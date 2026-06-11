@@ -1,0 +1,62 @@
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Editor and IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Coding agents
+CLAUDE.local.md
+.claude/settings.local.json
+.claude/**/settings.local.json
+.claude/cache/
+.claude/logs/
+.claude/tmp/
+.claude/transcripts/
+.codex/sessions/
+.codex/logs/
+.codex/cache/
+.codex/tmp/
+.codex/history*
+.codex/*.local.*
+
+# Logs
+*.log
+logs/
+
+# Dependency directories
+node_modules/
+vendor/
+
+# Build and cache output
+dist/
+build/
+coverage/
+.cache/
+.parcel-cache/
+.turbo/
+.next/
+out/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Go
+bin/
+
+# Rust
+target/
