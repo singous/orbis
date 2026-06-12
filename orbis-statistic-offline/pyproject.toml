@@ -1,0 +1,9 @@
+[project]
+name = "orbis-statistic-offline"
+version = "0.1.0"
+description = "Offline statistics task service for Orbis."
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[tool.uv]
+package = false

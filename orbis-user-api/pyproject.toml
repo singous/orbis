@@ -1,0 +1,9 @@
+[project]
+name = "orbis-user-api"
+version = "0.1.0"
+description = "User API service for Orbis."
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[tool.uv]
+package = false

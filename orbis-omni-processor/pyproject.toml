@@ -1,0 +1,9 @@
+[project]
+name = "orbis-omni-processor"
+version = "0.1.0"
+description = "Multimodal data processing service for Orbis."
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[tool.uv]
+package = false

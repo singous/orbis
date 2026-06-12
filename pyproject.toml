@@ -1,0 +1,22 @@
+[project]
+name = "orbis"
+version = "0.1.0"
+description = "Orbis monorepo workspace."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = [
+  "orbis-gateway",
+  "orbis-user-api",
+  "orbis-user-web",
+  "orbis-omni-processor",
+  "orbis-indexer",
+  "orbis-statistic-offline",
+  "orbis-retrievaler",
+  "orbis-data-receiver",
+]
