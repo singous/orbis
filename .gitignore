@@ -15,6 +15,7 @@ Thumbs.db
 
 # Coding agents
 AGENTS.md
+agents.md
 Agents.md
 CLAUDE.local.md
 .claude/settings.local.json
@@ -31,7 +32,7 @@ CLAUDE.local.md
 .codex/*.local.*
 
 # Local planning and generated docs
-docs/superpowers/
+docs/
 
 # Logs
 *.log
