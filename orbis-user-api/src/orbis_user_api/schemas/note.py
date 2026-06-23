@@ -15,6 +15,7 @@ class NoteCreateRequest(BaseModel):
 
 class NoteContentUpdateRequest(BaseModel):
     expected_version: int = Field(ge=1)
+    title: str | None = Field(default=None, min_length=1, max_length=240)
     blocks: dict[str, Any]
     plain_text: str = ""
 

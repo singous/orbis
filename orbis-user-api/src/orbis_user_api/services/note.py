@@ -66,6 +66,8 @@ async def update_note_content(
         raise NoteVersionConflict
 
     next_version = note.content_version + 1
+    if payload.title is not None:
+        note.title = payload.title
     note.blocks = payload.blocks
     note.plain_text = payload.plain_text
     note.content_version = next_version

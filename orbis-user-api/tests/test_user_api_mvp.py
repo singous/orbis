@@ -105,6 +105,7 @@ def test_notes_are_owned_and_use_optimistic_versions(client: TestClient) -> None
         headers=auth_header(access_token),
         json={
             "expected_version": 1,
+            "title": "Renamed Orbis note",
             "blocks": {
                 "schema_version": 1,
                 "editor": "tiptap",
@@ -123,6 +124,7 @@ def test_notes_are_owned_and_use_optimistic_versions(client: TestClient) -> None
     )
     assert update_response.status_code == 200
     assert update_response.json()["content_version"] == 2
+    assert update_response.json()["title"] == "Renamed Orbis note"
 
     stale_response = client.put(
         f"/v1/notes/{note['id']}/content",
