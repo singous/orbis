@@ -38,6 +38,9 @@ docs/
 *.log
 logs/
 
+# Local service data
+orbis-user-api/storage/
+
 # Dependency directories
 node_modules/
 vendor/
