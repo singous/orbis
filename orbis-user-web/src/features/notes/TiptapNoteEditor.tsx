@@ -1,4 +1,11 @@
+import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
+import Table from "@tiptap/extension-table";
+import TableCell from "@tiptap/extension-table-cell";
+import TableHeader from "@tiptap/extension-table-header";
+import TableRow from "@tiptap/extension-table-row";
+import TaskItem from "@tiptap/extension-task-item";
+import TaskList from "@tiptap/extension-task-list";
 import { EditorContent, useEditor, type JSONContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect } from "react";
@@ -17,8 +24,33 @@ export function TiptapNoteEditor({
   const editor = useEditor({
     extensions: [
       StarterKit,
+      Link.configure({
+        autolink: true,
+        linkOnPaste: true,
+        openOnClick: false,
+        HTMLAttributes: {
+          rel: "noopener noreferrer",
+          target: "_blank",
+        },
+      }),
       Placeholder.configure({
         placeholder: "开始记录。先把想法留住，再慢慢整理。",
+      }),
+      Table.configure({
+        resizable: true,
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
+      TaskList,
+      TaskItem.configure({
+        HTMLAttributes: {
+          "data-type": "taskItem",
+        },
+        nested: true,
+        a11y: {
+          checkboxLabel: (node) => `${node.attrs.checked ? "已完成" : "未完成"}任务：${node.textContent || "空任务"}`,
+        },
       }),
     ],
     content: blocks.doc as JSONContent,

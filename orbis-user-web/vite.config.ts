@@ -9,7 +9,18 @@ export default defineConfig({
       output: {
         manualChunks: {
           react: ["react", "react-dom", "react-router-dom"],
-          editor: ["@tiptap/react", "@tiptap/starter-kit", "@tiptap/extension-placeholder"],
+          editor: [
+            "@tiptap/react",
+            "@tiptap/starter-kit",
+            "@tiptap/extension-placeholder",
+            "@tiptap/extension-link",
+            "@tiptap/extension-task-list",
+            "@tiptap/extension-task-item",
+            "@tiptap/extension-table",
+            "@tiptap/extension-table-row",
+            "@tiptap/extension-table-cell",
+            "@tiptap/extension-table-header",
+          ],
           query: ["@tanstack/react-query", "zustand"],
         },
       },

@@ -32,9 +32,23 @@ function inlineText(node: JSONContent): string {
   return node.content?.map(inlineText).join("") ?? "";
 }
 
+function collectTableRow(node: JSONContent): string {
+  return (
+    node.content
+      ?.map((cell) => collectLines(cell).join(" "))
+      .map((cellText) => cellText.trim())
+      .join("\t") ?? ""
+  );
+}
+
 function collectLines(node: JSONContent): string[] {
   if (node.type === "paragraph" || node.type === "heading" || node.type === "codeBlock") {
     const text = inlineText(node).trim();
+    return text ? [text] : [];
+  }
+
+  if (node.type === "tableRow") {
+    const text = collectTableRow(node).trim();
     return text ? [text] : [];
   }
 

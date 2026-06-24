@@ -53,11 +53,80 @@ describe("note contract", () => {
           type: "codeBlock",
           content: [{ type: "text", text: "expected_version" }],
         },
+        {
+          type: "taskList",
+          content: [
+            {
+              type: "taskItem",
+              attrs: { checked: true },
+              content: [
+                {
+                  type: "paragraph",
+                  content: [{ type: "text", text: "Review editor blocks" }],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: "horizontalRule",
+        },
+        {
+          type: "table",
+          content: [
+            {
+              type: "tableRow",
+              content: [
+                {
+                  type: "tableHeader",
+                  content: [
+                    {
+                      type: "paragraph",
+                      content: [{ type: "text", text: "Source" }],
+                    },
+                  ],
+                },
+                {
+                  type: "tableHeader",
+                  content: [
+                    {
+                      type: "paragraph",
+                      content: [{ type: "text", text: "Decision" }],
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              type: "tableRow",
+              content: [
+                {
+                  type: "tableCell",
+                  content: [
+                    {
+                      type: "paragraph",
+                      content: [{ type: "text", text: "Meeting" }],
+                    },
+                  ],
+                },
+                {
+                  type: "tableCell",
+                  content: [
+                    {
+                      type: "paragraph",
+                      content: [{ type: "text", text: "Ship MVP" }],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
       ],
     });
 
     expect(plainText).toBe(
-      "Project notes\nCapture the first workflow\nKeep the original context\nexpected_version",
+      "Project notes\nCapture the first workflow\nKeep the original context\nexpected_version\nReview editor blocks\nSource\tDecision\nMeeting\tShip MVP",
     );
   });
 
