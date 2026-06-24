@@ -20,6 +20,7 @@ export default defineConfig({
             "@tiptap/extension-table-row",
             "@tiptap/extension-table-cell",
             "@tiptap/extension-table-header",
+            "marked",
           ],
           query: ["@tanstack/react-query", "zustand"],
         },

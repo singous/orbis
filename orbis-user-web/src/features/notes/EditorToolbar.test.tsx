@@ -54,6 +54,7 @@ describe("EditorToolbar", () => {
       "链接",
       "删除线",
       "行内代码",
+      "复制 Markdown",
     ].forEach((label) => {
       expect(screen.getByRole("button", { name: label })).toBeInTheDocument();
     });

@@ -2,6 +2,7 @@ import type { Editor } from "@tiptap/react";
 import {
   Bold,
   Braces,
+  ClipboardCopy,
   CodeXml,
   Columns3,
   Heading1,
@@ -21,6 +22,9 @@ import {
   Type,
   type LucideIcon,
 } from "lucide-react";
+
+import { tiptapDocToMarkdown } from "./markdown-contract";
+import type { TiptapDocument } from "./note-contract";
 
 type EditorTool = {
   label: string;
@@ -50,6 +54,19 @@ function setLink(editor: Editor): boolean {
   }
 
   return editor.chain().focus().setLink({ href: normalizedHref }).run();
+}
+
+function copyMarkdown(editor: Editor): boolean {
+  const markdown = tiptapDocToMarkdown(editor.getJSON() as TiptapDocument);
+  if (navigator.clipboard?.writeText) {
+    void navigator.clipboard.writeText(markdown).catch(() => {
+      window.prompt("复制 Markdown", markdown);
+    });
+    return true;
+  }
+
+  window.prompt("复制 Markdown", markdown);
+  return true;
 }
 
 const tools: EditorTool[] = [
@@ -162,6 +179,11 @@ const tools: EditorTool[] = [
     label: "删除表格",
     icon: Trash2,
     run: (editor) => editor.chain().focus().deleteTable().run(),
+  },
+  {
+    label: "复制 Markdown",
+    icon: ClipboardCopy,
+    run: copyMarkdown,
   },
 ];
 

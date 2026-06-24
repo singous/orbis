@@ -7,12 +7,14 @@ import TableRow from "@tiptap/extension-table-row";
 import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import { EditorContent, useEditor, type JSONContent } from "@tiptap/react";
+import { Slice } from "@tiptap/pm/model";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect } from "react";
 
 import type { NoteBlocks } from "../../shared/api/schemas";
 import { extractPlainText, toNoteBlocks, type TiptapDocument } from "./note-contract";
 import { EditorToolbar } from "./EditorToolbar";
+import { looksLikeMarkdown, markdownToTiptapDoc } from "./markdown-contract";
 
 export function TiptapNoteEditor({
   blocks,
@@ -58,6 +60,19 @@ export function TiptapNoteEditor({
       attributes: {
         class:
           "prose prose-neutral max-w-none min-h-[420px] px-6 py-5 text-[15px] leading-7 text-[var(--text)] focus:outline-none",
+      },
+      handlePaste: (view, event) => {
+        const clipboardData = event.clipboardData;
+        const markdown = clipboardData?.getData("text/plain") ?? "";
+        const html = clipboardData?.getData("text/html") ?? "";
+        if (!markdown || html || !looksLikeMarkdown(markdown)) {
+          return false;
+        }
+
+        const doc = view.state.schema.nodeFromJSON(markdownToTiptapDoc(markdown));
+        view.dispatch(view.state.tr.replaceSelection(new Slice(doc.content, 0, 0)).scrollIntoView());
+        event.preventDefault();
+        return true;
       },
     },
     onUpdate: ({ editor: activeEditor }) => {
