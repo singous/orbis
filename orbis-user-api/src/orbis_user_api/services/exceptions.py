@@ -81,6 +81,10 @@ class DocumentGroupNotFound(ServiceError):
     pass
 
 
+class DefaultDocumentGroupArchiveForbidden(ServiceError):
+    pass
+
+
 class DefaultDocumentGroupMissing(ServiceError):
     pass
 
@@ -94,4 +98,12 @@ class NoteNotFound(ServiceError):
 
 
 class NoteVersionConflict(ServiceError):
+    pass
+
+
+class NoteContentInvalid(ServiceError):
+    pass
+
+
+class NoteParentInvalid(ServiceError):
     pass

@@ -7,31 +7,46 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class NoteCreateRequest(BaseModel):
+    notebook_id: UUID
     title: str = Field(min_length=1, max_length=240)
-    blocks: dict[str, Any] = Field(default_factory=dict)
-    plain_text: str = ""
-    note_type: str = Field(default="doc", max_length=32)
+    parent_id: UUID | None = None
+    sort_order: int = 0
+
+
+class NoteMetadataUpdateRequest(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=240)
+    parent_id: UUID | None = None
+    sort_order: int | None = None
 
 
 class NoteContentUpdateRequest(BaseModel):
     expected_version: int = Field(ge=1)
-    title: str | None = Field(default=None, min_length=1, max_length=240)
     blocks: dict[str, Any]
-    plain_text: str = ""
+
+
+class NoteContentOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    note_id: UUID
+    blocks: dict[str, Any]
+    plain_text: str
+    content_version: int
+    created_at_ms: int
+    updated_at_ms: int
 
 
 class NoteOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
+    tenant_id: UUID | None
     workspace_id: UUID
     owner_id: UUID
     notebook_id: UUID | None
+    parent_id: UUID | None
+    sort_order: int
     title: str
     note_type: str
-    blocks: dict[str, Any]
-    plain_text: str
-    content_version: int
     status: str
     created_at_ms: int
     updated_at_ms: int
@@ -41,13 +56,14 @@ class NoteListItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
+    tenant_id: UUID | None
     workspace_id: UUID
     owner_id: UUID
     notebook_id: UUID | None
+    parent_id: UUID | None
+    sort_order: int
     title: str
     note_type: str
-    plain_text: str
-    content_version: int
     status: str
     created_at_ms: int
     updated_at_ms: int
@@ -62,10 +78,16 @@ class DocumentGroupCreateRequest(BaseModel):
     sort_order: int = 0
 
 
+class DocumentGroupUpdateRequest(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=120)
+    sort_order: int | None = None
+
+
 class DocumentGroupOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
+    tenant_id: UUID | None
     workspace_id: UUID
     owner_id: UUID
     name: str
@@ -86,10 +108,17 @@ class NotebookCreateRequest(BaseModel):
     sort_order: int = 0
 
 
+class NotebookUpdateRequest(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=160)
+    group_id: UUID | None = None
+    sort_order: int | None = None
+
+
 class NotebookOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
+    tenant_id: UUID | None
     workspace_id: UUID
     group_id: UUID
     owner_id: UUID
@@ -104,14 +133,41 @@ class NotebookListResponse(BaseModel):
     items: list[NotebookOut]
 
 
-class DocumentCreateRequest(BaseModel):
-    title: str = Field(min_length=1, max_length=240)
+class MarkdownImportRequest(BaseModel):
     notebook_id: UUID
-    blocks: dict[str, Any] = Field(default_factory=dict)
-    plain_text: str = ""
+    title: str = Field(min_length=1, max_length=240)
+    markdown: str
+    parent_id: UUID | None = None
+    sort_order: int = 0
 
 
-DocumentContentUpdateRequest = NoteContentUpdateRequest
-DocumentOut = NoteOut
-DocumentListItem = NoteListItem
-DocumentListResponse = NoteListResponse
+class MarkdownExportResponse(BaseModel):
+    filename: str
+    markdown: str
+
+
+class NoteSearchItem(NoteListItem):
+    plain_text: str
+
+
+class NoteSearchResponse(BaseModel):
+    items: list[NoteSearchItem]
+
+
+class NoteTreeItem(BaseModel):
+    id: UUID
+    tenant_id: UUID | None
+    workspace_id: UUID
+    notebook_id: UUID
+    parent_id: UUID | None
+    owner_id: UUID
+    title: str
+    sort_order: int
+    status: str
+    created_at_ms: int
+    updated_at_ms: int
+    children: list[NoteTreeItem] = Field(default_factory=list)
+
+
+class NoteTreeResponse(BaseModel):
+    items: list[NoteTreeItem]

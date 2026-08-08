@@ -5,12 +5,15 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-
 PASSWORD = "correct horse battery staple"
 
 
-def test_database_schema_is_not_enabled_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("ORBIS_DATABASE_URL", "postgresql+asyncpg://example:secret@localhost/orbis")
+def test_database_schema_is_not_enabled_by_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(
+        "ORBIS_DATABASE_URL", "postgresql+asyncpg://example:secret@localhost/orbis"
+    )
     monkeypatch.delenv("ORBIS_DATABASE_SCHEMA", raising=False)
 
     from orbis_user_api.core.settings import Settings
@@ -24,12 +27,20 @@ def storage_dir(tmp_path: Path) -> Path:
 
 
 @pytest.fixture()
-def client(tmp_path: Path, storage_dir: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
-    monkeypatch.setenv("ORBIS_DATABASE_URL", f"sqlite+aiosqlite:///{tmp_path / 'test.db'}")
+def client(
+    tmp_path: Path, storage_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> TestClient:
+    monkeypatch.setenv(
+        "ORBIS_DATABASE_URL", f"sqlite+aiosqlite:///{tmp_path / 'test.db'}"
+    )
     monkeypatch.setenv("ORBIS_STORAGE_DIR", str(storage_dir))
     monkeypatch.setenv("ORBIS_AUTO_CREATE_TABLES", "true")
-    monkeypatch.setenv("ORBIS_ACCESS_TOKEN_SECRET", "test-access-secret-with-at-least-32-bytes")
-    monkeypatch.setenv("ORBIS_REFRESH_TOKEN_SECRET", "test-refresh-secret-with-at-least-32-bytes")
+    monkeypatch.setenv(
+        "ORBIS_ACCESS_TOKEN_SECRET", "test-access-secret-with-at-least-32-bytes"
+    )
+    monkeypatch.setenv(
+        "ORBIS_REFRESH_TOKEN_SECRET", "test-refresh-secret-with-at-least-32-bytes"
+    )
 
     from orbis_user_api.main import create_app
 
@@ -44,13 +55,19 @@ def auth_header(token: str) -> dict[str, str]:
 def setup_owner(client: TestClient) -> str:
     response = client.post(
         "/setup",
-        json={"email": "owner@example.com", "password": PASSWORD, "display_name": "Owner"},
+        json={
+            "email": "owner@example.com",
+            "password": PASSWORD,
+            "display_name": "Owner",
+        },
     )
     assert response.status_code == 201
     return response.json()["access_token"]
 
 
-def test_document_groups_notebooks_and_documents_keep_working_on_unversioned_routes(client: TestClient) -> None:
+def test_document_groups_collections_and_notes_keep_working_on_unversioned_routes(
+    client: TestClient,
+) -> None:
     owner_token = setup_owner(client)
 
     groups_response = client.get("/document-groups", headers=auth_header(owner_token))
@@ -68,58 +85,76 @@ def test_document_groups_notebooks_and_documents_keep_working_on_unversioned_rou
     notebook = notebook_response.json()
     assert notebook["group_id"] == default_group["id"]
 
-    document_response = client.post(
-        "/documents",
+    note_response = client.post(
+        "/notes",
         headers=auth_header(owner_token),
         json={
             "title": "第一篇文档",
             "notebook_id": notebook["id"],
+        },
+    )
+    assert note_response.status_code == 201
+    note = note_response.json()
+    assert note["note_type"] == "doc"
+
+    content_response = client.get(
+        f"/notes/{note['id']}/content", headers=auth_header(owner_token)
+    )
+    assert content_response.status_code == 200
+    assert content_response.json()["content_version"] == 1
+
+    list_response = client.get("/notes", headers=auth_header(owner_token))
+    assert list_response.status_code == 200
+    assert list_response.json()["items"][0]["id"] == note["id"]
+    assert "blocks" not in list_response.json()["items"][0]
+
+    stale_response = client.put(
+        f"/notes/{note['id']}/content",
+        headers=auth_header(owner_token),
+        json={
+            "expected_version": 0,
+            "blocks": {
+                "schema_version": 1,
+                "editor": "tiptap",
+                "doc": {"type": "doc"},
+            },
+        },
+    )
+    assert stale_response.status_code == 422
+
+    update_response = client.put(
+        f"/notes/{note['id']}/content",
+        headers=auth_header(owner_token),
+        json={
+            "expected_version": 1,
             "blocks": {
                 "schema_version": 1,
                 "editor": "tiptap",
                 "doc": {"type": "doc", "content": []},
             },
-            "plain_text": "",
-        },
-    )
-    assert document_response.status_code == 201
-    document = document_response.json()
-    assert document["content_version"] == 1
-    assert document["note_type"] == "doc"
-
-    list_response = client.get("/documents", headers=auth_header(owner_token))
-    assert list_response.status_code == 200
-    assert list_response.json()["items"][0]["id"] == document["id"]
-    assert "blocks" not in list_response.json()["items"][0]
-
-    stale_response = client.put(
-        f"/documents/{document['id']}/content",
-        headers=auth_header(owner_token),
-        json={"expected_version": 0, "blocks": {"schema_version": 1, "doc": {"type": "doc"}}, "plain_text": ""},
-    )
-    assert stale_response.status_code == 422
-
-    update_response = client.put(
-        f"/documents/{document['id']}/content",
-        headers=auth_header(owner_token),
-        json={
-            "expected_version": 1,
-            "title": "改名后的文档",
-            "blocks": {"schema_version": 1, "editor": "tiptap", "doc": {"type": "doc", "content": []}},
-            "plain_text": "updated",
         },
     )
     assert update_response.status_code == 200
     assert update_response.json()["content_version"] == 2
 
     conflict_response = client.put(
-        f"/documents/{document['id']}/content",
+        f"/notes/{note['id']}/content",
         headers=auth_header(owner_token),
-        json={"expected_version": 1, "blocks": {"schema_version": 1, "doc": {"type": "doc"}}, "plain_text": ""},
+        json={
+            "expected_version": 1,
+            "blocks": {
+                "schema_version": 1,
+                "editor": "tiptap",
+                "doc": {"type": "doc"},
+            },
+        },
     )
     assert conflict_response.status_code == 409
 
-def test_files_keep_working_on_unversioned_routes(client: TestClient, storage_dir: Path) -> None:
+
+def test_files_keep_working_on_unversioned_routes(
+    client: TestClient, storage_dir: Path
+) -> None:
     access_token = setup_owner(client)
 
     upload_response = client.post(

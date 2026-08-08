@@ -9,15 +9,26 @@ from orbis_user_api.core.time import now_ms
 from orbis_user_api.models.note import NoteGroup
 from orbis_user_api.models.user import User
 from orbis_user_api.models.workspace import Workspace
-from orbis_user_api.schemas.note import DocumentGroupCreateRequest
-from orbis_user_api.services.exceptions import DefaultDocumentGroupMissing, DocumentGroupNotFound
-from orbis_user_api.services.workspace import get_current_workspace, require_workspace_member
-
+from orbis_user_api.schemas.note import (
+    DocumentGroupCreateRequest,
+    DocumentGroupUpdateRequest,
+)
+from orbis_user_api.services.exceptions import (
+    DefaultDocumentGroupArchiveForbidden,
+    DefaultDocumentGroupMissing,
+    DocumentGroupNotFound,
+)
+from orbis_user_api.services.workspace import (
+    get_current_workspace,
+    require_workspace_member,
+)
 
 DEFAULT_DOCUMENT_GROUP_NAME = "默认分组"
 
 
-async def ensure_default_document_group(session: AsyncSession, workspace: Workspace, user: User) -> NoteGroup:
+async def ensure_default_document_group(
+    session: AsyncSession, workspace: Workspace, user: User
+) -> NoteGroup:
     result = await session.execute(
         select(NoteGroup)
         .where(
@@ -33,6 +44,7 @@ async def ensure_default_document_group(session: AsyncSession, workspace: Worksp
 
     timestamp = now_ms()
     group = NoteGroup(
+        tenant_id=workspace.tenant_id,
         workspace_id=workspace.id,
         owner_id=user.id,
         name=DEFAULT_DOCUMENT_GROUP_NAME,
@@ -47,7 +59,9 @@ async def ensure_default_document_group(session: AsyncSession, workspace: Worksp
     return group
 
 
-async def get_default_document_group(session: AsyncSession, workspace: Workspace) -> NoteGroup:
+async def get_default_document_group(
+    session: AsyncSession, workspace: Workspace
+) -> NoteGroup:
     result = await session.execute(
         select(NoteGroup).where(
             NoteGroup.workspace_id == workspace.id,
@@ -78,6 +92,7 @@ async def create_document_group(
 ) -> NoteGroup:
     workspace, _ = await get_current_workspace(user, session)
     group = NoteGroup(
+        tenant_id=workspace.tenant_id,
         workspace_id=workspace.id,
         owner_id=user.id,
         name=payload.name.strip(),
@@ -90,7 +105,52 @@ async def create_document_group(
     return group
 
 
-async def get_document_group(group_id: UUID, workspace_id: UUID, user: User, session: AsyncSession) -> NoteGroup:
+async def set_document_group_archived(
+    group_id: UUID,
+    archived: bool,
+    user: User,
+    session: AsyncSession,
+) -> NoteGroup:
+    workspace, _ = await get_current_workspace(user, session)
+    group = await session.get(NoteGroup, group_id)
+    if (
+        group is None
+        or group.workspace_id != workspace.id
+        or group.status not in {"active", "archived"}
+    ):
+        raise DocumentGroupNotFound
+    if archived and group.is_default:
+        raise DefaultDocumentGroupArchiveForbidden
+    group.status = "archived" if archived else "active"
+    group.updated_at_ms = now_ms()
+    await session.commit()
+    await session.refresh(group)
+    return group
+
+
+async def update_document_group(
+    group_id: UUID,
+    payload: DocumentGroupUpdateRequest,
+    user: User,
+    session: AsyncSession,
+) -> NoteGroup:
+    workspace, _ = await get_current_workspace(user, session)
+    group = await session.get(NoteGroup, group_id)
+    if group is None or group.workspace_id != workspace.id or group.status != "active":
+        raise DocumentGroupNotFound
+    if payload.name is not None:
+        group.name = payload.name.strip()
+    if payload.sort_order is not None:
+        group.sort_order = payload.sort_order
+    group.updated_at_ms = now_ms()
+    await session.commit()
+    await session.refresh(group)
+    return group
+
+
+async def get_document_group(
+    group_id: UUID, workspace_id: UUID, user: User, session: AsyncSession
+) -> NoteGroup:
     await require_workspace_member(workspace_id, user, session)
     group = await session.get(NoteGroup, group_id)
     if group is None or group.workspace_id != workspace_id or group.status != "active":

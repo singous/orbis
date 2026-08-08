@@ -2,7 +2,7 @@
 
 from orbis_user_api.models.community import CommunityState, CommunityTenant
 from orbis_user_api.models.file import FileAsset
-from orbis_user_api.models.note import Note, Notebook, NoteGroup, NoteRevision
+from orbis_user_api.models.note import Note, Notebook, NoteContent, NoteGroup
 from orbis_user_api.models.user import RefreshSession, User
 from orbis_user_api.models.workspace import (
     OwnershipTransfer,
@@ -16,8 +16,8 @@ __all__ = [
     "CommunityTenant",
     "FileAsset",
     "Note",
+    "NoteContent",
     "NoteGroup",
-    "NoteRevision",
     "Notebook",
     "OwnershipTransfer",
     "RefreshSession",
