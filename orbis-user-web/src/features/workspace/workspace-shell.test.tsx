@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, useLocation } from "react-router-dom";
+import { Link, MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { authStore } from "../../shared/auth/auth-store";
@@ -122,7 +122,33 @@ describe("WorkspaceShell", () => {
     expect(mainWorkspace).toHaveClass("has-context");
     expect(mainWorkspace).toContainElement(contextPanel);
     expect(mainWorkspace.lastElementChild).toBe(contextPanel);
-    expect(mainWorkspace.parentElement?.children).toHaveLength(3);
+    expect(mainWorkspace.parentElement?.children).toHaveLength(2);
+  });
+
+  it("uses separate mobile drawers and closes each after its navigation link", async () => {
+    const actor = userEvent.setup();
+    renderShell("/documents", <nav aria-label="测试文档目录"><Link to="/documents/note-1">目录中的文档</Link></nav>);
+    const mainNavigation = screen.getByRole("button", { name: "打开主导航" });
+    const documentContext = screen.getByRole("button", { name: "打开文档目录" });
+
+    await actor.click(mainNavigation);
+
+    expect(mainNavigation).toHaveAttribute("aria-expanded", "true");
+    expect(documentContext).toHaveAttribute("aria-expanded", "false");
+
+    await actor.click(documentContext);
+
+    expect(mainNavigation).toHaveAttribute("aria-expanded", "false");
+    expect(documentContext).toHaveAttribute("aria-expanded", "true");
+
+    await actor.click(screen.getByRole("link", { name: "搜索" }));
+
+    expect(mainNavigation).toHaveAttribute("aria-expanded", "false");
+
+    await actor.click(documentContext);
+    await actor.click(screen.getByRole("link", { name: "目录中的文档" }));
+
+    expect(documentContext).toHaveAttribute("aria-expanded", "false");
   });
 
   it("does not hide the user access surface at mobile width", () => {
