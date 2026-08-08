@@ -26,6 +26,8 @@ export type AuthRequestOptions = {
   onUnauthorized: () => void;
 };
 
+export type ResourceStatus = "active" | "archived";
+
 function authOptions(auth: AuthRequestOptions) {
   return {
     token: auth.accessToken,
@@ -44,8 +46,8 @@ function queryPath(path: string, values: Record<string, string | null | undefine
   return query ? `${path}?${query}` : path;
 }
 
-export async function listDocumentGroups(auth: AuthRequestOptions): Promise<{ items: DocumentGroup[] }> {
-  return documentGroupListResponseSchema.parse(await apiRequest("/document-groups", authOptions(auth)));
+export async function listDocumentGroups(auth: AuthRequestOptions, status: ResourceStatus = "active"): Promise<{ items: DocumentGroup[] }> {
+  return documentGroupListResponseSchema.parse(await apiRequest(queryPath("/document-groups", { status: status === "archived" ? status : null }), authOptions(auth)));
 }
 
 export async function createDocumentGroup(payload: { name: string; sort_order: number }, auth: AuthRequestOptions): Promise<DocumentGroup> {
@@ -60,8 +62,8 @@ export async function setDocumentGroupArchived(groupId: string, archived: boolea
   return documentGroupSchema.parse(await apiRequest(`/document-groups/${groupId}/${archived ? "archive" : "restore"}`, { method: "POST", ...authOptions(auth) }));
 }
 
-export async function listNotebooks(auth: AuthRequestOptions, groupId?: string): Promise<{ items: Notebook[] }> {
-  return notebookListResponseSchema.parse(await apiRequest(queryPath("/notebooks", { group_id: groupId }), authOptions(auth)));
+export async function listNotebooks(auth: AuthRequestOptions, groupId?: string, status: ResourceStatus = "active"): Promise<{ items: Notebook[] }> {
+  return notebookListResponseSchema.parse(await apiRequest(queryPath("/notebooks", { group_id: groupId, status: status === "archived" ? status : null }), authOptions(auth)));
 }
 
 export async function createNotebook(payload: { title: string; group_id?: string | null; sort_order: number }, auth: AuthRequestOptions): Promise<Notebook> {
@@ -110,8 +112,8 @@ export async function saveNoteContent(payload: { noteId: string; expectedVersion
   }));
 }
 
-export async function searchNotes(query: string, auth: AuthRequestOptions): Promise<{ items: NoteSearchItem[] }> {
-  return noteSearchResponseSchema.parse(await apiRequest(queryPath("/notes", { q: query.trim() || null }), authOptions(auth)));
+export async function searchNotes(query: string, auth: AuthRequestOptions, status: ResourceStatus = "active"): Promise<{ items: NoteSearchItem[] }> {
+  return noteSearchResponseSchema.parse(await apiRequest(queryPath("/notes", { q: query.trim() || null, status: status === "archived" ? status : null }), authOptions(auth)));
 }
 
 export async function importMarkdown(payload: { notebook_id: string; title: string; markdown: string; parent_id: string | null; sort_order: number }, auth: AuthRequestOptions): Promise<Note> {

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createNote,
   listDocumentGroups,
+  listNotebooks,
   saveNoteContent,
   searchNotes,
   type AuthRequestOptions,
@@ -48,6 +49,23 @@ describe("document API", () => {
       "/api/notes?q=release+plan",
       expect.any(Object),
     );
+  });
+
+  it("requests archived document resources with the archived status filter", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ items: [] }))
+      .mockResolvedValueOnce(jsonResponse({ items: [] }))
+      .mockResolvedValueOnce(jsonResponse({ items: [] }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await listDocumentGroups(auth, "archived");
+    await listNotebooks(auth, "group-1", "archived");
+    await searchNotes("draft", auth, "archived");
+
+    expect(fetchMock).toHaveBeenNthCalledWith(1, "/api/document-groups?status=archived", expect.any(Object));
+    expect(fetchMock).toHaveBeenNthCalledWith(2, "/api/notebooks?group_id=group-1&status=archived", expect.any(Object));
+    expect(fetchMock).toHaveBeenNthCalledWith(3, "/api/notes?q=draft&status=archived", expect.any(Object));
   });
 
   it("creates note metadata separately from versioned content", async () => {

@@ -23,6 +23,7 @@ import {
   updateNotebook,
   type AuthRequestOptions,
   type CreateNotePayload,
+  type ResourceStatus,
 } from "./api";
 
 export function useDocumentAuth(): AuthRequestOptions {
@@ -36,14 +37,14 @@ export function useDocumentAuth(): AuthRequestOptions {
   return { accessToken, refreshToken, onTokenRefresh, onUnauthorized };
 }
 
-export function useDocumentGroups() {
+export function useDocumentGroups(status: ResourceStatus = "active") {
   const auth = useDocumentAuth();
-  return useQuery({ queryKey: ["document-groups"], queryFn: () => listDocumentGroups(auth) });
+  return useQuery({ queryKey: ["document-groups", status], queryFn: () => listDocumentGroups(auth, status) });
 }
 
-export function useNotebooks(groupId?: string) {
+export function useNotebooks(groupId?: string, status: ResourceStatus = "active") {
   const auth = useDocumentAuth();
-  return useQuery({ queryKey: ["notebooks", groupId ?? "all"], queryFn: () => listNotebooks(auth, groupId) });
+  return useQuery({ queryKey: ["notebooks", status, groupId ?? "all"], queryFn: () => listNotebooks(auth, groupId, status) });
 }
 
 export function useNoteTree(notebookId?: string) {
@@ -73,11 +74,11 @@ export function useNoteContent(noteId?: string) {
   });
 }
 
-export function useNoteSearch(query = "") {
+export function useNoteSearch(query = "", status: ResourceStatus = "active") {
   const auth = useDocumentAuth();
   return useQuery({
-    queryKey: ["note-search", query.trim()],
-    queryFn: () => searchNotes(query, auth),
+    queryKey: ["note-search", status, query.trim()],
+    queryFn: () => searchNotes(query, auth, status),
   });
 }
 
