@@ -8,23 +8,31 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from orbis_user_api.core.time import now_ms
 from orbis_user_api.models.note import Notebook, NoteGroup
 from orbis_user_api.models.user import User
-from orbis_user_api.schemas.note import NotebookCreateRequest, NotebookUpdateRequest
+from orbis_user_api.schemas.note import (
+    NotebookCreateRequest,
+    NotebookUpdateRequest,
+    ResourceStatus,
+)
 from orbis_user_api.services.document_group import get_default_document_group
 from orbis_user_api.services.exceptions import DocumentGroupNotFound, NotebookNotFound
 from orbis_user_api.services.workspace import get_current_workspace
 
 
 async def list_notebooks(
-    user: User, session: AsyncSession, group_id: UUID | None = None
+    user: User,
+    session: AsyncSession,
+    group_id: UUID | None = None,
+    resource_status: ResourceStatus = "active",
 ) -> list[Notebook]:
     workspace, _ = await get_current_workspace(user, session)
     conditions = [
         Notebook.workspace_id == workspace.id,
-        Notebook.status == "active",
-        NoteGroup.status == "active",
+        Notebook.status == resource_status,
     ]
     if group_id is not None:
         conditions.append(Notebook.group_id == group_id)
+    if resource_status == "active":
+        conditions.append(NoteGroup.status == "active")
     result = await session.execute(
         select(Notebook)
         .join(NoteGroup, NoteGroup.id == Notebook.group_id)

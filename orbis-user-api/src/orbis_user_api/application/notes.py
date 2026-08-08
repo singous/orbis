@@ -23,6 +23,7 @@ from orbis_user_api.schemas.note import (
     NoteContentUpdateRequest,
     NoteCreateRequest,
     NoteMetadataUpdateRequest,
+    ResourceStatus,
 )
 from orbis_user_api.services.exceptions import (
     NotebookNotFound,
@@ -312,20 +313,24 @@ async def export_note_markdown(
 
 
 async def search_notes(
-    query: str | None, user: User, session: AsyncSession
+    query: str | None,
+    user: User,
+    session: AsyncSession,
+    resource_status: ResourceStatus = "active",
 ) -> list[dict[str, Any]]:
     workspace, _ = await get_current_workspace(user, session)
+    conditions = [
+        Note.workspace_id == workspace.id,
+        Note.status == resource_status,
+    ]
+    if resource_status == "active":
+        conditions.extend([Notebook.status == "active", NoteGroup.status == "active"])
     statement = (
         select(Note, NoteContent.plain_text)
         .join(NoteContent, NoteContent.note_id == Note.id)
         .join(Notebook, Notebook.id == Note.notebook_id)
         .join(NoteGroup, NoteGroup.id == Notebook.group_id)
-        .where(
-            Note.workspace_id == workspace.id,
-            Note.status == "active",
-            Notebook.status == "active",
-            NoteGroup.status == "active",
-        )
+        .where(*conditions)
     )
     normalized_query = (query or "").strip().lower()
     if normalized_query:

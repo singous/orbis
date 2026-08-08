@@ -37,6 +37,7 @@ from orbis_user_api.schemas.note import (
     NoteOut,
     NoteSearchResponse,
     NoteTreeResponse,
+    ResourceStatus,
 )
 from orbis_user_api.services.exceptions import (
     NotebookNotFound,
@@ -64,11 +65,14 @@ def _workspace_forbidden() -> HTTPException:
 @router.get("/notes", response_model=NoteSearchResponse)
 async def list_or_search_notes(
     q: str | None = Query(default=None, max_length=240),
+    resource_status: ResourceStatus = Query(default="active", alias="status"),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> NoteSearchResponse:
     try:
-        return NoteSearchResponse(items=await search_notes(q, user, session))
+        return NoteSearchResponse(
+            items=await search_notes(q, user, session, resource_status)
+        )
     except UserWorkspaceMissing:
         raise _workspace_forbidden() from None
 

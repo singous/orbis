@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from orbis_user_api.api.deps import (
@@ -17,6 +17,7 @@ from orbis_user_api.schemas.note import (
     DocumentGroupListResponse,
     DocumentGroupOut,
     DocumentGroupUpdateRequest,
+    ResourceStatus,
 )
 from orbis_user_api.services.document_group import (
     create_document_group as create_document_group_service,
@@ -39,12 +40,13 @@ router = APIRouter(prefix="/document-groups", tags=["document-groups"])
 
 @router.get("", response_model=DocumentGroupListResponse)
 async def list_document_groups(
+    resource_status: ResourceStatus = Query(default="active", alias="status"),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> DocumentGroupListResponse:
     try:
         return DocumentGroupListResponse(
-            items=await list_document_groups_service(user, session)
+            items=await list_document_groups_service(user, session, resource_status)
         )
     except UserWorkspaceMissing:
         raise HTTPException(

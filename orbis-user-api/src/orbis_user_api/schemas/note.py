@@ -1,9 +1,12 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal, TypeAlias
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
+
+
+ResourceStatus: TypeAlias = Literal["active", "archived"]
 
 
 class NoteCreateRequest(BaseModel):

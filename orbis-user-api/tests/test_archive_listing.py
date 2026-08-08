@@ -1,0 +1,157 @@
+from __future__ import annotations
+
+import asyncio
+from pathlib import Path
+
+import pytest
+from fastapi.testclient import TestClient
+
+from orbis_user_api.core.ids import new_uuidv7
+from orbis_user_api.models.note import NoteGroup
+
+PASSWORD = "correct horse battery staple"
+
+
+@pytest.fixture()
+def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+    monkeypatch.setenv(
+        "ORBIS_DATABASE_URL", f"sqlite+aiosqlite:///{tmp_path / 'test.db'}"
+    )
+    monkeypatch.setenv("ORBIS_STORAGE_DIR", str(tmp_path / "storage"))
+    monkeypatch.setenv("ORBIS_AUTO_CREATE_TABLES", "true")
+    monkeypatch.setenv(
+        "ORBIS_ACCESS_TOKEN_SECRET", "test-access-secret-with-at-least-32-bytes"
+    )
+    monkeypatch.setenv(
+        "ORBIS_REFRESH_TOKEN_SECRET", "test-refresh-secret-with-at-least-32-bytes"
+    )
+
+    from orbis_user_api.main import create_app
+
+    with TestClient(create_app()) as test_client:
+        yield test_client
+
+
+def auth_header(token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {token}"}
+
+
+async def _insert_unrelated_archived_group(client: TestClient) -> str:
+    group = NoteGroup(
+        id=new_uuidv7(),
+        tenant_id=new_uuidv7(),
+        workspace_id=new_uuidv7(),
+        owner_id=new_uuidv7(),
+        name="Unrelated archived group",
+        is_default=False,
+        sort_order=0,
+        status="archived",
+    )
+    async with client.app.state.session_factory() as session:
+        session.add(group)
+        await session.commit()
+    return str(group.id)
+
+
+def test_archived_resources_are_listed_only_when_requested(
+    client: TestClient,
+) -> None:
+    setup_response = client.post(
+        "/setup",
+        json={
+            "email": "owner@example.com",
+            "password": PASSWORD,
+            "display_name": "Owner",
+        },
+    )
+    assert setup_response.status_code == 201
+    headers = auth_header(setup_response.json()["access_token"])
+
+    archived_group = client.post(
+        "/document-groups",
+        headers=headers,
+        json={"name": "Archived group"},
+    ).json()
+    archived_notebook = client.post(
+        "/notebooks",
+        headers=headers,
+        json={"title": "Archived notebook", "group_id": archived_group["id"]},
+    ).json()
+    archived_note = client.post(
+        "/notes",
+        headers=headers,
+        json={
+            "title": "archive-keyword note",
+            "notebook_id": archived_notebook["id"],
+        },
+    ).json()
+
+    assert (
+        client.post(f"/notes/{archived_note['id']}/archive", headers=headers).status_code
+        == 200
+    )
+    assert (
+        client.post(
+            f"/notebooks/{archived_notebook['id']}/archive", headers=headers
+        ).status_code
+        == 200
+    )
+    assert (
+        client.post(
+            f"/document-groups/{archived_group['id']}/archive", headers=headers
+        ).status_code
+        == 200
+    )
+
+    active_groups = client.get("/document-groups", headers=headers).json()["items"]
+    archived_groups = client.get(
+        "/document-groups", headers=headers, params={"status": "archived"}
+    ).json()["items"]
+    assert archived_group["id"] not in {item["id"] for item in active_groups}
+    assert [item["id"] for item in archived_groups] == [archived_group["id"]]
+
+    active_notebooks = client.get("/notebooks", headers=headers).json()["items"]
+    archived_notebooks = client.get(
+        "/notebooks", headers=headers, params={"status": "archived"}
+    ).json()["items"]
+    assert archived_notebook["id"] not in {item["id"] for item in active_notebooks}
+    assert [item["id"] for item in archived_notebooks] == [archived_notebook["id"]]
+
+    default_search = client.get(
+        "/notes", headers=headers, params={"q": "archive-keyword"}
+    )
+    archived_search = client.get(
+        "/notes",
+        headers=headers,
+        params={"status": "archived", "q": "archive-keyword"},
+    )
+    assert default_search.json()["items"] == []
+    assert [item["id"] for item in archived_search.json()["items"]] == [
+        archived_note["id"]
+    ]
+    assert (
+        client.get("/notes", headers=headers, params={"status": "deleted"}).status_code
+        == 422
+    )
+
+
+def test_archived_document_groups_remain_scoped_to_the_current_workspace(
+    client: TestClient,
+) -> None:
+    setup_response = client.post(
+        "/setup",
+        json={
+            "email": "owner@example.com",
+            "password": PASSWORD,
+            "display_name": "Owner",
+        },
+    )
+    assert setup_response.status_code == 201
+    headers = auth_header(setup_response.json()["access_token"])
+    unrelated_group_id = asyncio.run(_insert_unrelated_archived_group(client))
+
+    archived_groups = client.get(
+        "/document-groups", headers=headers, params={"status": "archived"}
+    ).json()["items"]
+
+    assert unrelated_group_id not in {item["id"] for item in archived_groups}

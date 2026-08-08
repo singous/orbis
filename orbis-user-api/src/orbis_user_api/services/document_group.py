@@ -12,6 +12,7 @@ from orbis_user_api.models.workspace import Workspace
 from orbis_user_api.schemas.note import (
     DocumentGroupCreateRequest,
     DocumentGroupUpdateRequest,
+    ResourceStatus,
 )
 from orbis_user_api.services.exceptions import (
     DefaultDocumentGroupArchiveForbidden,
@@ -75,11 +76,16 @@ async def get_default_document_group(
     return group
 
 
-async def list_document_groups(user: User, session: AsyncSession) -> list[NoteGroup]:
+async def list_document_groups(
+    user: User, session: AsyncSession, resource_status: ResourceStatus = "active"
+) -> list[NoteGroup]:
     workspace, _ = await get_current_workspace(user, session)
     result = await session.execute(
         select(NoteGroup)
-        .where(NoteGroup.workspace_id == workspace.id, NoteGroup.status == "active")
+        .where(
+            NoteGroup.workspace_id == workspace.id,
+            NoteGroup.status == resource_status,
+        )
         .order_by(NoteGroup.sort_order.asc(), NoteGroup.created_at_ms.asc())
     )
     return list(result.scalars().all())
