@@ -45,7 +45,11 @@ def test_setup_creates_only_owner_and_default_private_workspace(
     )
 
     assert response.status_code == 201
-    payload = response.json()
+    envelope = response.json()
+    assert envelope["code"] == "CREATED"
+    assert envelope["message"] == "创建成功"
+    assert envelope["request_id"] == response.headers["X-Request-ID"]
+    payload = envelope["data"]
     assert payload["token_type"] == "bearer"
     assert payload["access_token"]
     assert payload["refresh_token"]
@@ -61,22 +65,23 @@ def test_setup_creates_only_owner_and_default_private_workspace(
         headers=auth_header(payload["access_token"]),
     )
     assert me_response.status_code == 200
-    assert me_response.json()["id"] == payload["user"]["id"]
+    assert me_response.json()["data"]["id"] == payload["user"]["id"]
 
     login_response = client.post(
         "/auth/login",
         json={"email": "owner@example.com", "password": PASSWORD},
     )
     assert login_response.status_code == 200
-    assert login_response.json()["user"]["id"] == payload["user"]["id"]
-    assert login_response.json()["workspace"]["role"] == "owner"
+    login_payload = login_response.json()["data"]
+    assert login_payload["user"]["id"] == payload["user"]["id"]
+    assert login_payload["workspace"]["role"] == "owner"
 
     refresh_response = client.post(
         "/auth/refresh",
-        json={"refresh_token": login_response.json()["refresh_token"]},
+        json={"refresh_token": login_payload["refresh_token"]},
     )
     assert refresh_response.status_code == 200
-    assert refresh_response.json()["access_token"]
+    assert refresh_response.json()["data"]["access_token"]
 
     repeated_response = client.post(
         "/setup",
@@ -87,7 +92,9 @@ def test_setup_creates_only_owner_and_default_private_workspace(
         },
     )
     assert repeated_response.status_code == 409
-    assert repeated_response.json()["detail"] == "System is already initialized"
+    assert repeated_response.json()["code"] == "SYSTEM_ALREADY_INITIALIZED"
+    assert repeated_response.json()["message"] == "系统已经完成初始化"
+    assert repeated_response.json()["data"] is None
 
 
 def test_community_mode_hides_public_registration_and_workspace_management(

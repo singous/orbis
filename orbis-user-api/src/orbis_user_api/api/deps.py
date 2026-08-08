@@ -3,10 +3,11 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 
 import jwt
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from orbis_user_api.api.errors import ApiError
 from orbis_user_api.core.security import decode_access_token
 from orbis_user_api.models.user import User
 from orbis_user_api.models.workspace import WorkspaceMember
@@ -35,14 +36,18 @@ async def get_current_user(
     try:
         user_id = decode_access_token(token, settings)
     except (jwt.InvalidTokenError, ValueError):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid access token"
+        raise ApiError(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            code="INVALID_ACCESS_TOKEN",
+            message="访问令牌无效或已过期",
         ) from None
 
     user = await session.get(User, user_id)
     if user is None or user.status != "active":
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid access token"
+        raise ApiError(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            code="INVALID_ACCESS_TOKEN",
+            message="访问令牌无效或已过期",
         )
     return user
 
@@ -58,14 +63,18 @@ async def get_optional_current_user(
     try:
         user_id = decode_access_token(token, settings)
     except (jwt.InvalidTokenError, ValueError):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid access token"
+        raise ApiError(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            code="INVALID_ACCESS_TOKEN",
+            message="访问令牌无效或已过期",
         ) from None
 
     user = await session.get(User, user_id)
     if user is None or user.status != "active":
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid access token"
+        raise ApiError(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            code="INVALID_ACCESS_TOKEN",
+            message="访问令牌无效或已过期",
         )
     return user
 
@@ -78,8 +87,9 @@ async def require_resource_manager(
         _, membership = await AuthorizationService.actor(user, session)
         AuthorizationService.require_capability(membership, Capability.RESOURCE_MANAGE)
     except (UserWorkspaceMissing, WorkspaceMemberForbidden):
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Resource management forbidden",
+            code="RESOURCE_MANAGEMENT_FORBIDDEN",
+            message="当前账号无资源管理权限",
         ) from None
     return membership

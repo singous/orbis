@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from fastapi import UploadFile
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from orbis_user_api.core.ids import new_uuidv7
@@ -40,8 +40,20 @@ async def upload_file_asset(
     return file_asset
 
 
-async def list_file_assets(user: User, session: AsyncSession) -> list[FileAsset]:
+async def list_file_assets(
+    user: User,
+    session: AsyncSession,
+    *,
+    offset: int = 0,
+    limit: int = 20,
+) -> tuple[list[FileAsset], int]:
+    conditions = (FileAsset.owner_id == user.id,)
+    total = await session.scalar(select(func.count(FileAsset.id)).where(*conditions))
     result = await session.execute(
-        select(FileAsset).where(FileAsset.owner_id == user.id).order_by(FileAsset.created_at_ms.desc())
+        select(FileAsset)
+        .where(*conditions)
+        .order_by(FileAsset.created_at_ms.desc())
+        .offset(offset)
+        .limit(limit)
     )
-    return list(result.scalars().all())
+    return list(result.scalars().all()), int(total or 0)

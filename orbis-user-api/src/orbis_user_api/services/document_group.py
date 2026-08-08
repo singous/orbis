@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from orbis_user_api.core.time import now_ms
@@ -77,18 +77,29 @@ async def get_default_document_group(
 
 
 async def list_document_groups(
-    user: User, session: AsyncSession, resource_status: ResourceStatus = "active"
-) -> list[NoteGroup]:
+    user: User,
+    session: AsyncSession,
+    resource_status: ResourceStatus = "active",
+    *,
+    offset: int = 0,
+    limit: int = 20,
+) -> tuple[list[NoteGroup], int]:
     workspace, _ = await get_current_workspace(user, session)
+    conditions = (
+        NoteGroup.workspace_id == workspace.id,
+        NoteGroup.status == resource_status,
+    )
+    total = await session.scalar(
+        select(func.count(NoteGroup.id)).where(*conditions)
+    )
     result = await session.execute(
         select(NoteGroup)
-        .where(
-            NoteGroup.workspace_id == workspace.id,
-            NoteGroup.status == resource_status,
-        )
+        .where(*conditions)
         .order_by(NoteGroup.sort_order.asc(), NoteGroup.created_at_ms.asc())
+        .offset(offset)
+        .limit(limit)
     )
-    return list(result.scalars().all())
+    return list(result.scalars().all()), int(total or 0)
 
 
 async def create_document_group(

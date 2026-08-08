@@ -62,7 +62,7 @@ def setup_owner(client: TestClient) -> dict[str, Any]:
         },
     )
     assert response.status_code == 201
-    return response.json()
+    return response.json()["data"]
 
 
 def auth_header(token: str) -> dict[str, str]:
@@ -110,7 +110,7 @@ def invite_new_member(
         },
     )
     assert accepted_response.status_code == 201
-    return accepted_response.json()
+    return accepted_response.json()["data"]
 
 
 def test_owner_invites_new_editor_and_invitee_accepts_from_email(
@@ -126,7 +126,7 @@ def test_owner_invites_new_editor_and_invitee_accepts_from_email(
     )
 
     assert invitation_response.status_code == 201
-    invitation = invitation_response.json()
+    invitation = invitation_response.json()["data"]
     assert invitation["email"] == "member@example.com"
     assert invitation["role"] == "editor"
     assert invitation["status"] == "pending"
@@ -149,7 +149,7 @@ def test_owner_invites_new_editor_and_invitee_accepts_from_email(
         },
     )
     assert accepted_response.status_code == 201
-    accepted = accepted_response.json()
+    accepted = accepted_response.json()["data"]
     assert accepted["user"]["email"] == "member@example.com"
     assert accepted["membership"]["role"] == "editor"
     assert accepted["membership"]["status"] == "active"
@@ -161,7 +161,7 @@ def test_owner_invites_new_editor_and_invitee_accepts_from_email(
         headers=auth_header(owner["access_token"]),
     )
     assert members_response.status_code == 200
-    assert [item["role"] for item in members_response.json()["items"]] == [
+    assert [item["role"] for item in members_response.json()["data"]["items"]] == [
         "owner",
         "editor",
     ]
@@ -188,12 +188,12 @@ def test_owner_changes_non_owner_member_role(
     )
 
     assert update_response.status_code == 200
-    assert update_response.json()["role"] == "normal"
+    assert update_response.json()["data"]["role"] == "normal"
     members_response = client.get(
         "/workspace/members",
         headers=auth_header(owner["access_token"]),
     )
-    assert [item["role"] for item in members_response.json()["items"]] == [
+    assert [item["role"] for item in members_response.json()["data"]["items"]] == [
         "owner",
         "normal",
     ]
@@ -240,7 +240,7 @@ def test_admin_cannot_change_owner_role(
         headers=auth_header(admin["access_token"]),
     )
     owner_member = next(
-        item for item in members_response.json()["items"] if item["role"] == "owner"
+        item for item in members_response.json()["data"]["items"] if item["role"] == "owner"
     )
 
     response = client.patch(
@@ -312,7 +312,7 @@ def test_admin_invites_editor_and_changes_role_between_editor_and_normal(
     )
 
     assert response.status_code == 200
-    assert response.json()["role"] == "normal"
+    assert response.json()["data"]["role"] == "normal"
 
 
 @pytest.mark.parametrize("role", ["editor", "normal"])
@@ -359,12 +359,13 @@ def test_owner_removes_member_without_deleting_account(
         headers=auth_header(owner["access_token"]),
     )
 
-    assert remove_response.status_code == 204
+    assert remove_response.status_code == 200
+    assert remove_response.json()["data"] is None
     members_response = client.get(
         "/workspace/members",
         headers=auth_header(owner["access_token"]),
     )
-    assert [item["role"] for item in members_response.json()["items"]] == ["owner"]
+    assert [item["role"] for item in members_response.json()["data"]["items"]] == ["owner"]
     removed_access_response = client.get(
         "/workspace/members",
         headers=auth_header(member["access_token"]),
@@ -390,7 +391,7 @@ def test_removed_member_cannot_log_in(
             f"/workspace/members/{member['membership']['id']}",
             headers=auth_header(owner["access_token"]),
         ).status_code
-        == 204
+        == 200
     )
 
     response = client.post(
@@ -419,7 +420,7 @@ def test_removed_member_cannot_refresh_access_token(
             f"/workspace/members/{member['membership']['id']}",
             headers=auth_header(owner["access_token"]),
         ).status_code
-        == 204
+        == 200
     )
 
     response = client.post(
@@ -436,7 +437,7 @@ def test_owner_cannot_remove_the_only_owner(client: TestClient) -> None:
         "/workspace/members",
         headers=auth_header(owner["access_token"]),
     )
-    owner_member = members_response.json()["items"][0]
+    owner_member = members_response.json()["data"]["items"][0]
 
     response = client.delete(
         f"/workspace/members/{owner_member['id']}",
@@ -505,7 +506,8 @@ def test_admin_removes_editor_or_normal_member(
         headers=auth_header(admin["access_token"]),
     )
 
-    assert response.status_code == 204
+    assert response.status_code == 200
+    assert response.json()["data"] is None
 
 
 def test_invitation_is_unavailable_when_mail_is_not_configured(
@@ -551,7 +553,7 @@ def test_delivery_failure_keeps_pending_invitation_with_safe_error_summary(
     )
 
     assert response.status_code == 201
-    invitation = response.json()
+    invitation = response.json()["data"]
     assert invitation["status"] == "pending"
     assert invitation["email_sent"] is False
     assert invitation["email_error_summary"] == "SMTP connection timed out"
@@ -567,7 +569,7 @@ def test_owner_revokes_pending_invitation_and_token_cannot_be_used(
         headers=auth_header(owner["access_token"]),
         json={"email": "member@example.com", "role": "normal"},
     )
-    invitation = invitation_response.json()
+    invitation = invitation_response.json()["data"]
     message = latest_outbox_message(
         outbox_dir, "member@example.com", "workspace_invitation"
     )
@@ -577,7 +579,8 @@ def test_owner_revokes_pending_invitation_and_token_cannot_be_used(
         headers=auth_header(owner["access_token"]),
     )
 
-    assert revoke_response.status_code == 204
+    assert revoke_response.status_code == 200
+    assert revoke_response.json()["data"] is None
     accept_response = client.post(
         "/workspace/invitations/accept",
         json={
@@ -600,7 +603,7 @@ def test_expired_invitation_is_marked_expired_and_cannot_be_reused(
         headers=auth_header(owner["access_token"]),
         json={"email": "member@example.com", "role": "normal"},
     )
-    invitation = invitation_response.json()
+    invitation = invitation_response.json()["data"]
     message = latest_outbox_message(
         outbox_dir, "member@example.com", "workspace_invitation"
     )
@@ -617,7 +620,8 @@ def test_expired_invitation_is_marked_expired_and_cannot_be_reused(
     first_response = client.post("/workspace/invitations/accept", json=accept_payload)
     second_response = client.post("/workspace/invitations/accept", json=accept_payload)
 
-    assert first_response.status_code == 410
+    assert first_response.status_code == 409
+    assert first_response.json()["code"] == "INVITATION_EXPIRED"
     assert second_response.status_code == 409
 
 
@@ -641,7 +645,7 @@ def test_member_manager_lists_invitation_without_secret_token(
     )
 
     assert response.status_code == 200
-    invitation = response.json()["items"][0]
+    invitation = response.json()["data"]["items"][0]
     assert invitation["status"] == "accepted"
     assert "token" not in invitation
     assert "accept_url" not in invitation
@@ -662,7 +666,7 @@ def test_resend_rotates_invitation_token_and_restarts_original_ttl(
             "expires_in_seconds": 3600,
         },
     )
-    invitation = create_response.json()
+    invitation = create_response.json()["data"]
     first_message = latest_outbox_message(
         outbox_dir, "member@example.com", "workspace_invitation"
     )
@@ -677,7 +681,7 @@ def test_resend_rotates_invitation_token_and_restarts_original_ttl(
     )
 
     assert resend_response.status_code == 200
-    resent = resend_response.json()
+    resent = resend_response.json()["data"]
     assert resent["expires_at_ms"] == invitation["created_at_ms"] + 30_000 + 3_600_000
     second_message = latest_outbox_message(
         outbox_dir, "member@example.com", "workspace_invitation"
@@ -758,7 +762,7 @@ def test_new_invitation_for_same_email_revokes_previous_invitation(
         "/workspace/invitations",
         headers=auth_header(owner["access_token"]),
     )
-    assert [item["status"] for item in list_response.json()["items"]] == [
+    assert [item["status"] for item in list_response.json()["data"]["items"]] == [
         "pending",
         "revoked",
     ]
@@ -782,7 +786,7 @@ def test_existing_removed_account_must_sign_in_before_accepting_reinvite(
             f"/workspace/members/{member['membership']['id']}",
             headers=auth_header(owner["access_token"]),
         ).status_code
-        == 204
+        == 200
     )
     reinvite_response = client.post(
         "/workspace/invitations",
@@ -807,12 +811,12 @@ def test_existing_removed_account_must_sign_in_before_accepting_reinvite(
     assert login_response.status_code == 200
     accept_response = client.post(
         "/workspace/invitations/accept",
-        headers=auth_header(login_response.json()["access_token"]),
+        headers=auth_header(login_response.json()["data"]["access_token"]),
         json={"token": message["token"]},
     )
 
     assert accept_response.status_code == 201
-    accepted = accept_response.json()
+    accepted = accept_response.json()["data"]
     assert accepted["membership"]["role"] == "editor"
     assert accepted["membership"]["status"] == "active"
     assert accepted["access_token"] is None
@@ -830,7 +834,7 @@ def test_mail_status_exposes_availability_without_smtp_secrets(
     )
 
     assert response.status_code == 200
-    assert response.json() == {"available": True, "transport": "outbox"}
+    assert response.json()["data"] == {"available": True, "transport": "outbox"}
 
 
 def test_normal_member_reads_but_cannot_create_application_resources(

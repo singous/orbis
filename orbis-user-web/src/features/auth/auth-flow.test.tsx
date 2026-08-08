@@ -38,7 +38,7 @@ describe("community auth flow", () => {
   });
 
   it("guides repeated setup attempts back to login", async () => {
-    setupMock.mockRejectedValue(new ApiError(409, "System is already initialized"));
+    setupMock.mockRejectedValue(new ApiError(409, "系统已经完成初始化", "SYSTEM_ALREADY_INITIALIZED"));
     renderPage("setup");
     await userEvent.type(screen.getByLabelText("显示名称"), "Owner");
     await userEvent.type(screen.getByLabelText("邮箱"), "owner@example.com");

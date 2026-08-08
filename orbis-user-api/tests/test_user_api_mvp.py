@@ -62,7 +62,7 @@ def setup_owner(client: TestClient) -> str:
         },
     )
     assert response.status_code == 201
-    return response.json()["access_token"]
+    return response.json()["data"]["access_token"]
 
 
 def test_document_groups_collections_and_notes_keep_working_on_unversioned_routes(
@@ -72,7 +72,7 @@ def test_document_groups_collections_and_notes_keep_working_on_unversioned_route
 
     groups_response = client.get("/document-groups", headers=auth_header(owner_token))
     assert groups_response.status_code == 200
-    default_group = groups_response.json()["items"][0]
+    default_group = groups_response.json()["data"]["items"][0]
     assert default_group["name"] == "默认分组"
     assert default_group["is_default"] is True
 
@@ -82,7 +82,7 @@ def test_document_groups_collections_and_notes_keep_working_on_unversioned_route
         json={"title": "产品设计", "group_id": None, "sort_order": 10},
     )
     assert notebook_response.status_code == 201
-    notebook = notebook_response.json()
+    notebook = notebook_response.json()["data"]
     assert notebook["group_id"] == default_group["id"]
 
     note_response = client.post(
@@ -94,19 +94,19 @@ def test_document_groups_collections_and_notes_keep_working_on_unversioned_route
         },
     )
     assert note_response.status_code == 201
-    note = note_response.json()
+    note = note_response.json()["data"]
     assert note["note_type"] == "doc"
 
     content_response = client.get(
         f"/notes/{note['id']}/content", headers=auth_header(owner_token)
     )
     assert content_response.status_code == 200
-    assert content_response.json()["content_version"] == 1
+    assert content_response.json()["data"]["content_version"] == 1
 
     list_response = client.get("/notes", headers=auth_header(owner_token))
     assert list_response.status_code == 200
-    assert list_response.json()["items"][0]["id"] == note["id"]
-    assert "blocks" not in list_response.json()["items"][0]
+    assert list_response.json()["data"]["items"][0]["id"] == note["id"]
+    assert "blocks" not in list_response.json()["data"]["items"][0]
 
     stale_response = client.put(
         f"/notes/{note['id']}/content",
@@ -135,7 +135,7 @@ def test_document_groups_collections_and_notes_keep_working_on_unversioned_route
         },
     )
     assert update_response.status_code == 200
-    assert update_response.json()["content_version"] == 2
+    assert update_response.json()["data"]["content_version"] == 2
 
     conflict_response = client.put(
         f"/notes/{note['id']}/content",
@@ -163,7 +163,7 @@ def test_files_keep_working_on_unversioned_routes(
         files={"file": ("hello.txt", b"hello file", "text/plain")},
     )
     assert upload_response.status_code == 201
-    uploaded = upload_response.json()
+    uploaded = upload_response.json()["data"]
     assert uploaded["original_filename"] == "hello.txt"
     assert uploaded["mime_type"] == "text/plain"
     assert uploaded["file_size"] == 10
@@ -172,4 +172,4 @@ def test_files_keep_working_on_unversioned_routes(
 
     list_response = client.get("/files", headers=auth_header(access_token))
     assert list_response.status_code == 200
-    assert [item["id"] for item in list_response.json()["items"]] == [uploaded["id"]]
+    assert [item["id"] for item in list_response.json()["data"]["items"]] == [uploaded["id"]]

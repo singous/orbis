@@ -17,6 +17,7 @@ import {
   type NoteContent,
   type NoteSearchItem,
   type NoteTreeItem,
+  type PageData,
 } from "../../shared/api/schemas";
 
 export type AuthRequestOptions = {
@@ -27,6 +28,9 @@ export type AuthRequestOptions = {
 };
 
 export type ResourceStatus = "active" | "archived";
+
+const DEFAULT_PAGE = "1";
+const DEFAULT_PAGE_SIZE = "100";
 
 function authOptions(auth: AuthRequestOptions) {
   return {
@@ -46,8 +50,12 @@ function queryPath(path: string, values: Record<string, string | null | undefine
   return query ? `${path}?${query}` : path;
 }
 
-export async function listDocumentGroups(auth: AuthRequestOptions, status: ResourceStatus = "active"): Promise<{ items: DocumentGroup[] }> {
-  return documentGroupListResponseSchema.parse(await apiRequest(queryPath("/document-groups", { status: status === "archived" ? status : null }), authOptions(auth)));
+export async function listDocumentGroups(auth: AuthRequestOptions, status: ResourceStatus = "active"): Promise<PageData<DocumentGroup>> {
+  return documentGroupListResponseSchema.parse(await apiRequest(queryPath("/document-groups", {
+    status: status === "archived" ? status : null,
+    page: DEFAULT_PAGE,
+    page_size: DEFAULT_PAGE_SIZE,
+  }), authOptions(auth)));
 }
 
 export async function createDocumentGroup(payload: { name: string; sort_order: number }, auth: AuthRequestOptions): Promise<DocumentGroup> {
@@ -67,11 +75,13 @@ export async function listNotebooks(
   groupId?: string,
   status: ResourceStatus = "active",
   options: { includeInactiveParents?: boolean } = {},
-): Promise<{ items: Notebook[] }> {
+): Promise<PageData<Notebook>> {
   return notebookListResponseSchema.parse(await apiRequest(queryPath("/notebooks", {
     group_id: groupId,
     status: status === "archived" ? status : null,
     include_inactive_parents: options.includeInactiveParents ? "true" : null,
+    page: DEFAULT_PAGE,
+    page_size: DEFAULT_PAGE_SIZE,
   }), authOptions(auth)));
 }
 
@@ -121,8 +131,13 @@ export async function saveNoteContent(payload: { noteId: string; expectedVersion
   }));
 }
 
-export async function searchNotes(query: string, auth: AuthRequestOptions, status: ResourceStatus = "active"): Promise<{ items: NoteSearchItem[] }> {
-  return noteSearchResponseSchema.parse(await apiRequest(queryPath("/notes", { q: query.trim() || null, status: status === "archived" ? status : null }), authOptions(auth)));
+export async function searchNotes(query: string, auth: AuthRequestOptions, status: ResourceStatus = "active"): Promise<PageData<NoteSearchItem>> {
+  return noteSearchResponseSchema.parse(await apiRequest(queryPath("/notes", {
+    q: query.trim() || null,
+    status: status === "archived" ? status : null,
+    page: DEFAULT_PAGE,
+    page_size: DEFAULT_PAGE_SIZE,
+  }), authOptions(auth)));
 }
 
 export async function importMarkdown(payload: { notebook_id: string; title: string; markdown: string; parent_id: string | null; sort_order: number }, auth: AuthRequestOptions): Promise<Note> {

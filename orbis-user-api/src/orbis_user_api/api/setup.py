@@ -1,14 +1,17 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import Depends, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from orbis_user_api.api.contract import ApiRouter
+from orbis_user_api.api.errors import ApiError
 
 from orbis_user_api.api.deps import get_session
 from orbis_user_api.schemas.setup import SetupRequest, SetupResponse
 from orbis_user_api.services.exceptions import SystemAlreadyInitialized
 from orbis_user_api.services.setup import setup_community
 
-router = APIRouter(tags=["setup"])
+router = ApiRouter(tags=["setup"])
 
 
 @router.post("/setup", response_model=SetupResponse, status_code=status.HTTP_201_CREATED)
@@ -24,9 +27,10 @@ async def setup(
             session,
         )
     except SystemAlreadyInitialized:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_409_CONFLICT,
-            detail="System is already initialized",
+            code="SYSTEM_ALREADY_INITIALIZED",
+            message="系统已经完成初始化",
         ) from None
 
     return SetupResponse(

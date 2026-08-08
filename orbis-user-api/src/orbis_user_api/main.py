@@ -5,6 +5,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from orbis_user_api.api.contract import ApiResponse, api_success, install_api_contract
+from orbis_user_api.api.openapi_docs import install_chinese_openapi
 from orbis_user_api.api.v1.router import api_router
 from orbis_user_api.core.settings import Settings
 from orbis_user_api.db.session import create_engine, create_session_factory, init_models
@@ -32,11 +34,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await engine.dispose()
 
     app = FastAPI(title="Orbis User API", version="0.1.0", lifespan=lifespan)
+    install_api_contract(app)
     app.include_router(api_router)
 
-    @app.get("/healthz", tags=["system"])
-    async def healthz() -> dict[str, str]:
-        return {"status": "ok"}
+    @app.get("/healthz", tags=["system"], response_model=ApiResponse[dict[str, str]])
+    async def healthz() -> ApiResponse[dict[str, str]]:
+        return api_success({"status": "ok"})
+
+    install_chinese_openapi(app)
 
     return app
 

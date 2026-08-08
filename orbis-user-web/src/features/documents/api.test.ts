@@ -18,10 +18,29 @@ const auth: AuthRequestOptions = {
 };
 
 function jsonResponse(payload: unknown, status = 200) {
-  return new Response(JSON.stringify(payload), {
+  return new Response(JSON.stringify({
+    code: status === 201 ? "CREATED" : "OK",
+    message: status === 201 ? "创建成功" : "请求成功",
+    request_id: "018ff7c4-a5b6-7000-8000-000000000099",
+    data: payload,
+  }), {
     status,
     headers: { "Content-Type": "application/json" },
   });
+}
+
+function page(items: unknown[] = []) {
+  return {
+    items,
+    pagination: {
+      page: 1,
+      page_size: 100,
+      total: items.length,
+      total_pages: items.length ? 1 : 0,
+      has_next: false,
+      has_previous: false,
+    },
+  };
 }
 
 describe("document API", () => {
@@ -32,8 +51,8 @@ describe("document API", () => {
   it("uses the unversioned group and search routes", async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(jsonResponse({ items: [] }))
-      .mockResolvedValueOnce(jsonResponse({ items: [] }));
+      .mockResolvedValueOnce(jsonResponse(page()))
+      .mockResolvedValueOnce(jsonResponse(page()));
     vi.stubGlobal("fetch", fetchMock);
 
     await listDocumentGroups(auth);
@@ -41,12 +60,12 @@ describe("document API", () => {
 
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
-      "/api/document-groups",
+      "/api/document-groups?page=1&page_size=100",
       expect.objectContaining({ headers: expect.objectContaining({ Authorization: "Bearer access-token" }) }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
-      "/api/notes?q=release+plan",
+      "/api/notes?q=release+plan&page=1&page_size=100",
       expect.any(Object),
     );
   });
@@ -54,22 +73,22 @@ describe("document API", () => {
   it("requests archived document resources with the archived status filter", async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(jsonResponse({ items: [] }))
-      .mockResolvedValueOnce(jsonResponse({ items: [] }))
-      .mockResolvedValueOnce(jsonResponse({ items: [] }));
+      .mockResolvedValueOnce(jsonResponse(page()))
+      .mockResolvedValueOnce(jsonResponse(page()))
+      .mockResolvedValueOnce(jsonResponse(page()));
     vi.stubGlobal("fetch", fetchMock);
 
     await listDocumentGroups(auth, "archived");
     await listNotebooks(auth, "group-1", "archived");
     await searchNotes("draft", auth, "archived");
 
-    expect(fetchMock).toHaveBeenNthCalledWith(1, "/api/document-groups?status=archived", expect.any(Object));
-    expect(fetchMock).toHaveBeenNthCalledWith(2, "/api/notebooks?group_id=group-1&status=archived", expect.any(Object));
-    expect(fetchMock).toHaveBeenNthCalledWith(3, "/api/notes?q=draft&status=archived", expect.any(Object));
+    expect(fetchMock).toHaveBeenNthCalledWith(1, "/api/document-groups?status=archived&page=1&page_size=100", expect.any(Object));
+    expect(fetchMock).toHaveBeenNthCalledWith(2, "/api/notebooks?group_id=group-1&status=archived&page=1&page_size=100", expect.any(Object));
+    expect(fetchMock).toHaveBeenNthCalledWith(3, "/api/notes?q=draft&status=archived&page=1&page_size=100", expect.any(Object));
   });
 
   it("can include active notebooks hidden by an archived parent", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ items: [] }));
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(page()));
     vi.stubGlobal("fetch", fetchMock);
 
     await listNotebooks(auth, undefined, "active", {
@@ -77,7 +96,7 @@ describe("document API", () => {
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/notebooks?include_inactive_parents=true",
+      "/api/notebooks?include_inactive_parents=true&page=1&page_size=100",
       expect.any(Object),
     );
   });

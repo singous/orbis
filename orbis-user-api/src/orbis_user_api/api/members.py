@@ -2,8 +2,16 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import Depends, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from orbis_user_api.api.contract import (
+    ApiRouter,
+    PageData,
+    PaginationParams,
+    build_page_data,
+)
+from orbis_user_api.api.errors import ApiError
 
 from orbis_user_api.api.deps import (
     get_current_user,
@@ -15,10 +23,8 @@ from orbis_user_api.schemas.member import (
     InvitationAcceptRequest,
     InvitationAcceptResponse,
     InvitationCreateRequest,
-    InvitationListResponse,
     InvitationOut,
     MailStatusOut,
-    MemberListResponse,
     MemberOut,
     MemberRoleUpdateRequest,
 )
@@ -48,7 +54,7 @@ from orbis_user_api.services.member import (
 )
 from orbis_user_api.services.workspace import member_payload
 
-router = APIRouter(prefix="/workspace", tags=["workspace"])
+router = ApiRouter(prefix="/workspace", tags=["workspace"])
 
 
 @router.get("/mail-status", response_model=MailStatusOut)
@@ -60,9 +66,10 @@ async def get_mail_status(
     try:
         await AuthorizationService.actor(user, session)
     except UserWorkspaceMissing:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Active workspace membership required",
+            code="ACTIVE_WORKSPACE_MEMBERSHIP_REQUIRED",
+            message="需要有效的工作空间成员身份",
         ) from None
     return MailStatusOut(
         available=request.app.state.mail_sender.available,
@@ -88,41 +95,59 @@ async def invite_member(
             session,
         )
     except MailServiceUnavailable:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Mail service is unavailable",
+            code="MAIL_SERVICE_UNAVAILABLE",
+            message="邮件服务暂不可用",
         ) from None
     except (InvitationForbidden, WorkspaceMemberForbidden):
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invitation operation forbidden",
+            code="INVITATION_OPERATION_FORBIDDEN",
+            message="无权执行邀请操作",
         ) from None
     except InvitationInvalid:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Invitation cannot be created"
+        raise ApiError(
+            status_code=status.HTTP_409_CONFLICT,
+            code="INVITATION_INVALID",
+            message="当前邀请无法创建",
         ) from None
     except UserWorkspaceMissing:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Active workspace membership required",
+            code="ACTIVE_WORKSPACE_MEMBERSHIP_REQUIRED",
+            message="需要有效的工作空间成员身份",
         ) from None
 
 
-@router.get("/invitations", response_model=InvitationListResponse)
+@router.get("/invitations", response_model=PageData[InvitationOut])
 async def get_invitations(
+    pagination: PaginationParams = Depends(),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-) -> InvitationListResponse:
+) -> PageData[InvitationOut]:
     try:
-        return InvitationListResponse(items=await list_invitations(user, session))
+        items, total = await list_invitations(
+            user,
+            session,
+            offset=pagination.offset,
+            limit=pagination.page_size,
+        )
+        return build_page_data(
+            items,
+            page=pagination.page,
+            page_size=pagination.page_size,
+            total=total,
+        )
     except (UserWorkspaceMissing, WorkspaceMemberForbidden):
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invitation operation forbidden",
+            code="INVITATION_OPERATION_FORBIDDEN",
+            message="无权执行邀请操作",
         ) from None
 
 
-@router.delete("/invitations/{invitation_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/invitations/{invitation_id}", status_code=status.HTTP_200_OK)
 async def delete_invitation(
     invitation_id: UUID,
     user: User = Depends(get_current_user),
@@ -131,13 +156,16 @@ async def delete_invitation(
     try:
         await revoke_invitation(invitation_id, user, session)
     except InvitationInvalid:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Invitation cannot be revoked"
+        raise ApiError(
+            status_code=status.HTTP_409_CONFLICT,
+            code="INVITATION_INVALID",
+            message="当前邀请无法撤销",
         ) from None
     except (InvitationForbidden, UserWorkspaceMissing, WorkspaceMemberForbidden):
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invitation operation forbidden",
+            code="INVITATION_OPERATION_FORBIDDEN",
+            message="无权执行邀请操作",
         ) from None
 
 
@@ -157,22 +185,28 @@ async def resend_workspace_invitation(
             session,
         )
     except MailServiceUnavailable:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Mail service is unavailable",
+            code="MAIL_SERVICE_UNAVAILABLE",
+            message="邮件服务暂不可用",
         ) from None
     except InvitationExpired:
-        raise HTTPException(
-            status_code=status.HTTP_410_GONE, detail="Invitation has expired"
+        raise ApiError(
+            status_code=status.HTTP_409_CONFLICT,
+            code="INVITATION_EXPIRED",
+            message="邀请已过期",
         ) from None
     except InvitationInvalid:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Invitation cannot be resent"
+        raise ApiError(
+            status_code=status.HTTP_409_CONFLICT,
+            code="INVITATION_INVALID",
+            message="当前邀请无法重新发送",
         ) from None
     except (InvitationForbidden, UserWorkspaceMissing, WorkspaceMemberForbidden):
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invitation operation forbidden",
+            code="INVITATION_OPERATION_FORBIDDEN",
+            message="无权执行邀请操作",
         ) from None
 
 
@@ -200,28 +234,34 @@ async def accept_workspace_invitation(
             session,
         )
     except InvitationExpired:
-        raise HTTPException(
-            status_code=status.HTTP_410_GONE, detail="Invitation has expired"
+        raise ApiError(
+            status_code=status.HTTP_409_CONFLICT,
+            code="INVITATION_EXPIRED",
+            message="邀请已过期",
         ) from None
     except InvitationAccountExists:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Sign in with the invited account before accepting",
+            code="INVITATION_ACCOUNT_AUTHENTICATION_REQUIRED",
+            message="请先登录受邀账号再接受邀请",
         ) from None
     except InvitationPasswordRequired:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Password and display name are required for a new account",
+            code="INVITATION_ACCOUNT_PROFILE_REQUIRED",
+            message="新账号必须提供密码和显示名称",
         ) from None
     except InvitationForbidden:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invitation acceptance forbidden",
+            code="INVITATION_ACCEPTANCE_FORBIDDEN",
+            message="无权接受此邀请",
         ) from None
     except InvitationInvalid:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Invitation is invalid or already used",
+            code="INVITATION_INVALID",
+            message="邀请无效或已经使用",
         ) from None
 
     return {
@@ -232,17 +272,30 @@ async def accept_workspace_invitation(
     }
 
 
-@router.get("/members", response_model=MemberListResponse)
+@router.get("/members", response_model=PageData[MemberOut])
 async def get_members(
+    pagination: PaginationParams = Depends(),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-) -> MemberListResponse:
+) -> PageData[MemberOut]:
     try:
-        return MemberListResponse(items=await list_members(user, session))
+        items, total = await list_members(
+            user,
+            session,
+            offset=pagination.offset,
+            limit=pagination.page_size,
+        )
+        return build_page_data(
+            items,
+            page=pagination.page,
+            page_size=pagination.page_size,
+            total=total,
+        )
     except (UserWorkspaceMissing, WorkspaceMemberForbidden):
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Active workspace membership required",
+            code="ACTIVE_WORKSPACE_MEMBERSHIP_REQUIRED",
+            message="需要有效的工作空间成员身份",
         ) from None
 
 
@@ -256,17 +309,20 @@ async def change_member_role(
     try:
         return await update_member_role(member_id, payload.role, user, session)
     except WorkspaceMemberNotFound:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Workspace member not found"
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code="WORKSPACE_MEMBER_NOT_FOUND",
+            message="工作空间成员不存在",
         ) from None
     except (UserWorkspaceMissing, WorkspaceMemberForbidden):
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Member role operation forbidden",
+            code="MEMBER_ROLE_OPERATION_FORBIDDEN",
+            message="无权修改成员角色",
         ) from None
 
 
-@router.delete("/members/{member_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/members/{member_id}", status_code=status.HTTP_200_OK)
 async def delete_member(
     member_id: UUID,
     user: User = Depends(get_current_user),
@@ -275,10 +331,14 @@ async def delete_member(
     try:
         await remove_member(member_id, user, session)
     except WorkspaceMemberNotFound:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Workspace member not found"
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code="WORKSPACE_MEMBER_NOT_FOUND",
+            message="工作空间成员不存在",
         ) from None
     except (UserWorkspaceMissing, WorkspaceMemberForbidden):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Member removal forbidden"
+        raise ApiError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            code="MEMBER_REMOVAL_FORBIDDEN",
+            message="无权移除该成员",
         ) from None

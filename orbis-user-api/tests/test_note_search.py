@@ -43,26 +43,26 @@ def test_note_search_uses_title_and_derived_body_and_excludes_archived(
             "display_name": "Owner",
         },
     )
-    token = setup_response.json()["access_token"]
+    token = setup_response.json()["data"]["access_token"]
     notebook = client.post(
         "/notebooks", headers=auth_header(token), json={"title": "Search"}
-    ).json()
+    ).json()["data"]
 
     title_note = client.post(
         "/notes",
         headers=auth_header(token),
         json={"notebook_id": notebook["id"], "title": "Graph retrieval"},
-    ).json()
+    ).json()["data"]
     body_note = client.post(
         "/notes",
         headers=auth_header(token),
         json={"notebook_id": notebook["id"], "title": "Architecture"},
-    ).json()
+    ).json()["data"]
     archived_note = client.post(
         "/notes",
         headers=auth_header(token),
         json={"notebook_id": notebook["id"], "title": "Old graph notes"},
-    ).json()
+    ).json()["data"]
     body_update = client.put(
         f"/notes/{body_note['id']}/content",
         headers=auth_header(token),
@@ -100,8 +100,8 @@ def test_note_search_uses_title_and_derived_body_and_excludes_archived(
     )
 
     assert response.status_code == 200
-    assert [item["id"] for item in response.json()["items"]] == [
+    assert [item["id"] for item in response.json()["data"]["items"]] == [
         body_note["id"],
         title_note["id"],
     ]
-    assert forged_response.json()["items"] == []
+    assert forged_response.json()["data"]["items"] == []

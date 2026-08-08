@@ -12,17 +12,34 @@ export type ApiRequestOptions = {
 
 export class ApiError extends Error {
   readonly status: number;
-  readonly detail: string;
+  readonly code: string;
+  readonly requestId: string;
+  readonly data: unknown;
   readonly isConflict: boolean;
 
-  constructor(status: number, detail: string) {
-    super(detail);
+  constructor(
+    status: number,
+    message: string,
+    code = "UNKNOWN_ERROR",
+    requestId = "",
+    data: unknown = null,
+  ) {
+    super(message);
     this.name = "ApiError";
     this.status = status;
-    this.detail = detail;
+    this.code = code;
+    this.requestId = requestId;
+    this.data = data;
     this.isConflict = status === 409;
   }
 }
+
+type ApiEnvelope<T> = {
+  code: string;
+  message: string;
+  request_id: string;
+  data: T;
+};
 
 const DEFAULT_API_BASE_URL = "/api";
 
@@ -73,18 +90,25 @@ function createRequestInit(options: ApiRequestOptions, token: string | null | un
   };
 }
 
-async function parseErrorDetail(response: Response): Promise<string> {
-  const fallback = "请求失败";
+async function parseEnvelope<T>(response: Response): Promise<ApiEnvelope<T> | null> {
   const contentType = response.headers.get("Content-Type") ?? "";
   if (!contentType.includes("application/json")) {
-    return fallback;
+    return null;
   }
 
   try {
-    const payload = (await response.json()) as { detail?: unknown };
-    return typeof payload.detail === "string" ? payload.detail : fallback;
+    const payload = (await response.json()) as Partial<ApiEnvelope<T>>;
+    if (
+      typeof payload.code !== "string" ||
+      typeof payload.message !== "string" ||
+      typeof payload.request_id !== "string" ||
+      !("data" in payload)
+    ) {
+      return null;
+    }
+    return payload as ApiEnvelope<T>;
   } catch {
-    return fallback;
+    return null;
   }
 }
 
@@ -98,7 +122,8 @@ async function parseSuccess<T>(response: Response): Promise<T> {
     return undefined as T;
   }
 
-  return (await response.json()) as T;
+  const envelope = await parseEnvelope<T>(response);
+  return envelope?.data as T;
 }
 
 async function refreshAccessToken(refreshToken: string): Promise<string | null> {
@@ -112,15 +137,23 @@ async function refreshAccessToken(refreshToken: string): Promise<string | null> 
     return null;
   }
 
-  const payload = (await response.json()) as { access_token?: unknown };
-  return typeof payload.access_token === "string" ? payload.access_token : null;
+  const envelope = await parseEnvelope<{ access_token?: unknown }>(response);
+  const payload = envelope?.data;
+  return typeof payload?.access_token === "string" ? payload.access_token : null;
 }
 
 async function handleError(response: Response, options: ApiRequestOptions): Promise<never> {
   if (response.status === 401) {
     options.onUnauthorized?.();
   }
-  throw new ApiError(response.status, await parseErrorDetail(response));
+  const envelope = await parseEnvelope<unknown>(response);
+  throw new ApiError(
+    response.status,
+    envelope?.message ?? "请求失败",
+    envelope?.code ?? "UNKNOWN_ERROR",
+    envelope?.request_id ?? response.headers.get("X-Request-ID") ?? "",
+    envelope?.data ?? null,
+  );
 }
 
 export async function apiRequest<T = unknown>(path: string, options: ApiRequestOptions = {}): Promise<T> {

@@ -2,8 +2,11 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import Depends, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from orbis_user_api.api.contract import ApiRouter
+from orbis_user_api.api.errors import ApiError
 
 from orbis_user_api.api.deps import get_current_user, get_session
 from orbis_user_api.models.user import User
@@ -30,7 +33,7 @@ from orbis_user_api.services.ownership import (
     resend_ownership_transfer,
 )
 
-router = APIRouter(prefix="/workspace/ownership-transfers", tags=["ownership"])
+router = ApiRouter(prefix="/workspace/ownership-transfers", tags=["ownership"])
 
 
 @router.get("/current", response_model=OwnershipTransferOut)
@@ -41,13 +44,16 @@ async def current_transfer(
     try:
         return await get_current_ownership_transfer(user, session)
     except OwnershipTransferNotFound:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="No pending ownership transfer",
+            code="OWNERSHIP_TRANSFER_NOT_FOUND",
+            message="当前没有待处理的所有权转让",
         ) from None
     except (OwnershipTransferForbidden, UserWorkspaceMissing, WorkspaceMemberForbidden):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Ownership transfer forbidden"
+        raise ApiError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            code="OWNERSHIP_TRANSFER_FORBIDDEN",
+            message="无权执行所有权转让操作",
         ) from None
 
 
@@ -69,27 +75,32 @@ async def start_ownership_transfer(
             session,
         )
     except MailServiceUnavailable:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Mail service is unavailable",
+            code="MAIL_SERVICE_UNAVAILABLE",
+            message="邮件服务暂不可用",
         ) from None
     except (OwnershipTransferForbidden, UserWorkspaceMissing, WorkspaceMemberForbidden):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Ownership transfer forbidden"
+        raise ApiError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            code="OWNERSHIP_TRANSFER_FORBIDDEN",
+            message="无权执行所有权转让操作",
         ) from None
     except OwnershipTransferAlreadyPending:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_409_CONFLICT,
-            detail="An ownership transfer is already pending",
+            code="OWNERSHIP_TRANSFER_ALREADY_PENDING",
+            message="已有待处理的所有权转让",
         ) from None
     except OwnershipTransferInvalid:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Ownership transfer cannot be created",
+            code="OWNERSHIP_TRANSFER_INVALID",
+            message="当前所有权转让无法创建",
         ) from None
 
 
-@router.delete("/{transfer_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{transfer_id}", status_code=status.HTTP_200_OK)
 async def cancel_transfer(
     transfer_id: UUID,
     user: User = Depends(get_current_user),
@@ -98,13 +109,16 @@ async def cancel_transfer(
     try:
         await cancel_ownership_transfer(transfer_id, user, session)
     except (OwnershipTransferForbidden, UserWorkspaceMissing, WorkspaceMemberForbidden):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Ownership transfer forbidden"
+        raise ApiError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            code="OWNERSHIP_TRANSFER_FORBIDDEN",
+            message="无权执行所有权转让操作",
         ) from None
     except OwnershipTransferInvalid:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Ownership transfer cannot be cancelled",
+            code="OWNERSHIP_TRANSFER_INVALID",
+            message="当前所有权转让无法取消",
         ) from None
 
 
@@ -124,22 +138,28 @@ async def resend_transfer(
             session,
         )
     except MailServiceUnavailable:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Mail service is unavailable",
+            code="MAIL_SERVICE_UNAVAILABLE",
+            message="邮件服务暂不可用",
         ) from None
     except OwnershipTransferExpired:
-        raise HTTPException(
-            status_code=status.HTTP_410_GONE, detail="Ownership transfer has expired"
+        raise ApiError(
+            status_code=status.HTTP_409_CONFLICT,
+            code="OWNERSHIP_TRANSFER_EXPIRED",
+            message="所有权转让已过期",
         ) from None
     except (OwnershipTransferForbidden, UserWorkspaceMissing, WorkspaceMemberForbidden):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Ownership transfer forbidden"
+        raise ApiError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            code="OWNERSHIP_TRANSFER_FORBIDDEN",
+            message="无权执行所有权转让操作",
         ) from None
     except OwnershipTransferInvalid:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Ownership transfer cannot be resent",
+            code="OWNERSHIP_TRANSFER_INVALID",
+            message="当前所有权转让无法重新发送",
         ) from None
 
 
@@ -154,10 +174,14 @@ async def confirm_transfer(
             payload.token, request.app.state.settings, session
         )
     except OwnershipTransferExpired:
-        raise HTTPException(
-            status_code=status.HTTP_410_GONE, detail="Ownership transfer has expired"
+        raise ApiError(
+            status_code=status.HTTP_409_CONFLICT,
+            code="OWNERSHIP_TRANSFER_EXPIRED",
+            message="所有权转让已过期",
         ) from None
     except OwnershipTransferInvalid:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Ownership transfer is invalid"
+        raise ApiError(
+            status_code=status.HTTP_409_CONFLICT,
+            code="OWNERSHIP_TRANSFER_INVALID",
+            message="所有权转让无效",
         ) from None

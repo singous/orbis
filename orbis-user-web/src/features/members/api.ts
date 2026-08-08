@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { apiRequest } from "../../shared/api/api-client";
+import { pageDataSchema } from "../../shared/api/schemas";
 
 export type MemberAuth = {
   accessToken: string;
@@ -33,11 +34,11 @@ function authOptions(auth: MemberAuth) {
 }
 
 export async function listMembers(auth: MemberAuth) {
-  return z.object({ items: z.array(memberSchema) }).parse(await apiRequest("/workspace/members", authOptions(auth)));
+  return pageDataSchema(memberSchema).parse(await apiRequest("/workspace/members?page=1&page_size=100", authOptions(auth)));
 }
 
 export async function listInvitations(auth: MemberAuth) {
-  return z.object({ items: z.array(invitationSchema) }).parse(await apiRequest("/workspace/invitations", authOptions(auth)));
+  return pageDataSchema(invitationSchema).parse(await apiRequest("/workspace/invitations?page=1&page_size=100", authOptions(auth)));
 }
 
 export async function getMailStatus(auth: MemberAuth) {

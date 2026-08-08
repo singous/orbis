@@ -348,7 +348,10 @@ async def search_notes(
     user: User,
     session: AsyncSession,
     resource_status: ResourceStatus = "active",
-) -> list[dict[str, Any]]:
+    *,
+    offset: int = 0,
+    limit: int = 20,
+) -> tuple[list[dict[str, Any]], int]:
     workspace, _ = await get_current_workspace(user, session)
     conditions = [
         Note.workspace_id == workspace.id,
@@ -372,10 +375,27 @@ async def search_notes(
                 func.lower(NoteContent.plain_text).like(pattern),
             )
         )
+    count_statement = (
+        select(func.count(Note.id))
+        .join(NoteContent, NoteContent.note_id == Note.id)
+        .join(Notebook, Notebook.id == Note.notebook_id)
+        .join(NoteGroup, NoteGroup.id == Notebook.group_id)
+        .where(*conditions)
+    )
+    if normalized_query:
+        count_statement = count_statement.where(
+            or_(
+                func.lower(Note.title).like(pattern),
+                func.lower(NoteContent.plain_text).like(pattern),
+            )
+        )
+    total = await session.scalar(count_statement)
     result = await session.execute(
         statement.order_by(Note.updated_at_ms.desc(), Note.created_at_ms.desc())
+        .offset(offset)
+        .limit(limit)
     )
-    return [
+    items = [
         {
             "id": note.id,
             "tenant_id": note.tenant_id,
@@ -393,3 +413,4 @@ async def search_notes(
         }
         for note, plain_text in result.all()
     ]
+    return items, int(total or 0)

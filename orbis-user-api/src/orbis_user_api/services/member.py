@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from orbis_user_api.core.time import now_ms
@@ -17,23 +17,36 @@ from orbis_user_api.services.workspace import member_payload
 
 
 async def list_members(
-    actor_user: User, session: AsyncSession
-) -> list[dict[str, object]]:
+    actor_user: User,
+    session: AsyncSession,
+    *,
+    offset: int = 0,
+    limit: int = 20,
+) -> tuple[list[dict[str, object]], int]:
     workspace, actor_membership = await AuthorizationService.actor(actor_user, session)
     AuthorizationService.require_capability(actor_membership, Capability.MEMBER_READ)
+    conditions = (
+        WorkspaceMember.workspace_id == workspace.id,
+        WorkspaceMember.status == "active",
+    )
+    total = await session.scalar(
+        select(func.count(WorkspaceMember.id)).where(*conditions)
+    )
     result = await session.execute(
         select(WorkspaceMember, User)
         .join(User, User.id == WorkspaceMember.user_id)
-        .where(
-            WorkspaceMember.workspace_id == workspace.id,
-            WorkspaceMember.status == "active",
-        )
+        .where(*conditions)
         .order_by(WorkspaceMember.created_at_ms.asc())
+        .offset(offset)
+        .limit(limit)
     )
-    return [
-        member_payload(membership, member_user)
-        for membership, member_user in result.all()
-    ]
+    return (
+        [
+            member_payload(membership, member_user)
+            for membership, member_user in result.all()
+        ],
+        int(total or 0),
+    )
 
 
 async def update_member_role(

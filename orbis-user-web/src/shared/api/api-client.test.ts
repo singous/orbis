@@ -9,7 +9,12 @@ describe("api client", () => {
 
   it("attaches bearer tokens to JSON requests", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ ok: true }), {
+      new Response(JSON.stringify({
+        code: "OK",
+        message: "请求成功",
+        request_id: "018ff7c4-a5b6-7000-8000-000000000001",
+        data: { ok: true },
+      }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       }),
@@ -39,7 +44,12 @@ describe("api client", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
-        new Response(JSON.stringify({ detail: "Note version conflict" }), {
+        new Response(JSON.stringify({
+          code: "NOTE_VERSION_CONFLICT",
+          message: "文档内容版本冲突，请刷新后重试",
+          request_id: "018ff7c4-a5b6-7000-8000-000000000002",
+          data: { expected_version: 2 },
+        }), {
           status: 409,
           headers: { "Content-Type": "application/json" },
         }),
@@ -48,7 +58,10 @@ describe("api client", () => {
 
     await expect(apiRequest("/v1/notes/note-id/content")).rejects.toMatchObject({
       status: 409,
-      detail: "Note version conflict",
+      code: "NOTE_VERSION_CONFLICT",
+      message: "文档内容版本冲突，请刷新后重试",
+      requestId: "018ff7c4-a5b6-7000-8000-000000000002",
+      data: { expected_version: 2 },
       isConflict: true,
     } satisfies Partial<ApiError>);
   });
@@ -58,7 +71,12 @@ describe("api client", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
-        new Response(JSON.stringify({ detail: "Not authenticated" }), {
+        new Response(JSON.stringify({
+          code: "AUTH_REQUIRED",
+          message: "请先登录",
+          request_id: "018ff7c4-a5b6-7000-8000-000000000003",
+          data: null,
+        }), {
           status: 401,
           headers: { "Content-Type": "application/json" },
         }),
@@ -77,19 +95,34 @@ describe("api client", () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ detail: "Not authenticated" }), {
+        new Response(JSON.stringify({
+          code: "AUTH_REQUIRED",
+          message: "请先登录",
+          request_id: "018ff7c4-a5b6-7000-8000-000000000004",
+          data: null,
+        }), {
           status: 401,
           headers: { "Content-Type": "application/json" },
         }),
       )
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ access_token: "new-access-token", token_type: "bearer" }), {
+        new Response(JSON.stringify({
+          code: "OK",
+          message: "请求成功",
+          request_id: "018ff7c4-a5b6-7000-8000-000000000005",
+          data: { access_token: "new-access-token", token_type: "bearer" },
+        }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         }),
       )
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ items: [] }), {
+        new Response(JSON.stringify({
+          code: "OK",
+          message: "请求成功",
+          request_id: "018ff7c4-a5b6-7000-8000-000000000006",
+          data: { items: [] },
+        }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         }),

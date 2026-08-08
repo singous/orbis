@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from orbis_user_api.core.time import now_ms
@@ -28,7 +28,10 @@ async def list_notebooks(
     group_id: UUID | None = None,
     resource_status: ResourceStatus = "active",
     include_inactive_parents: bool = False,
-) -> list[Notebook]:
+    *,
+    offset: int = 0,
+    limit: int = 20,
+) -> tuple[list[Notebook], int]:
     workspace, _ = await get_current_workspace(user, session)
     conditions = [
         Notebook.workspace_id == workspace.id,
@@ -38,13 +41,20 @@ async def list_notebooks(
         conditions.append(Notebook.group_id == group_id)
     if resource_status == "active" and not include_inactive_parents:
         conditions.append(NoteGroup.status == "active")
+    total = await session.scalar(
+        select(func.count(Notebook.id))
+        .join(NoteGroup, NoteGroup.id == Notebook.group_id)
+        .where(*conditions)
+    )
     result = await session.execute(
         select(Notebook)
         .join(NoteGroup, NoteGroup.id == Notebook.group_id)
         .where(*conditions)
         .order_by(Notebook.sort_order.asc(), Notebook.created_at_ms.asc())
+        .offset(offset)
+        .limit(limit)
     )
-    return list(result.scalars().all())
+    return list(result.scalars().all()), int(total or 0)
 
 
 async def create_notebook(

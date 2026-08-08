@@ -25,6 +25,25 @@ export const workspaceSchema = z.object({
 
 export type Workspace = z.infer<typeof workspaceSchema>;
 
+export const paginationSchema = z.object({
+  page: z.number().int().min(1),
+  page_size: z.number().int().min(1).max(100),
+  total: z.number().int().min(0),
+  total_pages: z.number().int().min(0),
+  has_next: z.boolean(),
+  has_previous: z.boolean(),
+});
+
+export function pageDataSchema<T extends z.ZodTypeAny>(itemSchema: T) {
+  return z.object({
+    items: z.array(itemSchema),
+    pagination: paginationSchema,
+  });
+}
+
+export type Pagination = z.infer<typeof paginationSchema>;
+export type PageData<T> = { items: T[]; pagination: Pagination };
+
 export const authResponseSchema = z.object({
   access_token: z.string(),
   refresh_token: z.string(),
@@ -57,7 +76,7 @@ export const documentGroupSchema = resourceIdentitySchema.extend({
   sort_order: z.number(),
 });
 
-export const documentGroupListResponseSchema = z.object({ items: z.array(documentGroupSchema) });
+export const documentGroupListResponseSchema = pageDataSchema(documentGroupSchema);
 
 export const notebookSchema = resourceIdentitySchema.extend({
   group_id: z.string().uuid(),
@@ -65,7 +84,7 @@ export const notebookSchema = resourceIdentitySchema.extend({
   sort_order: z.number(),
 });
 
-export const notebookListResponseSchema = z.object({ items: z.array(notebookSchema) });
+export const notebookListResponseSchema = pageDataSchema(notebookSchema);
 
 export const noteSchema = resourceIdentitySchema.extend({
   notebook_id: z.string().uuid(),
@@ -94,7 +113,7 @@ export const noteTreeItemSchema: z.ZodType<NoteTreeItem> = noteTreeBaseSchema.ex
   children: z.lazy(() => z.array(noteTreeItemSchema)),
 });
 
-export const noteSearchResponseSchema = z.object({ items: z.array(noteSearchItemSchema) });
+export const noteSearchResponseSchema = pageDataSchema(noteSearchItemSchema);
 export const noteTreeResponseSchema = z.object({ items: z.array(noteTreeItemSchema) });
 export const markdownExportSchema = z.object({ filename: z.string(), markdown: z.string() });
 

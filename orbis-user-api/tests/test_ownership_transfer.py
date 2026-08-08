@@ -70,7 +70,7 @@ def setup_owner(client: TestClient) -> dict[str, Any]:
         },
     )
     assert response.status_code == 201
-    return response.json()
+    return response.json()["data"]
 
 
 def latest_outbox_message(
@@ -110,7 +110,7 @@ def invite_admin(
         },
     )
     assert accepted_response.status_code == 201
-    return accepted_response.json()
+    return accepted_response.json()["data"]
 
 
 def invite_member(
@@ -137,7 +137,7 @@ def invite_member(
         },
     )
     assert accepted_response.status_code == 201
-    return accepted_response.json()
+    return accepted_response.json()["data"]
 
 
 def test_owner_confirms_transfer_to_active_admin_from_email_token(
@@ -154,7 +154,7 @@ def test_owner_confirms_transfer_to_active_admin_from_email_token(
     )
 
     assert create_response.status_code == 201
-    transfer = create_response.json()
+    transfer = create_response.json()["data"]
     assert transfer["status"] == "pending"
     assert transfer["email_sent"] is True
     assert transfer["expires_at_ms"] - transfer["created_at_ms"] == 15 * 60 * 1000
@@ -172,7 +172,7 @@ def test_owner_confirms_transfer_to_active_admin_from_email_token(
     )
 
     assert confirm_response.status_code == 200
-    assert confirm_response.json()["status"] == "confirmed"
+    assert confirm_response.json()["data"]["status"] == "confirmed"
     repeated_response = client.post(
         "/workspace/ownership-transfers/confirm",
         json={"token": message["token"]},
@@ -183,7 +183,7 @@ def test_owner_confirms_transfer_to_active_admin_from_email_token(
         "/workspace/members",
         headers=auth_header(owner["access_token"]),
     )
-    roles = {item["email"]: item["role"] for item in members_response.json()["items"]}
+    roles = {item["email"]: item["role"] for item in members_response.json()["data"]["items"]}
     assert roles == {"owner@example.com": "admin", "admin@example.com": "owner"}
 
 
@@ -284,7 +284,7 @@ def test_owner_cancels_pending_transfer_and_can_start_another(
         headers=auth_header(owner["access_token"]),
         json={"target_member_id": admin["membership"]["id"]},
     )
-    transfer = create_response.json()
+    transfer = create_response.json()["data"]
     message = latest_outbox_message(
         outbox_dir,
         "owner@example.com",
@@ -296,7 +296,8 @@ def test_owner_cancels_pending_transfer_and_can_start_another(
         headers=auth_header(owner["access_token"]),
     )
 
-    assert cancel_response.status_code == 204
+    assert cancel_response.status_code == 200
+    assert cancel_response.json()["data"] is None
     confirm_response = client.post(
         "/workspace/ownership-transfers/confirm",
         json={"token": message["token"]},
@@ -322,7 +323,7 @@ def test_expired_ownership_transfer_cannot_be_confirmed(
         headers=auth_header(owner["access_token"]),
         json={"target_member_id": admin["membership"]["id"]},
     )
-    transfer = create_response.json()
+    transfer = create_response.json()["data"]
     message = latest_outbox_message(
         outbox_dir,
         "owner@example.com",
@@ -342,7 +343,8 @@ def test_expired_ownership_transfer_cannot_be_confirmed(
         json={"token": message["token"]},
     )
 
-    assert first_response.status_code == 410
+    assert first_response.status_code == 409
+    assert first_response.json()["code"] == "OWNERSHIP_TRANSFER_EXPIRED"
     assert second_response.status_code == 409
 
 
@@ -382,7 +384,7 @@ def test_confirmation_revalidates_target_is_still_active_admin(
         "/workspace/members",
         headers=auth_header(owner["access_token"]),
     )
-    roles = {item["email"]: item["role"] for item in members_response.json()["items"]}
+    roles = {item["email"]: item["role"] for item in members_response.json()["data"]["items"]}
     assert roles == {"owner@example.com": "owner", "admin@example.com": "normal"}
 
 
@@ -417,7 +419,7 @@ def test_failed_ownership_email_can_be_resent_with_new_expiry(
         json={"target_member_id": admin["membership"]["id"]},
     )
     assert create_response.status_code == 201
-    transfer = create_response.json()
+    transfer = create_response.json()["data"]
     assert transfer["status"] == "pending"
     assert transfer["email_sent"] is False
     assert transfer["email_error_summary"] == "SMTP connection timed out"
@@ -433,7 +435,7 @@ def test_failed_ownership_email_can_be_resent_with_new_expiry(
     )
 
     assert resend_response.status_code == 200
-    resent = resend_response.json()
+    resent = resend_response.json()["data"]
     assert resent["email_sent"] is True
     assert resent["email_error_summary"] is None
     assert (
@@ -476,8 +478,8 @@ def test_owner_reads_current_pending_transfer_without_token(
     )
 
     assert current_response.status_code == 200
-    current = current_response.json()
-    assert current["id"] == create_response.json()["id"]
+    current = current_response.json()["data"]
+    assert current["id"] == create_response.json()["data"]["id"]
     assert current["status"] == "pending"
     assert "token" not in current
     assert "confirm_url" not in current

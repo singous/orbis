@@ -108,18 +108,18 @@ def test_archived_resources_are_listed_only_when_requested(
         },
     )
     assert setup_response.status_code == 201
-    headers = auth_header(setup_response.json()["access_token"])
+    headers = auth_header(setup_response.json()["data"]["access_token"])
 
     archived_group = client.post(
         "/document-groups",
         headers=headers,
         json={"name": "Archived group"},
-    ).json()
+    ).json()["data"]
     archived_notebook = client.post(
         "/notebooks",
         headers=headers,
         json={"title": "Archived notebook", "group_id": archived_group["id"]},
-    ).json()
+    ).json()["data"]
     archived_note = client.post(
         "/notes",
         headers=headers,
@@ -127,7 +127,7 @@ def test_archived_resources_are_listed_only_when_requested(
             "title": "archive-keyword note",
             "notebook_id": archived_notebook["id"],
         },
-    ).json()
+    ).json()["data"]
 
     assert (
         client.post(f"/notes/{archived_note['id']}/archive", headers=headers).status_code
@@ -146,17 +146,17 @@ def test_archived_resources_are_listed_only_when_requested(
         == 200
     )
 
-    active_groups = client.get("/document-groups", headers=headers).json()["items"]
+    active_groups = client.get("/document-groups", headers=headers).json()["data"]["items"]
     archived_groups = client.get(
         "/document-groups", headers=headers, params={"status": "archived"}
-    ).json()["items"]
+    ).json()["data"]["items"]
     assert archived_group["id"] not in {item["id"] for item in active_groups}
     assert [item["id"] for item in archived_groups] == [archived_group["id"]]
 
-    active_notebooks = client.get("/notebooks", headers=headers).json()["items"]
+    active_notebooks = client.get("/notebooks", headers=headers).json()["data"]["items"]
     archived_notebooks = client.get(
         "/notebooks", headers=headers, params={"status": "archived"}
-    ).json()["items"]
+    ).json()["data"]["items"]
     assert archived_notebook["id"] not in {item["id"] for item in active_notebooks}
     assert [item["id"] for item in archived_notebooks] == [archived_notebook["id"]]
 
@@ -168,8 +168,8 @@ def test_archived_resources_are_listed_only_when_requested(
         headers=headers,
         params={"status": "archived", "q": "archive-keyword"},
     )
-    assert default_search.json()["items"] == []
-    assert [item["id"] for item in archived_search.json()["items"]] == [
+    assert default_search.json()["data"]["items"] == []
+    assert [item["id"] for item in archived_search.json()["data"]["items"]] == [
         archived_note["id"]
     ]
     assert (
@@ -190,12 +190,12 @@ def test_archived_document_groups_remain_scoped_to_the_current_workspace(
         },
     )
     assert setup_response.status_code == 201
-    headers = auth_header(setup_response.json()["access_token"])
+    headers = auth_header(setup_response.json()["data"]["access_token"])
     unrelated_group_id = asyncio.run(_insert_unrelated_archived_group(client))
 
     archived_groups = client.get(
         "/document-groups", headers=headers, params={"status": "archived"}
-    ).json()["items"]
+    ).json()["data"]["items"]
 
     assert unrelated_group_id not in {item["id"] for item in archived_groups}
 
@@ -212,7 +212,7 @@ def test_archived_restore_targets_remain_scoped_to_the_current_workspace(
         },
     )
     assert setup_response.status_code == 201
-    headers = auth_header(setup_response.json()["access_token"])
+    headers = auth_header(setup_response.json()["data"]["access_token"])
     group_id, notebook_id, note_id = asyncio.run(
         _insert_unrelated_archived_hierarchy(client)
     )
@@ -228,19 +228,19 @@ def test_archived_restore_targets_remain_scoped_to_the_current_workspace(
         item["id"]
         for item in client.get(
             "/document-groups", headers=headers, params={"status": "archived"}
-        ).json()["items"]
+        ).json()["data"]["items"]
     }
     assert notebook_id not in {
         item["id"]
         for item in client.get(
             "/notebooks", headers=headers, params={"status": "archived"}
-        ).json()["items"]
+        ).json()["data"]["items"]
     }
     assert note_id not in {
         item["id"]
         for item in client.get(
             "/notes", headers=headers, params={"status": "archived"}
-        ).json()["items"]
+        ).json()["data"]["items"]
     }
 
 
@@ -254,20 +254,20 @@ def test_restore_requires_active_parent_resources(client: TestClient) -> None:
         },
     )
     assert setup_response.status_code == 201
-    headers = auth_header(setup_response.json()["access_token"])
+    headers = auth_header(setup_response.json()["data"]["access_token"])
     group = client.post(
         "/document-groups", headers=headers, json={"name": "Archived group"}
-    ).json()
+    ).json()["data"]
     notebook = client.post(
         "/notebooks",
         headers=headers,
         json={"title": "Archived notebook", "group_id": group["id"]},
-    ).json()
+    ).json()["data"]
     note = client.post(
         "/notes",
         headers=headers,
         json={"title": "Archived note", "notebook_id": notebook["id"]},
-    ).json()
+    ).json()["data"]
 
     for path in (
         f"/notes/{note['id']}/archive",
@@ -287,13 +287,13 @@ def test_restore_requires_active_parent_resources(client: TestClient) -> None:
         item["id"]
         for item in client.get(
             "/notebooks", headers=headers, params={"status": "archived"}
-        ).json()["items"]
+        ).json()["data"]["items"]
     }
     assert note["id"] in {
         item["id"]
         for item in client.get(
             "/notes", headers=headers, params={"status": "archived"}
-        ).json()["items"]
+        ).json()["data"]["items"]
     }
     assert client.post(
         f"/document-groups/{group['id']}/restore", headers=headers
@@ -317,30 +317,30 @@ def test_note_restore_requires_an_active_notebook_group(client: TestClient) -> N
         },
     )
     assert setup_response.status_code == 201
-    headers = auth_header(setup_response.json()["access_token"])
+    headers = auth_header(setup_response.json()["data"]["access_token"])
     group = client.post(
         "/document-groups", headers=headers, json={"name": "Archived group"}
-    ).json()
+    ).json()["data"]
     notebook = client.post(
         "/notebooks",
         headers=headers,
         json={"title": "Active notebook", "group_id": group["id"]},
-    ).json()
+    ).json()["data"]
     note = client.post(
         "/notes",
         headers=headers,
         json={"title": "Archived note", "notebook_id": notebook["id"]},
-    ).json()
+    ).json()["data"]
     assert client.post(f"/notes/{note['id']}/archive", headers=headers).status_code == 200
     assert client.post(
         f"/document-groups/{group['id']}/archive", headers=headers
     ).status_code == 200
-    assert client.get("/notebooks", headers=headers).json()["items"] == []
+    assert client.get("/notebooks", headers=headers).json()["data"]["items"] == []
     hidden_active_notebooks = client.get(
         "/notebooks",
         headers=headers,
         params={"include_inactive_parents": True},
-    ).json()["items"]
+    ).json()["data"]["items"]
     assert [item["id"] for item in hidden_active_notebooks] == [notebook["id"]]
 
     restore_response = client.post(f"/notes/{note['id']}/restore", headers=headers)
@@ -350,7 +350,7 @@ def test_note_restore_requires_an_active_notebook_group(client: TestClient) -> N
         item["id"]
         for item in client.get(
             "/notes", headers=headers, params={"status": "archived"}
-        ).json()["items"]
+        ).json()["data"]["items"]
     }
     assert client.post(
         f"/document-groups/{group['id']}/restore", headers=headers
@@ -358,7 +358,7 @@ def test_note_restore_requires_an_active_notebook_group(client: TestClient) -> N
     assert client.post(f"/notes/{note['id']}/restore", headers=headers).status_code == 200
     tree = client.get(
         f"/notebooks/{notebook['id']}/notes/tree", headers=headers
-    ).json()["items"]
+    ).json()["data"]["items"]
     assert [item["id"] for item in tree] == [note["id"]]
 
 
@@ -372,15 +372,15 @@ def test_child_note_restore_requires_an_active_parent_note(client: TestClient) -
         },
     )
     assert setup_response.status_code == 201
-    headers = auth_header(setup_response.json()["access_token"])
+    headers = auth_header(setup_response.json()["data"]["access_token"])
     notebook = client.post(
         "/notebooks", headers=headers, json={"title": "Active notebook"}
-    ).json()
+    ).json()["data"]
     parent = client.post(
         "/notes",
         headers=headers,
         json={"title": "Parent note", "notebook_id": notebook["id"]},
-    ).json()
+    ).json()["data"]
     child = client.post(
         "/notes",
         headers=headers,
@@ -389,7 +389,7 @@ def test_child_note_restore_requires_an_active_parent_note(client: TestClient) -
             "notebook_id": notebook["id"],
             "parent_id": parent["id"],
         },
-    ).json()
+    ).json()["data"]
     assert client.post(
         f"/notes/{parent['id']}/archive", headers=headers
     ).status_code == 200
@@ -406,7 +406,7 @@ def test_child_note_restore_requires_an_active_parent_note(client: TestClient) -
         item["id"]
         for item in client.get(
             "/notes", headers=headers, params={"status": "archived"}
-        ).json()["items"]
+        ).json()["data"]["items"]
     }
     assert client.post(
         f"/notes/{parent['id']}/restore", headers=headers
@@ -416,7 +416,7 @@ def test_child_note_restore_requires_an_active_parent_note(client: TestClient) -
     ).status_code == 200
     tree = client.get(
         f"/notebooks/{notebook['id']}/notes/tree", headers=headers
-    ).json()["items"]
+    ).json()["data"]["items"]
     assert [item["id"] for item in tree] == [parent["id"]]
     assert [item["id"] for item in tree[0]["children"]] == [child["id"]]
 
@@ -433,15 +433,15 @@ def test_note_restore_requires_every_note_ancestor_to_be_active(
         },
     )
     assert setup_response.status_code == 201
-    headers = auth_header(setup_response.json()["access_token"])
+    headers = auth_header(setup_response.json()["data"]["access_token"])
     notebook = client.post(
         "/notebooks", headers=headers, json={"title": "Active notebook"}
-    ).json()
+    ).json()["data"]
     grandparent = client.post(
         "/notes",
         headers=headers,
         json={"title": "Grandparent note", "notebook_id": notebook["id"]},
-    ).json()
+    ).json()["data"]
     parent = client.post(
         "/notes",
         headers=headers,
@@ -450,7 +450,7 @@ def test_note_restore_requires_every_note_ancestor_to_be_active(
             "notebook_id": notebook["id"],
             "parent_id": grandparent["id"],
         },
-    ).json()
+    ).json()["data"]
     child = client.post(
         "/notes",
         headers=headers,
@@ -459,7 +459,7 @@ def test_note_restore_requires_every_note_ancestor_to_be_active(
             "notebook_id": notebook["id"],
             "parent_id": parent["id"],
         },
-    ).json()
+    ).json()["data"]
     assert client.post(
         f"/notes/{grandparent['id']}/archive", headers=headers
     ).status_code == 200

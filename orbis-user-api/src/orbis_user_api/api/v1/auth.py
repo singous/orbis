@@ -1,7 +1,10 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import Depends, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from orbis_user_api.api.contract import ApiRouter
+from orbis_user_api.api.errors import ApiError
 
 from orbis_user_api.api.deps import get_session
 from orbis_user_api.schemas.auth import (
@@ -23,7 +26,7 @@ from orbis_user_api.services.exceptions import (
 )
 from orbis_user_api.services.workspace import get_current_workspace, workspace_payload
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = ApiRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/login", response_model=AuthResponse)
@@ -37,8 +40,10 @@ async def login(
             payload, request.app.state.settings, session
         )
     except InvalidCredentials:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password"
+        raise ApiError(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            code="INVALID_CREDENTIALS",
+            message="邮箱或密码错误",
         )
     try:
         workspace, membership = await get_current_workspace(user, session)
@@ -65,7 +70,9 @@ async def refresh_access_token(
             payload, request.app.state.settings, session
         )
     except InvalidRefreshToken:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+        raise ApiError(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            code="INVALID_REFRESH_TOKEN",
+            message="刷新令牌无效或已过期",
         )
     return AccessTokenResponse(access_token=access_token)

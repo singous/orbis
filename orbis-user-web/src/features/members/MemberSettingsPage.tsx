@@ -95,7 +95,7 @@ export function MemberSettingsPage() {
         {!canManage ? <StatusMessage tone="info" title="只读成员列表">你的角色不能邀请、移除或调整其他成员。</StatusMessage> : null}
         {membersQuery.isError ? <div className="mb-5"><StatusMessage tone="error" title="成员列表加载失败">请刷新页面后重试。</StatusMessage></div> : null}
         {operationError ? (
-          <div className="mb-5"><StatusMessage tone="error" title="操作未完成">{operationError.detail === "Mail service is unavailable" ? "邮件服务不可用，暂时无法发送邀请或转让确认。" : operationError.detail}</StatusMessage></div>
+          <div className="mb-5"><StatusMessage tone="error" title="操作未完成">{operationError.code === "MAIL_SERVICE_UNAVAILABLE" ? "邮件服务不可用，暂时无法发送邀请或转让确认。" : operationError.message}</StatusMessage></div>
         ) : null}
 
         {canManage ? (

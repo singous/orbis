@@ -43,21 +43,21 @@ def setup_note(client: TestClient) -> tuple[str, dict[str, Any], dict[str, Any]]
         },
     )
     assert setup_response.status_code == 201
-    token = setup_response.json()["access_token"]
+    token = setup_response.json()["data"]["access_token"]
     notebook_response = client.post(
         "/notebooks",
         headers=auth_header(token),
         json={"title": "Product notes"},
     )
     assert notebook_response.status_code == 201
-    notebook = notebook_response.json()
+    notebook = notebook_response.json()["data"]
     note_response = client.post(
         "/notes",
         headers=auth_header(token),
         json={"notebook_id": notebook["id"], "title": "MVP", "sort_order": 0},
     )
     assert note_response.status_code == 201
-    return token, notebook, note_response.json()
+    return token, notebook, note_response.json()["data"]
 
 
 def supported_blocks() -> dict[str, Any]:
@@ -168,10 +168,10 @@ def test_note_content_is_separate_and_uses_optimistic_lock(client: TestClient) -
     )
 
     assert initial_response.status_code == 200
-    assert initial_response.json()["content_version"] == 1
-    assert initial_response.json()["blocks"]["doc"]["type"] == "doc"
+    assert initial_response.json()["data"]["content_version"] == 1
+    assert initial_response.json()["data"]["blocks"]["doc"]["type"] == "doc"
     assert update_response.status_code == 200
-    content = update_response.json()
+    content = update_response.json()["data"]
     assert content["content_version"] == 2
     assert "Architecture" in content["plain_text"]
     assert "Orbis keeps structured content." in content["plain_text"]
@@ -196,7 +196,8 @@ def test_note_content_rejects_unknown_block_type(client: TestClient) -> None:
     )
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "Note content is invalid"
+    assert response.json()["code"] == "NOTE_CONTENT_INVALID"
+    assert response.json()["message"] == "文档内容无效"
 
 
 def test_markdown_import_and_export_cover_supported_boundary_types(
@@ -232,12 +233,12 @@ print("orbis")
     )
 
     assert import_response.status_code == 201
-    imported = import_response.json()
+    imported = import_response.json()["data"]
     content_response = client.get(
         f"/notes/{imported['id']}/content", headers=auth_header(token)
     )
     node_types = [
-        node["type"] for node in content_response.json()["blocks"]["doc"]["content"]
+        node["type"] for node in content_response.json()["data"]["blocks"]["doc"]["content"]
     ]
     assert node_types == [
         "heading",
@@ -255,7 +256,7 @@ print("orbis")
         f"/notes/{imported['id']}/markdown", headers=auth_header(token)
     )
     assert export_response.status_code == 200
-    exported = export_response.json()["markdown"]
+    exported = export_response.json()["data"]["markdown"]
     assert "# Product plan" in exported
     assert "[documentation](https://example.com/docs)" in exported
     assert "- [x] Shipped" in exported

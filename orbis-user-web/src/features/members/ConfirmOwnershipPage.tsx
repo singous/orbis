@@ -28,7 +28,7 @@ export function ConfirmOwnershipPage() {
           <>
             <h1 className="text-2xl font-semibold tracking-[-0.035em]">确认接管工作空间</h1>
             <p className="mt-3 text-sm leading-6 text-white/55">确认后，你将成为唯一 owner，原 owner 自动降级为管理员。此操作不可在本页面撤回。</p>
-            {error ? <div className="mt-5"><StatusMessage tone="error" title="确认失败">{error.status === 410 ? "确认链接已经过期，请联系当前 owner 重新发起。" : error.detail}</StatusMessage></div> : null}
+            {error ? <div className="mt-5"><StatusMessage tone="error" title="确认失败">{error.code === "OWNERSHIP_TRANSFER_EXPIRED" ? "确认链接已经过期，请联系当前 owner 重新发起。" : error.message}</StatusMessage></div> : null}
             <Button className="mt-6 w-full bg-white text-black hover:bg-white/80" onClick={() => confirm.mutate()} disabled={!transferToken || confirm.isPending}>确认所有权转让</Button>
             <Link to="/login" className="mt-4 block text-center text-xs text-white/45">暂不处理</Link>
           </>

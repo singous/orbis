@@ -4,7 +4,7 @@ import logging
 from urllib.parse import urlencode
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from orbis_user_api.core.security import (
@@ -60,16 +60,29 @@ def _delivery_error_summary(error: MailDeliveryError) -> str:
 
 
 async def list_invitations(
-    actor_user: User, session: AsyncSession
-) -> list[dict[str, object]]:
+    actor_user: User,
+    session: AsyncSession,
+    *,
+    offset: int = 0,
+    limit: int = 20,
+) -> tuple[list[dict[str, object]], int]:
     workspace, actor_membership = await AuthorizationService.actor(actor_user, session)
     AuthorizationService.require_capability(actor_membership, Capability.MEMBER_MANAGE)
+    conditions = (WorkspaceInvitation.workspace_id == workspace.id,)
+    total = await session.scalar(
+        select(func.count(WorkspaceInvitation.id)).where(*conditions)
+    )
     result = await session.execute(
         select(WorkspaceInvitation)
-        .where(WorkspaceInvitation.workspace_id == workspace.id)
+        .where(*conditions)
         .order_by(WorkspaceInvitation.created_at_ms.desc())
+        .offset(offset)
+        .limit(limit)
     )
-    return [invitation_payload(invitation) for invitation in result.scalars()]
+    return (
+        [invitation_payload(invitation) for invitation in result.scalars()],
+        int(total or 0),
+    )
 
 
 async def create_invitation(

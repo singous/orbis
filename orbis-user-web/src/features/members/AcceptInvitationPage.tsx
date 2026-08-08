@@ -56,7 +56,7 @@ export function AcceptInvitationPage() {
             <p className="mt-3 text-sm leading-6 text-[var(--muted)]">{auth ? "使用当前登录账号确认加入默认私人工作空间。" : "首次加入需要设置显示名称和密码。已有账号请先登录，再重新打开邀请链接。"}</p>
             <form className="mt-6 grid gap-4" onSubmit={submit}>
               {!auth ? <><TextInput label="显示名称" value={displayName} required onChange={(event) => setDisplayName(event.target.value)} /><TextInput label="设置密码" type="password" minLength={8} value={password} required onChange={(event) => setPassword(event.target.value)} /></> : null}
-              {error ? <StatusMessage tone="error" title="无法接受邀请">{error.detail === "Sign in with the invited account before accepting" ? "该邮箱已有账号，请先登录对应账号。" : error.detail}</StatusMessage> : null}
+              {error ? <StatusMessage tone="error" title="无法接受邀请">{error.code === "INVITATION_ACCOUNT_AUTHENTICATION_REQUIRED" ? "该邮箱已有账号，请先登录对应账号。" : error.message}</StatusMessage> : null}
               <Button type="submit" variant="primary" className="mt-2 w-full" disabled={!invitationToken || accept.isPending}>确认加入</Button>
             </form>
             <div className="mt-5 text-center text-xs text-[var(--muted)]"><Link className="font-semibold text-black" to="/login">返回登录</Link></div>

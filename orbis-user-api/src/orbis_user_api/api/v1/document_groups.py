@@ -2,8 +2,16 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from orbis_user_api.api.contract import (
+    ApiRouter,
+    PageData,
+    PaginationParams,
+    build_page_data,
+)
+from orbis_user_api.api.errors import ApiError
 
 from orbis_user_api.api.deps import (
     get_current_user,
@@ -14,7 +22,6 @@ from orbis_user_api.models.note import NoteGroup
 from orbis_user_api.models.user import User
 from orbis_user_api.schemas.note import (
     DocumentGroupCreateRequest,
-    DocumentGroupListResponse,
     DocumentGroupOut,
     DocumentGroupUpdateRequest,
     ResourceStatus,
@@ -35,22 +42,35 @@ from orbis_user_api.services.exceptions import (
     UserWorkspaceMissing,
 )
 
-router = APIRouter(prefix="/document-groups", tags=["document-groups"])
+router = ApiRouter(prefix="/document-groups", tags=["document-groups"])
 
 
-@router.get("", response_model=DocumentGroupListResponse)
+@router.get("", response_model=PageData[DocumentGroupOut])
 async def list_document_groups(
     resource_status: ResourceStatus = Query(default="active", alias="status"),
+    pagination: PaginationParams = Depends(),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-) -> DocumentGroupListResponse:
+) -> PageData[DocumentGroupOut]:
     try:
-        return DocumentGroupListResponse(
-            items=await list_document_groups_service(user, session, resource_status)
+        items, total = await list_document_groups_service(
+            user,
+            session,
+            resource_status,
+            offset=pagination.offset,
+            limit=pagination.page_size,
+        )
+        return build_page_data(
+            items,
+            page=pagination.page,
+            page_size=pagination.page_size,
+            total=total,
         )
     except UserWorkspaceMissing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="User workspace is missing"
+        raise ApiError(
+            status_code=status.HTTP_409_CONFLICT,
+            code="USER_WORKSPACE_MISSING",
+            message="用户未绑定可用工作空间",
         ) from None
 
 
@@ -68,8 +88,10 @@ async def create_document_group(
     try:
         return await create_document_group_service(payload, user, session)
     except UserWorkspaceMissing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="User workspace is missing"
+        raise ApiError(
+            status_code=status.HTTP_409_CONFLICT,
+            code="USER_WORKSPACE_MISSING",
+            message="用户未绑定可用工作空间",
         ) from None
 
 
@@ -87,13 +109,16 @@ async def update_document_group(
     try:
         return await update_document_group_service(group_id, payload, user, session)
     except DocumentGroupNotFound:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Document group not found"
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code="DOCUMENT_GROUP_NOT_FOUND",
+            message="文档分组不存在",
         ) from None
     except UserWorkspaceMissing:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Active workspace membership required",
+            code="ACTIVE_WORKSPACE_MEMBERSHIP_REQUIRED",
+            message="需要有效的工作空间成员身份",
         ) from None
 
 
@@ -106,18 +131,22 @@ async def _change_archive_status(
     try:
         return await set_document_group_archived(group_id, archived, user, session)
     except DefaultDocumentGroupArchiveForbidden:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Default document group cannot be archived",
+            code="DEFAULT_DOCUMENT_GROUP_ARCHIVE_FORBIDDEN",
+            message="默认文档分组不能归档",
         ) from None
     except DocumentGroupNotFound:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Document group not found"
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code="DOCUMENT_GROUP_NOT_FOUND",
+            message="文档分组不存在",
         ) from None
     except UserWorkspaceMissing:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Active workspace membership required",
+            code="ACTIVE_WORKSPACE_MEMBERSHIP_REQUIRED",
+            message="需要有效的工作空间成员身份",
         ) from None
 
 

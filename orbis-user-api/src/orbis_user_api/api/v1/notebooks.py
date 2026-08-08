@@ -2,8 +2,16 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from orbis_user_api.api.contract import (
+    ApiRouter,
+    PageData,
+    PaginationParams,
+    build_page_data,
+)
+from orbis_user_api.api.errors import ApiError
 
 from orbis_user_api.api.deps import (
     get_current_user,
@@ -14,7 +22,6 @@ from orbis_user_api.models.note import Notebook
 from orbis_user_api.models.user import User
 from orbis_user_api.schemas.note import (
     NotebookCreateRequest,
-    NotebookListResponse,
     NotebookOut,
     NotebookUpdateRequest,
     ResourceStatus,
@@ -31,30 +38,39 @@ from orbis_user_api.services.notebook import list_notebooks as list_notebooks_se
 from orbis_user_api.services.notebook import set_notebook_archived
 from orbis_user_api.services.notebook import update_notebook as update_notebook_service
 
-router = APIRouter(prefix="/notebooks", tags=["notebooks"])
+router = ApiRouter(prefix="/notebooks", tags=["notebooks"])
 
 
-@router.get("", response_model=NotebookListResponse)
+@router.get("", response_model=PageData[NotebookOut])
 async def list_notebooks(
     group_id: UUID | None = Query(default=None),
     resource_status: ResourceStatus = Query(default="active", alias="status"),
     include_inactive_parents: bool = Query(default=False),
+    pagination: PaginationParams = Depends(),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-) -> NotebookListResponse:
+) -> PageData[NotebookOut]:
     try:
-        return NotebookListResponse(
-            items=await list_notebooks_service(
-                user,
-                session,
-                group_id,
-                resource_status,
-                include_inactive_parents,
-            )
+        items, total = await list_notebooks_service(
+            user,
+            session,
+            group_id,
+            resource_status,
+            include_inactive_parents,
+            offset=pagination.offset,
+            limit=pagination.page_size,
+        )
+        return build_page_data(
+            items,
+            page=pagination.page,
+            page_size=pagination.page_size,
+            total=total,
         )
     except UserWorkspaceMissing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="User workspace is missing"
+        raise ApiError(
+            status_code=status.HTTP_409_CONFLICT,
+            code="USER_WORKSPACE_MISSING",
+            message="用户未绑定可用工作空间",
         ) from None
 
 
@@ -72,17 +88,22 @@ async def create_notebook(
     try:
         return await create_notebook_service(payload, user, session)
     except UserWorkspaceMissing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="User workspace is missing"
+        raise ApiError(
+            status_code=status.HTTP_409_CONFLICT,
+            code="USER_WORKSPACE_MISSING",
+            message="用户未绑定可用工作空间",
         ) from None
     except DefaultDocumentGroupMissing:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Default document group is missing",
+            code="DEFAULT_DOCUMENT_GROUP_MISSING",
+            message="默认文档分组不存在",
         ) from None
     except DocumentGroupNotFound:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Document group not found"
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code="DOCUMENT_GROUP_NOT_FOUND",
+            message="文档分组不存在",
         ) from None
 
 
@@ -100,22 +121,28 @@ async def update_notebook(
     try:
         return await update_notebook_service(notebook_id, payload, user, session)
     except NotebookNotFound:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Collection not found"
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code="NOTEBOOK_NOT_FOUND",
+            message="文集不存在",
         ) from None
     except DocumentGroupNotFound:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Document group not found"
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code="DOCUMENT_GROUP_NOT_FOUND",
+            message="文档分组不存在",
         ) from None
     except DefaultDocumentGroupMissing:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Default document group is missing",
+            code="DEFAULT_DOCUMENT_GROUP_MISSING",
+            message="默认文档分组不存在",
         ) from None
     except UserWorkspaceMissing:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Active workspace membership required",
+            code="ACTIVE_WORKSPACE_MEMBERSHIP_REQUIRED",
+            message="需要有效的工作空间成员身份",
         ) from None
 
 
@@ -128,18 +155,22 @@ async def _change_archive_status(
     try:
         return await set_notebook_archived(notebook_id, archived, user, session)
     except ArchiveRestoreDependencyInactive:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Parent document group must be restored first",
+            code="ARCHIVE_RESTORE_DEPENDENCY_INACTIVE",
+            message="请先恢复上级文档分组",
         ) from None
     except NotebookNotFound:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Collection not found"
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code="NOTEBOOK_NOT_FOUND",
+            message="文集不存在",
         ) from None
     except UserWorkspaceMissing:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Active workspace membership required",
+            code="ACTIVE_WORKSPACE_MEMBERSHIP_REQUIRED",
+            message="需要有效的工作空间成员身份",
         ) from None
 
 

@@ -40,13 +40,13 @@ export function LoginPage({ mode }: { mode: "login" | "setup" }) {
   }
 
   const error = authMutation.error as ApiError | null;
-  const errorMessage = error?.detail === "Invalid email or password"
+  const errorMessage = error?.code === "INVALID_CREDENTIALS"
     ? "邮箱或密码不正确。"
-    : error?.detail === "System is already initialized"
+    : error?.code === "SYSTEM_ALREADY_INITIALIZED"
       ? "系统已经完成初始化，请返回登录。"
       : error?.status === 422
         ? "请检查表单，密码至少需要 8 位。"
-        : "暂时无法连接 Orbis API，请稍后重试。";
+        : error?.message || "暂时无法连接 Orbis API，请稍后重试。";
 
   return (
     <main className="auth-layout">
@@ -72,7 +72,7 @@ export function LoginPage({ mode }: { mode: "login" | "setup" }) {
             {isSetup ? <TextInput label="显示名称" placeholder="你的名字" value={displayName} required onChange={(event) => setDisplayName(event.target.value)} autoComplete="name" /> : null}
             <TextInput label="邮箱" type="email" placeholder="name@example.com" value={email} required onChange={(event) => setEmail(event.target.value)} autoComplete="email" />
             <TextInput label="密码" type="password" placeholder={isSetup ? "至少 8 位" : "输入密码"} value={password} required minLength={isSetup ? 8 : 1} onChange={(event) => setPassword(event.target.value)} autoComplete={isSetup ? "new-password" : "current-password"} />
-            {error ? <StatusMessage tone="error" title={isSetup && error.status === 409 ? "无需重复初始化" : "无法继续"}>{errorMessage}{isSetup && error.status === 409 ? <div className="mt-2"><Link className="font-semibold underline" to="/login">返回登录</Link></div> : null}</StatusMessage> : null}
+            {error ? <StatusMessage tone="error" title={isSetup && error.code === "SYSTEM_ALREADY_INITIALIZED" ? "无需重复初始化" : "无法继续"}>{errorMessage}{isSetup && error.code === "SYSTEM_ALREADY_INITIALIZED" ? <div className="mt-2"><Link className="font-semibold underline" to="/login">返回登录</Link></div> : null}</StatusMessage> : null}
             <Button type="submit" variant="primary" className="mt-2 h-11 w-full rounded-xl" disabled={authMutation.isPending} icon={isSetup ? <ArrowRight aria-hidden="true" size={16} /> : <LogIn aria-hidden="true" size={16} />}>{authMutation.isPending ? "正在连接…" : isSetup ? "创建并进入工作空间" : "登录 Orbis"}</Button>
           </form>
           <div className="mt-7 border-t border-[var(--border)] pt-5 text-sm text-[var(--muted)]">{isSetup ? <>系统已初始化？ <Link className="font-semibold text-black" to="/login">返回登录</Link></> : <>首次部署？ <Link className="inline-flex items-center gap-1 font-semibold text-black" to="/setup">初始化管理员账号 <ArrowRight aria-hidden="true" size={13} /></Link></>}</div>

@@ -46,7 +46,7 @@ def setup_owner(client: TestClient) -> dict[str, Any]:
         },
     )
     assert response.status_code == 201
-    return response.json()
+    return response.json()["data"]
 
 
 def create_notebook(client: TestClient, token: str) -> dict[str, Any]:
@@ -56,7 +56,7 @@ def create_notebook(client: TestClient, token: str) -> dict[str, Any]:
         json={"title": "Product notes"},
     )
     assert response.status_code == 201
-    return response.json()
+    return response.json()["data"]
 
 
 def create_note(
@@ -79,7 +79,7 @@ def create_note(
         },
     )
     assert response.status_code == 201
-    return response.json()
+    return response.json()["data"]
 
 
 def invite_normal_member(client: TestClient, owner_token: str) -> str:
@@ -100,7 +100,7 @@ def invite_normal_member(client: TestClient, owner_token: str) -> str:
         },
     )
     assert accepted.status_code == 201
-    return accepted.json()["access_token"]
+    return accepted.json()["data"]["access_token"]
 
 
 def test_note_tree_supports_nested_notes_with_stable_sibling_order(
@@ -140,7 +140,7 @@ def test_note_tree_supports_nested_notes_with_stable_sibling_order(
     )
 
     assert response.status_code == 200
-    tree = response.json()["items"]
+    tree = response.json()["data"]["items"]
     assert [item["title"] for item in tree] == ["First root", "Later root"]
     assert [item["title"] for item in tree[1]["children"]] == ["Child"]
 
@@ -155,7 +155,7 @@ def test_note_parent_must_belong_to_same_collection(client: TestClient) -> None:
         json={"title": "Second collection"},
     )
     assert second_notebook_response.status_code == 201
-    second_notebook = second_notebook_response.json()
+    second_notebook = second_notebook_response.json()["data"]
     parent = create_note(
         client,
         token,
@@ -209,12 +209,12 @@ def test_note_can_be_reparented_and_reordered_within_collection(
     )
 
     assert update_response.status_code == 200
-    assert update_response.json()["parent_id"] is None
+    assert update_response.json()["data"]["parent_id"] is None
     tree_response = client.get(
         f"/notebooks/{notebook['id']}/notes/tree",
         headers=auth_header(token),
     )
-    assert [item["title"] for item in tree_response.json()["items"]] == [
+    assert [item["title"] for item in tree_response.json()["data"]["items"]] == [
         "Child",
         "Root",
     ]
@@ -291,11 +291,11 @@ def test_archiving_parent_hides_subtree_and_restore_reveals_it(
     )
 
     assert archive_response.status_code == 200
-    assert archive_response.json()["status"] == "archived"
-    assert archived_tree.json()["items"] == []
+    assert archive_response.json()["data"]["status"] == "archived"
+    assert archived_tree.json()["data"]["items"] == []
     assert restore_response.status_code == 200
-    assert restore_response.json()["status"] == "active"
-    assert restored_tree.json()["items"][0]["children"][0]["title"] == "Child"
+    assert restore_response.json()["data"]["status"] == "active"
+    assert restored_tree.json()["data"]["items"][0]["children"][0]["title"] == "Child"
 
 
 def test_archiving_group_hides_collections_and_notes_until_restore(
@@ -309,14 +309,14 @@ def test_archiving_group_hides_collections_and_notes_until_restore(
         json={"name": "Projects", "sort_order": 1},
     )
     assert group_response.status_code == 201
-    group = group_response.json()
+    group = group_response.json()["data"]
     notebook_response = client.post(
         "/notebooks",
         headers=auth_header(token),
         json={"title": "Orbis", "group_id": group["id"]},
     )
     assert notebook_response.status_code == 201
-    notebook = notebook_response.json()
+    notebook = notebook_response.json()["data"]
     create_note(
         client,
         token,
@@ -332,13 +332,13 @@ def test_archiving_group_hides_collections_and_notes_until_restore(
     )
 
     assert archive_response.status_code == 200
-    groups = client.get("/document-groups", headers=auth_header(token)).json()["items"]
+    groups = client.get("/document-groups", headers=auth_header(token)).json()["data"]["items"]
     assert [item["name"] for item in groups] == ["默认分组"]
     notebooks = client.get(
         "/notebooks",
         headers=auth_header(token),
         params={"group_id": group["id"]},
-    ).json()["items"]
+    ).json()["data"]["items"]
     assert notebooks == []
     assert (
         client.get(
@@ -357,7 +357,7 @@ def test_archiving_group_hides_collections_and_notes_until_restore(
         "/notebooks",
         headers=auth_header(token),
         params={"group_id": group["id"]},
-    ).json()["items"]
+    ).json()["data"]["items"]
     assert [item["title"] for item in restored_notebooks] == ["Orbis"]
 
 
@@ -365,7 +365,7 @@ def test_default_group_cannot_be_archived(client: TestClient) -> None:
     owner = setup_owner(client)
     token = owner["access_token"]
     groups_response = client.get("/document-groups", headers=auth_header(token))
-    default_group = groups_response.json()["items"][0]
+    default_group = groups_response.json()["data"]["items"][0]
 
     response = client.post(
         f"/document-groups/{default_group['id']}/archive",
@@ -373,7 +373,7 @@ def test_default_group_cannot_be_archived(client: TestClient) -> None:
     )
 
     assert response.status_code == 409
-    groups = client.get("/document-groups", headers=auth_header(token)).json()["items"]
+    groups = client.get("/document-groups", headers=auth_header(token)).json()["data"]["items"]
     assert [item["name"] for item in groups] == ["默认分组"]
 
 
@@ -396,8 +396,8 @@ def test_archiving_collection_hides_note_tree_until_restore(client: TestClient) 
     )
 
     assert archive_response.status_code == 200
-    assert archive_response.json()["status"] == "archived"
-    assert client.get("/notebooks", headers=auth_header(token)).json()["items"] == []
+    assert archive_response.json()["data"]["status"] == "archived"
+    assert client.get("/notebooks", headers=auth_header(token)).json()["data"]["items"] == []
     assert (
         client.get(
             f"/notebooks/{notebook['id']}/notes/tree",
@@ -415,7 +415,7 @@ def test_archiving_collection_hides_note_tree_until_restore(client: TestClient) 
         f"/notebooks/{notebook['id']}/notes/tree",
         headers=auth_header(token),
     )
-    assert restored_tree.json()["items"][0]["title"] == "Visible note"
+    assert restored_tree.json()["data"]["items"][0]["title"] == "Visible note"
 
 
 def test_group_and_collection_metadata_can_be_edited_and_reordered(
@@ -427,17 +427,17 @@ def test_group_and_collection_metadata_can_be_edited_and_reordered(
         "/document-groups",
         headers=auth_header(token),
         json={"name": "Projects", "sort_order": 10},
-    ).json()
+    ).json()["data"]
     second_group = client.post(
         "/document-groups",
         headers=auth_header(token),
         json={"name": "Archive", "sort_order": 20},
-    ).json()
+    ).json()["data"]
     notebook = client.post(
         "/notebooks",
         headers=auth_header(token),
         json={"title": "Orbis", "group_id": first_group["id"], "sort_order": 10},
-    ).json()
+    ).json()["data"]
 
     group_response = client.patch(
         f"/document-groups/{first_group['id']}",
@@ -451,12 +451,12 @@ def test_group_and_collection_metadata_can_be_edited_and_reordered(
     )
 
     assert group_response.status_code == 200
-    assert group_response.json()["name"] == "Active projects"
-    assert group_response.json()["sort_order"] == -1
+    assert group_response.json()["data"]["name"] == "Active projects"
+    assert group_response.json()["data"]["sort_order"] == -1
     assert notebook_response.status_code == 200
-    assert notebook_response.json()["title"] == "Orbis MVP"
-    assert notebook_response.json()["group_id"] == second_group["id"]
-    assert notebook_response.json()["sort_order"] == -1
+    assert notebook_response.json()["data"]["title"] == "Orbis MVP"
+    assert notebook_response.json()["data"]["group_id"] == second_group["id"]
+    assert notebook_response.json()["data"]["sort_order"] == -1
 
 
 def test_normal_member_can_read_notes_but_cannot_mutate_note_workspace(
