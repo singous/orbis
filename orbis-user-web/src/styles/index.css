@@ -669,6 +669,96 @@ textarea {
   background: white;
 }
 
+.document-context-shell {
+  position: relative;
+  height: 100%;
+}
+
+.document-context-close {
+  position: absolute;
+  top: 14px;
+  right: 12px;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: white;
+  color: var(--muted);
+}
+
+.document-context {
+  min-height: 100%;
+  padding: 18px 8px;
+}
+
+.document-context-header {
+  display: flex;
+  min-height: 34px;
+  align-items: start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 4px 12px;
+}
+
+.document-context-header h2 {
+  margin: 3px 0 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.document-context-create {
+  min-height: 28px;
+  padding: 4px 6px;
+  font-size: 11px;
+}
+
+.document-context-tree {
+  display: grid;
+  gap: 1px;
+}
+
+.document-context-item {
+  min-width: 0;
+}
+
+.document-context-link {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 7px;
+  border-radius: 7px;
+  padding: 7px 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 550;
+}
+
+.document-context-link:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.document-context-link.is-active {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.document-context-actions {
+  display: flex;
+  flex: none;
+  gap: 1px;
+  opacity: 0;
+}
+
+.document-context-item:hover > div > .document-context-actions,
+.document-context-actions:focus-within {
+  opacity: 1;
+}
+
 .workspace-user-menu {
   position: fixed;
   bottom: 14px;
