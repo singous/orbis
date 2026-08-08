@@ -32,15 +32,17 @@ export function WorkspaceShell({ children, toolbar, contextPanel, contextOpen = 
       <div className="workspace-shell-grid">
         <BusinessRail />
         <DocumentFunctionMenu />
-        <section className="workspace-content">
-          <header className="workspace-toolbar">
-            <div className="min-w-0 flex-1 text-sm text-[var(--muted)]">在线云文档</div>
-            {contextPanel && onOpenContext ? <button type="button" aria-label="打开上下文面板" className="icon-button" onClick={onOpenContext}><PanelRightOpen aria-hidden="true" size={16} /></button> : null}
-            {toolbar}
-          </header>
-          {children}
+        <section className={`workspace-main-area ${contextPanel && contextOpen ? "has-context" : ""}`} aria-label="主工作区">
+          <section className="workspace-content">
+            <header className="workspace-toolbar">
+              <div className="min-w-0 flex-1 text-sm text-[var(--muted)]">在线云文档</div>
+              {contextPanel && onOpenContext ? <button type="button" aria-label="打开上下文面板" className="icon-button" onClick={onOpenContext}><PanelRightOpen aria-hidden="true" size={16} /></button> : null}
+              {toolbar}
+            </header>
+            {children}
+          </section>
+          {contextPanel && contextOpen ? <aside className="workspace-context-panel" aria-label="上下文面板">{contextPanel}</aside> : null}
         </section>
-        {contextPanel && contextOpen ? <aside className="workspace-context-panel">{contextPanel}</aside> : null}
       </div>
       <UserMenu user={user} workspace={workspace} onLogout={logout} />
     </main>

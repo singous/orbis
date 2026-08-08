@@ -635,6 +635,16 @@ textarea {
   color: var(--accent-strong);
 }
 
+.workspace-main-area {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.workspace-main-area.has-context {
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+}
+
 .workspace-content {
   min-width: 0;
 }
@@ -822,7 +832,41 @@ textarea {
   }
 
   .workspace-user-menu {
+    bottom: 12px;
+    left: 12px;
+    display: block;
+    width: 48px;
+  }
+
+  .workspace-user-trigger {
+    width: 48px;
+    height: 48px;
+    justify-content: center;
+    border: 1px solid rgb(255 255 255 / 12%);
+    background: var(--chrome);
+    padding: 0;
+  }
+
+  .workspace-user-trigger-copy,
+  .workspace-user-trigger > svg {
     display: none;
+  }
+
+  .workspace-user-popover {
+    position: fixed;
+    right: 12px;
+    bottom: 68px;
+    left: 12px;
+    width: auto;
+  }
+
+  .workspace-main-area.has-context {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workspace-context-panel {
+    border-top: 1px solid var(--border);
+    border-left: 0;
   }
 
   .notebook-hero {
