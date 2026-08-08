@@ -151,6 +151,36 @@ describe("WorkspaceShell", () => {
     expect(documentContext).toHaveAttribute("aria-expanded", "false");
   });
 
+  it("makes closed mobile drawer descendants inert until their drawer opens", async () => {
+    const originalMatchMedia = window.matchMedia;
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: () => ({
+        matches: true,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      }),
+    });
+    const actor = userEvent.setup();
+
+    try {
+      renderShell("/documents", <nav aria-label="测试文档目录"><Link to="/documents/note-1">目录中的文档</Link></nav>);
+
+      expect(screen.queryByRole("link", { name: "搜索" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: "目录中的文档" })).not.toBeInTheDocument();
+
+      await actor.click(screen.getByRole("button", { name: "打开主导航" }));
+      expect(screen.getByRole("link", { name: "搜索" })).toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: "目录中的文档" })).not.toBeInTheDocument();
+
+      await actor.click(screen.getByRole("button", { name: "打开文档目录" }));
+      expect(screen.queryByRole("link", { name: "搜索" })).not.toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "目录中的文档" })).toBeInTheDocument();
+    } finally {
+      Object.defineProperty(window, "matchMedia", { configurable: true, value: originalMatchMedia });
+    }
+  });
+
   it("does not hide the user access surface at mobile width", () => {
     renderShell();
 

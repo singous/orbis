@@ -17,6 +17,28 @@ export type WorkspaceShellProps = {
   onOpenContext?: () => void;
 };
 
+const compactNavigationQuery = "(max-width: 1023px)";
+
+function useCompactNavigation(): boolean {
+  const [compact, setCompact] = useState(() =>
+    typeof window !== "undefined" && typeof window.matchMedia === "function"
+      ? window.matchMedia(compactNavigationQuery).matches
+      : false,
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+
+    const media = window.matchMedia(compactNavigationQuery);
+    const updateCompact = () => setCompact(media.matches);
+    updateCompact();
+    media.addEventListener("change", updateCompact);
+    return () => media.removeEventListener("change", updateCompact);
+  }, []);
+
+  return compact;
+}
+
 export function WorkspaceShell({ children, toolbar, contextPanel, contextOpen = true, onOpenContext }: WorkspaceShellProps) {
   const navigate = useNavigate();
   const user = useStore(authStore, (state) => state.user);
@@ -24,16 +46,7 @@ export function WorkspaceShell({ children, toolbar, contextPanel, contextOpen = 
   const clearSession = useStore(authStore, (state) => state.clearSession);
   const [mainNavigationOpen, setMainNavigationOpen] = useState(false);
   const [documentContextOpen, setDocumentContextOpen] = useState(false);
-  const [compact, setCompact] = useState(() => window.innerWidth < 1024);
-
-  useEffect(() => {
-    function updateCompact() {
-      setCompact(window.innerWidth < 1024);
-    }
-
-    window.addEventListener("resize", updateCompact);
-    return () => window.removeEventListener("resize", updateCompact);
-  }, []);
+  const compact = useCompactNavigation();
 
   function logout() {
     clearSession();
@@ -66,7 +79,7 @@ export function WorkspaceShell({ children, toolbar, contextPanel, contextOpen = 
   return (
     <main className={`workspace-shell${mainNavigationOpen ? " main-navigation-open" : ""}${documentContextOpen ? " document-context-drawer-open" : ""}`}>
       <div className="workspace-shell-grid">
-        <div className="workspace-main-navigation" onClick={closeMainNavigationAfterLink}>
+        <div className="workspace-main-navigation" aria-hidden={compact && !mainNavigationOpen ? true : undefined} inert={compact && !mainNavigationOpen ? true : undefined} onClick={closeMainNavigationAfterLink}>
           <BusinessRail />
           <DocumentFunctionMenu />
         </div>
@@ -83,7 +96,7 @@ export function WorkspaceShell({ children, toolbar, contextPanel, contextOpen = 
             </header>
             {children}
           </section>
-          {contextPanel ? <aside className="workspace-context-panel" aria-label="上下文面板" aria-hidden={compact ? !documentContextOpen : undefined} hidden={!contextOpen} onClick={closeDocumentContextAfterLink}>{contextPanel}</aside> : null}
+          {contextPanel ? <aside className="workspace-context-panel" aria-label="上下文面板" aria-hidden={compact && !documentContextOpen ? true : undefined} inert={compact && !documentContextOpen ? true : undefined} hidden={!contextOpen} onClick={closeDocumentContextAfterLink}>{contextPanel}</aside> : null}
         </section>
       </div>
       <UserMenu user={user} workspace={workspace} onLogout={logout} />
