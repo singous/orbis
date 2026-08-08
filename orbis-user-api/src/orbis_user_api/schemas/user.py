@@ -9,6 +9,7 @@ class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
+    tenant_id: UUID | None
     email: EmailStr
     display_name: str | None
     current_workspace_id: UUID | None

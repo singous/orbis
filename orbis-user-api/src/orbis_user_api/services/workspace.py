@@ -65,7 +65,12 @@ async def ensure_default_workspace(session: AsyncSession, user: User) -> Workspa
     )
     workspace = result.scalars().first()
     if workspace is None:
-        workspace = Workspace(owner_id=user.id, name=DEFAULT_PRIVATE_WORKSPACE_NAME, workspace_type="private")
+        workspace = Workspace(
+            tenant_id=user.tenant_id,
+            owner_id=user.id,
+            name=DEFAULT_PRIVATE_WORKSPACE_NAME,
+            workspace_type="private",
+        )
         session.add(workspace)
         await session.flush()
 
@@ -80,6 +85,7 @@ async def ensure_default_workspace(session: AsyncSession, user: User) -> Workspa
     if membership is None:
         session.add(
             WorkspaceMember(
+                tenant_id=user.tenant_id,
                 workspace_id=workspace.id,
                 user_id=user.id,
                 role="owner",
@@ -245,6 +251,7 @@ async def add_workspace_member(
         member = existing
     else:
         member = WorkspaceMember(
+            tenant_id=target_user.tenant_id,
             workspace_id=workspace_id,
             user_id=target_user.id,
             role="member",

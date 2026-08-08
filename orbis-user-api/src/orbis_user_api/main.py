@@ -8,7 +8,6 @@ from fastapi import FastAPI
 from orbis_user_api.api.v1.router import api_router
 from orbis_user_api.core.settings import Settings
 from orbis_user_api.db.session import create_engine, create_session_factory, init_models
-from orbis_user_api.services.bootstrap import bootstrap_superuser
 from orbis_user_api.services.storage import LocalFileStorage
 
 
@@ -25,8 +24,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app_settings.storage_dir.mkdir(parents=True, exist_ok=True)
         if app_settings.auto_create_tables:
             await init_models(engine)
-        async with app.state.session_factory() as session:
-            await bootstrap_superuser(app_settings, session)
         try:
             yield
         finally:

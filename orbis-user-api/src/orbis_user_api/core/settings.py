@@ -21,7 +21,3 @@ class Settings(BaseSettings):
 
     email_code_ttl_seconds: int = 10 * 60
     email_code_resend_seconds: int = 60
-
-    bootstrap_superuser_enabled: bool = True
-    bootstrap_superuser_email: str = "admin@orbis.com"
-    bootstrap_superuser_password: str = "orbis_admin"

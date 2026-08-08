@@ -5,6 +5,10 @@ class ServiceError(Exception):
     """Base class for expected service-layer errors."""
 
 
+class SystemAlreadyInitialized(ServiceError):
+    pass
+
+
 class EmailAlreadyRegistered(ServiceError):
     pass
 

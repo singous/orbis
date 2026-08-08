@@ -15,6 +15,7 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[UUID] = mapped_column(GUID(), primary_key=True, default=new_uuidv7)
+    tenant_id: Mapped[UUID | None] = mapped_column(GUID(), index=True)
     email: Mapped[str] = mapped_column(String(320), unique=True, index=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(Text, nullable=False)
     display_name: Mapped[str | None] = mapped_column(String(120))
