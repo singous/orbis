@@ -33,8 +33,3 @@ class Settings(BaseSettings):
     invitation_default_ttl_seconds: int = 24 * 60 * 60
     invitation_max_ttl_seconds: int = 7 * 24 * 60 * 60
     ownership_transfer_ttl_seconds: int = 15 * 60
-
-    event_transport: Literal["memory", "kafka"] = "memory"
-    kafka_bootstrap_servers: str = "127.0.0.1:9092"
-    index_cleanup_mode: Literal["noop", "http"] = "noop"
-    indexer_base_url: str = "http://127.0.0.1:9400"

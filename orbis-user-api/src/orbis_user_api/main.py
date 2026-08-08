@@ -8,8 +8,6 @@ from fastapi import FastAPI
 from orbis_user_api.api.v1.router import api_router
 from orbis_user_api.core.settings import Settings
 from orbis_user_api.db.session import create_engine, create_session_factory, init_models
-from orbis_user_api.infrastructure.events import create_event_publisher
-from orbis_user_api.infrastructure.index_cleanup import create_index_cleanup_gateway
 from orbis_user_api.infrastructure.mail import create_mail_sender
 from orbis_user_api.services.storage import LocalFileStorage
 
@@ -24,17 +22,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.session_factory = create_session_factory(engine)
         app.state.storage = LocalFileStorage(app_settings.storage_dir)
         app.state.mail_sender = create_mail_sender(app_settings)
-        app.state.event_publisher = create_event_publisher(app_settings)
-        app.state.index_cleanup = create_index_cleanup_gateway(app_settings)
 
         app_settings.storage_dir.mkdir(parents=True, exist_ok=True)
         if app_settings.auto_create_tables:
             await init_models(engine)
-        await app.state.event_publisher.start()
         try:
             yield
         finally:
-            await app.state.event_publisher.stop()
             await engine.dispose()
 
     app = FastAPI(title="Orbis User API", version="0.1.0", lifespan=lifespan)
