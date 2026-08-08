@@ -251,18 +251,18 @@ const workspace = {
   updated_at_ms: 1,
 };
 
-function sessionFor(role: "owner" | "normal" = "owner") {
+function sessionFor(role: "owner" | "normal" = "owner", workspaceOverride?: typeof workspace | null) {
   return {
     accessToken: "access-token",
     refreshToken: "refresh-token",
     user,
-    workspace: { ...workspace, role },
+    workspace: workspaceOverride === undefined ? { ...workspace, role } : workspaceOverride,
   };
 }
 
-async function renderRoute(path: string, role: "owner" | "normal" = "owner") {
+async function renderRoute(path: string, role: "owner" | "normal" = "owner", workspaceOverride?: typeof workspace | null) {
   window.history.replaceState({}, "", path);
-  window.localStorage.setItem("orbis.auth", JSON.stringify(sessionFor(role)));
+  window.localStorage.setItem("orbis.auth", JSON.stringify(sessionFor(role, workspaceOverride)));
   vi.resetModules();
   const { router } = await import("../../app/router");
   return render(<RouterProvider router={router} />);
@@ -378,6 +378,16 @@ describe("document function pages", () => {
     expect(recent.textContent?.indexOf("更新较早的文档")).toBeLessThan(
       recent.textContent?.indexOf("最新文档") ?? -1,
     );
+    expect(screen.queryByRole("navigation", { name: "在线文档功能" })).not.toBeInTheDocument();
+    expect(document.querySelector(".workspace-shell")).not.toHaveClass("has-section-menu");
+  });
+
+  it("keeps account settings on the workspace shell without document functions", async () => {
+    await renderRoute("/settings/account");
+
+    expect(await screen.findByRole("heading", { name: "账号" })).toBeVisible();
+    expect(screen.queryByRole("navigation", { name: "在线文档功能" })).not.toBeInTheDocument();
+    expect(document.querySelector(".workspace-shell")).not.toHaveClass("has-section-menu");
   });
 
   it("links the overview quick actions to both document and collection creation", async () => {
@@ -547,5 +557,12 @@ describe("document function pages", () => {
     expect(
       screen.queryByRole("button", { name: /恢复/ }),
     ).not.toBeInTheDocument();
+  });
+
+  it("does not offer restore controls without a current workspace", async () => {
+    await renderRoute("/documents/archive", "owner", null);
+
+    await screen.findByRole("heading", { name: "归档" });
+    expect(screen.queryByRole("button", { name: /恢复/ })).not.toBeInTheDocument();
   });
 });

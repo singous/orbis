@@ -8,6 +8,7 @@ import { authStore } from "../../shared/auth/auth-store";
 import { Button } from "../../shared/ui/Button";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { TiptapNoteEditor } from "../notes/TiptapNoteEditor";
+import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { tiptapDocToMarkdown } from "../notes/markdown-contract";
 import type { TiptapDocument } from "../notes/note-contract";
 import { AutosaveCoordinator, type AutosaveState } from "./autosave";
@@ -48,7 +49,7 @@ export function DocumentEditorPage() {
   const { noteId = "" } = useParams();
   const navigate = useNavigate();
   const workspace = useStore(authStore, (state) => state.workspace);
-  const canEdit = workspace?.role !== "normal";
+  const canEdit = canMutateWorkspaceContent(workspace);
   const noteQuery = useNote(noteId);
   const contentQuery = useNoteContent(noteId);
   const updateNote = useUpdateNote();

@@ -14,6 +14,7 @@ import { authStore } from "../../shared/auth/auth-store";
 import { Button } from "../../shared/ui/Button";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { DocumentShell } from "./DocumentShell";
+import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { ResourceDialog } from "./ResourceDialog";
 import {
   useArchiveDocumentGroup,
@@ -50,7 +51,7 @@ export function CollectionsPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const workspace = useStore(authStore, (state) => state.workspace);
-  const canEdit = workspace?.role !== "normal";
+  const canEdit = canMutateWorkspaceContent(workspace);
   const [dialog, setDialog] = useState<DialogState>(null);
   const groupsQuery = useDocumentGroups();
   const notebooksQuery = useNotebooks();

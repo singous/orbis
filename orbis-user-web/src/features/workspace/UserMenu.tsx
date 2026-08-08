@@ -3,16 +3,13 @@ import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import type { User, Workspace } from "../../shared/api/schemas";
+import { canManageWorkspaceMembers } from "./capabilities";
 
 export type UserMenuProps = {
   user: User | null;
   workspace: Workspace | null;
   onLogout: () => void;
 };
-
-function canManageMembers(workspace: Workspace | null): boolean {
-  return workspace?.role === "owner" || workspace?.role === "admin";
-}
 
 export function UserMenu({ user, workspace, onLogout }: UserMenuProps) {
   const [open, setOpen] = useState(false);
@@ -36,7 +33,7 @@ export function UserMenu({ user, workspace, onLogout }: UserMenuProps) {
             <div className="mt-0.5 truncate text-[10px] text-[var(--muted-light)]">{workspace?.name ?? "私人工作空间"}</div>
           </div>
           <div className="p-1">
-            {canManageMembers(workspace) ? <Link to="/settings/members" className="workspace-user-menu-item" onClick={() => setOpen(false)}><Users aria-hidden="true" size={14} />工作空间成员</Link> : null}
+            {canManageWorkspaceMembers(workspace) ? <Link to="/settings/members" className="workspace-user-menu-item" onClick={() => setOpen(false)}><Users aria-hidden="true" size={14} />工作空间成员</Link> : null}
             <Link to="/settings/account" className="workspace-user-menu-item" onClick={() => setOpen(false)}><Settings aria-hidden="true" size={14} />账号</Link>
             <button type="button" className="workspace-user-menu-item" onClick={onLogout}><LogOut aria-hidden="true" size={14} />退出登录</button>
           </div>

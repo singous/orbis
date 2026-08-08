@@ -3,10 +3,35 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createEmptyNoteBlocks } from "../notes/note-contract";
+import { authStore } from "../../shared/auth/auth-store";
 import { DocumentEditorPage } from "./DocumentEditorPage";
 
 const updateNote = vi.fn();
 const saveContent = vi.fn();
+
+const ownerSession = {
+  accessToken: "access-token",
+  refreshToken: "refresh-token",
+  user: {
+    id: "018ff7c4-a5b6-7000-8000-000000000002",
+    tenant_id: null,
+    email: "owner@orbis.test",
+    display_name: "Orbis Owner",
+    current_workspace_id: "018ff7c4-a5b6-7000-8000-000000000003",
+    status: "active",
+    created_at_ms: 1,
+    updated_at_ms: 1,
+  },
+  workspace: {
+    id: "018ff7c4-a5b6-7000-8000-000000000003",
+    name: "Orbis Workspace",
+    workspace_type: "team",
+    role: "owner" as const,
+    is_current: true,
+    created_at_ms: 1,
+    updated_at_ms: 1,
+  },
+};
 
 vi.mock("./DocumentShell", () => ({ DocumentShell: ({ children }: { children: React.ReactNode }) => <main>{children}</main> }));
 vi.mock("../notes/TiptapNoteEditor", () => ({
@@ -28,11 +53,13 @@ describe("DocumentEditorPage", () => {
     updateNote.mockResolvedValue({});
     saveContent.mockReset();
     saveContent.mockResolvedValue({ content_version: 5 });
+    act(() => authStore.setState(ownerSession));
   });
 
   afterEach(() => {
     vi.clearAllTimers();
     vi.useRealTimers();
+    act(() => authStore.getState().clearSession());
   });
 
   it("autosaves structured blocks with the current optimistic version", async () => {

@@ -1,7 +1,7 @@
 import { BookOpen, BrainCircuit, FilePlus2, LibraryBig } from "lucide-react";
 import { Link } from "react-router-dom";
 
-import { DocumentShell } from "../documents/DocumentShell";
+import { WorkspaceShell } from "../workspace/WorkspaceShell";
 import {
   useDocumentGroups,
   useNotebooks,
@@ -18,7 +18,7 @@ export function HomePage() {
   const recentNotes = notes.slice(0, 5);
 
   return (
-    <DocumentShell>
+    <WorkspaceShell>
       <div className="mx-auto max-w-[1040px] px-5 py-8 lg:px-10 lg:py-10">
         <header className="mb-9">
           <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted-light)]">
@@ -123,6 +123,6 @@ export function HomePage() {
           ) : null}
         </section>
       </div>
-    </DocumentShell>
+    </WorkspaceShell>
   );
 }

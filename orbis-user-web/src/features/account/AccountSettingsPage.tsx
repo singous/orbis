@@ -1,7 +1,7 @@
 import { useStore } from "zustand";
 
-import { DocumentShell } from "../documents/DocumentShell";
 import { authStore } from "../../shared/auth/auth-store";
+import { WorkspaceShell } from "../workspace/WorkspaceShell";
 
 export function AccountSettingsPage() {
   const user = useStore(authStore, (state) => state.user);
@@ -13,7 +13,7 @@ export function AccountSettingsPage() {
     ["角色", workspace?.role || "member"],
   ] as const;
   return (
-    <DocumentShell>
+    <WorkspaceShell>
       <div className="mx-auto max-w-3xl px-5 py-8 lg:px-10 lg:py-10">
         <header className="mb-9">
           <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted-light)]">
@@ -38,6 +38,6 @@ export function AccountSettingsPage() {
           ))}
         </dl>
       </div>
-    </DocumentShell>
+    </WorkspaceShell>
   );
 }

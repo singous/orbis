@@ -5,6 +5,7 @@ import { useStore } from "zustand";
 import { authStore } from "../../shared/auth/auth-store";
 import { Button } from "../../shared/ui/Button";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
+import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { DocumentShell } from "./DocumentShell";
 import {
   useCreateNote,
@@ -23,7 +24,7 @@ function formatDate(value: number): string {
 export function DocumentOverviewPage() {
   const navigate = useNavigate();
   const workspace = useStore(authStore, (state) => state.workspace);
-  const canEdit = workspace?.role !== "normal";
+  const canEdit = canMutateWorkspaceContent(workspace);
   const groupsQuery = useDocumentGroups();
   const notebooksQuery = useNotebooks();
   const notesQuery = useNoteSearch("");

@@ -6,6 +6,7 @@ import { useStore } from "zustand";
 import { authStore } from "../../shared/auth/auth-store";
 import { Button } from "../../shared/ui/Button";
 import { DocumentContextPanel, DocumentContextSummaryProvider, useDocumentContextSummary } from "./DocumentContextPanel";
+import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { DocumentShell } from "./DocumentShell";
 import {
   useExportMarkdown,
@@ -16,7 +17,7 @@ import {
 function NotebookPageContent({ collectionId }: { collectionId: string }) {
   const navigate = useNavigate();
   const workspace = useStore(authStore, (state) => state.workspace);
-  const canEdit = workspace?.role !== "normal";
+  const canEdit = canMutateWorkspaceContent(workspace);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const notebooksQuery = useNotebooks();
   const importMarkdown = useImportMarkdown();

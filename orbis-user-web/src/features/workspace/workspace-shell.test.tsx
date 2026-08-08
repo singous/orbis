@@ -5,6 +5,7 @@ import { Link, MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { authStore } from "../../shared/auth/auth-store";
+import { DocumentShell } from "../documents/DocumentShell";
 import { WorkspaceShell } from "./WorkspaceShell";
 
 const workspaceStyles = readFileSync("src/styles/index.css", "utf8");
@@ -34,10 +35,25 @@ function CurrentPath() {
   return <output aria-label="current path">{useLocation().pathname}</output>;
 }
 
-function renderShell(initialEntry = "/documents", contextPanel?: React.ReactNode) {
+function renderShell(initialEntry = "/documents", contextPanel?: React.ReactNode, sectionMenu?: React.ReactNode) {
   return render(
     <MemoryRouter initialEntries={[initialEntry]}>
-      <WorkspaceShell contextPanel={contextPanel}><div>文档内容</div></WorkspaceShell>
+      <WorkspaceShell
+        sectionTitle="测试工作台"
+        sectionMenu={sectionMenu}
+        contextPanel={contextPanel}
+      >
+        <div>文档内容</div>
+      </WorkspaceShell>
+      <CurrentPath />
+    </MemoryRouter>,
+  );
+}
+
+function renderDocumentShell(initialEntry = "/documents") {
+  return render(
+    <MemoryRouter initialEntries={[initialEntry]}>
+      <DocumentShell><div>文档内容</div></DocumentShell>
       <CurrentPath />
     </MemoryRouter>,
   );
@@ -68,16 +84,38 @@ describe("WorkspaceShell", () => {
     act(() => authStore.getState().clearSession());
   });
 
-  it("separates business navigation from the five online document functions", () => {
-    renderShell();
+  it("renders only the business rail when a workspace page supplies no section menu", () => {
+    render(
+      <MemoryRouter>
+        <WorkspaceShell><div>工作区内容</div></WorkspaceShell>
+      </MemoryRouter>,
+    );
 
     expect(screen.getByRole("navigation", { name: "业务板块" })).toBeInTheDocument();
-    expect(screen.getByRole("navigation", { name: "在线文档功能" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "文档概览" })).toHaveAttribute("href", "/documents");
-    expect(screen.getByText("知识库")).toHaveAttribute("aria-disabled", "true");
-    expect(screen.queryByText("产品手册")).not.toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "在线文档功能" })).not.toBeInTheDocument();
+    expect(screen.queryByText("在线云文档")).not.toBeInTheDocument();
+    expect(document.querySelector(".workspace-shell")).not.toHaveClass("has-section-menu");
+  });
 
+  it("renders a supplied section title and menu beside the business rail", () => {
+    renderShell("/documents", undefined, <nav aria-label="测试功能"><Link to="/documents">文档概览</Link></nav>);
+
+    expect(screen.getByRole("navigation", { name: "业务板块" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "测试功能" })).toBeInTheDocument();
+    expect(screen.getByText("测试工作台")).toBeInTheDocument();
+    expect(document.querySelector(".workspace-shell")).toHaveClass("has-section-menu");
+  });
+
+  it("lets the document shell own the five online document functions", () => {
+    render(
+      <MemoryRouter initialEntries={["/documents"]}>
+        <DocumentShell><div>文档内容</div></DocumentShell>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("navigation", { name: "在线文档功能" })).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: /文档概览|最近文档|我的文集|搜索|归档/ })).toHaveLength(5);
+    expect(screen.getByText("在线云文档")).toBeInTheDocument();
   });
 
   it.each([
@@ -88,7 +126,7 @@ describe("WorkspaceShell", () => {
     ["归档", "/documents/archive"],
   ] as const)("navigates %s to its explicit document route", async (label, path) => {
     const actor = userEvent.setup();
-    renderShell();
+    renderDocumentShell();
 
     const link = screen.getByRole("link", { name: label });
     expect(link).toHaveAttribute("href", path);
@@ -103,13 +141,13 @@ describe("WorkspaceShell", () => {
   });
 
   it("marks collections and notes as the 我的文集 function", () => {
-    renderShell("/collections/018ff7c4-a5b6-7000-8000-000000000004");
+    renderDocumentShell("/collections/018ff7c4-a5b6-7000-8000-000000000004");
 
     expect(screen.getByRole("link", { name: "我的文集" })).toHaveClass("is-active");
   });
 
   it("marks an open note as the 我的文集 function", () => {
-    renderShell("/documents/018ff7c4-a5b6-7000-8000-000000000005");
+    renderDocumentShell("/documents/018ff7c4-a5b6-7000-8000-000000000005");
 
     expect(screen.getByRole("link", { name: "我的文集" })).toHaveClass("is-active");
   });
@@ -127,7 +165,7 @@ describe("WorkspaceShell", () => {
 
   it("uses separate mobile drawers and closes each after its navigation link", async () => {
     const actor = userEvent.setup();
-    renderShell("/documents", <nav aria-label="测试文档目录"><Link to="/documents/note-1">目录中的文档</Link></nav>);
+    renderShell("/documents", <nav aria-label="测试文档目录"><Link to="/documents/note-1">目录中的文档</Link></nav>, <nav aria-label="测试功能"><Link to="/documents/search">搜索</Link></nav>);
     const mainNavigation = screen.getByRole("button", { name: "打开主导航" });
     const documentContext = screen.getByRole("button", { name: "打开文档目录" });
 
@@ -164,7 +202,7 @@ describe("WorkspaceShell", () => {
     const actor = userEvent.setup();
 
     try {
-      renderShell("/documents", <nav aria-label="测试文档目录"><Link to="/documents/note-1">目录中的文档</Link></nav>);
+      renderShell("/documents", <nav aria-label="测试文档目录"><Link to="/documents/note-1">目录中的文档</Link></nav>, <nav aria-label="测试功能"><Link to="/documents/search">搜索</Link></nav>);
 
       expect(screen.queryByRole("link", { name: "搜索" })).not.toBeInTheDocument();
       expect(screen.queryByRole("link", { name: "目录中的文档" })).not.toBeInTheDocument();

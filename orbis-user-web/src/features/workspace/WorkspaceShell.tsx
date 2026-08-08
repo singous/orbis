@@ -6,11 +6,12 @@ import { useStore } from "zustand";
 
 import { authStore } from "../../shared/auth/auth-store";
 import { BusinessRail } from "./BusinessRail";
-import { DocumentFunctionMenu } from "./DocumentFunctionMenu";
 import { UserMenu } from "./UserMenu";
 
 export type WorkspaceShellProps = {
   children: ReactNode;
+  sectionTitle?: ReactNode;
+  sectionMenu?: ReactNode;
   toolbar?: ReactNode;
   contextPanel?: ReactNode;
   contextOpen?: boolean;
@@ -39,7 +40,7 @@ function useCompactNavigation(): boolean {
   return compact;
 }
 
-export function WorkspaceShell({ children, toolbar, contextPanel, contextOpen = true, onOpenContext }: WorkspaceShellProps) {
+export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, contextPanel, contextOpen = true, onOpenContext }: WorkspaceShellProps) {
   const navigate = useNavigate();
   const user = useStore(authStore, (state) => state.user);
   const workspace = useStore(authStore, (state) => state.workspace);
@@ -77,18 +78,18 @@ export function WorkspaceShell({ children, toolbar, contextPanel, contextOpen = 
   }
 
   return (
-    <main className={`workspace-shell${mainNavigationOpen ? " main-navigation-open" : ""}${documentContextOpen ? " document-context-drawer-open" : ""}`}>
+    <main className={`workspace-shell${sectionMenu ? " has-section-menu" : ""}${mainNavigationOpen ? " main-navigation-open" : ""}${documentContextOpen ? " document-context-drawer-open" : ""}`}>
       <div className="workspace-shell-grid">
         <div className="workspace-main-navigation" aria-hidden={compact && !mainNavigationOpen ? true : undefined} inert={compact && !mainNavigationOpen ? true : undefined} onClick={closeMainNavigationAfterLink}>
           <BusinessRail />
-          <DocumentFunctionMenu />
+          {sectionMenu}
         </div>
         <section className={`workspace-main-area ${contextPanel && contextOpen ? "has-context" : ""}`} aria-label="主工作区">
           <section className="workspace-content">
             <header className="workspace-toolbar">
               <div className="flex min-w-0 flex-1 items-center gap-2 text-sm text-[var(--muted)]">
                 <button type="button" aria-label="打开主导航" aria-expanded={mainNavigationOpen} className="workspace-mobile-drawer-control" onClick={openMainNavigation}><Menu aria-hidden="true" size={16} /></button>
-                <span>在线云文档</span>
+                {sectionTitle ? <span>{sectionTitle}</span> : null}
               </div>
               {contextPanel ? <button type="button" aria-label="打开文档目录" aria-expanded={documentContextOpen} className="workspace-mobile-drawer-control" onClick={openDocumentContext}><PanelRightOpen aria-hidden="true" size={16} /></button> : null}
               {contextPanel && onOpenContext ? <button type="button" aria-label="打开上下文面板" className="icon-button workspace-context-open-control" onClick={onOpenContext}><PanelRightOpen aria-hidden="true" size={16} /></button> : null}

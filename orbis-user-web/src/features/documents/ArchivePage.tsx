@@ -10,6 +10,7 @@ import { useStore } from "zustand";
 import { authStore } from "../../shared/auth/auth-store";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { DocumentShell } from "./DocumentShell";
+import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import {
   useArchiveDocumentGroup,
   useArchiveNotebook,
@@ -110,7 +111,7 @@ function ArchiveSection({
 
 export function ArchivePage() {
   const workspace = useStore(authStore, (state) => state.workspace);
-  const canRestore = workspace?.role !== "normal";
+  const canRestore = canMutateWorkspaceContent(workspace);
   const groupsQuery = useDocumentGroups("archived");
   const notebooksQuery = useNotebooks(undefined, "archived");
   const notesQuery = useNoteSearch("", "archived");

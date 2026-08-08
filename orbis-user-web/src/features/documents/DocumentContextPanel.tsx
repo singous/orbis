@@ -7,6 +7,7 @@ import type { NoteTreeItem } from "../../shared/api/schemas";
 import { authStore } from "../../shared/auth/auth-store";
 import { Button } from "../../shared/ui/Button";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
+import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { ResourceDialog } from "./ResourceDialog";
 import { useArchiveNote, useCreateNote, useNoteTree, useUpdateNote } from "./queries";
 
@@ -109,7 +110,7 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
   const navigate = useNavigate();
   const summaryContext = useContext(DocumentContextSummaryContext);
   const workspace = useStore(authStore, (state) => state.workspace);
-  const canEdit = workspace?.role !== "normal";
+  const canEdit = canMutateWorkspaceContent(workspace);
   const treeQuery = useNoteTree(notebookId);
   const createNote = useCreateNote();
   const updateNote = useUpdateNote();

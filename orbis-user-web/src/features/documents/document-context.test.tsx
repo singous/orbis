@@ -237,6 +237,16 @@ describe("DocumentContextPanel", () => {
     expect(screen.queryByRole("button", { name: "归档 发布范围" })).not.toBeInTheDocument();
   });
 
+  it("does not offer document mutations without a current workspace", () => {
+    act(() => authStore.setState((state) => ({ ...state, workspace: null })));
+
+    renderPanel();
+
+    expect(screen.queryByRole("button", { name: "新建文档" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "新建子文档 发布范围" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "归档 发布范围" })).not.toBeInTheDocument();
+  });
+
   it("keeps tree failure recovery inside the context panel", async () => {
     treeState = { data: undefined, isLoading: false, isError: true, refetch: mocks.refetchTree };
     const actor = userEvent.setup();
