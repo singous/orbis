@@ -13,7 +13,6 @@ class UserOut(BaseModel):
     email: EmailStr
     display_name: str | None
     current_workspace_id: UUID | None
-    is_superuser: bool
     status: str
     created_at_ms: int
     updated_at_ms: int

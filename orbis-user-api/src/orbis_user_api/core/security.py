@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import hmac
 import secrets
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
@@ -29,7 +30,9 @@ def verify_password(password: str, password_hash: str) -> bool:
 
 
 def create_access_token(user_id: UUID, settings: Settings) -> str:
-    expires_at = datetime.now(UTC) + timedelta(seconds=settings.access_token_ttl_seconds)
+    expires_at = datetime.now(UTC) + timedelta(
+        seconds=settings.access_token_ttl_seconds
+    )
     return jwt.encode(
         {"sub": str(user_id), "type": "access", "exp": expires_at},
         settings.access_token_secret,
@@ -38,7 +41,9 @@ def create_access_token(user_id: UUID, settings: Settings) -> str:
 
 
 def decode_access_token(token: str, settings: Settings) -> UUID:
-    payload = jwt.decode(token, settings.access_token_secret, algorithms=[JWT_ALGORITHM])
+    payload = jwt.decode(
+        token, settings.access_token_secret, algorithms=[JWT_ALGORITHM]
+    )
     if payload.get("type") != "access":
         raise jwt.InvalidTokenError("Invalid token type")
     return UUID(payload["sub"])
@@ -49,8 +54,22 @@ def new_refresh_token() -> str:
 
 
 def hash_refresh_token(token: str, settings: Settings) -> str:
-    return hashlib.sha256(f"{settings.refresh_token_secret}:{token}".encode("utf-8")).hexdigest()
+    return hashlib.sha256(
+        f"{settings.refresh_token_secret}:{token}".encode()
+    ).hexdigest()
 
 
 def refresh_token_expires_at_ms(settings: Settings) -> int:
     return now_ms() + settings.refresh_token_ttl_seconds * 1000
+
+
+def new_action_token() -> str:
+    return secrets.token_urlsafe(48)
+
+
+def hash_action_token(token: str, settings: Settings) -> str:
+    return hmac.new(
+        settings.action_token_secret.encode("utf-8"),
+        token.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()

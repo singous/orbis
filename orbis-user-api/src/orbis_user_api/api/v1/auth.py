@@ -8,18 +8,20 @@ from orbis_user_api.schemas.auth import (
     AccessTokenResponse,
     AuthResponse,
     LoginRequest,
-    LogoutRequest,
     RefreshRequest,
 )
 from orbis_user_api.services.auth import (
     login_user,
-    logout_refresh_session,
+)
+from orbis_user_api.services.auth import (
     refresh_access_token as refresh_access_token_service,
 )
 from orbis_user_api.services.exceptions import (
     InvalidCredentials,
     InvalidRefreshToken,
+    UserWorkspaceMissing,
 )
+from orbis_user_api.services.workspace import get_current_workspace, workspace_payload
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -31,10 +33,25 @@ async def login(
     session: AsyncSession = Depends(get_session),
 ) -> AuthResponse:
     try:
-        access_token, refresh_token, user = await login_user(payload, request.app.state.settings, session)
+        access_token, refresh_token, user = await login_user(
+            payload, request.app.state.settings, session
+        )
     except InvalidCredentials:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
-    return AuthResponse(access_token=access_token, refresh_token=refresh_token, user=user)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password"
+        )
+    try:
+        workspace, membership = await get_current_workspace(user, session)
+    except UserWorkspaceMissing:
+        current_workspace = None
+    else:
+        current_workspace = workspace_payload(workspace, membership, user)
+    return AuthResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        user=user,
+        workspace=current_workspace,
+    )
 
 
 @router.post("/refresh", response_model=AccessTokenResponse)
@@ -44,16 +61,11 @@ async def refresh_access_token(
     session: AsyncSession = Depends(get_session),
 ) -> AccessTokenResponse:
     try:
-        access_token = await refresh_access_token_service(payload, request.app.state.settings, session)
+        access_token = await refresh_access_token_service(
+            payload, request.app.state.settings, session
+        )
     except InvalidRefreshToken:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+        )
     return AccessTokenResponse(access_token=access_token)
-
-
-@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-async def logout(
-    payload: LogoutRequest,
-    request: Request,
-    session: AsyncSession = Depends(get_session),
-) -> None:
-    await logout_refresh_session(payload, request.app.state.settings, session)

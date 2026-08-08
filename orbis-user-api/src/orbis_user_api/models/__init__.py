@@ -2,21 +2,27 @@
 
 from orbis_user_api.models.community import CommunityState, CommunityTenant
 from orbis_user_api.models.file import FileAsset
-from orbis_user_api.models.note import Note, NoteGroup, NoteRevision, Notebook
-from orbis_user_api.models.user import EmailVerificationCode, RefreshSession, User
-from orbis_user_api.models.workspace import Workspace, WorkspaceMember
+from orbis_user_api.models.note import Note, Notebook, NoteGroup, NoteRevision
+from orbis_user_api.models.user import RefreshSession, User
+from orbis_user_api.models.workspace import (
+    OwnershipTransfer,
+    Workspace,
+    WorkspaceInvitation,
+    WorkspaceMember,
+)
 
 __all__ = [
     "CommunityState",
     "CommunityTenant",
-    "EmailVerificationCode",
     "FileAsset",
     "Note",
     "NoteGroup",
     "NoteRevision",
     "Notebook",
+    "OwnershipTransfer",
     "RefreshSession",
     "User",
     "Workspace",
+    "WorkspaceInvitation",
     "WorkspaceMember",
 ]

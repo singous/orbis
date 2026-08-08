@@ -9,14 +9,6 @@ class SystemAlreadyInitialized(ServiceError):
     pass
 
 
-class EmailAlreadyRegistered(ServiceError):
-    pass
-
-
-class InvalidEmailCode(ServiceError):
-    pass
-
-
 class InvalidCredentials(ServiceError):
     pass
 
@@ -37,15 +29,51 @@ class WorkspaceMemberNotFound(ServiceError):
     pass
 
 
-class WorkspaceMemberAlreadyExists(ServiceError):
-    pass
-
-
 class WorkspaceMemberForbidden(ServiceError):
     pass
 
 
-class WorkspaceOwnerRemovalForbidden(ServiceError):
+class MailServiceUnavailable(ServiceError):
+    pass
+
+
+class InvitationForbidden(ServiceError):
+    pass
+
+
+class InvitationInvalid(ServiceError):
+    pass
+
+
+class InvitationExpired(ServiceError):
+    pass
+
+
+class InvitationAccountExists(ServiceError):
+    pass
+
+
+class InvitationPasswordRequired(ServiceError):
+    pass
+
+
+class OwnershipTransferForbidden(ServiceError):
+    pass
+
+
+class OwnershipTransferInvalid(ServiceError):
+    pass
+
+
+class OwnershipTransferExpired(ServiceError):
+    pass
+
+
+class OwnershipTransferAlreadyPending(ServiceError):
+    pass
+
+
+class OwnershipTransferNotFound(ServiceError):
     pass
 
 
