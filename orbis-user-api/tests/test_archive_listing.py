@@ -7,7 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from orbis_user_api.core.ids import new_uuidv7
-from orbis_user_api.models.note import NoteGroup
+from orbis_user_api.models.note import Note, Notebook, NoteGroup
 
 PASSWORD = "correct horse battery staple"
 
@@ -51,6 +51,49 @@ async def _insert_unrelated_archived_group(client: TestClient) -> str:
         session.add(group)
         await session.commit()
     return str(group.id)
+
+
+async def _insert_unrelated_archived_hierarchy(
+    client: TestClient,
+) -> tuple[str, str, str]:
+    workspace_id = new_uuidv7()
+    owner_id = new_uuidv7()
+    group = NoteGroup(
+        id=new_uuidv7(),
+        tenant_id=new_uuidv7(),
+        workspace_id=workspace_id,
+        owner_id=owner_id,
+        name="Unrelated archived group",
+        is_default=False,
+        sort_order=0,
+        status="archived",
+    )
+    notebook = Notebook(
+        id=new_uuidv7(),
+        tenant_id=group.tenant_id,
+        workspace_id=workspace_id,
+        group_id=group.id,
+        owner_id=owner_id,
+        title="Unrelated archived notebook",
+        sort_order=0,
+        status="archived",
+    )
+    note = Note(
+        id=new_uuidv7(),
+        tenant_id=group.tenant_id,
+        workspace_id=workspace_id,
+        owner_id=owner_id,
+        notebook_id=notebook.id,
+        parent_id=None,
+        title="Unrelated archived note",
+        sort_order=0,
+        note_type="doc",
+        status="archived",
+    )
+    async with client.app.state.session_factory() as session:
+        session.add_all([group, notebook, note])
+        await session.commit()
+    return str(group.id), str(notebook.id), str(note.id)
 
 
 def test_archived_resources_are_listed_only_when_requested(
@@ -155,3 +198,110 @@ def test_archived_document_groups_remain_scoped_to_the_current_workspace(
     ).json()["items"]
 
     assert unrelated_group_id not in {item["id"] for item in archived_groups}
+
+
+def test_archived_restore_targets_remain_scoped_to_the_current_workspace(
+    client: TestClient,
+) -> None:
+    setup_response = client.post(
+        "/setup",
+        json={
+            "email": "owner@example.com",
+            "password": PASSWORD,
+            "display_name": "Owner",
+        },
+    )
+    assert setup_response.status_code == 201
+    headers = auth_header(setup_response.json()["access_token"])
+    group_id, notebook_id, note_id = asyncio.run(
+        _insert_unrelated_archived_hierarchy(client)
+    )
+
+    responses = [
+        client.post(f"/document-groups/{group_id}/restore", headers=headers),
+        client.post(f"/notebooks/{notebook_id}/restore", headers=headers),
+        client.post(f"/notes/{note_id}/restore", headers=headers),
+    ]
+
+    assert [response.status_code for response in responses] == [404, 404, 404]
+    assert group_id not in {
+        item["id"]
+        for item in client.get(
+            "/document-groups", headers=headers, params={"status": "archived"}
+        ).json()["items"]
+    }
+    assert notebook_id not in {
+        item["id"]
+        for item in client.get(
+            "/notebooks", headers=headers, params={"status": "archived"}
+        ).json()["items"]
+    }
+    assert note_id not in {
+        item["id"]
+        for item in client.get(
+            "/notes", headers=headers, params={"status": "archived"}
+        ).json()["items"]
+    }
+
+
+def test_restore_requires_active_parent_resources(client: TestClient) -> None:
+    setup_response = client.post(
+        "/setup",
+        json={
+            "email": "owner@example.com",
+            "password": PASSWORD,
+            "display_name": "Owner",
+        },
+    )
+    assert setup_response.status_code == 201
+    headers = auth_header(setup_response.json()["access_token"])
+    group = client.post(
+        "/document-groups", headers=headers, json={"name": "Archived group"}
+    ).json()
+    notebook = client.post(
+        "/notebooks",
+        headers=headers,
+        json={"title": "Archived notebook", "group_id": group["id"]},
+    ).json()
+    note = client.post(
+        "/notes",
+        headers=headers,
+        json={"title": "Archived note", "notebook_id": notebook["id"]},
+    ).json()
+
+    for path in (
+        f"/notes/{note['id']}/archive",
+        f"/notebooks/{notebook['id']}/archive",
+        f"/document-groups/{group['id']}/archive",
+    ):
+        assert client.post(path, headers=headers).status_code == 200
+
+    notebook_restore = client.post(
+        f"/notebooks/{notebook['id']}/restore", headers=headers
+    )
+    note_restore = client.post(f"/notes/{note['id']}/restore", headers=headers)
+
+    assert notebook_restore.status_code == 409
+    assert note_restore.status_code == 409
+    assert notebook["id"] in {
+        item["id"]
+        for item in client.get(
+            "/notebooks", headers=headers, params={"status": "archived"}
+        ).json()["items"]
+    }
+    assert note["id"] in {
+        item["id"]
+        for item in client.get(
+            "/notes", headers=headers, params={"status": "archived"}
+        ).json()["items"]
+    }
+    assert client.post(
+        f"/document-groups/{group['id']}/restore", headers=headers
+    ).status_code == 200
+    assert client.post(
+        f"/notes/{note['id']}/restore", headers=headers
+    ).status_code == 409
+    assert client.post(
+        f"/notebooks/{notebook['id']}/restore", headers=headers
+    ).status_code == 200
+    assert client.post(f"/notes/{note['id']}/restore", headers=headers).status_code == 200

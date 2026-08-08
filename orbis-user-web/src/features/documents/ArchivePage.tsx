@@ -19,7 +19,16 @@ import {
   useNoteSearch,
 } from "./queries";
 
-type ArchiveResource = { id: string; label: string };
+type ArchiveResource = {
+  id: string;
+  label: string;
+  parentLabel?: string;
+  restoreBlockedReason?: string;
+};
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "恢复失败，请稍后重试。";
+}
 
 function ArchiveSection({
   title,
@@ -27,12 +36,18 @@ function ArchiveSection({
   resources,
   canRestore,
   onRestore,
+  pendingId,
+  errorId,
+  error,
 }: {
   title: string;
   icon: ReactNode;
   resources: ArchiveResource[];
   canRestore: boolean;
   onRestore: (id: string) => void;
+  pendingId?: string;
+  errorId?: string;
+  error?: unknown;
 }) {
   return (
     <section className="mb-8">
@@ -50,18 +65,37 @@ function ArchiveSection({
               className="flex items-center gap-3 px-4 py-3.5"
             >
               <div className="document-icon small">{icon}</div>
-              <div className="min-w-0 flex-1 truncate text-sm font-semibold">
-                {resource.label}
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-semibold">{resource.label}</div>
+                {resource.parentLabel ? (
+                  <div className="mt-1 text-xs text-[var(--muted)]">
+                    {resource.parentLabel}
+                  </div>
+                ) : null}
+                {resource.restoreBlockedReason ? (
+                  <div className="mt-1 text-xs text-[var(--warning-text)]">
+                    {resource.restoreBlockedReason}
+                  </div>
+                ) : null}
+                {pendingId === resource.id ? (
+                  <div className="mt-1 text-xs text-[var(--muted)]">正在恢复…</div>
+                ) : null}
+                {errorId === resource.id && error ? (
+                  <div role="alert" className="mt-1 text-xs text-[var(--danger-text)]">
+                    {errorMessage(error)}
+                  </div>
+                ) : null}
               </div>
               {canRestore ? (
                 <button
                   type="button"
                   className="text-action inline-flex items-center gap-1"
-                  aria-label={`恢复 ${resource.label}`}
+                  aria-label={pendingId === resource.id ? `正在恢复 ${resource.label}` : `恢复 ${resource.label}`}
+                  disabled={Boolean(resource.restoreBlockedReason) || pendingId === resource.id}
                   onClick={() => onRestore(resource.id)}
                 >
                   <ArchiveRestore aria-hidden="true" size={14} />
-                  恢复
+                  {pendingId === resource.id ? "正在恢复" : "恢复"}
                 </button>
               ) : null}
             </div>
@@ -86,6 +120,10 @@ export function ArchivePage() {
   const groups = groupsQuery.data?.items ?? [];
   const notebooks = notebooksQuery.data?.items ?? [];
   const notes = notesQuery.data?.items ?? [];
+  const archivedGroupsById = new Map(groups.map((group) => [group.id, group]));
+  const archivedNotebooksById = new Map(
+    notebooks.map((notebook) => [notebook.id, notebook]),
+  );
 
   return (
     <DocumentShell>
@@ -123,6 +161,9 @@ export function ArchivePage() {
           }))}
           canRestore={canRestore}
           onRestore={(id) => archiveGroup.mutate({ id, archived: false })}
+          pendingId={archiveGroup.isPending ? archiveGroup.variables?.id : undefined}
+          errorId={archiveGroup.isError ? archiveGroup.variables?.id : undefined}
+          error={archiveGroup.error}
         />
         <ArchiveSection
           title="文集"
@@ -130,16 +171,37 @@ export function ArchivePage() {
           resources={notebooks.map((notebook) => ({
             id: notebook.id,
             label: notebook.title,
+            parentLabel: archivedGroupsById.has(notebook.group_id)
+              ? `归属分组：${archivedGroupsById.get(notebook.group_id)?.name}`
+              : "归属分组：已恢复",
+            restoreBlockedReason: archivedGroupsById.has(notebook.group_id)
+              ? "请先恢复分组"
+              : undefined,
           }))}
           canRestore={canRestore}
           onRestore={(id) => archiveNotebook.mutate({ id, archived: false })}
+          pendingId={archiveNotebook.isPending ? archiveNotebook.variables?.id : undefined}
+          errorId={archiveNotebook.isError ? archiveNotebook.variables?.id : undefined}
+          error={archiveNotebook.error}
         />
         <ArchiveSection
           title="文档"
           icon={<FilePlus2 aria-hidden="true" size={14} />}
-          resources={notes.map((note) => ({ id: note.id, label: note.title }))}
+          resources={notes.map((note) => ({
+            id: note.id,
+            label: note.title,
+            parentLabel: archivedNotebooksById.has(note.notebook_id)
+              ? `归属文集：${archivedNotebooksById.get(note.notebook_id)?.title}`
+              : "归属文集：已恢复",
+            restoreBlockedReason: archivedNotebooksById.has(note.notebook_id)
+              ? "请先恢复文集"
+              : undefined,
+          }))}
           canRestore={canRestore}
           onRestore={(id) => archiveNote.mutate({ id, archived: false })}
+          pendingId={archiveNote.isPending ? archiveNote.variables?.id : undefined}
+          errorId={archiveNote.isError ? archiveNote.variables?.id : undefined}
+          error={archiveNote.error}
         />
       </div>
     </DocumentShell>

@@ -85,6 +85,10 @@ class DefaultDocumentGroupArchiveForbidden(ServiceError):
     pass
 
 
+class ArchiveRestoreDependencyInactive(ServiceError):
+    pass
+
+
 class DefaultDocumentGroupMissing(ServiceError):
     pass
 

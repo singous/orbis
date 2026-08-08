@@ -152,7 +152,15 @@ export function useUpdateNote() {
 export function useArchiveNote() {
   const auth = useDocumentAuth();
   const refresh = useRefreshDocuments();
-  return useMutation({ mutationFn: ({ id, archived }: { id: string; archived: boolean }) => setNoteArchived(id, archived, auth), onSuccess: refresh });
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, archived }: { id: string; archived: boolean }) => setNoteArchived(id, archived, auth),
+    onSuccess: async (_note, { id }) => {
+      queryClient.removeQueries({ queryKey: ["note", id], exact: true });
+      queryClient.removeQueries({ queryKey: ["note-content", id], exact: true });
+      await refresh();
+    },
+  });
 }
 
 export function useSaveNoteContent() {

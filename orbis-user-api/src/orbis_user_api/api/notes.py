@@ -40,6 +40,7 @@ from orbis_user_api.schemas.note import (
     ResourceStatus,
 )
 from orbis_user_api.services.exceptions import (
+    ArchiveRestoreDependencyInactive,
     NotebookNotFound,
     NoteContentInvalid,
     NoteNotFound,
@@ -234,6 +235,11 @@ async def _change_archive_status(
 ) -> Note:
     try:
         return await set_note_archived(note_id, archived, user, session)
+    except ArchiveRestoreDependencyInactive:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Parent collection must be restored first",
+        ) from None
     except NoteNotFound:
         raise _not_found("Note not found") from None
     except UserWorkspaceMissing:

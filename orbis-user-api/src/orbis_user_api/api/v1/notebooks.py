@@ -20,6 +20,7 @@ from orbis_user_api.schemas.note import (
     ResourceStatus,
 )
 from orbis_user_api.services.exceptions import (
+    ArchiveRestoreDependencyInactive,
     DefaultDocumentGroupMissing,
     DocumentGroupNotFound,
     NotebookNotFound,
@@ -121,6 +122,11 @@ async def _change_archive_status(
 ) -> Notebook:
     try:
         return await set_notebook_archived(notebook_id, archived, user, session)
+    except ArchiveRestoreDependencyInactive:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Parent document group must be restored first",
+        ) from None
     except NotebookNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Collection not found"

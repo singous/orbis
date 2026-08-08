@@ -26,6 +26,7 @@ from orbis_user_api.schemas.note import (
     ResourceStatus,
 )
 from orbis_user_api.services.exceptions import (
+    ArchiveRestoreDependencyInactive,
     NotebookNotFound,
     NoteContentInvalid,
     NoteNotFound,
@@ -167,6 +168,14 @@ async def set_note_archived(
         or note.status not in {"active", "archived"}
     ):
         raise NoteNotFound
+    if not archived:
+        notebook = await session.get(Notebook, note.notebook_id)
+        if (
+            notebook is None
+            or notebook.workspace_id != workspace.id
+            or notebook.status != "active"
+        ):
+            raise ArchiveRestoreDependencyInactive
     note.status = "archived" if archived else "active"
     note.updated_at_ms = now_ms()
     await session.commit()

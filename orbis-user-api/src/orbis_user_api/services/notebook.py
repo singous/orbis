@@ -14,7 +14,11 @@ from orbis_user_api.schemas.note import (
     ResourceStatus,
 )
 from orbis_user_api.services.document_group import get_default_document_group
-from orbis_user_api.services.exceptions import DocumentGroupNotFound, NotebookNotFound
+from orbis_user_api.services.exceptions import (
+    ArchiveRestoreDependencyInactive,
+    DocumentGroupNotFound,
+    NotebookNotFound,
+)
 from orbis_user_api.services.workspace import get_current_workspace
 
 
@@ -87,6 +91,14 @@ async def set_notebook_archived(
         or notebook.status not in {"active", "archived"}
     ):
         raise NotebookNotFound
+    if not archived:
+        group = await session.get(NoteGroup, notebook.group_id)
+        if (
+            group is None
+            or group.workspace_id != workspace.id
+            or group.status != "active"
+        ):
+            raise ArchiveRestoreDependencyInactive
     notebook.status = "archived" if archived else "active"
     notebook.updated_at_ms = now_ms()
     await session.commit()
