@@ -15,6 +15,7 @@ export function HomePage() {
   const groups = groupsQuery.data?.items ?? [];
   const notebooks = notebooksQuery.data?.items ?? [];
   const notes = notesQuery.data?.items ?? [];
+  const recentNotes = notes.slice(0, 5);
 
   return (
     <DocumentShell>
@@ -67,7 +68,7 @@ export function HomePage() {
             </span>
           </div>
         </section>
-        <section className="mt-10 rounded-2xl border border-[var(--border)] bg-white p-5">
+        <section className="mt-10" aria-label="最近编辑">
           <div className="flex items-center gap-3">
             <div className="document-icon">
               <FilePlus2 aria-hidden="true" size={18} />
@@ -75,16 +76,51 @@ export function HomePage() {
             <div>
               <h2 className="text-base font-semibold">继续写作</h2>
               <p className="mt-1 text-sm text-[var(--muted)]">
-                查看最近更新，或进入文集创建新文档。
+                最近编辑的文档会显示在这里。
               </p>
-              <Link
-                to="/documents/recent"
-                className="mt-3 inline-flex text-sm font-semibold"
-              >
-                最近文档
-              </Link>
             </div>
           </div>
+          {notesQuery.isLoading ? (
+            <div className="empty-panel mt-4">正在加载最近文档…</div>
+          ) : null}
+          {!notesQuery.isLoading && !recentNotes.length ? (
+            <div className="empty-panel mt-4">
+              还没有可继续的文档。
+              <Link
+                to="/documents/collections"
+                className="mt-3 inline-flex text-sm font-semibold"
+              >
+                前往我的文集
+              </Link>
+            </div>
+          ) : null}
+          {recentNotes.length ? (
+            <div className="mt-4 divide-y divide-[var(--border)] overflow-hidden rounded-xl border border-[var(--border)] bg-white">
+              {recentNotes.map((note) => (
+                <Link
+                  key={note.id}
+                  to={`/documents/${note.id}`}
+                  className="flex items-center gap-3 px-4 py-3 transition hover:bg-[#fafafa]"
+                >
+                  <FilePlus2 aria-hidden="true" size={15} />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-semibold">{note.title}</div>
+                    <div className="mt-1 truncate text-xs text-[var(--muted)]">
+                      {note.plain_text || "空白文档"}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : null}
+          {recentNotes.length ? (
+            <Link
+              to="/documents/recent"
+              className="mt-3 inline-flex text-sm font-semibold"
+            >
+              查看全部最近文档
+            </Link>
+          ) : null}
         </section>
       </div>
     </DocumentShell>

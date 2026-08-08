@@ -4,13 +4,15 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { authStore } from "../../shared/auth/auth-store";
-import { useArchiveNote } from "./queries";
+import { useArchiveNote, useNoteSearch } from "./queries";
 
 const setNoteArchivedMock = vi.fn();
+const searchNotesMock = vi.fn();
 
 vi.mock("./api", async () => ({
   ...(await vi.importActual<typeof import("./api")>("./api")),
   setNoteArchived: (...args: unknown[]) => setNoteArchivedMock(...args),
+  searchNotes: (...args: unknown[]) => searchNotesMock(...args),
 }));
 
 const noteId = "018ff7c4-a5b6-7000-8000-000000000001";
@@ -27,9 +29,16 @@ function ArchiveNoteButton() {
   );
 }
 
+function DisabledSearchProbe() {
+  useNoteSearch("   ", "active", { enabled: false });
+  return null;
+}
+
 describe("document query mutations", () => {
   beforeEach(() => {
     setNoteArchivedMock.mockReset();
+    searchNotesMock.mockReset();
+    searchNotesMock.mockResolvedValue({ items: [] });
     authStore.setState({
       accessToken: "access-token",
       refreshToken: "refresh-token",
@@ -74,6 +83,20 @@ describe("document query mutations", () => {
     expect(
       queryClient.getQueryState(["note-search", "active", ""]),
     ).toMatchObject({ isInvalidated: true });
+    unmount();
+  });
+
+  it("does not request a disabled note search", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const { unmount } = render(
+      <QueryClientProvider client={queryClient}>
+        <DisabledSearchProbe />
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => expect(searchNotesMock).not.toHaveBeenCalled());
     unmount();
   });
 });

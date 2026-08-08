@@ -1,15 +1,25 @@
-import { FilePlus2, Search } from "lucide-react";
+import { FilePlus2, Search, X } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { DocumentShell } from "./DocumentShell";
-import { useNoteSearch } from "./queries";
+import { useNotebooks, useNoteSearch } from "./queries";
 
 export function DocumentSearchPage() {
   const [params, setParams] = useSearchParams();
   const query = params.get("q") ?? "";
-  const notesQuery = useNoteSearch(query);
+  const trimmedQuery = query.trim();
+  const notesQuery = useNoteSearch(query, "active", {
+    enabled: Boolean(trimmedQuery),
+  });
+  const notebooksQuery = useNotebooks(undefined, "active");
   const notes = notesQuery.data?.items ?? [];
+  const notebookNames = new Map(
+    (notebooksQuery.data?.items ?? []).map((notebook) => [
+      notebook.id,
+      notebook.title,
+    ]),
+  );
 
   function setQuery(nextQuery: string) {
     if (nextQuery) setParams({ q: nextQuery });
@@ -48,7 +58,7 @@ export function DocumentSearchPage() {
             请检查 API 服务后重试。
           </StatusMessage>
         ) : null}
-        {query ? (
+        {trimmedQuery ? (
           <p className="mb-4 text-sm text-[var(--muted)]">
             找到 {notes.length} 篇相关文档
           </p>
@@ -57,13 +67,23 @@ export function DocumentSearchPage() {
             输入关键词搜索标题或正文。
           </p>
         )}
-        {notesQuery.isLoading ? (
+        {trimmedQuery ? (
+          <button
+            type="button"
+            className="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-[var(--muted)] hover:text-black"
+            onClick={() => setQuery("")}
+          >
+            <X aria-hidden="true" size={14} />
+            清空搜索
+          </button>
+        ) : null}
+        {trimmedQuery && notesQuery.isLoading ? (
           <div className="empty-panel">正在搜索…</div>
         ) : null}
-        {!notesQuery.isLoading && query && !notes.length ? (
+        {trimmedQuery && !notesQuery.isLoading && !notes.length ? (
           <div className="empty-panel">没有匹配的文档。试试更短的关键词。</div>
         ) : null}
-        {notes.length ? (
+        {trimmedQuery && notes.length ? (
           <div className="grid gap-3 md:grid-cols-2">
             {notes.map((note) => (
               <Link
@@ -79,6 +99,9 @@ export function DocumentSearchPage() {
                 </h2>
                 <p className="mt-2 line-clamp-2 text-xs leading-5 text-[var(--muted)]">
                   {note.plain_text || "空白文档"}
+                </p>
+                <p className="mt-3 text-xs text-[var(--muted-light)]">
+                  所属文集：{notebookNames.get(note.notebook_id) ?? "未知文集"}
                 </p>
               </Link>
             ))}

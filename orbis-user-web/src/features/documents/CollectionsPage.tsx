@@ -6,7 +6,7 @@ import {
   Plus,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
 
 import type { DocumentGroup, Notebook } from "../../shared/api/schemas";
@@ -35,6 +35,10 @@ type DialogState =
   | { kind: "rename-notebook"; resource: Notebook }
   | null;
 
+type CollectionLocationState = {
+  resourceError?: string;
+};
+
 function formatDate(value: number): string {
   return new Intl.DateTimeFormat("zh-CN", {
     month: "short",
@@ -44,6 +48,7 @@ function formatDate(value: number): string {
 
 export function CollectionsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const workspace = useStore(authStore, (state) => state.workspace);
   const canEdit = workspace?.role !== "normal";
   const [dialog, setDialog] = useState<DialogState>(null);
@@ -60,6 +65,8 @@ export function CollectionsPage() {
   const groups = groupsQuery.data?.items ?? [];
   const notebooks = notebooksQuery.data?.items ?? [];
   const notes = notesQuery.data?.items ?? [];
+  const resourceError = (location.state as CollectionLocationState | null)
+    ?.resourceError;
   const notebookCounts = useMemo(
     () =>
       notes.reduce(
@@ -166,6 +173,25 @@ export function CollectionsPage() {
             在清晰的层级中管理分组、文集和文档目录。
           </p>
         </header>
+        {resourceError ? (
+          <div role="alert" className="mb-5">
+            <StatusMessage tone="error" title="无法打开资源">
+              <div className="flex items-center justify-between gap-3">
+                <span>{resourceError}</span>
+                <button
+                  type="button"
+                  className="shrink-0 font-semibold underline"
+                  aria-label="关闭提示"
+                  onClick={() =>
+                    navigate(location.pathname, { replace: true, state: null })
+                  }
+                >
+                  关闭
+                </button>
+              </div>
+            </StatusMessage>
+          </div>
+        ) : null}
         {groupsQuery.isError || notebooksQuery.isError || notesQuery.isError ? (
           <StatusMessage tone="error" title="文集加载失败">
             请检查 API 服务后重试。

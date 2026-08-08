@@ -5,6 +5,7 @@ import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { authStore } from "../../shared/auth/auth-store";
+import { ApiError } from "../../shared/api/api-client";
 import {
   DocumentContextPanel,
   DocumentContextSummaryProvider,
@@ -25,8 +26,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 let treeState: { data: { items: Array<Record<string, unknown>> } | undefined; isLoading: boolean; isError: boolean; refetch: () => void };
-let noteState: { data: Record<string, unknown> | undefined; isError: boolean; refetch: () => void };
-let contentState: { data: Record<string, unknown> | undefined; isError: boolean; refetch: () => void };
+let noteState: { data: Record<string, unknown> | undefined; isError: boolean; error?: unknown; refetch: () => void };
+let contentState: { data: Record<string, unknown> | undefined; isError: boolean; error?: unknown; refetch: () => void };
 
 type BriefDocumentContextPanelProps = {
   notebookId: string;
@@ -294,8 +295,13 @@ describe("DocumentContextPanel", () => {
     expect(screen.getByText("目录加载失败")).toBeInTheDocument();
   });
 
-  it("returns direct note failures to the collections function", async () => {
-    noteState = { data: undefined, isError: true, refetch: vi.fn() };
+  it("returns unavailable direct notes to the collections function", async () => {
+    noteState = {
+      data: undefined,
+      isError: true,
+      error: new ApiError(404, "Note not found"),
+      refetch: vi.fn(),
+    };
     render(
       <MemoryRouter initialEntries={[`/documents/${rootNote.id}`]}>
         <Routes><Route path="*" element={<><DocumentEditorPage /><CurrentPath /></>} /></Routes>

@@ -52,14 +52,22 @@ export function DocumentOverviewPage() {
     <DocumentShell
       toolbar={
         canEdit ? (
-          <Button
-            variant="primary"
-            icon={<Plus aria-hidden="true" size={15} />}
-            disabled={!notebooks.length || createNote.isPending}
-            onClick={createDocument}
-          >
-            新建文档
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="primary"
+              icon={<Plus aria-hidden="true" size={15} />}
+              disabled={!notebooks.length || createNote.isPending}
+              onClick={createDocument}
+            >
+              新建文档
+            </Button>
+            <Link
+              to="/documents/collections"
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--border)] bg-white px-3 text-sm font-medium transition hover:bg-[var(--surface-hover)]"
+            >
+              新建文集
+            </Link>
+          </div>
         ) : null
       }
     >

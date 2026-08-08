@@ -1,11 +1,10 @@
 import { ArrowLeft, BookOpen, Download, FilePlus2, Import } from "lucide-react";
-import { type ChangeEvent, useRef } from "react";
+import { type ChangeEvent, useEffect, useRef } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useStore } from "zustand";
 
 import { authStore } from "../../shared/auth/auth-store";
 import { Button } from "../../shared/ui/Button";
-import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { DocumentContextPanel, DocumentContextSummaryProvider, useDocumentContextSummary } from "./DocumentContextPanel";
 import { DocumentShell } from "./DocumentShell";
 import {
@@ -24,6 +23,18 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
   const exportMarkdown = useExportMarkdown();
   const treeSummary = useDocumentContextSummary();
   const notebook = notebooksQuery.data?.items.find((item) => item.id === collectionId);
+  const collectionUnavailable =
+    !notebooksQuery.isLoading && !notebooksQuery.isError && !notebook;
+
+  useEffect(() => {
+    if (!collectionUnavailable) return;
+    navigate("/documents/collections", {
+      replace: true,
+      state: {
+        resourceError: "无法打开文集：它不存在、已归档，或你没有访问权限。",
+      },
+    });
+  }, [collectionUnavailable, navigate]);
 
   async function handleImport(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -47,9 +58,7 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
     }
   }
 
-  if (!notebooksQuery.isLoading && !notebook) {
-    return <DocumentShell><div className="mx-auto max-w-3xl p-8"><StatusMessage tone="error" title="文集不存在">它可能已归档，或你没有访问权限。</StatusMessage><Link to="/documents" className="mt-4 inline-flex text-sm font-semibold">返回文档中心</Link></div></DocumentShell>;
-  }
+  if (collectionUnavailable) return null;
 
   return (
     <DocumentShell contextPanel={<DocumentContextPanel notebookId={collectionId} />}>

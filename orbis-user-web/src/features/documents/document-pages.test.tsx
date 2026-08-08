@@ -1,9 +1,12 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, RouterProvider, useLocation } from "react-router-dom";
+import { MemoryRouter, Route, RouterProvider, Routes, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DocumentSearchPage } from "./DocumentSearchPage";
+import { CollectionsPage } from "./CollectionsPage";
+import { DocumentEditorPage } from "./DocumentEditorPage";
+import { NotebookPage } from "./NotebookPage";
 import { ApiError } from "../../shared/api/api-client";
 
 const mocks = vi.hoisted(() => ({
@@ -28,6 +31,14 @@ const mocks = vi.hoisted(() => ({
     error: null as Error | null,
     variables: undefined as { id: string; archived: boolean } | undefined,
   },
+  activeNotes: undefined as unknown[] | undefined,
+  activeNotebooks: undefined as unknown[] | undefined,
+  noteQueryResult: undefined as Record<string, unknown> | undefined,
+  noteSearchCalls: [] as Array<{
+    query: string;
+    status?: string;
+    options?: { enabled?: boolean };
+  }>,
 }));
 
 vi.mock("./queries", () => {
@@ -157,23 +168,35 @@ vi.mock("./queries", () => {
     useDocumentGroups: (status?: string) =>
       result(status === "archived" ? archivedGroups : groups),
     useNotebooks: (_groupId?: string, status?: string) =>
-      result(status === "archived" ? archivedNotebooks : notebooks),
-    useNoteSearch: (query = "", status?: string) =>
       result(
         status === "archived"
-          ? archivedNotes
-          : notes.filter(
-              (note) =>
-                note.title.includes(query) || note.plain_text.includes(query),
-            ),
+          ? archivedNotebooks
+          : (mocks.activeNotebooks ?? notebooks),
       ),
+    useNoteSearch: (
+      query = "",
+      status?: string,
+      options?: { enabled?: boolean },
+    ) => {
+      mocks.noteSearchCalls.push({ query, status, options });
+      return result(
+        status === "archived"
+          ? archivedNotes
+          : mocks.activeNotes ??
+              notes.filter(
+                (note) =>
+                  note.title.includes(query) || note.plain_text.includes(query),
+              ),
+      );
+    },
     useNoteTree: () => result([]),
-    useNote: () => ({
-      data: undefined,
-      isLoading: false,
-      isError: false,
-      refetch: vi.fn(),
-    }),
+    useNote: () =>
+      mocks.noteQueryResult ?? {
+        data: undefined,
+        isLoading: false,
+        isError: false,
+        refetch: vi.fn(),
+      },
     useNoteContent: () => ({
       data: undefined,
       isLoading: false,
@@ -266,6 +289,10 @@ describe("document function pages", () => {
     mocks.archiveNoteState.isError = false;
     mocks.archiveNoteState.error = null;
     mocks.archiveNoteState.variables = undefined;
+    mocks.activeNotes = undefined;
+    mocks.activeNotebooks = undefined;
+    mocks.noteQueryResult = undefined;
+    mocks.noteSearchCalls.length = 0;
     window.localStorage.clear();
   });
 
@@ -308,6 +335,124 @@ describe("document function pages", () => {
       screen.getByRole("status", { name: "current search" }),
     ).toHaveTextContent("?q=%E6%9C%80%E6%96%B0");
     expect(screen.getByRole("heading", { name: "最新文档" })).toBeVisible();
+  });
+
+  it("does not search or render all documents for a blank query", async () => {
+    await renderRoute("/documents/search");
+
+    expect(await screen.findByText("输入关键词搜索标题或正文。")).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "最新文档" })).not.toBeInTheDocument();
+    expect(mocks.noteSearchCalls).toContainEqual({
+      query: "",
+      status: "active",
+      options: { enabled: false },
+    });
+  });
+
+  it("shows each search result's collection without additional row requests", async () => {
+    await renderRoute("/documents/search?q=%E6%9C%80%E6%96%B0");
+
+    expect(await screen.findByText("所属文集：产品手册")).toBeVisible();
+  });
+
+  it("provides a clear action to reset the document search", async () => {
+    const actor = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={["/documents/search?q=%E6%9C%80%E6%96%B0"]}>
+        <DocumentSearchPage />
+        <CurrentSearch />
+      </MemoryRouter>,
+    );
+
+    await actor.click(screen.getByRole("button", { name: "清空搜索" }));
+
+    expect(screen.getByRole("status", { name: "current search" })).toHaveTextContent("");
+  });
+
+  it("shows recent home documents in the API order", async () => {
+    await renderRoute("/home");
+
+    const recent = await screen.findByRole("region", { name: "最近编辑" });
+    expect(recent).toHaveTextContent("更新较早的文档");
+    expect(recent).toHaveTextContent("最新文档");
+    expect(recent.textContent?.indexOf("更新较早的文档")).toBeLessThan(
+      recent.textContent?.indexOf("最新文档") ?? -1,
+    );
+  });
+
+  it("links the overview quick actions to both document and collection creation", async () => {
+    await renderRoute("/documents");
+
+    expect(await screen.findByRole("button", { name: "新建文档" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "新建文集" })).toHaveAttribute(
+      "href",
+      "/documents/collections",
+    );
+  });
+
+  it("links the recent empty state to collections", async () => {
+    mocks.activeNotes = [];
+    await renderRoute("/documents/recent");
+
+    expect(await screen.findByRole("link", { name: "前往我的文集" })).toHaveAttribute(
+      "href",
+      "/documents/collections",
+    );
+  });
+
+  it("redirects an unavailable collection to collections with a persistent, dismissible error", async () => {
+    const actor = userEvent.setup();
+    mocks.activeNotebooks = [];
+    render(
+      <MemoryRouter initialEntries={["/collections/018ff7c4-a5b6-7000-8000-000000000099"]}>
+        <Routes>
+          <Route path="/collections/:collectionId" element={<NotebookPage />} />
+          <Route path="/documents/collections" element={<CollectionsPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "我的文集" })).toBeVisible();
+    expect(screen.getByRole("alert")).toHaveTextContent("无法打开文集");
+
+    await actor.click(screen.getByRole("button", { name: "关闭提示" }));
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("redirects a missing document to collections with a persistent error", async () => {
+    mocks.noteQueryResult = {
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new ApiError(404, "Note not found"),
+      refetch: vi.fn(),
+    };
+    render(
+      <MemoryRouter initialEntries={["/documents/018ff7c4-a5b6-7000-8000-000000000099"]}>
+        <Routes>
+          <Route path="/documents/:noteId" element={<DocumentEditorPage />} />
+          <Route path="/documents/collections" element={<CollectionsPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "我的文集" })).toBeVisible();
+    expect(screen.getByRole("alert")).toHaveTextContent("无法打开文档");
+  });
+
+  it("keeps a transient document query error on the current route", async () => {
+    mocks.noteQueryResult = {
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new Error("Network request failed"),
+      refetch: vi.fn(),
+    };
+    await renderRoute("/documents/018ff7c4-a5b6-7000-8000-000000000099");
+
+    expect(await screen.findByText("无法打开文档")).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "我的文集" })).not.toBeInTheDocument();
   });
 
   it("requires parents to be restored before their archived descendants", async () => {

@@ -21,6 +21,7 @@ import {
   useSaveNoteContent,
   useUpdateNote,
 } from "./queries";
+import { isUnavailableResourceError } from "./resource-errors";
 
 type EditorDraft = { title: string; blocks: NoteBlocks; version: number };
 
@@ -97,9 +98,19 @@ export function DocumentEditorPage() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, []);
 
+  const resourceUnavailable =
+    isUnavailableResourceError(noteQuery.error) ||
+    isUnavailableResourceError(contentQuery.error);
+
   useEffect(() => {
-    if (noteQuery.isError) navigate("/documents/collections", { replace: true });
-  }, [navigate, noteQuery.isError]);
+    if (!resourceUnavailable) return;
+    navigate("/documents/collections", {
+      replace: true,
+      state: {
+        resourceError: "无法打开文档：它不存在、已归档，或你没有访问权限。",
+      },
+    });
+  }, [navigate, resourceUnavailable]);
 
   const outline = useMemo(() => draft ? outlineFromBlocks(draft.blocks) : [], [draft?.blocks]);
   const stateCopy = saveStateCopy[saveState];

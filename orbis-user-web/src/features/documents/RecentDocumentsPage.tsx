@@ -39,7 +39,15 @@ export function RecentDocumentsPage() {
           <div className="empty-panel">正在加载文档…</div>
         ) : null}
         {!notesQuery.isLoading && !notes.length ? (
-          <div className="empty-panel">还没有可继续的文档。</div>
+          <div className="empty-panel">
+            还没有可继续的文档。
+            <Link
+              to="/documents/collections"
+              className="mt-3 inline-flex text-sm font-semibold"
+            >
+              前往我的文集
+            </Link>
+          </div>
         ) : null}
         {notes.length ? (
           <div className="divide-y divide-[var(--border)] overflow-hidden rounded-2xl border border-[var(--border)] bg-white">

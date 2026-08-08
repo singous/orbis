@@ -74,10 +74,19 @@ export function useNoteContent(noteId?: string) {
   });
 }
 
-export function useNoteSearch(query = "", status: ResourceStatus = "active") {
+type UseNoteSearchOptions = {
+  enabled?: boolean;
+};
+
+export function useNoteSearch(
+  query = "",
+  status: ResourceStatus = "active",
+  options: UseNoteSearchOptions = {},
+) {
   const auth = useDocumentAuth();
   return useQuery({
     queryKey: ["note-search", status, query.trim()],
+    enabled: options.enabled ?? true,
     queryFn: () => searchNotes(query, auth, status),
   });
 }
