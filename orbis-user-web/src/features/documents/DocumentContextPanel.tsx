@@ -1,5 +1,5 @@
 import { Archive, ArrowDown, ArrowUp, FilePlus2, MoreHorizontal, Plus, Undo2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
 
@@ -17,13 +17,39 @@ type InternalDocumentTreeSummary = {
   state: "loading" | "success" | "error";
 };
 
+type DocumentContextSummaryValue = {
+  summary: InternalDocumentTreeSummary;
+  publishSummary: (summary: InternalDocumentTreeSummary) => void;
+};
+
+const initialDocumentContextSummary: InternalDocumentTreeSummary = {
+  noteCount: 0,
+  noteIds: [],
+  rootCount: 0,
+  state: "loading",
+};
+
+const DocumentContextSummaryContext = createContext<DocumentContextSummaryValue | null>(null);
+
+export function DocumentContextSummaryProvider({ children }: { children: ReactNode }) {
+  const [summary, setSummary] = useState(initialDocumentContextSummary);
+  const publishSummary = useCallback((next: InternalDocumentTreeSummary) => setSummary(next), []);
+  const value = useMemo(() => ({ summary, publishSummary }), [publishSummary, summary]);
+
+  return <DocumentContextSummaryContext.Provider value={value}>{children}</DocumentContextSummaryContext.Provider>;
+}
+
+export function useDocumentContextSummary(): InternalDocumentTreeSummary {
+  const context = useContext(DocumentContextSummaryContext);
+  if (!context) throw new Error("Document context summary requires its provider");
+  return context.summary;
+}
+
 type DocumentContextPanelProps = {
   notebookId: string;
   activeNoteId?: string;
   mobile?: boolean;
   onNavigate?: () => void;
-  // Internal bridge keeps NotebookPage summaries derived from this single tree query.
-  onInternalSummaryChange?: (summary: InternalDocumentTreeSummary) => void;
 };
 
 type TreeNodeProps = {
@@ -79,8 +105,9 @@ function DocumentTree({ items, depth, activeNoteId, canEdit, onNavigate, onCreat
   ));
 }
 
-export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false, onNavigate, onInternalSummaryChange }: DocumentContextPanelProps) {
+export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false, onNavigate }: DocumentContextPanelProps) {
   const navigate = useNavigate();
+  const summaryContext = useContext(DocumentContextSummaryContext);
   const workspace = useStore(authStore, (state) => state.workspace);
   const canEdit = workspace?.role !== "normal";
   const treeQuery = useNoteTree(notebookId);
@@ -94,13 +121,13 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
   const treeItems = treeQuery.data?.items ?? [];
 
   useEffect(() => {
-    onInternalSummaryChange?.({
+    summaryContext?.publishSummary({
       noteCount: noteIds.length,
       noteIds,
       rootCount: treeItems.length,
       state: treeQuery.isError ? "error" : treeQuery.isLoading ? "loading" : "success",
     });
-  }, [noteIds, onInternalSummaryChange, treeItems.length, treeQuery.isError, treeQuery.isLoading]);
+  }, [noteIds, summaryContext?.publishSummary, treeItems.length, treeQuery.isError, treeQuery.isLoading]);
 
   async function handleCreate(title: string) {
     const parent = createParent ? findNote(treeItems, createParent) : undefined;

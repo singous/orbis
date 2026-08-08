@@ -5,7 +5,11 @@ import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { authStore } from "../../shared/auth/auth-store";
-import { DocumentContextPanel } from "./DocumentContextPanel";
+import {
+  DocumentContextPanel,
+  DocumentContextSummaryProvider,
+  useDocumentContextSummary,
+} from "./DocumentContextPanel";
 import { DocumentEditorPage } from "./DocumentEditorPage";
 import { DocumentShell } from "./DocumentShell";
 import { NotebookPage } from "./NotebookPage";
@@ -23,6 +27,23 @@ const mocks = vi.hoisted(() => ({
 let treeState: { data: { items: Array<Record<string, unknown>> } | undefined; isLoading: boolean; isError: boolean; refetch: () => void };
 let noteState: { data: Record<string, unknown> | undefined; isError: boolean; refetch: () => void };
 let contentState: { data: Record<string, unknown> | undefined; isError: boolean; refetch: () => void };
+
+type BriefDocumentContextPanelProps = {
+  notebookId: string;
+  activeNoteId?: string;
+  mobile?: boolean;
+  onNavigate?: () => void;
+};
+
+type PanelPropKeysAreExact =
+  Exclude<keyof React.ComponentProps<typeof DocumentContextPanel>, keyof BriefDocumentContextPanelProps> extends never
+    ? Exclude<keyof BriefDocumentContextPanelProps, keyof React.ComponentProps<typeof DocumentContextPanel>> extends never
+      ? true
+      : never
+    : never;
+
+const panelPropKeysAreExact: PanelPropKeysAreExact = true;
+void panelPropKeysAreExact;
 
 vi.mock("./queries", () => ({
   useNoteTree: () => treeState,
@@ -123,6 +144,11 @@ function CurrentPath() {
   return <output aria-label="current path">{useLocation().pathname}</output>;
 }
 
+function DocumentContextSummaryProbe() {
+  const summary = useDocumentContextSummary();
+  return <output aria-label="document context summary">{`${summary.noteCount}:${summary.rootCount}:${summary.noteIds.join(",")}:${summary.state}`}</output>;
+}
+
 describe("document context state", () => {
   beforeEach(() => {
     window.localStorage.clear();
@@ -183,6 +209,21 @@ describe("DocumentContextPanel", () => {
 
     expect(screen.getByRole("link", { name: "产品计划" })).toHaveAttribute("href", "/documents/018ff7c4-a5b6-7000-8000-000000000003");
     expect(screen.getByRole("link", { name: "发布范围" })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("publishes the tree summary through React context using only the brief panel props", async () => {
+    render(
+      <MemoryRouter>
+        <DocumentContextSummaryProvider>
+          <DocumentContextPanel notebookId={rootNote.notebook_id} />
+          <DocumentContextSummaryProbe />
+        </DocumentContextSummaryProvider>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole("status", { name: "document context summary" })).toHaveTextContent(
+      `${2}:${1}:${rootNote.id},${rootNote.children[0].id}:success`,
+    );
   });
 
   it("does not offer document mutations to a Normal workspace member", () => {

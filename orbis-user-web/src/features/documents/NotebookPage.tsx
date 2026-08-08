@@ -1,12 +1,12 @@
 import { ArrowLeft, BookOpen, Download, FilePlus2, Import } from "lucide-react";
-import { type ChangeEvent, useRef, useState } from "react";
+import { type ChangeEvent, useRef } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useStore } from "zustand";
 
 import { authStore } from "../../shared/auth/auth-store";
 import { Button } from "../../shared/ui/Button";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
-import { DocumentContextPanel } from "./DocumentContextPanel";
+import { DocumentContextPanel, DocumentContextSummaryProvider, useDocumentContextSummary } from "./DocumentContextPanel";
 import { DocumentShell } from "./DocumentShell";
 import {
   useExportMarkdown,
@@ -14,15 +14,7 @@ import {
   useNotebooks,
 } from "./queries";
 
-type NotebookTreeSummary = {
-  noteCount: number;
-  noteIds: string[];
-  rootCount: number;
-  state: "loading" | "success" | "error";
-};
-
-export function NotebookPage() {
-  const { collectionId = "" } = useParams();
+function NotebookPageContent({ collectionId }: { collectionId: string }) {
   const navigate = useNavigate();
   const workspace = useStore(authStore, (state) => state.workspace);
   const canEdit = workspace?.role !== "normal";
@@ -30,7 +22,7 @@ export function NotebookPage() {
   const notebooksQuery = useNotebooks();
   const importMarkdown = useImportMarkdown();
   const exportMarkdown = useExportMarkdown();
-  const [treeSummary, setTreeSummary] = useState<NotebookTreeSummary>({ noteCount: 0, noteIds: [], rootCount: 0, state: "loading" });
+  const treeSummary = useDocumentContextSummary();
   const notebook = notebooksQuery.data?.items.find((item) => item.id === collectionId);
 
   async function handleImport(event: ChangeEvent<HTMLInputElement>) {
@@ -60,7 +52,7 @@ export function NotebookPage() {
   }
 
   return (
-    <DocumentShell contextPanel={<DocumentContextPanel notebookId={collectionId} onInternalSummaryChange={setTreeSummary} />}>
+    <DocumentShell contextPanel={<DocumentContextPanel notebookId={collectionId} />}>
       <div className="mx-auto max-w-[1040px] px-5 py-8 lg:px-10 lg:py-10">
         <Link to="/documents" className="mb-8 inline-flex items-center gap-2 text-xs font-medium text-[var(--muted)] hover:text-black"><ArrowLeft aria-hidden="true" size={14} />文档中心</Link>
         <header className="notebook-hero">
@@ -82,4 +74,9 @@ export function NotebookPage() {
       </div>
     </DocumentShell>
   );
+}
+
+export function NotebookPage() {
+  const { collectionId = "" } = useParams();
+  return <DocumentContextSummaryProvider key={collectionId}><NotebookPageContent collectionId={collectionId} /></DocumentContextSummaryProvider>;
 }
