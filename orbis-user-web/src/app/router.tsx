@@ -1,28 +1,50 @@
 import { Navigate, createBrowserRouter } from "react-router-dom";
 
-import { NotesWorkspace } from "../features/notes/NotesWorkspace";
+import { DocumentCenterPage } from "../features/documents/DocumentCenterPage";
+import { DocumentEditorPage } from "../features/documents/DocumentEditorPage";
+import { NotebookPage } from "../features/documents/NotebookPage";
+import { AcceptInvitationPage } from "../features/members/AcceptInvitationPage";
+import { ConfirmOwnershipPage } from "../features/members/ConfirmOwnershipPage";
+import { MemberSettingsPage } from "../features/members/MemberSettingsPage";
 import { RequireAuth } from "../shared/auth/RequireAuth";
 import { LoginPage } from "./LoginPage";
 
 export const router = createBrowserRouter([
   {
     path: "/",
-    element: <Navigate to="/notes" replace />,
+    element: <Navigate to="/documents" replace />,
   },
   {
     path: "/login",
     element: <LoginPage mode="login" />,
   },
   {
-    path: "/register",
-    element: <LoginPage mode="register" />,
+    path: "/setup",
+    element: <LoginPage mode="setup" />,
   },
+  { path: "/invite/:token", element: <AcceptInvitationPage /> },
+  { path: "/invitations/accept", element: <AcceptInvitationPage /> },
+  { path: "/ownership-transfer/:token", element: <ConfirmOwnershipPage /> },
+  { path: "/ownership-transfers/confirm", element: <ConfirmOwnershipPage /> },
   {
-    path: "/notes",
+    path: "/documents",
     element: (
       <RequireAuth>
-        <NotesWorkspace />
+        <DocumentCenterPage />
       </RequireAuth>
     ),
   },
+  {
+    path: "/collections/:collectionId",
+    element: <RequireAuth><NotebookPage /></RequireAuth>,
+  },
+  {
+    path: "/documents/:noteId",
+    element: <RequireAuth><DocumentEditorPage /></RequireAuth>,
+  },
+  {
+    path: "/settings/members",
+    element: <RequireAuth><MemberSettingsPage /></RequireAuth>,
+  },
+  { path: "*", element: <Navigate to="/documents" replace /> },
 ]);

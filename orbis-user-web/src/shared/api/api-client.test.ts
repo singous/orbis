@@ -107,7 +107,7 @@ describe("api client", () => {
 
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
-      "/api/v1/auth/refresh",
+      "/api/auth/refresh",
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({ "Content-Type": "application/json" }),

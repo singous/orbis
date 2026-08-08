@@ -19,9 +19,11 @@ import { looksLikeMarkdown, markdownToTiptapDoc } from "./markdown-contract";
 export function TiptapNoteEditor({
   blocks,
   onChange,
+  readOnly = false,
 }: {
   blocks: NoteBlocks;
   onChange: (next: { blocks: NoteBlocks; plainText: string }) => void;
+  readOnly?: boolean;
 }) {
   const editor = useEditor({
     extensions: [
@@ -56,6 +58,7 @@ export function TiptapNoteEditor({
       }),
     ],
     content: blocks.doc as JSONContent,
+    editable: !readOnly,
     editorProps: {
       attributes: {
         class:
@@ -95,9 +98,13 @@ export function TiptapNoteEditor({
     }
   }, [blocks.doc, editor]);
 
+  useEffect(() => {
+    editor?.setEditable(!readOnly);
+  }, [editor, readOnly]);
+
   return (
     <section className="overflow-hidden rounded-md border border-[var(--border)] bg-white shadow-sm">
-      <EditorToolbar editor={editor} />
+      {!readOnly ? <EditorToolbar editor={editor} /> : null}
       <EditorContent editor={editor} />
     </section>
   );

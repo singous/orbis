@@ -8,7 +8,7 @@ export function TextInput({ label, className = "", ...props }: TextInputProps) {
   const input = (
     <input
       className={[
-        "h-10 w-full rounded-md border border-[var(--border)] bg-white px-3 text-sm text-[var(--text)]",
+        "h-11 w-full rounded-xl border border-[var(--border)] bg-white px-3.5 text-sm text-[var(--text)]",
         "placeholder:text-[var(--muted-light)]",
         "focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-soft)]",
         className,

@@ -15,8 +15,20 @@ describe("auth store", () => {
       refreshToken: "refresh-token",
       user: {
         id: "018ff7c4-a5b6-7000-8000-000000000001",
+        tenant_id: null,
         email: "ada@example.com",
         display_name: "Ada",
+        current_workspace_id: "018ff7c4-a5b6-7000-8000-000000000002",
+        status: "active",
+        created_at_ms: 1710000000000,
+        updated_at_ms: 1710000000000,
+      },
+      workspace: {
+        id: "018ff7c4-a5b6-7000-8000-000000000002",
+        name: "Private workspace",
+        workspace_type: "private",
+        role: "owner",
+        is_current: true,
         created_at_ms: 1710000000000,
         updated_at_ms: 1710000000000,
       },
@@ -35,11 +47,15 @@ describe("auth store", () => {
       refreshToken: "refresh-token",
       user: {
         id: "018ff7c4-a5b6-7000-8000-000000000001",
+        tenant_id: null,
         email: "ada@example.com",
         display_name: "Ada",
+        current_workspace_id: "018ff7c4-a5b6-7000-8000-000000000002",
+        status: "active",
         created_at_ms: 1710000000000,
         updated_at_ms: 1710000000000,
       },
+      workspace: null,
     });
 
     store.getState().clearSession();
@@ -57,11 +73,15 @@ describe("auth store", () => {
       refreshToken: "refresh-token",
       user: {
         id: "018ff7c4-a5b6-7000-8000-000000000001",
+        tenant_id: null,
         email: "ada@example.com",
         display_name: "Ada",
+        current_workspace_id: "018ff7c4-a5b6-7000-8000-000000000002",
+        status: "active",
         created_at_ms: 1710000000000,
         updated_at_ms: 1710000000000,
       },
+      workspace: null,
     });
 
     store.getState().setAccessToken("new-access-token");

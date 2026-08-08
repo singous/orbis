@@ -102,7 +102,7 @@ async function parseSuccess<T>(response: Response): Promise<T> {
 }
 
 async function refreshAccessToken(refreshToken: string): Promise<string | null> {
-  const response = await fetch(`${apiBaseUrl()}/v1/auth/refresh`, {
+  const response = await fetch(`${apiBaseUrl()}/auth/refresh`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ refresh_token: refreshToken }),

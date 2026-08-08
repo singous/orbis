@@ -1,6 +1,6 @@
 import { createStore } from "zustand/vanilla";
 
-import type { User } from "../api/schemas";
+import type { User, Workspace } from "../api/schemas";
 
 const STORAGE_KEY = "orbis.auth";
 
@@ -8,12 +8,14 @@ export type AuthSession = {
   accessToken: string;
   refreshToken: string;
   user: User;
+  workspace: Workspace | null;
 };
 
 export type AuthState = {
   accessToken: string | null;
   refreshToken: string | null;
   user: User | null;
+  workspace: Workspace | null;
   setSession: (session: AuthSession) => void;
   setAccessToken: (accessToken: string) => void;
   clearSession: () => void;
@@ -49,12 +51,14 @@ export function createAuthStore() {
     accessToken: session?.accessToken ?? null,
     refreshToken: session?.refreshToken ?? null,
     user: session?.user ?? null,
+    workspace: session?.workspace ?? null,
     setSession: (nextSession) => {
       writeSession(nextSession);
       set({
         accessToken: nextSession.accessToken,
         refreshToken: nextSession.refreshToken,
         user: nextSession.user,
+        workspace: nextSession.workspace,
       });
     },
     setAccessToken: (accessToken) => {
@@ -66,13 +70,14 @@ export function createAuthStore() {
           accessToken,
           refreshToken: current.refreshToken,
           user: current.user,
+          workspace: current.workspace,
         });
         return { accessToken };
       });
     },
     clearSession: () => {
       getStorage()?.removeItem(STORAGE_KEY);
-      set({ accessToken: null, refreshToken: null, user: null });
+      set({ accessToken: null, refreshToken: null, user: null, workspace: null });
     },
   }));
 }

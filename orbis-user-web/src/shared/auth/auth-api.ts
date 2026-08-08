@@ -6,20 +6,20 @@ export type LoginPayload = {
   password: string;
 };
 
-export type RegisterPayload = LoginPayload & {
-  display_name?: string;
+export type SetupPayload = LoginPayload & {
+  display_name: string;
 };
 
 export async function login(payload: LoginPayload): Promise<AuthResponse> {
-  const response = await apiRequest("/v1/auth/login", {
+  const response = await apiRequest("/auth/login", {
     method: "POST",
     body: payload,
   });
   return authResponseSchema.parse(response);
 }
 
-export async function register(payload: RegisterPayload): Promise<AuthResponse> {
-  const response = await apiRequest("/v1/auth/register", {
+export async function setup(payload: SetupPayload): Promise<AuthResponse> {
+  const response = await apiRequest("/setup", {
     method: "POST",
     body: payload,
   });
@@ -27,6 +27,6 @@ export async function register(payload: RegisterPayload): Promise<AuthResponse> 
 }
 
 export async function getCurrentUser(token: string): Promise<User> {
-  const response = await apiRequest("/v1/users/me", { token });
+  const response = await apiRequest("/users/me", { token });
   return userSchema.parse(response);
 }
