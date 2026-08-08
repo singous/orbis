@@ -144,7 +144,7 @@ export function DocumentEditorPage() {
   );
 
   return (
-    <DocumentShell activeNotebookId={noteQuery.data?.notebook_id} activeNoteId={noteId} toolbar={toolbar} contextPanel={noteQuery.data ? <DocumentContextPanel notebookId={noteQuery.data.notebook_id} activeNoteId={noteId} /> : undefined}>
+    <DocumentShell toolbar={toolbar} contextPanel={noteQuery.data ? <DocumentContextPanel notebookId={noteQuery.data.notebook_id} activeNoteId={noteId} /> : undefined}>
       {!draft || !noteQuery.data ? <div className="grid min-h-[70vh] place-items-center text-sm text-[var(--muted)]">正在打开文档…</div> : (
         <div className="editor-layout">
           <article className="editor-canvas">

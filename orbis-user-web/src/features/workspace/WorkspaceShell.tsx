@@ -41,7 +41,7 @@ export function WorkspaceShell({ children, toolbar, contextPanel, contextOpen = 
             </header>
             {children}
           </section>
-          {contextPanel && contextOpen ? <aside className="workspace-context-panel" aria-label="上下文面板">{contextPanel}</aside> : null}
+          {contextPanel ? <aside className="workspace-context-panel" aria-label="上下文面板" hidden={!contextOpen}>{contextPanel}</aside> : null}
         </section>
       </div>
       <UserMenu user={user} workspace={workspace} onLogout={logout} />

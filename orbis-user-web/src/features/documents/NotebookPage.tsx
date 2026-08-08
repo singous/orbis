@@ -6,13 +6,20 @@ import { useStore } from "zustand";
 import { authStore } from "../../shared/auth/auth-store";
 import { Button } from "../../shared/ui/Button";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
-import { DocumentContextPanel, type DocumentTreeSummary } from "./DocumentContextPanel";
+import { DocumentContextPanel } from "./DocumentContextPanel";
 import { DocumentShell } from "./DocumentShell";
 import {
   useExportMarkdown,
   useImportMarkdown,
   useNotebooks,
 } from "./queries";
+
+type NotebookTreeSummary = {
+  noteCount: number;
+  noteIds: string[];
+  rootCount: number;
+  state: "loading" | "success" | "error";
+};
 
 export function NotebookPage() {
   const { collectionId = "" } = useParams();
@@ -23,7 +30,7 @@ export function NotebookPage() {
   const notebooksQuery = useNotebooks();
   const importMarkdown = useImportMarkdown();
   const exportMarkdown = useExportMarkdown();
-  const [treeSummary, setTreeSummary] = useState<DocumentTreeSummary>({ noteCount: 0, noteIds: [], rootCount: 0, state: "loading" });
+  const [treeSummary, setTreeSummary] = useState<NotebookTreeSummary>({ noteCount: 0, noteIds: [], rootCount: 0, state: "loading" });
   const notebook = notebooksQuery.data?.items.find((item) => item.id === collectionId);
 
   async function handleImport(event: ChangeEvent<HTMLInputElement>) {
@@ -53,7 +60,7 @@ export function NotebookPage() {
   }
 
   return (
-    <DocumentShell contextPanel={<DocumentContextPanel notebookId={collectionId} onTreeChange={setTreeSummary} />} activeNotebookId={collectionId}>
+    <DocumentShell contextPanel={<DocumentContextPanel notebookId={collectionId} onInternalSummaryChange={setTreeSummary} />}>
       <div className="mx-auto max-w-[1040px] px-5 py-8 lg:px-10 lg:py-10">
         <Link to="/documents" className="mb-8 inline-flex items-center gap-2 text-xs font-medium text-[var(--muted)] hover:text-black"><ArrowLeft aria-hidden="true" size={14} />文档中心</Link>
         <header className="notebook-hero">

@@ -8,6 +8,7 @@ import { authStore } from "../../shared/auth/auth-store";
 import { DocumentContextPanel } from "./DocumentContextPanel";
 import { DocumentEditorPage } from "./DocumentEditorPage";
 import { DocumentShell } from "./DocumentShell";
+import { NotebookPage } from "./NotebookPage";
 import {
   documentContextStorageKey,
   readDocumentContextOpen,
@@ -25,12 +26,31 @@ let contentState: { data: Record<string, unknown> | undefined; isError: boolean;
 
 vi.mock("./queries", () => ({
   useNoteTree: () => treeState,
+  useNotebooks: () => ({
+    data: {
+      items: [{
+        id: "018ff7c4-a5b6-7000-8000-000000000002",
+        group_id: "018ff7c4-a5b6-7000-8000-000000000005",
+        title: "产品手册",
+        tenant_id: null,
+        workspace_id: "workspace-1",
+        owner_id: "018ff7c4-a5b6-7000-8000-000000000001",
+        sort_order: 0,
+        status: "active",
+        created_at_ms: 1,
+        updated_at_ms: 2,
+      }],
+    },
+    isLoading: false,
+    isError: false,
+  }),
   useCreateNote: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useUpdateNote: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useArchiveNote: () => ({ mutateAsync: mocks.archiveNote, isPending: false }),
   useNote: () => noteState,
   useNoteContent: () => contentState,
   useSaveNoteContent: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useImportMarkdown: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useExportMarkdown: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
@@ -210,6 +230,17 @@ describe("DocumentContextPanel", () => {
     expect(mocks.archiveNote).toHaveBeenCalledWith({ id: rootNote.children[0].id, archived: true });
   });
 
+  it("offers to restore a document archived from the collection tree", async () => {
+    const actor = userEvent.setup();
+    renderPanel({ activeNoteId: undefined });
+
+    await actor.click(screen.getByRole("button", { name: "归档 产品计划" }));
+    await actor.click(await screen.findByRole("button", { name: "撤销" }));
+
+    expect(mocks.archiveNote).toHaveBeenNthCalledWith(1, { id: rootNote.id, archived: true });
+    expect(mocks.archiveNote).toHaveBeenNthCalledWith(2, { id: rootNote.id, archived: false });
+  });
+
   it("keeps the editor available when only its contextual tree fails", () => {
     treeState = { data: undefined, isLoading: false, isError: true, refetch: mocks.refetchTree };
     render(
@@ -251,5 +282,20 @@ describe("DocumentContextPanel", () => {
     await actor.click(screen.getByRole("button", { name: "收起上下文面板" }));
 
     expect(window.localStorage.getItem("orbis.document-context.open.workspace-1")).toBe("false");
+  });
+
+  it("keeps the collection summary live while the contextual tree is closed", async () => {
+    window.localStorage.setItem("orbis.document-context.open.workspace-1", "false");
+    render(
+      <MemoryRouter initialEntries={[`/collections/${rootNote.notebook_id}`]}>
+        <Routes><Route path="/collections/:collectionId" element={<NotebookPage />} /></Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("2 篇文档")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "导出全部" })).toBeEnabled();
+    expect(screen.getByRole("region", { name: "主工作区" })).not.toHaveClass("has-context");
+    expect(screen.queryByRole("complementary", { name: "上下文面板" })).not.toBeInTheDocument();
+    expect(document.querySelector('aside[aria-label="上下文面板"][hidden]')).toBeInTheDocument();
   });
 });

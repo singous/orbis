@@ -1,4 +1,4 @@
-import { Archive, ArrowDown, ArrowUp, FilePlus2, MoreHorizontal, Plus } from "lucide-react";
+import { Archive, ArrowDown, ArrowUp, FilePlus2, MoreHorizontal, Plus, Undo2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
@@ -10,7 +10,7 @@ import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { ResourceDialog } from "./ResourceDialog";
 import { useArchiveNote, useCreateNote, useNoteTree, useUpdateNote } from "./queries";
 
-export type DocumentTreeSummary = {
+type InternalDocumentTreeSummary = {
   noteCount: number;
   noteIds: string[];
   rootCount: number;
@@ -22,7 +22,8 @@ type DocumentContextPanelProps = {
   activeNoteId?: string;
   mobile?: boolean;
   onNavigate?: () => void;
-  onTreeChange?: (summary: DocumentTreeSummary) => void;
+  // Internal bridge keeps NotebookPage summaries derived from this single tree query.
+  onInternalSummaryChange?: (summary: InternalDocumentTreeSummary) => void;
 };
 
 type TreeNodeProps = {
@@ -78,7 +79,7 @@ function DocumentTree({ items, depth, activeNoteId, canEdit, onNavigate, onCreat
   ));
 }
 
-export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false, onNavigate, onTreeChange }: DocumentContextPanelProps) {
+export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false, onNavigate, onInternalSummaryChange }: DocumentContextPanelProps) {
   const navigate = useNavigate();
   const workspace = useStore(authStore, (state) => state.workspace);
   const canEdit = workspace?.role !== "normal";
@@ -88,17 +89,18 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
   const archiveNote = useArchiveNote();
   const [createParent, setCreateParent] = useState<string | null | undefined>(undefined);
   const [renameTarget, setRenameTarget] = useState<NoteTreeItem | null>(null);
+  const [undoNote, setUndoNote] = useState<NoteTreeItem | null>(null);
   const noteIds = useMemo(() => collectNoteIds(treeQuery.data?.items ?? []), [treeQuery.data?.items]);
   const treeItems = treeQuery.data?.items ?? [];
 
   useEffect(() => {
-    onTreeChange?.({
+    onInternalSummaryChange?.({
       noteCount: noteIds.length,
       noteIds,
       rootCount: treeItems.length,
       state: treeQuery.isError ? "error" : treeQuery.isLoading ? "loading" : "success",
     });
-  }, [noteIds, onTreeChange, treeItems.length, treeQuery.isError, treeQuery.isLoading]);
+  }, [noteIds, onInternalSummaryChange, treeItems.length, treeQuery.isError, treeQuery.isLoading]);
 
   async function handleCreate(title: string) {
     const parent = createParent ? findNote(treeItems, createParent) : undefined;
@@ -120,7 +122,14 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
 
   async function handleArchive(note: NoteTreeItem) {
     await archiveNote.mutateAsync({ id: note.id, archived: true });
+    setUndoNote(note);
     if (note.id === activeNoteId) navigate(`/collections/${notebookId}`, { replace: true });
+  }
+
+  async function handleUndo() {
+    if (!undoNote) return;
+    await archiveNote.mutateAsync({ id: undoNote.id, archived: false });
+    setUndoNote(null);
   }
 
   async function handleMove(note: NoteTreeItem, delta: -1 | 1) {
@@ -142,6 +151,7 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
       {!treeQuery.isLoading && !treeQuery.isError ? <nav className="document-context-tree" aria-label="文集文档"><DocumentTree items={treeItems} depth={0} activeNoteId={activeNoteId} canEdit={canEdit} onNavigate={mobile ? onNavigate : undefined} onCreateChild={setCreateParent} onRename={setRenameTarget} onArchive={(note) => void handleArchive(note)} onMove={(note, delta) => void handleMove(note, delta)} /></nav> : null}
       <ResourceDialog open={createParent !== undefined} title={createParent ? "新建子文档" : "新建文档"} label="文档标题" placeholder="未命名文档" submitLabel="创建并打开" pending={createNote.isPending} onClose={() => setCreateParent(undefined)} onSubmit={handleCreate} />
       <ResourceDialog open={Boolean(renameTarget)} title="重命名文档" label="文档标题" placeholder="文档标题" initialValue={renameTarget?.title ?? ""} submitLabel="保存" pending={updateNote.isPending} onClose={() => setRenameTarget(null)} onSubmit={handleRename} />
+      {undoNote ? <div className="toast"><div><div className="text-sm font-semibold">文档已归档</div><div className="mt-0.5 text-xs text-white/60">{undoNote.title}</div></div><button type="button" className="toast-action" onClick={() => void handleUndo()}><Undo2 aria-hidden="true" size={14} />撤销</button></div> : null}
     </section>
   );
 }

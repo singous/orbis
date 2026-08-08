@@ -13,8 +13,6 @@ type DocumentShellProps = {
   contextPanel?: ReactNode;
   contextOpen?: boolean;
   onOpenContext?: () => void;
-  activeNotebookId?: string;
-  activeNoteId?: string;
 };
 
 export function DocumentShell({ children, toolbar, contextPanel, contextOpen, onOpenContext }: DocumentShellProps) {
