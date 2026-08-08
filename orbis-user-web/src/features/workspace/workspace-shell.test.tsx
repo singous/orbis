@@ -80,6 +80,28 @@ describe("WorkspaceShell", () => {
     expect(screen.getAllByRole("link", { name: /文档概览|最近文档|我的文集|搜索|归档/ })).toHaveLength(5);
   });
 
+  it.each([
+    ["文档概览", "/documents"],
+    ["最近文档", "/documents/recent"],
+    ["我的文集", "/documents/collections"],
+    ["搜索", "/documents/search"],
+    ["归档", "/documents/archive"],
+  ] as const)("navigates %s to its explicit document route", async (label, path) => {
+    const actor = userEvent.setup();
+    renderShell();
+
+    const link = screen.getByRole("link", { name: label });
+    expect(link).toHaveAttribute("href", path);
+
+    await actor.click(link);
+
+    expect(screen.getByRole("status", { name: "current path" })).toHaveTextContent(path);
+    expect(link).toHaveClass("is-active");
+    const overview = screen.getByRole("link", { name: "文档概览" });
+    if (label === "文档概览") expect(overview).toHaveClass("is-active");
+    else expect(overview).not.toHaveClass("is-active");
+  });
+
   it("marks collections and notes as the 我的文集 function", () => {
     renderShell("/collections/018ff7c4-a5b6-7000-8000-000000000004");
 

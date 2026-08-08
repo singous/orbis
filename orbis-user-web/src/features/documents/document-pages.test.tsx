@@ -272,6 +272,34 @@ describe("document function pages", () => {
     });
   });
 
+  it("restores an archived group for an owner", async () => {
+    const actor = userEvent.setup();
+    await renderRoute("/documents/archive");
+
+    await actor.click(
+      await screen.findByRole("button", { name: "恢复 已归档分组" }),
+    );
+
+    expect(mocks.archiveGroup).toHaveBeenCalledWith({
+      id: "018ff7c4-a5b6-7000-8000-000000000005",
+      archived: false,
+    });
+  });
+
+  it("restores an archived notebook for an owner", async () => {
+    const actor = userEvent.setup();
+    await renderRoute("/documents/archive");
+
+    await actor.click(
+      await screen.findByRole("button", { name: "恢复 已归档文集" }),
+    );
+
+    expect(mocks.archiveNotebook).toHaveBeenCalledWith({
+      id: "018ff7c4-a5b6-7000-8000-000000000006",
+      archived: false,
+    });
+  });
+
   it("does not offer restore controls to a normal member", async () => {
     await renderRoute("/documents/archive", "normal");
 
