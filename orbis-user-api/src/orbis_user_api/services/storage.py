@@ -17,7 +17,9 @@ class LocalFileStorage:
     def __init__(self, root: Path) -> None:
         self.root = root
 
-    async def save_upload(self, upload: UploadFile, storage_key: str) -> tuple[int, str]:
+    async def save_upload(
+        self, upload: UploadFile, storage_key: str
+    ) -> tuple[int, str]:
         target = self.root / storage_key
         target.parent.mkdir(parents=True, exist_ok=True)
 
@@ -29,3 +31,20 @@ class LocalFileStorage:
                 digest.update(chunk)
                 output.write(chunk)
         return size, digest.hexdigest()
+
+    async def save_bytes(self, content: bytes, storage_key: str) -> tuple[int, str]:
+        target = self.root / storage_key
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(content)
+        return len(content), hashlib.sha256(content).hexdigest()
+
+    async def delete(self, storage_key: str) -> None:
+        target = self.root / storage_key
+        target.unlink(missing_ok=True)
+        parent = target.parent
+        while parent != self.root:
+            try:
+                parent.rmdir()
+            except OSError:
+                break
+            parent = parent.parent

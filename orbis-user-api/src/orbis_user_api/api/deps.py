@@ -83,3 +83,20 @@ async def require_resource_manager(
             detail="Resource management forbidden",
         ) from None
     return membership
+
+
+async def require_knowledge_base_deleter(
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> WorkspaceMember:
+    try:
+        _, membership = await AuthorizationService.actor(user, session)
+        AuthorizationService.require_capability(
+            membership, Capability.KNOWLEDGE_BASE_DELETE
+        )
+    except (UserWorkspaceMissing, WorkspaceMemberForbidden):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Knowledge base deletion forbidden",
+        ) from None
+    return membership

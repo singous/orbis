@@ -11,6 +11,7 @@ package = false
 
 [tool.uv.workspace]
 members = [
+  "packages/orbis-contracts",
   "orbis-gateway",
   "orbis-user-api",
   "orbis-user-web",
