@@ -62,8 +62,17 @@ export async function setDocumentGroupArchived(groupId: string, archived: boolea
   return documentGroupSchema.parse(await apiRequest(`/document-groups/${groupId}/${archived ? "archive" : "restore"}`, { method: "POST", ...authOptions(auth) }));
 }
 
-export async function listNotebooks(auth: AuthRequestOptions, groupId?: string, status: ResourceStatus = "active"): Promise<{ items: Notebook[] }> {
-  return notebookListResponseSchema.parse(await apiRequest(queryPath("/notebooks", { group_id: groupId, status: status === "archived" ? status : null }), authOptions(auth)));
+export async function listNotebooks(
+  auth: AuthRequestOptions,
+  groupId?: string,
+  status: ResourceStatus = "active",
+  options: { includeInactiveParents?: boolean } = {},
+): Promise<{ items: Notebook[] }> {
+  return notebookListResponseSchema.parse(await apiRequest(queryPath("/notebooks", {
+    group_id: groupId,
+    status: status === "archived" ? status : null,
+    include_inactive_parents: options.includeInactiveParents ? "true" : null,
+  }), authOptions(auth)));
 }
 
 export async function createNotebook(payload: { title: string; group_id?: string | null; sort_order: number }, auth: AuthRequestOptions): Promise<Notebook> {

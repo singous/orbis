@@ -27,6 +27,7 @@ async def list_notebooks(
     session: AsyncSession,
     group_id: UUID | None = None,
     resource_status: ResourceStatus = "active",
+    include_inactive_parents: bool = False,
 ) -> list[Notebook]:
     workspace, _ = await get_current_workspace(user, session)
     conditions = [
@@ -35,7 +36,7 @@ async def list_notebooks(
     ]
     if group_id is not None:
         conditions.append(Notebook.group_id == group_id)
-    if resource_status == "active":
+    if resource_status == "active" and not include_inactive_parents:
         conditions.append(NoteGroup.status == "active")
     result = await session.execute(
         select(Notebook)

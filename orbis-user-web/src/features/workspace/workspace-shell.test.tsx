@@ -219,6 +219,49 @@ describe("WorkspaceShell", () => {
     }
   });
 
+  it("collapses the mobile document context drawer when its panel is closed", async () => {
+    const originalMatchMedia = window.matchMedia;
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: () => ({
+        matches: true,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      }),
+    });
+    const actor = userEvent.setup();
+
+    try {
+      render(
+        <MemoryRouter initialEntries={["/documents"]}>
+          <DocumentShell contextPanel={<nav aria-label="测试文档目录">文档目录</nav>}>
+            <div>文档内容</div>
+          </DocumentShell>
+        </MemoryRouter>,
+      );
+      const trigger = screen.getByRole("button", { name: "打开文档目录" });
+
+      await actor.click(trigger);
+      expect(trigger).toHaveAttribute("aria-expanded", "true");
+      await actor.click(screen.getByRole("button", { name: "收起上下文面板" }));
+
+      expect(trigger).toHaveAttribute("aria-expanded", "false");
+      const panel = document.querySelector('aside[aria-label="上下文面板"]');
+      expect(panel).toHaveAttribute("hidden");
+      expect(panel).toHaveAttribute("aria-hidden", "true");
+      expect(panel).toHaveAttribute("inert");
+
+      await actor.click(trigger);
+      expect(trigger).toHaveAttribute("aria-expanded", "true");
+      expect(panel).not.toHaveAttribute("hidden");
+    } finally {
+      Object.defineProperty(window, "matchMedia", {
+        configurable: true,
+        value: originalMatchMedia,
+      });
+    }
+  });
+
   it("does not hide the user access surface at mobile width", () => {
     renderShell();
 

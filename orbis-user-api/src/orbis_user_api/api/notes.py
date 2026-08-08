@@ -238,7 +238,7 @@ async def _change_archive_status(
     except ArchiveRestoreDependencyInactive:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Parent collection must be restored first",
+            detail="Parent resources must be restored first",
         ) from None
     except NoteNotFound:
         raise _not_found("Note not found") from None

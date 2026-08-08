@@ -38,13 +38,18 @@ router = APIRouter(prefix="/notebooks", tags=["notebooks"])
 async def list_notebooks(
     group_id: UUID | None = Query(default=None),
     resource_status: ResourceStatus = Query(default="active", alias="status"),
+    include_inactive_parents: bool = Query(default=False),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> NotebookListResponse:
     try:
         return NotebookListResponse(
             items=await list_notebooks_service(
-                user, session, group_id, resource_status
+                user,
+                session,
+                group_id,
+                resource_status,
+                include_inactive_parents,
             )
         )
     except UserWorkspaceMissing:

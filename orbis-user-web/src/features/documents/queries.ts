@@ -42,9 +42,16 @@ export function useDocumentGroups(status: ResourceStatus = "active") {
   return useQuery({ queryKey: ["document-groups", status], queryFn: () => listDocumentGroups(auth, status) });
 }
 
-export function useNotebooks(groupId?: string, status: ResourceStatus = "active") {
+export function useNotebooks(
+  groupId?: string,
+  status: ResourceStatus = "active",
+  options: { includeInactiveParents?: boolean } = {},
+) {
   const auth = useDocumentAuth();
-  return useQuery({ queryKey: ["notebooks", status, groupId ?? "all"], queryFn: () => listNotebooks(auth, groupId, status) });
+  return useQuery({
+    queryKey: ["notebooks", status, groupId ?? "all", options.includeInactiveParents ?? false],
+    queryFn: () => listNotebooks(auth, groupId, status, options),
+  });
 }
 
 export function useNoteTree(notebookId?: string) {

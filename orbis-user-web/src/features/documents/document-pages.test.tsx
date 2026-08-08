@@ -39,6 +39,11 @@ const mocks = vi.hoisted(() => ({
     status?: string;
     options?: { enabled?: boolean };
   }>,
+  notebookCalls: [] as Array<{
+    groupId?: string;
+    status?: string;
+    options?: { includeInactiveParents?: boolean };
+  }>,
 }));
 
 vi.mock("./queries", () => {
@@ -52,6 +57,11 @@ vi.mock("./queries", () => {
     archivedNote: "018ff7c4-a5b6-7000-8000-000000000007",
     archivedNotebookWithActiveGroup: "018ff7c4-a5b6-7000-8000-000000000011",
     archivedNoteWithActiveNotebook: "018ff7c4-a5b6-7000-8000-000000000012",
+    activeNotebookWithArchivedGroup: "018ff7c4-a5b6-7000-8000-000000000013",
+    archivedNoteWithArchivedGroup: "018ff7c4-a5b6-7000-8000-000000000014",
+    archivedParentNote: "018ff7c4-a5b6-7000-8000-000000000015",
+    archivedChildNote: "018ff7c4-a5b6-7000-8000-000000000016",
+    archivedNoteWithArchivedNotebook: "018ff7c4-a5b6-7000-8000-000000000017",
   };
   const common = {
     tenant_id: null,
@@ -77,6 +87,14 @@ vi.mock("./queries", () => {
       group_id: ids.group,
       title: "产品手册",
       sort_order: 0,
+      status: "active",
+    },
+    {
+      ...common,
+      id: ids.activeNotebookWithArchivedGroup,
+      group_id: ids.archivedGroup,
+      title: "已归档分组中的活跃文集",
+      sort_order: 1,
       status: "active",
     },
   ];
@@ -157,6 +175,50 @@ vi.mock("./queries", () => {
       plain_text: "归档内容",
       status: "archived",
     },
+    {
+      ...common,
+      id: ids.archivedNoteWithArchivedGroup,
+      notebook_id: ids.activeNotebookWithArchivedGroup,
+      parent_id: null,
+      sort_order: 2,
+      title: "已归档分组中的已归档文档",
+      note_type: "document",
+      plain_text: "归档内容",
+      status: "archived",
+    },
+    {
+      ...common,
+      id: ids.archivedParentNote,
+      notebook_id: ids.notebook,
+      parent_id: null,
+      sort_order: 3,
+      title: "已归档父文档",
+      note_type: "document",
+      plain_text: "归档内容",
+      status: "archived",
+    },
+    {
+      ...common,
+      id: ids.archivedChildNote,
+      notebook_id: ids.notebook,
+      parent_id: ids.archivedParentNote,
+      sort_order: 4,
+      title: "已归档子文档",
+      note_type: "document",
+      plain_text: "归档内容",
+      status: "archived",
+    },
+    {
+      ...common,
+      id: ids.archivedNoteWithArchivedNotebook,
+      notebook_id: ids.archivedNotebookWithActiveGroup,
+      parent_id: null,
+      sort_order: 5,
+      title: "已归档文集中的已归档文档",
+      note_type: "document",
+      plain_text: "归档内容",
+      status: "archived",
+    },
   ];
   const result = (items: unknown[]) => ({
     data: { items },
@@ -167,12 +229,18 @@ vi.mock("./queries", () => {
   return {
     useDocumentGroups: (status?: string) =>
       result(status === "archived" ? archivedGroups : groups),
-    useNotebooks: (_groupId?: string, status?: string) =>
-      result(
+    useNotebooks: (
+      groupId?: string,
+      status?: string,
+      options?: { includeInactiveParents?: boolean },
+    ) => {
+      mocks.notebookCalls.push({ groupId, status, options });
+      return result(
         status === "archived"
           ? archivedNotebooks
           : (mocks.activeNotebooks ?? notebooks),
-      ),
+      );
+    },
     useNoteSearch: (
       query = "",
       status?: string,
@@ -293,6 +361,7 @@ describe("document function pages", () => {
     mocks.activeNotebooks = undefined;
     mocks.noteQueryResult = undefined;
     mocks.noteSearchCalls.length = 0;
+    mocks.notebookCalls.length = 0;
     window.localStorage.clear();
   });
 
@@ -470,14 +539,41 @@ describe("document function pages", () => {
 
     expect(await screen.findByText("归属分组：已归档分组")).toBeVisible();
     expect(screen.getByText("归属文集：已归档文集")).toBeVisible();
-    expect(screen.getByText("请先恢复分组")).toBeVisible();
-    expect(screen.getByText("请先恢复文集")).toBeVisible();
+    expect(screen.getAllByText("请先恢复分组").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("请先恢复文集").length).toBeGreaterThan(0);
+    expect(screen.getByText("请先恢复父文档")).toBeVisible();
     expect(
       screen.getByRole("button", { name: "恢复 已归档文集" }),
     ).toBeDisabled();
     expect(
       screen.getByRole("button", { name: "恢复 已归档文档" }),
     ).toBeDisabled();
+    const groupBlockedNote = screen.getByRole("button", {
+      name: "恢复 已归档分组中的已归档文档",
+    });
+    expect(groupBlockedNote).toBeDisabled();
+    expect(groupBlockedNote.parentElement).toHaveTextContent("请先恢复分组");
+    const notebookBlockedNote = screen.getByRole("button", {
+      name: "恢复 已归档文集中的已归档文档",
+    });
+    expect(notebookBlockedNote).toBeDisabled();
+    expect(notebookBlockedNote.parentElement).toHaveTextContent("请先恢复文集");
+    const parentBlockedNote = screen.getByRole("button", {
+      name: "恢复 已归档子文档",
+    });
+    expect(parentBlockedNote).toBeDisabled();
+    expect(parentBlockedNote.parentElement).toHaveTextContent("请先恢复父文档");
+    const fullyBlockedNote = screen.getByRole("button", {
+      name: "恢复 已归档文档",
+    });
+    expect(fullyBlockedNote.parentElement).toHaveTextContent("请先恢复分组");
+    expect(mocks.notebookCalls.filter((call) => call.status === "active")).toEqual([
+      {
+        groupId: undefined,
+        status: "active",
+        options: { includeInactiveParents: true },
+      },
+    ]);
   });
 
   it("restores an archived group for an owner", async () => {
@@ -536,7 +632,7 @@ describe("document function pages", () => {
 
   it.each([
     new ApiError(403, "Permission denied"),
-    new ApiError(409, "Parent collection must be restored first"),
+    new ApiError(409, "Parent resources must be restored first"),
     new Error("Network request failed"),
   ])("shows a visible restore error: %s", async (error) => {
     mocks.archiveNoteState.isError = true;

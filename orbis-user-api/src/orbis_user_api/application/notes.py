@@ -176,6 +176,28 @@ async def set_note_archived(
             or notebook.status != "active"
         ):
             raise ArchiveRestoreDependencyInactive
+        group = await session.get(NoteGroup, notebook.group_id)
+        if (
+            group is None
+            or group.workspace_id != workspace.id
+            or group.status != "active"
+        ):
+            raise ArchiveRestoreDependencyInactive
+        seen_ancestor_ids: set[UUID] = set()
+        ancestor_id = note.parent_id
+        while ancestor_id is not None:
+            if ancestor_id in seen_ancestor_ids:
+                raise ArchiveRestoreDependencyInactive
+            seen_ancestor_ids.add(ancestor_id)
+            parent = await session.get(Note, ancestor_id)
+            if (
+                parent is None
+                or parent.workspace_id != workspace.id
+                or parent.notebook_id != notebook.id
+                or parent.status != "active"
+            ):
+                raise ArchiveRestoreDependencyInactive
+            ancestor_id = parent.parent_id
     note.status = "archived" if archived else "active"
     note.updated_at_ms = now_ms()
     await session.commit()

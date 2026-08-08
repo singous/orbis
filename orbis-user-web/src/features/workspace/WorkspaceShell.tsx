@@ -48,6 +48,7 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
   const [mainNavigationOpen, setMainNavigationOpen] = useState(false);
   const [documentContextOpen, setDocumentContextOpen] = useState(false);
   const compact = useCompactNavigation();
+  const documentContextExpanded = documentContextOpen && contextOpen;
 
   function logout() {
     clearSession();
@@ -78,7 +79,7 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
   }
 
   return (
-    <main className={`workspace-shell${sectionMenu ? " has-section-menu" : ""}${mainNavigationOpen ? " main-navigation-open" : ""}${documentContextOpen ? " document-context-drawer-open" : ""}`}>
+    <main className={`workspace-shell${sectionMenu ? " has-section-menu" : ""}${mainNavigationOpen ? " main-navigation-open" : ""}${documentContextExpanded ? " document-context-drawer-open" : ""}`}>
       <div className="workspace-shell-grid">
         <div className="workspace-main-navigation" aria-hidden={compact && !mainNavigationOpen ? true : undefined} inert={compact && !mainNavigationOpen ? true : undefined} onClick={closeMainNavigationAfterLink}>
           <BusinessRail />
@@ -91,13 +92,13 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
                 <button type="button" aria-label="打开主导航" aria-expanded={mainNavigationOpen} className="workspace-mobile-drawer-control" onClick={openMainNavigation}><Menu aria-hidden="true" size={16} /></button>
                 {sectionTitle ? <span>{sectionTitle}</span> : null}
               </div>
-              {contextPanel ? <button type="button" aria-label="打开文档目录" aria-expanded={documentContextOpen} className="workspace-mobile-drawer-control" onClick={openDocumentContext}><PanelRightOpen aria-hidden="true" size={16} /></button> : null}
+              {contextPanel ? <button type="button" aria-label="打开文档目录" aria-expanded={documentContextExpanded} className="workspace-mobile-drawer-control" onClick={openDocumentContext}><PanelRightOpen aria-hidden="true" size={16} /></button> : null}
               {contextPanel && onOpenContext ? <button type="button" aria-label="打开上下文面板" className="icon-button workspace-context-open-control" onClick={onOpenContext}><PanelRightOpen aria-hidden="true" size={16} /></button> : null}
               {toolbar}
             </header>
             {children}
           </section>
-          {contextPanel ? <aside className="workspace-context-panel" aria-label="上下文面板" aria-hidden={compact && !documentContextOpen ? true : undefined} inert={compact && !documentContextOpen ? true : undefined} hidden={!contextOpen} onClick={closeDocumentContextAfterLink}>{contextPanel}</aside> : null}
+          {contextPanel ? <aside className="workspace-context-panel" aria-label="上下文面板" aria-hidden={compact && !documentContextExpanded ? true : undefined} inert={compact && !documentContextExpanded ? true : undefined} hidden={!contextOpen} onClick={closeDocumentContextAfterLink}>{contextPanel}</aside> : null}
         </section>
       </div>
       <UserMenu user={user} workspace={workspace} onLogout={logout} />

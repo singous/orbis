@@ -68,6 +68,20 @@ describe("document API", () => {
     expect(fetchMock).toHaveBeenNthCalledWith(3, "/api/notes?q=draft&status=archived", expect.any(Object));
   });
 
+  it("can include active notebooks hidden by an archived parent", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ items: [] }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await listNotebooks(auth, undefined, "active", {
+      includeInactiveParents: true,
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/notebooks?include_inactive_parents=true",
+      expect.any(Object),
+    );
+  });
+
   it("creates note metadata separately from versioned content", async () => {
     const note = {
       id: "018ff7c4-a5b6-7000-8000-000000000001",

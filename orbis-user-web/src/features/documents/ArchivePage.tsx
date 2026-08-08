@@ -114,17 +114,39 @@ export function ArchivePage() {
   const canRestore = canMutateWorkspaceContent(workspace);
   const groupsQuery = useDocumentGroups("archived");
   const notebooksQuery = useNotebooks(undefined, "archived");
+  const activeNotebooksQuery = useNotebooks(undefined, "active", {
+    includeInactiveParents: true,
+  });
   const notesQuery = useNoteSearch("", "archived");
   const archiveGroup = useArchiveDocumentGroup();
   const archiveNotebook = useArchiveNotebook();
   const archiveNote = useArchiveNote();
   const groups = groupsQuery.data?.items ?? [];
   const notebooks = notebooksQuery.data?.items ?? [];
+  const activeNotebooks = activeNotebooksQuery.data?.items ?? [];
   const notes = notesQuery.data?.items ?? [];
   const archivedGroupsById = new Map(groups.map((group) => [group.id, group]));
   const archivedNotebooksById = new Map(
     notebooks.map((notebook) => [notebook.id, notebook]),
   );
+  const notebooksById = new Map(
+    [...activeNotebooks, ...notebooks].map((notebook) => [notebook.id, notebook]),
+  );
+  const archivedNotesById = new Map(notes.map((note) => [note.id, note]));
+
+  function noteRestoreBlockedReason(note: (typeof notes)[number]): string | undefined {
+    const notebook = notebooksById.get(note.notebook_id);
+    if (notebook && archivedGroupsById.has(notebook.group_id)) {
+      return "请先恢复分组";
+    }
+    if (archivedNotebooksById.has(note.notebook_id)) {
+      return "请先恢复文集";
+    }
+    if (note.parent_id && archivedNotesById.has(note.parent_id)) {
+      return "请先恢复父文档";
+    }
+    return undefined;
+  }
 
   return (
     <DocumentShell>
@@ -143,13 +165,14 @@ export function ArchivePage() {
               : "只有工作空间管理者可以恢复内容。"}
           </p>
         </header>
-        {groupsQuery.isError || notebooksQuery.isError || notesQuery.isError ? (
+        {groupsQuery.isError || notebooksQuery.isError || activeNotebooksQuery.isError || notesQuery.isError ? (
           <StatusMessage tone="error" title="归档加载失败">
             请检查 API 服务后重试。
           </StatusMessage>
         ) : null}
         {groupsQuery.isLoading ||
         notebooksQuery.isLoading ||
+        activeNotebooksQuery.isLoading ||
         notesQuery.isLoading ? (
           <div className="empty-panel">正在加载归档…</div>
         ) : null}
@@ -191,12 +214,10 @@ export function ArchivePage() {
           resources={notes.map((note) => ({
             id: note.id,
             label: note.title,
-            parentLabel: archivedNotebooksById.has(note.notebook_id)
-              ? `归属文集：${archivedNotebooksById.get(note.notebook_id)?.title}`
+            parentLabel: notebooksById.has(note.notebook_id)
+              ? `归属文集：${notebooksById.get(note.notebook_id)?.title}`
               : "归属文集：已恢复",
-            restoreBlockedReason: archivedNotebooksById.has(note.notebook_id)
-              ? "请先恢复文集"
-              : undefined,
+            restoreBlockedReason: noteRestoreBlockedReason(note),
           }))}
           canRestore={canRestore}
           onRestore={(id) => archiveNote.mutate({ id, archived: false })}

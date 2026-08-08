@@ -305,3 +305,176 @@ def test_restore_requires_active_parent_resources(client: TestClient) -> None:
         f"/notebooks/{notebook['id']}/restore", headers=headers
     ).status_code == 200
     assert client.post(f"/notes/{note['id']}/restore", headers=headers).status_code == 200
+
+
+def test_note_restore_requires_an_active_notebook_group(client: TestClient) -> None:
+    setup_response = client.post(
+        "/setup",
+        json={
+            "email": "owner@example.com",
+            "password": PASSWORD,
+            "display_name": "Owner",
+        },
+    )
+    assert setup_response.status_code == 201
+    headers = auth_header(setup_response.json()["access_token"])
+    group = client.post(
+        "/document-groups", headers=headers, json={"name": "Archived group"}
+    ).json()
+    notebook = client.post(
+        "/notebooks",
+        headers=headers,
+        json={"title": "Active notebook", "group_id": group["id"]},
+    ).json()
+    note = client.post(
+        "/notes",
+        headers=headers,
+        json={"title": "Archived note", "notebook_id": notebook["id"]},
+    ).json()
+    assert client.post(f"/notes/{note['id']}/archive", headers=headers).status_code == 200
+    assert client.post(
+        f"/document-groups/{group['id']}/archive", headers=headers
+    ).status_code == 200
+    assert client.get("/notebooks", headers=headers).json()["items"] == []
+    hidden_active_notebooks = client.get(
+        "/notebooks",
+        headers=headers,
+        params={"include_inactive_parents": True},
+    ).json()["items"]
+    assert [item["id"] for item in hidden_active_notebooks] == [notebook["id"]]
+
+    restore_response = client.post(f"/notes/{note['id']}/restore", headers=headers)
+
+    assert restore_response.status_code == 409
+    assert note["id"] in {
+        item["id"]
+        for item in client.get(
+            "/notes", headers=headers, params={"status": "archived"}
+        ).json()["items"]
+    }
+    assert client.post(
+        f"/document-groups/{group['id']}/restore", headers=headers
+    ).status_code == 200
+    assert client.post(f"/notes/{note['id']}/restore", headers=headers).status_code == 200
+    tree = client.get(
+        f"/notebooks/{notebook['id']}/notes/tree", headers=headers
+    ).json()["items"]
+    assert [item["id"] for item in tree] == [note["id"]]
+
+
+def test_child_note_restore_requires_an_active_parent_note(client: TestClient) -> None:
+    setup_response = client.post(
+        "/setup",
+        json={
+            "email": "owner@example.com",
+            "password": PASSWORD,
+            "display_name": "Owner",
+        },
+    )
+    assert setup_response.status_code == 201
+    headers = auth_header(setup_response.json()["access_token"])
+    notebook = client.post(
+        "/notebooks", headers=headers, json={"title": "Active notebook"}
+    ).json()
+    parent = client.post(
+        "/notes",
+        headers=headers,
+        json={"title": "Parent note", "notebook_id": notebook["id"]},
+    ).json()
+    child = client.post(
+        "/notes",
+        headers=headers,
+        json={
+            "title": "Child note",
+            "notebook_id": notebook["id"],
+            "parent_id": parent["id"],
+        },
+    ).json()
+    assert client.post(
+        f"/notes/{parent['id']}/archive", headers=headers
+    ).status_code == 200
+    assert client.post(
+        f"/notes/{child['id']}/archive", headers=headers
+    ).status_code == 200
+
+    restore_response = client.post(
+        f"/notes/{child['id']}/restore", headers=headers
+    )
+
+    assert restore_response.status_code == 409
+    assert child["id"] in {
+        item["id"]
+        for item in client.get(
+            "/notes", headers=headers, params={"status": "archived"}
+        ).json()["items"]
+    }
+    assert client.post(
+        f"/notes/{parent['id']}/restore", headers=headers
+    ).status_code == 200
+    assert client.post(
+        f"/notes/{child['id']}/restore", headers=headers
+    ).status_code == 200
+    tree = client.get(
+        f"/notebooks/{notebook['id']}/notes/tree", headers=headers
+    ).json()["items"]
+    assert [item["id"] for item in tree] == [parent["id"]]
+    assert [item["id"] for item in tree[0]["children"]] == [child["id"]]
+
+
+def test_note_restore_requires_every_note_ancestor_to_be_active(
+    client: TestClient,
+) -> None:
+    setup_response = client.post(
+        "/setup",
+        json={
+            "email": "owner@example.com",
+            "password": PASSWORD,
+            "display_name": "Owner",
+        },
+    )
+    assert setup_response.status_code == 201
+    headers = auth_header(setup_response.json()["access_token"])
+    notebook = client.post(
+        "/notebooks", headers=headers, json={"title": "Active notebook"}
+    ).json()
+    grandparent = client.post(
+        "/notes",
+        headers=headers,
+        json={"title": "Grandparent note", "notebook_id": notebook["id"]},
+    ).json()
+    parent = client.post(
+        "/notes",
+        headers=headers,
+        json={
+            "title": "Active parent note",
+            "notebook_id": notebook["id"],
+            "parent_id": grandparent["id"],
+        },
+    ).json()
+    child = client.post(
+        "/notes",
+        headers=headers,
+        json={
+            "title": "Archived child note",
+            "notebook_id": notebook["id"],
+            "parent_id": parent["id"],
+        },
+    ).json()
+    assert client.post(
+        f"/notes/{grandparent['id']}/archive", headers=headers
+    ).status_code == 200
+    assert client.post(
+        f"/notes/{child['id']}/archive", headers=headers
+    ).status_code == 200
+
+    restore_response = client.post(
+        f"/notes/{child['id']}/restore", headers=headers
+    )
+
+    assert restore_response.status_code == 409
+    assert client.post(
+        f"/notes/{grandparent['id']}/restore", headers=headers
+    ).status_code == 200
+    assert client.post(
+        f"/notes/{child['id']}/restore", headers=headers
+    ).status_code == 200
