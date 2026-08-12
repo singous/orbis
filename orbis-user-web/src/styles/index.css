@@ -1,20 +1,77 @@
 @import "tailwindcss";
 
+/* ============================================================
+   Orbis design tokens
+
+   Three layers:
+   1. Base palette — raw scales, redefined per theme.
+   2. Semantic tokens — what components and pages consume.
+   3. Legacy aliases — old variable names kept so unmigrated
+      page styles keep working; remove once migration completes.
+
+   Theme switching puts data-theme="light" | "dark" on <html>.
+   ============================================================ */
+
 :root {
-  --app-bg: #f0f0ef;
-  --workspace: #f5f5f4;
-  --panel: #f7f7f6;
-  --chrome: #151515;
-  --surface-hover: #f1f1f0;
-  --text: #151515;
-  --muted: #666663;
-  --muted-light: #949491;
-  --border: #e2e2df;
-  --border-strong: #d0d0cc;
-  --accent: #6757f5;
-  --accent-strong: #5546df;
-  --accent-soft: #eeecff;
-  --accent-border: #bcb5ff;
+  /* Base palette: warm gray scale */
+  --gray-0: #ffffff;
+  --gray-25: #fbfbfa;
+  --gray-50: #f7f7f6;
+  --gray-75: #f5f5f4;
+  --gray-100: #f1f1f0;
+  --gray-150: #f0f0ef;
+  --gray-200: #e2e2df;
+  --gray-300: #d0d0cc;
+  --gray-400: #b4b4b0;
+  --gray-500: #949491;
+  --gray-600: #666663;
+  --gray-700: #454542;
+  --gray-800: #30302f;
+  --gray-900: #1f1f1e;
+  --gray-950: #151515;
+
+  /* Base palette: brand violet scale */
+  --violet-50: #f4f2ff;
+  --violet-100: #eeecff;
+  --violet-200: #dcd8ff;
+  --violet-300: #bcb5ff;
+  --violet-500: #6757f5;
+  --violet-600: #5546df;
+  --violet-700: #463ac4;
+
+  /* Semantic: surfaces (depth model — darker outside, lighter inside) */
+  --surface-app: var(--gray-150);
+  --surface-sidebar: var(--gray-75);
+  --surface-panel: var(--gray-50);
+  --surface-content: var(--gray-0);
+  --surface-hover: var(--gray-100);
+  --surface-active: var(--gray-200);
+  --surface-overlay: var(--gray-0);
+  --surface-inverse: var(--gray-950);
+  --surface-inverse-hover: var(--gray-800);
+
+  /* Semantic: text */
+  --text-primary: var(--gray-950);
+  --text-secondary: var(--gray-600);
+  --text-tertiary: var(--gray-500);
+  --text-oncolor: var(--gray-0);
+  --text-oninverse: var(--gray-25);
+
+  /* Semantic: borders */
+  --border-subtle: var(--gray-200);
+  --border-strong: var(--gray-300);
+  --border-inverse: rgb(255 255 255 / 12%);
+
+  /* Semantic: accent */
+  --accent: var(--violet-500);
+  --accent-strong: var(--violet-600);
+  --accent-deep: var(--violet-700);
+  --accent-soft: var(--violet-100);
+  --accent-softer: var(--violet-200);
+  --accent-border: var(--violet-300);
+  --accent-text: var(--violet-600);
+
+  /* Semantic: status */
   --danger: #b84a4a;
   --danger-strong: #963737;
   --danger-bg: #fff0f0;
@@ -26,8 +83,84 @@
   --success-bg: #edf8f1;
   --success-border: #bee4cc;
   --success-text: #27593a;
+
+  /* Semantic: focus */
+  --focus-ring: var(--accent);
+
+  /* Semantic: shadows (floating layers only) */
+  --shadow-pop: 0 1px 3px rgb(21 21 21 / 6%), 0 6px 20px rgb(21 21 21 / 9%);
+  --shadow-card: 0 14px 32px rgb(20 20 20 / 7%);
+
+  /* Semantic: radii */
+  --radius-control: 6px;
+  --radius-container: 8px;
+  --radius-pop: 10px;
+
+  /* Legacy aliases — keep unmigrated styles working; do not use in new code */
+  --app-bg: var(--surface-app);
+  --workspace: var(--surface-sidebar);
+  --panel: var(--surface-panel);
+  --chrome: var(--surface-inverse);
+  --text: var(--text-primary);
+  --muted: var(--text-secondary);
+  --muted-light: var(--text-tertiary);
+  --border: var(--border-subtle);
+
   font-family: Inter, "SF Pro Display", "SF Pro Text", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color-scheme: light;
+}
+
+[data-theme="dark"] {
+  /* Base palette: warm dark gray scale */
+  --gray-0: #262624;
+  --gray-25: #232321;
+  --gray-50: #212120;
+  --gray-75: #1d1d1b;
+  --gray-100: #2a2a28;
+  --gray-150: #161615;
+  --gray-200: #2e2e2b;
+  --gray-300: #3c3c38;
+  --gray-400: #55554f;
+  --gray-500: #7d7d76;
+  --gray-600: #a6a69f;
+  --gray-700: #c2c2bb;
+  --gray-800: #d8d8d2;
+  --gray-900: #e6e6e1;
+  --gray-950: #efefec;
+
+  /* Base palette: brand violet scale (dark) */
+  --violet-50: #26234d;
+  --violet-100: #2c2858;
+  --violet-200: #3a347a;
+  --violet-300: #564bb8;
+  --violet-500: #8577ff;
+  --violet-600: #9d91ff;
+  --violet-700: #b5abff;
+
+  /* Semantic overrides where the light mapping does not hold */
+  --surface-overlay: #2c2c29;
+  --surface-inverse: var(--gray-25);
+  --surface-inverse-hover: var(--gray-100);
+  --text-oninverse: var(--gray-900);
+  --border-inverse: rgb(255 255 255 / 10%);
+  --accent-text: var(--violet-600);
+
+  --danger: #d47070;
+  --danger-strong: #e08a8a;
+  --danger-bg: #33201f;
+  --danger-border: #54302e;
+  --danger-text: #e8a3a3;
+  --warning-bg: #322a17;
+  --warning-border: #57481f;
+  --warning-text: #d9bc77;
+  --success-bg: #1c2e23;
+  --success-border: #2c5238;
+  --success-text: #8ecfa4;
+
+  --shadow-pop: 0 1px 3px rgb(0 0 0 / 30%), 0 8px 24px rgb(0 0 0 / 40%);
+  --shadow-card: 0 14px 32px rgb(0 0 0 / 35%);
+
+  color-scheme: dark;
 }
 
 * {
@@ -115,9 +248,10 @@ textarea {
   font-size: 1.08em;
 }
 
+/* Code blocks stay dark in both themes — deliberate contrast anchor. */
 .ProseMirror pre {
   overflow-x: auto;
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   background: #161616;
   color: #f4f7f5;
   padding: 0.9rem 1rem;
@@ -187,7 +321,7 @@ textarea {
 }
 
 ::selection {
-  background: #dcd8ff;
+  background: var(--accent-softer);
 }
 
 .rail-link {
@@ -263,7 +397,7 @@ textarea {
 }
 
 .danger-hover:hover {
-  background: #fff0f0;
+  background: var(--danger-bg);
   color: var(--danger);
 }
 
@@ -319,8 +453,8 @@ textarea {
 .document-card:hover,
 .collection-card:hover {
   transform: translateY(-2px);
-  border-color: #cececa;
-  box-shadow: 0 14px 32px rgb(20 20 20 / 7%);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-card);
 }
 
 .document-icon {
@@ -329,9 +463,9 @@ textarea {
   height: 38px;
   place-items: center;
   border: 1px solid var(--border);
-  border-radius: 11px;
-  background: #f6f6f5;
-  color: #454542;
+  border-radius: var(--radius-pop);
+  background: var(--surface-panel);
+  color: var(--gray-700);
 }
 
 .document-icon.small {
@@ -344,8 +478,8 @@ textarea {
   width: 58px;
   height: 58px;
   border-radius: 17px;
-  background: #151515;
-  color: white;
+  background: var(--surface-inverse);
+  color: var(--text-oninverse);
 }
 
 .tag {
@@ -353,7 +487,7 @@ textarea {
   align-items: center;
   border: 1px solid var(--border);
   border-radius: 999px;
-  background: #fafafa;
+  background: var(--surface-content);
   padding: 3px 8px;
   color: var(--muted);
   font-size: 10px;
@@ -378,6 +512,7 @@ textarea {
   padding-bottom: 36px;
 }
 
+/* Toast stays dark in both themes — floating inverse surface. */
 .toast {
   position: fixed;
   right: 24px;
@@ -388,12 +523,12 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  border: 1px solid rgb(255 255 255 / 12%);
-  border-radius: 14px;
-  background: #151515;
+  border: 1px solid var(--border-inverse);
+  border-radius: var(--radius-pop);
+  background: var(--surface-inverse);
   padding: 14px 16px;
-  color: white;
-  box-shadow: 0 18px 50px rgb(0 0 0 / 24%);
+  color: var(--text-oninverse);
+  box-shadow: var(--shadow-pop);
 }
 
 .toast-action {
@@ -412,7 +547,7 @@ textarea {
   min-height: calc(100vh - 64px);
   grid-template-columns: minmax(0, 1fr) 210px;
   gap: 48px;
-  background: #efefed;
+  background: var(--surface-app);
   padding: 36px 36px 80px;
 }
 
@@ -473,12 +608,13 @@ textarea {
   display: grid;
   min-height: 100vh;
   grid-template-columns: minmax(0, 1.2fr) minmax(420px, 0.8fr);
-  background: white;
+  background: var(--surface-content);
 }
 
 .auth-story {
   position: relative;
   overflow: hidden;
+  /* Brand story panel stays near-black in both themes — deliberate brand moment. */
   background: #111;
   padding: 38px clamp(32px, 5vw, 76px);
 }
