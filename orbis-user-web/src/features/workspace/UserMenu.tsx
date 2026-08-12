@@ -91,7 +91,7 @@ export function UserMenu({ user, workspace, onLogout }: UserMenuProps) {
         <span className="workspace-user-avatar">{userName.slice(0, 1).toUpperCase()}</span>
         <span className="workspace-user-trigger-copy">
           <span className="truncate">{userName}</span>
-          <span className="capitalize text-[10px] text-white/45">{workspace?.role ?? "member"}</span>
+          <span className="capitalize text-[10px] text-[var(--text-oninverse)] opacity-45">{workspace?.role ?? "member"}</span>
         </span>
         <ChevronUp aria-hidden="true" size={14} className={open ? "rotate-180" : ""} />
       </button>

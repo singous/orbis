@@ -95,12 +95,12 @@ export function HomePage() {
             </div>
           ) : null}
           {recentNotes.length ? (
-            <div className="mt-4 divide-y divide-[var(--border)] overflow-hidden rounded-xl border border-[var(--border)] bg-white">
+            <div className="mt-4 divide-y divide-[var(--border)] overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-content)]">
               {recentNotes.map((note) => (
                 <Link
                   key={note.id}
                   to={`/documents/${note.id}`}
-                  className="flex items-center gap-3 px-4 py-3 transition hover:bg-[#fafafa]"
+                  className="flex items-center gap-3 px-4 py-3 transition hover:bg-[var(--surface-hover)]"
                 >
                   <FilePlus2 aria-hidden="true" size={15} />
                   <div className="min-w-0 flex-1">
