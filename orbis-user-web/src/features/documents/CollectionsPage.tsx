@@ -363,7 +363,7 @@ export function CollectionsPage() {
                       onClick={() =>
                         setDialog({ kind: "notebook", groupId: group.id })
                       }
-                      className="w-full rounded-xl border border-dashed border-[var(--border-strong)] bg-white/40 p-6 text-sm text-[var(--muted)] hover:border-black/30 disabled:cursor-default"
+                      className="w-full rounded-xl border border-dashed border-[var(--border-strong)] bg-[var(--surface-hover)] p-6 text-sm text-[var(--muted)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-active)] disabled:cursor-default"
                     >
                       此分组暂无文集{canEdit ? "，点击创建" : ""}
                     </button>

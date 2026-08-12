@@ -46,7 +46,7 @@ export function DocumentSearchPage() {
               type="search"
               role="searchbox"
               aria-label="搜索文档"
-              className="h-12 w-full rounded-xl border border-[var(--border)] bg-white pl-10 pr-4 text-sm outline-none transition focus:border-[#8072f2] focus:ring-4 focus:ring-[#6757f5]/10"
+              className="h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-content)] pl-10 pr-4 text-sm outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent-soft)]"
               placeholder="搜索标题或正文…"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
