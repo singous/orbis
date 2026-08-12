@@ -17,6 +17,7 @@ export function SectionLabel({ children, className }: { children: ReactNode; cla
   );
 }
 
+/** Labeled navigation row for list-style sidebars. */
 export function NavItem({
   to,
   icon,
@@ -51,6 +52,44 @@ export function NavItem({
       {icon ? <span className="shrink-0 [&>svg]:block">{icon}</span> : null}
       <span className="min-w-0 flex-1 truncate">{children}</span>
       {badge}
+    </NavLink>
+  );
+}
+
+/** Icon-only navigation tile for compact rails; label lives in the tooltip. */
+export function NavIcon({
+  to,
+  label,
+  icon,
+  hint,
+  end = false,
+}: {
+  to: string;
+  label: string;
+  icon: ReactNode;
+  hint?: string;
+  end?: boolean;
+}) {
+  return (
+    <NavLink
+      to={to}
+      end={end}
+      aria-label={label}
+      className={({ isActive }) =>
+        cn(
+          "relative grid h-[42px] w-[42px] place-items-center rounded-[var(--radius-pop)] transition-colors duration-150",
+          isActive
+            ? "bg-[var(--border-inverse)] text-[var(--text-oninverse)]"
+            : "text-[var(--text-oninverse)] opacity-50 hover:bg-[var(--border-inverse)] hover:opacity-100",
+        )
+      }
+    >
+      {icon}
+      {hint ? (
+        <em className="absolute top-full mt-0.5 whitespace-nowrap text-[9px] not-italic text-[var(--text-oninverse)] opacity-50">
+          {hint}
+        </em>
+      ) : null}
     </NavLink>
   );
 }

@@ -12,6 +12,7 @@ import { RecentDocumentsPage } from "../features/documents/RecentDocumentsPage";
 import { AcceptInvitationPage } from "../features/members/AcceptInvitationPage";
 import { ConfirmOwnershipPage } from "../features/members/ConfirmOwnershipPage";
 import { MemberSettingsPage } from "../features/members/MemberSettingsPage";
+import { KnowledgePlaceholderPage, MemoryPlaceholderPage } from "../features/placeholders/PlaceholderPage";
 import { RequireAuth } from "../shared/auth/RequireAuth";
 import { LoginPage } from "./LoginPage";
 
@@ -85,6 +86,22 @@ export const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <NotebookPage />
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/knowledge",
+    element: (
+      <RequireAuth>
+        <KnowledgePlaceholderPage />
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/memory",
+    element: (
+      <RequireAuth>
+        <MemoryPlaceholderPage />
       </RequireAuth>
     ),
   },

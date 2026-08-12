@@ -678,10 +678,10 @@ textarea {
   min-height: 100vh;
   flex-direction: column;
   align-items: center;
-  border-right: 1px solid rgb(255 255 255 / 8%);
-  background: var(--chrome);
+  border-right: 1px solid var(--border-inverse);
+  background: var(--surface-inverse);
   padding: 16px 0;
-  color: white;
+  color: var(--text-oninverse);
 }
 
 .workspace-brand {
@@ -689,10 +689,10 @@ textarea {
   width: 36px;
   height: 36px;
   place-items: center;
-  border: 1px solid rgb(255 255 255 / 15%);
-  border-radius: 11px;
-  background: white;
-  color: var(--chrome);
+  border: 1px solid var(--border-inverse);
+  border-radius: var(--radius-pop);
+  background: var(--surface-content);
+  color: var(--text-primary);
   font-size: 14px;
   font-weight: 800;
 }
@@ -705,38 +705,6 @@ textarea {
   align-items: center;
   gap: 10px;
   margin-top: 34px;
-}
-
-.business-rail-link {
-  position: relative;
-  display: grid;
-  width: 42px;
-  min-height: 42px;
-  place-items: center;
-  border-radius: 11px;
-  color: rgb(255 255 255 / 48%);
-  font-size: 0;
-  transition: 160ms ease;
-}
-
-.business-rail-link:hover,
-.business-rail-link.is-active {
-  background: rgb(255 255 255 / 10%);
-  color: white;
-}
-
-.business-rail-link.is-planned {
-  cursor: not-allowed;
-  opacity: 0.38;
-}
-
-.business-rail-link em {
-  position: absolute;
-  top: calc(100% + 2px);
-  white-space: nowrap;
-  color: rgb(255 255 255 / 48%);
-  font-size: 9px;
-  font-style: normal;
 }
 
 .workspace-function-menu {
@@ -921,14 +889,15 @@ textarea {
   width: 52px;
   height: 52px;
   place-items: center;
-  border-radius: 12px;
-  color: rgb(255 255 255 / 76%);
+  border-radius: var(--radius-pop);
+  color: var(--text-oninverse);
+  opacity: 0.76;
   transition: 160ms ease;
 }
 
 .workspace-user-trigger:hover {
-  background: rgb(255 255 255 / 10%);
-  color: white;
+  background: var(--border-inverse);
+  opacity: 1;
 }
 
 .workspace-user-avatar {
@@ -937,8 +906,8 @@ textarea {
   height: 30px;
   place-items: center;
   border-radius: 50%;
-  background: white;
-  color: var(--chrome);
+  background: var(--surface-content);
+  color: var(--text-primary);
   font-size: 11px;
   font-weight: 700;
 }
@@ -954,10 +923,10 @@ textarea {
   left: 0;
   width: 220px;
   overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: white;
-  box-shadow: 0 14px 36px rgb(20 20 20 / 15%);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pop);
+  background: var(--surface-overlay);
+  box-shadow: var(--shadow-pop);
 }
 
 .workspace-user-menu-item {
@@ -965,9 +934,9 @@ textarea {
   width: 100%;
   align-items: center;
   gap: 9px;
-  border-radius: 7px;
+  border-radius: var(--radius-control);
   padding: 8px 9px;
-  color: var(--muted);
+  color: var(--text-secondary);
   font-size: 12px;
   font-weight: 560;
   text-align: left;
@@ -975,7 +944,7 @@ textarea {
 
 .workspace-user-menu-item:hover {
   background: var(--surface-hover);
-  color: var(--text);
+  color: var(--text-primary);
 }
 
 @media (max-width: 1023px) {

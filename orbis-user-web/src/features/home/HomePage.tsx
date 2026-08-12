@@ -43,30 +43,30 @@ export function HomePage() {
             </p>
             <div className="mt-5 text-sm font-semibold">进入文档</div>
           </Link>
-          <div className="document-card opacity-65" aria-disabled="true">
+          <Link to="/knowledge" className="document-card opacity-65 transition-opacity hover:opacity-90">
             <div className="mb-7 document-icon">
               <LibraryBig aria-hidden="true" size={18} />
             </div>
             <h2 className="text-base font-semibold">知识库</h2>
             <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
-              规划中，暂不提供知识库业务。
+              文件入库、笔记快照发布与检索问答正在建设中。
             </p>
             <span className="mt-5 inline-block text-sm font-semibold">
               即将推出
             </span>
-          </div>
-          <div className="document-card opacity-65" aria-disabled="true">
+          </Link>
+          <Link to="/memory" className="document-card opacity-65 transition-opacity hover:opacity-90">
             <div className="mb-7 document-icon">
               <BrainCircuit aria-hidden="true" size={18} />
             </div>
             <h2 className="text-base font-semibold">记忆库</h2>
             <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
-              规划中，暂不提供记忆库业务。
+              长期上下文沉淀能力正在建设中。
             </p>
             <span className="mt-5 inline-block text-sm font-semibold">
               即将推出
             </span>
-          </div>
+          </Link>
         </section>
         <section className="mt-10" aria-label="最近编辑">
           <div className="flex items-center gap-3">
