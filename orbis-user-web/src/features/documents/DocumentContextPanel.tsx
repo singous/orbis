@@ -179,7 +179,7 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
       {!treeQuery.isLoading && !treeQuery.isError ? <nav className="document-context-tree" aria-label="文集文档"><DocumentTree items={treeItems} depth={0} activeNoteId={activeNoteId} canEdit={canEdit} onNavigate={mobile ? onNavigate : undefined} onCreateChild={setCreateParent} onRename={setRenameTarget} onArchive={(note) => void handleArchive(note)} onMove={(note, delta) => void handleMove(note, delta)} /></nav> : null}
       <ResourceDialog open={createParent !== undefined} title={createParent ? "新建子文档" : "新建文档"} label="文档标题" placeholder="未命名文档" submitLabel="创建并打开" pending={createNote.isPending} onClose={() => setCreateParent(undefined)} onSubmit={handleCreate} />
       <ResourceDialog open={Boolean(renameTarget)} title="重命名文档" label="文档标题" placeholder="文档标题" initialValue={renameTarget?.title ?? ""} submitLabel="保存" pending={updateNote.isPending} onClose={() => setRenameTarget(null)} onSubmit={handleRename} />
-      {undoNote ? <div className="toast"><div><div className="text-sm font-semibold">文档已归档</div><div className="mt-0.5 text-xs text-white/60">{undoNote.title}</div></div><button type="button" className="toast-action" onClick={() => void handleUndo()}><Undo2 aria-hidden="true" size={14} />撤销</button></div> : null}
+      {undoNote ? <div className="toast"><div><div className="text-sm font-semibold">文档已归档</div><div className="mt-0.5 text-xs text-[var(--text-oninverse)] opacity-60">{undoNote.title}</div></div><button type="button" className="toast-action" onClick={() => void handleUndo()}><Undo2 aria-hidden="true" size={14} />撤销</button></div> : null}
     </section>
   );
 }

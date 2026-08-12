@@ -26,7 +26,7 @@ export function AccountSettingsPage() {
             当前登录账号与工作空间信息。
           </p>
         </header>
-        <dl className="overflow-hidden rounded-2xl border border-[var(--border)] bg-white">
+        <dl className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-content)]">
           {values.map(([label, value]) => (
             <div
               key={label}

@@ -99,7 +99,7 @@ export function MemberSettingsPage() {
         ) : null}
 
         {canManage ? (
-          <section className="mb-10 rounded-2xl border border-[var(--border)] bg-white p-5">
+          <section className="mb-10 rounded-2xl border border-[var(--border)] bg-[var(--surface-content)] p-5">
             <div className="mb-5 flex items-center gap-3">
               <div className="document-icon"><UserPlus aria-hidden="true" size={17} /></div>
               <div><h2 className="text-base font-semibold">邀请成员</h2><p className="mt-1 text-xs text-[var(--muted)]">{mailQuery.data?.available ? "邀请链接会通过邮件发送。" : "当前邮件服务未启用，邀请发送不可用。"}</p></div>
@@ -108,7 +108,7 @@ export function MemberSettingsPage() {
               <TextInput label="邮箱" type="email" placeholder="member@example.com" value={email} onChange={(event) => setEmail(event.target.value)} />
               <label className="grid gap-1.5 text-sm font-medium">
                 <span>角色</span>
-                <select className="h-11 rounded-xl border border-[var(--border)] bg-white px-3 text-sm" value={role} onChange={(event) => setRole(event.target.value as typeof role)}>
+                <select className="h-11 rounded-xl border border-[var(--border)] bg-[var(--surface-content)] px-3 text-sm" value={role} onChange={(event) => setRole(event.target.value as typeof role)}>
                   {workspace?.role === "owner" ? <option value="admin">管理员</option> : null}
                   <option value="editor">编辑者</option><option value="normal">普通成员</option>
                 </select>
@@ -121,16 +121,16 @@ export function MemberSettingsPage() {
         <section className="mb-10">
           <div className="section-heading"><div><h2>工作空间成员</h2><p>{membersQuery.data?.items.length ?? 0} 位活跃成员</p></div></div>
           {membersQuery.isLoading ? <div className="empty-panel">正在加载成员…</div> : null}
-          <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-white">
+          <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-content)]">
             {membersQuery.data?.items.map((member) => {
               const actorCanChange = canManage && (workspace?.role === "owner" || member.role !== "admin");
               return (
                 <div key={member.id} className="flex flex-wrap items-center gap-4 border-b border-[var(--border)] px-4 py-4 last:border-b-0">
-                  <div className="grid h-9 w-9 place-items-center rounded-full bg-black text-xs font-semibold text-white">{(member.display_name || member.email).slice(0, 1).toUpperCase()}</div>
+                  <div className="grid h-9 w-9 place-items-center rounded-full bg-[var(--surface-inverse)] text-xs font-semibold text-[var(--text-oninverse)]">{(member.display_name || member.email).slice(0, 1).toUpperCase()}</div>
                   <div className="min-w-[180px] flex-1"><div className="text-sm font-semibold">{member.display_name || member.email}</div><div className="mt-1 text-xs text-[var(--muted)]">{member.email}</div></div>
                   <div className="flex items-center gap-2">
                     {member.role === "owner" ? <span className="tag"><Crown aria-hidden="true" className="mr-1" size={11} />所有者</span> : actorCanChange ? (
-                      <select aria-label={`调整 ${member.email} 的角色`} className="h-9 rounded-lg border border-[var(--border)] bg-white px-2 text-xs" value={member.role} onChange={(event) => roleMutation.mutate({ id: member.id, nextRole: event.target.value as "admin" | "editor" | "normal" })}>
+                      <select aria-label={`调整 ${member.email} 的角色`} className="h-9 rounded-lg border border-[var(--border)] bg-[var(--surface-content)] px-2 text-xs" value={member.role} onChange={(event) => roleMutation.mutate({ id: member.id, nextRole: event.target.value as "admin" | "editor" | "normal" })}>
                         {workspace?.role === "owner" ? <option value="admin">管理员</option> : null}<option value="editor">编辑者</option><option value="normal">普通成员</option>
                       </select>
                     ) : <span className="tag"><Shield aria-hidden="true" className="mr-1" size={11} />{member.role}</span>}
@@ -146,7 +146,7 @@ export function MemberSettingsPage() {
         {canManage && pendingInvitations.length ? (
           <section>
             <div className="section-heading"><div><h2>待处理邀请</h2><p>过期后需要重新发送</p></div></div>
-            <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-white">
+            <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-content)]">
               {pendingInvitations.map((item) => (
                 <div key={item.id} className="flex flex-wrap items-center gap-4 border-b border-[var(--border)] px-4 py-4 last:border-b-0">
                   <Users aria-hidden="true" size={17} className="text-[var(--muted)]" />
@@ -159,7 +159,7 @@ export function MemberSettingsPage() {
           </section>
         ) : null}
 
-        {transferMutation.data ? <div className="toast"><div><div className="text-sm font-semibold">所有权转让已发起</div><div className="mt-0.5 text-xs text-white/60">等待目标管理员通过邮件确认</div></div><Crown aria-hidden="true" size={17} /></div> : null}
+        {transferMutation.data ? <div className="toast"><div><div className="text-sm font-semibold">所有权转让已发起</div><div className="mt-0.5 text-xs text-[var(--text-oninverse)] opacity-60">等待目标管理员通过邮件确认</div></div><Crown aria-hidden="true" size={17} /></div> : null}
       </div>
     </DocumentShell>
   );

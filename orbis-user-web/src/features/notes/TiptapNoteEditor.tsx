@@ -103,7 +103,7 @@ export function TiptapNoteEditor({
   }, [editor, readOnly]);
 
   return (
-    <section className="overflow-hidden rounded-md border border-[var(--border)] bg-white shadow-sm">
+    <section className="overflow-hidden rounded-md border border-[var(--border)] bg-[var(--surface-content)] shadow-sm">
       {!readOnly ? <EditorToolbar editor={editor} /> : null}
       <EditorContent editor={editor} />
     </section>

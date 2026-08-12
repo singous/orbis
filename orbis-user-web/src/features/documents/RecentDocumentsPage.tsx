@@ -50,12 +50,12 @@ export function RecentDocumentsPage() {
           </div>
         ) : null}
         {notes.length ? (
-          <div className="divide-y divide-[var(--border)] overflow-hidden rounded-2xl border border-[var(--border)] bg-white">
+          <div className="divide-y divide-[var(--border)] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-content)]">
             {notes.map((note) => (
               <Link
                 key={note.id}
                 to={`/documents/${note.id}`}
-                className="flex items-center gap-4 px-5 py-4 transition hover:bg-[#fafafa]"
+                className="flex items-center gap-4 px-5 py-4 transition hover:bg-[var(--surface-hover)]"
               >
                 <div className="document-icon small">
                   <FilePlus2 aria-hidden="true" size={15} />

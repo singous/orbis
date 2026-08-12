@@ -39,9 +39,9 @@ export function AcceptInvitationPage() {
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-[#f3f3f1] p-5">
-      <section className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-white p-7 shadow-xl shadow-black/5">
-        <div className="mb-6 grid h-12 w-12 place-items-center rounded-2xl bg-black text-white">
+    <main className="grid min-h-screen place-items-center bg-[var(--surface-app)] p-5">
+      <section className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--surface-content)] p-7 shadow-[var(--shadow-pop)]">
+        <div className="mb-6 grid h-12 w-12 place-items-center rounded-2xl bg-[var(--surface-inverse)] text-[var(--text-oninverse)]">
           {accept.isSuccess ? <Check aria-hidden="true" size={20} /> : <UserPlus aria-hidden="true" size={20} />}
         </div>
         {accept.isSuccess ? (

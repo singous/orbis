@@ -59,7 +59,7 @@ function ArchiveSection({
         </div>
       </div>
       {resources.length ? (
-        <div className="divide-y divide-[var(--border)] overflow-hidden rounded-xl border border-[var(--border)] bg-white">
+        <div className="divide-y divide-[var(--border)] overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-content)]">
           {resources.map((resource) => (
             <div
               key={resource.id}

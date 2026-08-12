@@ -5,6 +5,7 @@ import { Link, MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { authStore } from "../../shared/auth/auth-store";
+import { useThemeStore } from "../../shared/theme/theme-store";
 import { DocumentShell } from "../documents/DocumentShell";
 import { WorkspaceShell } from "./WorkspaceShell";
 
@@ -314,5 +315,27 @@ describe("WorkspaceShell", () => {
 
     expect(authStore.getState().accessToken).toBeNull();
     expect(screen.getByRole("status", { name: "current path" })).toHaveTextContent("/login");
+  });
+
+  it("routes knowledge and memory entries to their placeholder pages", () => {
+    renderShell();
+
+    expect(screen.getByRole("link", { name: "知识库" })).toHaveAttribute("href", "/knowledge");
+    expect(screen.getByRole("link", { name: "记忆" })).toHaveAttribute("href", "/memory");
+  });
+
+  it("toggles the application theme from the user menu", async () => {
+    const actor = userEvent.setup();
+    renderShell();
+
+    await actor.click(screen.getByRole("button", { name: "打开用户菜单" }));
+    await actor.click(screen.getByRole("button", { name: "切换到深色模式" }));
+
+    expect(document.documentElement.dataset.theme).toBe("dark");
+
+    // restore default state for other tests
+    window.localStorage.clear();
+    useThemeStore.setState({ theme: "light", explicit: false });
+    document.documentElement.dataset.theme = "light";
   });
 });

@@ -64,7 +64,7 @@ export function DocumentOverviewPage() {
             </Button>
             <Link
               to="/documents/collections"
-              className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--border)] bg-white px-3 text-sm font-medium transition hover:bg-[var(--surface-hover)]"
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface-content)] px-3 text-sm font-medium transition hover:bg-[var(--surface-hover)]"
             >
               新建文集
             </Link>
@@ -140,12 +140,12 @@ export function DocumentOverviewPage() {
             </div>
           ) : null}
           {recentNotes.length ? (
-            <div className="divide-y divide-[var(--border)] overflow-hidden rounded-xl border border-[var(--border)] bg-white">
+            <div className="divide-y divide-[var(--border)] overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-content)]">
               {recentNotes.map((note) => (
                 <Link
                   key={note.id}
                   to={`/documents/${note.id}`}
-                  className="flex items-center gap-4 px-4 py-3.5 transition hover:bg-[#fafafa]"
+                  className="flex items-center gap-4 px-4 py-3.5 transition hover:bg-[var(--surface-hover)]"
                 >
                   <div className="document-icon small">
                     <FilePlus2 aria-hidden="true" size={15} />
@@ -167,7 +167,7 @@ export function DocumentOverviewPage() {
           ) : null}
         </section>
 
-        <section className="mt-10 rounded-2xl border border-[var(--border)] bg-white p-5">
+        <section className="mt-10 rounded-2xl border border-[var(--border)] bg-[var(--surface-content)] p-5">
           <div className="flex items-start gap-3">
             <div className="document-icon">
               <BookOpen aria-hidden="true" size={18} />
