@@ -54,12 +54,12 @@ export function LoginPage({ mode }: { mode: "login" | "setup" }) {
         <div className="relative z-10 flex h-full flex-col">
           <Link to="/login" className="flex items-center gap-3 text-white"><span className="grid h-9 w-9 place-items-center rounded-xl bg-white text-sm font-black text-black">O</span><span className="text-sm font-semibold tracking-wide">ORBIS</span></Link>
           <div className="my-auto max-w-xl py-16">
-            <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/60"><Sparkles aria-hidden="true" size={12} />Cloud documents, in your control</div>
-            <h1 className="text-5xl font-semibold leading-[1.05] tracking-[-0.055em] text-white lg:text-7xl">把想法写成<br /><span className="text-white/40">可持续的知识资产。</span></h1>
+            <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[10px] font-semibold tracking-[0.16em] text-white/60"><Sparkles aria-hidden="true" size={12} />云端文档，自主可控</div>
+            <h1 className="text-5xl font-semibold leading-[1.12] tracking-[-0.045em] text-white lg:text-6xl">把想法写成<br /><span className="text-white/40">可持续的知识资产</span></h1>
             <p className="mt-7 max-w-lg text-sm leading-7 text-white/55">Orbis 为个人与小团队提供安静、清晰的在线文档空间。层级组织、结构化编辑与自动保存，在同一处自然发生。</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
-            {["结构化块编辑", "毫秒级自动保存", "清晰文档树"].map((item) => <div key={item} className="rounded-xl border border-white/10 bg-white/[0.035] p-4 text-xs text-white/65"><Check aria-hidden="true" size={14} className="mb-6 text-[#8a7cf6]" />{item}</div>)}
+            {["结构化块编辑", "毫秒级自动保存", "清晰文档树"].map((item) => <div key={item} className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.035] px-4 py-3 text-xs text-white/65"><Check aria-hidden="true" size={14} className="flex-none text-[#8a7cf6]" />{item}</div>)}
           </div>
         </div>
       </section>
@@ -67,7 +67,7 @@ export function LoginPage({ mode }: { mode: "login" | "setup" }) {
       <section className="auth-form-panel">
         <div className="w-full max-w-[420px]">
           <div className="mb-9 grid h-12 w-12 place-items-center rounded-2xl bg-[var(--surface-inverse)] text-[var(--text-oninverse)]"><BookOpen aria-hidden="true" size={20} /></div>
-          <div className="mb-8"><div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-text)]">{isSetup ? "First launch" : "Welcome back"}</div><h2 className="text-3xl font-semibold tracking-[-0.04em]">{isSetup ? "初始化 Orbis" : "登录工作空间"}</h2><p className="mt-3 text-sm leading-6 text-[var(--muted)]">{isSetup ? "创建唯一的所有者账号与默认私人工作空间。" : "继续编辑你的笔记本和在线文档。"}</p></div>
+          <div className="mb-8"><div className="mb-2 text-xs font-semibold tracking-[0.18em] text-[var(--accent-text)]">{isSetup ? "首次启动" : "欢迎回来"}</div><h2 className="text-3xl font-semibold tracking-[-0.04em]">{isSetup ? "初始化 Orbis" : "登录工作空间"}</h2><p className="mt-3 text-sm leading-6 text-[var(--muted)]">{isSetup ? "创建唯一的所有者账号与默认私人工作空间。" : "继续编辑你的笔记本和在线文档。"}</p></div>
           <form className="grid gap-4" onSubmit={handleSubmit}>
             {isSetup ? <TextInput label="显示名称" placeholder="你的名字" value={displayName} required onChange={(event) => setDisplayName(event.target.value)} autoComplete="name" /> : null}
             <TextInput label="邮箱" type="email" placeholder="name@example.com" value={email} required onChange={(event) => setEmail(event.target.value)} autoComplete="email" />

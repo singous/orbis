@@ -27,7 +27,7 @@ export function HomePage() {
       >
         <section className="grid gap-3 md:grid-cols-3">
           <Link to="/documents" className="document-card">
-            <div className="mb-7 document-icon">
+            <div className="mb-4 document-icon">
               <BookOpen aria-hidden="true" size={18} />
             </div>
             <h2 className="text-base font-semibold">在线文档</h2>
@@ -35,29 +35,29 @@ export function HomePage() {
               {groups.length} 个分组 · {notebooks.length} 个笔记本 ·{" "}
               {notes.length} 篇文档
             </p>
-            <div className="mt-5 text-sm font-semibold">进入文档</div>
+            <div className="mt-4 text-sm font-semibold">进入文档</div>
           </Link>
           <Link to="/knowledge" className="document-card opacity-65 transition-opacity hover:opacity-90">
-            <div className="mb-7 document-icon">
+            <div className="mb-4 document-icon">
               <LibraryBig aria-hidden="true" size={18} />
             </div>
             <h2 className="text-base font-semibold">知识库</h2>
             <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
               文件入库、笔记快照发布与检索问答正在建设中。
             </p>
-            <span className="mt-5 inline-block text-sm font-semibold">
+            <span className="mt-4 inline-block text-sm font-semibold">
               即将推出
             </span>
           </Link>
           <Link to="/memory" className="document-card opacity-65 transition-opacity hover:opacity-90">
-            <div className="mb-7 document-icon">
+            <div className="mb-4 document-icon">
               <BrainCircuit aria-hidden="true" size={18} />
             </div>
             <h2 className="text-base font-semibold">记忆库</h2>
             <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
               长期上下文沉淀能力正在建设中。
             </p>
-            <span className="mt-5 inline-block text-sm font-semibold">
+            <span className="mt-4 inline-block text-sm font-semibold">
               即将推出
             </span>
           </Link>

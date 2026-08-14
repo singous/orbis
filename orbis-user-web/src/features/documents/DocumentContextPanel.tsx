@@ -212,10 +212,7 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
     <section className={main ? "document-main-list" : "document-context"} aria-label="文档目录">
       {main ? null : (
         <div className="document-context-header">
-          <div>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--muted-light)]">Collection</div>
-            <h2>文档目录</h2>
-          </div>
+          <h2>文档目录</h2>
           {canEdit ? <Button variant="ghost" className="document-context-create" icon={<Plus aria-hidden="true" size={14} />} onClick={() => setCreateParent(null)}>新建文档</Button> : null}
         </div>
       )}

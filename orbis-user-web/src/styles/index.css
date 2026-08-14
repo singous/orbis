@@ -564,8 +564,8 @@ textarea {
 .empty-panel {
   border: 1px dashed var(--border-strong);
   border-radius: 14px;
-  background: rgb(255 255 255 / 60%);
-  padding: 30px;
+  background: var(--surface-panel);
+  padding: 34px 30px;
   color: var(--muted);
   text-align: center;
   font-size: 13px;
@@ -644,6 +644,18 @@ textarea {
   letter-spacing: -0.03em;
   line-height: 1.15;
   outline: none;
+}
+
+/* Align BlockNote's self-contained UI with Orbis tokens: same font stack,
+   transparent canvas, Orbis text color. Menu geometry is left untouched. */
+.editor-canvas .bn-container,
+.editor-canvas .bn-editor {
+  font-family: inherit;
+}
+
+.editor-canvas .bn-editor {
+  background: transparent;
+  color: var(--text-primary);
 }
 
 .editor-outline {
