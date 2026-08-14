@@ -353,7 +353,7 @@ describe("DocumentContextPanel", () => {
     expect(screen.getByRole("button", { name: "导出全部" })).toBeEnabled();
     // The notebook page owns its document list; no shell context panel aside.
     expect(screen.queryByRole("complementary", { name: "上下文面板" })).not.toBeInTheDocument();
-    const tree = screen.getByRole("navigation", { name: "笔记本文档" });
+    const tree = screen.getByRole("navigation", { name: "文档列表" });
     expect(tree).toHaveTextContent("产品计划");
     expect(tree).toHaveTextContent("发布范围");
   });

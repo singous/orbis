@@ -8,6 +8,7 @@ import { Button } from "../../shared/ui/Button";
 import { DocumentContextPanel, DocumentContextSummaryProvider, useDocumentContextSummary } from "./DocumentContextPanel";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { DocumentShell } from "./DocumentShell";
+import { NotebookSectionMenu } from "./NotebookSectionMenu";
 import {
   useCreateNote,
   useExportMarkdown,
@@ -74,7 +75,7 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
   if (collectionUnavailable) return null;
 
   return (
-    <DocumentShell>
+    <DocumentShell sectionMenu={<NotebookSectionMenu notebookId={collectionId} />}>
       <div className="page-container">
         <Link to="/documents" className="mb-8 inline-flex items-center gap-2 text-xs font-medium text-[var(--muted)] hover:text-black"><ArrowLeft aria-hidden="true" size={14} />文档中心</Link>
         <header className="notebook-hero">

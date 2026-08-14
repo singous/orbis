@@ -209,7 +209,7 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
   }
 
   return (
-    <section className={main ? "document-main-list" : "document-context"} aria-label="文档目录">
+    <section className={main ? "document-main-list" : "document-context"} aria-label={main ? undefined : "文档目录"}>
       {main ? null : (
         <div className="document-context-header">
           <h2>文档目录</h2>
@@ -229,7 +229,7 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
           <div className="px-3 py-5 text-xs leading-5 text-[var(--muted)]">这个笔记本还没有文档。{canEdit ? "从第一篇文档开始吧。" : ""}</div>
         )
       ) : null}
-      {!treeQuery.isLoading && !treeQuery.isError ? <nav className={main ? "grid gap-0.5" : "document-context-tree"} aria-label="笔记本文档"><DocumentTree items={treeItems} depth={0} activeNoteId={activeNoteId} canEdit={canEdit} main={main} onNavigate={mobile ? onNavigate : undefined} onCreateChild={setCreateParent} onRename={setRenameTarget} onArchive={(note) => void handleArchive(note)} onMove={(note, delta) => void handleMove(note, delta)} /></nav> : null}
+      {!treeQuery.isLoading && !treeQuery.isError ? <nav className={main ? "grid gap-0.5" : "document-context-tree"} aria-label={main ? "文档列表" : "笔记本文档"}><DocumentTree items={treeItems} depth={0} activeNoteId={activeNoteId} canEdit={canEdit} main={main} onNavigate={mobile ? onNavigate : undefined} onCreateChild={setCreateParent} onRename={setRenameTarget} onArchive={(note) => void handleArchive(note)} onMove={(note, delta) => void handleMove(note, delta)} /></nav> : null}
       <ResourceDialog open={createParent !== undefined} title={createParent ? "新建子文档" : "新建文档"} label="文档标题" placeholder="未命名文档" submitLabel="创建并打开" pending={createNote.isPending} onClose={() => setCreateParent(undefined)} onSubmit={handleCreate} />
       <ResourceDialog open={Boolean(renameTarget)} title="重命名文档" label="文档标题" placeholder="文档标题" initialValue={renameTarget?.title ?? ""} submitLabel="保存" pending={updateNote.isPending} onClose={() => setRenameTarget(null)} onSubmit={handleRename} />
       {undoNote ? <div className="toast"><div><div className="text-sm font-semibold">文档已归档</div><div className="mt-0.5 text-xs text-[var(--text-oninverse)] opacity-60">{undoNote.title}</div></div><button type="button" className="toast-action" onClick={() => void handleUndo()}><Undo2 aria-hidden="true" size={14} />撤销</button></div> : null}

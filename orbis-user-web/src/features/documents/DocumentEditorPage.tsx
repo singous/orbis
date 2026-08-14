@@ -9,8 +9,8 @@ import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { toV2, v2ToMarkdown, type NoteBlocksV2, type OrbisBlock, type OrbisInline } from "../notes/block-model";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { AutosaveCoordinator, type AutosaveState } from "./autosave";
-import { DocumentContextPanel } from "./DocumentContextPanel";
 import { DocumentShell } from "./DocumentShell";
+import { NotebookSectionMenu } from "./NotebookSectionMenu";
 
 // BlockNote is heavy; load it only when the editor page renders.
 const BlockNoteEditor = lazy(() =>
@@ -178,7 +178,7 @@ export function DocumentEditorPage() {
   );
 
   return (
-    <DocumentShell toolbar={toolbar} contextPanel={noteQuery.data ? <DocumentContextPanel notebookId={noteQuery.data.notebook_id} activeNoteId={noteId} /> : undefined}>
+    <DocumentShell toolbar={toolbar} sectionMenu={noteQuery.data ? <NotebookSectionMenu notebookId={noteQuery.data.notebook_id} activeNoteId={noteId} /> : undefined}>
       {!draft || !noteQuery.data ? <div className="grid min-h-[70vh] place-items-center text-sm text-[var(--muted)]">正在打开文档…</div> : (
         <div className={`editor-layout${outlineOpen ? " outline-open" : ""}`}>
           <article className="editor-canvas">
