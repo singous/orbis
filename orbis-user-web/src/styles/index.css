@@ -39,12 +39,12 @@
   --violet-600: #5546df;
   --violet-700: #463ac4;
 
-  /* Semantic: surfaces (paper depth model — quiet off-whites outside,
-     near-paper content; depth by luminance, not by borders) */
-  --surface-app: var(--gray-50);
-  --surface-sidebar: var(--gray-75);
-  --surface-panel: var(--gray-50);
-  --surface-content: var(--gray-0);
+  /* Semantic: surfaces (floating-panel model — cool gray canvas with
+     white rounded panels for the rail, sidebar menu and content) */
+  --surface-app: #f3f4f7;
+  --surface-sidebar: #ffffff;
+  --surface-panel: #ffffff;
+  --surface-content: #ffffff;
   --surface-hover: var(--gray-150);
   --surface-active: var(--gray-200);
   --surface-overlay: #ffffff;
@@ -64,7 +64,7 @@
   --border-inverse: rgb(255 255 255 / 12%);
 
   /* Semantic: business rail (light rail on paper) */
-  --rail-bg: #f4f4f2;
+  --rail-bg: #ffffff;
   --rail-border: #e6e6e2;
   --rail-text: #63635e;
   --rail-text-strong: #1c1c1a;
@@ -112,7 +112,7 @@
 
   /* Legacy aliases — keep unmigrated styles working; do not use in new code */
   --app-bg: var(--surface-app);
-  --workspace: var(--surface-content);
+  --workspace: var(--surface-app);
   --panel: var(--surface-panel);
   --chrome: var(--surface-inverse);
   --text: var(--text-primary);
@@ -152,6 +152,10 @@
   --violet-700: #b5abff;
 
   /* Semantic overrides where the light mapping does not hold */
+  --surface-app: #131315;
+  --surface-sidebar: #1f1f22;
+  --surface-panel: #1f1f22;
+  --surface-content: #1f1f22;
   --surface-overlay: #2c2c29;
   --surface-inverse: var(--gray-25);
   --surface-inverse-hover: var(--gray-100);
@@ -159,9 +163,8 @@
   --border-inverse: rgb(255 255 255 / 10%);
   --accent-text: var(--violet-600);
 
-  /* Dark workspace keeps a deeper gutter so content cards keep depth;
-     the rail goes one step darker than the app surface. */
-  --workspace: #1a1a18;
+  /* Dark: deep canvas with one-step-lighter panels. */
+  --rail-bg: #1f1f22;
   --rail-bg: #141412;
   --rail-border: rgb(255 255 255 / 8%);
   --rail-text: #8a8a83;
@@ -641,7 +644,7 @@ textarea {
 /* Full-bleed white page (Notion-like): no gray gutter, no floating sheet. */
 .editor-layout {
   display: grid;
-  min-height: calc(100vh - 64px);
+  min-height: calc(100vh - 80px);
   grid-template-columns: minmax(0, 1fr) 44px;
   gap: 24px;
   background: var(--surface-content);
@@ -804,6 +807,8 @@ textarea {
   display: grid;
   min-height: 100vh;
   grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  padding: 8px;
 }
 
 /* Explicit tracks: when the rail floats (fixed, out of flow), remaining
@@ -830,15 +835,15 @@ textarea {
 
 .workspace-business-rail {
   position: sticky;
-  top: 0;
+  top: 8px;
   align-self: start;
   z-index: 20;
   display: flex;
   width: 68px;
-  height: 100vh;
+  height: calc(100vh - 16px);
   flex-direction: column;
   align-items: center;
-  border-right: 1px solid var(--rail-border);
+  border-radius: 12px;
   background: var(--rail-bg);
   padding: 16px 0;
   color: var(--rail-text);
@@ -998,13 +1003,13 @@ textarea {
 
 .workspace-function-menu {
   position: sticky;
-  top: 0;
+  top: 8px;
   align-self: start;
   min-width: 0;
-  height: 100vh;
+  height: calc(100vh - 16px);
   overflow-y: auto;
-  border-right: 1px solid var(--border);
-  background: var(--panel);
+  border-radius: 12px;
+  background: var(--surface-panel);
 }
 
 .workspace-function-heading {
@@ -1070,7 +1075,11 @@ textarea {
 .workspace-main-area {
   display: grid;
   min-width: 0;
+  min-height: calc(100vh - 16px);
   grid-template-columns: minmax(0, 1fr);
+  align-self: start;
+  border-radius: 12px;
+  background: var(--surface-content);
 }
 
 .workspace-main-area.has-context {
@@ -1083,14 +1092,15 @@ textarea {
 
 .workspace-toolbar {
   position: sticky;
-  top: 0;
+  top: 8px;
   z-index: 10;
   display: flex;
   height: 64px;
   align-items: center;
   gap: 12px;
   border-bottom: 1px solid var(--border-subtle);
-  background: color-mix(in srgb, var(--workspace) 86%, transparent);
+  border-radius: 12px 12px 0 0;
+  background: color-mix(in srgb, var(--surface-content) 86%, transparent);
   padding: 0 28px;
   backdrop-filter: blur(14px);
 }
@@ -1098,6 +1108,7 @@ textarea {
 .workspace-context-panel {
   min-width: 220px;
   border-left: 1px solid var(--border);
+  border-radius: 0 12px 12px 0;
   background: var(--surface-panel);
 }
 
@@ -1332,6 +1343,19 @@ textarea {
   .workspace-shell-grid,
   .workspace-shell.has-section-menu .workspace-shell-grid {
     grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    padding: 0;
+  }
+
+  /* Panels flatten back to full-bleed surfaces in the drawer pattern. */
+  .workspace-main-area {
+    min-height: 100vh;
+    border-radius: 0;
+  }
+
+  .workspace-toolbar {
+    top: 0;
+    border-radius: 0;
   }
 
   /* Compact shell grid holds only the main area (navigation is a fixed
@@ -1347,6 +1371,7 @@ textarea {
     position: static;
     height: auto;
     align-self: auto;
+    border-radius: 0;
   }
 
   .workspace-main-navigation {
@@ -1558,14 +1583,15 @@ textarea {
 
 @media (min-width: 1024px) {
   .workspace-shell.rail-floating .workspace-shell-grid {
-    padding-left: 68px;
+    padding-left: 84px;
   }
 
   .workspace-shell.rail-floating .workspace-business-rail {
     position: fixed;
-    top: 0;
-    bottom: 0;
-    left: 0;
+    top: 8px;
+    bottom: 8px;
+    left: 8px;
+    height: auto;
     z-index: 50;
   }
 
