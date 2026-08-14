@@ -101,7 +101,7 @@ export function DocumentSearchPage() {
                   {note.plain_text || "空白文档"}
                 </p>
                 <p className="mt-3 text-xs text-[var(--muted-light)]">
-                  所属文集：{notebookNames.get(note.notebook_id) ?? "未知文集"}
+                  所属笔记本：{notebookNames.get(note.notebook_id) ?? "未知笔记本"}
                 </p>
               </Link>
             ))}

@@ -54,11 +54,22 @@ export const authResponseSchema = z.object({
 
 export type AuthResponse = z.infer<typeof authResponseSchema>;
 
-export const noteBlocksSchema = z.object({
+export const noteBlocksV1Schema = z.object({
   schema_version: z.literal(1),
   editor: z.literal("tiptap"),
   doc: z.record(z.unknown()),
 });
+
+export const noteBlocksV2Schema = z.object({
+  schema_version: z.literal(2),
+  editor: z.literal("blocknote"),
+  blocks: z.array(z.record(z.unknown())),
+});
+
+export const noteBlocksSchema = z.union([noteBlocksV1Schema, noteBlocksV2Schema]);
+
+export type NoteBlocksV1 = z.infer<typeof noteBlocksV1Schema>;
+export type NoteBlocksV2Stored = z.infer<typeof noteBlocksV2Schema>;
 
 const resourceIdentitySchema = z.object({
   id: z.string().uuid(),

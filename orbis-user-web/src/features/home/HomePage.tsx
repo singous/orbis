@@ -38,7 +38,7 @@ export function HomePage() {
             </div>
             <h2 className="text-base font-semibold">在线文档</h2>
             <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
-              {groups.length} 个分组 · {notebooks.length} 个文集 ·{" "}
+              {groups.length} 个分组 · {notebooks.length} 个笔记本 ·{" "}
               {notes.length} 篇文档
             </p>
             <div className="mt-5 text-sm font-semibold">进入文档</div>
@@ -90,7 +90,7 @@ export function HomePage() {
                 to="/documents/collections"
                 className="mt-3 inline-flex text-sm font-semibold"
               >
-                前往我的文集
+                前往我的笔记本
               </Link>
             </div>
           ) : null}

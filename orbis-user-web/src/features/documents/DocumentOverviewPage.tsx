@@ -1,14 +1,12 @@
 import { BookOpen, FilePlus2, Plus } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useStore } from "zustand";
 
 import { authStore } from "../../shared/auth/auth-store";
-import { Button } from "../../shared/ui/Button";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { DocumentShell } from "./DocumentShell";
 import {
-  useCreateNote,
   useDocumentGroups,
   useNotebooks,
   useNoteSearch,
@@ -22,13 +20,11 @@ function formatDate(value: number): string {
 }
 
 export function DocumentOverviewPage() {
-  const navigate = useNavigate();
   const workspace = useStore(authStore, (state) => state.workspace);
   const canEdit = canMutateWorkspaceContent(workspace);
   const groupsQuery = useDocumentGroups();
   const notebooksQuery = useNotebooks();
   const notesQuery = useNoteSearch("");
-  const createNote = useCreateNote();
   const groups = groupsQuery.data?.items ?? [];
   const notebooks = notebooksQuery.data?.items ?? [];
   const notes = notesQuery.data?.items ?? [];
@@ -36,39 +32,17 @@ export function DocumentOverviewPage() {
     .sort((left, right) => right.updated_at_ms - left.updated_at_ms)
     .slice(0, 5);
 
-  async function createDocument() {
-    const notebook = notebooks[0];
-    if (!notebook) return;
-    const note = await createNote.mutateAsync({
-      notebook_id: notebook.id,
-      title: "未命名文档",
-      parent_id: null,
-      sort_order: notes.filter((item) => item.notebook_id === notebook.id)
-        .length,
-    });
-    navigate(`/documents/${note.id}`);
-  }
-
   return (
     <DocumentShell
       toolbar={
         canEdit ? (
-          <div className="flex items-center gap-2">
-            <Button
-              variant="primary"
-              icon={<Plus aria-hidden="true" size={15} />}
-              disabled={!notebooks.length || createNote.isPending}
-              onClick={createDocument}
-            >
-              新建文档
-            </Button>
-            <Link
-              to="/documents/collections"
-              className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface-content)] px-3 text-sm font-medium transition hover:bg-[var(--surface-hover)]"
-            >
-              新建文集
-            </Link>
-          </div>
+          <Link
+            to="/documents/collections"
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-[var(--surface-inverse)] px-3 text-sm font-medium text-[var(--text-oninverse)] transition hover:opacity-90"
+          >
+            <Plus aria-hidden="true" size={15} />
+            新建笔记本
+          </Link>
         ) : null
       }
     >
@@ -101,7 +75,7 @@ export function DocumentOverviewPage() {
           </div>
           <div className="document-card">
             <div className="text-2xl font-semibold">{notebooks.length}</div>
-            <div className="mt-1 text-xs text-[var(--muted)]">个文集</div>
+            <div className="mt-1 text-xs text-[var(--muted)]">个笔记本</div>
           </div>
           <div className="document-card">
             <div className="text-2xl font-semibold">{notes.length}</div>
@@ -130,12 +104,12 @@ export function DocumentOverviewPage() {
                 size={24}
               />
               <div className="font-semibold text-black">还没有文档</div>
-              <p className="mt-1">先创建文集，再开始第一篇文档。</p>
+              <p className="mt-1">先创建笔记本，再开始第一篇文档。</p>
               <Link
                 className="mt-4 inline-flex text-sm font-semibold"
                 to="/documents/collections"
               >
-                管理文集
+                管理笔记本
               </Link>
             </div>
           ) : null}
@@ -173,15 +147,15 @@ export function DocumentOverviewPage() {
               <BookOpen aria-hidden="true" size={18} />
             </div>
             <div>
-              <h2 className="text-base font-semibold">管理你的文集</h2>
+              <h2 className="text-base font-semibold">管理你的笔记本</h2>
               <p className="mt-1 text-sm text-[var(--muted)]">
-                分组、文集和目录结构集中在一个地方维护。
+                分组、笔记本和目录结构集中在一个地方维护。
               </p>
               <Link
                 className="mt-3 inline-flex text-sm font-semibold"
                 to="/documents/collections"
               >
-                前往我的文集
+                前往我的笔记本
               </Link>
             </div>
           </div>

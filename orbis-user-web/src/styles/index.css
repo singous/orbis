@@ -526,24 +526,29 @@ textarea {
   font-weight: 650;
 }
 
+/* Full-bleed white page (Notion-like): no gray gutter, no floating sheet. */
 .editor-layout {
   display: grid;
   min-height: calc(100vh - 64px);
-  grid-template-columns: minmax(0, 1fr) 210px;
-  gap: 48px;
-  background: var(--surface-app);
-  padding: 36px 36px 80px;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  gap: 24px;
+  background: var(--surface-content);
+  padding: 24px 32px 96px;
+  transition: grid-template-columns 200ms ease;
 }
 
+/* Outline expanded (hover or pinned): squeeze the editor column. */
+.editor-layout.outline-open {
+  grid-template-columns: minmax(0, 1fr) 232px;
+}
+
+/* Content column, not a sheet of paper: no border, no shadow, transparent bg. */
 .editor-canvas {
   width: 100%;
-  max-width: 880px;
+  max-width: 760px;
   justify-self: center;
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  background: var(--surface-content);
-  padding: 50px 64px 80px;
-  box-shadow: 0 14px 45px rgb(25 25 25 / 5%);
+  background: transparent;
+  padding: 8px 0 0;
 }
 
 .editor-title {
@@ -551,10 +556,10 @@ textarea {
   border: 0;
   background: transparent;
   color: var(--text);
-  font-size: clamp(2.25rem, 5vw, 3.65rem);
-  font-weight: 680;
-  letter-spacing: -0.055em;
-  line-height: 1.04;
+  font-size: clamp(1.9rem, 4vw, 2.6rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
   outline: none;
 }
 
@@ -562,10 +567,41 @@ textarea {
   position: sticky;
   top: 96px;
   align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   max-height: calc(100vh - 120px);
-  overflow: auto;
+  overflow: hidden;
   border-left: 1px solid var(--border-strong);
-  padding: 8px 0 8px 18px;
+  padding: 8px 0 8px 10px;
+}
+
+.editor-outline-pin {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface-content);
+  color: var(--muted);
+  transition: color 120ms ease, background 120ms ease;
+}
+
+.editor-outline-pin:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.editor-outline-body {
+  display: none;
+  min-width: 0;
+  overflow: auto;
+}
+
+.editor-layout.outline-open .editor-outline-body {
+  display: block;
 }
 
 .save-indicator {
@@ -643,7 +679,7 @@ textarea {
 .workspace-shell-grid {
   display: grid;
   min-height: 100vh;
-  grid-template-columns: 68px minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
 }
 
 .workspace-shell.has-section-menu .workspace-shell-grid {
@@ -655,11 +691,13 @@ textarea {
 }
 
 .workspace-business-rail {
-  position: relative;
+  position: sticky;
+  top: 0;
+  align-self: start;
   z-index: 20;
   display: flex;
   width: 68px;
-  min-height: 100vh;
+  height: 100vh;
   flex-direction: column;
   align-items: center;
   border-right: 1px solid var(--border-inverse);
@@ -692,7 +730,12 @@ textarea {
 }
 
 .workspace-function-menu {
+  position: sticky;
+  top: 0;
+  align-self: start;
   min-width: 0;
+  height: 100vh;
+  overflow-y: auto;
   border-right: 1px solid var(--border);
   background: var(--panel);
 }
@@ -932,8 +975,17 @@ textarea {
 }
 
 @media (max-width: 1023px) {
-  .workspace-shell-grid {
+  .workspace-shell-grid,
+  .workspace-shell.has-section-menu .workspace-shell-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Undo desktop sticky pinning inside the fixed mobile drawer. */
+  .workspace-business-rail,
+  .workspace-function-menu {
+    position: static;
+    height: auto;
+    align-self: auto;
   }
 
   .workspace-main-navigation {
@@ -1138,4 +1190,222 @@ textarea {
     bottom: 12px;
     left: 12px;
   }
+}
+
+
+
+/* ============================================================
+   Business rail v2: expandable, search item, pinned notebooks.
+   ============================================================ */
+.workspace-business-rail {
+  transition: width 180ms ease;
+}
+
+.workspace-business-rail.is-expanded {
+  width: 236px;
+  align-items: stretch;
+  padding: 16px 10px;
+}
+
+.workspace-business-rail.is-expanded .workspace-business-nav {
+  align-items: stretch;
+  margin-top: 20px;
+  gap: 4px;
+}
+
+.rail-expand {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 7px;
+  color: var(--text-oninverse);
+  opacity: 0.6;
+}
+
+.rail-expand:hover {
+  background: var(--border-inverse);
+  opacity: 1;
+}
+
+.rail-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--text-oninverse);
+  opacity: 0.55;
+}
+
+.rail-icon:hover {
+  background: var(--border-inverse);
+  opacity: 1;
+}
+
+.rail-icon.is-active {
+  background: var(--border-inverse);
+  opacity: 1;
+}
+
+.rail-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 560;
+  color: var(--text-oninverse);
+  opacity: 0.75;
+}
+
+.rail-row:hover {
+  background: var(--border-inverse);
+  opacity: 1;
+}
+
+.rail-row.is-active {
+  background: var(--border-inverse);
+  opacity: 1;
+}
+
+.rail-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.workspace-business-rail.is-expanded .rail-bottom {
+  align-items: stretch;
+}
+
+/* Collapsed favorites trigger + hover popover */
+.rail-fav-trigger-group {
+  position: relative;
+}
+
+.rail-fav-popover {
+  position: absolute;
+  left: calc(100% + 8px);
+  bottom: 0;
+  z-index: 60;
+  display: none;
+  width: 232px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-overlay);
+  padding: 8px;
+  box-shadow: var(--shadow-pop);
+}
+
+.rail-fav-trigger-group:hover .rail-fav-popover,
+.rail-fav-trigger-group:focus-within .rail-fav-popover {
+  display: block;
+}
+
+.rail-favorites-title {
+  padding: 4px 6px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.rail-favorites-empty {
+  padding: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.rail-fav-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rail-fav-item .rail-row {
+  flex: 1;
+  opacity: 1;
+}
+
+.rail-favorites .rail-fav-item .rail-row {
+  color: var(--text-oninverse);
+}
+
+.rail-favorites .rail-fav-item .rail-row:hover {
+  background: var(--border-inverse);
+}
+
+.rail-fav-popover .rail-fav-item .rail-row {
+  color: var(--text);
+}
+
+.rail-fav-popover .rail-fav-item .rail-row:hover {
+  background: var(--surface-hover);
+}
+
+.rail-favorites .rail-pin {
+  color: var(--text-oninverse);
+  opacity: 0.6;
+}
+
+.rail-favorites .rail-pin:hover {
+  background: var(--border-inverse);
+  opacity: 1;
+}
+
+.rail-pin {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  place-items: center;
+  border-radius: 6px;
+  color: var(--muted);
+}
+
+.rail-pin:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.rail-pin.is-on {
+  color: var(--accent-strong);
+}
+
+/* Pin button on notebook cards (top-right) */
+.notebook-pin {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 5;
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-content);
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.collection-card:hover .notebook-pin,
+.notebook-pin.is-on {
+  opacity: 1;
+}
+
+.notebook-pin:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.notebook-pin.is-on {
+  color: var(--accent-strong);
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
 }

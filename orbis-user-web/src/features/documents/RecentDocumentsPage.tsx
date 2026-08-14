@@ -45,7 +45,7 @@ export function RecentDocumentsPage() {
               to="/documents/collections"
               className="mt-3 inline-flex text-sm font-semibold"
             >
-              前往我的文集
+              前往我的笔记本
             </Link>
           </div>
         ) : null}

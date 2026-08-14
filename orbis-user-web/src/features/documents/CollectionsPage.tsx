@@ -3,6 +3,7 @@ import {
   BookOpen,
   FolderPlus,
   MoreHorizontal,
+  Pin,
   Plus,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -15,6 +16,7 @@ import { Button } from "../../shared/ui/Button";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { DocumentShell } from "./DocumentShell";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
+import { usePinnedNotebooks } from "./pinned-notebooks";
 import { ResourceDialog } from "./ResourceDialog";
 import {
   useArchiveDocumentGroup,
@@ -52,6 +54,7 @@ export function CollectionsPage() {
   const location = useLocation();
   const workspace = useStore(authStore, (state) => state.workspace);
   const canEdit = canMutateWorkspaceContent(workspace);
+  const { isPinned, togglePin } = usePinnedNotebooks(workspace?.id);
   const [dialog, setDialog] = useState<DialogState>(null);
   const groupsQuery = useDocumentGroups();
   const notebooksQuery = useNotebooks();
@@ -120,11 +123,11 @@ export function CollectionsPage() {
         }
       : dialog?.kind === "notebook"
         ? {
-            title: "新建文集",
-            label: "文集名称",
+            title: "新建笔记本",
+            label: "笔记本名称",
             placeholder: "例如：Orbis 产品手册",
             initialValue: "",
-            submitLabel: "创建文集",
+            submitLabel: "创建笔记本",
           }
         : dialog?.kind === "rename-group"
           ? {
@@ -136,9 +139,9 @@ export function CollectionsPage() {
             }
           : dialog?.kind === "rename-notebook"
             ? {
-                title: "重命名文集",
-                label: "文集名称",
-                placeholder: "文集名称",
+                title: "重命名笔记本",
+                label: "笔记本名称",
+                placeholder: "笔记本名称",
                 initialValue: dialog.resource.title,
                 submitLabel: "保存",
               }
@@ -157,7 +160,7 @@ export function CollectionsPage() {
             }
             disabled={!groups.length}
           >
-            新建文集
+            新建笔记本
           </Button>
         ) : null
       }
@@ -168,10 +171,10 @@ export function CollectionsPage() {
             Workspace / Documents
           </div>
           <h1 className="text-4xl font-semibold tracking-[-0.045em] lg:text-5xl">
-            我的文集
+            我的笔记本
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--muted)]">
-            在清晰的层级中管理分组、文集和文档目录。
+            在清晰的层级中管理分组、笔记本和文档目录。
           </p>
         </header>
         {resourceError ? (
@@ -194,15 +197,15 @@ export function CollectionsPage() {
           </div>
         ) : null}
         {groupsQuery.isError || notebooksQuery.isError || notesQuery.isError ? (
-          <StatusMessage tone="error" title="文集加载失败">
+          <StatusMessage tone="error" title="笔记本加载失败">
             请检查 API 服务后重试。
           </StatusMessage>
         ) : null}
-        <section aria-label="文集">
+        <section aria-label="笔记本">
           <div className="section-heading">
             <div>
-              <h2>文集管理</h2>
-              <p>{notebooks.length} 个文集，按工作主题归档</p>
+              <h2>笔记本管理</h2>
+              <p>{notebooks.length} 个笔记本，按工作主题归档</p>
             </div>
             {canEdit ? (
               <Button
@@ -215,13 +218,13 @@ export function CollectionsPage() {
             ) : null}
           </div>
           {groupsQuery.isLoading || notebooksQuery.isLoading ? (
-            <div className="empty-panel">正在加载文集…</div>
+            <div className="empty-panel">正在加载笔记本…</div>
           ) : null}
           {!groupsQuery.isLoading && !notebooks.length ? (
             <div className="empty-panel">
               <BookOpen aria-hidden="true" className="mx-auto mb-3" size={24} />
-              <div className="font-semibold text-black">还没有文集</div>
-              <p className="mt-1">先在默认分组下创建一个文集。</p>
+              <div className="font-semibold text-black">还没有笔记本</div>
+              <p className="mt-1">先在默认分组下创建一个笔记本。</p>
               {canEdit && groups[0] ? (
                 <Button
                   className="mt-4"
@@ -230,7 +233,7 @@ export function CollectionsPage() {
                     setDialog({ kind: "notebook", groupId: groups[0].id })
                   }
                 >
-                  创建第一个文集
+                  创建第一个笔记本
                 </Button>
               ) : null}
             </div>
@@ -261,7 +264,7 @@ export function CollectionsPage() {
                             setDialog({ kind: "notebook", groupId: group.id })
                           }
                         >
-                          + 文集
+                          + 笔记本
                         </button>
                         <button
                           className="icon-button"
@@ -296,8 +299,17 @@ export function CollectionsPage() {
                       {groupNotebooks.map((notebook) => (
                         <article
                           key={notebook.id}
-                          className="collection-card group/card"
+                          className="collection-card group/card relative"
                         >
+                          <button
+                            type="button"
+                            className={`notebook-pin${isPinned(notebook.id) ? " is-on" : ""}`}
+                            aria-label={isPinned(notebook.id) ? `取消置顶 ${notebook.title}` : `置顶 ${notebook.title}`}
+                            aria-pressed={isPinned(notebook.id)}
+                            onClick={() => togglePin(notebook.id)}
+                          >
+                            <Pin aria-hidden="true" size={14} />
+                          </button>
                           <Link
                             to={`/collections/${notebook.id}`}
                             className="block min-w-0 flex-1"
@@ -365,7 +377,7 @@ export function CollectionsPage() {
                       }
                       className="w-full rounded-xl border border-dashed border-[var(--border-strong)] bg-[var(--surface-hover)] p-6 text-sm text-[var(--muted)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-active)] disabled:cursor-default"
                     >
-                      此分组暂无文集{canEdit ? "，点击创建" : ""}
+                      此分组暂无笔记本{canEdit ? "，点击创建" : ""}
                     </button>
                   )}
                 </div>

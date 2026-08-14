@@ -1,6 +1,6 @@
 import type { JSONContent } from "@tiptap/react";
 
-import type { NoteBlocks } from "../../shared/api/schemas";
+import type { NoteBlocksV1 } from "../../shared/api/schemas";
 
 export type TiptapDocument = JSONContent & {
   type: "doc";
@@ -13,11 +13,11 @@ export function createEmptyTiptapDoc(): TiptapDocument {
   };
 }
 
-export function createEmptyNoteBlocks(): NoteBlocks {
+export function createEmptyNoteBlocks(): NoteBlocksV1 {
   return toNoteBlocks(createEmptyTiptapDoc());
 }
 
-export function toNoteBlocks(doc: TiptapDocument): NoteBlocks {
+export function toNoteBlocks(doc: TiptapDocument): NoteBlocksV1 {
   return {
     schema_version: 1,
     editor: "tiptap",

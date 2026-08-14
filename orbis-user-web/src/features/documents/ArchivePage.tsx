@@ -140,7 +140,7 @@ export function ArchivePage() {
       return "请先恢复分组";
     }
     if (archivedNotebooksById.has(note.notebook_id)) {
-      return "请先恢复文集";
+      return "请先恢复笔记本";
     }
     if (note.parent_id && archivedNotesById.has(note.parent_id)) {
       return "请先恢复父文档";
@@ -190,7 +190,7 @@ export function ArchivePage() {
           error={archiveGroup.error}
         />
         <ArchiveSection
-          title="文集"
+          title="笔记本"
           icon={<BookOpen aria-hidden="true" size={14} />}
           resources={notebooks.map((notebook) => ({
             id: notebook.id,
@@ -215,8 +215,8 @@ export function ArchivePage() {
             id: note.id,
             label: note.title,
             parentLabel: notebooksById.has(note.notebook_id)
-              ? `归属文集：${notebooksById.get(note.notebook_id)?.title}`
-              : "归属文集：已恢复",
+              ? `归属笔记本：${notebooksById.get(note.notebook_id)?.title}`
+              : "归属笔记本：已恢复",
             restoreBlockedReason: noteRestoreBlockedReason(note),
           }))}
           canRestore={canRestore}

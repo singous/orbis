@@ -76,8 +76,8 @@ vi.mock("./queries", () => ({
   useExportMarkdown: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
-vi.mock("../notes/TiptapNoteEditor", () => ({
-  TiptapNoteEditor: () => <div>编辑器仍可用</div>,
+vi.mock("../notes/BlockNoteEditor", () => ({
+  BlockNoteEditor: () => <div>编辑器仍可用</div>,
 }));
 
 const user = {
@@ -293,7 +293,7 @@ describe("DocumentContextPanel", () => {
     expect(mocks.archiveNote).toHaveBeenNthCalledWith(2, { id: rootNote.id, archived: false });
   });
 
-  it("keeps the editor available when only its contextual tree fails", () => {
+  it("keeps the editor available when only its contextual tree fails", async () => {
     treeState = { data: undefined, isLoading: false, isError: true, refetch: mocks.refetchTree };
     render(
       <MemoryRouter initialEntries={[`/documents/${rootNote.id}`]}>
@@ -301,7 +301,7 @@ describe("DocumentContextPanel", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("编辑器仍可用")).toBeInTheDocument();
+    expect(await screen.findByText("编辑器仍可用")).toBeInTheDocument();
     expect(screen.getByText("目录加载失败")).toBeInTheDocument();
   });
 

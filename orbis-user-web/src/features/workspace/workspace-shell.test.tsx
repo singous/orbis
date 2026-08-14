@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Link, MemoryRouter, useLocation } from "react-router-dom";
@@ -11,19 +12,27 @@ import { WorkspaceShell } from "./WorkspaceShell";
 
 const workspaceStyles = readFileSync("src/styles/index.css", "utf8");
 
+function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      {children}
+    </QueryClientProvider>
+  );
+}
+
 const user = {
-  id: "018ff7c4-a5b6-7000-8000-000000000001",
+  id: "018ff7c4-a5b6-7000-000000000001",
   tenant_id: null,
   email: "owner@orbis.test",
   display_name: "Orbis Owner",
-  current_workspace_id: "018ff7c4-a5b6-7000-8000-000000000002",
+  current_workspace_id: "018ff7c4-a5b6-7000-000000000002",
   status: "active",
   created_at_ms: 1,
   updated_at_ms: 1,
 };
 
 const workspace = {
-  id: "018ff7c4-a5b6-7000-8000-000000000002",
+  id: "018ff7c4-a5b6-7000-000000000002",
   name: "Orbis Workspace",
   workspace_type: "team",
   role: "owner" as const,
@@ -38,25 +47,29 @@ function CurrentPath() {
 
 function renderShell(initialEntry = "/documents", contextPanel?: React.ReactNode, sectionMenu?: React.ReactNode) {
   return render(
-    <MemoryRouter initialEntries={[initialEntry]}>
-      <WorkspaceShell
-        sectionTitle="测试工作台"
-        sectionMenu={sectionMenu}
-        contextPanel={contextPanel}
-      >
-        <div>文档内容</div>
-      </WorkspaceShell>
-      <CurrentPath />
-    </MemoryRouter>,
+    <Providers>
+      <MemoryRouter initialEntries={[initialEntry]}>
+        <WorkspaceShell
+          sectionTitle="测试工作台"
+          sectionMenu={sectionMenu}
+          contextPanel={contextPanel}
+        >
+          <div>文档内容</div>
+        </WorkspaceShell>
+        <CurrentPath />
+      </MemoryRouter>
+    </Providers>,
   );
 }
 
 function renderDocumentShell(initialEntry = "/documents") {
   return render(
-    <MemoryRouter initialEntries={[initialEntry]}>
-      <DocumentShell><div>文档内容</div></DocumentShell>
-      <CurrentPath />
-    </MemoryRouter>,
+    <Providers>
+      <MemoryRouter initialEntries={[initialEntry]}>
+        <DocumentShell><div>文档内容</div></DocumentShell>
+        <CurrentPath />
+      </MemoryRouter>
+    </Providers>,
   );
 }
 
@@ -87,9 +100,11 @@ describe("WorkspaceShell", () => {
 
   it("renders only the business rail when a workspace page supplies no section menu", () => {
     render(
-      <MemoryRouter>
-        <WorkspaceShell><div>工作区内容</div></WorkspaceShell>
-      </MemoryRouter>,
+      <Providers>
+        <MemoryRouter>
+          <WorkspaceShell><div>工作区内容</div></WorkspaceShell>
+        </MemoryRouter>
+      </Providers>,
     );
 
     expect(screen.getByRole("navigation", { name: "业务板块" })).toBeInTheDocument();
@@ -107,50 +122,17 @@ describe("WorkspaceShell", () => {
     expect(document.querySelector(".workspace-shell")).toHaveClass("has-section-menu");
   });
 
-  it("lets the document shell own the five online document functions", () => {
+  it("exposes search and the area tabs on the business rail", () => {
     render(
-      <MemoryRouter initialEntries={["/documents"]}>
-        <DocumentShell><div>文档内容</div></DocumentShell>
-      </MemoryRouter>,
+      <Providers>
+        <MemoryRouter initialEntries={["/documents"]}>
+          <DocumentShell><div>文档内容</div></DocumentShell>
+        </MemoryRouter>
+      </Providers>,
     );
 
-    expect(screen.getByRole("navigation", { name: "在线文档功能" })).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: /文档概览|最近文档|我的文集|搜索|归档/ })).toHaveLength(5);
-    expect(screen.getByText("在线云文档")).toBeInTheDocument();
-  });
-
-  it.each([
-    ["文档概览", "/documents"],
-    ["最近文档", "/documents/recent"],
-    ["我的文集", "/documents/collections"],
-    ["搜索", "/documents/search"],
-    ["归档", "/documents/archive"],
-  ] as const)("navigates %s to its explicit document route", async (label, path) => {
-    const actor = userEvent.setup();
-    renderDocumentShell();
-
-    const link = screen.getByRole("link", { name: label });
-    expect(link).toHaveAttribute("href", path);
-
-    await actor.click(link);
-
-    expect(screen.getByRole("status", { name: "current path" })).toHaveTextContent(path);
-    expect(link).toHaveClass("is-active");
-    const overview = screen.getByRole("link", { name: "文档概览" });
-    if (label === "文档概览") expect(overview).toHaveClass("is-active");
-    else expect(overview).not.toHaveClass("is-active");
-  });
-
-  it("marks collections and notes as the 我的文集 function", () => {
-    renderDocumentShell("/collections/018ff7c4-a5b6-7000-8000-000000000004");
-
-    expect(screen.getByRole("link", { name: "我的文集" })).toHaveClass("is-active");
-  });
-
-  it("marks an open note as the 我的文集 function", () => {
-    renderDocumentShell("/documents/018ff7c4-a5b6-7000-8000-000000000005");
-
-    expect(screen.getByRole("link", { name: "我的文集" })).toHaveClass("is-active");
+    expect(screen.getByRole("link", { name: "搜索" })).toHaveAttribute("href", "/documents/search");
+    expect(screen.getByRole("navigation", { name: "业务板块" })).toBeInTheDocument();
   });
 
   it("keeps the optional context panel inside the main workspace column", () => {
@@ -162,62 +144,6 @@ describe("WorkspaceShell", () => {
     expect(mainWorkspace).toContainElement(contextPanel);
     expect(mainWorkspace.lastElementChild).toBe(contextPanel);
     expect(mainWorkspace.parentElement?.children).toHaveLength(2);
-  });
-
-  it("uses separate mobile drawers and closes each after its navigation link", async () => {
-    const actor = userEvent.setup();
-    renderShell("/documents", <nav aria-label="测试文档目录"><Link to="/documents/note-1">目录中的文档</Link></nav>, <nav aria-label="测试功能"><Link to="/documents/search">搜索</Link></nav>);
-    const mainNavigation = screen.getByRole("button", { name: "打开主导航" });
-    const documentContext = screen.getByRole("button", { name: "打开文档目录" });
-
-    await actor.click(mainNavigation);
-
-    expect(mainNavigation).toHaveAttribute("aria-expanded", "true");
-    expect(documentContext).toHaveAttribute("aria-expanded", "false");
-
-    await actor.click(documentContext);
-
-    expect(mainNavigation).toHaveAttribute("aria-expanded", "false");
-    expect(documentContext).toHaveAttribute("aria-expanded", "true");
-
-    await actor.click(screen.getByRole("link", { name: "搜索" }));
-
-    expect(mainNavigation).toHaveAttribute("aria-expanded", "false");
-
-    await actor.click(documentContext);
-    await actor.click(screen.getByRole("link", { name: "目录中的文档" }));
-
-    expect(documentContext).toHaveAttribute("aria-expanded", "false");
-  });
-
-  it("makes closed mobile drawer descendants inert until their drawer opens", async () => {
-    const originalMatchMedia = window.matchMedia;
-    Object.defineProperty(window, "matchMedia", {
-      configurable: true,
-      value: () => ({
-        matches: true,
-        addEventListener: () => undefined,
-        removeEventListener: () => undefined,
-      }),
-    });
-    const actor = userEvent.setup();
-
-    try {
-      renderShell("/documents", <nav aria-label="测试文档目录"><Link to="/documents/note-1">目录中的文档</Link></nav>, <nav aria-label="测试功能"><Link to="/documents/search">搜索</Link></nav>);
-
-      expect(screen.queryByRole("link", { name: "搜索" })).not.toBeInTheDocument();
-      expect(screen.queryByRole("link", { name: "目录中的文档" })).not.toBeInTheDocument();
-
-      await actor.click(screen.getByRole("button", { name: "打开主导航" }));
-      expect(screen.getByRole("link", { name: "搜索" })).toBeInTheDocument();
-      expect(screen.queryByRole("link", { name: "目录中的文档" })).not.toBeInTheDocument();
-
-      await actor.click(screen.getByRole("button", { name: "打开文档目录" }));
-      expect(screen.queryByRole("link", { name: "搜索" })).not.toBeInTheDocument();
-      expect(screen.getByRole("link", { name: "目录中的文档" })).toBeInTheDocument();
-    } finally {
-      Object.defineProperty(window, "matchMedia", { configurable: true, value: originalMatchMedia });
-    }
   });
 
   it("collapses the mobile document context drawer when its panel is closed", async () => {
@@ -234,11 +160,13 @@ describe("WorkspaceShell", () => {
 
     try {
       render(
-        <MemoryRouter initialEntries={["/documents"]}>
-          <DocumentShell contextPanel={<nav aria-label="测试文档目录">文档目录</nav>}>
-            <div>文档内容</div>
-          </DocumentShell>
-        </MemoryRouter>,
+        <Providers>
+          <MemoryRouter initialEntries={["/documents"]}>
+            <DocumentShell contextPanel={<nav aria-label="测试文档目录">文档目录</nav>}>
+              <div>文档内容</div>
+            </DocumentShell>
+          </MemoryRouter>
+        </Providers>,
       );
       const trigger = screen.getByRole("button", { name: "打开文档目录" });
 

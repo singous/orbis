@@ -1,4 +1,4 @@
-import { ArrowLeft, BookOpen, Download, FilePlus2, Import } from "lucide-react";
+import { ArrowLeft, BookOpen, Download, FilePlus2, Import, Plus } from "lucide-react";
 import { type ChangeEvent, useEffect, useRef } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useStore } from "zustand";
@@ -9,6 +9,7 @@ import { DocumentContextPanel, DocumentContextSummaryProvider, useDocumentContex
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { DocumentShell } from "./DocumentShell";
 import {
+  useCreateNote,
   useExportMarkdown,
   useImportMarkdown,
   useNotebooks,
@@ -22,6 +23,7 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
   const notebooksQuery = useNotebooks();
   const importMarkdown = useImportMarkdown();
   const exportMarkdown = useExportMarkdown();
+  const createNote = useCreateNote();
   const treeSummary = useDocumentContextSummary();
   const notebook = notebooksQuery.data?.items.find((item) => item.id === collectionId);
   const collectionUnavailable =
@@ -32,7 +34,7 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
     navigate("/documents/collections", {
       replace: true,
       state: {
-        resourceError: "无法打开文集：它不存在、已归档，或你没有访问权限。",
+        resourceError: "无法打开笔记本：它不存在、已归档，或你没有访问权限。",
       },
     });
   }, [collectionUnavailable, navigate]);
@@ -44,6 +46,16 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
     const markdown = await file.text();
     const title = file.name.replace(/\.md$/i, "") || "导入文档";
     const note = await importMarkdown.mutateAsync({ notebook_id: collectionId, title, markdown, parent_id: null, sort_order: treeSummary.rootCount });
+    navigate(`/documents/${note.id}`);
+  }
+
+  async function createDocument() {
+    const note = await createNote.mutateAsync({
+      notebook_id: collectionId,
+      title: "未命名文档",
+      parent_id: null,
+      sort_order: treeSummary.rootCount,
+    });
     navigate(`/documents/${note.id}`);
   }
 
@@ -67,13 +79,14 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
         <Link to="/documents" className="mb-8 inline-flex items-center gap-2 text-xs font-medium text-[var(--muted)] hover:text-black"><ArrowLeft aria-hidden="true" size={14} />文档中心</Link>
         <header className="notebook-hero">
           <div className="document-icon large"><BookOpen aria-hidden="true" size={25} /></div>
-          <div className="min-w-0 flex-1"><div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--muted-light)]">Collection</div><h1 className="truncate text-4xl font-semibold tracking-[-0.045em] lg:text-5xl">{notebook?.title ?? "正在加载…"}</h1><p className="mt-4 max-w-2xl text-sm leading-6 text-[var(--muted)]">集中管理这个文集里的章节与页面。子文档会继承清晰的层级，但内容始终独立保存。</p><div className="mt-5 flex flex-wrap gap-2"><span className="tag">{treeSummary.noteCount} 篇文档</span><span className="tag">结构化内容</span><span className="tag">自动保存</span></div></div>
+          <div className="min-w-0 flex-1"><div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--muted-light)]">Collection</div><h1 className="truncate text-4xl font-semibold tracking-[-0.045em] lg:text-5xl">{notebook?.title ?? "正在加载…"}</h1><p className="mt-4 max-w-2xl text-sm leading-6 text-[var(--muted)]">集中管理这个笔记本里的章节与页面。子文档会继承清晰的层级，但内容始终独立保存。</p><div className="mt-5 flex flex-wrap gap-2"><span className="tag">{treeSummary.noteCount} 篇文档</span><span className="tag">结构化内容</span><span className="tag">自动保存</span></div></div>
         </header>
 
         <div className="mb-5 mt-10 flex flex-wrap items-center justify-between gap-3">
-          <div><h2 className="text-lg font-semibold tracking-[-0.02em]">文档操作</h2><p className="mt-1 text-xs text-[var(--muted)]">目录已移至右侧上下文面板</p></div>
+          <div><h2 className="text-lg font-semibold tracking-[-0.02em]">文档操作</h2><p className="mt-1 text-xs text-[var(--muted)]">在此笔记本内创建与管理文档</p></div>
           <div className="flex flex-wrap gap-2">
             <input ref={fileInputRef} className="hidden" type="file" accept=".md,text/markdown,text/plain" onChange={handleImport} />
+            {canEdit ? <Button variant="primary" icon={<Plus aria-hidden="true" size={14} />} onClick={() => void createDocument()} disabled={createNote.isPending}>新建文档</Button> : null}
             {canEdit ? <Button variant="secondary" icon={<Import aria-hidden="true" size={14} />} onClick={() => fileInputRef.current?.click()} disabled={importMarkdown.isPending}>导入 Markdown</Button> : null}
             <Button variant="secondary" icon={<Download aria-hidden="true" size={14} />} onClick={exportAllVisible} disabled={!treeSummary.noteCount || exportMarkdown.isPending}>导出全部</Button>
           </div>

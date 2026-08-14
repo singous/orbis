@@ -67,7 +67,7 @@ export function LoginPage({ mode }: { mode: "login" | "setup" }) {
       <section className="auth-form-panel">
         <div className="w-full max-w-[420px]">
           <div className="mb-9 grid h-12 w-12 place-items-center rounded-2xl bg-[var(--surface-inverse)] text-[var(--text-oninverse)]"><BookOpen aria-hidden="true" size={20} /></div>
-          <div className="mb-8"><div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-text)]">{isSetup ? "First launch" : "Welcome back"}</div><h2 className="text-3xl font-semibold tracking-[-0.04em]">{isSetup ? "初始化 Orbis" : "登录工作空间"}</h2><p className="mt-3 text-sm leading-6 text-[var(--muted)]">{isSetup ? "创建唯一的所有者账号与默认私人工作空间。" : "继续编辑你的文集和在线文档。"}</p></div>
+          <div className="mb-8"><div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-text)]">{isSetup ? "First launch" : "Welcome back"}</div><h2 className="text-3xl font-semibold tracking-[-0.04em]">{isSetup ? "初始化 Orbis" : "登录工作空间"}</h2><p className="mt-3 text-sm leading-6 text-[var(--muted)]">{isSetup ? "创建唯一的所有者账号与默认私人工作空间。" : "继续编辑你的笔记本和在线文档。"}</p></div>
           <form className="grid gap-4" onSubmit={handleSubmit}>
             {isSetup ? <TextInput label="显示名称" placeholder="你的名字" value={displayName} required onChange={(event) => setDisplayName(event.target.value)} autoComplete="name" /> : null}
             <TextInput label="邮箱" type="email" placeholder="name@example.com" value={email} required onChange={(event) => setEmail(event.target.value)} autoComplete="email" />
