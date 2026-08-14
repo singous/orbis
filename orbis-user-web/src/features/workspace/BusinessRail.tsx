@@ -104,20 +104,19 @@ export function BusinessRail({ pinned, compact, onTogglePinned }: BusinessRailPr
       {/* The aside itself stretches to the full grid-row height so the panel
           never ends mid-page; the inner column sticks to the viewport. */}
       <div className="rail-inner">
-      <Tooltip label={pinned ? "收起侧栏" : "固定侧栏"} side="right">
-        <button
-          type="button"
-          className="rail-pin-toggle"
-          aria-label={pinned ? "收起侧栏" : "固定侧栏"}
-          aria-pressed={pinned}
-          onClick={onTogglePinned}
-        >
-          {pinned ? <PanelLeftClose aria-hidden="true" size={13} /> : <PanelLeftOpen aria-hidden="true" size={13} />}
-        </button>
-      </Tooltip>
-
-      <div className={`flex w-full items-center gap-2${expanded ? " justify-between" : " justify-center"}`}>
+      <div className="rail-header">
         <WorkspaceSwitcher expanded={expanded} />
+        <Tooltip label={pinned ? "收起侧栏" : "固定侧栏"} side="right">
+          <button
+            type="button"
+            className="rail-pin-toggle"
+            aria-label={pinned ? "收起侧栏" : "固定侧栏"}
+            aria-pressed={pinned}
+            onClick={onTogglePinned}
+          >
+            {pinned ? <PanelLeftClose aria-hidden="true" size={13} /> : <PanelLeftOpen aria-hidden="true" size={13} />}
+          </button>
+        </Tooltip>
       </div>
 
       <nav className="workspace-business-nav" aria-label="业务板块">

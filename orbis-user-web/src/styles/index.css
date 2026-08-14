@@ -1572,28 +1572,34 @@ textarea {
   transition: width 180ms ease;
 }
 
-/* Unified rail toggle: one handle floating at the rail's top-right
-   corner in every state (replaces the old header/bottom buttons). */
+/* Unified rail toggle: one quiet icon button inside the panel's top-right
+   corner, in both collapsed and expanded states. */
+.rail-header {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 5px;
+}
+
+.workspace-business-rail.is-expanded .rail-header {
+  padding: 0;
+}
+
 .rail-pin-toggle {
-  position: absolute;
-  top: 22px;
-  right: -13px;
-  z-index: 55;
   display: grid;
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
+  flex: none;
   place-items: center;
-  border: 1px solid var(--border-subtle);
-  border-radius: 50%;
-  background: var(--surface-overlay);
-  color: var(--text-tertiary);
-  box-shadow: var(--shadow-pop);
+  border-radius: 6px;
+  color: var(--rail-dim);
   transition: 140ms ease;
 }
 
 .rail-pin-toggle:hover {
-  border-color: var(--border-strong);
-  color: var(--text-primary);
+  background: var(--rail-hover);
+  color: var(--rail-text-strong);
 }
 
 @media (min-width: 1024px) {
