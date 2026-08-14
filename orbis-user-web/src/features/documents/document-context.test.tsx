@@ -49,6 +49,24 @@ void panelPropKeysAreExact;
 
 vi.mock("./queries", () => ({
   useNoteTree: () => treeState,
+  useDocumentGroups: () => ({
+    data: {
+      items: [{
+        id: "018ff7c4-a5b6-7000-8000-000000000005",
+        name: "默认分组",
+        is_default: true,
+        tenant_id: null,
+        workspace_id: "workspace-1",
+        owner_id: "018ff7c4-a5b6-7000-8000-000000000001",
+        sort_order: 0,
+        status: "active",
+        created_at_ms: 1,
+        updated_at_ms: 2,
+      }],
+    },
+    isLoading: false,
+    isError: false,
+  }),
   useNotebooks: () => ({
     data: {
       items: [{
@@ -68,6 +86,7 @@ vi.mock("./queries", () => ({
     isError: false,
   }),
   useCreateNote: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCreateNotebook: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useUpdateNote: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useArchiveNote: () => ({ mutateAsync: mocks.archiveNote, isPending: false }),
   useNote: () => noteState,

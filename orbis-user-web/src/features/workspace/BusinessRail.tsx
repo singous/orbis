@@ -1,5 +1,5 @@
 import { BookOpen, Home, LibraryBig, PanelLeftClose, PanelLeftOpen, Pin, Search, Sparkles, StickyNote } from "lucide-react";
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
 
@@ -7,6 +7,7 @@ import { useNotebooks } from "../documents/queries";
 import { usePinnedNotebooks } from "../documents/pinned-notebooks";
 import { authStore } from "../../shared/auth/auth-store";
 import { Tooltip } from "../../shared/ui/Tooltip";
+import { RailCreateMenu } from "./RailCreateMenu";
 import { UserMenu } from "./UserMenu";
 import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 
@@ -81,11 +82,18 @@ export function BusinessRail({ pinned, compact, onTogglePinned }: BusinessRailPr
   const workspace = useStore(authStore, (state) => state.workspace);
   const clearSession = useStore(authStore, (state) => state.clearSession);
   const [hovered, setHovered] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const expanded = !compact && (pinned || hovered);
 
   function logout() {
     clearSession();
     navigate("/login", { replace: true });
+  }
+
+  function submitSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const keyword = searchQuery.trim();
+    navigate(keyword ? `/documents/search?q=${encodeURIComponent(keyword)}` : "/documents/search");
   }
 
   const areas = [
@@ -123,16 +131,29 @@ export function BusinessRail({ pinned, compact, onTogglePinned }: BusinessRailPr
 
       <nav className="workspace-business-nav" aria-label="业务板块">
         {expanded ? (
-          <Link to="/documents/search" className={`rail-row${pathname === "/documents/search" ? " is-active" : ""}`}>
-            <Search aria-hidden="true" size={17} />
-            <span>搜索</span>
-          </Link>
+          <div className="rail-search-row">
+            <form className="rail-search-field" onSubmit={submitSearch}>
+              <Search aria-hidden="true" size={14} />
+              <input
+                type="search"
+                className="rail-search-input"
+                aria-label="搜索文档"
+                placeholder="搜索文档"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+              />
+            </form>
+            {accessToken ? <RailCreateMenu expanded /> : null}
+          </div>
         ) : (
-          <Tooltip label="搜索" side="right">
-            <Link to="/documents/search" aria-label="搜索" className={`rail-icon${pathname === "/documents/search" ? " is-active" : ""}`}>
-              <Search aria-hidden="true" size={18} />
-            </Link>
-          </Tooltip>
+          <>
+            {accessToken ? <RailCreateMenu expanded={false} /> : null}
+            <Tooltip label="搜索" side="right">
+              <Link to="/documents/search" aria-label="搜索" className={`rail-icon${pathname === "/documents/search" ? " is-active" : ""}`}>
+                <Search aria-hidden="true" size={18} />
+              </Link>
+            </Tooltip>
+          </>
         )}
 
         {areas.map(({ label, to, icon: Icon, match }) =>

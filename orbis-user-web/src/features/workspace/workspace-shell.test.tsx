@@ -252,6 +252,27 @@ describe("WorkspaceShell", () => {
     expect(screen.getByRole("link", { name: "记忆" })).toHaveAttribute("href", "/memory");
   });
 
+  it("places quick create above search on the collapsed rail", () => {
+    renderShell();
+
+    const createButton = screen.getByRole("button", { name: "新建资产" });
+    const searchLink = screen.getByRole("link", { name: "搜索" });
+    expect(
+      createButton.compareDocumentPosition(searchLink) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("swaps the search item for a search box with a create button when the rail is pinned", () => {
+    window.localStorage.setItem("orbis.railExpanded", "1");
+    renderShell();
+
+    expect(screen.getByRole("searchbox", { name: "搜索文档" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "新建资产" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "搜索" })).not.toBeInTheDocument();
+
+    window.localStorage.removeItem("orbis.railExpanded");
+  });
+
   it("toggles the application theme from the user menu", async () => {
     const actor = userEvent.setup();
     renderShell();
