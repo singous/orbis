@@ -1674,6 +1674,7 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   display: flex;
   align-items: center;
   gap: 6px;
+  margin-bottom: 10px;
 }
 
 .rail-search-field {
