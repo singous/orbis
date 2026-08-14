@@ -186,6 +186,7 @@ export function DocumentEditorPage() {
             <input
               aria-label="文档标题"
               className="editor-title"
+              placeholder="无标题"
               value={draft.title}
               readOnly={!canEdit}
               onChange={(event) => changeDraft({ ...draft, title: event.target.value })}

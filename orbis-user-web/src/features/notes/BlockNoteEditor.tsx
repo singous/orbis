@@ -1,11 +1,15 @@
 import { zh } from "@blocknote/core/locales";
-import { BlockNoteViewRaw, useCreateBlockNote } from "@blocknote/react";
-// BlockNoteViewRaw renders the editor plus the default UI (side menu / slash
-// menu / formatting toolbar) with BlockNote's own self-contained CSS, so the
-// menus are properly positioned popovers. The shadcn variant relies on Tailwind
-// utilities our v4 setup doesn't generate from node_modules (menus rendered
-// unstyled), so we use the raw default UI instead.
+import { BlockNoteView } from "@blocknote/mantine";
+import { useCreateBlockNote } from "@blocknote/react";
+// @blocknote/react 0.53 ships no default UI components by itself (its
+// ComponentsContext defaults to undefined), so a bare BlockNoteViewRaw renders
+// no slash menu / formatting toolbar / side menu at all. The mantine adapter
+// provides the full default UI, and its styles are driven by --bn-* CSS
+// variables. The `orbis-bn` className lands on both the editor container and
+// every popup portal root, so the Notion/Yuque-style skin in styles/index.css
+// (`.orbis-bn …`) can theme the editor canvas and all menus.
 import "@blocknote/react/style.css";
+import "@blocknote/mantine/style.css";
 import { useEffect, useRef } from "react";
 
 import { useThemeStore } from "../../shared/theme/theme-store";
@@ -46,8 +50,9 @@ export function BlockNoteEditor({
   }, [editor, readOnly]);
 
   return (
-    <BlockNoteViewRaw
+    <BlockNoteView
       editor={editor}
+      className="orbis-bn"
       theme={theme === "dark" ? "dark" : "light"}
       onChange={() => {
         const doc = editor.document as unknown as OrbisBlock[];
