@@ -6,9 +6,20 @@ from typing import Literal
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Layered dotenv: service-local .env wins over the repo-root .env, and real
+# environment variables always win over both. Paths are resolved from this
+# file so behavior does not depend on the working directory.
+_SERVICE_ROOT = Path(__file__).resolve().parents[3]
+_REPO_ROOT_ENV = _SERVICE_ROOT.parent / ".env"
+
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="ORBIS_", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_prefix="ORBIS_",
+        env_file=(_SERVICE_ROOT / ".env", _REPO_ROOT_ENV),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     database_url: str = Field(min_length=1)
     database_schema: str | None = None
