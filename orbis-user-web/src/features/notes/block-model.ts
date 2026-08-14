@@ -51,6 +51,29 @@ export function isV2(blocks: NoteBlocks | NoteBlocksV2 | null | undefined): bloc
   return Boolean(blocks) && (blocks as NoteBlocksV2).schema_version === 2;
 }
 
+function sortKeysDeep(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sortKeysDeep);
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    return Object.fromEntries(
+      Object.keys(record)
+        .sort()
+        .map((key) => [key, sortKeysDeep(record[key])]),
+    );
+  }
+  return value;
+}
+
+/**
+ * Key-order-insensitive JSON for block content. Postgres JSONB reorders
+ * object keys, so a server round-trip returns semantically identical blocks
+ * whose JSON string differs from the live editor document's. Compare with
+ * this instead of JSON.stringify when deciding whether content changed.
+ */
+export function canonicalJSON(value: unknown): string {
+  return JSON.stringify(sortKeysDeep(value));
+}
+
 const STYLE_MARKS = ["bold", "italic", "underline", "strike", "code"] as const;
 
 function inlineFromTiptap(nodes: JSONContent[] | undefined): OrbisInline[] {

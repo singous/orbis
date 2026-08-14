@@ -91,12 +91,21 @@ export function DocumentEditorPage() {
   const [outlinePinned, setOutlinePinned] = useState(false);
   const [outlineHovered, setOutlineHovered] = useState(false);
   const coordinatorRef = useRef<AutosaveCoordinator<EditorDraft> | null>(null);
+  const hydratedNoteRef = useRef<string | null>(null);
   const outlineOpen = outlinePinned || outlineHovered;
 
   useEffect(() => {
     const note = noteQuery.data;
     const content = contentQuery.data;
     if (!note || !content) return;
+    // A successful autosave writes the new version into the query cache, which
+    // re-runs this effect. Rebuilding the draft from our own echo would stomp
+    // the live editor (cursor loss, flicker, lost keystrokes typed mid-save).
+    const isOwnSaveEcho =
+      hydratedNoteRef.current === noteId &&
+      coordinatorRef.current?.saved?.version === content.content_version;
+    if (isOwnSaveEcho) return;
+    hydratedNoteRef.current = noteId;
     const initial = { title: note.title, blocks: toV2(content.blocks), version: content.content_version };
     setDraft(initial);
     coordinatorRef.current?.dispose(false);
@@ -156,6 +165,8 @@ export function DocumentEditorPage() {
   }
 
   async function reloadServer() {
+    // Force the hydrate effect to rebuild even if the version is unchanged.
+    hydratedNoteRef.current = null;
     coordinatorRef.current?.dispose(false);
     await Promise.all([noteQuery.refetch(), contentQuery.refetch()]);
   }

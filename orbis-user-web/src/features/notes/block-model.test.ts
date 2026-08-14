@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { NoteBlocks } from "../../shared/api/schemas";
 import {
+  canonicalJSON,
   extractPlainTextV2,
   tiptapDocToV2,
   toV2,
@@ -95,5 +96,28 @@ describe("extractPlainTextV2 / v2ToMarkdown", () => {
     expect(md).toContain("```ts");
     expect(md).toContain("> 引用");
     expect(md).toContain("---");
+  });
+});
+
+describe("canonicalJSON", () => {
+  it("treats JSONB key reordering as equal", () => {
+    const fromEditor = [
+      { id: "b1", type: "paragraph", props: { level: 1, textColor: "default" }, content: [{ type: "text", text: "正文", styles: { bold: true } }], children: [] },
+    ];
+    // Postgres JSONB stores object keys sorted by length, then alphabetically —
+    // the server round-trip reorders every object but changes nothing.
+    const fromServer = JSON.parse(
+      `[{"children":[],"content":[{"styles":{"bold":true},"text":"正文","type":"text"}],"props":{"level":1,"textColor":"default"},"id":"b1","type":"paragraph"}]`,
+    );
+    expect(JSON.stringify(fromEditor)).not.toBe(JSON.stringify(fromServer));
+    expect(canonicalJSON(fromEditor)).toBe(canonicalJSON(fromServer));
+  });
+
+  it("keeps array order significant and detects real changes", () => {
+    const a = [{ id: "1", type: "paragraph" }, { id: "2", type: "heading" }];
+    const reordered = [{ id: "2", type: "heading" }, { id: "1", type: "paragraph" }];
+    expect(canonicalJSON(a)).not.toBe(canonicalJSON(reordered));
+    const edited = [{ id: "1", type: "paragraph" }, { id: "2", type: "heading", props: { level: 2 } }];
+    expect(canonicalJSON(a)).not.toBe(canonicalJSON(edited));
   });
 });

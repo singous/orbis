@@ -9,6 +9,16 @@ import { DocumentEditorPage } from "./DocumentEditorPage";
 const updateNote = vi.fn();
 const saveContent = vi.fn();
 
+// Mutable content fixture so tests can simulate the post-save setQueryData echo.
+const contentFixture = {
+  current: {
+    note_id: "018ff7c4-a5b6-7000-8000-000000000001",
+    blocks: createEmptyNoteBlocks(),
+    plain_text: "",
+    content_version: 4,
+  },
+};
+
 const ownerSession = {
   accessToken: "access-token",
   refreshToken: "refresh-token",
@@ -39,7 +49,7 @@ vi.mock("../notes/BlockNoteEditor", () => ({
 }));
 vi.mock("./queries", () => ({
   useNote: () => ({ data: { id: "018ff7c4-a5b6-7000-8000-000000000001", notebook_id: "018ff7c4-a5b6-7000-8000-000000000004", title: "产品计划" }, isError: false }),
-  useNoteContent: () => ({ data: { note_id: "018ff7c4-a5b6-7000-8000-000000000001", blocks: createEmptyNoteBlocks(), plain_text: "", content_version: 4 }, isError: false, refetch: vi.fn() }),
+  useNoteContent: () => ({ data: contentFixture.current, isError: false, refetch: vi.fn() }),
   useNotebooks: () => ({ data: { items: [] }, isLoading: false, isError: false }),
   useUpdateNote: () => ({ mutateAsync: updateNote, isPending: false }),
   useSaveNoteContent: () => ({ mutateAsync: saveContent, isPending: false }),
@@ -53,6 +63,12 @@ describe("DocumentEditorPage", () => {
     updateNote.mockResolvedValue({});
     saveContent.mockReset();
     saveContent.mockResolvedValue({ content_version: 5 });
+    contentFixture.current = {
+      note_id: "018ff7c4-a5b6-7000-8000-000000000001",
+      blocks: createEmptyNoteBlocks(),
+      plain_text: "",
+      content_version: 4,
+    };
     act(() => authStore.setState(ownerSession));
   });
 
@@ -78,5 +94,38 @@ describe("DocumentEditorPage", () => {
     expect(payload.blocks.schema_version).toBe(2);
     expect(payload.blocks.editor).toBe("blocknote");
     expect(screen.getByText(/版本 5/)).toBeInTheDocument();
+  });
+
+  it("keeps the live draft when the content-version bump is our own save echo", async () => {
+    const view = render(
+      <MemoryRouter initialEntries={["/documents/018ff7c4-a5b6-7000-000000000001"]}>
+        <Routes><Route path="/documents/:noteId" element={<DocumentEditorPage />} /></Routes>
+      </MemoryRouter>,
+    );
+    const editButton = await screen.findByRole("button", { name: "模拟编辑" });
+    vi.useFakeTimers();
+    fireEvent.click(editButton);
+    const titleInput = screen.getByLabelText("文档标题");
+    fireEvent.change(titleInput, { target: { value: "新产品计划" } });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(750);
+    });
+    expect(saveContent).toHaveBeenCalledTimes(1);
+
+    // The server echo: version bumped, blocks round-tripped through JSONB.
+    // Rebuilding the draft from this echo would wipe the just-typed title.
+    contentFixture.current = {
+      ...contentFixture.current,
+      content_version: 5,
+    };
+    act(() => {
+      view.rerender(
+        <MemoryRouter initialEntries={["/documents/018ff7c4-a5b6-7000-000000000001"]}>
+          <Routes><Route path="/documents/:noteId" element={<DocumentEditorPage />} /></Routes>
+        </MemoryRouter>,
+      );
+    });
+
+    expect((titleInput as HTMLInputElement).value).toBe("新产品计划");
   });
 });

@@ -14,6 +14,7 @@ import { useEffect, useRef } from "react";
 
 import { useThemeStore } from "../../shared/theme/theme-store";
 import {
+  canonicalJSON,
   extractPlainTextV2,
   type NoteBlocksV2,
   type OrbisBlock,
@@ -33,13 +34,23 @@ export function BlockNoteEditor({
   // generic friction (content is validated at the API boundary).
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const editor = useCreateBlockNote({ dictionary: zh, initialContent: blocks.blocks as any });
-  const lastEmitted = useRef<string>("");
+  const lastEmitted = useRef<OrbisBlock[] | null>(null);
+  const lastApplied = useRef(blocks.blocks);
 
+  // Push external content into the editor. Bail-outs keep this from stomping
+  // the live document (cursor loss, flicker, slash-menu queries surviving as
+  // literal "/" text):
+  // 1. our own onChange round-trips the identical array reference;
+  // 2. a re-render with the content the editor was created/last synced with
+  //    (also covers the StrictMode double effect on mount);
+  // 3. server echoes of the current document — JSONB key-reordered and with
+  //    BlockNote-normalized props, but semantically identical.
   useEffect(() => {
     if (!editor) return;
-    const incoming = JSON.stringify(blocks.blocks);
-    if (incoming === lastEmitted.current) return;
-    lastEmitted.current = incoming;
+    if (blocks.blocks === lastEmitted.current) return;
+    if (canonicalJSON(blocks.blocks) === canonicalJSON(lastApplied.current)) return;
+    if (canonicalJSON(blocks.blocks) === canonicalJSON(editor.document)) return;
+    lastApplied.current = blocks.blocks;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     editor.replaceBlocks(editor.document, blocks.blocks as any);
   }, [blocks.blocks, editor]);
@@ -61,7 +72,7 @@ export function BlockNoteEditor({
           editor: "blocknote",
           blocks: doc,
         };
-        lastEmitted.current = JSON.stringify(doc);
+        lastEmitted.current = doc;
         onChange({ blocks: next, plainText: extractPlainTextV2(doc) });
       }}
     />
