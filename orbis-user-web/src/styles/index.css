@@ -13,22 +13,22 @@
    ============================================================ */
 
 :root {
-  /* Base palette: warm gray scale */
-  --gray-0: #ffffff;
-  --gray-25: #fbfbfa;
+  /* Base palette: warm paper scale (dark theme inverts this scale) */
+  --gray-0: #fbfbf9;
+  --gray-25: #f9f9f7;
   --gray-50: #f7f7f6;
-  --gray-75: #f5f5f4;
-  --gray-100: #f1f1f0;
-  --gray-150: #f0f0ef;
-  --gray-200: #e2e2df;
-  --gray-300: #d0d0cc;
-  --gray-400: #b4b4b0;
-  --gray-500: #949491;
-  --gray-600: #666663;
+  --gray-75: #f4f4f2;
+  --gray-100: #efefed;
+  --gray-150: #ececea;
+  --gray-200: #e6e6e2;
+  --gray-300: #d6d6d1;
+  --gray-400: #b6b6b1;
+  --gray-500: #8f8f8a;
+  --gray-600: #5f5f5b;
   --gray-700: #454542;
-  --gray-800: #30302f;
-  --gray-900: #1f1f1e;
-  --gray-950: #151515;
+  --gray-800: #353533;
+  --gray-900: #242422;
+  --gray-950: #1c1c1a;
 
   /* Base palette: brand violet scale */
   --violet-50: #f4f2ff;
@@ -39,14 +39,15 @@
   --violet-600: #5546df;
   --violet-700: #463ac4;
 
-  /* Semantic: surfaces (depth model — darker outside, lighter inside) */
-  --surface-app: var(--gray-150);
+  /* Semantic: surfaces (paper depth model — quiet off-whites outside,
+     near-paper content; depth by luminance, not by borders) */
+  --surface-app: var(--gray-50);
   --surface-sidebar: var(--gray-75);
   --surface-panel: var(--gray-50);
   --surface-content: var(--gray-0);
-  --surface-hover: var(--gray-100);
+  --surface-hover: var(--gray-150);
   --surface-active: var(--gray-200);
-  --surface-overlay: var(--gray-0);
+  --surface-overlay: #ffffff;
   --surface-inverse: var(--gray-950);
   --surface-inverse-hover: var(--gray-800);
 
@@ -54,13 +55,24 @@
   --text-primary: var(--gray-950);
   --text-secondary: var(--gray-600);
   --text-tertiary: var(--gray-500);
-  --text-oncolor: var(--gray-0);
+  --text-oncolor: #ffffff;
   --text-oninverse: var(--gray-25);
 
-  /* Semantic: borders */
+  /* Semantic: borders (hairline-first) */
   --border-subtle: var(--gray-200);
   --border-strong: var(--gray-300);
   --border-inverse: rgb(255 255 255 / 12%);
+
+  /* Semantic: business rail (light rail on paper) */
+  --rail-bg: #f4f4f2;
+  --rail-border: #e6e6e2;
+  --rail-text: #63635e;
+  --rail-text-strong: #1c1c1a;
+  --rail-dim: #8f8f8a;
+  --rail-hover: #e7e7e3;
+  --rail-active: #e2e2de;
+  --rail-chip-bg: #1c1c1a;
+  --rail-chip-text: #fbfbf9;
 
   /* Semantic: accent */
   --accent: var(--violet-500);
@@ -89,16 +101,18 @@
 
   /* Semantic: shadows (floating layers only) */
   --shadow-pop: 0 1px 3px rgb(21 21 21 / 6%), 0 6px 20px rgb(21 21 21 / 9%);
-  --shadow-card: 0 14px 32px rgb(20 20 20 / 7%);
 
   /* Semantic: radii */
   --radius-control: 6px;
   --radius-container: 8px;
   --radius-pop: 10px;
 
+  /* Semantic: type */
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+
   /* Legacy aliases — keep unmigrated styles working; do not use in new code */
   --app-bg: var(--surface-app);
-  --workspace: var(--surface-sidebar);
+  --workspace: var(--surface-content);
   --panel: var(--surface-panel);
   --chrome: var(--surface-inverse);
   --text: var(--text-primary);
@@ -145,6 +159,19 @@
   --border-inverse: rgb(255 255 255 / 10%);
   --accent-text: var(--violet-600);
 
+  /* Dark workspace keeps a deeper gutter so content cards keep depth;
+     the rail goes one step darker than the app surface. */
+  --workspace: #1a1a18;
+  --rail-bg: #141412;
+  --rail-border: rgb(255 255 255 / 8%);
+  --rail-text: #8a8a83;
+  --rail-text-strong: #ededeb;
+  --rail-dim: #5c5c56;
+  --rail-hover: rgb(255 255 255 / 6%);
+  --rail-active: rgb(255 255 255 / 9%);
+  --rail-chip-bg: #262624;
+  --rail-chip-text: #efefec;
+
   --danger: #d47070;
   --danger-strong: #e08a8a;
   --danger-bg: #33201f;
@@ -158,7 +185,6 @@
   --success-text: #8ecfa4;
 
   --shadow-pop: 0 1px 3px rgb(0 0 0 / 30%), 0 8px 24px rgb(0 0 0 / 40%);
-  --shadow-card: 0 14px 32px rgb(0 0 0 / 35%);
 
   color-scheme: dark;
 }
@@ -449,9 +475,9 @@ textarea {
 
 .page-title {
   color: var(--text-primary);
-  font-size: 30px;
+  font-size: 28px;
   font-weight: 650;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
   line-height: 1.2;
 }
 
@@ -470,17 +496,16 @@ textarea {
   gap: 8px;
 }
 
-/* Compact inline statistics (replaces the old oversized stat cards). */
+/* Compact inline statistics: a boxless hairline band, mono figures. */
 .stat-strip {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 12px 36px;
   margin-bottom: 32px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-pop);
-  background: var(--surface-content);
-  padding: 14px 20px;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 12px 2px;
 }
 
 .stat-item {
@@ -491,7 +516,7 @@ textarea {
 
 .stat-value {
   color: var(--text-primary);
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 650;
   letter-spacing: -0.02em;
 }
@@ -499,6 +524,15 @@ textarea {
 .stat-label {
   color: var(--text-secondary);
   font-size: 12px;
+}
+
+/* Mono for metadata: figures, dates, save state. */
+.stat-value,
+.page-container time,
+.document-main-item time,
+.save-indicator {
+  font-family: var(--font-mono);
+  letter-spacing: -0.02em;
 }
 
 .document-card,
@@ -519,9 +553,7 @@ textarea {
 
 .document-card:hover,
 .collection-card:hover {
-  transform: translateY(-2px);
   border-color: var(--border-strong);
-  box-shadow: var(--shadow-card);
 }
 
 .document-icon {
@@ -529,9 +561,8 @@ textarea {
   width: 38px;
   height: 38px;
   place-items: center;
-  border: 1px solid var(--border);
   border-radius: var(--radius-pop);
-  background: var(--surface-panel);
+  background: var(--surface-hover);
   color: var(--gray-700);
 }
 
@@ -552,9 +583,8 @@ textarea {
 .tag {
   display: inline-flex;
   align-items: center;
-  border: 1px solid var(--border);
   border-radius: 999px;
-  background: var(--surface-content);
+  background: var(--surface-hover);
   padding: 3px 8px;
   color: var(--muted);
   font-size: 10px;
@@ -562,9 +592,8 @@ textarea {
 }
 
 .empty-panel {
-  border: 1px dashed var(--border-strong);
+  border: 1px solid var(--border-subtle);
   border-radius: 14px;
-  background: var(--surface-panel);
   padding: 34px 30px;
   color: var(--muted);
   text-align: center;
@@ -795,10 +824,10 @@ textarea {
   height: 100vh;
   flex-direction: column;
   align-items: center;
-  border-right: 1px solid var(--border-inverse);
-  background: var(--surface-inverse);
+  border-right: 1px solid var(--rail-border);
+  background: var(--rail-bg);
   padding: 16px 0;
-  color: var(--text-oninverse);
+  color: var(--rail-text);
 }
 
 .workspace-brand {
@@ -806,10 +835,9 @@ textarea {
   width: 36px;
   height: 36px;
   place-items: center;
-  border: 1px solid var(--border-inverse);
   border-radius: var(--radius-pop);
-  background: var(--surface-content);
-  color: var(--text-primary);
+  background: var(--rail-chip-bg);
+  color: var(--rail-chip-text);
   font-size: 14px;
   font-weight: 800;
 }
@@ -917,8 +945,8 @@ textarea {
   height: 64px;
   align-items: center;
   gap: 12px;
-  border-bottom: 1px solid var(--border);
-  background: rgb(255 255 255 / 94%);
+  border-bottom: 1px solid var(--border-subtle);
+  background: color-mix(in srgb, var(--workspace) 86%, transparent);
   padding: 0 28px;
   backdrop-filter: blur(14px);
 }
@@ -1066,14 +1094,13 @@ textarea {
   height: 40px;
   place-items: center;
   border-radius: 10px;
-  color: var(--text-oninverse);
-  opacity: 0.76;
+  color: var(--rail-text);
   transition: 160ms ease;
 }
 
 .workspace-user-trigger:hover {
-  background: var(--border-inverse);
-  opacity: 1;
+  background: var(--rail-hover);
+  color: var(--rail-text-strong);
 }
 
 .workspace-user-avatar {
@@ -1082,8 +1109,8 @@ textarea {
   height: 28px;
   place-items: center;
   border-radius: 50%;
-  background: var(--surface-content);
-  color: var(--text-primary);
+  background: var(--rail-chip-bg);
+  color: var(--rail-chip-text);
   font-size: 11px;
   font-weight: 700;
 }
@@ -1091,6 +1118,11 @@ textarea {
 .workspace-user-trigger-copy,
 .workspace-user-trigger > svg {
   display: none;
+}
+
+.workspace-user-trigger-role {
+  color: var(--rail-dim);
+  font-size: 10px;
 }
 
 /* Expanded rail: full-width account row with name and role. */
@@ -1302,7 +1334,7 @@ textarea {
   .workspace-user-trigger {
     justify-content: center;
     margin: 0 auto;
-    border: 1px solid rgb(255 255 255 / 12%);
+    border: 1px solid var(--rail-border);
   }
 
   .workspace-user-trigger-copy,
@@ -1365,13 +1397,12 @@ textarea {
   height: 28px;
   place-items: center;
   border-radius: 7px;
-  color: var(--text-oninverse);
-  opacity: 0.6;
+  color: var(--rail-dim);
 }
 
 .rail-expand:hover {
-  background: var(--border-inverse);
-  opacity: 1;
+  background: var(--rail-hover);
+  color: var(--rail-text-strong);
 }
 
 .rail-icon {
@@ -1380,18 +1411,18 @@ textarea {
   height: 40px;
   place-items: center;
   border-radius: 10px;
-  color: var(--text-oninverse);
-  opacity: 0.55;
+  color: var(--rail-text);
+  transition: 140ms ease;
 }
 
 .rail-icon:hover {
-  background: var(--border-inverse);
-  opacity: 1;
+  background: var(--rail-hover);
+  color: var(--rail-text-strong);
 }
 
 .rail-icon.is-active {
-  background: var(--border-inverse);
-  opacity: 1;
+  background: var(--rail-active);
+  color: var(--rail-text-strong);
 }
 
 .rail-row {
@@ -1403,18 +1434,18 @@ textarea {
   padding: 8px 10px;
   font-size: 13px;
   font-weight: 560;
-  color: var(--text-oninverse);
-  opacity: 0.75;
+  color: var(--rail-text);
+  transition: 140ms ease;
 }
 
 .rail-row:hover {
-  background: var(--border-inverse);
-  opacity: 1;
+  background: var(--rail-hover);
+  color: var(--rail-text-strong);
 }
 
 .rail-row.is-active {
-  background: var(--border-inverse);
-  opacity: 1;
+  background: var(--rail-active);
+  color: var(--rail-text-strong);
 }
 
 .rail-bottom {
@@ -1457,13 +1488,13 @@ textarea {
   padding: 4px 6px 6px;
   font-size: 11px;
   font-weight: 600;
-  color: var(--muted);
+  color: var(--rail-dim);
 }
 
 .rail-favorites-empty {
   padding: 6px;
   font-size: 12px;
-  color: var(--muted);
+  color: var(--rail-dim);
 }
 
 .rail-fav-item {
@@ -1478,11 +1509,12 @@ textarea {
 }
 
 .rail-favorites .rail-fav-item .rail-row {
-  color: var(--text-oninverse);
+  color: var(--rail-text);
 }
 
 .rail-favorites .rail-fav-item .rail-row:hover {
-  background: var(--border-inverse);
+  background: var(--rail-hover);
+  color: var(--rail-text-strong);
 }
 
 .rail-fav-popover .rail-fav-item .rail-row {
@@ -1494,13 +1526,12 @@ textarea {
 }
 
 .rail-favorites .rail-pin {
-  color: var(--text-oninverse);
-  opacity: 0.6;
+  color: var(--rail-dim);
 }
 
 .rail-favorites .rail-pin:hover {
-  background: var(--border-inverse);
-  opacity: 1;
+  background: var(--rail-hover);
+  color: var(--rail-text-strong);
 }
 
 .rail-pin {
