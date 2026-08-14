@@ -840,6 +840,93 @@ textarea {
   color: var(--rail-chip-text);
   font-size: 14px;
   font-weight: 800;
+  transition: 140ms ease;
+}
+
+.workspace-brand:hover {
+  filter: brightness(1.12);
+}
+
+/* Brand-chip workspace popover (list only; no switching this version). */
+.workspace-switcher {
+  position: relative;
+}
+
+.workspace-switcher-popover {
+  position: absolute;
+  top: 0;
+  left: calc(100% + 10px);
+  z-index: 60;
+  width: 264px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pop);
+  background: var(--surface-overlay);
+  padding: 6px;
+  box-shadow: var(--shadow-pop);
+}
+
+.workspace-switcher-group {
+  padding: 8px 8px 4px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.workspace-switcher-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.workspace-switcher-avatar {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--rail-chip-bg);
+  color: var(--rail-chip-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.workspace-switcher-space-icon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--surface-hover);
+  color: var(--text-secondary);
+}
+
+.workspace-switcher-name {
+  display: block;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.workspace-switcher-sub {
+  display: block;
+  margin-top: 1px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
+.workspace-switcher-check {
+  flex: none;
+  color: var(--text-primary);
+}
+
+.workspace-switcher-empty {
+  padding: 4px 8px 10px;
+  color: var(--text-tertiary);
+  font-size: 12px;
 }
 
 .workspace-business-nav {

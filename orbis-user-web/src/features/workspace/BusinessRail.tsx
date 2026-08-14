@@ -8,6 +8,7 @@ import { usePinnedNotebooks } from "../documents/pinned-notebooks";
 import { authStore } from "../../shared/auth/auth-store";
 import { Tooltip } from "../../shared/ui/Tooltip";
 import { UserMenu } from "./UserMenu";
+import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 
 const RAIL_EXPANDED_KEY = "orbis.railExpanded";
 
@@ -95,9 +96,7 @@ export function BusinessRail() {
   return (
     <aside className={`workspace-business-rail${expanded ? " is-expanded" : ""}`}>
       <div className="flex w-full items-center justify-center gap-2">
-        <Link to="/documents" aria-label="Orbis 在线文档" className="workspace-brand">
-          O
-        </Link>
+        <WorkspaceSwitcher />
         {expanded ? (
           <button type="button" className="rail-expand" aria-label="收起侧栏" onClick={() => setExpanded(false)}>
             <PanelLeftClose aria-hidden="true" size={15} />
