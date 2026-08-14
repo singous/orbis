@@ -30,6 +30,25 @@ BLOCK_TYPES = {
 }
 MARK_TYPES = {"bold", "italic", "strike", "code", "link"}
 
+# schema_version 2 (BlockNote-aligned normalized blocks). Block shape mirrors
+# BlockNote's Block: { id, type, props, content, children }.
+V2_BLOCK_TYPES = {
+    "paragraph",
+    "heading",
+    "bulletListItem",
+    "numberedListItem",
+    "checkListItem",
+    "toggleListItem",
+    "codeBlock",
+    "quote",
+    "table",
+    "divider",
+    "image",
+    "file",
+    "audio",
+    "video",
+}
+
 
 class InvalidNoteContent(ValueError):
     pass
@@ -126,9 +145,58 @@ def _validate_node(node: object, parent_type: str | None = None) -> None:
         _validate_node(child, node_type)
 
 
+def _validate_v2_inline(inline: object) -> None:
+    # Lenient by design: validation guards against garbage, not a perfect schema.
+    # BlockNote inline output (text/link, plus styles) is accepted as-is.
+    if not isinstance(inline, dict):
+        raise InvalidNoteContent
+    inline_type = inline.get("type")
+    if inline_type == "text":
+        if not isinstance(inline.get("text"), str):
+            raise InvalidNoteContent
+    elif inline_type == "link":
+        if not isinstance(inline.get("href"), str):
+            raise InvalidNoteContent
+
+
+def _validate_v2_block(block: object) -> None:
+    if not isinstance(block, dict):
+        raise InvalidNoteContent
+    if block.get("type") not in V2_BLOCK_TYPES:
+        raise InvalidNoteContent
+    if not isinstance(block.get("id"), str):
+        raise InvalidNoteContent
+    if not isinstance(block.get("props", {}), dict):
+        raise InvalidNoteContent
+    content = block.get("content", [])
+    if isinstance(content, list):
+        # Table blocks carry 2D cell data; only validate dict (inline) items.
+        for inline in content:
+            if isinstance(inline, dict):
+                _validate_v2_inline(inline)
+    elif not isinstance(content, str):
+        raise InvalidNoteContent
+    children = block.get("children", [])
+    if not isinstance(children, list):
+        raise InvalidNoteContent
+    for child in children:
+        _validate_v2_block(child)
+
+
 def normalize_note_blocks(blocks: object) -> dict[str, Any]:
     if not isinstance(blocks, dict):
         raise InvalidNoteContent
+    if blocks.get("schema_version") == 2:
+        if blocks.get("editor") != "blocknote":
+            raise InvalidNoteContent
+        block_list = blocks.get("blocks")
+        if not isinstance(block_list, list):
+            raise InvalidNoteContent
+        for block in block_list:
+            _validate_v2_block(block)
+        return deepcopy(
+            {"schema_version": 2, "editor": "blocknote", "blocks": block_list}
+        )
     if blocks.get("schema_version") != 1 or blocks.get("editor") != "tiptap":
         raise InvalidNoteContent
     doc = blocks.get("doc")
@@ -142,8 +210,41 @@ def _node_text(node: dict[str, Any]) -> str:
     return "".join(_node_text(child) for child in node.get("content", []))
 
 
+def _v2_inline_text(inline: object) -> str:
+    if isinstance(inline, list):
+        return "".join(_v2_inline_text(item) for item in inline)
+    if not isinstance(inline, dict):
+        return ""
+    if inline.get("type") == "text":
+        return inline.get("text", "")
+    if inline.get("type") == "link":
+        return "".join(_v2_inline_text(child) for child in inline.get("content", []))
+    return ""
+
+
+def _v2_block_text(block: dict[str, Any]) -> str:
+    content = block.get("content", [])
+    if isinstance(content, str):
+        return content
+    return "".join(_v2_inline_text(item) for item in content)
+
+
 def derive_plain_text(blocks: dict[str, Any]) -> str:
-    lines: list[str] = []
+    if blocks.get("schema_version") == 2:
+        lines: list[str] = []
+
+        def visit_v2(block: dict[str, Any]) -> None:
+            text = _v2_block_text(block).strip()
+            if text:
+                lines.append(text)
+            for child in block.get("children", []):
+                visit_v2(child)
+
+        for block in blocks.get("blocks", []):
+            visit_v2(block)
+        return "\n".join(lines)
+
+    lines = []
 
     def visit(node: dict[str, Any]) -> None:
         node_type = node["type"]
@@ -433,6 +534,69 @@ def _render_blocks(nodes: list[dict[str, Any]]) -> str:
     return "\n\n".join(block for block in blocks if block)
 
 
+def _render_v2_inline(inline: object) -> str:
+    if isinstance(inline, list):
+        return "".join(_render_v2_inline(item) for item in inline)
+    if not isinstance(inline, dict):
+        return ""
+    if inline.get("type") == "link":
+        text = "".join(_render_v2_inline(c) for c in inline.get("content", []))
+        return f"[{text}]({inline.get('href', '')})"
+    value = inline.get("text", "")
+    styles = inline.get("styles") or {}
+    if styles.get("code"):
+        value = f"`{value}`"
+    if styles.get("bold"):
+        value = f"**{value}**"
+    if styles.get("italic"):
+        value = f"*{value}*"
+    if styles.get("strike"):
+        value = f"~~{value}~~"
+    return value
+
+
+def _render_v2_blocks(block_list: list[dict[str, Any]], depth: int = 0) -> str:
+    indent = "  " * depth
+    out: list[str] = []
+    for block in block_list:
+        block_type = block.get("type")
+        text = _render_v2_blocks_inline(block)
+        children = block.get("children", [])
+        if block_type == "heading":
+            level = int(block.get("props", {}).get("level", 1))
+            out.append(f"{'#' * level} {text}")
+        elif block_type == "bulletListItem":
+            out.append(f"{indent}- {text}")
+        elif block_type == "numberedListItem":
+            out.append(f"{indent}1. {text}")
+        elif block_type == "checkListItem":
+            checked = "x" if block.get("props", {}).get("checked") else " "
+            out.append(f"{indent}- [{checked}] {text}")
+        elif block_type == "quote":
+            body = _render_v2_blocks(children, 0) if children else text
+            out.append("\n".join(f"> {line}" for line in (body or text).splitlines()))
+        elif block_type == "codeBlock":
+            language = block.get("props", {}).get("language") or ""
+            code = block.get("content", "") if isinstance(block.get("content"), str) else text
+            out.append(f"```{language}\n{code}\n```")
+        elif block_type == "divider":
+            out.append("---")
+        else:
+            out.append(f"{indent}{text}")
+            if children:
+                out.append(_render_v2_blocks(children, depth + 1))
+    return "\n\n".join(part for part in out if part)
+
+
+def _render_v2_blocks_inline(block: dict[str, Any]) -> str:
+    content = block.get("content", [])
+    if isinstance(content, str):
+        return content
+    return "".join(_render_v2_inline(item) for item in content)
+
+
 def blocks_to_markdown(blocks: dict[str, Any]) -> str:
     canonical = normalize_note_blocks(blocks)
+    if canonical.get("schema_version") == 2:
+        return _render_v2_blocks(canonical.get("blocks", [])).strip()
     return _render_blocks(canonical["doc"].get("content", [])).strip()
