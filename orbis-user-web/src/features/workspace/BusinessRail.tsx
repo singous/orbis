@@ -1,5 +1,5 @@
 import { BookOpen, Home, LibraryBig, PanelLeftClose, PanelLeftOpen, Pin, Search, Sparkles, StickyNote } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
 
@@ -9,8 +9,6 @@ import { authStore } from "../../shared/auth/auth-store";
 import { Tooltip } from "../../shared/ui/Tooltip";
 import { UserMenu } from "./UserMenu";
 import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
-
-const RAIL_EXPANDED_KEY = "orbis.railExpanded";
 
 function PinnedList({ expanded }: { expanded: boolean }) {
   const workspaceId = useStore(authStore, (state) => state.workspace?.id);
@@ -66,20 +64,24 @@ function PinnedList({ expanded }: { expanded: boolean }) {
   );
 }
 
-export function BusinessRail() {
+export type BusinessRailProps = {
+  /** Pinned open in the layout flow. Unpinned: narrow floating rail that
+   * expands on hover. */
+  pinned: boolean;
+  /** Compact viewports use the drawer pattern instead of hover expansion. */
+  compact: boolean;
+  onTogglePinned: () => void;
+};
+
+export function BusinessRail({ pinned, compact, onTogglePinned }: BusinessRailProps) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const accessToken = useStore(authStore, (state) => state.accessToken);
   const user = useStore(authStore, (state) => state.user);
   const workspace = useStore(authStore, (state) => state.workspace);
   const clearSession = useStore(authStore, (state) => state.clearSession);
-  const [expanded, setExpanded] = useState(
-    () => typeof window !== "undefined" && window.localStorage.getItem(RAIL_EXPANDED_KEY) === "1",
-  );
-
-  useEffect(() => {
-    window.localStorage.setItem(RAIL_EXPANDED_KEY, expanded ? "1" : "0");
-  }, [expanded]);
+  const [hovered, setHovered] = useState(false);
+  const expanded = !compact && (pinned || hovered);
 
   function logout() {
     clearSession();
@@ -94,14 +96,25 @@ export function BusinessRail() {
   ];
 
   return (
-    <aside className={`workspace-business-rail${expanded ? " is-expanded" : ""}`}>
+    <aside
+      className={`workspace-business-rail${expanded ? " is-expanded" : ""}${pinned ? " is-pinned" : ""}`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <Tooltip label={pinned ? "收起侧栏" : "固定侧栏"} side="right">
+        <button
+          type="button"
+          className="rail-pin-toggle"
+          aria-label={pinned ? "收起侧栏" : "固定侧栏"}
+          aria-pressed={pinned}
+          onClick={onTogglePinned}
+        >
+          {pinned ? <PanelLeftClose aria-hidden="true" size={13} /> : <PanelLeftOpen aria-hidden="true" size={13} />}
+        </button>
+      </Tooltip>
+
       <div className={`flex w-full items-center gap-2${expanded ? " justify-between" : " justify-center"}`}>
         <WorkspaceSwitcher expanded={expanded} />
-        {expanded ? (
-          <button type="button" className="rail-expand" aria-label="收起侧栏" onClick={() => setExpanded(false)}>
-            <PanelLeftClose aria-hidden="true" size={15} />
-          </button>
-        ) : null}
       </div>
 
       <nav className="workspace-business-nav" aria-label="业务板块">
@@ -150,14 +163,6 @@ export function BusinessRail() {
       </nav>
 
       <div className="rail-bottom">
-        {!expanded ? (
-          <Tooltip label="展开侧栏" side="right">
-            <button type="button" className="rail-icon" aria-label="展开侧栏" onClick={() => setExpanded(true)}>
-              <PanelLeftOpen aria-hidden="true" size={18} />
-            </button>
-          </Tooltip>
-        ) : null}
-
         <UserMenu user={user} workspace={workspace} onLogout={logout} expanded={expanded} />
       </div>
     </aside>

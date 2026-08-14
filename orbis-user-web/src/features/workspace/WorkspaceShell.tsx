@@ -15,6 +15,11 @@ export type WorkspaceShellProps = {
 };
 
 const compactNavigationQuery = "(max-width: 1023px)";
+const RAIL_PINNED_KEY = "orbis.railExpanded";
+
+function readRailPinned(): boolean {
+  return typeof window !== "undefined" && window.localStorage.getItem(RAIL_PINNED_KEY) === "1";
+}
 
 function useCompactNavigation(): boolean {
   const [compact, setCompact] = useState(() =>
@@ -39,6 +44,7 @@ function useCompactNavigation(): boolean {
 export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, contextPanel, contextOpen = true, onOpenContext }: WorkspaceShellProps) {
   const [mainNavigationOpen, setMainNavigationOpen] = useState(false);
   const [documentContextOpen, setDocumentContextOpen] = useState(false);
+  const [railPinned, setRailPinned] = useState(readRailPinned);
   const compact = useCompactNavigation();
   const documentContextExpanded = documentContextOpen && contextOpen;
   // The toolbar strip only earns its vertical space when it carries content:
@@ -46,6 +52,13 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
   // section label, page toolbar actions, or a closed context panel's reopen
   // control. Pages with a PageContainer header get no redundant empty strip.
   const showToolbar = compact || Boolean(sectionTitle) || Boolean(toolbar) || Boolean(contextPanel && onOpenContext);
+  // Unpinned on desktop: the rail floats over a reserved 68px strip and
+  // expands on hover. Compact keeps the drawer pattern instead.
+  const railFloating = !compact && !railPinned;
+
+  useEffect(() => {
+    window.localStorage.setItem(RAIL_PINNED_KEY, railPinned ? "1" : "0");
+  }, [railPinned]);
 
   function openMainNavigation() {
     setMainNavigationOpen(true);
@@ -71,10 +84,10 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
   }
 
   return (
-    <main className={`workspace-shell${sectionMenu ? " has-section-menu" : ""}${mainNavigationOpen ? " main-navigation-open" : ""}${documentContextExpanded ? " document-context-drawer-open" : ""}`}>
+    <main className={`workspace-shell${sectionMenu ? " has-section-menu" : ""}${railFloating ? " rail-floating" : ""}${mainNavigationOpen ? " main-navigation-open" : ""}${documentContextExpanded ? " document-context-drawer-open" : ""}`}>
       <div className="workspace-shell-grid">
         <div className="workspace-main-navigation" aria-hidden={compact && !mainNavigationOpen ? true : undefined} inert={compact && !mainNavigationOpen ? true : undefined} onClick={closeMainNavigationAfterLink}>
-          <BusinessRail />
+          <BusinessRail pinned={railPinned} compact={compact} onTogglePinned={() => setRailPinned((value) => !value)} />
           {sectionMenu}
         </div>
         <section className={`workspace-main-area ${contextPanel && contextOpen ? "has-context" : ""}`} aria-label="主工作区">

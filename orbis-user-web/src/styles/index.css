@@ -806,6 +806,20 @@ textarea {
   grid-template-columns: auto minmax(0, 1fr);
 }
 
+/* Explicit tracks: when the rail floats (fixed, out of flow), remaining
+   items must not auto-place into earlier columns. */
+.workspace-main-area {
+  grid-column: 2;
+}
+
+.workspace-shell.has-section-menu .workspace-function-menu {
+  grid-column: 2;
+}
+
+.workspace-shell.has-section-menu .workspace-main-area {
+  grid-column: 3;
+}
+
 .workspace-shell.has-section-menu .workspace-shell-grid {
   grid-template-columns: auto minmax(248px, 276px) minmax(0, 1fr);
 }
@@ -1320,6 +1334,13 @@ textarea {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  /* Compact shell grid holds only the main area (navigation is a fixed
+     drawer), so the desktop track assignment must reset. */
+  .workspace-shell .workspace-main-area,
+  .workspace-shell.has-section-menu .workspace-main-area {
+    grid-column: auto;
+  }
+
   /* Undo desktop sticky pinning inside the fixed mobile drawer. */
   .workspace-business-rail,
   .workspace-function-menu {
@@ -1503,10 +1524,60 @@ textarea {
 
 
 /* ============================================================
-   Business rail v2: expandable, search item, pinned notebooks.
+   Business rail v2: pin toggle, hover expansion, pinned notebooks.
+   Unpinned on desktop: the rail floats over a reserved 68px strip
+   and expands as an overlay on hover; the corner handle pins it.
    ============================================================ */
 .workspace-business-rail {
   transition: width 180ms ease;
+}
+
+/* Unified rail toggle: one handle floating at the rail's top-right
+   corner in every state (replaces the old header/bottom buttons). */
+.rail-pin-toggle {
+  position: absolute;
+  top: 22px;
+  right: -13px;
+  z-index: 55;
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 1px solid var(--border-subtle);
+  border-radius: 50%;
+  background: var(--surface-overlay);
+  color: var(--text-tertiary);
+  box-shadow: var(--shadow-pop);
+  transition: 140ms ease;
+}
+
+.rail-pin-toggle:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+@media (min-width: 1024px) {
+  .workspace-shell.rail-floating .workspace-shell-grid {
+    padding-left: 68px;
+  }
+
+  .workspace-shell.rail-floating .workspace-business-rail {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 50;
+  }
+
+  .workspace-shell.rail-floating .workspace-business-rail.is-expanded {
+    box-shadow: 12px 0 32px rgb(20 20 20 / 10%);
+  }
+}
+
+@media (max-width: 1023px) {
+  .rail-pin-toggle {
+    display: none;
+  }
 }
 
 .workspace-business-rail.is-expanded {
@@ -1519,20 +1590,6 @@ textarea {
   align-items: stretch;
   margin-top: 20px;
   gap: 4px;
-}
-
-.rail-expand {
-  display: grid;
-  width: 28px;
-  height: 28px;
-  place-items: center;
-  border-radius: 7px;
-  color: var(--rail-dim);
-}
-
-.rail-expand:hover {
-  background: var(--rail-hover);
-  color: var(--rail-text-strong);
 }
 
 .rail-icon {
