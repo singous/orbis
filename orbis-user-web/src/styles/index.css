@@ -804,6 +804,7 @@ textarea {
 }
 
 .workspace-shell-grid {
+  position: relative;
   display: grid;
   min-height: 100vh;
   grid-template-columns: auto minmax(0, 1fr);
@@ -834,19 +835,28 @@ textarea {
 }
 
 .workspace-business-rail {
-  position: sticky;
-  top: 8px;
-  align-self: start;
   z-index: 20;
   display: flex;
   width: 68px;
-  height: calc(100vh - 16px);
   flex-direction: column;
   align-items: center;
   border-radius: 12px;
   background: var(--rail-bg);
-  padding: 16px 0;
   color: var(--rail-text);
+}
+
+/* The panel stretches to the full grid-row height (page height); the inner
+   column carries the viewport-locked content. This keeps the panel's bottom
+   edge glued to the page bottom regardless of viewport-unit quirks. */
+.rail-inner {
+  position: sticky;
+  top: 8px;
+  display: flex;
+  width: 100%;
+  height: calc(100vh - 16px);
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 0;
 }
 
 .workspace-brand {
@@ -1374,6 +1384,11 @@ textarea {
     border-radius: 0;
   }
 
+  .rail-inner {
+    position: static;
+    height: auto;
+  }
+
   .workspace-main-navigation {
     position: fixed;
     z-index: 30;
@@ -1582,16 +1597,21 @@ textarea {
 }
 
 @media (min-width: 1024px) {
+  /* Floating: the 68px strip keeps its own fixed track; the rail overlays
+     it absolutely so hover expansion never reshuffles the layout. */
   .workspace-shell.rail-floating .workspace-shell-grid {
-    padding-left: 84px;
+    grid-template-columns: 68px minmax(0, 1fr);
+  }
+
+  .workspace-shell.rail-floating.has-section-menu .workspace-shell-grid {
+    grid-template-columns: 68px minmax(248px, 276px) minmax(0, 1fr);
   }
 
   .workspace-shell.rail-floating .workspace-business-rail {
-    position: fixed;
+    position: absolute;
     top: 8px;
     bottom: 8px;
     left: 8px;
-    height: auto;
     z-index: 50;
   }
 
@@ -1608,6 +1628,9 @@ textarea {
 
 .workspace-business-rail.is-expanded {
   width: 236px;
+}
+
+.workspace-business-rail.is-expanded .rail-inner {
   align-items: stretch;
   padding: 16px 10px;
 }

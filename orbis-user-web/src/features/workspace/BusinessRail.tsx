@@ -101,6 +101,9 @@ export function BusinessRail({ pinned, compact, onTogglePinned }: BusinessRailPr
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
+      {/* The aside itself stretches to the full grid-row height so the panel
+          never ends mid-page; the inner column sticks to the viewport. */}
+      <div className="rail-inner">
       <Tooltip label={pinned ? "收起侧栏" : "固定侧栏"} side="right">
         <button
           type="button"
@@ -164,6 +167,7 @@ export function BusinessRail({ pinned, compact, onTogglePinned }: BusinessRailPr
 
       <div className="rail-bottom">
         <UserMenu user={user} workspace={workspace} onLogout={logout} expanded={expanded} />
+      </div>
       </div>
     </aside>
   );
