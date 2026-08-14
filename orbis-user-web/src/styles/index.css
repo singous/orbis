@@ -1573,17 +1573,16 @@ textarea {
 }
 
 /* Unified rail toggle: one quiet icon button inside the panel's top-right
-   corner, in both collapsed and expanded states. */
+   corner, visible once the rail is expanded (hover or pinned). */
 .rail-header {
   display: flex;
   width: 100%;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 5px;
+  justify-content: center;
 }
 
 .workspace-business-rail.is-expanded .rail-header {
-  padding: 0;
+  justify-content: space-between;
 }
 
 .rail-pin-toggle {
@@ -1638,7 +1637,7 @@ textarea {
 
 .workspace-business-rail.is-expanded .rail-inner {
   align-items: stretch;
-  padding: 16px 10px;
+  padding: 16px 16px;
 }
 
 .workspace-business-rail.is-expanded .workspace-business-nav {

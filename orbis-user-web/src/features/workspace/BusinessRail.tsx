@@ -104,7 +104,7 @@ export function BusinessRail({ pinned, compact, onTogglePinned }: BusinessRailPr
       {/* The aside itself stretches to the full grid-row height so the panel
           never ends mid-page; the inner column sticks to the viewport. */}
       <div className="rail-inner">
-      <div className={`rail-header${expanded ? "" : " justify-center"}`}>
+      <div className="rail-header">
         <WorkspaceSwitcher expanded={expanded} />
         {expanded ? (
           <Tooltip label={pinned ? "收起侧栏" : "固定侧栏"} side="right">
