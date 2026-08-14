@@ -4,15 +4,16 @@ import { Link } from "react-router-dom";
 
 import type { User, Workspace } from "../../shared/api/schemas";
 import { useThemeStore } from "../../shared/theme/theme-store";
-import { canManageWorkspaceMembers } from "./capabilities";
+import { canManageWorkspaceMembers, workspaceRoleLabel } from "./capabilities";
 
 export type UserMenuProps = {
   user: User | null;
   workspace: Workspace | null;
   onLogout: () => void;
+  expanded?: boolean;
 };
 
-export function UserMenu({ user, workspace, onLogout }: UserMenuProps) {
+export function UserMenu({ user, workspace, onLogout, expanded = false }: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -48,7 +49,7 @@ export function UserMenu({ user, workspace, onLogout }: UserMenuProps) {
   }, [open]);
 
   return (
-    <div ref={rootRef} className="workspace-user-menu">
+    <div ref={rootRef} className={`workspace-user-menu${expanded ? " is-expanded" : ""}`}>
       {open ? (
         <div id="workspace-user-actions" className="workspace-user-popover">
           <div className="border-b border-[var(--border-subtle)] px-3 py-2.5">
@@ -91,7 +92,7 @@ export function UserMenu({ user, workspace, onLogout }: UserMenuProps) {
         <span className="workspace-user-avatar">{userName.slice(0, 1).toUpperCase()}</span>
         <span className="workspace-user-trigger-copy">
           <span className="truncate">{userName}</span>
-          <span className="capitalize text-[10px] text-[var(--text-oninverse)] opacity-45">{workspace?.role ?? "member"}</span>
+          <span className="text-[10px] text-[var(--text-oninverse)] opacity-45">{workspaceRoleLabel(workspace?.role)}</span>
         </span>
         <ChevronUp aria-hidden="true" size={14} className={open ? "rotate-180" : ""} />
       </button>

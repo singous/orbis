@@ -903,20 +903,21 @@ textarea {
   opacity: 1;
 }
 
+/* User menu lives inside the business rail flow (last item of .rail-bottom),
+   so it can never overlap the rail's own buttons. The popover still floats. */
 .workspace-user-menu {
-  position: fixed;
-  bottom: 14px;
-  left: 8px;
-  z-index: 40;
-  width: 52px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  width: 100%;
 }
 
 .workspace-user-trigger {
   display: grid;
-  width: 52px;
-  height: 52px;
+  width: 40px;
+  height: 40px;
   place-items: center;
-  border-radius: var(--radius-pop);
+  border-radius: 10px;
   color: var(--text-oninverse);
   opacity: 0.76;
   transition: 160ms ease;
@@ -929,8 +930,8 @@ textarea {
 
 .workspace-user-avatar {
   display: grid;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   place-items: center;
   border-radius: 50%;
   background: var(--surface-content);
@@ -944,10 +945,39 @@ textarea {
   display: none;
 }
 
+/* Expanded rail: full-width account row with name and role. */
+.workspace-user-menu.is-expanded {
+  display: block;
+}
+
+.workspace-user-menu.is-expanded .workspace-user-trigger {
+  display: flex;
+  width: 100%;
+  height: 46px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 9px;
+  padding: 0 8px;
+}
+
+.workspace-user-menu.is-expanded .workspace-user-trigger-copy {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  text-align: left;
+  font-size: 11px;
+}
+
+.workspace-user-menu.is-expanded .workspace-user-trigger > svg {
+  display: block;
+  flex: none;
+}
+
 .workspace-user-popover {
   position: absolute;
   bottom: calc(100% + 8px);
   left: 0;
+  z-index: 60;
   width: 220px;
   overflow: hidden;
   border: 1px solid var(--border-subtle);
@@ -1060,33 +1090,6 @@ textarea {
     transform: translateX(0);
   }
 
-  .workspace-user-menu {
-    bottom: 14px;
-    left: 12px;
-    width: 194px;
-  }
-
-  .workspace-user-trigger {
-    display: flex;
-    width: 194px;
-    height: 46px;
-    justify-content: flex-start;
-    gap: 9px;
-    padding: 0 8px;
-  }
-
-  .workspace-user-trigger-copy {
-    display: grid;
-    min-width: 0;
-    flex: 1;
-    text-align: left;
-    font-size: 11px;
-  }
-
-  .workspace-user-trigger > svg {
-    display: block;
-  }
-
   .editor-layout {
     grid-template-columns: minmax(0, 1fr);
     padding: 24px 16px 60px;
@@ -1144,19 +1147,14 @@ textarea {
   }
 
   .workspace-user-menu {
-    bottom: 12px;
-    left: 12px;
     display: block;
-    width: 48px;
+    width: 100%;
   }
 
   .workspace-user-trigger {
-    width: 48px;
-    height: 48px;
     justify-content: center;
+    margin: 0 auto;
     border: 1px solid rgb(255 255 255 / 12%);
-    background: var(--chrome);
-    padding: 0;
   }
 
   .workspace-user-trigger-copy,

@@ -1,12 +1,13 @@
 import { BookOpen, Home, LibraryBig, PanelLeftClose, PanelLeftOpen, Pin, Search, Sparkles, StickyNote } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
 
 import { useNotebooks } from "../documents/queries";
 import { usePinnedNotebooks } from "../documents/pinned-notebooks";
 import { authStore } from "../../shared/auth/auth-store";
 import { Tooltip } from "../../shared/ui/Tooltip";
+import { UserMenu } from "./UserMenu";
 
 const RAIL_EXPANDED_KEY = "orbis.railExpanded";
 
@@ -66,7 +67,11 @@ function PinnedList({ expanded }: { expanded: boolean }) {
 
 export function BusinessRail() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const accessToken = useStore(authStore, (state) => state.accessToken);
+  const user = useStore(authStore, (state) => state.user);
+  const workspace = useStore(authStore, (state) => state.workspace);
+  const clearSession = useStore(authStore, (state) => state.clearSession);
   const [expanded, setExpanded] = useState(
     () => typeof window !== "undefined" && window.localStorage.getItem(RAIL_EXPANDED_KEY) === "1",
   );
@@ -74,6 +79,11 @@ export function BusinessRail() {
   useEffect(() => {
     window.localStorage.setItem(RAIL_EXPANDED_KEY, expanded ? "1" : "0");
   }, [expanded]);
+
+  function logout() {
+    clearSession();
+    navigate("/login", { replace: true });
+  }
 
   const areas = [
     { label: "首页", to: "/home", icon: Home, match: (p: string) => p === "/home" },
@@ -148,6 +158,8 @@ export function BusinessRail() {
             </button>
           </Tooltip>
         ) : null}
+
+        <UserMenu user={user} workspace={workspace} onLogout={logout} expanded={expanded} />
       </div>
     </aside>
   );

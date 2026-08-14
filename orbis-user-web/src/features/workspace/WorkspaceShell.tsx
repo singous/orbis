@@ -1,12 +1,8 @@
 import type { ReactNode } from "react";
 import { Menu, PanelRightOpen } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useStore } from "zustand";
 
-import { authStore } from "../../shared/auth/auth-store";
 import { BusinessRail } from "./BusinessRail";
-import { UserMenu } from "./UserMenu";
 
 export type WorkspaceShellProps = {
   children: ReactNode;
@@ -41,19 +37,10 @@ function useCompactNavigation(): boolean {
 }
 
 export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, contextPanel, contextOpen = true, onOpenContext }: WorkspaceShellProps) {
-  const navigate = useNavigate();
-  const user = useStore(authStore, (state) => state.user);
-  const workspace = useStore(authStore, (state) => state.workspace);
-  const clearSession = useStore(authStore, (state) => state.clearSession);
   const [mainNavigationOpen, setMainNavigationOpen] = useState(false);
   const [documentContextOpen, setDocumentContextOpen] = useState(false);
   const compact = useCompactNavigation();
   const documentContextExpanded = documentContextOpen && contextOpen;
-
-  function logout() {
-    clearSession();
-    navigate("/login", { replace: true });
-  }
 
   function openMainNavigation() {
     setMainNavigationOpen(true);
@@ -101,7 +88,6 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
           {contextPanel ? <aside className="workspace-context-panel" aria-label="上下文面板" aria-hidden={compact && !documentContextExpanded ? true : undefined} inert={compact && !documentContextExpanded ? true : undefined} hidden={!contextOpen} onClick={closeDocumentContextAfterLink}>{contextPanel}</aside> : null}
         </section>
       </div>
-      <UserMenu user={user} workspace={workspace} onLogout={logout} />
     </main>
   );
 }

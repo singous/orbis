@@ -1,3 +1,4 @@
+import { zh } from "@blocknote/core/locales";
 import { BlockNoteViewRaw, useCreateBlockNote } from "@blocknote/react";
 // BlockNoteViewRaw renders the editor plus the default UI (side menu / slash
 // menu / formatting toolbar) with BlockNote's own self-contained CSS, so the
@@ -27,7 +28,7 @@ export function BlockNoteEditor({
   // OrbisBlock mirrors BlockNote's Block shape; cast to avoid deep inline-style
   // generic friction (content is validated at the API boundary).
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const editor = useCreateBlockNote({ initialContent: blocks.blocks as any });
+  const editor = useCreateBlockNote({ dictionary: zh, initialContent: blocks.blocks as any });
   const lastEmitted = useRef<string>("");
 
   useEffect(() => {

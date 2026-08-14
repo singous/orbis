@@ -2,6 +2,7 @@ import { useStore } from "zustand";
 
 import { authStore } from "../../shared/auth/auth-store";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
+import { workspaceRoleLabel } from "../workspace/capabilities";
 
 export function AccountSettingsPage() {
   const user = useStore(authStore, (state) => state.user);
@@ -10,7 +11,7 @@ export function AccountSettingsPage() {
     ["名称", user?.display_name || "未设置"],
     ["邮箱", user?.email || "未设置"],
     ["工作空间", workspace?.name || "私人工作空间"],
-    ["角色", workspace?.role || "member"],
+    ["角色", workspaceRoleLabel(workspace?.role)],
   ] as const;
   return (
     <WorkspaceShell>
