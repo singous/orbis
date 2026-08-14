@@ -116,6 +116,11 @@ export function DocumentEditorPage() {
     coordinatorRef.current?.dispose(false);
     const coordinator = new AutosaveCoordinator<EditorDraft>({
       delayMs: 750,
+      // Bursts separated by short pauses coalesce into at most one save per
+      // 2s; continuous typing without a pause is capped at 15s so a crash
+      // cannot lose more than that window.
+      minIntervalMs: 2_000,
+      maxDelayMs: 15_000,
       fingerprint: draftFingerprint,
       onStateChange: setSaveState,
       save: async (current, saved) => {
@@ -207,7 +212,7 @@ export function DocumentEditorPage() {
               readOnly={!canEdit}
               onChange={(event) => changeDraft({ ...draft, title: event.target.value })}
             />
-            <div className="mb-7 mt-2 flex items-center gap-2 text-[11px] text-[var(--muted-light)]"><span>版本 {coordinatorRef.current?.saved?.version ?? draft.version}</span><span>·</span><span>{canEdit ? "750ms 自动保存" : "只读访问"}</span></div>
+            <div className="mb-7 mt-2 flex items-center gap-2 text-[11px] text-[var(--muted-light)]"><span>版本 {coordinatorRef.current?.saved?.version ?? draft.version}</span><span>·</span><span>{canEdit ? "停手后自动保存" : "只读访问"}</span></div>
 
             {saveState === "conflict" ? <div className="mb-5"><StatusMessage tone="warning" title="检测到其他窗口的更新">本地草稿仍保留。建议先复制本地 Markdown，再载入服务端版本。
               <div className="mt-3 flex flex-wrap gap-2"><Button variant="secondary" icon={<Download aria-hidden="true" size={14} />} onClick={() => navigator.clipboard?.writeText(v2ToMarkdown(draft.blocks.blocks))}>复制本地 Markdown</Button><Button variant="secondary" icon={<RotateCcw aria-hidden="true" size={14} />} onClick={reloadServer}>载入服务端版本</Button></div>
