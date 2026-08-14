@@ -1484,6 +1484,12 @@ textarea {
   display: block;
 }
 
+.rail-favorites {
+  margin-top: 14px;
+  border-top: 1px solid var(--rail-border);
+  padding-top: 10px;
+}
+
 .rail-favorites-title {
   padding: 4px 6px 6px;
   font-size: 11px;

@@ -106,6 +106,19 @@ export function BusinessRail() {
       </div>
 
       <nav className="workspace-business-nav" aria-label="业务板块">
+        {expanded ? (
+          <Link to="/documents/search" className={`rail-row${pathname === "/documents/search" ? " is-active" : ""}`}>
+            <Search aria-hidden="true" size={17} />
+            <span>搜索</span>
+          </Link>
+        ) : (
+          <Tooltip label="搜索" side="right">
+            <Link to="/documents/search" aria-label="搜索" className={`rail-icon${pathname === "/documents/search" ? " is-active" : ""}`}>
+              <Search aria-hidden="true" size={18} />
+            </Link>
+          </Tooltip>
+        )}
+
         {areas.map(({ label, to, icon: Icon, match }) =>
           expanded ? (
             <Link key={label} to={to} className={`rail-row${match(pathname) ? " is-active" : ""}`}>
@@ -121,21 +134,6 @@ export function BusinessRail() {
           ),
         )}
 
-        {expanded ? (
-          <Link to="/documents/search" className={`rail-row${pathname === "/documents/search" ? " is-active" : ""}`}>
-            <Search aria-hidden="true" size={17} />
-            <span>搜索</span>
-          </Link>
-        ) : (
-          <Tooltip label="搜索" side="right">
-            <Link to="/documents/search" aria-label="搜索" className={`rail-icon${pathname === "/documents/search" ? " is-active" : ""}`}>
-              <Search aria-hidden="true" size={18} />
-            </Link>
-          </Tooltip>
-        )}
-      </nav>
-
-      <div className="rail-bottom">
         {accessToken ? (
           expanded ? (
             <PinnedList expanded />
@@ -150,7 +148,9 @@ export function BusinessRail() {
             </div>
           )
         ) : null}
+      </nav>
 
+      <div className="rail-bottom">
         {!expanded ? (
           <Tooltip label="展开侧栏" side="right">
             <button type="button" className="rail-icon" aria-label="展开侧栏" onClick={() => setExpanded(true)}>
