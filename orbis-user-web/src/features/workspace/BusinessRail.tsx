@@ -95,8 +95,8 @@ export function BusinessRail() {
 
   return (
     <aside className={`workspace-business-rail${expanded ? " is-expanded" : ""}`}>
-      <div className="flex w-full items-center justify-center gap-2">
-        <WorkspaceSwitcher />
+      <div className={`flex w-full items-center gap-2${expanded ? " justify-between" : " justify-center"}`}>
+        <WorkspaceSwitcher expanded={expanded} />
         {expanded ? (
           <button type="button" className="rail-expand" aria-label="收起侧栏" onClick={() => setExpanded(false)}>
             <PanelLeftClose aria-hidden="true" size={15} />

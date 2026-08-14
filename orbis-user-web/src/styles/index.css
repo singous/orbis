@@ -847,6 +847,49 @@ textarea {
   filter: brightness(1.12);
 }
 
+/* Expanded rail: brand becomes a left-aligned chip + wordmark row. */
+.workspace-brand.is-expanded {
+  display: flex;
+  width: auto;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--radius-pop);
+  background: transparent;
+  padding: 0 8px 0 0;
+  color: var(--rail-text-strong);
+}
+
+.workspace-brand.is-expanded:hover {
+  background: var(--rail-hover);
+  filter: none;
+}
+
+.workspace-brand.is-expanded .workspace-brand-mark {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  place-items: center;
+  border-radius: var(--radius-pop);
+  background: var(--rail-chip-bg);
+  color: var(--rail-chip-text);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.workspace-brand-word {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+/* In the expanded rail the popover drops below the brand row. */
+.workspace-business-rail.is-expanded .workspace-switcher-popover {
+  top: calc(100% + 8px);
+  left: 0;
+  width: 248px;
+}
+
 /* Brand-chip workspace popover (list only; no switching this version). */
 .workspace-switcher {
   position: relative;
