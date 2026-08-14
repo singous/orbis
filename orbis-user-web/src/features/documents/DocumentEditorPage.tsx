@@ -98,13 +98,18 @@ export function DocumentEditorPage() {
     const note = noteQuery.data;
     const content = contentQuery.data;
     if (!note || !content) return;
-    // A successful autosave writes the new version into the query cache, which
-    // re-runs this effect. Rebuilding the draft from our own echo would stomp
-    // the live editor (cursor loss, flicker, lost keystrokes typed mid-save).
-    const isOwnSaveEcho =
+    // The version can only move forward per note, so a cached version at or
+    // below what we last saved is either our own echo (setQueryData after
+    // flush) or a stale query response that arrived late. Rebuilding the
+    // draft from either would stomp the live editor (cursor loss, flicker,
+    // lost keystrokes). Only a strictly newer server version — a genuine
+    // external edit — warrants a rebuild.
+    const saved = coordinatorRef.current?.saved;
+    const isOwnOrStaleEcho =
       hydratedNoteRef.current === noteId &&
-      coordinatorRef.current?.saved?.version === content.content_version;
-    if (isOwnSaveEcho) return;
+      saved != null &&
+      content.content_version <= saved.version;
+    if (isOwnOrStaleEcho) return;
     hydratedNoteRef.current = noteId;
     const initial = { title: note.title, blocks: toV2(content.blocks), version: content.content_version };
     setDraft(initial);

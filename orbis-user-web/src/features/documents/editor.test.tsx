@@ -128,4 +128,38 @@ describe("DocumentEditorPage", () => {
 
     expect((titleInput as HTMLInputElement).value).toBe("新产品计划");
   });
+
+  it("keeps the live draft when a late stale response regresses the cached version", async () => {
+    const view = render(
+      <MemoryRouter initialEntries={["/documents/018ff7c4-a5b6-7000-8000-000000000001"]}>
+        <Routes><Route path="/documents/:noteId" element={<DocumentEditorPage />} /></Routes>
+      </MemoryRouter>,
+    );
+    const editButton = await screen.findByRole("button", { name: "模拟编辑" });
+    vi.useFakeTimers();
+    fireEvent.click(editButton);
+    const titleInput = screen.getByLabelText("文档标题");
+    fireEvent.change(titleInput, { target: { value: "新版本草稿" } });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(750);
+    });
+    expect(saveContent).toHaveBeenCalledTimes(1);
+
+    // A slow query response generated before our save lands afterwards,
+    // regressing the cache to an older version with older blocks.
+    contentFixture.current = {
+      ...contentFixture.current,
+      blocks: createEmptyNoteBlocks(),
+      content_version: 3,
+    };
+    act(() => {
+      view.rerender(
+        <MemoryRouter initialEntries={["/documents/018ff7c4-a5b6-7000-8000-000000000001"]}>
+          <Routes><Route path="/documents/:noteId" element={<DocumentEditorPage />} /></Routes>
+        </MemoryRouter>,
+      );
+    });
+
+    expect((titleInput as HTMLInputElement).value).toBe("新版本草稿");
+  });
 });
