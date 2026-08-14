@@ -69,8 +69,8 @@
   --rail-text: #63635e;
   --rail-text-strong: #1c1c1a;
   --rail-dim: #8f8f8a;
-  --rail-hover: #e7e7e3;
-  --rail-active: #e2e2de;
+  --rail-hover: #f0f0ee;
+  --rail-active: #eaeae7;
   --rail-chip-bg: #1c1c1a;
   --rail-chip-text: #fbfbf9;
 
@@ -1665,8 +1665,8 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 
 .workspace-business-rail.is-expanded .workspace-business-nav {
   align-items: stretch;
-  margin-top: 20px;
-  gap: 4px;
+  margin-top: 24px;
+  gap: 6px;
 }
 
 /* Expanded rail: search field + quick-create button on the first row. */
@@ -1693,7 +1693,7 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 
 .rail-search-input {
   width: 100%;
-  height: 32px;
+  height: 34px;
   border: 1px solid transparent;
   border-radius: 8px;
   background: var(--surface-hover);
@@ -1716,17 +1716,20 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 
 .rail-create-trigger {
   display: grid;
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   flex: none;
   place-items: center;
-  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 9px;
+  background: var(--surface-content);
   color: var(--rail-text);
   transition: 140ms ease;
 }
 
 .rail-create-trigger:hover {
-  background: var(--rail-hover);
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
   color: var(--rail-text-strong);
 }
 
@@ -1810,9 +1813,9 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   align-items: center;
   gap: 10px;
   border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 13px;
-  font-weight: 560;
+  padding: 9px 12px;
+  font-size: 14px;
+  font-weight: 550;
   color: var(--rail-text);
   transition: 140ms ease;
 }
@@ -1864,9 +1867,9 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 }
 
 .rail-favorites {
-  margin-top: 14px;
+  margin-top: 18px;
   border-top: 1px solid var(--rail-border);
-  padding-top: 10px;
+  padding-top: 14px;
 }
 
 .rail-favorites-title {

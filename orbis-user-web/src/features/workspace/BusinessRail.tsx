@@ -37,7 +37,7 @@ function PinnedList({ expanded }: { expanded: boolean }) {
             </div>
           ))
         ) : (
-          <div className="rail-favorites-empty">在笔记本卡片上点置顶可添加到常用</div>
+          <div className="rail-favorites-empty">置顶笔记本后会出现在这里</div>
         )}
       </div>
     );
@@ -159,7 +159,7 @@ export function BusinessRail({ pinned, compact, onTogglePinned }: BusinessRailPr
         {areas.map(({ label, to, icon: Icon, match }) =>
           expanded ? (
             <Link key={label} to={to} className={`rail-row${match(pathname) ? " is-active" : ""}`}>
-              <Icon aria-hidden="true" size={17} />
+              <Icon aria-hidden="true" size={18} />
               <span>{label}</span>
             </Link>
           ) : (
