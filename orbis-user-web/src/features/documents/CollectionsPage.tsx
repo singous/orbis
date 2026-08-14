@@ -13,6 +13,7 @@ import { useStore } from "zustand";
 import type { DocumentGroup, Notebook } from "../../shared/api/schemas";
 import { authStore } from "../../shared/auth/auth-store";
 import { Button } from "../../shared/ui/Button";
+import { PageContainer } from "../../shared/ui/PageContainer";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { DocumentShell } from "./DocumentShell";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
@@ -148,35 +149,36 @@ export function CollectionsPage() {
             : null;
 
   return (
-    <DocumentShell
-      toolbar={
-        canEdit ? (
-          <Button
-            variant="primary"
-            icon={<Plus aria-hidden="true" size={15} />}
-            onClick={() =>
-              groups[0] &&
-              setDialog({ kind: "notebook", groupId: groups[0].id })
-            }
-            disabled={!groups.length}
-          >
-            新建笔记本
-          </Button>
-        ) : null
-      }
-    >
-      <div className="mx-auto max-w-[1240px] px-5 py-8 lg:px-10 lg:py-10">
-        <header className="mb-9">
-          <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted-light)]">
-            Workspace / Documents
-          </div>
-          <h1 className="text-4xl font-semibold tracking-[-0.045em] lg:text-5xl">
-            我的笔记本
-          </h1>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--muted)]">
-            在清晰的层级中管理分组、笔记本和文档目录。
-          </p>
-        </header>
+    <DocumentShell>
+      <PageContainer
+        eyebrow="文档中心"
+        title="我的笔记本"
+        description="在清晰的层级中管理分组、笔记本和文档目录。"
+        actions={
+          canEdit ? (
+            <>
+              <Button
+                variant="secondary"
+                icon={<FolderPlus aria-hidden="true" size={15} />}
+                onClick={() => setDialog({ kind: "group" })}
+              >
+                新建分组
+              </Button>
+              <Button
+                variant="primary"
+                icon={<Plus aria-hidden="true" size={15} />}
+                onClick={() =>
+                  groups[0] &&
+                  setDialog({ kind: "notebook", groupId: groups[0].id })
+                }
+                disabled={!groups.length}
+              >
+                新建笔记本
+              </Button>
+            </>
+          ) : null
+        }
+      >
         {resourceError ? (
           <div role="alert" className="mb-5">
             <StatusMessage tone="error" title="无法打开资源">
@@ -207,15 +209,6 @@ export function CollectionsPage() {
               <h2>笔记本管理</h2>
               <p>{notebooks.length} 个笔记本，按工作主题归档</p>
             </div>
-            {canEdit ? (
-              <Button
-                variant="secondary"
-                icon={<FolderPlus aria-hidden="true" size={15} />}
-                onClick={() => setDialog({ kind: "group" })}
-              >
-                新建分组
-              </Button>
-            ) : null}
           </div>
           {groupsQuery.isLoading || notebooksQuery.isLoading ? (
             <div className="empty-panel">正在加载笔记本…</div>
@@ -385,7 +378,7 @@ export function CollectionsPage() {
             })}
           </div>
         </section>
-      </div>
+      </PageContainer>
       {dialogCopy ? (
         <ResourceDialog
           open

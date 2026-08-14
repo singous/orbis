@@ -1,6 +1,7 @@
 import { BookOpen, BrainCircuit, FilePlus2, LibraryBig } from "lucide-react";
 import { Link } from "react-router-dom";
 
+import { PageContainer } from "../../shared/ui/PageContainer";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
 import {
   useDocumentGroups,
@@ -19,18 +20,11 @@ export function HomePage() {
 
   return (
     <WorkspaceShell>
-      <div className="mx-auto max-w-[1040px] px-5 py-8 lg:px-10 lg:py-10">
-        <header className="mb-9">
-          <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted-light)]">
-            Orbis Cloud
-          </div>
-          <h1 className="text-4xl font-semibold tracking-[-0.045em] lg:text-5xl">
-            首页
-          </h1>
-          <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
-            从在线文档开始，组织团队正在推进的工作。
-          </p>
-        </header>
+      <PageContainer
+        eyebrow="Orbis 云文档"
+        title="首页"
+        description="从在线文档开始，组织团队正在推进的工作。"
+      >
         <section className="grid gap-3 md:grid-cols-3">
           <Link to="/documents" className="document-card">
             <div className="mb-7 document-icon">
@@ -122,7 +116,7 @@ export function HomePage() {
             </Link>
           ) : null}
         </section>
-      </div>
+      </PageContainer>
     </WorkspaceShell>
   );
 }

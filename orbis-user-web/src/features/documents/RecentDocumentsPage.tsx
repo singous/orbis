@@ -1,6 +1,7 @@
 import { FilePlus2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
+import { PageContainer } from "../../shared/ui/PageContainer";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { DocumentShell } from "./DocumentShell";
 import { useNoteSearch } from "./queries";
@@ -18,18 +19,11 @@ export function RecentDocumentsPage() {
 
   return (
     <DocumentShell>
-      <div className="mx-auto max-w-[1040px] px-5 py-8 lg:px-10 lg:py-10">
-        <header className="mb-9">
-          <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted-light)]">
-            Documents
-          </div>
-          <h1 className="text-4xl font-semibold tracking-[-0.045em] lg:text-5xl">
-            最近文档
-          </h1>
-          <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
-            按最近更新时间继续你的工作。
-          </p>
-        </header>
+      <PageContainer
+        eyebrow="文档中心"
+        title="最近文档"
+        description="按最近更新时间继续你的工作。"
+      >
         {notesQuery.isError ? (
           <StatusMessage tone="error" title="最近文档加载失败">
             请检查 API 服务后重试。
@@ -75,7 +69,7 @@ export function RecentDocumentsPage() {
             ))}
           </div>
         ) : null}
-      </div>
+      </PageContainer>
     </DocumentShell>
   );
 }

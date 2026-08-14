@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useStore } from "zustand";
 
 import { authStore } from "../../shared/auth/auth-store";
+import { PageContainer } from "../../shared/ui/PageContainer";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { DocumentShell } from "./DocumentShell";
@@ -33,53 +34,41 @@ export function DocumentOverviewPage() {
     .slice(0, 5);
 
   return (
-    <DocumentShell
-      toolbar={
-        canEdit ? (
-          <Link
-            to="/documents/collections"
-            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-[var(--surface-inverse)] px-3 text-sm font-medium text-[var(--text-oninverse)] transition hover:opacity-90"
-          >
-            <Plus aria-hidden="true" size={15} />
-            新建笔记本
-          </Link>
-        ) : null
-      }
-    >
-      <div className="mx-auto max-w-[1040px] px-5 py-8 lg:px-10 lg:py-10">
-        <header className="mb-9">
-          <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted-light)]">
-            Workspace / Documents
-          </div>
-          <h1 className="text-4xl font-semibold tracking-[-0.045em] lg:text-5xl">
-            文档概览
-          </h1>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--muted)]">
-            查看工作空间的文档状态，并从这里快速开始写作。
-          </p>
-        </header>
-
+    <DocumentShell>
+      <PageContainer
+        eyebrow="文档中心"
+        title="文档概览"
+        description="查看工作空间的文档状态，并从这里快速开始写作。"
+        actions={
+          canEdit ? (
+            <Link
+              to="/documents/collections"
+              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-[var(--surface-inverse)] px-3 text-sm font-medium text-[var(--text-oninverse)] transition hover:opacity-90"
+            >
+              <Plus aria-hidden="true" size={15} />
+              新建笔记本
+            </Link>
+          ) : null
+        }
+      >
         {groupsQuery.isError || notebooksQuery.isError || notesQuery.isError ? (
           <StatusMessage tone="error" title="文档空间加载失败">
             请检查 API 服务后重试。
           </StatusMessage>
         ) : null}
 
-        <section
-          className="mb-10 grid gap-3 sm:grid-cols-3"
-          aria-label="文档摘要"
-        >
-          <div className="document-card">
-            <div className="text-2xl font-semibold">{groups.length}</div>
-            <div className="mt-1 text-xs text-[var(--muted)]">个分组</div>
+        <section className="stat-strip" aria-label="文档摘要">
+          <div className="stat-item">
+            <span className="stat-value">{groups.length}</span>
+            <span className="stat-label">个分组</span>
           </div>
-          <div className="document-card">
-            <div className="text-2xl font-semibold">{notebooks.length}</div>
-            <div className="mt-1 text-xs text-[var(--muted)]">个笔记本</div>
+          <div className="stat-item">
+            <span className="stat-value">{notebooks.length}</span>
+            <span className="stat-label">个笔记本</span>
           </div>
-          <div className="document-card">
-            <div className="text-2xl font-semibold">{notes.length}</div>
-            <div className="mt-1 text-xs text-[var(--muted)]">篇在线文档</div>
+          <div className="stat-item">
+            <span className="stat-value">{notes.length}</span>
+            <span className="stat-label">篇在线文档</span>
           </div>
         </section>
 
@@ -141,7 +130,7 @@ export function DocumentOverviewPage() {
           ) : null}
         </section>
 
-        <section className="mt-10 rounded-2xl border border-[var(--border)] bg-[var(--surface-content)] p-5">
+        <section className="mt-8 rounded-2xl border border-[var(--border)] bg-[var(--surface-content)] p-5">
           <div className="flex items-start gap-3">
             <div className="document-icon">
               <BookOpen aria-hidden="true" size={18} />
@@ -160,7 +149,7 @@ export function DocumentOverviewPage() {
             </div>
           </div>
         </section>
-      </div>
+      </PageContainer>
     </DocumentShell>
   );
 }

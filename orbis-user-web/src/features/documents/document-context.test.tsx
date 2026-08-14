@@ -34,6 +34,7 @@ type BriefDocumentContextPanelProps = {
   activeNoteId?: string;
   mobile?: boolean;
   onNavigate?: () => void;
+  variant?: "side" | "main";
 };
 
 type PanelPropKeysAreExact =
@@ -341,8 +342,7 @@ describe("DocumentContextPanel", () => {
     expect(window.localStorage.getItem("orbis.document-context.open.workspace-1")).toBe("false");
   });
 
-  it("keeps the collection summary live while the contextual tree is closed", async () => {
-    window.localStorage.setItem("orbis.document-context.open.workspace-1", "false");
+  it("renders the notebook's document tree in the main column", async () => {
     render(
       <MemoryRouter initialEntries={[`/collections/${rootNote.notebook_id}`]}>
         <Routes><Route path="/collections/:collectionId" element={<NotebookPage />} /></Routes>
@@ -351,8 +351,10 @@ describe("DocumentContextPanel", () => {
 
     expect(await screen.findByText("2 篇文档")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "导出全部" })).toBeEnabled();
-    expect(screen.getByRole("region", { name: "主工作区" })).not.toHaveClass("has-context");
+    // The notebook page owns its document list; no shell context panel aside.
     expect(screen.queryByRole("complementary", { name: "上下文面板" })).not.toBeInTheDocument();
-    expect(document.querySelector('aside[aria-label="上下文面板"][hidden]')).toBeInTheDocument();
+    const tree = screen.getByRole("navigation", { name: "笔记本文档" });
+    expect(tree).toHaveTextContent("产品计划");
+    expect(tree).toHaveTextContent("发布范围");
   });
 });

@@ -1,6 +1,7 @@
 import { useStore } from "zustand";
 
 import { authStore } from "../../shared/auth/auth-store";
+import { PageContainer } from "../../shared/ui/PageContainer";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
 import { workspaceRoleLabel } from "../workspace/capabilities";
 
@@ -15,18 +16,11 @@ export function AccountSettingsPage() {
   ] as const;
   return (
     <WorkspaceShell>
-      <div className="mx-auto max-w-3xl px-5 py-8 lg:px-10 lg:py-10">
-        <header className="mb-9">
-          <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted-light)]">
-            Settings
-          </div>
-          <h1 className="text-4xl font-semibold tracking-[-0.045em] lg:text-5xl">
-            账号
-          </h1>
-          <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
-            当前登录账号与工作空间信息。
-          </p>
-        </header>
+      <PageContainer
+        eyebrow="设置"
+        title="账号"
+        description="当前登录账号与工作空间信息。"
+      >
         <dl className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-content)]">
           {values.map(([label, value]) => (
             <div
@@ -38,7 +32,7 @@ export function AccountSettingsPage() {
             </div>
           ))}
         </dl>
-      </div>
+      </PageContainer>
     </WorkspaceShell>
   );
 }

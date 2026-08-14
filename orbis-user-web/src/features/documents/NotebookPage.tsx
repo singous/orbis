@@ -1,4 +1,4 @@
-import { ArrowLeft, BookOpen, Download, FilePlus2, Import, Plus } from "lucide-react";
+import { ArrowLeft, BookOpen, Download, Import, Plus } from "lucide-react";
 import { type ChangeEvent, useEffect, useRef } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useStore } from "zustand";
@@ -74,16 +74,19 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
   if (collectionUnavailable) return null;
 
   return (
-    <DocumentShell contextPanel={<DocumentContextPanel notebookId={collectionId} />}>
-      <div className="mx-auto max-w-[1040px] px-5 py-8 lg:px-10 lg:py-10">
+    <DocumentShell>
+      <div className="page-container">
         <Link to="/documents" className="mb-8 inline-flex items-center gap-2 text-xs font-medium text-[var(--muted)] hover:text-black"><ArrowLeft aria-hidden="true" size={14} />文档中心</Link>
         <header className="notebook-hero">
           <div className="document-icon large"><BookOpen aria-hidden="true" size={25} /></div>
-          <div className="min-w-0 flex-1"><div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--muted-light)]">Collection</div><h1 className="truncate text-4xl font-semibold tracking-[-0.045em] lg:text-5xl">{notebook?.title ?? "正在加载…"}</h1><p className="mt-4 max-w-2xl text-sm leading-6 text-[var(--muted)]">集中管理这个笔记本里的章节与页面。子文档会继承清晰的层级，但内容始终独立保存。</p><div className="mt-5 flex flex-wrap gap-2"><span className="tag">{treeSummary.noteCount} 篇文档</span><span className="tag">结构化内容</span><span className="tag">自动保存</span></div></div>
+          <div className="min-w-0 flex-1"><div className="page-eyebrow">笔记本</div><h1 className="page-title truncate">{notebook?.title ?? "正在加载…"}</h1><p className="page-description">集中管理这个笔记本里的章节与页面。子文档会继承清晰的层级，但内容始终独立保存。</p><div className="mt-5 flex flex-wrap gap-2"><span className="tag">{treeSummary.noteCount} 篇文档</span><span className="tag">结构化内容</span><span className="tag">自动保存</span></div></div>
         </header>
 
-        <div className="mb-5 mt-10 flex flex-wrap items-center justify-between gap-3">
-          <div><h2 className="text-lg font-semibold tracking-[-0.02em]">文档操作</h2><p className="mt-1 text-xs text-[var(--muted)]">在此笔记本内创建与管理文档</p></div>
+        <div className="section-heading mt-10">
+          <div>
+            <h2>文档列表</h2>
+            <p>在此笔记本内创建与管理文档</p>
+          </div>
           <div className="flex flex-wrap gap-2">
             <input ref={fileInputRef} className="hidden" type="file" accept=".md,text/markdown,text/plain" onChange={handleImport} />
             {canEdit ? <Button variant="primary" icon={<Plus aria-hidden="true" size={14} />} onClick={() => void createDocument()} disabled={createNote.isPending}>新建文档</Button> : null}
@@ -92,8 +95,7 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
           </div>
         </div>
 
-        {treeSummary.state === "loading" ? <div className="empty-panel">正在加载文档目录…</div> : null}
-        {treeSummary.state === "success" && !treeSummary.noteCount ? <div className="empty-panel py-16"><FilePlus2 aria-hidden="true" className="mx-auto mb-3" size={26} /><div className="font-semibold text-black">从第一篇文档开始</div><p className="mt-1">可以直接写作，也可以导入已有 Markdown。</p></div> : null}
+        <DocumentContextPanel notebookId={collectionId} variant="main" />
       </div>
     </DocumentShell>
   );

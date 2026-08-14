@@ -41,6 +41,11 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
   const [documentContextOpen, setDocumentContextOpen] = useState(false);
   const compact = useCompactNavigation();
   const documentContextExpanded = documentContextOpen && contextOpen;
+  // The toolbar strip only earns its vertical space when it carries content:
+  // mobile always needs it for the drawer controls; desktop shows it for a
+  // section label, page toolbar actions, or a closed context panel's reopen
+  // control. Pages with a PageContainer header get no redundant empty strip.
+  const showToolbar = compact || Boolean(sectionTitle) || Boolean(toolbar) || Boolean(contextPanel && onOpenContext);
 
   function openMainNavigation() {
     setMainNavigationOpen(true);
@@ -74,15 +79,17 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
         </div>
         <section className={`workspace-main-area ${contextPanel && contextOpen ? "has-context" : ""}`} aria-label="主工作区">
           <section className="workspace-content">
-            <header className="workspace-toolbar">
-              <div className="flex min-w-0 flex-1 items-center gap-2 text-sm text-[var(--muted)]">
-                <button type="button" aria-label="打开主导航" aria-expanded={mainNavigationOpen} className="workspace-mobile-drawer-control" onClick={openMainNavigation}><Menu aria-hidden="true" size={16} /></button>
-                {sectionTitle ? <span>{sectionTitle}</span> : null}
-              </div>
-              {contextPanel ? <button type="button" aria-label="打开文档目录" aria-expanded={documentContextExpanded} className="workspace-mobile-drawer-control" onClick={openDocumentContext}><PanelRightOpen aria-hidden="true" size={16} /></button> : null}
-              {contextPanel && onOpenContext ? <button type="button" aria-label="打开上下文面板" className="icon-button workspace-context-open-control" onClick={onOpenContext}><PanelRightOpen aria-hidden="true" size={16} /></button> : null}
-              {toolbar}
-            </header>
+            {showToolbar ? (
+              <header className="workspace-toolbar">
+                <div className="flex min-w-0 flex-1 items-center gap-2 text-sm text-[var(--muted)]">
+                  <button type="button" aria-label="打开主导航" aria-expanded={mainNavigationOpen} className="workspace-mobile-drawer-control" onClick={openMainNavigation}><Menu aria-hidden="true" size={16} /></button>
+                  {sectionTitle ? <span>{sectionTitle}</span> : null}
+                </div>
+                {contextPanel ? <button type="button" aria-label="打开文档目录" aria-expanded={documentContextExpanded} className="workspace-mobile-drawer-control" onClick={openDocumentContext}><PanelRightOpen aria-hidden="true" size={16} /></button> : null}
+                {contextPanel && onOpenContext ? <button type="button" aria-label="打开上下文面板" className="icon-button workspace-context-open-control" onClick={onOpenContext}><PanelRightOpen aria-hidden="true" size={16} /></button> : null}
+                {toolbar}
+              </header>
+            ) : null}
             {children}
           </section>
           {contextPanel ? <aside className="workspace-context-panel" aria-label="上下文面板" aria-hidden={compact && !documentContextExpanded ? true : undefined} inert={compact && !documentContextExpanded ? true : undefined} hidden={!contextOpen} onClick={closeDocumentContextAfterLink}>{contextPanel}</aside> : null}

@@ -418,6 +418,89 @@ textarea {
   font-size: 12px;
 }
 
+/* Canonical page column + header (see shared/ui/PageContainer). */
+.page-container {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+}
+
+@media (min-width: 1024px) {
+  .page-container {
+    padding: 40px 40px 80px;
+  }
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.page-eyebrow {
+  margin-bottom: 8px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+}
+
+.page-title {
+  color: var(--text-primary);
+  font-size: 30px;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+.page-description {
+  margin-top: 8px;
+  max-width: 36rem;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.page-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Compact inline statistics (replaces the old oversized stat cards). */
+.stat-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 36px;
+  margin-bottom: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pop);
+  background: var(--surface-content);
+  padding: 14px 20px;
+}
+
+.stat-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.stat-value {
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.stat-label {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
 .document-card,
 .collection-card {
   position: relative;
@@ -899,8 +982,15 @@ textarea {
 }
 
 .document-context-item:hover > div > .document-context-actions,
+.document-main-item:hover .document-context-actions,
 .document-context-actions:focus-within {
   opacity: 1;
+}
+
+/* Notebook page main-column document list (DocumentContextPanel variant="main"). */
+.document-main-list {
+  display: grid;
+  gap: 10px;
 }
 
 /* User menu lives inside the business rail flow (last item of .rail-bottom),
