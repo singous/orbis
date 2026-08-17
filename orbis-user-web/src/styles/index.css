@@ -87,16 +87,18 @@
   --border-strong: var(--gray-300);
   --border-inverse: rgb(255 255 255 / 12%);
 
-  /* Semantic: business rail. Opaque and only faintly violet on purpose — a
-     translucent rail would pull the canvas gradient down its length and go
-     muddy pink at the bottom. Items are brand violet, not neutral gray. */
-  --rail-bg: #ffffff;
-  --rail-border: rgb(103 87 245 / 9%);
-  --rail-text: #5a4fe0;
-  --rail-text-strong: #241a7a;
-  --rail-dim: #9a95cd;
-  --rail-hover: #f1eefe;
-  --rail-active: #e7e1fd;
+  /* Semantic: business rail. Lavender, like the reference — not white. It is
+     an opaque gradient rather than a translucent surface on purpose: letting
+     the canvas show through dragged the warm blob in and turned the lower half
+     muddy pink. Contrast comes from saturated items and a solid selected tile,
+     never from a white backing. */
+  --rail-bg: linear-gradient(180deg, #e4e8fb 0%, #eaebfc 52%, #f0eefd 100%);
+  --rail-border: rgb(103 87 245 / 12%);
+  --rail-text: #5347d8;
+  --rail-text-strong: #221873;
+  --rail-dim: #8b86c4;
+  --rail-hover: rgb(255 255 255 / 62%);
+  --rail-active: rgb(255 255 255 / 82%);
   --rail-chip-bg: #1c1c1a;
   --rail-chip-text: #fbfbf9;
 
@@ -204,8 +206,8 @@
   --surface-glass-toolbar: rgb(31 31 34 / 55%);
   --glass-border: rgb(255 255 255 / 8%);
 
-  /* Dark: opaque and deeper than the panel, items in a light violet. */
-  --rail-bg: #17161f;
+  /* Dark: same idea inverted — a deep violet-leaning gradient, not flat black. */
+  --rail-bg: linear-gradient(180deg, #1b1930 0%, #191826 55%, #17161f 100%);
   --rail-border: rgb(255 255 255 / 8%);
   --rail-text: #a6a0e0;
   --rail-text-strong: #d5cfff;
