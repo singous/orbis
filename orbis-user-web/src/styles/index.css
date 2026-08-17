@@ -59,6 +59,10 @@
      dense enough for long-form reading. */
   --surface-glass: rgb(255 255 255 / 68%);
   --surface-glass-panel: rgb(255 255 255 / 90%);
+  /* The sticky toolbar composites on top of the panel glass, so it carries a
+     light veil only: enough to hide the text scrolling under it, weak enough
+     that the strip still reads as part of the panel. */
+  --surface-glass-toolbar: rgb(255 255 255 / 50%);
   --glass-border: rgb(255 255 255 / 55%);
   --glass-blur: 18px;
   --surface-hover: var(--gray-150);
@@ -189,6 +193,7 @@
 
   --surface-glass: rgb(30 30 33 / 62%);
   --surface-glass-panel: rgb(31 31 34 / 88%);
+  --surface-glass-toolbar: rgb(31 31 34 / 55%);
   --glass-border: rgb(255 255 255 / 8%);
 
   /* Dark: the rail stays deeper than the panel, so it gets its own darker
@@ -1208,10 +1213,11 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   gap: 12px;
   border-bottom: 1px solid var(--border-subtle);
   border-radius: 12px 12px 0 0;
-  /* Transparent on purpose: the panel's own glass sits behind it, so the
-     strip inherits exactly the panel tint instead of stacking a second
-     translucent layer. The blur is what frosts the content scrolling under. */
-  background: transparent;
+  /* A veil is required, not optional: the blurred backdrop has the scrolling
+     content painted above the panel's own glass, so without it the text would
+     show through the strip. Kept light so the extra white stacking on the
+     panel stays imperceptible. */
+  background: var(--surface-glass-toolbar);
   padding: 0 28px;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
