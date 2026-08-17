@@ -39,12 +39,28 @@
   --violet-600: #5546df;
   --violet-700: #463ac4;
 
-  /* Semantic: surfaces (floating-panel model — cool gray canvas with
-     white rounded panels for the rail, sidebar menu and content) */
+  /* Semantic: surfaces (floating-panel model — tinted canvas with
+     translucent rounded panels for the rail, sidebar menu and content) */
   --surface-app: #f3f4f7;
   --surface-sidebar: #ffffff;
   --surface-panel: #ffffff;
   --surface-content: #ffffff;
+
+  /* Semantic: canvas tint — three soft blobs painted over --surface-app by
+     .workspace-shell::before. Low alpha on purpose: the canvas is backdrop,
+     never a subject. */
+  --canvas-tint-violet: rgb(139 122 255 / 24%);
+  --canvas-tint-warm: rgb(255 174 120 / 20%);
+  --canvas-tint-cool: rgb(190 210 255 / 28%);
+
+  /* Semantic: glass — shell surfaces let the canvas tint bleed through.
+     --surface-glass is the blurred orbit layer (rail, drawers);
+     --surface-glass-panel is the near-opaque focus panel (menu + content),
+     dense enough for long-form reading. */
+  --surface-glass: rgb(255 255 255 / 68%);
+  --surface-glass-panel: rgb(255 255 255 / 90%);
+  --glass-border: rgb(255 255 255 / 55%);
+  --glass-blur: 18px;
   --surface-hover: var(--gray-150);
   --surface-active: var(--gray-200);
   --surface-overlay: #ffffff;
@@ -63,8 +79,10 @@
   --border-strong: var(--gray-300);
   --border-inverse: rgb(255 255 255 / 12%);
 
-  /* Semantic: business rail (light rail on paper) */
-  --rail-bg: #ffffff;
+  /* Semantic: business rail (frosted rail floating on the tinted canvas).
+     --rail-border stays a visible hairline for dividers inside the rail; the
+     rail's own outer edge uses --glass-border. */
+  --rail-bg: var(--surface-glass);
   --rail-border: #e6e6e2;
   --rail-text: #63635e;
   --rail-text-strong: #1c1c1a;
@@ -163,9 +181,19 @@
   --border-inverse: rgb(255 255 255 / 10%);
   --accent-text: var(--violet-600);
 
-  /* Dark: deep canvas with one-step-lighter panels. */
-  --rail-bg: #1f1f22;
-  --rail-bg: #141412;
+  /* Dark: low-saturation canvas tint — the same three blobs, dimmed so the
+     deep canvas stays deep. */
+  --canvas-tint-violet: rgb(122 106 240 / 16%);
+  --canvas-tint-warm: rgb(206 126 80 / 11%);
+  --canvas-tint-cool: rgb(92 122 190 / 14%);
+
+  --surface-glass: rgb(30 30 33 / 62%);
+  --surface-glass-panel: rgb(31 31 34 / 88%);
+  --glass-border: rgb(255 255 255 / 8%);
+
+  /* Dark: the rail stays deeper than the panel, so it gets its own darker
+     glass rather than reusing --surface-glass. */
+  --rail-bg: rgb(18 18 20 / 68%);
   --rail-border: rgb(255 255 255 / 8%);
   --rail-text: #8a8a83;
   --rail-text-strong: #ededeb;
@@ -502,13 +530,15 @@ textarea {
   font-weight: 650;
 }
 
-/* Full-bleed white page (Notion-like): no gray gutter, no floating sheet. */
+/* Full-bleed page (Notion-like): no gray gutter, no floating sheet. The fill
+   is left to the shell panel so the editor page carries the same glass tint
+   as every other page instead of punching an opaque hole in it. */
 .editor-layout {
   display: grid;
   min-height: calc(100vh - 80px);
   grid-template-columns: minmax(0, 1fr) 44px;
   gap: 24px;
-  background: var(--surface-content);
+  background: transparent;
   padding: 24px 32px 96px;
   transition: grid-template-columns 200ms ease;
 }
@@ -822,12 +852,29 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 .workspace-shell {
   min-height: 100vh;
   overflow-x: clip;
-  background: var(--workspace);
+  background: var(--surface-app);
   color: var(--text);
+}
+
+/* The tinted canvas: three soft blobs pinned to the viewport, so the
+   backdrop stays still while panels scroll over it. Kept as a pseudo layer
+   (not a background on .workspace-shell) so translucent panels composite
+   against it without the gradient scrolling along. */
+.workspace-shell::before {
+  content: "";
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  background:
+    radial-gradient(125% 95% at 0% 0%, var(--canvas-tint-violet) 0%, transparent 60%),
+    radial-gradient(105% 85% at 2% 100%, var(--canvas-tint-warm) 0%, transparent 56%),
+    radial-gradient(95% 75% at 100% 26%, var(--canvas-tint-cool) 0%, transparent 62%);
+  pointer-events: none;
 }
 
 .workspace-shell-grid {
   position: relative;
+  z-index: 1;
   display: grid;
   min-height: 100vh;
   grid-template-columns: auto minmax(0, 1fr);
@@ -862,7 +909,10 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   margin-right: 8px;
 }
 
+/* Merged panel: the glass edge highlight runs around the outside only, the
+   menu's own right border is the internal divider. */
 .workspace-shell.has-section-menu .workspace-main-area {
+  border-left: 0;
   border-radius: 0 12px 12px 0;
 }
 
@@ -880,9 +930,12 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   width: 68px;
   flex-direction: column;
   align-items: center;
+  border: 1px solid var(--glass-border);
   border-radius: 12px;
   background: var(--rail-bg);
   color: var(--rail-text);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
 }
 
 /* The panel stretches to the full grid-row height (page height); the inner
@@ -1060,9 +1113,10 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   min-width: 0;
   height: calc(100vh - 16px);
   overflow-y: auto;
+  border: 1px solid var(--glass-border);
   border-right: 1px solid var(--border-subtle);
   border-radius: 12px 0 0 12px;
-  background: var(--surface-content);
+  background: var(--surface-glass-panel);
 }
 
 .workspace-function-heading {
@@ -1131,8 +1185,9 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   min-height: calc(100vh - 16px);
   grid-template-columns: minmax(0, 1fr);
   align-self: start;
+  border: 1px solid var(--glass-border);
   border-radius: 12px;
-  background: var(--surface-content);
+  background: var(--surface-glass-panel);
 }
 
 .workspace-main-area.has-context {
@@ -1153,16 +1208,39 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   gap: 12px;
   border-bottom: 1px solid var(--border-subtle);
   border-radius: 12px 12px 0 0;
-  background: color-mix(in srgb, var(--surface-content) 86%, transparent);
+  /* Transparent on purpose: the panel's own glass sits behind it, so the
+     strip inherits exactly the panel tint instead of stacking a second
+     translucent layer. The blur is what frosts the content scrolling under. */
+  background: transparent;
   padding: 0 28px;
   backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .workspace-context-panel {
   min-width: 220px;
   border-left: 1px solid var(--border);
   border-radius: 0 12px 12px 0;
-  background: var(--surface-panel);
+  background: var(--surface-glass-panel);
+}
+
+/* Without backdrop-filter the translucent surfaces would only look washed
+   out, so fall back to the opaque paper surfaces. Placed after every glass
+   rule above: @supports adds no specificity, only source order decides. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .workspace-business-rail {
+    background: var(--surface-panel);
+  }
+
+  .workspace-function-menu,
+  .workspace-main-area,
+  .workspace-context-panel {
+    background: var(--surface-content);
+  }
+
+  .workspace-toolbar {
+    background: color-mix(in srgb, var(--surface-content) 92%, transparent);
+  }
 }
 
 .workspace-mobile-drawer-control {
@@ -1400,9 +1478,11 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
     padding: 0;
   }
 
-  /* Panels flatten back to full-bleed surfaces in the drawer pattern. */
+  /* Panels flatten back to full-bleed surfaces in the drawer pattern, so the
+     glass edge highlight and radii come off. */
   .workspace-main-area {
     min-height: 100vh;
+    border: 0;
     border-radius: 0;
   }
 
@@ -1418,6 +1498,7 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   .workspace-shell .workspace-main-area,
   .workspace-shell.has-section-menu .workspace-main-area {
     grid-column: auto;
+    border: 0;
     border-radius: 0;
   }
 
@@ -1431,11 +1512,8 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
     position: static;
     height: auto;
     align-self: auto;
+    border: 0;
     border-radius: 0;
-  }
-
-  .workspace-function-menu {
-    border-right: 0;
   }
 
   .workspace-shell.has-section-menu .workspace-business-rail {
@@ -1447,6 +1525,8 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
     height: auto;
   }
 
+  /* The drawer carries its own opaque backing: the rail and section menu are
+     translucent glass, and a drawer must not show the page through it. */
   .workspace-main-navigation {
     position: fixed;
     z-index: 30;
@@ -1456,6 +1536,7 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
     display: grid;
     width: 68px;
     grid-template-columns: 68px;
+    background: var(--surface-app);
     transform: translateX(-100%);
     transition: transform 180ms ease;
     box-shadow: 16px 0 36px rgb(20 20 20 / 16%);
@@ -1478,7 +1559,6 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   .workspace-function-menu {
     min-height: 100dvh;
     overflow-y: auto;
-    border-right: 0;
   }
 
   .workspace-main-area.has-context {
@@ -1501,6 +1581,7 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
     display: none;
   }
 
+  /* As a drawer it must be opaque: glass would show the document through it. */
   .workspace-context-panel {
     position: fixed;
     z-index: 30;
@@ -1510,6 +1591,7 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
     width: min(88vw, 340px);
     overflow-y: auto;
     border-left: 1px solid var(--border);
+    background: var(--surface-content);
     transform: translateX(100%);
     transition: transform 180ms ease;
     box-shadow: -16px 0 36px rgb(20 20 20 / 16%);
@@ -1552,8 +1634,6 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 
   .workspace-function-menu {
     overflow-y: auto;
-    border-right: 0;
-    border-bottom: 0;
   }
 
   .workspace-function-heading {
