@@ -90,13 +90,13 @@
   /* Semantic: business rail. Opaque and only faintly violet on purpose — a
      translucent rail would pull the canvas gradient down its length and go
      muddy pink at the bottom. Items are brand violet, not neutral gray. */
-  --rail-bg: #f7f6fd;
-  --rail-border: #e4e1f4;
-  --rail-text: #6660b4;
-  --rail-text-strong: #3b2fb8;
+  --rail-bg: #ffffff;
+  --rail-border: rgb(103 87 245 / 9%);
+  --rail-text: #5a4fe0;
+  --rail-text-strong: #241a7a;
   --rail-dim: #9a95cd;
-  --rail-hover: #ece9fb;
-  --rail-active: #e2ddfa;
+  --rail-hover: #f1eefe;
+  --rail-active: #e7e1fd;
   --rail-chip-bg: #1c1c1a;
   --rail-chip-text: #fbfbf9;
 
@@ -948,6 +948,9 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   width: 84px;
   flex-direction: column;
   align-items: center;
+  /* Bleed past the grid's vertical padding: the rail runs edge to edge, so a
+     14px strip of canvas above and below it would break the flush look. */
+  margin: -14px 0;
   border-right: 1px solid var(--rail-border);
   background: var(--rail-bg);
   color: var(--rail-text);
@@ -1744,22 +1747,26 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   width: 100%;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  /* Tight: icon and label are one unit in the reference, not two stacked
+     elements with air between them. */
+  gap: 3px;
   padding: 2px;
   color: var(--rail-text);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 620;
   line-height: 1.2;
   text-align: center;
   transition: color 140ms ease;
 }
 
+/* 36px tall, not 40px: with a 24px glyph the box was leaving ~9px of dead air
+   above the label, so the pair read as two separate things. */
 .rail-tile-icon {
   display: grid;
-  width: 52px;
-  height: 42px;
+  width: 48px;
+  height: 36px;
   place-items: center;
-  border-radius: 14px;
+  border-radius: 12px;
   transition: 140ms ease;
 }
 
@@ -1773,7 +1780,7 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 
 .rail-tile.is-active {
   color: var(--rail-text-strong);
-  font-weight: 680;
+  font-weight: 720;
 }
 
 .rail-tile.is-active .rail-tile-icon {
