@@ -849,8 +849,25 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   grid-column: 3;
 }
 
+/* With a section menu present, the menu and the content merge into ONE
+   panel: no column gap between them, the canvas gap only separates the
+   rail from the merged panel. */
 .workspace-shell.has-section-menu .workspace-shell-grid {
   grid-template-columns: auto minmax(248px, 276px) minmax(0, 1fr);
+  column-gap: 0;
+}
+
+/* The rail keeps its 8px canvas gap from the merged panel. */
+.workspace-shell.has-section-menu .workspace-business-rail {
+  margin-right: 8px;
+}
+
+.workspace-shell.has-section-menu .workspace-main-area {
+  border-radius: 0 12px 12px 0;
+}
+
+.workspace-shell.has-section-menu .workspace-toolbar {
+  border-radius: 0 12px 0 0;
 }
 
 .workspace-main-navigation {
@@ -1034,6 +1051,8 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   margin-top: 34px;
 }
 
+/* The section menu is the left half of the merged menu+content panel:
+   same surface, hairline divider, rounded only on the outer edge. */
 .workspace-function-menu {
   position: sticky;
   top: 8px;
@@ -1041,8 +1060,9 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   min-width: 0;
   height: calc(100vh - 16px);
   overflow-y: auto;
-  border-radius: 12px;
-  background: var(--surface-panel);
+  border-right: 1px solid var(--border-subtle);
+  border-radius: 12px 0 0 12px;
+  background: var(--surface-content);
 }
 
 .workspace-function-heading {
@@ -1392,10 +1412,17 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   }
 
   /* Compact shell grid holds only the main area (navigation is a fixed
-     drawer), so the desktop track assignment must reset. */
+     drawer), so the desktop track assignment must reset. The merged-panel
+     radii are reset here too: their selectors outrank the flatten rules
+     above regardless of source order. */
   .workspace-shell .workspace-main-area,
   .workspace-shell.has-section-menu .workspace-main-area {
     grid-column: auto;
+    border-radius: 0;
+  }
+
+  .workspace-shell.has-section-menu .workspace-toolbar {
+    border-radius: 0;
   }
 
   /* Undo desktop sticky pinning inside the fixed mobile drawer. */
@@ -1405,6 +1432,14 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
     height: auto;
     align-self: auto;
     border-radius: 0;
+  }
+
+  .workspace-function-menu {
+    border-right: 0;
+  }
+
+  .workspace-shell.has-section-menu .workspace-business-rail {
+    margin-right: 0;
   }
 
   .rail-inner {
@@ -1632,7 +1667,7 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   }
 
   .workspace-shell.rail-floating.has-section-menu .workspace-shell-grid {
-    grid-template-columns: 68px minmax(248px, 276px) minmax(0, 1fr);
+    grid-template-columns: 76px minmax(248px, 276px) minmax(0, 1fr);
   }
 
   .workspace-shell.rail-floating .workspace-business-rail {
