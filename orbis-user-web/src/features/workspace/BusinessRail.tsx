@@ -80,7 +80,7 @@ export function BusinessRail() {
 
           <Link to="/documents/search" className={`rail-tile${pathname === "/documents/search" ? " is-active" : ""}`}>
             <span className="rail-tile-icon">
-              <Search aria-hidden="true" size={21} strokeWidth={2.1} />
+              <Search aria-hidden="true" size={24} strokeWidth={2.15} />
             </span>
             <span className="rail-tile-label">搜索</span>
           </Link>
@@ -88,7 +88,7 @@ export function BusinessRail() {
           {areas.map(({ label, to, icon: Icon, match }) => (
             <Link key={label} to={to} className={`rail-tile${match(pathname) ? " is-active" : ""}`}>
               <span className="rail-tile-icon">
-                <Icon aria-hidden="true" size={21} strokeWidth={2.1} />
+                <Icon aria-hidden="true" size={24} strokeWidth={2.15} />
               </span>
               <span className="rail-tile-label">{label}</span>
             </Link>
@@ -98,7 +98,7 @@ export function BusinessRail() {
             <div className="rail-fav-trigger-group">
               <button type="button" className="rail-tile" aria-label="常用笔记本">
                 <span className="rail-tile-icon">
-                  <StickyNote aria-hidden="true" size={21} strokeWidth={2.1} />
+                  <StickyNote aria-hidden="true" size={24} strokeWidth={2.15} />
                 </span>
                 <span className="rail-tile-label">常用</span>
               </button>

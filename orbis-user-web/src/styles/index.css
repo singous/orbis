@@ -939,13 +939,13 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   display: contents;
 }
 
-/* 76px fits a 4-character CJK label ("在线文档") under each icon at 11px.
-   Flush to the window edge, full height, square: the rail is chrome, not one
-   of the floating panels, so it gets no gutter and no radius. */
+/* 84px: a 4-character CJK label ("在线文档") at 12px needs 48px, and the icon
+   tile is 52px. Flush to the window edge, full height, square — the rail is
+   chrome, not one of the floating panels, so no gutter and no radius. */
 .workspace-business-rail {
   z-index: 20;
   display: flex;
-  width: 76px;
+  width: 84px;
   flex-direction: column;
   align-items: center;
   border-right: 1px solid var(--rail-border);
@@ -1092,8 +1092,8 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   flex: 1;
   flex-direction: column;
   align-items: center;
-  gap: 9px;
-  margin-top: 22px;
+  gap: 6px;
+  margin-top: 20px;
 }
 
 /* The section menu is the left half of the merged menu+content panel:
@@ -1384,16 +1384,18 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   color: var(--rail-text-strong);
 }
 
+/* Violet, not near-black: a dark chip is a foreign object on a violet rail. */
 .workspace-user-avatar {
   display: grid;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   place-items: center;
   border-radius: 50%;
-  background: var(--rail-chip-bg);
-  color: var(--rail-chip-text);
-  font-size: 11px;
-  font-weight: 700;
+  background: linear-gradient(150deg, var(--violet-500) 12%, #9a87ff 100%);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 750;
+  box-shadow: 0 3px 10px rgb(103 87 245 / 30%);
 }
 
 .workspace-user-trigger-copy,
@@ -1501,8 +1503,8 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
     bottom: 0;
     left: 0;
     display: grid;
-    width: 76px;
-    grid-template-columns: 76px;
+    width: 84px;
+    grid-template-columns: 84px;
     background: var(--surface-app);
     transform: translateX(-100%);
     transition: transform 180ms ease;
@@ -1515,12 +1517,12 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 
   .workspace-shell.has-section-menu .workspace-main-navigation {
     width: min(100vw, 368px);
-    grid-template-columns: 76px minmax(0, 1fr);
+    grid-template-columns: 84px minmax(0, 1fr);
   }
 
   .workspace-business-rail {
     display: flex;
-    width: 76px;
+    width: 84px;
   }
 
   .workspace-function-menu {
@@ -1669,7 +1671,7 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 
 
 /* ============================================================
-   Business rail: one fixed 76px column of icon + label tiles.
+   Business rail: one fixed 84px column of icon + label tiles.
    It never expands — the section menu column beside it carries
    the deeper navigation, matching the reference console.
    ============================================================ */
@@ -1742,11 +1744,11 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   width: 100%;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
-  padding: 3px 2px;
+  gap: 6px;
+  padding: 2px;
   color: var(--rail-text);
-  font-size: 11px;
-  font-weight: 560;
+  font-size: 12px;
+  font-weight: 600;
   line-height: 1.2;
   text-align: center;
   transition: color 140ms ease;
@@ -1754,10 +1756,10 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 
 .rail-tile-icon {
   display: grid;
-  width: 44px;
-  height: 36px;
+  width: 52px;
+  height: 42px;
   place-items: center;
-  border-radius: 12px;
+  border-radius: 14px;
   transition: 140ms ease;
 }
 

@@ -61,7 +61,7 @@ export function RailCreateMenu() {
       <div className="rail-create-group" onMouseEnter={() => setArmed(true)}>
         <button type="button" className="rail-tile" aria-label="新建资产">
           <span className="rail-tile-icon">
-            <Plus aria-hidden="true" size={21} strokeWidth={2.1} />
+            <Plus aria-hidden="true" size={24} strokeWidth={2.15} />
           </span>
           <span className="rail-tile-label">新建</span>
         </button>
