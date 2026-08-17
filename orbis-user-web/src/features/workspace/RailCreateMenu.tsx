@@ -64,8 +64,9 @@ export function RailCreateMenu({ expanded }: { expanded: boolean }) {
             <Plus aria-hidden="true" size={16} />
           </button>
         ) : (
-          <button type="button" className="rail-icon" aria-label="新建资产">
-            <Plus aria-hidden="true" size={18} />
+          <button type="button" className="rail-tile" aria-label="新建资产">
+            <Plus aria-hidden="true" size={19} />
+            <span className="rail-tile-label">新建</span>
           </button>
         )}
         <div className="rail-create-popover">

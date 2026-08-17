@@ -148,11 +148,10 @@ export function BusinessRail({ pinned, compact, onTogglePinned }: BusinessRailPr
         ) : (
           <>
             {accessToken ? <RailCreateMenu expanded={false} /> : null}
-            <Tooltip label="搜索" side="right">
-              <Link to="/documents/search" aria-label="搜索" className={`rail-icon${pathname === "/documents/search" ? " is-active" : ""}`}>
-                <Search aria-hidden="true" size={18} />
-              </Link>
-            </Tooltip>
+            <Link to="/documents/search" className={`rail-tile${pathname === "/documents/search" ? " is-active" : ""}`}>
+              <Search aria-hidden="true" size={19} />
+              <span className="rail-tile-label">搜索</span>
+            </Link>
           </>
         )}
 
@@ -163,11 +162,12 @@ export function BusinessRail({ pinned, compact, onTogglePinned }: BusinessRailPr
               <span>{label}</span>
             </Link>
           ) : (
-            <Tooltip key={label} label={label} side="right">
-              <Link to={to} aria-label={label} className={`rail-icon${match(pathname) ? " is-active" : ""}`}>
-                <Icon aria-hidden="true" size={18} />
-              </Link>
-            </Tooltip>
+            /* Collapsed items carry their label under the icon, so no tooltip
+               is needed and the link names itself from its own text. */
+            <Link key={label} to={to} className={`rail-tile${match(pathname) ? " is-active" : ""}`}>
+              <Icon aria-hidden="true" size={19} />
+              <span className="rail-tile-label">{label}</span>
+            </Link>
           ),
         )}
 
@@ -176,11 +176,10 @@ export function BusinessRail({ pinned, compact, onTogglePinned }: BusinessRailPr
             <PinnedList expanded />
           ) : (
             <div className="rail-fav-trigger-group">
-              <Tooltip label="常用笔记本" side="right">
-                <button type="button" className="rail-icon" aria-label="常用笔记本">
-                  <StickyNote aria-hidden="true" size={18} />
-                </button>
-              </Tooltip>
+              <button type="button" className="rail-tile" aria-label="常用笔记本">
+                <StickyNote aria-hidden="true" size={19} />
+                <span className="rail-tile-label">常用</span>
+              </button>
               <PinnedList expanded={false} />
             </div>
           )
