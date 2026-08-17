@@ -252,7 +252,7 @@ describe("WorkspaceShell", () => {
     expect(screen.getByRole("link", { name: "记忆" })).toHaveAttribute("href", "/memory");
   });
 
-  it("places quick create above search on the collapsed rail", () => {
+  it("places quick create above search on the rail", () => {
     renderShell();
 
     const createButton = screen.getByRole("button", { name: "新建资产" });
@@ -262,13 +262,18 @@ describe("WorkspaceShell", () => {
     ).toBeTruthy();
   });
 
-  it("swaps the search item for a search box with a create button when the rail is pinned", () => {
+  it("keeps the rail at one fixed form with labelled tiles and never expands", () => {
+    // The rail used to widen to 236px on hover or when pinned, swapping tiles
+    // for rows and a search box. That interaction is gone: one form only.
     window.localStorage.setItem("orbis.railExpanded", "1");
     renderShell();
 
-    expect(screen.getByRole("searchbox", { name: "搜索文档" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "新建资产" })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "搜索" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "搜索" })).toBeInTheDocument();
+    expect(screen.queryByRole("searchbox", { name: "搜索文档" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "固定侧栏" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "收起侧栏" })).not.toBeInTheDocument();
+    expect(document.querySelector(".workspace-business-rail.is-expanded")).toBeNull();
+    expect(screen.getByRole("link", { name: "在线文档" })).toBeInTheDocument();
 
     window.localStorage.removeItem("orbis.railExpanded");
   });

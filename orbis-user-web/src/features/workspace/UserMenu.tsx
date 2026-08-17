@@ -10,10 +10,9 @@ export type UserMenuProps = {
   user: User | null;
   workspace: Workspace | null;
   onLogout: () => void;
-  expanded?: boolean;
 };
 
-export function UserMenu({ user, workspace, onLogout, expanded = false }: UserMenuProps) {
+export function UserMenu({ user, workspace, onLogout }: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -49,7 +48,7 @@ export function UserMenu({ user, workspace, onLogout, expanded = false }: UserMe
   }, [open]);
 
   return (
-    <div ref={rootRef} className={`workspace-user-menu${expanded ? " is-expanded" : ""}`}>
+    <div ref={rootRef} className="workspace-user-menu">
       {open ? (
         <div id="workspace-user-actions" className="workspace-user-popover">
           <div className="border-b border-[var(--border-subtle)] px-3 py-2.5">

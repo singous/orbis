@@ -1,17 +1,19 @@
-import { BookOpen, Home, LibraryBig, PanelLeftClose, PanelLeftOpen, Pin, Search, Sparkles, StickyNote } from "lucide-react";
-import { type FormEvent, useState } from "react";
+import { BookOpen, Home, LibraryBig, Pin, Search, Sparkles, StickyNote } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
 
 import { useNotebooks } from "../documents/queries";
 import { usePinnedNotebooks } from "../documents/pinned-notebooks";
 import { authStore } from "../../shared/auth/auth-store";
-import { Tooltip } from "../../shared/ui/Tooltip";
 import { RailCreateMenu } from "./RailCreateMenu";
 import { UserMenu } from "./UserMenu";
 import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 
-function PinnedList({ expanded }: { expanded: boolean }) {
+/**
+ * Pinned notebooks, reachable from the rail's 常用 tile as a hover popover.
+ * The rail has one fixed width, so this never renders inline.
+ */
+function PinnedList() {
   const workspaceId = useStore(authStore, (state) => state.workspace?.id);
   const notebooksQuery = useNotebooks();
   const { pinned, togglePin } = usePinnedNotebooks(workspaceId);
@@ -19,29 +21,6 @@ function PinnedList({ expanded }: { expanded: boolean }) {
   const pinnedNotebooks = pinned
     .map((id) => notebooks.find((n) => n.id === id))
     .filter((n): n is NonNullable<typeof n> => Boolean(n));
-
-  if (expanded) {
-    return (
-      <div className="rail-favorites">
-        <div className="rail-favorites-title">常用笔记本</div>
-        {pinnedNotebooks.length ? (
-          pinnedNotebooks.map((notebook) => (
-            <div key={notebook.id} className="rail-fav-item">
-              <Link to={`/collections/${notebook.id}`} className="rail-row is-fav">
-                <StickyNote aria-hidden="true" size={16} />
-                <span className="truncate">{notebook.title}</span>
-              </Link>
-              <button type="button" className="rail-pin is-on" aria-label={`取消置顶 ${notebook.title}`} onClick={() => togglePin(notebook.id)}>
-                <Pin aria-hidden="true" size={13} />
-              </button>
-            </div>
-          ))
-        ) : (
-          <div className="rail-favorites-empty">置顶笔记本后会出现在这里</div>
-        )}
-      </div>
-    );
-  }
 
   return (
     <div className="rail-fav-popover">
@@ -65,35 +44,21 @@ function PinnedList({ expanded }: { expanded: boolean }) {
   );
 }
 
-export type BusinessRailProps = {
-  /** Pinned open in the layout flow. Unpinned: narrow floating rail that
-   * expands on hover. */
-  pinned: boolean;
-  /** Compact viewports use the drawer pattern instead of hover expansion. */
-  compact: boolean;
-  onTogglePinned: () => void;
-};
-
-export function BusinessRail({ pinned, compact, onTogglePinned }: BusinessRailProps) {
+/**
+ * Business rail: one fixed-width column of icon + label tiles. It does not
+ * expand — deeper navigation belongs to the section menu column beside it.
+ */
+export function BusinessRail() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const accessToken = useStore(authStore, (state) => state.accessToken);
   const user = useStore(authStore, (state) => state.user);
   const workspace = useStore(authStore, (state) => state.workspace);
   const clearSession = useStore(authStore, (state) => state.clearSession);
-  const [hovered, setHovered] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const expanded = !compact && (pinned || hovered);
 
   function logout() {
     clearSession();
     navigate("/login", { replace: true });
-  }
-
-  function submitSearch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const keyword = searchQuery.trim();
-    navigate(keyword ? `/documents/search?q=${encodeURIComponent(keyword)}` : "/documents/search");
   }
 
   const areas = [
@@ -104,91 +69,41 @@ export function BusinessRail({ pinned, compact, onTogglePinned }: BusinessRailPr
   ];
 
   return (
-    <aside
-      className={`workspace-business-rail${expanded ? " is-expanded" : ""}${pinned ? " is-pinned" : ""}`}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      {/* The aside itself stretches to the full grid-row height so the panel
-          never ends mid-page; the inner column sticks to the viewport. */}
+    <aside className="workspace-business-rail">
       <div className="rail-inner">
-      <div className="rail-header">
-        <WorkspaceSwitcher expanded={expanded} />
-        {expanded ? (
-          <Tooltip label={pinned ? "收起侧栏" : "固定侧栏"} side="right">
-            <button
-              type="button"
-              className="rail-pin-toggle"
-              aria-label={pinned ? "收起侧栏" : "固定侧栏"}
-              aria-pressed={pinned}
-              onClick={onTogglePinned}
-            >
-              {pinned ? <PanelLeftClose aria-hidden="true" size={13} /> : <PanelLeftOpen aria-hidden="true" size={13} />}
-            </button>
-          </Tooltip>
-        ) : null}
-      </div>
+        <div className="rail-header">
+          <WorkspaceSwitcher />
+        </div>
 
-      <nav className="workspace-business-nav" aria-label="业务板块">
-        {expanded ? (
-          <div className="rail-search-row">
-            <form className="rail-search-field" onSubmit={submitSearch}>
-              <Search aria-hidden="true" size={14} />
-              <input
-                type="search"
-                className="rail-search-input"
-                aria-label="搜索文档"
-                placeholder="搜索文档"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-              />
-            </form>
-            {accessToken ? <RailCreateMenu expanded /> : null}
-          </div>
-        ) : (
-          <>
-            {accessToken ? <RailCreateMenu expanded={false} /> : null}
-            <Link to="/documents/search" className={`rail-tile${pathname === "/documents/search" ? " is-active" : ""}`}>
-              <Search aria-hidden="true" size={19} />
-              <span className="rail-tile-label">搜索</span>
-            </Link>
-          </>
-        )}
+        <nav className="workspace-business-nav" aria-label="业务板块">
+          {accessToken ? <RailCreateMenu /> : null}
 
-        {areas.map(({ label, to, icon: Icon, match }) =>
-          expanded ? (
-            <Link key={label} to={to} className={`rail-row${match(pathname) ? " is-active" : ""}`}>
-              <Icon aria-hidden="true" size={18} />
-              <span>{label}</span>
-            </Link>
-          ) : (
-            /* Collapsed items carry their label under the icon, so no tooltip
-               is needed and the link names itself from its own text. */
+          <Link to="/documents/search" className={`rail-tile${pathname === "/documents/search" ? " is-active" : ""}`}>
+            <Search aria-hidden="true" size={19} />
+            <span className="rail-tile-label">搜索</span>
+          </Link>
+
+          {areas.map(({ label, to, icon: Icon, match }) => (
             <Link key={label} to={to} className={`rail-tile${match(pathname) ? " is-active" : ""}`}>
               <Icon aria-hidden="true" size={19} />
               <span className="rail-tile-label">{label}</span>
             </Link>
-          ),
-        )}
+          ))}
 
-        {accessToken ? (
-          expanded ? (
-            <PinnedList expanded />
-          ) : (
+          {accessToken ? (
             <div className="rail-fav-trigger-group">
               <button type="button" className="rail-tile" aria-label="常用笔记本">
                 <StickyNote aria-hidden="true" size={19} />
                 <span className="rail-tile-label">常用</span>
               </button>
-              <PinnedList expanded={false} />
+              <PinnedList />
             </div>
-          )
-        ) : null}
-      </nav>
+          ) : null}
+        </nav>
 
-      <div className="rail-bottom">
-        <UserMenu user={user} workspace={workspace} onLogout={logout} expanded={expanded} />
-      </div>
+        <div className="rail-bottom">
+          <UserMenu user={user} workspace={workspace} onLogout={logout} />
+        </div>
       </div>
     </aside>
   );

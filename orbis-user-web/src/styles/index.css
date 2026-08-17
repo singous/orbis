@@ -41,7 +41,7 @@
 
   /* Semantic: surfaces (floating-panel model — tinted canvas with
      translucent rounded panels for the rail, sidebar menu and content) */
-  --surface-app: #f3f4f7;
+  --surface-app: #eceaf6;
   --surface-sidebar: #ffffff;
   --surface-panel: #ffffff;
   --surface-content: #ffffff;
@@ -49,16 +49,20 @@
   /* Semantic: canvas tint — three soft blobs painted over --surface-app by
      .workspace-shell::before. Low alpha on purpose: the canvas is backdrop,
      never a subject. */
-  --canvas-tint-violet: rgb(139 122 255 / 24%);
-  --canvas-tint-warm: rgb(255 174 120 / 20%);
-  --canvas-tint-cool: rgb(190 210 255 / 28%);
+  --canvas-tint-violet: rgb(146 128 255 / 72%);
+  --canvas-tint-warm: rgb(255 168 196 / 54%);
+  --canvas-tint-cool: rgb(150 186 255 / 66%);
 
   /* Semantic: glass — shell surfaces let the canvas tint bleed through.
      --surface-glass is the blurred orbit layer (rail, drawers);
      --surface-glass-panel is the near-opaque focus panel (menu + content),
      dense enough for long-form reading. */
-  --surface-glass: rgb(255 255 255 / 68%);
-  --surface-glass-panel: rgb(255 255 255 / 90%);
+  /* Three levels, deliberately different: the rail is the most translucent so
+     it reads violet like the reference, the section menu is lightly tinted,
+     and the content panel is all but white because long text lives there. */
+  --surface-glass: rgb(255 255 255 / 58%);
+  --surface-glass-menu: rgb(255 255 255 / 76%);
+  --surface-glass-panel: rgb(255 255 255 / 96%);
   /* The sticky toolbar composites on top of the panel glass, so it carries a
      light veil only: enough to hide the text scrolling under it, weak enough
      that the strip still reads as part of the panel. */
@@ -194,8 +198,9 @@
   --canvas-tint-warm: rgb(206 126 80 / 11%);
   --canvas-tint-cool: rgb(92 122 190 / 14%);
 
-  --surface-glass: rgb(30 30 33 / 62%);
-  --surface-glass-panel: rgb(31 31 34 / 88%);
+  --surface-glass: rgb(30 30 33 / 55%);
+  --surface-glass-menu: rgb(31 31 34 / 74%);
+  --surface-glass-panel: rgb(31 31 34 / 94%);
   --surface-glass-toolbar: rgb(31 31 34 / 55%);
   --glass-border: rgb(255 255 255 / 8%);
 
@@ -874,9 +879,9 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   z-index: 0;
   inset: 0;
   background:
-    radial-gradient(125% 95% at 0% 0%, var(--canvas-tint-violet) 0%, transparent 60%),
-    radial-gradient(105% 85% at 2% 100%, var(--canvas-tint-warm) 0%, transparent 56%),
-    radial-gradient(95% 75% at 100% 26%, var(--canvas-tint-cool) 0%, transparent 62%);
+    radial-gradient(85% 70% at 6% 4%, var(--canvas-tint-violet) 0%, transparent 72%),
+    radial-gradient(75% 65% at 4% 96%, var(--canvas-tint-warm) 0%, transparent 70%),
+    radial-gradient(80% 70% at 98% 22%, var(--canvas-tint-cool) 0%, transparent 72%);
   pointer-events: none;
 }
 
@@ -886,8 +891,10 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   display: grid;
   min-height: 100vh;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 8px;
-  padding: 8px;
+  /* 14px, not 8px: the tinted canvas has to be visible around the panels,
+     otherwise the panels cover it and the theme reads as plain gray. */
+  gap: 14px;
+  padding: 14px;
 }
 
 /* Explicit tracks: when the rail floats (fixed, out of flow), remaining
@@ -914,18 +921,18 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 
 /* The rail keeps its 8px canvas gap from the merged panel. */
 .workspace-shell.has-section-menu .workspace-business-rail {
-  margin-right: 8px;
+  margin-right: 14px;
 }
 
 /* Merged panel: the glass edge highlight runs around the outside only, the
    menu's own right border is the internal divider. */
 .workspace-shell.has-section-menu .workspace-main-area {
   border-left: 0;
-  border-radius: 0 12px 12px 0;
+  border-radius: 0 16px 16px 0;
 }
 
 .workspace-shell.has-section-menu .workspace-toolbar {
-  border-radius: 0 12px 0 0;
+  border-radius: 0 16px 0 0;
 }
 
 .workspace-main-navigation {
@@ -941,7 +948,7 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   flex-direction: column;
   align-items: center;
   border: 1px solid var(--glass-border);
-  border-radius: 12px;
+  border-radius: 16px;
   background: var(--rail-bg);
   color: var(--rail-text);
   backdrop-filter: blur(var(--glass-blur));
@@ -953,10 +960,10 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
    edge glued to the page bottom regardless of viewport-unit quirks. */
 .rail-inner {
   position: sticky;
-  top: 8px;
+  top: 14px;
   display: flex;
   width: 100%;
-  height: calc(100vh - 16px);
+  height: calc(100vh - 28px);
   flex-direction: column;
   align-items: center;
   padding: 16px 6px;
@@ -977,49 +984,6 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 
 .workspace-brand:hover {
   filter: brightness(1.12);
-}
-
-/* Expanded rail: brand becomes a left-aligned chip + wordmark row. */
-.workspace-brand.is-expanded {
-  display: flex;
-  width: auto;
-  align-items: center;
-  gap: 8px;
-  border-radius: var(--radius-pop);
-  background: transparent;
-  padding: 0 8px 0 0;
-  color: var(--rail-text-strong);
-}
-
-.workspace-brand.is-expanded:hover {
-  background: var(--rail-hover);
-  filter: none;
-}
-
-.workspace-brand.is-expanded .workspace-brand-mark {
-  display: grid;
-  width: 36px;
-  height: 36px;
-  flex: none;
-  place-items: center;
-  border-radius: var(--radius-pop);
-  background: var(--rail-chip-bg);
-  color: var(--rail-chip-text);
-  font-size: 14px;
-  font-weight: 800;
-}
-
-.workspace-brand-word {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-}
-
-/* In the expanded rail the popover drops below the brand row. */
-.workspace-business-rail.is-expanded .workspace-switcher-popover {
-  top: calc(100% + 8px);
-  left: 0;
-  width: 248px;
 }
 
 /* Brand-chip workspace popover (list only; no switching this version). */
@@ -1118,15 +1082,17 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
    same surface, hairline divider, rounded only on the outer edge. */
 .workspace-function-menu {
   position: sticky;
-  top: 8px;
+  top: 14px;
   align-self: start;
   min-width: 0;
-  height: calc(100vh - 16px);
+  height: calc(100vh - 28px);
   overflow-y: auto;
   border: 1px solid var(--glass-border);
   border-right: 1px solid var(--border-subtle);
-  border-radius: 12px 0 0 12px;
-  background: var(--surface-glass-panel);
+  border-radius: 16px 0 0 16px;
+  background: var(--surface-glass-menu);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
 }
 
 .workspace-function-heading {
@@ -1192,11 +1158,11 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 .workspace-main-area {
   display: grid;
   min-width: 0;
-  min-height: calc(100vh - 16px);
+  min-height: calc(100vh - 28px);
   grid-template-columns: minmax(0, 1fr);
   align-self: start;
   border: 1px solid var(--glass-border);
-  border-radius: 12px;
+  border-radius: 16px;
   background: var(--surface-glass-panel);
 }
 
@@ -1210,14 +1176,14 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 
 .workspace-toolbar {
   position: sticky;
-  top: 8px;
+  top: 14px;
   z-index: 10;
   display: flex;
   height: 64px;
   align-items: center;
   gap: 12px;
   border-bottom: 1px solid var(--border-subtle);
-  border-radius: 12px 12px 0 0;
+  border-radius: 16px 16px 0 0;
   /* A veil is required, not optional: the blurred backdrop has the scrolling
      content painted above the panel's own glass, so without it the text would
      show through the strip. Kept light so the extra white stacking on the
@@ -1231,7 +1197,7 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 .workspace-context-panel {
   min-width: 220px;
   border-left: 1px solid var(--border);
-  border-radius: 0 12px 12px 0;
+  border-radius: 0 16px 16px 0;
   background: var(--surface-glass-panel);
 }
 
@@ -1420,34 +1386,6 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 .workspace-user-trigger-role {
   color: var(--rail-dim);
   font-size: 10px;
-}
-
-/* Expanded rail: full-width account row with name and role. */
-.workspace-user-menu.is-expanded {
-  display: block;
-}
-
-.workspace-user-menu.is-expanded .workspace-user-trigger {
-  display: flex;
-  width: 100%;
-  height: 46px;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 9px;
-  padding: 0 8px;
-}
-
-.workspace-user-menu.is-expanded .workspace-user-trigger-copy {
-  display: grid;
-  min-width: 0;
-  flex: 1;
-  text-align: left;
-  font-size: 11px;
-}
-
-.workspace-user-menu.is-expanded .workspace-user-trigger > svg {
-  display: block;
-  flex: none;
 }
 
 .workspace-user-popover {
@@ -1713,152 +1651,15 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 
 
 /* ============================================================
-   Business rail v2: pin toggle, hover expansion, pinned notebooks.
-   Unpinned on desktop: the rail floats over a reserved 76px strip
-   and expands as an overlay on hover; the corner handle pins it.
+   Business rail: one fixed 76px column of icon + label tiles.
+   It never expands — the section menu column beside it carries
+   the deeper navigation, matching the reference console.
    ============================================================ */
-.workspace-business-rail {
-  transition: width 180ms ease;
-}
-
-/* Unified rail toggle: one quiet icon button inside the panel's top-right
-   corner, visible once the rail is expanded (hover or pinned). */
 .rail-header {
   display: flex;
   width: 100%;
   align-items: center;
   justify-content: center;
-}
-
-.workspace-business-rail.is-expanded .rail-header {
-  justify-content: space-between;
-}
-
-.rail-pin-toggle {
-  display: grid;
-  width: 22px;
-  height: 22px;
-  flex: none;
-  place-items: center;
-  border-radius: 6px;
-  color: var(--rail-dim);
-  transition: 140ms ease;
-}
-
-.rail-pin-toggle:hover {
-  background: var(--rail-hover);
-  color: var(--rail-text-strong);
-}
-
-@media (min-width: 1024px) {
-  /* Floating: the 76px strip keeps its own fixed track; the rail overlays
-     it absolutely so hover expansion never reshuffles the layout. With a
-     section menu the column gap is 0, so the track absorbs the 8px itself. */
-  .workspace-shell.rail-floating .workspace-shell-grid {
-    grid-template-columns: 76px minmax(0, 1fr);
-  }
-
-  .workspace-shell.rail-floating.has-section-menu .workspace-shell-grid {
-    grid-template-columns: 84px minmax(248px, 276px) minmax(0, 1fr);
-  }
-
-  .workspace-shell.rail-floating .workspace-business-rail {
-    position: absolute;
-    top: 8px;
-    bottom: 8px;
-    left: 8px;
-    z-index: 50;
-  }
-
-  .workspace-shell.rail-floating .workspace-business-rail.is-expanded {
-    box-shadow: 12px 0 32px rgb(20 20 20 / 10%);
-  }
-}
-
-@media (max-width: 1023px) {
-  .rail-pin-toggle {
-    display: none;
-  }
-}
-
-.workspace-business-rail.is-expanded {
-  width: 236px;
-}
-
-.workspace-business-rail.is-expanded .rail-inner {
-  align-items: stretch;
-  padding: 16px 16px;
-}
-
-.workspace-business-rail.is-expanded .workspace-business-nav {
-  align-items: stretch;
-  margin-top: 24px;
-  gap: 6px;
-}
-
-/* Expanded rail: search field + quick-create button on the first row. */
-.rail-search-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-
-.rail-search-field {
-  position: relative;
-  flex: 1;
-  min-width: 0;
-}
-
-.rail-search-field > svg {
-  position: absolute;
-  top: 50%;
-  left: 9px;
-  transform: translateY(-50%);
-  color: var(--rail-dim);
-  pointer-events: none;
-}
-
-.rail-search-input {
-  width: 100%;
-  height: 34px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-pill);
-  background: var(--surface-hover);
-  padding: 0 12px 0 29px;
-  color: var(--text-primary);
-  font-size: 12px;
-  transition: 140ms ease;
-}
-
-.rail-search-input::placeholder {
-  color: var(--text-tertiary);
-}
-
-.rail-search-input:focus {
-  border-color: var(--accent-border);
-  background: var(--surface-content);
-  box-shadow: 0 0 0 3px var(--accent-soft);
-  outline: none;
-}
-
-.rail-create-trigger {
-  display: grid;
-  width: 34px;
-  height: 34px;
-  flex: none;
-  place-items: center;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-pill);
-  background: var(--surface-content);
-  color: var(--rail-text);
-  transition: 140ms ease;
-}
-
-.rail-create-trigger:hover {
-  border-color: var(--border-strong);
-  background: var(--surface-hover);
-  color: var(--rail-text-strong);
 }
 
 /* Hover popover listing creatable asset types. */
@@ -1948,8 +1749,8 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 }
 
 /* The hover popovers anchor on the tile, so their wrappers span the rail. */
-.workspace-business-rail:not(.is-expanded) .rail-create-group,
-.workspace-business-rail:not(.is-expanded) .rail-fav-trigger-group {
+.rail-create-group,
+.rail-fav-trigger-group {
   width: 100%;
 }
 
@@ -2004,11 +1805,7 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   margin-top: 12px;
 }
 
-.workspace-business-rail.is-expanded .rail-bottom {
-  align-items: stretch;
-}
-
-/* Collapsed favorites trigger + hover popover */
+/* Favorites tile + hover popover */
 .rail-fav-trigger-group {
   position: relative;
 }

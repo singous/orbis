@@ -16,7 +16,7 @@ import {
  * asset types: 文档 / 笔记本 now, 知识库 / 记忆库 once those modules land.
  * Documents are captured straight into the most recently updated notebook.
  */
-export function RailCreateMenu({ expanded }: { expanded: boolean }) {
+export function RailCreateMenu() {
   const navigate = useNavigate();
   const groupsQuery = useDocumentGroups();
   const notebooksQuery = useNotebooks();
@@ -59,16 +59,10 @@ export function RailCreateMenu({ expanded }: { expanded: boolean }) {
   return (
     <>
       <div className="rail-create-group" onMouseEnter={() => setArmed(true)}>
-        {expanded ? (
-          <button type="button" className="rail-create-trigger" aria-label="新建资产">
-            <Plus aria-hidden="true" size={16} />
-          </button>
-        ) : (
-          <button type="button" className="rail-tile" aria-label="新建资产">
-            <Plus aria-hidden="true" size={19} />
-            <span className="rail-tile-label">新建</span>
-          </button>
-        )}
+        <button type="button" className="rail-tile" aria-label="新建资产">
+          <Plus aria-hidden="true" size={19} />
+          <span className="rail-tile-label">新建</span>
+        </button>
         <div className="rail-create-popover">
           <button type="button" className="rail-create-item" onClick={() => void createDocument()} disabled={createNote.isPending}>
             <FilePlus2 aria-hidden="true" size={14} />

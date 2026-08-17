@@ -10,7 +10,7 @@ import { authStore } from "../../shared/auth/auth-store";
  * rows are static: the private space under 个人, team spaces under 空间
  * when the session knows about them.
  */
-export function WorkspaceSwitcher({ expanded = false }: { expanded?: boolean }) {
+export function WorkspaceSwitcher() {
   const user = useStore(authStore, (state) => state.user);
   const workspace = useStore(authStore, (state) => state.workspace);
   const [open, setOpen] = useState(false);
@@ -76,14 +76,13 @@ export function WorkspaceSwitcher({ expanded = false }: { expanded?: boolean }) 
       <button
         ref={triggerRef}
         type="button"
-        className={`workspace-brand${expanded ? " is-expanded" : ""}`}
+        className="workspace-brand"
         aria-label="切换工作空间"
         aria-controls="workspace-switcher-popover"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
       >
         <span className="workspace-brand-mark">O</span>
-        {expanded ? <span className="workspace-brand-word">Orbis</span> : null}
       </button>
     </div>
   );
