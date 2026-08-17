@@ -12,6 +12,7 @@ import { useStore } from "zustand";
 
 import type { DocumentGroup, Notebook } from "../../shared/api/schemas";
 import { authStore } from "../../shared/auth/auth-store";
+import { formatDate } from "../../shared/format/date";
 import { Button } from "../../shared/ui/Button";
 import { PageContainer } from "../../shared/ui/PageContainer";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
@@ -42,13 +43,6 @@ type DialogState =
 type CollectionLocationState = {
   resourceError?: string;
 };
-
-function formatDate(value: number): string {
-  return new Intl.DateTimeFormat("zh-CN", {
-    month: "short",
-    day: "numeric",
-  }).format(new Date(value));
-}
 
 export function CollectionsPage() {
   const navigate = useNavigate();

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useStore } from "zustand";
 
 import { authStore } from "../../shared/auth/auth-store";
+import { formatDate } from "../../shared/format/date";
 import { PageContainer } from "../../shared/ui/PageContainer";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
@@ -12,13 +13,6 @@ import {
   useNotebooks,
   useNoteSearch,
 } from "./queries";
-
-function formatDate(value: number): string {
-  return new Intl.DateTimeFormat("zh-CN", {
-    month: "short",
-    day: "numeric",
-  }).format(new Date(value));
-}
 
 export function DocumentOverviewPage() {
   const workspace = useStore(authStore, (state) => state.workspace);

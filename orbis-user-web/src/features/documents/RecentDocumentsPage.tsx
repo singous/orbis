@@ -1,17 +1,11 @@
 import { FilePlus2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
+import { formatDate } from "../../shared/format/date";
 import { PageContainer } from "../../shared/ui/PageContainer";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { DocumentShell } from "./DocumentShell";
 import { useNoteSearch } from "./queries";
-
-function formatDate(value: number): string {
-  return new Intl.DateTimeFormat("zh-CN", {
-    month: "short",
-    day: "numeric",
-  }).format(new Date(value));
-}
 
 export function RecentDocumentsPage() {
   const notesQuery = useNoteSearch("");

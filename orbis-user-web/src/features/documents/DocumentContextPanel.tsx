@@ -5,6 +5,7 @@ import { useStore } from "zustand";
 
 import type { NoteTreeItem } from "../../shared/api/schemas";
 import { authStore } from "../../shared/auth/auth-store";
+import { formatDate } from "../../shared/format/date";
 import { Button } from "../../shared/ui/Button";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
@@ -71,13 +72,6 @@ type TreeNodeProps = {
   onArchive: (note: NoteTreeItem) => void;
   onMove: (note: NoteTreeItem, delta: -1 | 1) => void;
 };
-
-function formatDate(value: number): string {
-  return new Intl.DateTimeFormat("zh-CN", {
-    month: "short",
-    day: "numeric",
-  }).format(new Date(value));
-}
 
 function collectNoteIds(items: NoteTreeItem[]): string[] {
   return items.flatMap((item) => [item.id, ...collectNoteIds(item.children)]);
