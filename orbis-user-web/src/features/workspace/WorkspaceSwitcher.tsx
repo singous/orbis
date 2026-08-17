@@ -83,6 +83,7 @@ export function WorkspaceSwitcher() {
         onClick={() => setOpen((value) => !value)}
       >
         <span className="workspace-brand-mark">O</span>
+        <span className="workspace-brand-word">Orbis</span>
       </button>
     </div>
   );

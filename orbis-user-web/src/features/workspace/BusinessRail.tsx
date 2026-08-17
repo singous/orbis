@@ -1,4 +1,4 @@
-import { BookOpen, Home, LibraryBig, Pin, Search, Sparkles, StickyNote } from "lucide-react";
+import { BookOpen, Home, LibraryBig, Pin, Search, Settings, Sparkles, StickyNote } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
 
@@ -79,13 +79,17 @@ export function BusinessRail() {
           {accessToken ? <RailCreateMenu /> : null}
 
           <Link to="/documents/search" className={`rail-tile${pathname === "/documents/search" ? " is-active" : ""}`}>
-            <Search aria-hidden="true" size={19} />
+            <span className="rail-tile-icon">
+              <Search aria-hidden="true" size={21} strokeWidth={2.1} />
+            </span>
             <span className="rail-tile-label">搜索</span>
           </Link>
 
           {areas.map(({ label, to, icon: Icon, match }) => (
             <Link key={label} to={to} className={`rail-tile${match(pathname) ? " is-active" : ""}`}>
-              <Icon aria-hidden="true" size={19} />
+              <span className="rail-tile-icon">
+                <Icon aria-hidden="true" size={21} strokeWidth={2.1} />
+              </span>
               <span className="rail-tile-label">{label}</span>
             </Link>
           ))}
@@ -93,7 +97,9 @@ export function BusinessRail() {
           {accessToken ? (
             <div className="rail-fav-trigger-group">
               <button type="button" className="rail-tile" aria-label="常用笔记本">
-                <StickyNote aria-hidden="true" size={19} />
+                <span className="rail-tile-icon">
+                  <StickyNote aria-hidden="true" size={21} strokeWidth={2.1} />
+                </span>
                 <span className="rail-tile-label">常用</span>
               </button>
               <PinnedList />
@@ -101,7 +107,14 @@ export function BusinessRail() {
           ) : null}
         </nav>
 
+        {/* Avatar opens the full menu; the gear is a direct shortcut. Logout
+            stays menu-only on purpose: a one-click destructive action on the
+            rail is easy to hit by accident, and duplicating the label would
+            leave two identically named controls. */}
         <div className="rail-bottom">
+          <Link to="/settings/account" className="rail-foot-action" aria-label="账号设置">
+            <Settings aria-hidden="true" size={19} strokeWidth={2} />
+          </Link>
           <UserMenu user={user} workspace={workspace} onLogout={logout} />
         </div>
       </div>
