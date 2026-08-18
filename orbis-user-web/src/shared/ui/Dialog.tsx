@@ -24,9 +24,10 @@ export function DialogContent({
 }) {
   return (
     <RadixDialog.Portal>
-      <RadixDialog.Overlay className="fixed inset-0 z-40 bg-black/30" />
+      <RadixDialog.Overlay className="fixed inset-0 z-40 bg-[#292631]/20 backdrop-blur-[2px]" />
       <RadixDialog.Content
         className={cn(
+          "glass-dialog",
           "fixed left-1/2 top-1/2 z-50 w-[calc(100vw-32px)] max-w-md -translate-x-1/2 -translate-y-1/2",
           "rounded-[var(--radius-pop)] border border-[var(--border-subtle)] bg-[var(--surface-overlay)] p-5",
           "shadow-[var(--shadow-pop)]",

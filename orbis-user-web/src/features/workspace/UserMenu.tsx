@@ -1,9 +1,8 @@
-import { ChevronUp, LogOut, Moon, Settings, Sun, Users } from "lucide-react";
+import { ChevronUp, LogOut, Settings, Users } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import type { User, Workspace } from "../../shared/api/schemas";
-import { useThemeStore } from "../../shared/theme/theme-store";
 import { canManageWorkspaceMembers, workspaceRoleLabel } from "./capabilities";
 
 export type UserMenuProps = {
@@ -16,8 +15,6 @@ export function UserMenu({ user, workspace, onLogout }: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const theme = useThemeStore((state) => state.theme);
-  const toggleTheme = useThemeStore((state) => state.toggleTheme);
   const userName = user?.display_name || user?.email || "Orbis";
 
   useEffect(() => {
@@ -68,10 +65,6 @@ export function UserMenu({ user, workspace, onLogout }: UserMenuProps) {
               <Settings aria-hidden="true" size={14} />
               账号
             </Link>
-            <button type="button" className="workspace-user-menu-item" onClick={toggleTheme}>
-              {theme === "light" ? <Moon aria-hidden="true" size={14} /> : <Sun aria-hidden="true" size={14} />}
-              {theme === "light" ? "切换到深色模式" : "切换到浅色模式"}
-            </button>
             <button type="button" className="workspace-user-menu-item" onClick={onLogout}>
               <LogOut aria-hidden="true" size={14} />
               退出登录

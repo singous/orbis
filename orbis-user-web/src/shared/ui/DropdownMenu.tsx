@@ -17,6 +17,7 @@ export function DropdownMenuContent({
         sideOffset={6}
         align="start"
         className={cn(
+          "glass-dropdown",
           "z-50 min-w-40 rounded-[var(--radius-pop)] border border-[var(--border-subtle)] bg-[var(--surface-overlay)] p-1",
           "shadow-[var(--shadow-pop)]",
           className,

@@ -4,31 +4,31 @@
    Orbis design tokens
 
    Three layers:
-   1. Base palette — raw scales, redefined per theme.
+   1. Base palette — raw scales for the single light theme.
    2. Semantic tokens — what components and pages consume.
    3. Legacy aliases — old variable names kept so unmigrated
       page styles keep working; remove once migration completes.
 
-   Theme switching puts data-theme="light" | "dark" on <html>.
+   The entire product consumes one soft-glass visual system.
    ============================================================ */
 
 :root {
-  /* Base palette: warm paper scale (dark theme inverts this scale) */
-  --gray-0: #fbfbf9;
-  --gray-25: #f9f9f7;
-  --gray-50: #f7f7f6;
-  --gray-75: #f4f4f2;
-  --gray-100: #efefed;
-  --gray-150: #ececea;
-  --gray-200: #e6e6e2;
-  --gray-300: #d6d6d1;
-  --gray-400: #b6b6b1;
-  --gray-500: #8f8f8a;
-  --gray-600: #5f5f5b;
-  --gray-700: #454542;
-  --gray-800: #353533;
-  --gray-900: #242422;
-  --gray-950: #1c1c1a;
+  /* Base palette: cool neutral scale, tuned for translucent surfaces. */
+  --gray-0: #fdfdff;
+  --gray-25: #fbfbfd;
+  --gray-50: #f8f8fb;
+  --gray-75: #f3f3f7;
+  --gray-100: #eeeef3;
+  --gray-150: #e9e8ef;
+  --gray-200: #e2e1e9;
+  --gray-300: #d3d1dc;
+  --gray-400: #b4b1bf;
+  --gray-500: #8c8898;
+  --gray-600: #625e6d;
+  --gray-700: #494550;
+  --gray-800: #38343f;
+  --gray-900: #2c2933;
+  --gray-950: #222029;
 
   /* Base palette: brand violet scale */
   --violet-50: #f4f2ff;
@@ -39,39 +39,32 @@
   --violet-600: #5546df;
   --violet-700: #463ac4;
 
-  /* Semantic: surfaces (floating-panel model — tinted canvas with
-     translucent rounded panels for the rail, sidebar menu and content) */
-  --surface-app: #eceaf6;
-  --surface-sidebar: #ffffff;
-  --surface-panel: #ffffff;
-  --surface-content: #ffffff;
+  /* Semantic: one ambient canvas shared by authentication and workspace. */
+  --surface-app: #e9e8f1;
+  --surface-sidebar: rgb(250 250 253 / 58%);
+  --surface-panel: rgb(252 252 254 / 74%);
+  --surface-content: rgb(255 255 255 / 72%);
+  --theme-backdrop:
+    radial-gradient(82% 102% at -6% 4%, rgb(174 160 218 / 88%) 0%, rgb(200 190 229 / 52%) 36%, transparent 66%),
+    radial-gradient(72% 78% at 48% -18%, rgb(127 145 198 / 58%) 0%, rgb(190 199 229 / 34%) 42%, transparent 72%),
+    radial-gradient(72% 96% at -8% 112%, rgb(255 165 49 / 92%) 0%, rgb(255 206 122 / 58%) 34%, transparent 66%),
+    radial-gradient(92% 105% at 108% 76%, rgb(180 194 235 / 78%) 0%, rgb(220 227 246 / 48%) 44%, transparent 72%),
+    linear-gradient(135deg, #d9d5e9 0%, #f7f8fb 48%, #e5eaf7 100%);
+  --shell-gradient: var(--theme-backdrop);
+  --shell-rail-width: 76px;
+  --shell-edge: 12px;
 
-  /* Semantic: canvas tint — three soft blobs painted over --surface-app by
-     .workspace-shell::before. Low alpha on purpose: the canvas is backdrop,
-     never a subject. */
-  --canvas-tint-violet: rgb(146 128 255 / 72%);
-  --canvas-tint-warm: rgb(255 168 196 / 54%);
-  --canvas-tint-cool: rgb(150 186 255 / 66%);
-
-  /* Semantic: glass — shell surfaces let the canvas tint bleed through.
-     --surface-glass is the blurred orbit layer (rail, drawers);
-     --surface-glass-panel is the near-opaque focus panel (menu + content),
-     dense enough for long-form reading. */
-  /* Three levels, deliberately different: the rail is the most translucent so
-     it reads violet like the reference, the section menu is lightly tinted,
-     and the content panel is all but white because long text lives there. */
-  --surface-glass: rgb(255 255 255 / 58%);
-  --surface-glass-menu: rgb(255 255 255 / 76%);
-  --surface-glass-panel: rgb(255 255 255 / 96%);
-  /* The sticky toolbar composites on top of the panel glass, so it carries a
-     light veil only: enough to hide the text scrolling under it, weak enough
-     that the strip still reads as part of the panel. */
-  --surface-glass-toolbar: rgb(255 255 255 / 50%);
-  --glass-border: rgb(255 255 255 / 55%);
-  --glass-blur: 18px;
-  --surface-hover: var(--gray-150);
-  --surface-active: var(--gray-200);
-  --surface-overlay: #ffffff;
+  /* Semantic: progressively denser glass from chrome to reading surfaces. */
+  --surface-glass: rgb(250 250 253 / 46%);
+  --surface-glass-menu: rgb(252 252 254 / 62%);
+  --surface-glass-panel: rgb(253 253 255 / 74%);
+  --surface-glass-toolbar: rgb(253 253 255 / 60%);
+  --surface-glass-card: rgb(255 255 255 / 66%);
+  --glass-border: rgb(255 255 255 / 72%);
+  --glass-blur: 24px;
+  --surface-hover: rgb(255 255 255 / 52%);
+  --surface-active: rgb(255 255 255 / 70%);
+  --surface-overlay: rgb(251 251 253 / 92%);
   --surface-inverse: var(--gray-950);
   --surface-inverse-hover: var(--gray-800);
 
@@ -83,24 +76,20 @@
   --text-oninverse: var(--gray-25);
 
   /* Semantic: borders (hairline-first) */
-  --border-subtle: var(--gray-200);
-  --border-strong: var(--gray-300);
+  --border-subtle: rgb(74 68 91 / 12%);
+  --border-strong: rgb(74 68 91 / 20%);
   --border-inverse: rgb(255 255 255 / 12%);
 
-  /* Semantic: business rail. Lavender, like the reference — not white. It is
-     an opaque gradient rather than a translucent surface on purpose: letting
-     the canvas show through dragged the warm blob in and turned the lower half
-     muddy pink. Contrast comes from saturated items and a solid selected tile,
-     never from a white backing. */
-  --rail-bg: linear-gradient(180deg, #e4e8fb 0%, #eaebfc 52%, #f0eefd 100%);
-  --rail-border: rgb(103 87 245 / 12%);
-  --rail-text: #5347d8;
-  --rail-text-strong: #221873;
-  --rail-dim: #8b86c4;
-  --rail-hover: rgb(255 255 255 / 62%);
-  --rail-active: rgb(255 255 255 / 82%);
-  --rail-chip-bg: #1c1c1a;
-  --rail-chip-text: #fbfbf9;
+  /* Navigation is glass chrome; violet appears only in active controls. */
+  --rail-bg: transparent;
+  --rail-border: transparent;
+  --rail-text: #625d6d;
+  --rail-text-strong: #2c2933;
+  --rail-dim: #928c9d;
+  --rail-hover: rgb(255 255 255 / 46%);
+  --rail-active: rgb(255 255 255 / 72%);
+  --rail-chip-bg: var(--violet-500);
+  --rail-chip-text: #ffffff;
 
   /* Semantic: accent */
   --accent: var(--violet-500);
@@ -128,14 +117,15 @@
   --focus-ring: var(--accent);
 
   /* Semantic: shadows (floating layers only) */
-  --shadow-pop: 0 1px 3px rgb(21 21 21 / 6%), 0 6px 20px rgb(21 21 21 / 9%);
+  --shadow-pop: 0 2px 8px rgb(67 58 91 / 7%), 0 14px 36px rgb(67 58 91 / 11%);
+  --shadow-glass: inset 0 1px 0 rgb(255 255 255 / 86%), 0 24px 70px rgb(66 57 92 / 13%), 0 6px 22px rgb(66 57 92 / 7%);
 
   /* Semantic: radii — generous, matching the reference's soft geometry.
      Cards are the roundest fixed step; pills are for chips and search fields. */
   --radius-control: 10px;
-  --radius-container: 14px;
-  --radius-pop: 14px;
-  --radius-card: 16px;
+  --radius-container: 18px;
+  --radius-pop: 16px;
+  --radius-card: 18px;
   --radius-pill: 999px;
 
   /* Semantic: type */
@@ -153,85 +143,6 @@
 
   font-family: Inter, "SF Pro Display", "SF Pro Text", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color-scheme: light;
-}
-
-[data-theme="dark"] {
-  /* Base palette: warm dark gray scale */
-  --gray-0: #262624;
-  --gray-25: #232321;
-  --gray-50: #212120;
-  --gray-75: #1d1d1b;
-  --gray-100: #2a2a28;
-  --gray-150: #161615;
-  --gray-200: #2e2e2b;
-  --gray-300: #3c3c38;
-  --gray-400: #55554f;
-  --gray-500: #7d7d76;
-  --gray-600: #a6a69f;
-  --gray-700: #c2c2bb;
-  --gray-800: #d8d8d2;
-  --gray-900: #e6e6e1;
-  --gray-950: #efefec;
-
-  /* Base palette: brand violet scale (dark) */
-  --violet-50: #26234d;
-  --violet-100: #2c2858;
-  --violet-200: #3a347a;
-  --violet-300: #564bb8;
-  --violet-500: #8577ff;
-  --violet-600: #9d91ff;
-  --violet-700: #b5abff;
-
-  /* Semantic overrides where the light mapping does not hold */
-  --surface-app: #131315;
-  --surface-sidebar: #1f1f22;
-  --surface-panel: #1f1f22;
-  --surface-content: #1f1f22;
-  --surface-overlay: #2c2c29;
-  --surface-inverse: var(--gray-25);
-  --surface-inverse-hover: var(--gray-100);
-  --text-oninverse: var(--gray-900);
-  --border-inverse: rgb(255 255 255 / 10%);
-  --accent-text: var(--violet-600);
-
-  /* Dark: low-saturation canvas tint — the same three blobs, dimmed so the
-     deep canvas stays deep. */
-  --canvas-tint-violet: rgb(122 106 240 / 16%);
-  --canvas-tint-warm: rgb(206 126 80 / 11%);
-  --canvas-tint-cool: rgb(92 122 190 / 14%);
-
-  --surface-glass: rgb(30 30 33 / 55%);
-  --surface-glass-menu: rgb(31 31 34 / 74%);
-  --surface-glass-panel: rgb(31 31 34 / 94%);
-  --surface-glass-toolbar: rgb(31 31 34 / 55%);
-  --glass-border: rgb(255 255 255 / 8%);
-
-  /* Dark: same idea inverted — a deep violet-leaning gradient, not flat black. */
-  --rail-bg: linear-gradient(180deg, #1b1930 0%, #191826 55%, #17161f 100%);
-  --rail-border: rgb(255 255 255 / 8%);
-  --rail-text: #a6a0e0;
-  --rail-text-strong: #d5cfff;
-  --rail-dim: #6f6a9c;
-  --rail-hover: rgb(133 119 255 / 14%);
-  --rail-active: rgb(133 119 255 / 22%);
-  --rail-chip-bg: #262624;
-  --rail-chip-text: #efefec;
-
-  --danger: #d47070;
-  --danger-strong: #e08a8a;
-  --danger-bg: #33201f;
-  --danger-border: #54302e;
-  --danger-text: #e8a3a3;
-  --warning-bg: #322a17;
-  --warning-border: #57481f;
-  --warning-text: #d9bc77;
-  --success-bg: #1c2e23;
-  --success-border: #2c5238;
-  --success-text: #8ecfa4;
-
-  --shadow-pop: 0 1px 3px rgb(0 0 0 / 30%), 0 8px 24px rgb(0 0 0 / 40%);
-
-  color-scheme: dark;
 }
 
 * {
@@ -447,8 +358,11 @@ textarea {
   min-width: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
-  background: var(--surface-content);
+  background: var(--surface-glass-card);
   padding: 18px;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 72%);
+  backdrop-filter: blur(12px) saturate(112%);
+  -webkit-backdrop-filter: blur(12px) saturate(112%);
   transition: 180ms ease;
 }
 
@@ -500,6 +414,7 @@ textarea {
 .empty-panel {
   border: 1px solid var(--border-subtle);
   border-radius: 14px;
+  background: var(--surface-glass-card);
   padding: 34px 30px;
   color: var(--muted);
   text-align: center;
@@ -607,9 +522,7 @@ textarea {
    stylesheet loads lazily after index.css, so ties would lose.
    ============================================================ */
 
-/* --- Theme bridge: drive BlockNote's variables from Orbis tokens.
-       Semantic tokens flip with [data-theme], so one block covers
-       both light and dark. --- */
+/* --- Theme bridge: drive BlockNote's light variables from Orbis tokens. --- */
 body .orbis-bn.orbis-bn {
   --bn-font-family: inherit;
   --bn-colors-editor-background: transparent;
@@ -879,10 +792,19 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   position: fixed;
   z-index: 0;
   inset: 0;
+  background: var(--shell-gradient);
+  pointer-events: none;
+}
+
+.workspace-shell::after {
+  position: fixed;
+  z-index: 0;
+  inset: 0;
   background:
-    radial-gradient(85% 70% at 6% 4%, var(--canvas-tint-violet) 0%, transparent 72%),
-    radial-gradient(75% 65% at 4% 96%, var(--canvas-tint-warm) 0%, transparent 70%),
-    radial-gradient(80% 70% at 98% 22%, var(--canvas-tint-cool) 0%, transparent 72%);
+    repeating-linear-gradient(118deg, transparent 0 3px, rgb(73 63 105 / 2.2%) 3px 4px),
+    radial-gradient(circle at 50% 36%, rgb(255 255 255 / 58%), transparent 42%);
+  content: "";
+  opacity: 0.38;
   pointer-events: none;
 }
 
@@ -890,13 +812,13 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   position: relative;
   z-index: 1;
   display: grid;
-  min-height: 100vh;
-  grid-template-columns: auto minmax(0, 1fr);
-  /* 14px, not 8px: the tinted canvas has to be visible around the panels,
-     otherwise the panels cover it and the theme reads as plain gray. The rail
-     is flush, so the left edge carries no padding. */
-  gap: 14px;
-  padding: 14px 14px 14px 0;
+  height: 100dvh;
+  min-width: 720px;
+  min-height: 0;
+  grid-template-columns: var(--shell-rail-width) minmax(0, 1fr);
+  gap: var(--shell-edge);
+  column-gap: 0;
+  padding: var(--shell-edge) var(--shell-edge) var(--shell-edge) 0;
 }
 
 /* Explicit tracks: when the rail floats (fixed, out of flow), remaining
@@ -913,49 +835,44 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   grid-column: 3;
 }
 
-/* With a section menu present, the menu and the content merge into ONE
-   panel: no column gap between them, the canvas gap only separates the
-   rail from the merged panel. */
 .workspace-shell.has-section-menu .workspace-shell-grid {
-  grid-template-columns: auto minmax(248px, 276px) minmax(0, 1fr);
+  grid-template-columns: var(--shell-rail-width) minmax(248px, 276px) minmax(0, 1fr);
   column-gap: 0;
 }
 
-/* The rail keeps its 8px canvas gap from the merged panel. */
 .workspace-shell.has-section-menu .workspace-business-rail {
-  margin-right: 14px;
+  margin-right: var(--shell-edge);
 }
 
-/* Merged panel: the glass edge highlight runs around the outside only, the
-   menu's own right border is the internal divider. */
 .workspace-shell.has-section-menu .workspace-main-area {
   border-left: 0;
-  border-radius: 0 16px 16px 0;
+  border-radius: 0 var(--radius-container) var(--radius-container) 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
 }
 
 .workspace-shell.has-section-menu .workspace-toolbar {
-  border-radius: 0 16px 0 0;
+  border-radius: 0 var(--radius-container) 0 0;
 }
 
 .workspace-main-navigation {
   display: contents;
 }
 
-/* 84px: a 4-character CJK label ("在线文档") at 12px needs 48px, and the icon
-   tile is 52px. Flush to the window edge, full height, square — the rail is
-   chrome, not one of the floating panels, so no gutter and no radius. */
 .workspace-business-rail {
   z-index: 20;
   display: flex;
-  width: 84px;
+  width: var(--shell-rail-width);
   flex-direction: column;
   align-items: center;
-  /* Bleed past the grid's vertical padding: the rail runs edge to edge, so a
-     14px strip of canvas above and below it would break the flush look. */
-  margin: -14px 0;
-  border-right: 1px solid var(--rail-border);
-  background: var(--rail-bg);
+  margin: calc(var(--shell-edge) * -1) 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--rail-text);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 /* The panel stretches to the full grid-row height (page height); the inner
@@ -991,12 +908,13 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   height: 40px;
   place-items: center;
   border-radius: 13px;
-  background: linear-gradient(150deg, var(--violet-500) 12%, #8f7bff 55%, #b3a2ff 100%);
-  color: #ffffff;
+  border: 1px solid var(--glass-border);
+  background: var(--surface-glass-card);
+  color: var(--accent-strong);
   font-size: 17px;
   font-weight: 800;
   letter-spacing: -0.02em;
-  box-shadow: 0 4px 12px rgb(103 87 245 / 32%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 82%), 0 8px 18px rgb(73 62 108 / 12%);
 }
 
 .workspace-brand-word {
@@ -1097,23 +1015,26 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   flex: 1;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  margin-top: 20px;
+  gap: 5px;
+  margin-top: 18px;
 }
 
 /* The section menu is the left half of the merged menu+content panel:
    same surface, hairline divider, rounded only on the outer edge. */
 .workspace-function-menu {
   position: sticky;
-  top: 14px;
+  top: var(--shell-edge);
   align-self: start;
   min-width: 0;
-  height: calc(100vh - 28px);
+  height: calc(100dvh - (var(--shell-edge) * 2));
   overflow-y: auto;
   border: 1px solid var(--glass-border);
   border-right: 1px solid var(--border-subtle);
-  border-radius: 16px 0 0 16px;
+  border-radius: var(--radius-container) 0 0 var(--radius-container);
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
   background: var(--surface-glass-menu);
+  box-shadow: none;
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
 }
@@ -1169,24 +1090,30 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 }
 
 .workspace-function-link:hover {
-  background: rgb(0 0 0 / 4%);
+  background: var(--surface-hover);
   color: var(--text);
 }
 
 .workspace-function-link.is-active {
-  background: var(--accent-soft);
+  border: 1px solid rgb(103 87 245 / 12%);
+  background: color-mix(in srgb, var(--surface-active) 72%, var(--accent-soft) 28%);
   color: var(--accent-strong);
 }
 
 .workspace-main-area {
   display: grid;
+  height: calc(100dvh - (var(--shell-edge) * 2));
   min-width: 0;
-  min-height: calc(100vh - 28px);
+  min-height: 0;
+  overflow: hidden;
   grid-template-columns: minmax(0, 1fr);
   align-self: start;
   border: 1px solid var(--glass-border);
-  border-radius: 16px;
+  border-radius: var(--radius-container);
   background: var(--surface-glass-panel);
+  box-shadow: var(--shadow-glass);
+  backdrop-filter: blur(var(--glass-blur)) saturate(120%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(120%);
 }
 
 .workspace-main-area.has-context {
@@ -1195,33 +1122,38 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 
 .workspace-content {
   min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .workspace-toolbar {
   position: sticky;
-  top: 14px;
+  top: 0;
   z-index: 10;
   display: flex;
   height: 64px;
   align-items: center;
   gap: 12px;
   border-bottom: 1px solid var(--border-subtle);
-  border-radius: 16px 16px 0 0;
+  border-radius: var(--radius-container) var(--radius-container) 0 0;
   /* A veil is required, not optional: the blurred backdrop has the scrolling
      content painted above the panel's own glass, so without it the text would
      show through the strip. Kept light so the extra white stacking on the
      panel stays imperceptible. */
   background: var(--surface-glass-toolbar);
   padding: 0 28px;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(18px) saturate(115%);
+  -webkit-backdrop-filter: blur(18px) saturate(115%);
 }
 
 .workspace-context-panel {
   min-width: 220px;
+  min-height: 0;
+  overflow-y: auto;
   border-left: 1px solid var(--border);
-  border-radius: 0 16px 16px 0;
-  background: var(--surface-glass-panel);
+  border-radius: 0 var(--radius-container) var(--radius-container) 0;
+  background: var(--surface-glass-menu);
 }
 
 /* Without backdrop-filter the translucent surfaces would only look washed
@@ -1229,7 +1161,7 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
    rule above: @supports adds no specificity, only source order decides. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .workspace-business-rail {
-    background: var(--surface-panel);
+    background: var(--rail-bg);
   }
 
   .workspace-function-menu,
@@ -1676,7 +1608,7 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 
 
 /* ============================================================
-   Business rail: one fixed 84px column of icon + label tiles.
+   Business rail: one fixed compact column of icon + label tiles.
    It never expands — the section menu column beside it carries
    the deeper navigation, matching the reference console.
    ============================================================ */
@@ -1746,62 +1678,68 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
    item read as barely-selected. */
 .rail-tile {
   display: flex;
-  width: 100%;
+  width: 64px;
+  min-height: 56px;
   flex-direction: column;
   align-items: center;
-  /* Tight: icon and label are one unit in the reference, not two stacked
-     elements with air between them. */
-  gap: 3px;
-  padding: 2px;
+  justify-content: center;
+  gap: 2px;
+  margin-inline: auto;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 5px 4px;
   color: var(--rail-text);
   font-size: 12px;
   font-weight: 620;
   line-height: 1.2;
   text-align: center;
-  transition: color 140ms ease;
+  transition: 160ms ease;
 }
 
 /* 36px tall, not 40px: with a 24px glyph the box was leaving ~9px of dead air
    above the label, so the pair read as two separate things. */
 .rail-tile-icon {
   display: grid;
-  width: 48px;
-  height: 36px;
+  width: 44px;
+  height: 28px;
   place-items: center;
-  border-radius: 12px;
+  border-radius: 9px;
   transition: 140ms ease;
 }
 
 .rail-tile:hover {
+  background: var(--rail-hover);
   color: var(--rail-text-strong);
 }
 
 .rail-tile:hover .rail-tile-icon {
-  background: var(--rail-hover);
+  background: transparent;
 }
 
 .rail-tile.is-active {
-  color: var(--rail-text-strong);
+  border-color: var(--glass-border);
+  background: var(--rail-active);
+  color: var(--accent-strong);
   font-weight: 720;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 76%), 0 7px 18px rgb(73 62 108 / 10%);
 }
 
 .rail-tile.is-active .rail-tile-icon {
-  background: var(--accent);
-  color: var(--text-oncolor);
-  box-shadow: 0 4px 12px rgb(103 87 245 / 30%);
+  background: transparent;
+  color: inherit;
+  box-shadow: none;
 }
 
 .rail-tile.is-active:hover .rail-tile-icon {
-  background: var(--accent-strong);
+  background: transparent;
 }
 
 .rail-tile-label {
   white-space: nowrap;
 }
 
-/* The hover popovers anchor on the tile, so their wrappers span the rail. */
-.rail-create-group,
-.rail-fav-trigger-group {
+/* The hover popover anchors on the tile, so its wrapper spans the rail. */
+.rail-create-group {
   width: 100%;
 }
 
@@ -1869,105 +1807,6 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 .rail-foot-action:hover {
   background: var(--rail-hover);
   color: var(--rail-text-strong);
-}
-
-/* Favorites tile + hover popover */
-.rail-fav-trigger-group {
-  position: relative;
-}
-
-.rail-fav-popover {
-  position: absolute;
-  left: calc(100% + 8px);
-  bottom: 0;
-  z-index: 60;
-  display: none;
-  width: 232px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface-overlay);
-  padding: 8px;
-  box-shadow: var(--shadow-pop);
-}
-
-.rail-fav-trigger-group:hover .rail-fav-popover,
-.rail-fav-trigger-group:focus-within .rail-fav-popover {
-  display: block;
-}
-
-.rail-favorites {
-  margin-top: 18px;
-  border-top: 1px solid var(--rail-border);
-  padding-top: 14px;
-}
-
-.rail-favorites-title {
-  padding: 4px 6px 6px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--rail-dim);
-}
-
-.rail-favorites-empty {
-  padding: 6px;
-  font-size: 12px;
-  color: var(--rail-dim);
-}
-
-.rail-fav-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.rail-fav-item .rail-row {
-  flex: 1;
-  opacity: 1;
-}
-
-.rail-favorites .rail-fav-item .rail-row {
-  color: var(--rail-text);
-}
-
-.rail-favorites .rail-fav-item .rail-row:hover {
-  background: var(--rail-hover);
-  color: var(--rail-text-strong);
-}
-
-.rail-fav-popover .rail-fav-item .rail-row {
-  color: var(--text);
-}
-
-.rail-fav-popover .rail-fav-item .rail-row:hover {
-  background: var(--surface-hover);
-}
-
-.rail-favorites .rail-pin {
-  color: var(--rail-dim);
-}
-
-.rail-favorites .rail-pin:hover {
-  background: var(--rail-hover);
-  color: var(--rail-text-strong);
-}
-
-.rail-pin {
-  display: grid;
-  width: 24px;
-  height: 24px;
-  flex: none;
-  place-items: center;
-  border-radius: 6px;
-  color: var(--muted);
-}
-
-.rail-pin:hover {
-  background: var(--surface-hover);
-  color: var(--text);
-}
-
-.rail-pin.is-on {
-  color: var(--accent-strong);
 }
 
 /* Pin button on notebook cards (top-right) */
@@ -2058,8 +1897,11 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   margin-top: 30px;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-pill);
-  background: var(--surface-content);
+  background: var(--surface-glass-card);
   padding: 0 6px 0 20px;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 76%), 0 12px 32px rgb(72 62 103 / 8%);
+  backdrop-filter: blur(16px) saturate(115%);
+  -webkit-backdrop-filter: blur(16px) saturate(115%);
   transition: 160ms ease;
 }
 
@@ -2122,7 +1964,7 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   gap: 6px;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-pill);
-  background: var(--surface-content);
+  background: var(--surface-glass-card);
   padding: 7px 14px;
   color: var(--text-secondary);
   font-size: 12px;
@@ -2150,8 +1992,11 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   align-items: flex-start;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-card);
-  background: var(--surface-content);
+  background: var(--surface-glass-card);
   padding: 18px;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 72%);
+  backdrop-filter: blur(12px) saturate(112%);
+  -webkit-backdrop-filter: blur(12px) saturate(112%);
   transition: 180ms ease;
 }
 
@@ -2232,7 +2077,10 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   overflow: hidden;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-card);
-  background: var(--surface-content);
+  background: var(--surface-glass-card);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 72%);
+  backdrop-filter: blur(12px) saturate(112%);
+  -webkit-backdrop-filter: blur(12px) saturate(112%);
 }
 
 .home-recent-list > li + li {
@@ -2325,4 +2173,18 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   .home-search {
     padding-left: 16px;
   }
+}
+
+/* Floating product chrome shares the same glass recipe regardless of owner. */
+.workspace-switcher-popover,
+.workspace-user-popover,
+.rail-create-popover,
+body .orbis-bn .mantine-Menu-dropdown,
+body .orbis-bn .bn-menu-dropdown,
+body .orbis-bn .bn-toolbar {
+  border-color: var(--glass-border);
+  background: var(--surface-overlay);
+  box-shadow: var(--shadow-pop);
+  backdrop-filter: blur(22px) saturate(118%);
+  -webkit-backdrop-filter: blur(22px) saturate(118%);
 }

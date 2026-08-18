@@ -12,7 +12,6 @@ import "@blocknote/react/style.css";
 import "@blocknote/mantine/style.css";
 import { useEffect, useRef } from "react";
 
-import { useThemeStore } from "../../shared/theme/theme-store";
 import {
   canonicalJSON,
   extractPlainTextV2,
@@ -29,7 +28,6 @@ export function BlockNoteEditor({
   onChange: (next: { blocks: NoteBlocksV2; plainText: string }) => void;
   readOnly?: boolean;
 }) {
-  const theme = useThemeStore((state) => state.theme);
   // OrbisBlock mirrors BlockNote's Block shape; cast to avoid deep inline-style
   // generic friction (content is validated at the API boundary).
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -64,7 +62,7 @@ export function BlockNoteEditor({
     <BlockNoteView
       editor={editor}
       className="orbis-bn"
-      theme={theme === "dark" ? "dark" : "light"}
+      theme="light"
       onChange={() => {
         const doc = editor.document as unknown as OrbisBlock[];
         const next: NoteBlocksV2 = {

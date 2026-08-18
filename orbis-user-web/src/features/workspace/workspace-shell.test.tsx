@@ -6,7 +6,6 @@ import { Link, MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { authStore } from "../../shared/auth/auth-store";
-import { useThemeStore } from "../../shared/theme/theme-store";
 import { DocumentShell } from "../documents/DocumentShell";
 import { WorkspaceShell } from "./WorkspaceShell";
 
@@ -113,6 +112,28 @@ describe("WorkspaceShell", () => {
     expect(document.querySelector(".workspace-shell")).not.toHaveClass("has-section-menu");
   });
 
+  it("keeps the business tabs integrated with the backdrop and joins the section menu to the main panel", () => {
+    const style = document.createElement("style");
+    style.textContent = workspaceStyles;
+    document.head.append(style);
+
+    try {
+      renderShell("/documents", undefined, <nav className="workspace-function-menu" aria-label="测试功能"><Link to="/documents">文档概览</Link></nav>);
+
+      const grid = document.querySelector(".workspace-shell-grid");
+      const rail = document.querySelector(".workspace-business-rail");
+      const menu = screen.getByRole("navigation", { name: "测试功能" });
+      const main = screen.getByRole("region", { name: "主工作区" });
+
+      expect(Number.parseFloat(getComputedStyle(grid!).columnGap)).toBe(0);
+      expect(getComputedStyle(rail!).backgroundColor).toBe("rgba(0, 0, 0, 0)");
+      expect(Number.parseFloat(getComputedStyle(menu).borderTopRightRadius)).toBe(0);
+      expect(Number.parseFloat(getComputedStyle(main).borderTopLeftRadius)).toBe(0);
+    } finally {
+      style.remove();
+    }
+  });
+
   it("renders a supplied section title and menu beside the business rail", () => {
     renderShell("/documents", undefined, <nav aria-label="测试功能"><Link to="/documents">文档概览</Link></nav>);
 
@@ -133,6 +154,7 @@ describe("WorkspaceShell", () => {
 
     expect(screen.getByRole("link", { name: "搜索" })).toHaveAttribute("href", "/documents/search");
     expect(screen.getByRole("navigation", { name: "业务板块" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "常用笔记本" })).not.toBeInTheDocument();
   });
 
   it("keeps the optional context panel inside the main workspace column", () => {
@@ -278,18 +300,11 @@ describe("WorkspaceShell", () => {
     window.localStorage.removeItem("orbis.railExpanded");
   });
 
-  it("toggles the application theme from the user menu", async () => {
+  it("keeps the application on its single visual theme", async () => {
     const actor = userEvent.setup();
     renderShell();
 
     await actor.click(screen.getByRole("button", { name: "打开用户菜单" }));
-    await actor.click(screen.getByRole("button", { name: "切换到深色模式" }));
-
-    expect(document.documentElement.dataset.theme).toBe("dark");
-
-    // restore default state for other tests
-    window.localStorage.clear();
-    useThemeStore.setState({ theme: "light", explicit: false });
-    document.documentElement.dataset.theme = "light";
+    expect(screen.queryByRole("button", { name: /切换到.*模式/ })).not.toBeInTheDocument();
   });
 });
