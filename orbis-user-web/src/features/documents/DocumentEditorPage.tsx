@@ -1,12 +1,14 @@
-import { AlertTriangle, Archive, ArrowLeft, Check, Cloud, Download, Eye, EyeOff, RefreshCw, RotateCcw, Save, WifiOff } from "lucide-react";
+import { AlertTriangle, Archive, ArrowLeft, Check, Cloud, Download, Eye, EyeOff, MessageSquare, RefreshCw, RotateCcw, Save, WifiOff } from "lucide-react";
 import { Component, lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useStore } from "zustand";
 
+import { ApiError } from "../../shared/api/api-client";
 import { authStore } from "../../shared/auth/auth-store";
 import { Button } from "../../shared/ui/Button";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
-import { extractPlainTextV2, toV2, v2ToMarkdown, type NoteBlocksV2, type OrbisBlock } from "../notes/block-model";
+import { extractPlainTextV2, toV2, v2ToMarkdown, type NoteBlocksV2 } from "../notes/block-model";
+import type { RestoreSavedRevision } from "../collaboration/DocumentCollaborationPanel";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { AutosaveCoordinator, type AutosaveState } from "./autosave";
 import { DocumentShell } from "./DocumentShell";
@@ -25,24 +27,23 @@ import {
 } from "./queries";
 import { isUnavailableResourceError } from "./resource-errors";
 
+const DocumentCollaborationPanel = lazy(() =>
+  import("../collaboration/DocumentCollaborationPanel").then((module) => ({ default: module.DocumentCollaborationPanel })),
+);
+
 type EditorDraft = { title: string; blocks: NoteBlocksV2; version: number };
 
 function draftFingerprint(draft: EditorDraft): string {
   return JSON.stringify([draft.title.trim(), draft.blocks]);
 }
 
-function blockText(block: OrbisBlock): string {
-  return extractPlainTextV2([{ ...block, children: [] }]);
-}
-
 function outlineFromBlocks(blocks: NoteBlocksV2) {
   return blocks.blocks
     .filter((block) => block.type === "heading")
-    .map((block, index) => ({
-      id: `${index}-${blockText(block)}`,
-      level: Number(block.props.level ?? 1),
-      text: blockText(block) || "未命名标题",
-    }));
+    .map((block, index) => {
+      const text = extractPlainTextV2([{ ...block, children: [] }]);
+      return { id: `${index}-${text}`, level: Number(block.props.level ?? 1), text: text || "未命名标题" };
+    });
 }
 
 const saveStateCopy: Record<AutosaveState, { label: string; icon: typeof Save }> = {
@@ -77,13 +78,20 @@ export function DocumentEditorPage() {
   const navigate = useNavigate();
   const workspace = useStore(authStore, (state) => state.workspace);
   const canEdit = canMutateWorkspaceContent(workspace);
+  const currentUserId = useStore(authStore, (state) => state.user?.id ?? "");
   const noteQuery = useNote(noteId);
   const contentQuery = useNoteContent(noteId);
   const updateNote = useUpdateNote();
   const saveContent = useSaveNoteContent();
   const archiveNote = useArchiveNote();
   const [draft, setDraft] = useState<EditorDraft | null>(null);
-  const [saveState, setSaveState] = useState<AutosaveState>("saved");
+  const [autosaveState, setSaveState] = useState<AutosaveState>("saved");
+  const [collaborationOpen, setCollaborationOpen] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [restorationConflict, setRestorationConflict] = useState(false);
+  const restoringRef = useRef(false);
+  const collaborationTriggerRef = useRef<HTMLButtonElement>(null);
+  const saveState = restorationConflict ? "conflict" : autosaveState;
   const [outlinePinned, setOutlinePinned] = useState(false);
   const [outlineHovered, setOutlineHovered] = useState(false);
   const coordinatorRef = useRef<AutosaveCoordinator<EditorDraft> | null>(null);
@@ -100,7 +108,10 @@ export function DocumentEditorPage() {
     // draft from either would stomp the live editor (cursor loss, flicker,
     // lost keystrokes). Only a strictly newer server version — a genuine
     // external edit — warrants a rebuild.
-    const saved = coordinatorRef.current?.saved;
+    const existing = coordinatorRef.current;
+    const saved = existing?.saved;
+    // A cache refresh must never replace unsaved work or an active restoration.
+    if (hydratedNoteRef.current === noteId && existing && (restoringRef.current || existing.state !== "saved")) return;
     const isOwnOrStaleEcho =
       hydratedNoteRef.current === noteId &&
       saved != null &&
@@ -133,14 +144,20 @@ export function DocumentEditorPage() {
     });
     coordinator.hydrate(initial);
     coordinatorRef.current = coordinator;
-    return () => coordinator.dispose(true);
   }, [contentQuery.data?.content_version, noteId, noteQuery.data?.title]);
+
+  useEffect(() => () => {
+    const coordinator = coordinatorRef.current;
+    coordinator?.dispose(canEdit && (coordinator.state === "dirty" || coordinator.state === "saving"));
+    coordinatorRef.current = null;
+    hydratedNoteRef.current = null;
+  }, [noteId]);
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (coordinatorRef.current?.state === "dirty") {
+      if ((coordinatorRef.current && coordinatorRef.current.state !== "saved") || restoringRef.current) {
         event.preventDefault();
-        void coordinatorRef.current.flush();
+        if (coordinatorRef.current?.state === "dirty") void coordinatorRef.current.flush();
       }
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
@@ -166,15 +183,57 @@ export function DocumentEditorPage() {
   const StateIcon = stateCopy.icon;
 
   function changeDraft(next: EditorDraft) {
+    if (!canEdit || restoringRef.current) return;
     setDraft(next);
     coordinatorRef.current?.change(next);
   }
 
   async function reloadServer() {
-    // Force the hydrate effect to rebuild even if the version is unchanged.
-    hydratedNoteRef.current = null;
-    coordinatorRef.current?.dispose(false);
-    await Promise.all([noteQuery.refetch(), contentQuery.refetch()]);
+    // Explicitly replace the draft only after both server reads succeed.
+    const coordinator = coordinatorRef.current;
+    coordinator?.dispose(false);
+    const [noteResult, contentResult] = await Promise.all([noteQuery.refetch(), contentQuery.refetch()]);
+    if (coordinatorRef.current !== coordinator || !noteResult.data || !contentResult.data || noteResult.error || contentResult.error) return;
+    const next = { title: noteResult.data.title, blocks: toV2(contentResult.data.blocks), version: contentResult.data.content_version };
+    coordinatorRef.current?.hydrate(next);
+    setDraft(next);
+    setRestorationConflict(false);
+  }
+
+  async function restoreSavedRevision(restore: RestoreSavedRevision) {
+    const coordinator = coordinatorRef.current;
+    if (!canEdit || !coordinator || restoringRef.current) throw new Error("当前无法恢复文档。");
+    if (restorationConflict || ["conflict", "error"].includes(coordinator.state)) {
+      throw new Error("请先关闭面板，处理保存失败或版本冲突，再恢复历史。本地草稿仍保留。");
+    }
+    restoringRef.current = true;
+    setRestoring(true);
+    try {
+      await coordinator.flush();
+      if (coordinatorRef.current !== coordinator) throw new Error("文档已切换，请在当前文档中重新选择历史版本。");
+      const saved = coordinator.saved;
+      if (coordinator.state !== "saved" || !saved) {
+        throw new Error("当前草稿尚未成功保存。请先处理保存失败或版本冲突，本地草稿仍保留。");
+      }
+      const restored = await restore(saved.version);
+      if (coordinatorRef.current !== coordinator) return;
+      const next = { ...saved, blocks: toV2(restored.blocks), version: restored.content_version };
+      coordinator.hydrate(next);
+      setDraft(next);
+      setRestorationConflict(false);
+    } catch (error) {
+      if (coordinatorRef.current === coordinator && error instanceof ApiError && error.isConflict) setRestorationConflict(true);
+      throw error;
+    } finally {
+      restoringRef.current = false;
+      setRestoring(false);
+    }
+  }
+
+  function closeCollaboration() {
+    if (restoringRef.current) return;
+    setCollaborationOpen(false);
+    collaborationTriggerRef.current?.focus();
   }
 
   async function handleArchive() {
@@ -189,8 +248,9 @@ export function DocumentEditorPage() {
 
   const toolbar = (
     <div className="flex items-center gap-2">
+      <button ref={collaborationTriggerRef} type="button" className="icon-button" aria-label="评论与历史" aria-haspopup="dialog" aria-expanded={collaborationOpen} disabled={!draft} onClick={() => setCollaborationOpen(true)}><MessageSquare aria-hidden="true" size={16} /></button>
       <span className={`save-indicator state-${saveState}`}><StateIcon aria-hidden="true" size={13} className={saveState === "saving" ? "animate-spin" : ""} />{stateCopy.label}</span>
-      {canEdit ? <button type="button" className="icon-button danger-hover" aria-label="归档文档" onClick={handleArchive}><Archive aria-hidden="true" size={15} /></button> : null}
+      {canEdit ? <button type="button" className="icon-button danger-hover" aria-label="归档文档" disabled={restoring} onClick={handleArchive}><Archive aria-hidden="true" size={15} /></button> : null}
     </div>
   );
 
@@ -205,7 +265,7 @@ export function DocumentEditorPage() {
               className="editor-title"
               placeholder="无标题"
               value={draft.title}
-              readOnly={!canEdit}
+              readOnly={!canEdit || restoring}
               onChange={(event) => changeDraft({ ...draft, title: event.target.value })}
             />
             <div className="mb-7 mt-2 flex items-center gap-2 text-[11px] text-[var(--muted-light)]"><span>版本 {coordinatorRef.current?.saved?.version ?? draft.version}</span><span>·</span><span>{canEdit ? "停手后自动保存" : "只读访问"}</span></div>
@@ -219,7 +279,7 @@ export function DocumentEditorPage() {
               <Suspense fallback={<div className="grid min-h-[40vh] place-items-center text-sm text-[var(--muted)]">正在加载编辑器…</div>}>
                 <BlockNoteEditor
                   blocks={draft.blocks}
-                  readOnly={!canEdit}
+                  readOnly={!canEdit || restoring}
                   onChange={({ blocks }) => changeDraft({ ...draft, blocks })}
                 />
               </Suspense>
@@ -248,6 +308,7 @@ export function DocumentEditorPage() {
           </aside>
         </div>
       )}
+      {collaborationOpen ? <Suspense fallback={<p role="status">正在加载评论与历史…</p>}><DocumentCollaborationPanel key={noteId} noteId={noteId} currentUserId={currentUserId} canManage={canEdit} onClose={closeCollaboration} onRestore={restoreSavedRevision} /></Suspense> : null}
     </DocumentShell>
   );
 }

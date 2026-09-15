@@ -178,6 +178,7 @@ export function useSaveNoteContent() {
     mutationFn: (payload: { noteId: string; expectedVersion: number; blocks: Parameters<typeof saveNoteContent>[0]["blocks"] }) => saveNoteContent(payload, auth),
     onSuccess: (content) => {
       queryClient.setQueryData(["note-content", content.note_id], content);
+      void queryClient.invalidateQueries({ queryKey: ["collaboration", content.note_id, "revisions"] });
       void queryClient.invalidateQueries({ queryKey: ["note-search"] });
     },
   });

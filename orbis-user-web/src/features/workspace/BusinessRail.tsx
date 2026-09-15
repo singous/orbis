@@ -1,4 +1,4 @@
-import { BookOpen, Home, LibraryBig, Search, Settings, Sparkles } from "lucide-react";
+import { BookOpen, Globe, Home, LibraryBig, Search, Settings, Sparkles } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
 
@@ -27,6 +27,7 @@ export function BusinessRail() {
   const areas = [
     { label: "首页", to: "/home", icon: Home, match: (p: string) => p === "/home" },
     { label: "在线文档", to: "/documents", icon: BookOpen, match: (p: string) => p.startsWith("/documents") || p.startsWith("/collections") },
+    { label: "站点", to: "/sites", icon: Globe, match: (p: string) => p.startsWith("/sites") },
     { label: "知识库", to: "/knowledge", icon: LibraryBig, match: (p: string) => p.startsWith("/knowledge") },
     { label: "记忆", to: "/memory", icon: Sparkles, match: (p: string) => p.startsWith("/memory") },
   ];

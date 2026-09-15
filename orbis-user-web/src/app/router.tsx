@@ -1,4 +1,5 @@
 import { Navigate, createBrowserRouter } from "react-router-dom";
+import { lazy, Suspense } from "react";
 
 import { AccountSettingsPage } from "../features/account/AccountSettingsPage";
 import { HomePage } from "../features/home/HomePage";
@@ -16,7 +17,17 @@ import { KnowledgePlaceholderPage, MemoryPlaceholderPage } from "../features/pla
 import { RequireAuth } from "../shared/auth/RequireAuth";
 import { LoginPage } from "./LoginPage";
 
+const SitesPage = lazy(() => import("../features/sites/SitesPage").then((module) => ({ default: module.SitesPage })));
+const SiteEditorPage = lazy(() => import("../features/sites/SiteEditorPage").then((module) => ({ default: module.SiteEditorPage })));
+const PublicSitePage = lazy(() => import("../features/sites/PublicSitePage").then((module) => ({ default: module.PublicSitePage })));
+const SitePreviewPage = lazy(() => import("../features/sites/PublicSitePage").then((module) => ({ default: module.SitePreviewPage })));
+const siteFallback = <div className="site-reader-status" role="status">正在打开站点…</div>;
+
 export const router = createBrowserRouter([
+  { path: "/s/:slug/:pageSlug?", element: <Suspense fallback={siteFallback}><PublicSitePage /></Suspense> },
+  { path: "/sites", element: <RequireAuth><Suspense fallback={siteFallback}><SitesPage /></Suspense></RequireAuth> },
+  { path: "/sites/:siteId", element: <RequireAuth><Suspense fallback={siteFallback}><SiteEditorPage /></Suspense></RequireAuth> },
+  { path: "/sites/:siteId/preview/:pageSlug?", element: <RequireAuth><Suspense fallback={siteFallback}><SitePreviewPage /></Suspense></RequireAuth> },
   {
     path: "/",
     element: <Navigate to="/home" replace />,
