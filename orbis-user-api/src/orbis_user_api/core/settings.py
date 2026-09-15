@@ -16,7 +16,7 @@ _REPO_ROOT_ENV = _SERVICE_ROOT.parent / ".env"
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="ORBIS_",
-        env_file=(_SERVICE_ROOT / ".env", _REPO_ROOT_ENV),
+        env_file=(_REPO_ROOT_ENV, _SERVICE_ROOT / ".env"),
         env_file_encoding="utf-8",
         extra="ignore",
     )
