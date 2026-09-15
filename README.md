@@ -5,8 +5,6 @@ Orbis 将个人知识记录、团队文档协作与对外文档站发布连接�
 Orbis connects personal knowledge, collaborative documents, and published
 documentation sites in one workspace.
 
-## Getting Started
-
 ## Base-MVP
 
 - 块文档、文集与目录、自动保存、搜索、归档恢复、Markdown 导入导出。
@@ -96,6 +94,12 @@ proxy target. Published sites use `/s/<site-slug>`.
 普通成员可以阅读和评论，正文编辑与历史恢复需要编辑权限。
 
 ## Verification
+
+Pull requests run three independent CI checks: backend tests, frontend
+unit/type/build checks, and the isolated browser journey. PostgreSQL integration
+checks remain opt-in against a dedicated test database.
+
+每个 PR 自动执行后端、前端和浏览器三项检查；真实 PostgreSQL 验证使用独立测试库按需运行。
 
 ```bash
 # From orbis-user-api
