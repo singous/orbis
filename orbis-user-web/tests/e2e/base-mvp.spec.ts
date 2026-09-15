@@ -150,6 +150,55 @@ test("personal writing, team discussion and a versioned documentation site work 
   expect(retained.data.plain_text).toContain("未发布的新内容");
   await page.screenshot({ path: testInfo.outputPath("workspace-editor.png"), fullPage: true });
 
+  const archiveEditor = page.locator('[contenteditable="true"]').first();
+  await archiveEditor.click();
+  await archiveEditor.press("ControlOrMeta+End");
+  await archiveEditor.press("Enter");
+  await archiveEditor.pressSequentially("归档前的最后修改。");
+  await page.getByRole("button", { name: "归档文档", exact: true }).click();
+  await expect(page).toHaveURL(/\/collections\//);
+  await page.goto("/documents/archive");
+  await page.getByRole("button", { name: "恢复 欢迎使用 Orbis", exact: true }).click();
+  await expect(page.getByRole("button", { name: "恢复 欢迎使用 Orbis", exact: true })).toHaveCount(0);
+  expect((await (await request.get(`${apiOrigin}/notes/${noteId}/content`, { headers })).json()).data.plain_text).toContain("归档前的最后修改。");
+  await reader.reload();
+  await expect(reader.getByText("归档前的最后修改。", { exact: true })).toHaveCount(0);
+  await page.goto("/documents/search");
+  await page.getByRole("searchbox", { name: "搜索文档" }).fill("让知识被找到");
+  await expect(page.getByRole("link", { name: /欢迎使用 Orbis/ })).toBeVisible();
+
+  await page.goto("/documents/collections");
+  await page.getByRole("button", { name: "新建笔记本", exact: true }).click();
+  await page.getByLabel("笔记本名称").fill("Markdown 交换验证");
+  await page.getByRole("button", { name: "创建笔记本", exact: true }).click();
+  await expect(page).toHaveURL(/\/collections\//);
+  const exchangeNotebook = page.url();
+  const chooserPromise = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: "导入 Markdown", exact: true }).click();
+  const chooser = await chooserPromise;
+  await chooser.setFiles({ name: "交换格式.md", mimeType: "text/markdown", buffer: Buffer.from("# 交换格式\n\nMarkdown 往返保留正文。\n\n- 第一项\n- 第二项\n") });
+  await expect(page).toHaveURL(/\/documents\/[0-9a-f-]+$/);
+  await expect(page.getByRole("textbox", { name: "文档标题" })).toHaveValue("交换格式");
+  await expect(page.locator('[contenteditable="true"]').first()).toContainText("Markdown 往返保留正文。");
+  await page.goto(exchangeNotebook);
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "导出全部", exact: true }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe("交换格式.md");
+  expect(readFileSync((await download.path())!, "utf8")).toContain("Markdown 往返保留正文。");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`/documents/${noteId}`);
+  await expect(page.getByRole("textbox", { name: "文档标题" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.getByRole("button", { name: "打开主导航", exact: true }).click();
+  await page.getByRole("navigation", { name: "业务板块", exact: true }).getByRole("link", { name: "站点", exact: true }).click();
+  await expect(page).toHaveURL(/\/sites$/);
+  await expect(page.getByRole("button", { name: "打开主导航", exact: true })).toHaveAttribute("aria-expanded", "false");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath("workspace-mobile.png"), fullPage: true });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+
   await page.goto(`/sites/${siteId}`);
   await page.getByRole("button", { name: "撤回站点", exact: true }).click();
   await page.getByRole("button", { name: "确认操作", exact: true }).click();
