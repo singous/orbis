@@ -159,7 +159,7 @@ def test_all_json_operations_document_the_unified_success_envelope() -> None:
                 continue
             operations.append((method.upper(), path, operation))
 
-    assert len(operations) == 42
+    assert len(operations) == 58
     for method, path, operation in operations:
         success_responses = [
             (status_code, response)

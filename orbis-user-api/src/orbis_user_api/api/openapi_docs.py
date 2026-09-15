@@ -5,6 +5,8 @@ from typing import Any
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 
+from orbis_user_api.api import openapi_base_mvp as base_mvp
+
 EXAMPLE_REQUEST_ID = "019fe1e0-1234-7abc-8def-0123456789ab"
 
 TAG_DOCS: dict[str, tuple[str, str]] = {
@@ -18,6 +20,7 @@ TAG_DOCS: dict[str, tuple[str, str]] = {
     "notes": ("文档", "文档、内容、搜索与目录树"),
     "files": ("文件", "文件上传与查询"),
     "system": ("系统状态", "服务健康检查"),
+    **base_mvp.TAG_DOCS,
 }
 
 
@@ -74,6 +77,7 @@ PUBLIC_OPERATIONS = {
     ("post", "/workspace/invitations/accept"),
     ("post", "/workspace/ownership-transfers/confirm"),
     ("get", "/healthz"),
+    base_mvp.PUBLIC_OPERATION,
 }
 
 PAGINATED_PATHS = {
@@ -83,6 +87,7 @@ PAGINATED_PATHS = {
     "/files",
     "/workspace/invitations",
     "/workspace/members",
+    *base_mvp.PAGINATED_PATHS,
 }
 
 FIELD_DESCRIPTIONS = {
@@ -222,11 +227,14 @@ def _add_error_example(
 def _operation_description(
     method: str, path: str, business_description: str
 ) -> str:
-    auth_line = (
-        "无需 Bearer 访问令牌；请按接口说明提交凭据或一次性密钥。"
-        if (method, path) in PUBLIC_OPERATIONS
-        else "必须在 Authorization 请求头中携带 `Bearer <access_token>`；部分写操作还要求资源管理权限。"
-    )
+    if (method, path) == base_mvp.PUBLIC_OPERATION:
+        auth_line = "匿名公开读取，无需 Bearer 访问令牌或一次性密钥。"
+    else:
+        auth_line = (
+            "无需 Bearer 访问令牌；请按接口说明提交凭据或一次性密钥。"
+            if (method, path) in PUBLIC_OPERATIONS
+            else "必须在 Authorization 请求头中携带 `Bearer <access_token>`；部分写操作还要求资源管理权限。"
+        )
     pagination_line = (
         "本接口使用统一分页：`page` 默认 1，`page_size` 默认 20、最大 100；分页元数据位于 `data.pagination`。"
         if path in PAGINATED_PATHS and method == "get"
@@ -369,6 +377,62 @@ def _install_chinese_tags(schema: dict[str, Any]) -> None:
             ]
 
 
+def _install_base_mvp_docs(schema: dict[str, Any]) -> None:
+    components = schema["components"]["schemas"]
+    for name, fields in base_mvp.SCHEMA_FIELD_DESCRIPTIONS.items():
+        for field_name, description in fields.items():
+            components[name]["properties"][field_name]["description"] = description
+    for name, examples in base_mvp.REQUEST_EXAMPLES.items():
+        components[name]["example"] = next(iter(examples.values()))["value"]
+
+    for key, (summary, description) in base_mvp.OPERATION_DOCS.items():
+        method, path = key
+        operation = schema["paths"][path][method]
+        operation["summary"] = summary
+        operation["description"] = _operation_description(method, path, description)
+        success_status = next(
+            code for code in operation["responses"] if code.startswith("2")
+        )
+        operation["responses"][success_status]["content"]["application/json"][
+            "examples"
+        ] = {
+            "success": {
+                "summary": "调用成功",
+                "value": _envelope(
+                    "CREATED" if success_status == "201" else "OK",
+                    "创建成功" if success_status == "201" else "请求成功",
+                    base_mvp.SUCCESS_DATA[key],
+                ),
+            }
+        }
+        for parameter in operation.get("parameters", []):
+            parameter["description"] = base_mvp.PARAMETER_DESCRIPTIONS[
+                parameter["name"]
+            ]
+        if "requestBody" in operation:
+            media = operation["requestBody"]["content"]["application/json"]
+            request_name = media["schema"]["$ref"].rsplit("/", 1)[-1]
+            media["examples"] = base_mvp.REQUEST_EXAMPLES[request_name]
+        errors = ["VALIDATION_ERROR", "INTERNAL_ERROR", *base_mvp.OPERATION_ERRORS[key]]
+        if key != base_mvp.PUBLIC_OPERATION:
+            errors.extend(
+                (
+                    "AUTH_REQUIRED",
+                    "INVALID_ACCESS_TOKEN",
+                    "ACTIVE_WORKSPACE_MEMBERSHIP_REQUIRED",
+                )
+            )
+        for code in errors:
+            status_code, message = base_mvp.ERROR_DOCS[code]
+            if key == base_mvp.PUBLIC_OPERATION and code == "SITE_NOT_FOUND":
+                message = "站点不存在或尚未发布"
+            _add_error_example(operation, status_code, code, message)
+        validation = operation["responses"]["422"]["content"]["application/json"][
+            "examples"
+        ]["VALIDATION_ERROR"]["value"]
+        validation["data"] = base_mvp.validation_error_data(method, path)
+
+
 def install_chinese_openapi(app: FastAPI) -> None:
     def custom_openapi() -> dict[str, Any]:
         if app.openapi_schema is not None:
@@ -386,6 +450,7 @@ def install_chinese_openapi(app: FastAPI) -> None:
         _install_chinese_tags(schema)
         _install_component_docs(schema)
         _install_operation_docs(schema)
+        _install_base_mvp_docs(schema)
         app.openapi_schema = schema
         return schema
 

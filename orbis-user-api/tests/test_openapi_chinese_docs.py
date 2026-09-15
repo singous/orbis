@@ -21,7 +21,7 @@ def test_every_operation_has_detailed_chinese_documentation() -> None:
     schema = create_app().openapi()
     operations = list(_operations(schema))
 
-    assert len(operations) == 42
+    assert len(operations) == 58
     for method, path, operation in operations:
         summary = operation.get("summary", "")
         description = operation.get("description", "")
@@ -46,6 +46,9 @@ def test_every_operation_uses_a_chinese_business_folder() -> None:
         "文档",
         "文件",
         "系统状态",
+        "站点管理",
+        "公开站点",
+        "文档协作",
     }
 
     assert {tag["name"] for tag in schema["tags"]} == expected_tags
