@@ -88,8 +88,11 @@ export function DocumentEditorPage() {
   const [autosaveState, setSaveState] = useState<AutosaveState>("saved");
   const [collaborationOpen, setCollaborationOpen] = useState(false);
   const [restoring, setRestoring] = useState(false);
+  const [archiving, setArchiving] = useState(false);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
   const [restorationConflict, setRestorationConflict] = useState(false);
   const restoringRef = useRef(false);
+  const archivingRef = useRef<AutosaveCoordinator<EditorDraft> | null>(null);
   const collaborationTriggerRef = useRef<HTMLButtonElement>(null);
   const saveState = restorationConflict ? "conflict" : autosaveState;
   const [outlinePinned, setOutlinePinned] = useState(false);
@@ -97,6 +100,7 @@ export function DocumentEditorPage() {
   const coordinatorRef = useRef<AutosaveCoordinator<EditorDraft> | null>(null);
   const hydratedNoteRef = useRef<string | null>(null);
   const outlineOpen = outlinePinned || outlineHovered;
+  const editorBusy = restoring || archiving;
 
   useEffect(() => {
     const note = noteQuery.data;
@@ -110,8 +114,8 @@ export function DocumentEditorPage() {
     // external edit — warrants a rebuild.
     const existing = coordinatorRef.current;
     const saved = existing?.saved;
-    // A cache refresh must never replace unsaved work or an active restoration.
-    if (hydratedNoteRef.current === noteId && existing && (restoringRef.current || existing.state !== "saved")) return;
+    // A cache refresh must never replace unsaved work or an active operation.
+    if (hydratedNoteRef.current === noteId && existing && (restoringRef.current || archivingRef.current || existing.state !== "saved")) return;
     const isOwnOrStaleEcho =
       hydratedNoteRef.current === noteId &&
       saved != null &&
@@ -146,16 +150,21 @@ export function DocumentEditorPage() {
     coordinatorRef.current = coordinator;
   }, [contentQuery.data?.content_version, noteId, noteQuery.data?.title]);
 
-  useEffect(() => () => {
-    const coordinator = coordinatorRef.current;
-    coordinator?.dispose(canEdit && (coordinator.state === "dirty" || coordinator.state === "saving"));
-    coordinatorRef.current = null;
-    hydratedNoteRef.current = null;
+  useEffect(() => {
+    setArchiving(false);
+    setArchiveError(null);
+    return () => {
+      const coordinator = coordinatorRef.current;
+      coordinator?.dispose(canEdit && (coordinator.state === "dirty" || coordinator.state === "saving"));
+      coordinatorRef.current = null;
+      hydratedNoteRef.current = null;
+      archivingRef.current = null;
+    };
   }, [noteId]);
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if ((coordinatorRef.current && coordinatorRef.current.state !== "saved") || restoringRef.current) {
+      if ((coordinatorRef.current && coordinatorRef.current.state !== "saved") || restoringRef.current || archivingRef.current) {
         event.preventDefault();
         if (coordinatorRef.current?.state === "dirty") void coordinatorRef.current.flush();
       }
@@ -183,12 +192,13 @@ export function DocumentEditorPage() {
   const StateIcon = stateCopy.icon;
 
   function changeDraft(next: EditorDraft) {
-    if (!canEdit || restoringRef.current) return;
+    if (!canEdit || restoringRef.current || archivingRef.current) return;
     setDraft(next);
     coordinatorRef.current?.change(next);
   }
 
   async function reloadServer() {
+    if (restoringRef.current || archivingRef.current) return;
     // Explicitly replace the draft only after both server reads succeed.
     const coordinator = coordinatorRef.current;
     coordinator?.dispose(false);
@@ -200,21 +210,26 @@ export function DocumentEditorPage() {
     setRestorationConflict(false);
   }
 
+  async function flushCurrentDraft(coordinator: AutosaveCoordinator<EditorDraft>) {
+    await coordinator.flush();
+    if (coordinatorRef.current !== coordinator) throw new Error("文档已切换，请在当前文档中重新操作。");
+    const saved = coordinator.saved;
+    if (coordinator.state !== "saved" || !saved) {
+      throw new Error("当前草稿尚未成功保存。请先处理保存失败或版本冲突，本地草稿仍保留。");
+    }
+    return saved;
+  }
+
   async function restoreSavedRevision(restore: RestoreSavedRevision) {
     const coordinator = coordinatorRef.current;
-    if (!canEdit || !coordinator || restoringRef.current) throw new Error("当前无法恢复文档。");
+    if (!canEdit || !coordinator || restoringRef.current || archivingRef.current) throw new Error("当前无法恢复文档。");
     if (restorationConflict || ["conflict", "error"].includes(coordinator.state)) {
       throw new Error("请先关闭面板，处理保存失败或版本冲突，再恢复历史。本地草稿仍保留。");
     }
     restoringRef.current = true;
     setRestoring(true);
     try {
-      await coordinator.flush();
-      if (coordinatorRef.current !== coordinator) throw new Error("文档已切换，请在当前文档中重新选择历史版本。");
-      const saved = coordinator.saved;
-      if (coordinator.state !== "saved" || !saved) {
-        throw new Error("当前草稿尚未成功保存。请先处理保存失败或版本冲突，本地草稿仍保留。");
-      }
+      const saved = await flushCurrentDraft(coordinator);
       const restored = await restore(saved.version);
       if (coordinatorRef.current !== coordinator) return;
       const next = { ...saved, blocks: toV2(restored.blocks), version: restored.content_version };
@@ -237,9 +252,30 @@ export function DocumentEditorPage() {
   }
 
   async function handleArchive() {
-    if (!noteQuery.data) return;
-    await archiveNote.mutateAsync({ id: noteId, archived: true });
-    navigate(`/collections/${noteQuery.data.notebook_id}`, { replace: true });
+    const coordinator = coordinatorRef.current;
+    const note = noteQuery.data;
+    if (!canEdit || !note || !coordinator || restoringRef.current || archivingRef.current) return;
+    if (restorationConflict || ["conflict", "error"].includes(coordinator.state)) {
+      setArchiveError("请先处理保存失败或版本冲突，再归档文档。本地草稿仍保留。");
+      return;
+    }
+    archivingRef.current = coordinator;
+    setArchiving(true);
+    setArchiveError(null);
+    try {
+      await flushCurrentDraft(coordinator);
+      await archiveNote.mutateAsync({ id: noteId, archived: true });
+      if (coordinatorRef.current === coordinator) navigate(`/collections/${note.notebook_id}`, { replace: true });
+    } catch (error) {
+      if (coordinatorRef.current === coordinator) {
+        setArchiveError(error instanceof Error ? error.message : "归档失败，请重试。本地草稿仍保留。");
+      }
+    } finally {
+      if (archivingRef.current === coordinator) {
+        archivingRef.current = null;
+        if (coordinatorRef.current === coordinator) setArchiving(false);
+      }
+    }
   }
 
   if (noteQuery.isError || contentQuery.isError) {
@@ -248,9 +284,9 @@ export function DocumentEditorPage() {
 
   const toolbar = (
     <div className="flex items-center gap-2">
-      <button ref={collaborationTriggerRef} type="button" className="icon-button" aria-label="评论与历史" aria-haspopup="dialog" aria-expanded={collaborationOpen} disabled={!draft} onClick={() => setCollaborationOpen(true)}><MessageSquare aria-hidden="true" size={16} /></button>
+      <button ref={collaborationTriggerRef} type="button" className="icon-button" aria-label="评论与历史" aria-haspopup="dialog" aria-expanded={collaborationOpen} disabled={!draft || archiving} onClick={() => setCollaborationOpen(true)}><MessageSquare aria-hidden="true" size={16} /></button>
       <span className={`save-indicator state-${saveState}`}><StateIcon aria-hidden="true" size={13} className={saveState === "saving" ? "animate-spin" : ""} />{stateCopy.label}</span>
-      {canEdit ? <button type="button" className="icon-button danger-hover" aria-label="归档文档" disabled={restoring} onClick={handleArchive}><Archive aria-hidden="true" size={15} /></button> : null}
+      {canEdit ? <button type="button" className="icon-button danger-hover" aria-label="归档文档" disabled={!draft || editorBusy} onClick={handleArchive}><Archive aria-hidden="true" size={15} /></button> : null}
     </div>
   );
 
@@ -265,11 +301,12 @@ export function DocumentEditorPage() {
               className="editor-title"
               placeholder="无标题"
               value={draft.title}
-              readOnly={!canEdit || restoring}
+              readOnly={!canEdit || editorBusy}
               onChange={(event) => changeDraft({ ...draft, title: event.target.value })}
             />
             <div className="mb-7 mt-2 flex items-center gap-2 text-[11px] text-[var(--muted-light)]"><span>版本 {coordinatorRef.current?.saved?.version ?? draft.version}</span><span>·</span><span>{canEdit ? "停手后自动保存" : "只读访问"}</span></div>
 
+            {archiveError ? <div role="alert" className="mb-5"><StatusMessage tone="error" title="未能归档文档">{archiveError}</StatusMessage></div> : null}
             {saveState === "conflict" ? <div className="mb-5"><StatusMessage tone="warning" title="检测到其他窗口的更新">本地草稿仍保留。建议先复制本地 Markdown，再载入服务端版本。
               <div className="mt-3 flex flex-wrap gap-2"><Button variant="secondary" icon={<Download aria-hidden="true" size={14} />} onClick={() => navigator.clipboard?.writeText(v2ToMarkdown(draft.blocks.blocks))}>复制本地 Markdown</Button><Button variant="secondary" icon={<RotateCcw aria-hidden="true" size={14} />} onClick={reloadServer}>载入服务端版本</Button></div>
             </StatusMessage></div> : null}
@@ -279,7 +316,7 @@ export function DocumentEditorPage() {
               <Suspense fallback={<div className="grid min-h-[40vh] place-items-center text-sm text-[var(--muted)]">正在加载编辑器…</div>}>
                 <BlockNoteEditor
                   blocks={draft.blocks}
-                  readOnly={!canEdit || restoring}
+                  readOnly={!canEdit || editorBusy}
                   onChange={({ blocks }) => changeDraft({ ...draft, blocks })}
                 />
               </Suspense>
