@@ -34,6 +34,35 @@ function renderEditor() {
 }
 
 describe("site editing", () => {
+  it("saves newly selected documents with public default paths independent of their IDs", async () => {
+    const noteId = "018ff7c4-a5b6-7000-8000-000000000002";
+    const currentFetch = globalThis.fetch;
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => String(url).startsWith("/api/notes?")
+      ? response(page([{ id: noteId, tenant_id: null, workspace_id: id, owner_id: id, status: "active", notebook_id: id, parent_id: null, sort_order: 0, title: "开始使用", note_type: "document", plain_text: "安装与配置", created_at_ms: 1, updated_at_ms: 1 }]))
+      : currentFetch(url, init)));
+    renderEditor();
+    await userEvent.click(await screen.findByRole("button", { name: "开始使用 安装与配置" }));
+    expect(screen.getByRole("textbox", { name: "第 1 篇页面路径" })).toHaveValue("page-1");
+    await userEvent.click(screen.getByRole("button", { name: "保存设置" }));
+    await waitFor(() => expect(requests.find((item) => item.method === "PUT")?.body.navigation).toEqual([
+      { note_id: noteId, title: "开始使用", slug: "page-1", group: null },
+    ]));
+    const navigation = requests.find((item) => item.method === "PUT")?.body.navigation as Array<{ slug: string }>;
+    expect(navigation[0].slug).not.toContain(noteId);
+  });
+
+  it("leaves existing configured paths unchanged when saving another setting", async () => {
+    const navigation = [{ note_id: id, slug: `page-${id}`, title: "Existing page", group: null }];
+    const currentFetch = globalThis.fetch;
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => String(url) === `/api/sites/${id}` && (init?.method || "GET") === "GET"
+      ? response({ ...baseSite, navigation }) : currentFetch(url, init)));
+    renderEditor();
+    const input = await screen.findByRole("textbox", { name: "站点名称" });
+    await userEvent.type(input, "新版");
+    await userEvent.click(screen.getByRole("button", { name: "保存设置" }));
+    await waitFor(() => expect(requests.find((item) => item.method === "PUT")?.body.navigation).toEqual(navigation));
+  });
+
   it("saves the changed site config with its version without publishing", async () => {
     renderEditor();
     const input = await screen.findByRole("textbox", { name: "站点名称" });
