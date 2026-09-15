@@ -4,6 +4,40 @@ import { describe, expect, it } from "vitest";
 import { ContentRenderer, contentOutline, safeContentUrl } from "./ContentRenderer";
 
 describe("published content rendering", () => {
+  it("renders native ordered starts, middle restarts, and nested lists independently", () => {
+    const item = (content: string, start?: number, children: unknown[] = []) => ({
+      type: "numberedListItem", props: start === undefined ? {} : { start }, content, children,
+    });
+    const { container } = render(<ContentRenderer blocks={{ schema_version: 2, blocks: [
+      item("Seven", 7, [{ type: "paragraph", content: "Continuation" }, { type: "bulletListItem", content: "Bullet" },
+        item("Nested three", 3), item("Nested four"), item("Nested ten", 10), item("Nested eleven")]),
+      item("Eight"), item("Twenty", 20), item("Twenty one"), { type: "paragraph", content: "Break" }, item("One"),
+    ] }} />);
+    const lists = Array.from(container.querySelectorAll("ol"));
+    const displayedNumbers = lists.map((list) => {
+      let next = list.start;
+      return Array.from(list.children).map((entry) => {
+        if (entry.hasAttribute("value")) next = Number(entry.getAttribute("value"));
+        return next++;
+      });
+    });
+    expect(displayedNumbers).toEqual([[7, 8, 20, 21], [3, 4, 10, 11], [1]]);
+    expect(lists[0]).toHaveAttribute("start", "7");
+    expect(lists[0].children[2]).toHaveAttribute("value", "20");
+    expect(container.querySelector("ul")).toHaveTextContent("Bullet");
+    expect(lists[0]).toHaveTextContent("Continuation");
+  });
+
+  it("retains legacy ordered-list and nested-list starts", () => {
+    const { container } = render(<ContentRenderer blocks={{ schema_version: 1, doc: { type: "doc", content: [
+      { type: "orderedList", attrs: { start: 7 }, content: [{ type: "listItem", content: [
+        { type: "paragraph", content: [{ type: "text", text: "Seven" }] },
+        { type: "orderedList", attrs: { start: 3 }, content: [{ type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "Three" }] }] }] },
+      ] }] },
+    ] } }} />);
+    expect(Array.from(container.querySelectorAll("ol"), (list) => list.start)).toEqual([7, 3]);
+  });
+
   it("keeps nested heading content visible with matching outline links", () => {
     const blocks = { schema_version: 2, blocks: [{ type: "heading", props: { level: 2 }, content: "父标题", children: [
       { type: "paragraph", content: "缩进正文" }, { type: "heading", props: { level: 3 }, content: "子标题" },

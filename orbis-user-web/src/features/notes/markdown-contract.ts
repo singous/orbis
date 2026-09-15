@@ -10,6 +10,7 @@ type MarkdownToken = {
   tokens?: MarkdownToken[];
   depth?: number;
   ordered?: boolean;
+  start?: number;
   items?: MarkdownToken[];
   task?: boolean;
   checked?: boolean;
@@ -103,7 +104,7 @@ function taskListNode(token: MarkdownToken): JSONContent {
     content: token.items?.map((item) => ({
       type: "taskItem",
       attrs: { checked: Boolean(item.checked) },
-      content: [paragraphFromInline(listItemTextToken(item))],
+      content: item.tokens?.length ? tokensToNodes(item.tokens) : [paragraphFromInline(listItemTextToken(item))],
     })),
   };
 }
@@ -111,9 +112,10 @@ function taskListNode(token: MarkdownToken): JSONContent {
 function listNode(token: MarkdownToken): JSONContent {
   return {
     type: token.ordered ? "orderedList" : "bulletList",
+    ...(token.ordered ? { attrs: { start: token.start ?? 1 } } : {}),
     content: token.items?.map((item) => ({
       type: "listItem",
-      content: [paragraphFromInline(listItemTextToken(item))],
+      content: item.tokens?.length ? tokensToNodes(item.tokens) : [paragraphFromInline(listItemTextToken(item))],
     })),
   };
 }
@@ -154,7 +156,7 @@ function blockTokenToNode(token: MarkdownToken): JSONContent | null {
     };
   }
 
-  if (token.type === "paragraph") {
+  if (token.type === "paragraph" || token.type === "text") {
     return paragraphFromInline(token.tokens, token.text);
   }
 
@@ -238,10 +240,6 @@ function renderInline(nodes: JSONContent[] = []): string {
     .join("");
 }
 
-function renderListItem(node: JSONContent): string {
-  return renderInline(node.content?.flatMap((child) => child.content ?? []) ?? []);
-}
-
 function renderTableCell(node: JSONContent): string {
   return renderInline(node.content?.flatMap((child) => child.content ?? []) ?? []);
 }
@@ -264,7 +262,7 @@ function renderTable(node: JSONContent): string {
   ].join("\n");
 }
 
-function renderBlock(node: JSONContent): string {
+function renderBlock(node: JSONContent, orderedDelimiter = "."): string {
   if (node.type === "paragraph") {
     return renderInline(node.content);
   }
@@ -275,15 +273,23 @@ function renderBlock(node: JSONContent): string {
   }
 
   if (node.type === "bulletList" || node.type === "orderedList") {
+    const start = Number.isInteger(node.attrs?.start) ? Number(node.attrs!.start) : 1;
     return (
       node.content
-        ?.map((item, index) => `${node.type === "orderedList" ? `${index + 1}.` : "-"} ${renderListItem(item)}`)
+        ?.map((item, index) => {
+          const marker = node.type === "orderedList" ? `${index + start}${orderedDelimiter} ` : "- ";
+          const body = renderBlocks(item.content).split("\n");
+          return `${marker}${body.map((line, lineIndex) => lineIndex && line ? " ".repeat(marker.length) + line : line).join("\n")}`;
+        })
         .join("\n") ?? ""
     );
   }
 
   if (node.type === "taskList") {
-    return node.content?.map((item) => `- [${item.attrs?.checked ? "x" : " "}] ${renderListItem(item)}`).join("\n") ?? "";
+    return node.content?.map((item) => {
+      const body = renderBlocks(item.content).split("\n").map((line, index) => index && line ? `  ${line}` : line).join("\n");
+      return `- [${item.attrs?.checked ? "x" : " "}] ${body}`;
+    }).join("\n") ?? "";
   }
 
   if (node.type === "blockquote") {
@@ -306,7 +312,12 @@ function renderBlock(node: JSONContent): string {
 }
 
 function renderBlocks(nodes: JSONContent[] = []): string {
-  return nodes.map(renderBlock).filter(Boolean).join("\n\n");
+  let delimiter = ".";
+  return nodes.map((node, index) => {
+    delimiter = node.type === "orderedList" && nodes[index - 1]?.type === "orderedList"
+      ? delimiter === "." ? ")" : "." : ".";
+    return renderBlock(node, delimiter);
+  }).filter(Boolean).join("\n\n");
 }
 
 export function tiptapDocToMarkdown(doc: TiptapDocument | JSONContent): string {

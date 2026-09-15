@@ -128,6 +128,9 @@ function listToBlocks(listType: "bulletListItem" | "numberedListItem" | "checkLi
   for (const item of node.content ?? []) {
     const isTask = listType === "checkListItem";
     const block = blockBase(listType, isTask ? { checked: Boolean((item.attrs as { checked?: boolean } | undefined)?.checked) } : {});
+    if (listType === "numberedListItem" && items.length === 0) {
+      block.props.start = Number.isInteger(node.attrs?.start) ? node.attrs!.start : 1;
+    }
     const [first, ...rest] = item.content ?? [];
     if (first && first.type === "paragraph") {
       block.content = inlineFromTiptap(first.content);
@@ -184,7 +187,8 @@ function cellInlineFromTiptap(node: JSONContent): OrbisInline[] {
   for (const [index, child] of (node.content ?? []).entries()) {
     if (index) result.push({ type: "text", text: "\n" });
     if (node.type === "bulletList" || node.type === "orderedList") {
-      result.push({ type: "text", text: node.type === "bulletList" ? "- " : `${index + 1}. ` });
+      const start = Number.isInteger(node.attrs?.start) ? Number(node.attrs!.start) : 1;
+      result.push({ type: "text", text: node.type === "bulletList" ? "- " : `${index + start}. ` });
     }
     result.push(...cellInlineFromTiptap(child));
   }
@@ -350,27 +354,51 @@ function renderTable(content: OrbisTableContent): string {
 
 /** Frontend v2 → Markdown (used for the conflict "copy local" affordance). */
 export function v2ToMarkdown(blocks: OrbisBlock[]): string {
+  return renderMarkdownBlocks(blocks, 0);
+}
+
+function renderMarkdownBlocks(blocks: OrbisBlock[], depth: number): string {
   const out: string[] = [];
-  const walk = (block: OrbisBlock, depth: number) => {
-    const indent = "  ".repeat(depth);
+  const indent = "  ".repeat(depth);
+  let nextNumber = 1;
+  let previousNumbered = false;
+  let delimiter = ".";
+  for (const block of blocks) {
     const text = renderBlockContent(block);
+    let marker: string | undefined;
+    if (block.type === "numberedListItem") {
+      const start = Number.isInteger(block.props?.start) ? Number(block.props.start) : undefined;
+      // A delimiter change starts a new CommonMark list; a new numeric marker
+      // alone would be ignored by Markdown readers during an explicit restart.
+      if (previousNumbered && start !== undefined && start !== nextNumber) delimiter = delimiter === "." ? ")" : ".";
+      nextNumber = start ?? nextNumber;
+      marker = `${nextNumber++}${delimiter} `;
+      previousNumbered = true;
+    } else {
+      nextNumber = 1;
+      previousNumbered = false;
+      delimiter = ".";
+    }
     switch (block.type) {
       case "heading":
         out.push(`${"#".repeat(Number(block.props.level ?? 1))} ${text}`);
         break;
       case "bulletListItem":
-        out.push(`${indent}- ${text}`);
+        marker = "- ";
+        out.push(`${indent}${marker}${text}`);
         break;
       case "numberedListItem":
-        out.push(`${indent}1. ${text}`);
+        out.push(`${indent}${marker}${text}`);
         break;
       case "checkListItem":
+        marker = "- ";
         out.push(`${indent}- [${block.props.checked ? "x" : " "}] ${text}`);
         break;
-      case "quote":
-        out.push((text || block.children.map((c) => renderBlockContent(c)).join(" "))
-          .split("\n").map((l) => `> ${l}`).join("\n"));
+      case "quote": {
+        const body = [text, renderMarkdownBlocks(block.children, 0)].filter(Boolean).join("\n\n");
+        out.push(body.split("\n").map((line) => `> ${line}`).join("\n"));
         break;
+      }
       case "codeBlock":
         out.push(`\`\`\`${(block.props.language as string) ?? ""}\n${blockContentText(block)}\n\`\`\``);
         break;
@@ -391,8 +419,14 @@ export function v2ToMarkdown(blocks: OrbisBlock[]): string {
       default:
         out.push(`${indent}${text}`);
     }
-    block.children.forEach((child) => walk(child, depth + 1));
-  };
-  blocks.forEach((block) => walk(block, 0));
+    if (block.children.length && block.type !== "quote") {
+      if (marker) {
+        const childIndent = indent + " ".repeat(marker.length);
+        out.push(renderMarkdownBlocks(block.children, 0).split("\n").map((line) => line ? `${childIndent}${line}` : "").join("\n"));
+      } else {
+        out.push(renderMarkdownBlocks(block.children, depth + 1));
+      }
+    }
+  }
   return out.filter(Boolean).join("\n\n");
 }

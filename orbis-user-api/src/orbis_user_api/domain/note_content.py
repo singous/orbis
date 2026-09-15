@@ -31,6 +31,13 @@ BLOCK_TYPES = {
 }
 MARK_TYPES = {"bold", "italic", "strike", "code", "link"}
 
+# Tiptap list items and nested task items accept paragraph + block*. Keep
+# their supported child block set aligned with the document's existing blocks.
+V1_DOCUMENT_BLOCK_TYPES = {
+    "heading", "paragraph", "bulletList", "orderedList", "taskList",
+    "blockquote", "codeBlock", "horizontalRule", "table",
+}
+
 # schema_version 2 (BlockNote-aligned normalized blocks). Block shape mirrors
 # BlockNote's Block: { id, type, props, content, children }.
 V2_BLOCK_TYPES = {
@@ -101,30 +108,14 @@ def _validate_node(node: object, parent_type: str | None = None) -> None:
     if not isinstance(content, list):
         raise InvalidNoteContent
     allowed_children = {
-        "doc": {
-            "heading",
-            "paragraph",
-            "bulletList",
-            "orderedList",
-            "taskList",
-            "blockquote",
-            "codeBlock",
-            "horizontalRule",
-            "table",
-        },
+        "doc": V1_DOCUMENT_BLOCK_TYPES,
         "heading": {"text"},
         "paragraph": {"text"},
         "bulletList": {"listItem"},
         "orderedList": {"listItem"},
-        "listItem": {
-            "paragraph",
-            "bulletList",
-            "orderedList",
-            "taskList",
-            "blockquote",
-        },
+        "listItem": V1_DOCUMENT_BLOCK_TYPES,
         "taskList": {"taskItem"},
-        "taskItem": {"paragraph", "bulletList", "orderedList", "taskList"},
+        "taskItem": V1_DOCUMENT_BLOCK_TYPES,
         "blockquote": {
             "heading",
             "paragraph",
@@ -377,6 +368,62 @@ def _is_table_separator(line: str) -> bool:
     return bool(cells) and all(re.fullmatch(r":?-{3,}:?", cell) for cell in cells)
 
 
+_LIST_MARKER = re.compile(r"^(?P<indent> *)(?:(?P<number>\d+)(?P<delimiter>[.)])|(?P<bullet>[-*+]))\s+(?P<text>.+)$")
+_TASK_MARKER = re.compile(r"^\[([ xX])\]\s+(.+)$")
+
+
+def _markdown_list_kind(marker: re.Match[str]) -> str:
+    if marker.group("number") is not None:
+        return "orderedList"
+    return "taskList" if _TASK_MARKER.match(marker.group("text")) else "bulletList"
+
+
+def _parse_markdown_list(lines: list[str], index: int) -> tuple[dict[str, Any], int]:
+    first = _LIST_MARKER.match(lines[index].expandtabs(4))
+    assert first is not None
+    kind = _markdown_list_kind(first)
+    indentation = len(first.group("indent"))
+    delimiter = first.group("delimiter")
+    items: list[dict[str, Any]] = []
+    while index < len(lines):
+        marker = _LIST_MARKER.match(lines[index].expandtabs(4))
+        if (
+            marker is None
+            or len(marker.group("indent")) != indentation
+            or _markdown_list_kind(marker) != kind
+            or marker.group("delimiter") != delimiter
+        ):
+            break
+        content_indent = marker.start("text")
+        task = _TASK_MARKER.match(marker.group("text")) if kind == "taskList" else None
+        first_text = task.group(2) if task else marker.group("text")
+        body: list[str] = []
+        index += 1
+        # Continuations and nested lists belong to this item only when they are
+        # indented to its content column. Sibling lists keep independent starts.
+        while index < len(lines):
+            line = lines[index].expandtabs(4)
+            if not line.strip():
+                body.append("")
+                index += 1
+            elif len(line) - len(line.lstrip(" ")) >= content_indent:
+                body.append(line[content_indent:])
+                index += 1
+            else:
+                break
+        content = [_paragraph(first_text)]
+        if any(line.strip() for line in body):
+            content.extend(markdown_to_blocks("\n".join(body))["doc"]["content"])
+        item = {"type": "taskItem" if task else "listItem", "content": content}
+        if task:
+            item["attrs"] = {"checked": task.group(1).lower() == "x"}
+        items.append(item)
+    node: dict[str, Any] = {"type": kind, "content": items}
+    if kind == "orderedList":
+        node["attrs"] = {"start": int(first.group("number"))}
+    return node, index
+
+
 def markdown_to_blocks(markdown: str) -> dict[str, Any]:
     lines = markdown.replace("\r\n", "\n").replace("\r", "\n").split("\n")
     nodes: list[dict[str, Any]] = []
@@ -463,48 +510,9 @@ def markdown_to_blocks(markdown: str) -> dict[str, Any]:
             quoted = markdown_to_blocks("\n".join(quote_lines))["doc"]["content"]
             nodes.append({"type": "blockquote", "content": quoted or [_paragraph("")]})
             continue
-        task = re.match(r"^[-*+]\s+\[([ xX])\]\s+(.+)$", stripped)
-        if task:
-            items: list[dict[str, Any]] = []
-            while index < len(lines):
-                item = re.match(r"^[-*+]\s+\[([ xX])\]\s+(.+)$", lines[index].strip())
-                if item is None:
-                    break
-                items.append(
-                    {
-                        "type": "taskItem",
-                        "attrs": {"checked": item.group(1).lower() == "x"},
-                        "content": [_paragraph(item.group(2))],
-                    }
-                )
-                index += 1
-            nodes.append({"type": "taskList", "content": items})
-            continue
-        bullet = re.match(r"^[-*+]\s+(.+)$", stripped)
-        if bullet:
-            items = []
-            while index < len(lines):
-                item = re.match(r"^[-*+]\s+(.+)$", lines[index].strip())
-                if item is None or re.match(r"^\[[ xX]\]\s+", item.group(1)):
-                    break
-                items.append(
-                    {"type": "listItem", "content": [_paragraph(item.group(1))]}
-                )
-                index += 1
-            nodes.append({"type": "bulletList", "content": items})
-            continue
-        ordered = re.match(r"^\d+[.)]\s+(.+)$", stripped)
-        if ordered:
-            items = []
-            while index < len(lines):
-                item = re.match(r"^\d+[.)]\s+(.+)$", lines[index].strip())
-                if item is None:
-                    break
-                items.append(
-                    {"type": "listItem", "content": [_paragraph(item.group(1))]}
-                )
-                index += 1
-            nodes.append({"type": "orderedList", "content": items})
+        if _LIST_MARKER.match(line.expandtabs(4)):
+            list_node, index = _parse_markdown_list(lines, index)
+            nodes.append(list_node)
             continue
 
         paragraph_lines = [stripped]
@@ -550,10 +558,27 @@ def _render_inline(nodes: list[dict[str, Any]]) -> str:
     return "".join(rendered)
 
 
+def _list_start(value: object, fallback: int = 1) -> int:
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    return fallback
+
+
+def _indent_markdown(markdown: str, indent: str) -> str:
+    return "\n".join(f"{indent}{line}" if line else "" for line in markdown.split("\n"))
+
+
 def _render_blocks(nodes: list[dict[str, Any]]) -> str:
     blocks: list[str] = []
-    for node in nodes:
+    delimiter = "."
+    for index, node in enumerate(nodes):
         node_type = node["type"]
+        if node_type == "orderedList" and index > 0 and nodes[index - 1]["type"] == "orderedList":
+            delimiter = ")" if delimiter == "." else "."
+        else:
+            delimiter = "."
         if node_type == "paragraph":
             blocks.append(_render_inline(node.get("content", [])))
         elif node_type == "heading":
@@ -561,21 +586,25 @@ def _render_blocks(nodes: list[dict[str, Any]]) -> str:
                 f"{'#' * node['attrs']['level']} {_render_inline(node.get('content', []))}"
             )
         elif node_type in {"bulletList", "orderedList"}:
-            prefix = "-" if node_type == "bulletList" else None
-            blocks.append(
-                "\n".join(
-                    f"{prefix or f'{position}.'} {_render_blocks(item.get('content', [])).replace(chr(10), ' ')}"
-                    for position, item in enumerate(node.get("content", []), start=1)
-                )
-            )
+            rendered_items: list[str] = []
+            start = _list_start(node.get("attrs", {}).get("start"))
+            for position, item in enumerate(node.get("content", []), start=start):
+                marker = "- " if node_type == "bulletList" else f"{position}{delimiter} "
+                body = _render_blocks(item.get("content", [])).split("\n", 1)
+                rendered = marker + body[0]
+                if len(body) > 1:
+                    rendered += "\n" + _indent_markdown(body[1], " " * len(marker))
+                rendered_items.append(rendered)
+            blocks.append("\n".join(rendered_items))
         elif node_type == "taskList":
-            blocks.append(
-                "\n".join(
-                    f"- [{'x' if item.get('attrs', {}).get('checked') else ' '}] "
-                    f"{_render_blocks(item.get('content', [])).replace(chr(10), ' ')}"
-                    for item in node.get("content", [])
-                )
-            )
+            rendered_items = []
+            for item in node.get("content", []):
+                body = _render_blocks(item.get("content", [])).split("\n", 1)
+                rendered = f"- [{'x' if item.get('attrs', {}).get('checked') else ' '}] {body[0]}"
+                if len(body) > 1:
+                    rendered += "\n" + _indent_markdown(body[1], "  ")
+                rendered_items.append(rendered)
+            blocks.append("\n".join(rendered_items))
         elif node_type == "blockquote":
             blocks.append(
                 "\n".join(
@@ -637,18 +666,37 @@ def _render_v2_inline(inline: object) -> str:
 def _render_v2_blocks(block_list: list[dict[str, Any]], depth: int = 0) -> str:
     indent = "  " * depth
     out: list[str] = []
+    next_number = 1
+    previous_numbered = False
+    delimiter = "."
     for block in block_list:
         block_type = block.get("type")
         text = _render_v2_blocks_inline(block)
         children = block.get("children", [])
+        marker: str | None = None
+        if block_type == "numberedListItem":
+            start = _list_start(block.get("props", {}).get("start"), next_number)
+            # Changing the delimiter preserves explicit restarts in Markdown;
+            # changing only a middle item's number would still render sequentially.
+            if previous_numbered and start != next_number:
+                delimiter = ")" if delimiter == "." else "."
+            marker = f"{start}{delimiter} "
+            next_number = start + 1
+            previous_numbered = True
+        else:
+            next_number = 1
+            previous_numbered = False
+            delimiter = "."
         if block_type == "heading":
             level = int(block.get("props", {}).get("level", 1))
             out.append(f"{'#' * level} {text}")
         elif block_type == "bulletListItem":
+            marker = "- "
             out.append(f"{indent}- {text}")
         elif block_type == "numberedListItem":
-            out.append(f"{indent}1. {text}")
+            out.append(f"{indent}{marker}{text}")
         elif block_type == "checkListItem":
+            marker = "- "
             checked = "x" if block.get("props", {}).get("checked") else " "
             out.append(f"{indent}- [{checked}] {text}")
         elif block_type == "quote":
@@ -668,6 +716,8 @@ def _render_v2_blocks(block_list: list[dict[str, Any]], depth: int = 0) -> str:
             out.append(f"{indent}{text}")
             if children:
                 out.append(_render_v2_blocks(children, depth + 1))
+        if marker is not None and children:
+            out.append(_indent_markdown(_render_v2_blocks(children), indent + " " * len(marker)))
     return "\n\n".join(part for part in out if part)
 
 

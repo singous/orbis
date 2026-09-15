@@ -122,8 +122,8 @@ function renderBlock(value: unknown, path: number[], legacy: boolean, pageTitle?
     case "taskList": return <ul className="content-task-list">{children}</ul>;
     case "listItem": return <li>{children}</li>;
     case "taskItem": return <li className="content-task"><input type="checkbox" checked={Boolean(props.checked)} disabled aria-label="待办事项" /><div>{children}</div></li>;
-    case "bulletListItem":
-    case "numberedListItem": return <li>{content}{children}</li>;
+    case "bulletListItem": return <li>{content}{children}</li>;
+    case "numberedListItem": return <li value={typeof props.start === "number" && Number.isInteger(props.start) ? props.start : undefined}>{content}{children}</li>;
     case "checkListItem": return <li className="content-task"><input type="checkbox" checked={Boolean(props.checked)} disabled aria-label="待办事项" /><div>{content}{children}</div></li>;
     case "horizontalRule":
     case "divider": return <><hr />{legacy ? null : children}</>;
@@ -161,12 +161,13 @@ function renderNodes(items: unknown[], prefix: number[], legacy: boolean, pageTi
     const key = [...prefix, index].join("-");
     if (!legacy && ["bulletListItem", "numberedListItem", "checkListItem"].includes(String(type))) {
       const grouped: ReactNode[] = [];
+      const start = node(node(items[index]).props).start;
       do {
         grouped.push(<Fragment key={index}>{renderBlock(items[index], [...prefix, index], legacy)}</Fragment>);
         index += 1;
       } while (index < items.length && node(items[index]).type === type);
       index -= 1;
-      result.push(type === "numberedListItem" ? <ol key={key}>{grouped}</ol> : <ul key={key} className={type === "checkListItem" ? "content-task-list" : undefined}>{grouped}</ul>);
+      result.push(type === "numberedListItem" ? <ol key={key} start={typeof start === "number" && Number.isInteger(start) ? start : undefined}>{grouped}</ol> : <ul key={key} className={type === "checkListItem" ? "content-task-list" : undefined}>{grouped}</ul>);
     } else result.push(<Fragment key={key}>{renderBlock(items[index], [...prefix, index], legacy, pageTitle)}</Fragment>);
   }
   return result;
