@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import Text
+import orbis_user_api.db.types
 ${imports if imports else ""}
 
 revision = ${repr(up_revision)}
