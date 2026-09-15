@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import re
 from copy import deepcopy
 from typing import Any
@@ -159,6 +160,60 @@ def _validate_v2_inline(inline: object) -> None:
             raise InvalidNoteContent
 
 
+def _validate_v2_table_cell_content(content: object) -> None:
+    if isinstance(content, str):
+        return
+    if not isinstance(content, list):
+        raise InvalidNoteContent
+    for inline in content:
+        _validate_v2_inline(inline)
+        if inline.get("type") == "text":
+            if not isinstance(inline.get("styles", {}), dict):
+                raise InvalidNoteContent
+        elif inline.get("type") == "link":
+            _validate_v2_table_cell_content(inline.get("content", []))
+        else:
+            raise InvalidNoteContent
+
+
+def _validate_v2_table_content(content: dict[str, Any]) -> None:
+    if content.get("type") != "tableContent":
+        raise InvalidNoteContent
+    rows = content.get("rows")
+    if not isinstance(rows, list):
+        raise InvalidNoteContent
+    column_widths = content.get("columnWidths")
+    if column_widths is not None and (
+        not isinstance(column_widths, list)
+        or any(
+            width is not None and (
+                isinstance(width, bool)
+                or not isinstance(width, (int, float))
+                or not math.isfinite(width)
+                or width < 0
+            )
+            for width in column_widths
+        )
+    ):
+        raise InvalidNoteContent
+    for header_key in ("headerRows", "headerCols"):
+        header_count = content.get(header_key)
+        if header_count is not None and (
+            not isinstance(header_count, int) or isinstance(header_count, bool) or header_count < 0
+        ):
+            raise InvalidNoteContent
+    for row in rows:
+        if not isinstance(row, dict) or not isinstance(row.get("cells"), list):
+            raise InvalidNoteContent
+        for cell in row["cells"]:
+            if isinstance(cell, dict):
+                if cell.get("type") != "tableCell" or not isinstance(cell.get("props", {}), dict):
+                    raise InvalidNoteContent
+                _validate_v2_table_cell_content(cell.get("content", []))
+            else:
+                _validate_v2_table_cell_content(cell)
+
+
 def _validate_v2_block(block: object) -> None:
     if not isinstance(block, dict):
         raise InvalidNoteContent
@@ -169,7 +224,9 @@ def _validate_v2_block(block: object) -> None:
     if not isinstance(block.get("props", {}), dict):
         raise InvalidNoteContent
     content = block.get("content", [])
-    if isinstance(content, list):
+    if block.get("type") == "table" and isinstance(content, dict):
+        _validate_v2_table_content(content)
+    elif isinstance(content, list):
         # Table blocks carry 2D cell data; only validate dict (inline) items.
         for inline in content:
             if isinstance(inline, dict):
@@ -218,7 +275,8 @@ def _v2_inline_text(inline: object) -> str:
     if inline.get("type") == "text":
         return inline.get("text", "")
     if inline.get("type") == "link":
-        return "".join(_v2_inline_text(child) for child in inline.get("content", []))
+        content = inline.get("content", [])
+        return content if isinstance(content, str) else _v2_inline_text(content)
     return ""
 
 
@@ -226,7 +284,27 @@ def _v2_block_text(block: dict[str, Any]) -> str:
     content = block.get("content", [])
     if isinstance(content, str):
         return content
+    if block.get("type") == "table":
+        rows = _v2_table_rows(content)
+        if rows is not None:
+            return "\n".join(
+                "\t".join(_v2_table_cell_text(cell) for cell in row.get("cells", []))
+                for row in rows
+            )
     return "".join(_v2_inline_text(item) for item in content)
+
+
+def _v2_table_cell_text(cell: object) -> str:
+    content = cell.get("content", []) if isinstance(cell, dict) else cell
+    return content if isinstance(content, str) else _v2_inline_text(content)
+
+
+def _v2_table_rows(content: object) -> list[dict[str, Any]] | None:
+    if isinstance(content, dict) and content.get("type") == "tableContent":
+        return content.get("rows", [])
+    if isinstance(content, list) and content and all(isinstance(row, list) for row in content):
+        return [{"cells": row} for row in content]
+    return None
 
 
 def derive_plain_text(blocks: dict[str, Any]) -> str:
@@ -540,7 +618,8 @@ def _render_v2_inline(inline: object) -> str:
     if not isinstance(inline, dict):
         return ""
     if inline.get("type") == "link":
-        text = "".join(_render_v2_inline(c) for c in inline.get("content", []))
+        content = inline.get("content", [])
+        text = content if isinstance(content, str) else _render_v2_inline(content)
         return f"[{text}]({inline.get('href', '')})"
     value = inline.get("text", "")
     styles = inline.get("styles") or {}
@@ -581,6 +660,10 @@ def _render_v2_blocks(block_list: list[dict[str, Any]], depth: int = 0) -> str:
             out.append(f"```{language}\n{code}\n```")
         elif block_type == "divider":
             out.append("---")
+        elif block_type == "table" and (rows := _v2_table_rows(block.get("content"))) is not None:
+            out.append(_render_v2_table({"rows": rows}))
+            if children:
+                out.append(_render_v2_blocks(children, depth + 1))
         else:
             out.append(f"{indent}{text}")
             if children:
@@ -592,7 +675,27 @@ def _render_v2_blocks_inline(block: dict[str, Any]) -> str:
     content = block.get("content", [])
     if isinstance(content, str):
         return content
+    if isinstance(content, dict):
+        return _v2_block_text(block)
     return "".join(_render_v2_inline(item) for item in content)
+
+
+def _render_v2_table(content: dict[str, Any]) -> str:
+    rows: list[list[str]] = []
+    for row in content.get("rows", []):
+        cells: list[str] = []
+        for cell in row.get("cells", []):
+            cell_content = cell.get("content", []) if isinstance(cell, dict) else cell
+            value = cell_content if isinstance(cell_content, str) else _render_v2_inline(cell_content)
+            cells.append(value.replace("|", "\\|").replace("\r\n", "\n").replace("\r", "\n").replace("\n", "<br>"))
+        rows.append(cells)
+    width = max((len(row) for row in rows), default=0)
+    if not width:
+        return ""
+    rows = [row + [""] * (width - len(row)) for row in rows]
+    rendered = [f"| {' | '.join(row)} |" for row in rows]
+    rendered.insert(1, f"| {' | '.join('---' for _ in range(width))} |")
+    return "\n".join(rendered)
 
 
 def blocks_to_markdown(blocks: dict[str, Any]) -> str:

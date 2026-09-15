@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { BlockNoteEditor } from "@blocknote/core";
 
 import type { NoteBlocks } from "../../shared/api/schemas";
 import {
@@ -7,6 +8,8 @@ import {
   tiptapDocToV2,
   toV2,
   v2ToMarkdown,
+  type NoteBlocksV2,
+  type OrbisBlock,
 } from "./block-model";
 
 const v1: NoteBlocks = {
@@ -66,6 +69,61 @@ describe("tiptapDocToV2", () => {
     expect(code.props.language).toBe("ts");
     expect(code.content).toBe("const a = 1;");
   });
+
+  it("preserves legacy table structure, rich text, spans, and column widths", () => {
+    const converted = tiptapDocToV2({
+      type: "doc",
+      content: [{
+        type: "table",
+        content: [
+          { type: "tableRow", content: [
+            { type: "tableHeader", attrs: { colspan: 2, rowspan: 1, colwidth: [140, 220] }, content: [
+              { type: "paragraph", content: [{ type: "text", text: "Header", marks: [{ type: "bold" }] }] },
+            ] },
+          ] },
+          { type: "tableRow", content: [
+            { type: "tableCell", attrs: { colspan: 1, rowspan: 1 }, content: [
+              { type: "paragraph", content: [{ type: "text", text: "Docs", marks: [{ type: "link", attrs: { href: "https://orbis.dev" } }] }] },
+              { type: "bulletList", content: [{ type: "listItem", content: [
+                { type: "paragraph", content: [{ type: "text", text: "Nested cell text" }] },
+              ] }] },
+            ] },
+            { type: "tableCell", content: [{ type: "paragraph" }] },
+          ] },
+        ],
+      }],
+    });
+    expect(converted.blocks).toHaveLength(1);
+    expect(converted.blocks[0].type).toBe("table");
+    expect(converted.blocks[0].content).toMatchObject({
+      type: "tableContent",
+      headerRows: 1,
+      columnWidths: [140, 220],
+      rows: [
+        { cells: [{ type: "tableCell", props: { colspan: 2, rowspan: 1 }, content: [{ type: "text", text: "Header", styles: { bold: true } }] }] },
+        { cells: [
+          { type: "tableCell", content: [
+            { type: "link", href: "https://orbis.dev", content: [{ type: "text", text: "Docs" }] },
+            { type: "text", text: "\n" },
+            { type: "text", text: "- " },
+            { type: "text", text: "Nested cell text" },
+          ] },
+          { type: "tableCell", content: [] },
+        ] },
+      ],
+    });
+    expect(extractPlainTextV2(converted.blocks)).toContain("Docs\n- Nested cell text");
+  });
+
+  it("preserves a legacy header column", () => {
+    const converted = tiptapDocToV2({
+      type: "doc", content: [{ type: "table", content: [
+        { type: "tableRow", content: [{ type: "tableHeader" }, { type: "tableCell" }] },
+        { type: "tableRow", content: [{ type: "tableHeader" }, { type: "tableCell" }] },
+      ] }],
+    });
+    expect(converted.blocks[0].content).toMatchObject({ headerRows: 0, headerCols: 1 });
+  });
 });
 
 describe("toV2", () => {
@@ -73,6 +131,83 @@ describe("toV2", () => {
     const v2 = tiptapDocToV2(v1.doc);
     expect(toV2(v2)).toBe(v2);
     expect(toV2(v1).schema_version).toBe(2);
+  });
+
+  it("opens stored v2 blocks with omitted defaults at every nesting level", () => {
+    const stored: NoteBlocks = {
+      schema_version: 2, editor: "blocknote", blocks: [
+        { id: "old", type: "paragraph", content: "Legacy paragraph" },
+        { id: "parent", type: "paragraph", content: "Parent", children: [
+          { id: "nested", type: "heading", content: "Nested heading" },
+          { id: "empty", type: "paragraph" },
+        ] },
+      ],
+    };
+    const before = JSON.stringify(stored);
+    const converted = toV2(stored);
+    const editor = BlockNoteEditor.create({ initialContent: converted.blocks as never });
+    expect(editor.document[0]).toMatchObject({ id: "old", type: "paragraph" });
+    expect(editor.document[1].children[0]).toMatchObject({ id: "nested", type: "heading" });
+    expect(extractPlainTextV2(converted.blocks)).toBe("Legacy paragraph\nParent\nNested heading");
+    expect(v2ToMarkdown(converted.blocks)).toContain("# Nested heading");
+    expect(extractPlainTextV2(editor.document as OrbisBlock[])).toBe("Legacy paragraph\nParent\nNested heading");
+    expect(JSON.stringify(stored)).toBe(before);
+    expect(toV2(converted)).toBe(converted);
+  });
+
+  it("opens legacy two-dimensional tables with the original rows and rich cells", () => {
+    const rows = [
+      [[{ type: "text", text: "Name", styles: { bold: true } }], [{ type: "text", text: "State" }]],
+      [[{ type: "link", href: "https://orbis.dev", content: [{ type: "text", text: "Orbis" }] }], "Ready"],
+    ];
+    const stored: NoteBlocks = { schema_version: 2, editor: "blocknote", blocks: [{
+      id: "old-table", type: "table", props: { textColor: "default" }, content: rows, children: [],
+    }] };
+    const before = JSON.stringify(stored);
+    const converted = toV2(stored);
+    const editor = BlockNoteEditor.create({ initialContent: converted.blocks as never });
+    expect(editor.document[0]).toMatchObject({ id: "old-table", type: "table", content: {
+      type: "tableContent", rows: [{ cells: [expect.anything(), expect.anything()] }, { cells: [expect.anything(), expect.anything()] }],
+    } });
+    expect(converted.blocks[0].content).toMatchObject({ type: "tableContent", rows: rows.map((cells) => ({ cells })) });
+    expect(extractPlainTextV2(editor.document as OrbisBlock[])).toBe("Name\tState\nOrbis\tReady");
+    expect(v2ToMarkdown(converted.blocks)).toBe("| **Name** | State |\n| --- | --- |\n| [Orbis](https://orbis.dev) | Ready |");
+    expect(extractPlainTextV2(stored.blocks as OrbisBlock[])).toBe("Name\tState\nOrbis\tReady");
+    expect(v2ToMarkdown(stored.blocks as OrbisBlock[])).toBe("| **Name** | State |\n| --- | --- |\n| [Orbis](https://orbis.dev) | Ready |");
+    expect(JSON.stringify(stored)).toBe(before);
+  });
+
+  it.each([
+    { content: [], expectedCell: "" },
+    { content: "Legacy table", expectedCell: "Legacy table" },
+    { content: [{ type: "text" as const, text: "Old cell" }], expectedCell: [{ type: "text", text: "Old cell" }] },
+  ])("adapts legacy table content for editing: $content", ({ content, expectedCell }) => {
+    const saved: NoteBlocksV2 = {
+      schema_version: 2, editor: "blocknote", blocks: [{
+        id: "parent", type: "paragraph", props: {}, content: [], children: [{
+          id: "legacy-table", type: "table", props: { textColor: "default" }, content, children: [],
+        }],
+      }],
+    };
+    const before = JSON.stringify(saved);
+    const converted = toV2(saved);
+    expect(converted.blocks[0].children[0]).toMatchObject({
+      id: "legacy-table", type: "table", props: { textColor: "default" },
+      content: { type: "tableContent", rows: [{ cells: [expectedCell] }] },
+    });
+    expect(JSON.stringify(saved)).toBe(before);
+    expect(toV2(converted)).toBe(converted);
+  });
+
+  it.each([
+    { schema_version: 1, editor: "tiptap", doc: { type: "doc", content: [{ type: "table" }] } },
+    { schema_version: 2, editor: "blocknote", blocks: [{ id: "empty-table", type: "table", props: {}, content: { type: "tableContent", rows: [] }, children: [] }] },
+    { schema_version: 2, editor: "blocknote", blocks: [{ id: "empty-row", type: "table", props: {}, content: { type: "tableContent", rows: [{ cells: [] }] }, children: [] }] },
+  ])("opens a stored empty table in the actual editor: $editor", (stored) => {
+    const blocks = toV2(stored as NoteBlocks | NoteBlocksV2).blocks;
+    const editor = BlockNoteEditor.create({ initialContent: blocks as never });
+    expect(editor.document[0].type).toBe("table");
+    expect(extractPlainTextV2(editor.document as OrbisBlock[])).toBe("");
   });
 });
 
@@ -96,6 +231,90 @@ describe("extractPlainTextV2 / v2ToMarkdown", () => {
     expect(md).toContain("```ts");
     expect(md).toContain("> 引用");
     expect(md).toContain("---");
+  });
+  it("extracts and exports native BlockNote table and code content", () => {
+    const blocks = [
+      {
+        id: "table-1",
+        type: "table",
+        props: { textColor: "default" },
+        content: {
+          type: "tableContent",
+          headerRows: 1,
+          rows: [
+            { cells: ["块类型", "状态"] },
+            { cells: ["表格", "待验收"] },
+          ],
+        },
+        children: [],
+      },
+      {
+        id: "code-1",
+        type: "codeBlock",
+        props: { language: "typescript" },
+        content: [{ type: "text", text: "const ready = true;", styles: {} }],
+        children: [],
+      },
+    ];
+
+    expect(() => extractPlainTextV2(blocks as never)).not.toThrow();
+    expect(extractPlainTextV2(blocks as never)).toContain("块类型\t状态\n表格\t待验收");
+    const markdown = v2ToMarkdown(blocks as never);
+    expect(markdown).toContain("| 块类型 | 状态 |");
+    expect(markdown).toContain("```typescript\nconst ready = true;\n```");
+  });
+
+  it("exports native inline code content without object coercion", () => {
+    expect(v2ToMarkdown([{
+      id: "code", type: "codeBlock", props: { language: "typescript" },
+      content: [{ type: "text", text: "const ready = true;", styles: {} }], children: [],
+    }])).toBe("```typescript\nconst ready = true;\n```");
+  });
+
+  it.each([
+    { content: [], expected: "" },
+    { content: "Legacy table", expected: "Legacy table" },
+    { content: [{ type: "text", text: "Old cell" }], expected: "Old cell" },
+  ])("keeps legacy table content readable: $content", ({ content, expected }) => {
+    const blocks = [{ id: "legacy-table", type: "table", props: {}, content, children: [] }];
+    expect(extractPlainTextV2(blocks as never)).toBe(expected);
+    expect(v2ToMarkdown(blocks as never)).toBe(expected);
+  });
+
+  it("renders rich native cells, escapes pipes, preserves line breaks, and pads short rows", () => {
+    const blocks = [{ id: "table", type: "table", props: {}, children: [], content: {
+      type: "tableContent", headerRows: 1,
+      rows: [
+        { cells: ["Name", [{ type: "text", text: "Value", styles: { bold: true } }]] },
+        { cells: [{ type: "tableCell", props: {}, content: [{ type: "link", href: "https://orbis.dev", content: [
+          { type: "text", text: "Docs|API\nnext", styles: { italic: true } },
+        ] }] }] },
+        { cells: [{ type: "tableCell", content: "Partial cell" }, "Ready"] },
+      ],
+    } }];
+    expect(extractPlainTextV2(blocks as never)).toBe("Name\tValue\nDocs|API\nnext\nPartial cell\tReady");
+    expect(v2ToMarkdown(blocks as never)).toBe(
+      "| Name | **Value** |\n| --- | --- |\n| [*Docs\\|API<br>next*](https://orbis.dev) |  |\n| Partial cell | Ready |",
+    );
+  });
+
+  it("accepts empty native tables without losing following blocks", () => {
+    const blocks = [
+      { id: "table", type: "table", props: {}, content: { type: "tableContent", rows: [] }, children: [] },
+      { id: "paragraph", type: "paragraph", props: {}, content: "After the table", children: [] },
+    ];
+    expect(extractPlainTextV2(blocks as never)).toBe("After the table");
+    expect(v2ToMarkdown(blocks as never)).toBe("After the table");
+  });
+
+  it("keeps string labels from partial native links", () => {
+    const blocks = [{
+      id: "table", type: "table", props: {}, children: [], content: {
+        type: "tableContent", rows: [{ cells: [[{ type: "link", href: "https://orbis.dev", content: "Docs" }]] }],
+      },
+    }];
+    expect(extractPlainTextV2(blocks as never)).toBe("Docs");
+    expect(v2ToMarkdown(blocks as never)).toContain("[Docs](https://orbis.dev)");
   });
 });
 

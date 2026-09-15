@@ -16,13 +16,32 @@ export type OrbisInlineStyle = Partial<
 
 export type OrbisInline =
   | { type: "text"; text: string; styles?: OrbisInlineStyle }
-  | { type: "link"; href: string; content: OrbisInline[] };
+  | { type: "link"; href: string; content: OrbisInline[] | string };
+
+export type OrbisTableCell =
+  | string
+  | OrbisInline[]
+  | { type: "tableCell"; props?: Record<string, unknown>; content?: OrbisInline[] | string };
+
+export type OrbisTableContent = {
+  type: "tableContent";
+  rows: Array<{ cells: OrbisTableCell[] }>;
+  columnWidths?: Array<number | null>;
+  headerRows?: number;
+  headerCols?: number;
+};
+
+type LegacyTableContent = OrbisTableCell[][];
+
+function isLegacyTableContent(content: unknown): content is LegacyTableContent {
+  return Array.isArray(content) && content.length > 0 && content.every(Array.isArray);
+}
 
 export type OrbisBlock = {
   id: string;
   type: string;
   props: Record<string, unknown>;
-  content: OrbisInline[] | string;
+  content: OrbisInline[] | string | OrbisTableContent;
   children: OrbisBlock[];
 };
 
@@ -148,25 +167,66 @@ export function nodeToBlocks(node: JSONContent): OrbisBlock[] {
     }
     case "horizontalRule":
       return [blockBase("divider")];
-    case "table": {
-      // Lossy migration: render rows as paragraphs separated by " | ".
-      const rows: string[] = [];
-      for (const row of node.content ?? []) {
-        const cells = (row.content ?? []).map((cell) => cellText(cell)).join(" | ");
-        rows.push(cells);
-      }
-      return rows.map((line) => ({ ...blockBase("paragraph"), content: [{ type: "text", text: line }] }));
-    }
+    case "table":
+      return [{ ...blockBase("table"), content: editableTableContent(tableFromTiptap(node)) }];
     default:
       // Unknown node: flatten any text content into a paragraph.
       return [{ ...blockBase("paragraph"), content: inlineFromTiptap(node.content) }];
   }
 }
 
-function cellText(node: JSONContent): string {
-  return (node.content ?? [])
-    .map((child) => (child.content ?? []).map((t) => t.text ?? "").join(""))
-    .join(" ");
+/** Table cells hold inline content; keep block boundaries and list labels as text. */
+function cellInlineFromTiptap(node: JSONContent): OrbisInline[] {
+  if (node.type === "paragraph" || node.type === "heading") {
+    return inlineFromTiptap(node.content);
+  }
+  const result: OrbisInline[] = [];
+  for (const [index, child] of (node.content ?? []).entries()) {
+    if (index) result.push({ type: "text", text: "\n" });
+    if (node.type === "bulletList" || node.type === "orderedList") {
+      result.push({ type: "text", text: node.type === "bulletList" ? "- " : `${index + 1}. ` });
+    }
+    result.push(...cellInlineFromTiptap(child));
+  }
+  return result;
+}
+
+function tableFromTiptap(node: JSONContent): OrbisTableContent {
+  const rows = node.content ?? [];
+  let headerRows = 0;
+  for (const row of rows) {
+    if (!row.content?.length || !row.content.every((cell) => cell.type === "tableHeader")) break;
+    headerRows++;
+  }
+  const headerCols = rows.length ? Math.min(...rows.map((row) => {
+    let count = 0;
+    for (const cell of row.content ?? []) {
+      if (cell.type !== "tableHeader") break;
+      count += Number(cell.attrs?.colspan ?? 1);
+    }
+    return count;
+  })) : 0;
+  const columnWidths = (rows[0]?.content ?? []).flatMap((cell) => {
+    const widths = cell.attrs?.colwidth as Array<number | null> | undefined;
+    const colspan = Number(cell.attrs?.colspan ?? 1);
+    return Array.from({ length: colspan }, (_, index) => widths?.[index] ?? null);
+  });
+  return {
+    type: "tableContent",
+    columnWidths,
+    headerRows,
+    headerCols,
+    rows: rows.map((row) => ({
+      cells: (row.content ?? []).map((cell) => ({
+        type: "tableCell",
+        props: {
+          colspan: cell.attrs?.colspan ?? 1,
+          rowspan: cell.attrs?.rowspan ?? 1,
+        },
+        content: cellInlineFromTiptap(cell),
+      })),
+    })),
+  };
 }
 
 /** Convert a legacy schema_version 1 tiptap doc into v2 blocks. */
@@ -181,17 +241,66 @@ export function tiptapDocToV2(doc: JSONContent): NoteBlocksV2 {
 
 /** Normalize any stored NoteBlocks (v1 or v2) to v2 for editing. */
 export function toV2(blocks: NoteBlocks | NoteBlocksV2): NoteBlocksV2 {
-  if (isV2(blocks)) return blocks;
+  if (isV2(blocks)) {
+    const adapted = blocks.blocks.map(adaptLegacyTable);
+    return adapted.some((block, index) => block !== blocks.blocks[index])
+      ? { ...blocks, blocks: adapted }
+      : blocks;
+  }
   return tiptapDocToV2((blocks as { doc: JSONContent }).doc);
 }
 
+function adaptLegacyTable(block: OrbisBlock): OrbisBlock {
+  const storedChildren = block.children ?? [];
+  const children = storedChildren.map(adaptLegacyTable);
+  const changedChildren = block.children === undefined || children.some((child, index) => child !== storedChildren[index]);
+  const storedContent = block.content ?? [];
+  const content = block.type === "table" ? editableTableContent(storedContent) : storedContent;
+  const props = block.props ?? {};
+  if (content === block.content && props === block.props && !changedChildren) return block;
+  return {
+    ...block,
+    props,
+    children: changedChildren ? children : block.children,
+    content,
+  };
+}
+
+/** Keep stored empty tables valid for BlockNote's nonempty table/row schema. */
+function editableTableContent(content: OrbisBlock["content"] | LegacyTableContent): OrbisTableContent {
+  if (isLegacyTableContent(content)) {
+    return editableTableContent({ type: "tableContent", rows: content.map((cells) => ({ cells })) });
+  }
+  if (typeof content === "string" || Array.isArray(content)) {
+    return { type: "tableContent", rows: [{ cells: [content.length ? content : ""] }] };
+  }
+  if (content.rows.length && content.rows.every((row) => row.cells.length)) return content;
+  return {
+    ...content,
+    rows: content.rows.length
+      ? content.rows.map((row) => row.cells.length ? row : { ...row, cells: [""] })
+      : [{ cells: [""] }],
+  };
+}
+
 function inlineText(inline: OrbisInline): string {
-  return inline.type === "text" ? inline.text : inline.content.map(inlineText).join("");
+  if (inline.type === "text") return inline.text;
+  return typeof inline.content === "string" ? inline.content : inline.content.map(inlineText).join("");
 }
 
 function blockContentText(block: OrbisBlock): string {
   if (block.content == null) return "";
-  return typeof block.content === "string" ? block.content : block.content.map(inlineText).join("");
+  if (typeof block.content === "string") return block.content;
+  if (block.type === "table" && isLegacyTableContent(block.content)) {
+    return block.content.map((row) => row.map((cell) => tableCellValue(cell, inlineText)).join("\t")).join("\n");
+  }
+  if (Array.isArray(block.content)) return block.content.map(inlineText).join("");
+  return block.content.rows.map((row) => row.cells.map((cell) => tableCellValue(cell, inlineText)).join("\t")).join("\n");
+}
+
+function tableCellValue(cell: OrbisTableCell, render: (inline: OrbisInline) => string): string {
+  const content = typeof cell === "object" && !Array.isArray(cell) ? cell.content ?? [] : cell;
+  return typeof content === "string" ? content : content.map(render).join("");
 }
 
 /** Plain text for search / knowledge snapshots, from v2 blocks. */
@@ -208,7 +317,8 @@ export function extractPlainTextV2(blocks: OrbisBlock[]): string {
 
 function renderInline(inline: OrbisInline): string {
   if (inline.type === "link") {
-    return `[${inline.content.map(renderInline).join("")}](${inline.href})`;
+    const text = typeof inline.content === "string" ? inline.content : inline.content.map(renderInline).join("");
+    return `[${text}](${inline.href})`;
   }
   let value = inline.text;
   const styles = inline.styles ?? {};
@@ -221,7 +331,21 @@ function renderInline(inline: OrbisInline): string {
 
 function renderBlockContent(block: OrbisBlock): string {
   if (block.content == null) return "";
-  return typeof block.content === "string" ? block.content : block.content.map(renderInline).join("");
+  if (typeof block.content === "string") return block.content;
+  if (block.type === "table" && isLegacyTableContent(block.content)) return blockContentText(block);
+  if (Array.isArray(block.content)) return block.content.map(renderInline).join("");
+  return blockContentText(block);
+}
+
+function renderTable(content: OrbisTableContent): string {
+  const rows = content.rows.map((row) => row.cells.map((cell) =>
+    tableCellValue(cell, renderInline).replaceAll("|", "\\|").replace(/\r\n?|\n/g, "<br>"),
+  ));
+  const width = Math.max(0, ...rows.map((row) => row.length));
+  if (!width) return "";
+  const rendered = rows.map((row) => `| ${[...row, ...Array<string>(width - row.length).fill("")].join(" | ")} |`);
+  rendered.splice(1, 0, `| ${Array<string>(width).fill("---").join(" | ")} |`);
+  return rendered.join("\n");
 }
 
 /** Frontend v2 → Markdown (used for the conflict "copy local" affordance). */
@@ -248,11 +372,22 @@ export function v2ToMarkdown(blocks: OrbisBlock[]): string {
           .split("\n").map((l) => `> ${l}`).join("\n"));
         break;
       case "codeBlock":
-        out.push(`\`\`\`${(block.props.language as string) ?? ""}\n${block.content}\n\`\`\``);
+        out.push(`\`\`\`${(block.props.language as string) ?? ""}\n${blockContentText(block)}\n\`\`\``);
         break;
       case "divider":
         out.push("---");
         break;
+      case "table": {
+        const content = block.content;
+        if (isLegacyTableContent(content)) {
+          out.push(renderTable({ type: "tableContent", rows: content.map((cells) => ({ cells })) }));
+        } else if (typeof content === "object" && !Array.isArray(content) && content !== null) {
+          out.push(renderTable(content));
+        } else {
+          out.push(`${indent}${text}`);
+        }
+        break;
+      }
       default:
         out.push(`${indent}${text}`);
     }

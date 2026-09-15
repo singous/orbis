@@ -6,7 +6,7 @@ import { useStore } from "zustand";
 import { authStore } from "../../shared/auth/auth-store";
 import { Button } from "../../shared/ui/Button";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
-import { toV2, v2ToMarkdown, type NoteBlocksV2, type OrbisBlock, type OrbisInline } from "../notes/block-model";
+import { extractPlainTextV2, toV2, v2ToMarkdown, type NoteBlocksV2, type OrbisBlock } from "../notes/block-model";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { AutosaveCoordinator, type AutosaveState } from "./autosave";
 import { DocumentShell } from "./DocumentShell";
@@ -31,12 +31,8 @@ function draftFingerprint(draft: EditorDraft): string {
   return JSON.stringify([draft.title.trim(), draft.blocks]);
 }
 
-function inlineText(inline: OrbisInline): string {
-  return inline.type === "text" ? inline.text : inline.content.map(inlineText).join("");
-}
-
 function blockText(block: OrbisBlock): string {
-  return typeof block.content === "string" ? block.content : block.content.map(inlineText).join("");
+  return extractPlainTextV2([{ ...block, children: [] }]);
 }
 
 function outlineFromBlocks(blocks: NoteBlocksV2) {
