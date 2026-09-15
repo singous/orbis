@@ -55,6 +55,8 @@ vendor/
 dist/
 build/
 coverage/
+test-results/
+playwright-report/
 .cache/
 .parcel-cache/
 .turbo/

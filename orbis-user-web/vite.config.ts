@@ -1,6 +1,6 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
@@ -33,7 +33,7 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       "/api": {
-        target: "http://127.0.0.1:9201",
+        target: process.env.ORBIS_DEV_API_TARGET || "http://127.0.0.1:9201",
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ""),
       },
@@ -45,6 +45,7 @@ export default defineConfig({
     strictPort: true,
   },
   test: {
+    exclude: [...configDefaults.exclude, "tests/e2e/**"],
     environment: "jsdom",
     globals: true,
     setupFiles: "./vitest.setup.ts",
