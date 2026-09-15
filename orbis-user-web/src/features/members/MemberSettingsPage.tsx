@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Crown, Mail, RefreshCw, Shield, Trash2, UserPlus, Users } from "lucide-react";
-import { type FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 import { useStore } from "zustand";
 
 import { ApiError } from "../../shared/api/api-client";
 import { authStore } from "../../shared/auth/auth-store";
+import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { Button } from "../../shared/ui/Button";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { TextInput } from "../../shared/ui/TextInput";
@@ -20,22 +21,14 @@ import {
   revokeInvitation,
   startOwnershipTransfer,
   updateMemberRole,
-  type MemberAuth,
 } from "./api";
 
 export function MemberSettingsPage() {
   const queryClient = useQueryClient();
-  const accessToken = useStore(authStore, (state) => state.accessToken);
-  const refreshToken = useStore(authStore, (state) => state.refreshToken);
+  const auth = useAuthRequest();
   const workspace = useStore(authStore, (state) => state.workspace);
-  const onTokenRefresh = useStore(authStore, (state) => state.setAccessToken);
-  const onUnauthorized = useStore(authStore, (state) => state.clearSession);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"admin" | "editor" | "normal">("editor");
-  const auth = useMemo<MemberAuth>(
-    () => ({ accessToken: accessToken as string, refreshToken, onTokenRefresh, onUnauthorized }),
-    [accessToken, refreshToken, onTokenRefresh, onUnauthorized],
-  );
   const canManage = workspace?.role === "owner" || workspace?.role === "admin";
   const membersQuery = useQuery({ queryKey: ["members"], queryFn: () => listMembers(auth) });
   const invitesQuery = useQuery({

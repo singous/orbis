@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useStore } from "zustand";
 
-import { authStore } from "../../shared/auth/auth-store";
+import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import {
   createDocumentGroup,
   createNote,
@@ -27,14 +26,7 @@ import {
 } from "./api";
 
 export function useDocumentAuth(): AuthRequestOptions {
-  const accessToken = useStore(authStore, (state) => state.accessToken);
-  const refreshToken = useStore(authStore, (state) => state.refreshToken);
-  const onTokenRefresh = useStore(authStore, (state) => state.setAccessToken);
-  const onUnauthorized = useStore(authStore, (state) => state.clearSession);
-  if (!accessToken) {
-    throw new Error("Authenticated document access required");
-  }
-  return { accessToken, refreshToken, onTokenRefresh, onUnauthorized };
+  return useAuthRequest();
 }
 
 export function useDocumentGroups(status: ResourceStatus = "active") {

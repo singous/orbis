@@ -92,4 +92,23 @@ describe("auth store", () => {
     expect(restored.getState().refreshToken).toBe("refresh-token");
     expect(restored.getState().user?.email).toBe("ada@example.com");
   });
+
+  it("advances the session generation on logout and same-account login but not refresh", () => {
+    const store = createAuthStore();
+    const session = {
+      accessToken: "access-token", refreshToken: "refresh-token",
+      user: { id: "account-a", tenant_id: null, email: "a@example.com", display_name: "A", current_workspace_id: null, status: "active", created_at_ms: 1, updated_at_ms: 1 },
+      workspace: null,
+    };
+    const initialGeneration = store.getState().sessionGeneration;
+    store.getState().setSession(session);
+    const loginGeneration = store.getState().sessionGeneration;
+    expect(loginGeneration).toBe(initialGeneration + 1);
+    store.getState().setAccessToken("refreshed-access");
+    expect(store.getState().sessionGeneration).toBe(loginGeneration);
+    store.getState().setSession(session);
+    expect(store.getState().sessionGeneration).toBe(loginGeneration + 1);
+    store.getState().clearSession();
+    expect(store.getState().sessionGeneration).toBe(loginGeneration + 2);
+  });
 });

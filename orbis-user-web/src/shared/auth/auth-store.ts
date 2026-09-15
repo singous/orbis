@@ -12,6 +12,7 @@ export type AuthSession = {
 };
 
 export type AuthState = {
+  sessionGeneration: number;
   accessToken: string | null;
   refreshToken: string | null;
   user: User | null;
@@ -20,6 +21,17 @@ export type AuthState = {
   setAccessToken: (accessToken: string) => void;
   clearSession: () => void;
 };
+
+export function getAuthSessionKey(state: AuthState): string {
+  return JSON.stringify([
+    state.sessionGeneration,
+    state.user?.id ?? null,
+    state.user?.tenant_id ?? null,
+    state.user?.current_workspace_id ?? null,
+    state.workspace?.id ?? null,
+    state.workspace?.role ?? null,
+  ]);
+}
 
 function getStorage(): Storage | null {
   return typeof window === "undefined" ? null : window.localStorage;
@@ -48,18 +60,21 @@ export function createAuthStore() {
   const session = readSession();
 
   return createStore<AuthState>((set) => ({
+    // Runtime-only generation distinguishes a fresh login by the same account.
+    sessionGeneration: 0,
     accessToken: session?.accessToken ?? null,
     refreshToken: session?.refreshToken ?? null,
     user: session?.user ?? null,
     workspace: session?.workspace ?? null,
     setSession: (nextSession) => {
       writeSession(nextSession);
-      set({
+      set((current) => ({
+        sessionGeneration: current.sessionGeneration + 1,
         accessToken: nextSession.accessToken,
         refreshToken: nextSession.refreshToken,
         user: nextSession.user,
         workspace: nextSession.workspace,
-      });
+      }));
     },
     setAccessToken: (accessToken) => {
       set((current) => {
@@ -77,7 +92,10 @@ export function createAuthStore() {
     },
     clearSession: () => {
       getStorage()?.removeItem(STORAGE_KEY);
-      set({ accessToken: null, refreshToken: null, user: null, workspace: null });
+      set((current) => ({
+        sessionGeneration: current.sessionGeneration + 1,
+        accessToken: null, refreshToken: null, user: null, workspace: null,
+      }));
     },
   }));
 }
