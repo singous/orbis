@@ -6,7 +6,7 @@ from contextlib import contextmanager
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends, Path, Request, Response
+from fastapi import Body, Depends, Path, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from orbis_user_api.api.contract import (
@@ -25,10 +25,12 @@ from orbis_user_api.models.user import User
 from orbis_user_api.schemas.site import (
     SiteCreateRequest,
     SiteOut,
+    SitePreviewOut,
     SiteReleaseOut,
     SiteSnapshotOut,
     SiteUpdateRequest,
 )
+from orbis_user_api.schemas.site_source import SitePublishRequest, SiteSourcesOut
 from orbis_user_api.services.exceptions import (
     UserWorkspaceMissing,
     WorkspaceMemberForbidden,
@@ -115,7 +117,7 @@ async def update_site(
 
 
 @router.get(
-    "/sites/{site_id}/preview", response_model=SiteSnapshotOut, summary="预览待发布站点"
+    "/sites/{site_id}/preview", response_model=SitePreviewOut, summary="预览待发布站点"
 )
 async def preview_site(
     site_id: UUID,
@@ -125,8 +127,25 @@ async def preview_site(
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     response.headers["Cache-Control"] = "no-store"
+    response.headers["X-Robots-Tag"] = "noindex, nofollow"
     with _site_errors():
         return await sites.preview_site(site_id, user, session, url_policy=url_policy)
+
+
+@router.get(
+    "/sites/{site_id}/sources",
+    response_model=SiteSourcesOut,
+    summary="解析站点来源与待发布变化",
+)
+async def get_site_sources(
+    site_id: UUID,
+    response: Response,
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    response.headers["Cache-Control"] = "no-store"
+    with _site_errors():
+        return await sites.get_site_sources(site_id, user, session)
 
 
 @router.post(
@@ -139,9 +158,16 @@ async def publish_site(
     url_policy: Annotated[PublicUrlPolicy, Depends(_public_url_policy)],
     user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_session)],
+    payload: Annotated[SitePublishRequest, Body(default_factory=SitePublishRequest)],
 ):
     with _site_errors():
-        return await sites.publish_site(site_id, user, session, url_policy=url_policy)
+        return await sites.publish_site(
+            site_id,
+            user,
+            session,
+            url_policy=url_policy,
+            expected_source_fingerprint=payload.expected_source_fingerprint,
+        )
 
 
 @router.get(

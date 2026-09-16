@@ -15,6 +15,7 @@ EXPECTED_OPERATIONS = {
     ("get", "/sites/{site_id}"),
     ("put", "/sites/{site_id}"),
     ("get", "/sites/{site_id}/preview"),
+    ("get", "/sites/{site_id}/sources"),
     ("post", "/sites/{site_id}/publish"),
     ("get", "/sites/{site_id}/releases"),
     ("post", "/sites/{site_id}/releases/{release_id}/activate"),

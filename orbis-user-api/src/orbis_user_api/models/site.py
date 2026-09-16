@@ -42,6 +42,15 @@ class Site(Base):
     navigation: Mapped[list[dict[str, Any]]] = mapped_column(
         json_type, default=list, server_default="[]", nullable=False
     )
+    source: Mapped[dict[str, Any]] = mapped_column(
+        json_type, default=dict, server_default="{}", nullable=False
+    )
+    branding: Mapped[dict[str, Any]] = mapped_column(
+        json_type, default=dict, server_default="{}", nullable=False
+    )
+    page_registry: Mapped[dict[str, Any]] = mapped_column(
+        json_type, default=dict, server_default="{}", nullable=False
+    )
     config_version: Mapped[int] = mapped_column(
         Integer, default=1, server_default="1", nullable=False
     )
@@ -72,6 +81,9 @@ class SiteRelease(Base):
         Integer, default=1, server_default="1", nullable=False
     )
     snapshot: Mapped[dict[str, Any]] = mapped_column(
+        json_type, default=dict, server_default="{}", nullable=False
+    )
+    source_manifest: Mapped[dict[str, Any]] = mapped_column(
         json_type, default=dict, server_default="{}", nullable=False
     )
     published_at_ms: Mapped[int] = mapped_column(

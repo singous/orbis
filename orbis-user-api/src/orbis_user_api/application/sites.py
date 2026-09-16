@@ -7,19 +7,21 @@ from sqlalchemy import func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from orbis_user_api.application.site_changes import source_changes
 from orbis_user_api.application.site_errors import (
     SiteError,
     site_slug_conflict,
     site_version_conflict,
 )
+from orbis_user_api.application.site_navigation import PagePaths
 from orbis_user_api.application.site_slugs import (
     release_unused_site_slugs,
     reserve_site_slug,
 )
 from orbis_user_api.application.site_snapshots import (
     build_snapshot,
-    validate_navigation,
 )
+from orbis_user_api.application.site_sources import resolve_site_source
 from orbis_user_api.application.site_urls import PublicUrlPolicy
 from orbis_user_api.core.ids import new_uuidv7
 from orbis_user_api.core.time import now_ms
@@ -29,10 +31,12 @@ from orbis_user_api.models.workspace import WorkspaceMember
 from orbis_user_api.schemas.site import (
     SiteCreateRequest,
     SiteOut,
+    SitePreviewOut,
     SiteReleaseOut,
     SiteSnapshotOut,
     SiteUpdateRequest,
 )
+from orbis_user_api.schemas.site_source import SiteSource, SiteSourcesOut
 from orbis_user_api.services.authorization import AuthorizationService, Capability
 
 logger = logging.getLogger(__name__)
@@ -92,10 +96,10 @@ async def create_site(
     workspace, member = await AuthorizationService.actor(user, session)
     AuthorizationService.require_capability(member, Capability.RESOURCE_MANAGE)
     await _require_available_slug(payload.slug, session)
-    await validate_navigation(payload.navigation, workspace.id, session)
     site = Site(
         id=new_uuidv7(), workspace_id=workspace.id, **payload.model_dump(mode="json")
     )
+    await resolve_site_source(site, session)
     session.add(site)
     await reserve_site_slug(site.id, site.slug, session)
     try:
@@ -126,17 +130,41 @@ async def update_site(
     if site.config_version != payload.expected_version:
         raise site_version_conflict()
     await _require_available_slug(payload.slug, session, site.id)
-    await validate_navigation(payload.navigation, site.workspace_id, session)
     values = payload.model_dump(mode="json", exclude={"expected_version"})
+    # Older clients do not know these additive settings. An omitted field must
+    # preserve it instead of resetting it to a schema default.
+    for field in ("source", "branding"):
+        if field not in payload.model_fields_set:
+            values[field] = getattr(site, field)
+    registry = PagePaths(site.page_registry or {})
+    if (
+        SiteSource.model_validate(site.source or {}).kind == "manual"
+        and SiteSource.model_validate(values["source"]).kind == "notebooks"
+    ):
+        # Old releases have no registry. Preserve configured addresses when
+        # moving from explicit selection to notebook-driven navigation.
+        for entry in site.navigation:
+            registry.assign(entry["note_id"], entry["title"], entry["slug"])
+    candidate = Site(
+        id=site.id,
+        workspace_id=site.workspace_id,
+        page_registry=registry.registry,
+        **values,
+    )
+    await resolve_site_source(candidate, session)
     try:
         result = await session.execute(
             update(Site)
             .where(
                 Site.id == site.id,
                 Site.config_version == payload.expected_version,
+                Site.release_sequence == site.release_sequence,
             )
             .values(
-                **values, config_version=Site.config_version + 1, updated_at_ms=now_ms()
+                **values,
+                page_registry=registry.registry,
+                config_version=Site.config_version + 1,
+                updated_at_ms=now_ms(),
             )
             .returning(Site.id)
             .execution_options(synchronize_session=False)
@@ -162,20 +190,68 @@ async def update_site(
 
 async def preview_site(
     site_id: UUID, user: User, session: AsyncSession, *, url_policy: PublicUrlPolicy
-) -> SiteSnapshotOut:
+) -> SitePreviewOut:
     site, _ = await _site_actor(site_id, user, session)
-    return await build_snapshot(site, session, url_policy=url_policy)
+    before = await resolve_site_source(site, session)
+    snapshot = await build_snapshot(site, session, url_policy=url_policy)
+    after = await resolve_site_source(site, session)
+    if before.fingerprint != after.fingerprint:
+        raise SiteError(
+            "SITE_SOURCE_CONFLICT", "预览期间来源内容已变化，请重新预览", 409
+        )
+    return SitePreviewOut(**snapshot.model_dump(), source_fingerprint=after.fingerprint)
+
+
+async def get_site_sources(
+    site_id: UUID, user: User, session: AsyncSession
+) -> SiteSourcesOut:
+    site, _ = await _site_actor(site_id, user, session)
+    resolved = await resolve_site_source(site, session)
+    release = (
+        await session.get(SiteRelease, site.published_release_id)
+        if site.published_release_id
+        else None
+    )
+    return SiteSourcesOut(
+        pages=[page.metadata for page in resolved.pages],
+        excluded_count=resolved.excluded_count,
+        source_fingerprint=resolved.fingerprint,
+        changes=source_changes(resolved, release),
+    )
 
 
 async def publish_site(
-    site_id: UUID, user: User, session: AsyncSession, *, url_policy: PublicUrlPolicy
+    site_id: UUID,
+    user: User,
+    session: AsyncSession,
+    *,
+    url_policy: PublicUrlPolicy,
+    expected_source_fingerprint: str | None = None,
 ) -> SiteSnapshotOut:
     site, member = await _site_actor(site_id, user, session)
     _require_publisher(member)
-    if not site.navigation:
+    source = SiteSource.model_validate(site.source or {})
+    before = await resolve_site_source(site, session)
+    if source.kind == "notebooks" and expected_source_fingerprint is None:
+        raise SiteError(
+            "SITE_PREVIEW_REQUIRED", "请先预览本次来源变化，再确认发布", 422
+        )
+    if (
+        expected_source_fingerprint is not None
+        and expected_source_fingerprint != before.fingerprint
+    ):
+        raise SiteError(
+            "SITE_SOURCE_CONFLICT", "来源内容或配置已变化，请重新预览后发布", 409
+        )
+    if not before.pages:
         raise SiteError("SITE_EMPTY", "请先选择至少一篇文档再发布", 422)
     await _require_available_slug(site.slug, session, site.id)
     snapshot = await build_snapshot(site, session, url_policy=url_policy)
+    after = await resolve_site_source(site, session)
+    if before.fingerprint != after.fingerprint:
+        raise SiteError(
+            "SITE_SOURCE_CONFLICT", "发布期间来源内容已变化，请重新预览后发布", 409
+        )
     release_id = new_uuidv7()
     number = site.release_sequence + 1
     timestamp = now_ms()
@@ -200,6 +276,7 @@ async def publish_site(
                 published_release_id=release_id,
                 published_slug=snapshot.slug,
                 release_sequence=number,
+                page_registry=after.registry,
                 updated_at_ms=timestamp,
             )
             .returning(Site.id)
@@ -216,6 +293,7 @@ async def publish_site(
                 site_id=site.id,
                 release_number=number,
                 snapshot=snapshot.model_dump(mode="json"),
+                source_manifest=after.manifest,
                 published_at_ms=timestamp,
             )
         )

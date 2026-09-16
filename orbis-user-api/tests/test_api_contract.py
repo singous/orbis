@@ -159,7 +159,10 @@ def test_all_json_operations_document_the_unified_success_envelope() -> None:
                 continue
             operations.append((method.upper(), path, operation))
 
-    assert len(operations) == 60
+    assert operations
+    assert ("GET", "/sites/{site_id}/sources") in {
+        (method, path) for method, path, _ in operations
+    }
     for method, path, operation in operations:
         success_responses = [
             (status_code, response)

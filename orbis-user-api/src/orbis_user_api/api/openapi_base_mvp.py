@@ -42,6 +42,10 @@ OPERATION_DOCS = {
         "预览待发布站点",
         "当前空间成员读取由最新站点配置与当前文档正文构建的认证预览。预览会校验文档及公开内容，可以为空；release_id、release_number、published_at_ms 均为 null，不创建发布历史。响应头 Cache-Control 为 no-store。",
     ),
+    ("get", "/sites/{site_id}/sources"): (
+        "解析站点来源与待发布变化",
+        "当前空间成员读取笔记本或手选来源的完整页面元数据、排除数量和来源指纹，比较当前公开版本得到新增、修改和移除列表。该接口需要登录，包含内部文档标识，不生成发布版本。",
+    ),
     ("post", "/sites/{site_id}/publish"): (
         "发布站点不可变快照",
         "仅所有者和管理员可以发布。至少选择一篇文档；发布前校验空间归属、活跃状态、内容格式及公开链接安全性。成功后生成递增发布版本并原子切换公开指针，响应为 HTTP 200。文档后续保存不会修改本快照；校验或并发冲突失败时保留原有公开版本。本接口无需请求体。",
@@ -106,6 +110,8 @@ SITE_FIELDS = {
     "site_kind": "起始场景：knowledge 为个人知识站，handbook 为产品手册，help 为帮助中心。",
     "accent_color": "主题色，使用 # 开头的六位十六进制颜色，默认 #0f766e。",
     "navigation": "待发布的文档选集，最多 200 项，数组顺序决定导航顺序；文档和页面路径均不能重复。",
+    "source": "文档来源：manual 维持手选，notebooks 自动解析笔记本和子树。旧客户端更新时省略本字段会保留已有配置。",
+    "branding": "站点品牌、导航外链、页脚链接与主题设置，随发布版本固定。旧客户端省略时保留已有配置。",
 }
 COMMENT_FIELDS = {
     "body": "评论正文，长度为 1 至 10000；去除首尾空白后不能为空。",
@@ -133,12 +139,21 @@ SCHEMA_FIELD_DESCRIPTIONS = {
         "slug": "该页面的独立公开路径，不包含站点路径前缀。",
         "title": "发布快照中的导航标题，可独立于源文档标题。",
         "group": "发布快照中的导航分组；null 表示未分组。",
+        "parent_slug": "同一栏目的父页面公开路径；根页面为 null。",
+        "section": "顶部文档栏目名称；旧手选站点可为 null。",
+        "description": "页面简介，默认使用空字符串。",
+        "updated_at_ms": "来源文档最后更新时间，UTC Unix 毫秒时间戳；旧版本可为 null。",
     },
     "SiteSnapshotOut": {
-        **{key: value for key, value in SITE_FIELDS.items() if key != "navigation"},
+        **{
+            key: value
+            for key, value in SITE_FIELDS.items()
+            if key not in {"navigation", "source"}
+        },
         "name": "快照中的站点名称。",
         "slug": "快照中的站点路径；发布后用于匿名入口，认证预览使用配置草稿路径。",
         "pages": "按导航顺序排列的完整公开页面；不包含内部文档、空间或作者标识。",
+        "redirects": "已明确改名的页面旧路径到当前公开路径的映射，不包含内部文档标识。",
     },
     "SiteReleaseOut": {
         "id": "发布版本 UUIDv7 标识，用于切换站点公开版本。",
@@ -190,6 +205,19 @@ SITE_CONFIG = {
     "description": "从第一篇文档开始协作与发布。",
     "site_kind": "handbook",
     "accent_color": "#0f766e",
+    "source": {
+        "kind": "manual",
+        "notebooks": [],
+        "excluded_note_ids": [],
+        "page_overrides": [],
+    },
+    "branding": {
+        "logo_url": None,
+        "links": [],
+        "footer_links": [],
+        "cta": None,
+        "theme": "system",
+    },
     "navigation": [
         {
             "note_id": NOTE_ID,
@@ -209,7 +237,12 @@ SITE = {
     "updated_at_ms": EXAMPLE_TIME_MS,
 }
 SNAPSHOT = {
-    **{key: value for key, value in SITE_CONFIG.items() if key != "navigation"},
+    **{
+        key: value
+        for key, value in SITE_CONFIG.items()
+        if key not in {"navigation", "source"}
+    },
+    "redirects": {},
     "pages": [
         {
             "slug": "getting-started",
@@ -217,6 +250,10 @@ SNAPSHOT = {
             "group": "入门",
             "blocks": BLOCKS,
             "plain_text": "欢迎使用 Orbis。",
+            "parent_slug": None,
+            "section": None,
+            "description": "",
+            "updated_at_ms": EXAMPLE_TIME_MS,
         }
     ],
     "release_id": RELEASE_ID,
@@ -248,6 +285,12 @@ RELEASE = {
 }
 
 REQUEST_EXAMPLES = {
+    "SitePublishRequest": {
+        "publish": {
+            "summary": "携带认证预览返回的来源指纹发布；旧手选模式也接受空请求体",
+            "value": {"expected_source_fingerprint": "a" * 64},
+        },
+    },
     "SiteCreateRequest": {
         "create": {"summary": "创建产品手册草稿", "value": SITE_CONFIG}
     },
@@ -309,6 +352,7 @@ SUCCESS_DATA = {
         "release_id": None,
         "release_number": None,
         "published_at_ms": None,
+        "source_fingerprint": "a" * 64,
     },
     ("post", "/sites/{site_id}/publish"): SNAPSHOT,
     ("get", "/sites/{site_id}/releases"): _page(RELEASE),
@@ -343,6 +387,11 @@ SUCCESS_DATA = {
 }
 
 ERROR_DOCS = {
+    "SITE_SOURCE_INVALID": (422, "来源笔记本或根文档不可用，请检查空间归属与归档状态"),
+    "SITE_SOURCE_CONFLICT": (409, "来源内容或配置已变化，请重新预览后发布"),
+    "SITE_PREVIEW_REQUIRED": (422, "请先预览本次来源变化，再确认发布"),
+    "SITE_TOO_MANY_PAGES": (422, "解析后的文档超过 200 篇，请缩小来源范围或排除子树"),
+    "SITE_PAGE_PATH_CONFLICT": (422, "页面路径已被使用，请修改后重试"),
     "AUTH_REQUIRED": (401, "请先登录"),
     "INVALID_ACCESS_TOKEN": (401, "访问令牌无效或已过期"),
     "ACTIVE_WORKSPACE_MEMBERSHIP_REQUIRED": (403, "需要有效的工作空间成员身份"),
@@ -368,6 +417,13 @@ ERROR_DOCS = {
     "INTERNAL_ERROR": (500, "服务内部错误"),
 }
 OPERATION_ERRORS = {
+    ("get", "/sites/{site_id}/sources"): (
+        "SITE_NOT_FOUND",
+        "SITE_SOURCE_INVALID",
+        "SITE_DOCUMENT_INVALID",
+        "SITE_TOO_MANY_PAGES",
+        "SITE_PAGE_PATH_CONFLICT",
+    ),
     ("get", "/sites"): (),
     ("post", "/sites"): (
         "RESOURCE_MANAGE_FORBIDDEN",
@@ -428,6 +484,38 @@ OPERATION_ERRORS = {
         "NOTE_CONTENT_INVALID",
     ),
 }
+
+SOURCE_PAGE = {
+    "note_id": NOTE_ID,
+    **{
+        key: value
+        for key, value in SNAPSHOT["pages"][0].items()
+        if key not in {"blocks", "plain_text"}
+    },
+}
+SUCCESS_DATA[("get", "/sites/{site_id}/sources")] = {
+    "pages": [SOURCE_PAGE],
+    "excluded_count": 0,
+    "source_fingerprint": "a" * 64,
+    "changes": {"added": [SOURCE_PAGE], "modified": [], "removed": []},
+}
+SCHEMA_FIELD_DESCRIPTIONS["SitePreviewOut"] = SCHEMA_FIELD_DESCRIPTIONS[
+    "SiteSnapshotOut"
+]
+for key in [
+    ("post", "/sites"),
+    ("put", "/sites/{site_id}"),
+    ("get", "/sites/{site_id}/preview"),
+    ("post", "/sites/{site_id}/publish"),
+]:
+    OPERATION_ERRORS[key] += (
+        "SITE_SOURCE_INVALID",
+        "SITE_TOO_MANY_PAGES",
+        "SITE_PAGE_PATH_CONFLICT",
+    )
+for key in [("get", "/sites/{site_id}/preview"), ("post", "/sites/{site_id}/publish")]:
+    OPERATION_ERRORS[key] += ("SITE_SOURCE_CONFLICT",)
+OPERATION_ERRORS[("post", "/sites/{site_id}/publish")] += ("SITE_PREVIEW_REQUIRED",)
 
 
 def validation_error_data(method: str, path: str) -> dict[str, Any]:
