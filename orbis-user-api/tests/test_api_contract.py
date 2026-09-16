@@ -163,6 +163,10 @@ def test_all_json_operations_document_the_unified_success_envelope() -> None:
     assert ("GET", "/sites/{site_id}/sources") in {
         (method, path) for method, path, _ in operations
     }
+    binary_operations = {("GET", "/files/{file_id}/content")}
+    assert binary_operations.issubset(
+        {(method, path) for method, path, _ in operations}
+    )
     for method, path, operation in operations:
         success_responses = [
             (status_code, response)
@@ -172,6 +176,13 @@ def test_all_json_operations_document_the_unified_success_envelope() -> None:
         assert len(success_responses) == 1, (method, path, success_responses)
         status_code, response = success_responses[0]
         assert status_code != "204", (method, path)
+        if (method, path) in binary_operations:
+            assert response["content"] == {
+                "application/octet-stream": {
+                    "schema": {"type": "string", "format": "binary"}
+                }
+            }
+            continue
         schema = response["content"]["application/json"]["schema"]
         if "$ref" in schema:
             schema = components[schema["$ref"].rsplit("/", 1)[-1]]

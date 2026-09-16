@@ -1,14 +1,120 @@
 from __future__ import annotations
 
+import re
+from pathlib import Path
+from uuid import UUID
+
 from fastapi import UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from orbis_user_api.core.ids import new_uuidv7
 from orbis_user_api.models.file import FileAsset
 from orbis_user_api.models.user import User
+from orbis_user_api.services.exceptions import UserWorkspaceMissing
 from orbis_user_api.services.storage import LocalFileStorage, safe_filename
 from orbis_user_api.services.workspace import get_current_workspace
+
+SAFE_INLINE_MEDIA_TYPES = frozenset(
+    {
+        "image/avif",
+        "image/gif",
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "audio/aac",
+        "audio/flac",
+        "audio/mpeg",
+        "audio/mp4",
+        "audio/ogg",
+        "audio/wav",
+        "audio/webm",
+        "video/mp4",
+        "video/ogg",
+        "video/quicktime",
+        "video/webm",
+    }
+)
+SAFE_ATTACHMENT_MEDIA_TYPES = frozenset({"text/plain"})
+SECURE_FILE_HEADERS = {
+    "Cache-Control": "no-store",
+    "Content-Security-Policy": "default-src 'none'; sandbox; frame-ancestors 'none'",
+    "X-Content-Type-Options": "nosniff",
+}
+
+
+class FileAssetNotFound(Exception):
+    pass
+
+
+def _download_filename(filename: str) -> str:
+    basename = re.split(r"[/\\]", filename)[-1]
+    cleaned = "".join(
+        character
+        for character in basename
+        if ord(character) >= 32 and ord(character) != 127
+    ).strip()
+    return cleaned[:255] or "download"
+
+
+def secure_file_response(
+    path: Path, *, filename: str, media_type: str
+) -> FileResponse:
+    normalized_type = media_type.partition(";")[0].strip().lower()
+    if normalized_type in SAFE_INLINE_MEDIA_TYPES:
+        response_type = normalized_type
+        disposition = "inline"
+    elif normalized_type in SAFE_ATTACHMENT_MEDIA_TYPES:
+        response_type = normalized_type
+        disposition = "attachment"
+    else:
+        response_type = "application/octet-stream"
+        disposition = "attachment"
+    return FileResponse(
+        path,
+        media_type=response_type,
+        filename=_download_filename(filename),
+        content_disposition_type=disposition,
+        headers=SECURE_FILE_HEADERS,
+    )
+
+
+async def get_workspace_file_asset(
+    file_id: UUID, user: User, session: AsyncSession
+) -> FileAsset:
+    try:
+        workspace, _membership = await get_current_workspace(user, session)
+    except UserWorkspaceMissing:
+        raise FileAssetNotFound from None
+    asset = await session.get(FileAsset, file_id)
+    if (
+        asset is None
+        or asset.workspace_id != workspace.id
+        or asset.upload_status != "completed"
+    ):
+        raise FileAssetNotFound
+    return asset
+
+
+async def read_file_asset(
+    file_id: UUID,
+    storage: LocalFileStorage,
+    user: User,
+    session: AsyncSession,
+) -> FileResponse:
+    asset = await get_workspace_file_asset(file_id, user, session)
+    try:
+        path = storage.resolve(asset.storage_key)
+    except ValueError:
+        raise FileAssetNotFound from None
+    if not path.is_file():
+        raise FileAssetNotFound
+    return secure_file_response(
+        path,
+        filename=asset.original_filename,
+        media_type=asset.mime_type,
+    )
 
 
 async def upload_file_asset(

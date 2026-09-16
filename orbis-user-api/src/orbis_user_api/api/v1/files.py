@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from fastapi import Depends, File, Request, UploadFile, status
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, File, Request, UploadFile, status
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from orbis_user_api.api.contract import (
@@ -20,7 +23,12 @@ from orbis_user_api.models.file import FileAsset
 from orbis_user_api.models.user import User
 from orbis_user_api.schemas.file import FileOut
 from orbis_user_api.services.exceptions import UserWorkspaceMissing
-from orbis_user_api.services.file import list_file_assets, upload_file_asset
+from orbis_user_api.services.file import (
+    FileAssetNotFound,
+    list_file_assets,
+    read_file_asset,
+    upload_file_asset,
+)
 
 router = ApiRouter(prefix="/files", tags=["files"])
 
@@ -65,3 +73,46 @@ async def list_files(
         page_size=pagination.page_size,
         total=total,
     )
+
+
+async def get_file_content(
+    file_id: UUID,
+    request: Request,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> FileResponse:
+    try:
+        return await read_file_asset(
+            file_id,
+            request.app.state.storage,
+            user,
+            session,
+        )
+    except FileAssetNotFound:
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code="FILE_NOT_FOUND",
+            message="文件不存在或不属于当前工作空间",
+        ) from None
+
+
+# Binary responses intentionally bypass ApiRouter's JSON success envelope while
+# retaining its authentication dependencies and the application's JSON errors.
+APIRouter.add_api_route(
+    router,
+    "/{file_id}/content",
+    get_file_content,
+    methods=["GET"],
+    response_class=FileResponse,
+    response_model=None,
+    responses={
+        200: {
+            "description": "文件二进制内容",
+            "content": {
+                "application/octet-stream": {
+                    "schema": {"type": "string", "format": "binary"}
+                }
+            },
+        }
+    },
+)
