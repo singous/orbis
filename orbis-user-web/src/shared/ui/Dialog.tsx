@@ -24,12 +24,11 @@ export function DialogContent({
 }) {
   return (
     <RadixDialog.Portal>
-      <RadixDialog.Overlay className="fixed inset-0 z-40 bg-[#292631]/20 backdrop-blur-[2px]" />
+      <RadixDialog.Overlay className="fixed inset-0 z-40 bg-[#24252a]/30" />
       <RadixDialog.Content
         className={cn(
-          "glass-dialog",
           "fixed left-1/2 top-1/2 z-50 w-[calc(100vw-32px)] max-w-md -translate-x-1/2 -translate-y-1/2",
-          "rounded-[var(--radius-pop)] border border-[var(--border-subtle)] bg-[var(--surface-overlay)] p-5",
+          "max-h-[calc(100dvh-48px)] overflow-y-auto rounded-[var(--radius-pop)] border border-[var(--border-subtle)] bg-[var(--surface-overlay)] p-7",
           "shadow-[var(--shadow-pop)]",
           "focus:outline-none",
           className,
@@ -37,11 +36,11 @@ export function DialogContent({
       >
         <div className="flex items-start justify-between gap-4">
           <div className="grid gap-1">
-            <RadixDialog.Title className="text-base font-semibold text-[var(--text-primary)]">
+            <RadixDialog.Title className="text-lg font-semibold tracking-tight text-[var(--text-primary)]">
               {title}
             </RadixDialog.Title>
             {description ? (
-              <RadixDialog.Description className="text-sm text-[var(--text-secondary)]">
+              <RadixDialog.Description className="text-sm leading-6 text-[var(--text-secondary)]">
                 {description}
               </RadixDialog.Description>
             ) : null}

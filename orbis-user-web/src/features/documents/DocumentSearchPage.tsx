@@ -29,7 +29,7 @@ export function DocumentSearchPage() {
 
   return (
     <DocumentShell>
-      <PageContainer eyebrow="文档中心" title="搜索文档">
+      <PageContainer title="搜索文档" description="搜索工作空间中的标题与正文。">
         <div className="mb-8">
           <label className="relative block max-w-2xl">
             <Search
@@ -41,7 +41,7 @@ export function DocumentSearchPage() {
               type="search"
               role="searchbox"
               aria-label="搜索文档"
-              className="h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-content)] pl-10 pr-4 text-sm outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent-soft)]"
+              className="workbench-search-field"
               placeholder="搜索标题或正文…"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -79,25 +79,19 @@ export function DocumentSearchPage() {
           <div className="empty-panel">没有匹配的文档。试试更短的关键词。</div>
         ) : null}
         {trimmedQuery && notes.length ? (
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="workbench-document-list">
             {notes.map((note) => (
               <Link
                 key={note.id}
                 to={`/documents/${note.id}`}
-                className="document-card"
+                className="workbench-document-row workbench-search-result"
               >
-                <div className="mb-6 document-icon">
-                  <FilePlus2 aria-hidden="true" size={18} />
+                <FilePlus2 aria-hidden="true" size={19} />
+                <div className="workbench-resource-copy">
+                  <h2>{note.title}</h2>
+                  <span>{note.plain_text || "空白文档"}</span>
                 </div>
-                <h2 className="truncate text-base font-semibold">
-                  {note.title}
-                </h2>
-                <p className="mt-2 line-clamp-2 text-xs leading-5 text-[var(--muted)]">
-                  {note.plain_text || "空白文档"}
-                </p>
-                <p className="mt-3 text-xs text-[var(--muted-light)]">
-                  所属笔记本：{notebookNames.get(note.notebook_id) ?? "未知笔记本"}
-                </p>
+                <span className="workbench-search-notebook">所属笔记本：{notebookNames.get(note.notebook_id) ?? "未知笔记本"}</span>
               </Link>
             ))}
           </div>

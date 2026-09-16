@@ -33,7 +33,6 @@ export function DocumentShell({ children, toolbar, contextPanel, contextOpen, on
 
   return (
     <WorkspaceShell
-      sectionTitle="在线云文档"
       sectionMenu={sectionMenu}
       toolbar={toolbar}
       contextPanel={contextPanel ? <div className="document-context-shell">{contextPanel}{isContextOpen ? <button type="button" className="document-context-close" aria-label="收起上下文面板" onClick={() => setContextOpen(false)}><PanelRightClose aria-hidden="true" size={15} /></button> : null}</div> : undefined}

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 export type PageContainerProps = {
-  /** Small uppercase label above the title, e.g. 文档中心. */
+  /** Optional section context above the title, e.g. 文档中心. */
   eyebrow?: string;
   title: ReactNode;
   description?: ReactNode;
@@ -11,9 +11,7 @@ export type PageContainerProps = {
 };
 
 /**
- * Canonical page geometry for workspace pages: one centered column with a
- * consistent header (eyebrow / title / description / actions). Pages should
- * not hand-roll their own max-width wrapper or header markup.
+ * Shared workbench column with a quiet title row and a separating hairline.
  */
 export function PageContainer({ eyebrow, title, description, actions, children }: PageContainerProps) {
   return (

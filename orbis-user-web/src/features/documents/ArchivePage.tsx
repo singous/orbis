@@ -60,13 +60,13 @@ function ArchiveSection({
         </div>
       </div>
       {resources.length ? (
-        <div className="divide-y divide-[var(--border)] overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-content)]">
+        <div className="workbench-document-list">
           {resources.map((resource) => (
             <div
               key={resource.id}
-              className="flex items-center gap-3 px-4 py-3.5"
+              className="workbench-document-row"
             >
-              <div className="document-icon small">{icon}</div>
+              <div className="workbench-list-icon">{icon}</div>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-semibold">{resource.label}</div>
                 {resource.parentLabel ? (
@@ -152,7 +152,6 @@ export function ArchivePage() {
   return (
     <DocumentShell>
       <PageContainer
-        eyebrow="文档中心"
         title="归档"
         description={
           canRestore

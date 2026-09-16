@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import type { NotebookIconValue } from "../../shared/api/schemas";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import {
   createDocumentGroup,
@@ -123,13 +124,13 @@ export function useArchiveDocumentGroup() {
 export function useCreateNotebook() {
   const auth = useDocumentAuth();
   const refresh = useRefreshDocuments();
-  return useMutation({ mutationFn: (payload: { title: string; group_id?: string | null; sort_order: number }) => createNotebook(payload, auth), onSuccess: refresh });
+  return useMutation({ mutationFn: (payload: { title: string; group_id?: string | null; sort_order: number; icon?: NotebookIconValue | null }) => createNotebook(payload, auth), onSuccess: refresh });
 }
 
 export function useUpdateNotebook() {
   const auth = useDocumentAuth();
   const refresh = useRefreshDocuments();
-  return useMutation({ mutationFn: ({ id, ...payload }: { id: string; title?: string; group_id?: string | null; sort_order?: number }) => updateNotebook(id, payload, auth), onSuccess: refresh });
+  return useMutation({ mutationFn: ({ id, ...payload }: { id: string; title?: string; group_id?: string | null; sort_order?: number; icon?: NotebookIconValue | null }) => updateNotebook(id, payload, auth), onSuccess: refresh });
 }
 
 export function useArchiveNotebook() {

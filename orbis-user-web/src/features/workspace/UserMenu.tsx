@@ -1,4 +1,4 @@
-import { ChevronUp, LogOut, Settings, Users } from "lucide-react";
+import { LogOut, Settings, Users } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -48,12 +48,16 @@ export function UserMenu({ user, workspace, onLogout }: UserMenuProps) {
     <div ref={rootRef} className="workspace-user-menu">
       {open ? (
         <div id="workspace-user-actions" className="workspace-user-popover">
-          <div className="border-b border-[var(--border-subtle)] px-3 py-2.5">
-            <div className="truncate text-xs font-semibold text-[var(--text-primary)]">{userName}</div>
-            <div className="mt-0.5 truncate text-[10px] text-[var(--text-tertiary)]">
+          <div className="workspace-user-profile">
+            <span className="workspace-user-avatar">{userName.slice(0, 1).toUpperCase()}</span>
+            <div>
+            <div className="workspace-user-name">{userName}</div>
+            <div className="workspace-user-space">
               {workspace?.name ?? "私人工作空间"}
             </div>
+            </div>
           </div>
+          <div className="workspace-user-actions-label">设置</div>
           <div className="p-1">
             {canManageWorkspaceMembers(workspace) ? (
               <Link to="/settings/members" className="workspace-user-menu-item" onClick={() => setOpen(false)}>
@@ -86,7 +90,6 @@ export function UserMenu({ user, workspace, onLogout }: UserMenuProps) {
           <span className="truncate">{userName}</span>
           <span className="workspace-user-trigger-role">{workspaceRoleLabel(workspace?.role)}</span>
         </span>
-        <ChevronUp aria-hidden="true" size={14} className={open ? "rotate-180" : ""} />
       </button>
     </div>
   );

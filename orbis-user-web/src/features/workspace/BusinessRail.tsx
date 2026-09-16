@@ -1,74 +1,42 @@
-import { BookOpen, Globe, Home, LibraryBig, Search, Settings, Sparkles } from "lucide-react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useStore } from "zustand";
+import { BookOpen, ChevronsRight, Globe, Home, LibraryBig, Orbit, Search, Settings, Sparkles } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 
-import { authStore } from "../../shared/auth/auth-store";
-import { RailCreateMenu } from "./RailCreateMenu";
-import { UserMenu } from "./UserMenu";
-import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
+import { Tooltip } from "../../shared/ui/Tooltip";
+import { resolveWorkspaceArea, WORKSPACE_AREAS, type WorkspaceAreaId } from "./workspace-areas";
 
-/**
- * Business rail: one fixed-width column of icon + label tiles. It does not
- * expand — deeper navigation belongs to the section menu column beside it.
- */
-export function BusinessRail() {
+type BusinessRailProps = { collapsed: boolean; onExpand: () => void };
+
+const areaIcons = {
+  home: Home,
+  documents: BookOpen,
+  sites: Globe,
+  knowledge: LibraryBig,
+  memory: Sparkles,
+  settings: Settings,
+} satisfies Record<WorkspaceAreaId, typeof Home>;
+const areas = WORKSPACE_AREAS.filter((area) => area.id !== "settings");
+
+export function BusinessRail({ collapsed, onExpand }: BusinessRailProps) {
   const { pathname } = useLocation();
-  const navigate = useNavigate();
-  const accessToken = useStore(authStore, (state) => state.accessToken);
-  const user = useStore(authStore, (state) => state.user);
-  const workspace = useStore(authStore, (state) => state.workspace);
-  const clearSession = useStore(authStore, (state) => state.clearSession);
-
-  function logout() {
-    clearSession();
-    navigate("/login", { replace: true });
-  }
-
-  const areas = [
-    { label: "首页", to: "/home", icon: Home, match: (p: string) => p === "/home" },
-    { label: "在线文档", to: "/documents", icon: BookOpen, match: (p: string) => p.startsWith("/documents") || p.startsWith("/collections") },
-    { label: "站点", to: "/sites", icon: Globe, match: (p: string) => p.startsWith("/sites") },
-    { label: "知识库", to: "/knowledge", icon: LibraryBig, match: (p: string) => p.startsWith("/knowledge") },
-    { label: "记忆", to: "/memory", icon: Sparkles, match: (p: string) => p.startsWith("/memory") },
-  ];
-
+  const activeArea = resolveWorkspaceArea(pathname);
   return (
-    <aside className="workspace-business-rail">
-      <div className="rail-inner">
-        <div className="rail-header">
-          <WorkspaceSwitcher />
-        </div>
-
-        <nav className="workspace-business-nav" aria-label="业务板块">
-          {accessToken ? <RailCreateMenu /> : null}
-
-          <Link to="/documents/search" className={`rail-tile${pathname === "/documents/search" ? " is-active" : ""}`}>
-            <span className="rail-tile-icon">
-              <Search aria-hidden="true" size={24} strokeWidth={2} />
-            </span>
-            <span className="rail-tile-label">搜索</span>
-          </Link>
-
-          {areas.map(({ label, to, icon: Icon, match }) => (
-            <Link key={label} to={to} className={`rail-tile${match(pathname) ? " is-active" : ""}`}>
-              <span className="rail-tile-icon">
-                <Icon aria-hidden="true" size={24} strokeWidth={2} />
-              </span>
-              <span className="rail-tile-label">{label}</span>
-            </Link>
-          ))}
-        </nav>
-
-        {/* Avatar opens the full menu; the gear is a direct shortcut. Logout
-            stays menu-only on purpose: a one-click destructive action on the
-            rail is easy to hit by accident, and duplicating the label would
-            leave two identically named controls. */}
-        <div className="rail-bottom">
-          <Link to="/settings/account" className="rail-foot-action" aria-label="账号设置">
-            <Settings aria-hidden="true" size={19} strokeWidth={2} />
-          </Link>
-          <UserMenu user={user} workspace={workspace} onLogout={logout} />
-        </div>
+    <aside className="workspace-business-rail" aria-label="应用导航">
+      {collapsed ? <Tooltip label="展开侧栏" side="right"><button className="rail-action rail-expand" type="button" aria-label="展开侧栏" onClick={onExpand}><ChevronsRight size={19} /></button></Tooltip> : null}
+      <Link to="/home" className="rail-brand" aria-label="Orbis 首页"><Orbit size={26} strokeWidth={1.8} /></Link>
+      <nav className="workspace-business-nav" aria-label="业务板块">
+        {areas.map(({ id, label, href }) => {
+          const Icon = areaIcons[id];
+          const active = activeArea.id === id;
+          return (
+          <Tooltip key={id} label={label} side="right">
+            <Link to={href} aria-label={label} aria-current={active ? "page" : undefined} className={`rail-action${active ? " is-active" : ""}`}><Icon aria-hidden="true" size={21} strokeWidth={1.7} /></Link>
+          </Tooltip>
+          );
+        })}
+      </nav>
+      <div className="rail-bottom">
+        <Tooltip label="搜索" side="right"><Link to="/documents/search" aria-label="搜索" className="rail-action"><Search size={20} strokeWidth={1.7} /></Link></Tooltip>
+        <Tooltip label="账号设置" side="right"><Link to="/settings/account" aria-label="账号设置" aria-current={activeArea.id === "settings" ? "page" : undefined} className={`rail-action${activeArea.id === "settings" ? " is-active" : ""}`}><Settings size={20} strokeWidth={1.7} /></Link></Tooltip>
       </div>
     </aside>
   );

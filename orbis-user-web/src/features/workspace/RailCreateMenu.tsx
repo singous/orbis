@@ -1,8 +1,11 @@
-import { BookOpen, FilePlus2, LibraryBig, Plus, Sparkles } from "lucide-react";
+import { BookOpen, FilePlus2, Plus } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { ResourceDialog } from "../documents/ResourceDialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../../shared/ui/DropdownMenu";
+import { useToast } from "../../shared/ui/Toast";
+import { NotebookDialog } from "../documents/NotebookDialog";
+import type { NotebookIconValue } from "../documents/notebook-icons";
 import {
   useCreateNote,
   useCreateNotebook,
@@ -12,12 +15,12 @@ import {
 } from "../documents/queries";
 
 /**
- * Quick-create entry on the business rail. Hover reveals the creatable
- * asset types: 文档 / 笔记本 now, 知识库 / 记忆库 once those modules land.
+ * Keyboard-accessible quick-create menu for the document area.
  * Documents are captured straight into the most recently updated notebook.
  */
 export function RailCreateMenu() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const groupsQuery = useDocumentGroups();
   const notebooksQuery = useNotebooks();
   const createNote = useCreateNote();
@@ -43,12 +46,13 @@ export function RailCreateMenu() {
     navigate(`/documents/${note.id}`);
   }
 
-  async function submitNotebook(title: string) {
+  async function submitNotebook({ title, icon }: { title: string; icon: NotebookIconValue | null }) {
     const groups = groupsQuery.data?.items ?? [];
     const group = groups.find((item) => item.is_default) ?? groups[0];
     if (!group) return;
     const notebook = await createNotebook.mutateAsync({
       title,
+      icon,
       group_id: group.id,
       sort_order: notebooks.length,
     });
@@ -58,39 +62,19 @@ export function RailCreateMenu() {
 
   return (
     <>
-      <div className="rail-create-group" onMouseEnter={() => setArmed(true)}>
-        <button type="button" className="rail-tile" aria-label="新建资产">
-          <span className="rail-tile-icon">
-            <Plus aria-hidden="true" size={24} strokeWidth={2} />
-          </span>
-          <span className="rail-tile-label">新建</span>
-        </button>
-        <div className="rail-create-popover">
-          <button type="button" className="rail-create-item" onClick={() => void createDocument()} disabled={createNote.isPending}>
-            <FilePlus2 aria-hidden="true" size={14} />
-            文档
-          </button>
-          <button type="button" className="rail-create-item" onClick={() => setNotebookDialogOpen(true)}>
-            <BookOpen aria-hidden="true" size={14} />
-            笔记本
-          </button>
-          <button type="button" className="rail-create-item" disabled>
-            <LibraryBig aria-hidden="true" size={14} />
-            知识库
-            <span className="rail-create-soon">即将推出</span>
-          </button>
-          <button type="button" className="rail-create-item" disabled>
-            <Sparkles aria-hidden="true" size={14} />
-            记忆库
-            <span className="rail-create-soon">即将推出</span>
-          </button>
-        </div>
-      </div>
-      <ResourceDialog
+      <DropdownMenu onOpenChange={setArmed}>
+        <DropdownMenuTrigger asChild>
+          <button type="button" className="rail-create-trigger" aria-label="新建资产"><Plus size={18} aria-hidden="true" /></button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="rail-create-popover" align="start" sideOffset={10}>
+          <DropdownMenuLabel>在当前空间新建</DropdownMenuLabel>
+          <DropdownMenuItem onSelect={() => { void createDocument().catch(() => toast({ title: "文档创建失败，请重试", tone: "danger" })); }} disabled={createNote.isPending}><FilePlus2 />文档</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setNotebookDialogOpen(true)}><BookOpen />笔记本</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <NotebookDialog
         open={notebookDialogOpen}
         title="新建笔记本"
-        label="笔记本名称"
-        placeholder="例如：Orbis 产品手册"
         submitLabel="创建笔记本"
         pending={createNotebook.isPending}
         onClose={() => setNotebookDialogOpen(false)}

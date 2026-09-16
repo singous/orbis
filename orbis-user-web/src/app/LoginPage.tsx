@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { ArrowRight, BookOpen, LogIn, Sparkles } from "lucide-react";
+import { ArrowRight, Orbit } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
@@ -50,43 +50,30 @@ export function LoginPage({ mode }: { mode: "login" | "setup" }) {
 
   return (
     <main className="auth-layout">
-      <div className="auth-glass-orbit" aria-hidden="true" />
+      <header className="auth-header">
+        <Link to="/login" className="auth-brand" aria-label="Orbis">
+          <span className="auth-brand-mark"><Orbit aria-hidden="true" size={23} strokeWidth={1.8} /></span>
+          <span>Orbis</span>
+        </Link>
+        <span className="auth-header-caption">你的知识工作空间</span>
+      </header>
 
-      <div className="auth-shell">
-        <header className="auth-header">
-          <Link to="/login" className="auth-brand" aria-label="Orbis">
-            <span className="auth-brand-mark">O</span>
-            <span className="auth-brand-word">ORBIS</span>
-          </Link>
-          <div className="auth-window-dots" aria-hidden="true"><span /><span /><span /></div>
-        </header>
-
-        <section className="auth-intro" aria-labelledby="auth-story-heading">
-          <div className="auth-eyebrow"><Sparkles aria-hidden="true" size={13} />云端文档，自主可控</div>
-          <h1 id="auth-story-heading">把想法写成<br /><span>可持续的知识资产</span></h1>
-          <p>Orbis 为个人与小团队提供安静、清晰的在线文档空间。层级组织、结构化编辑与自动保存，在同一处自然发生。</p>
-          <div className="auth-intro-note"><span aria-hidden="true" />专注写作，知识自然沉淀</div>
-        </section>
-
-        <section className="auth-form-panel" aria-labelledby="auth-heading">
-          <div className="auth-card">
-            <div className="auth-card-icon"><BookOpen aria-hidden="true" size={20} /></div>
-            <div className="auth-card-heading">
-              <div className="auth-card-kicker">{isSetup ? "首次启动" : "欢迎回来"}</div>
-              <h2 id="auth-heading">{isSetup ? "初始化 Orbis" : "登录工作空间"}</h2>
-              <p>{isSetup ? "创建唯一的所有者账号与默认私人工作空间。" : "继续编辑你的笔记本和在线文档。"}</p>
-            </div>
-            <form className="auth-form" aria-labelledby="auth-heading" onSubmit={handleSubmit}>
-              {isSetup ? <TextInput label="显示名称" placeholder="你的名字" value={displayName} required onChange={(event) => setDisplayName(event.target.value)} autoComplete="name" /> : null}
-              <TextInput label="邮箱" type="email" placeholder="name@example.com" value={email} required onChange={(event) => setEmail(event.target.value)} autoComplete="email" />
-              <TextInput label="密码" type="password" placeholder={isSetup ? "至少 8 位" : "输入密码"} value={password} required minLength={isSetup ? 8 : 1} onChange={(event) => setPassword(event.target.value)} autoComplete={isSetup ? "new-password" : "current-password"} />
-              {error ? <StatusMessage tone="error" title={isSetup && error.code === "SYSTEM_ALREADY_INITIALIZED" ? "无需重复初始化" : "无法继续"}>{errorMessage}{isSetup && error.code === "SYSTEM_ALREADY_INITIALIZED" ? <div className="mt-2"><Link className="font-semibold underline" to="/login">返回登录</Link></div> : null}</StatusMessage> : null}
-              <Button type="submit" variant="primary" className="auth-submit" disabled={authMutation.isPending} icon={isSetup ? <ArrowRight aria-hidden="true" size={16} /> : <LogIn aria-hidden="true" size={16} />}>{authMutation.isPending ? "正在连接…" : isSetup ? "创建并进入工作空间" : "登录 Orbis"}</Button>
-            </form>
-            <div className="auth-card-footer">{isSetup ? <>系统已初始化？ <Link to="/login">返回登录</Link></> : <>首次部署？ <Link to="/setup">初始化管理员账号 <ArrowRight aria-hidden="true" size={13} /></Link></>}</div>
-          </div>
-        </section>
-      </div>
+      <section className="auth-card" aria-labelledby="auth-heading">
+        <div className="auth-card-heading">
+          <div className="auth-card-kicker">{isSetup ? "从这里开始" : "欢迎回来"}</div>
+          <h1 id="auth-heading">{isSetup ? "初始化 Orbis" : "登录工作空间"}</h1>
+          <p>{isSetup ? "创建所有者账号，开启你的私人工作空间。" : "继续记录想法，整理和分享你的知识。"}</p>
+        </div>
+        <form className="auth-form" aria-labelledby="auth-heading" onSubmit={handleSubmit}>
+          {isSetup ? <TextInput label="显示名称" placeholder="你的名字" value={displayName} required onChange={(event) => setDisplayName(event.target.value)} autoComplete="name" /> : null}
+          <TextInput label="邮箱" type="email" placeholder="name@example.com" value={email} required onChange={(event) => setEmail(event.target.value)} autoComplete="email" />
+          <TextInput label="密码" type="password" placeholder={isSetup ? "至少 8 位" : "输入密码"} value={password} required minLength={isSetup ? 8 : 1} onChange={(event) => setPassword(event.target.value)} autoComplete={isSetup ? "new-password" : "current-password"} />
+          {error ? <StatusMessage tone="error" title={isSetup && error.code === "SYSTEM_ALREADY_INITIALIZED" ? "无需重复初始化" : "无法继续"}>{errorMessage}{isSetup && error.code === "SYSTEM_ALREADY_INITIALIZED" ? <div className="mt-2"><Link className="font-semibold underline" to="/login">返回登录</Link></div> : null}</StatusMessage> : null}
+          <Button type="submit" variant="primary" className="auth-submit" disabled={authMutation.isPending}>{authMutation.isPending ? "正在连接…" : isSetup ? "创建并进入工作空间" : "登录 Orbis"}<ArrowRight aria-hidden="true" size={16} /></Button>
+        </form>
+        <div className="auth-card-footer">{isSetup ? <>系统已初始化？ <Link to="/login">返回登录</Link></> : <>首次部署？ <Link to="/setup">初始化管理员账号</Link></>}</div>
+      </section>
+      <footer className="auth-footer">记录 · 连接 · 生长</footer>
     </main>
   );
 }

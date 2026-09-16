@@ -1,6 +1,7 @@
 import {
   Archive,
   BookOpen,
+  ChevronDown,
   FolderPlus,
   MoreHorizontal,
   Pin,
@@ -19,6 +20,10 @@ import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { DocumentShell } from "./DocumentShell";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { usePinnedNotebooks } from "./pinned-notebooks";
+import { useCollapsedGroups } from "./collapsed-groups";
+import { NotebookDialog } from "./NotebookDialog";
+import { NotebookIcon } from "./NotebookIcon";
+import type { NotebookIconValue } from "./notebook-icons";
 import { ResourceDialog } from "./ResourceDialog";
 import {
   useArchiveDocumentGroup,
@@ -37,7 +42,7 @@ type DialogState =
   | { kind: "group" }
   | { kind: "notebook"; groupId: string }
   | { kind: "rename-group"; resource: DocumentGroup }
-  | { kind: "rename-notebook"; resource: Notebook }
+  | { kind: "edit-notebook"; resource: Notebook }
   | null;
 
 type CollectionLocationState = {
@@ -48,6 +53,7 @@ export function CollectionsPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const workspace = useStore(authStore, (state) => state.workspace);
+  const { isCollapsed, toggleGroup } = useCollapsedGroups(workspace?.id);
   const canEdit = canMutateWorkspaceContent(workspace);
   const { isPinned, togglePin } = usePinnedNotebooks(workspace?.id);
   const [dialog, setDialog] = useState<DialogState>(null);
@@ -76,13 +82,14 @@ export function CollectionsPage() {
     [notes],
   );
 
-  async function handleDialog(value: string) {
+  async function handleDialog(value: string, icon?: NotebookIconValue | null) {
     if (!dialog) return;
     if (dialog.kind === "group")
       await createGroup.mutateAsync({ name: value, sort_order: groups.length });
     else if (dialog.kind === "notebook") {
       const notebook = await createNotebook.mutateAsync({
         title: value,
+        icon,
         group_id: dialog.groupId,
         sort_order: notebooks.length,
       });
@@ -93,6 +100,7 @@ export function CollectionsPage() {
       await updateNotebook.mutateAsync({
         id: dialog.resource.id,
         title: value,
+        icon,
       });
     setDialog(null);
   }
@@ -107,47 +115,17 @@ export function CollectionsPage() {
     navigate(`/documents/${note.id}`);
   }
 
-  const dialogCopy =
-    dialog?.kind === "group"
-      ? {
-          title: "新建分组",
-          label: "分组名称",
-          placeholder: "例如：产品研发",
-          initialValue: "",
-          submitLabel: "创建分组",
-        }
-      : dialog?.kind === "notebook"
-        ? {
-            title: "新建笔记本",
-            label: "笔记本名称",
-            placeholder: "例如：Orbis 产品手册",
-            initialValue: "",
-            submitLabel: "创建笔记本",
-          }
-        : dialog?.kind === "rename-group"
-          ? {
-              title: "重命名分组",
-              label: "分组名称",
-              placeholder: "分组名称",
-              initialValue: dialog.resource.name,
-              submitLabel: "保存",
-            }
-          : dialog?.kind === "rename-notebook"
-            ? {
-                title: "重命名笔记本",
-                label: "笔记本名称",
-                placeholder: "笔记本名称",
-                initialValue: dialog.resource.title,
-                submitLabel: "保存",
-              }
-            : null;
+  const dialogCopy = dialog?.kind === "group"
+    ? { title: "新建分组", label: "分组名称", placeholder: "例如：产品研发", initialValue: "", submitLabel: "创建分组" }
+    : dialog?.kind === "rename-group"
+      ? { title: "重命名分组", label: "分组名称", placeholder: "分组名称", initialValue: dialog.resource.name, submitLabel: "保存" }
+      : null;
 
   return (
     <DocumentShell>
       <PageContainer
-        eyebrow="文档中心"
         title="我的笔记本"
-        description="在清晰的层级中管理分组、笔记本和文档目录。"
+        description={`${notebooks.length} 个笔记本 · ${groups.length} 个分组`}
         actions={
           canEdit ? (
             <>
@@ -197,13 +175,7 @@ export function CollectionsPage() {
             请检查 API 服务后重试。
           </StatusMessage>
         ) : null}
-        <section aria-label="笔记本">
-          <div className="section-heading">
-            <div>
-              <h2>笔记本管理</h2>
-              <p>{notebooks.length} 个笔记本，按工作主题归档</p>
-            </div>
-          </div>
+        <section className="workbench-section" aria-label="笔记本">
           {groupsQuery.isLoading || notebooksQuery.isLoading ? (
             <div className="empty-panel">正在加载笔记本…</div>
           ) : null}
@@ -225,33 +197,37 @@ export function CollectionsPage() {
               ) : null}
             </div>
           ) : null}
-          <div className="space-y-8">
+          <div className="workbench-collection-groups">
             {groups.map((group) => {
               const groupNotebooks = notebooks.filter(
                 (notebook) => notebook.group_id === group.id,
               );
+              const collapsed = isCollapsed(group.id);
+              const contentId = `notebook-group-${group.id}`;
               return (
-                <div key={group.id}>
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-semibold">{group.name}</h3>
+                <div key={group.id} className={`workbench-collection-group${collapsed ? " is-collapsed" : ""}`}>
+                  <div className="workbench-section-heading">
+                    <h3 className="workbench-group-heading"><button type="button" className="workbench-group-toggle" aria-expanded={!collapsed} aria-controls={contentId} aria-label={`${collapsed ? "展开" : "收起"}分组 ${group.name}`} onClick={() => toggleGroup(group.id)}>
+                      <ChevronDown size={16} aria-hidden="true" className="workbench-group-chevron" />
+                      <span className="workbench-group-name" title={group.name}>{group.name}</span>
                       {group.is_default ? (
-                        <span className="tag">默认</span>
+                        <span className="workbench-group-default">默认</span>
                       ) : null}
                       <span className="text-xs text-[var(--muted-light)]">
                         {groupNotebooks.length}
                       </span>
-                    </div>
+                    </button></h3>
                     {canEdit ? (
                       <div className="flex items-center gap-1">
                         <button
                           className="text-action"
                           type="button"
+                          aria-label="+ 笔记本"
                           onClick={() =>
                             setDialog({ kind: "notebook", groupId: group.id })
                           }
                         >
-                          + 笔记本
+                          <Plus aria-hidden="true" size={16} />笔记本
                         </button>
                         <button
                           className="icon-button"
@@ -281,76 +257,39 @@ export function CollectionsPage() {
                       </div>
                     ) : null}
                   </div>
+                  <div id={contentId} hidden={collapsed}>
                   {groupNotebooks.length ? (
-                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    <div className="workbench-resource-grid">
                       {groupNotebooks.map((notebook) => (
-                        <article
-                          key={notebook.id}
-                          className="collection-card group/card relative"
-                        >
-                          <button
-                            type="button"
-                            className={`notebook-pin${isPinned(notebook.id) ? " is-on" : ""}`}
-                            aria-label={isPinned(notebook.id) ? `取消置顶 ${notebook.title}` : `置顶 ${notebook.title}`}
-                            aria-pressed={isPinned(notebook.id)}
-                            onClick={() => togglePin(notebook.id)}
-                          >
-                            <Pin aria-hidden="true" size={14} />
-                          </button>
-                          <Link
-                            to={`/collections/${notebook.id}`}
-                            className="block min-w-0 flex-1"
-                          >
-                            <div className="mb-8 document-icon">
-                              <BookOpen aria-hidden="true" size={19} />
-                            </div>
-                            <h4 className="truncate text-base font-semibold">
-                              {notebook.title}
-                            </h4>
-                            <p className="mt-2 text-xs text-[var(--muted)]">
-                              {notebookCounts.get(notebook.id) ?? 0} 篇文档 ·
-                              更新于 {formatDate(notebook.updated_at_ms)}
-                            </p>
+                        <article key={notebook.id} className="workbench-collection-card">
+                          <Link to={`/collections/${notebook.id}`} className="workbench-collection-link">
+                            <NotebookIcon icon={notebook.icon} />
+                            <span className="workbench-resource-copy">
+                              <strong>{notebook.title}</strong>
+                              <span>{notebookCounts.get(notebook.id) ?? 0} 篇文档 · 更新于 {formatDate(notebook.updated_at_ms)}</span>
+                            </span>
                           </Link>
-                          {canEdit ? (
-                            <div className="ml-2 flex shrink-0 flex-col gap-1 opacity-0 transition group-hover/card:opacity-100">
-                              <button
-                                type="button"
-                                className="icon-button"
-                                aria-label={`重命名 ${notebook.title}`}
-                                onClick={() =>
-                                  setDialog({
-                                    kind: "rename-notebook",
-                                    resource: notebook,
-                                  })
-                                }
-                              >
-                                <MoreHorizontal aria-hidden="true" size={15} />
-                              </button>
-                              <button
-                                type="button"
-                                className="icon-button danger-hover"
-                                aria-label={`归档 ${notebook.title}`}
-                                onClick={() =>
-                                  archiveNotebook.mutate({
-                                    id: notebook.id,
-                                    archived: true,
-                                  })
-                                }
-                              >
-                                <Archive aria-hidden="true" size={14} />
-                              </button>
-                            </div>
-                          ) : null}
-                          {canEdit &&
-                          (notebookCounts.get(notebook.id) ?? 0) === 0 ? (
+                          <div className="workbench-collection-actions">
                             <button
                               type="button"
-                              className="absolute bottom-4 right-4 text-action"
-                              onClick={() => createFirstDocument(notebook)}
+                              className={`icon-button${isPinned(notebook.id) ? " is-pinned" : ""}`}
+                              aria-label={isPinned(notebook.id) ? `取消置顶 ${notebook.title}` : `置顶 ${notebook.title}`}
+                              aria-pressed={isPinned(notebook.id)}
+                              onClick={() => togglePin(notebook.id)}
                             >
-                              新建文档
+                              <Pin aria-hidden="true" size={14} />
                             </button>
+                            {canEdit ? <>
+                              <button type="button" className="icon-button" aria-label={`编辑笔记本 ${notebook.title}`} title="编辑名称和图标" onClick={() => setDialog({ kind: "edit-notebook", resource: notebook })}>
+                                <MoreHorizontal aria-hidden="true" size={15} />
+                              </button>
+                              <button type="button" className="icon-button danger-hover" aria-label={`归档 ${notebook.title}`} onClick={() => archiveNotebook.mutate({ id: notebook.id, archived: true })}>
+                                <Archive aria-hidden="true" size={14} />
+                              </button>
+                            </> : null}
+                          </div>
+                          {canEdit && (notebookCounts.get(notebook.id) ?? 0) === 0 ? (
+                            <div className="workbench-collection-footer"><Button variant="ghost" className="workbench-collection-create" icon={<Plus aria-hidden="true" size={16} />} onClick={() => createFirstDocument(notebook)}>新建文档</Button></div>
                           ) : null}
                         </article>
                       ))}
@@ -362,18 +301,30 @@ export function CollectionsPage() {
                       onClick={() =>
                         setDialog({ kind: "notebook", groupId: group.id })
                       }
-                      className="w-full rounded-xl border border-dashed border-[var(--border-strong)] bg-[var(--surface-hover)] p-6 text-sm text-[var(--muted)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-active)] disabled:cursor-default"
+                      className="workbench-empty-group"
                     >
                       此分组暂无笔记本{canEdit ? "，点击创建" : ""}
                     </button>
                   )}
+                  </div>
                 </div>
               );
             })}
           </div>
         </section>
       </PageContainer>
-      {dialogCopy ? (
+      {dialog?.kind === "notebook" || dialog?.kind === "edit-notebook" ? (
+        <NotebookDialog
+          open
+          title={dialog.kind === "notebook" ? "新建笔记本" : "编辑笔记本"}
+          initialValue={dialog.kind === "edit-notebook" ? dialog.resource.title : ""}
+          initialIcon={dialog.kind === "edit-notebook" ? dialog.resource.icon : null}
+          submitLabel={dialog.kind === "notebook" ? "创建笔记本" : "保存"}
+          pending={createNotebook.isPending || updateNotebook.isPending}
+          onClose={() => setDialog(null)}
+          onSubmit={({ title, icon }) => handleDialog(title, icon)}
+        />
+      ) : dialogCopy ? (
         <ResourceDialog
           open
           title={dialogCopy.title}

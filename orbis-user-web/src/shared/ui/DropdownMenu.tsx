@@ -17,8 +17,7 @@ export function DropdownMenuContent({
         sideOffset={6}
         align="start"
         className={cn(
-          "glass-dropdown",
-          "z-50 min-w-40 rounded-[var(--radius-pop)] border border-[var(--border-subtle)] bg-[var(--surface-overlay)] p-1",
+          "z-50 min-w-48 rounded-[var(--radius-pop)] border border-[var(--border-subtle)] bg-[var(--surface-overlay)] p-1.5",
           "shadow-[var(--shadow-pop)]",
           className,
         )}
@@ -38,7 +37,7 @@ export function DropdownMenuItem({
   return (
     <RadixMenu.Item
       className={cn(
-        "flex cursor-pointer select-none items-center gap-2 rounded-[var(--radius-control)] px-2.5 py-1.5 text-sm outline-none",
+        "flex min-h-9 cursor-pointer select-none items-center gap-2.5 rounded-[var(--radius-control)] px-2.5 py-2 text-sm outline-none",
         "data-[highlighted]:bg-[var(--surface-hover)]",
         "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         destructive

@@ -1,6 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 
+import { NotebookIcon } from "./NotebookIcon";
 import { DocumentContextPanel } from "./DocumentContextPanel";
 import { useNotebooks } from "./queries";
 
@@ -25,8 +26,8 @@ export function NotebookSectionMenu({ notebookId, activeNoteId }: NotebookSectio
           <ArrowLeft aria-hidden="true" size={13} />
           文档中心
         </Link>
-        <div className="notebook-menu-title truncate" title={notebook?.title}>
-          {notebook?.title ?? "正在加载…"}
+        <div className="notebook-menu-title flex items-center gap-2" title={notebook?.title}>
+          <NotebookIcon icon={notebook?.icon} size="sm" /><span className="truncate">{notebook?.title ?? "正在加载…"}</span>
         </div>
       </div>
       <DocumentContextPanel notebookId={notebookId} activeNoteId={activeNoteId} />

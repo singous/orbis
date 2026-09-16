@@ -49,6 +49,7 @@ void panelPropKeysAreExact;
 
 vi.mock("./queries", () => ({
   useNoteTree: () => treeState,
+  useUpdateNotebook: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useDocumentGroups: () => ({
     data: {
       items: [{

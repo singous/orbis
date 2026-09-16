@@ -5,7 +5,7 @@ import { cn } from "./cn";
 
 export const buttonVariants = cva(
   [
-    "inline-flex items-center justify-center gap-2 font-medium whitespace-nowrap",
+    "ui-button border border-transparent",
     "transition-colors duration-100",
     "disabled:pointer-events-none disabled:opacity-50",
     "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]",
@@ -21,8 +21,8 @@ export const buttonVariants = cva(
         danger: "bg-[var(--danger)] text-[var(--text-oncolor)] hover:bg-[var(--danger-strong)]",
       },
       size: {
-        sm: "h-8 rounded-[var(--radius-control)] px-2.5 text-xs",
-        md: "h-9 rounded-[var(--radius-control)] px-3 text-sm",
+        sm: "ui-button--sm",
+        md: "ui-button--md",
       },
     },
     defaultVariants: {

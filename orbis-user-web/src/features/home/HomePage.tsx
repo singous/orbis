@@ -7,6 +7,7 @@ import {
   FileText,
   LibraryBig,
   Notebook,
+  Plus,
   Search,
 } from "lucide-react";
 import { type FormEvent, useState } from "react";
@@ -15,96 +16,44 @@ import { useStore } from "zustand";
 
 import { authStore } from "../../shared/auth/auth-store";
 import { formatDate } from "../../shared/format/date";
+import { PageContainer } from "../../shared/ui/PageContainer";
+import { StatusMessage } from "../../shared/ui/StatusMessage";
+import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
-import {
-  useDocumentGroups,
-  useNotebooks,
-  useNoteSearch,
-} from "../documents/queries";
+import { NotebookIcon } from "../documents/NotebookIcon";
+import { useDocumentGroups, useNotebooks, useNoteSearch } from "../documents/queries";
 
-/** 早/午/晚 greeting, so the hero reads as a working surface, not a banner. */
-function greeting(hour: number): string {
-  if (hour < 6) return "夜深了";
-  if (hour < 12) return "早上好";
-  if (hour < 18) return "下午好";
-  return "晚上好";
-}
-
-type AreaCard = {
+type WorkspaceArea = {
   title: string;
   description: string;
   to: string;
   icon: typeof BookOpen;
-  tags: string[];
   soon?: boolean;
 };
 
 export function HomePage() {
   const navigate = useNavigate();
-  const user = useStore(authStore, (state) => state.user);
+  const workspace = useStore(authStore, (state) => state.workspace);
   const groupsQuery = useDocumentGroups();
   const notebooksQuery = useNotebooks();
   const notesQuery = useNoteSearch("");
   const [keyword, setKeyword] = useState("");
-
   const groups = groupsQuery.data?.items ?? [];
   const notebooks = notebooksQuery.data?.items ?? [];
   const notes = notesQuery.data?.items ?? [];
 
-  // The search endpoint already returns notes in recency order and the home
-  // list is contracted to preserve it, so this must not re-sort.
+  // The search endpoint owns recency ordering; preserve its returned sequence.
   const recentNotes = notes.slice(0, 5);
-  // The chip row carries real shortcuts instead of decorative suggestions:
-  // the notebooks this workspace touched most recently.
   const recentNotebooks = [...notebooks]
     .sort((left, right) => right.updated_at_ms - left.updated_at_ms)
     .slice(0, 4);
-
-  const cards: AreaCard[] = [
-    {
-      title: "在线文档",
-      description: `${groups.length} 个分组 · ${notebooks.length} 个笔记本 · ${notes.length} 篇文档`,
-      to: "/documents",
-      icon: BookOpen,
-      tags: ["分组管理", "文档树"],
-    },
-    {
-      title: "我的笔记本",
-      description: "按笔记本组织文档，维护目录与层级。",
-      to: "/documents/collections",
-      icon: Notebook,
-      tags: ["目录", "层级"],
-    },
-    {
-      title: "最近编辑",
-      description: "回到刚刚离开的文档，接着写下去。",
-      to: "/documents/recent",
-      icon: Clock3,
-      tags: ["继续写作", "时间线"],
-    },
-    {
-      title: "全文搜索",
-      description: "按标题与正文检索工作区内的全部文档。",
-      to: "/documents/search",
-      icon: Search,
-      tags: ["标题", "正文"],
-    },
-    {
-      title: "知识库",
-      description: "文件入库、笔记快照发布与检索问答。",
-      to: "/knowledge",
-      icon: LibraryBig,
-      tags: ["即将推出"],
-      soon: true,
-    },
-    {
-      title: "记忆库",
-      description: "长期上下文沉淀与召回。",
-      to: "/memory",
-      icon: BrainCircuit,
-      tags: ["即将推出"],
-      soon: true,
-    },
+  const areas: WorkspaceArea[] = [
+    { title: "在线文档", description: `${groups.length} 个分组 · ${notebooks.length} 个笔记本 · ${notes.length} 篇文档`, to: "/documents", icon: BookOpen },
+    { title: "我的笔记本", description: "按主题整理文档，维护目录与层级。", to: "/documents/collections", icon: Notebook },
+    { title: "最近编辑", description: "继续上次的写作。", to: "/documents/recent", icon: Clock3 },
+    { title: "全文搜索", description: "搜索工作空间中的标题与正文。", to: "/documents/search", icon: Search },
+    { title: "知识库", description: "汇集文件与笔记，查找和使用知识。", to: "/knowledge", icon: LibraryBig, soon: true },
+    { title: "记忆库", description: "保存长期上下文，连接每一次思考。", to: "/memory", icon: BrainCircuit, soon: true },
   ];
 
   function submitSearch(event: FormEvent<HTMLFormElement>) {
@@ -115,100 +64,67 @@ export function HomePage() {
 
   return (
     <WorkspaceShell>
-      <div className="home-page">
-        <section className="home-hero" aria-labelledby="home-greeting">
-          <h1 className="home-hero-title" id="home-greeting">
-            {greeting(new Date().getHours())}
-            {user?.display_name ? `，${user.display_name}` : ""}，今天想写点什么？
-          </h1>
-          <p className="home-hero-subtitle">从搜索开始，或者直接进入一个笔记本。</p>
+      <PageContainer
+        title="首页"
+        description={workspace?.name || "我的工作空间"}
+        actions={canMutateWorkspaceContent(workspace) ? (
+          <Link className="workbench-primary-action" to="/documents/collections">
+            <Plus aria-hidden="true" size={16} />新建笔记本
+          </Link>
+        ) : null}
+      >
+        <section className="workbench-section" aria-label="工作区板块">
+          <header className="workbench-section-heading">
+            <h2>工作空间</h2>
+            <form className="workbench-inline-search" onSubmit={submitSearch} role="search">
+              <Search aria-hidden="true" size={15} />
+              <input type="search" aria-label="搜索文档" placeholder="搜索文档…" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
+              <button type="submit" aria-label="搜索"><ArrowRight aria-hidden="true" size={15} /></button>
+            </form>
+          </header>
+          <div className="workbench-resource-grid">
+            {areas.map(({ title, description, to, icon: Icon, soon }) => (
+              <Link key={title} to={to} className="workbench-resource-card">
+                <span className="workbench-resource-icon"><Icon aria-hidden="true" size={23} /></span>
+                <span className="workbench-resource-copy"><strong>{title}</strong><span>{description}</span></span>
+                {soon ? <span className="workbench-availability">即将推出</span> : <ChevronRight className="workbench-resource-chevron" aria-hidden="true" size={17} />}
+              </Link>
+            ))}
+          </div>
+        </section>
 
-          <form className="home-search" onSubmit={submitSearch} role="search">
-            <Search aria-hidden="true" size={18} />
-            <input
-              className="home-search-input"
-              type="search"
-              aria-label="搜索文档"
-              placeholder="搜索标题或正文…"
-              value={keyword}
-              onChange={(event) => setKeyword(event.target.value)}
-            />
-            <button type="submit" className="home-search-submit" aria-label="搜索">
-              <ArrowRight aria-hidden="true" size={17} />
-            </button>
-          </form>
-
-          {recentNotebooks.length ? (
-            <div className="home-chips">
+        {recentNotebooks.length ? (
+          <section className="workbench-section" aria-label="常用笔记本">
+            <header className="workbench-section-heading"><h2>最近使用的笔记本</h2><Link className="workbench-more" to="/documents/collections">查看全部<ChevronRight aria-hidden="true" size={14} /></Link></header>
+            <div className="workbench-notebook-shortcuts">
               {recentNotebooks.map((notebook) => (
-                <Link key={notebook.id} to={`/collections/${notebook.id}`} className="home-chip">
-                  <Notebook aria-hidden="true" size={13} />
-                  <span className="truncate">{notebook.title}</span>
-                </Link>
+                <Link key={notebook.id} to={`/collections/${notebook.id}`}><NotebookIcon icon={notebook.icon} size="sm" /><span>{notebook.title}</span></Link>
               ))}
             </div>
-          ) : null}
-        </section>
+          </section>
+        ) : null}
 
-        <section className="home-grid" aria-label="工作区板块">
-          {cards.map(({ title, description, to, icon: Icon, tags, soon }) => (
-            <Link key={title} to={to} className={`home-card${soon ? " is-soon" : ""}`}>
-              <span className="home-card-icon">
-                <Icon aria-hidden="true" size={19} />
-              </span>
-              <span className="home-card-title">{title}</span>
-              <span className="home-card-description">{description}</span>
-              <span className="home-card-tags">
-                {tags.map((tag) => (
-                  <span key={tag} className="tag">
-                    {tag}
-                  </span>
-                ))}
-              </span>
-            </Link>
-          ))}
-        </section>
-
-        <section className="home-recent" aria-label="最近编辑">
-          <header className="home-section-header">
-            <h2 className="home-section-title">最近编辑</h2>
-            <Link to="/documents/recent" className="home-section-more">
-              查看全部
-              <ChevronRight aria-hidden="true" size={15} />
-            </Link>
-          </header>
-
+        <section className="workbench-section" aria-label="最近编辑">
+          <header className="workbench-section-heading"><h2>最近编辑</h2><Link className="workbench-more" to="/documents/recent">查看全部<ChevronRight aria-hidden="true" size={14} /></Link></header>
+          {notesQuery.isError ? <StatusMessage tone="error" title="最近文档加载失败">请稍后重试。</StatusMessage> : null}
           {notesQuery.isLoading ? <div className="empty-panel">正在加载最近文档…</div> : null}
-
-          {!notesQuery.isLoading && !recentNotes.length ? (
-            <div className="empty-panel">
-              还没有可继续的文档。
-              <Link to="/documents/collections" className="mt-3 inline-flex text-sm font-semibold">
-                前往我的笔记本
-              </Link>
-            </div>
+          {!notesQuery.isLoading && !notesQuery.isError && !recentNotes.length ? (
+            <div className="empty-panel">还没有可继续的文档。<Link to="/documents/collections" className="mt-3 inline-flex text-sm font-semibold">前往我的笔记本</Link></div>
           ) : null}
-
           {recentNotes.length ? (
-            <ul className="home-recent-list">
+            <ul className="workbench-document-list">
               {recentNotes.map((note) => (
-                <li key={note.id}>
-                  <Link to={`/documents/${note.id}`} className="home-recent-item">
-                    <span className="home-recent-icon">
-                      <FileText aria-hidden="true" size={16} />
-                    </span>
-                    <span className="home-recent-body">
-                      <span className="home-recent-title">{note.title}</span>
-                      <span className="home-recent-excerpt">{note.plain_text || "空白文档"}</span>
-                    </span>
-                    <time className="home-recent-date">{formatDate(note.updated_at_ms)}</time>
-                  </Link>
-                </li>
+                <li key={note.id}><Link to={`/documents/${note.id}`} className="workbench-document-row">
+                  <FileText aria-hidden="true" size={18} />
+                  <span className="workbench-resource-copy"><strong>{note.title}</strong><span>{note.plain_text || "空白文档"}</span></span>
+                  <time>{formatDate(note.updated_at_ms)}</time>
+                  <ChevronRight className="workbench-resource-chevron" aria-hidden="true" size={15} />
+                </Link></li>
               ))}
             </ul>
           ) : null}
         </section>
-      </div>
+      </PageContainer>
     </WorkspaceShell>
   );
 }

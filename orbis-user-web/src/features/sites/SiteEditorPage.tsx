@@ -6,6 +6,7 @@ import { useStore } from "zustand";
 import { authStore } from "../../shared/auth/auth-store";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { Dialog, DialogContent } from "../../shared/ui/Dialog";
+import { PageContainer } from "../../shared/ui/PageContainer";
 import { canManageWorkspaceMembers, canMutateWorkspaceContent } from "../workspace/capabilities";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
 import { activateSiteRelease, getSite, publishSite, saveSite, unpublishSite } from "./api";
@@ -76,9 +77,8 @@ function SiteEditor({ site }: { site: Site }) {
     });
   }
 
-  return <WorkspaceShell sectionTitle="发布与站点"><div className="mvp-page site-editor-page">
-    <Link className="mvp-back" to="/sites"><ArrowLeft size={15} />所有站点</Link>
-    <div className="mvp-page-heading"><div><span className="mvp-eyebrow">发布管理</span><h1>{site.name}</h1><p>组织面向读者的内容，让每次发布都清晰可控。</p></div><span className={`site-state${site.published_release_id ? " published" : ""}`}><span />{site.published_release_id ? "已发布" : "尚未发布"}</span></div>
+  return <WorkspaceShell><PageContainer title={site.name} description="管理站点设置、发布内容与公开版本。" actions={<span className={`site-state${site.published_release_id ? " published" : ""}`}><span />{site.published_release_id ? "已发布" : "尚未发布"}</span>}><div className="workbench-site-editor">
+    <Link className="workbench-back" to="/sites"><ArrowLeft aria-hidden="true" size={15} />所有站点</Link>
     <div className="site-publishing-bar"><span><Globe size={17} />{site.published_slug ? <Link to={`/s/${site.published_slug}`} target="_blank" rel="noopener noreferrer">查看公开站点<ExternalLink size={14} /></Link> : "站点将在发布后对外开放"}</span><div><button type="button" className="mvp-button" disabled={busy} onClick={() => void preview()}><Eye size={16} />预览</button>{canPublish ? <button type="button" className="mvp-button primary" disabled={busy || !draft.navigation.length} onClick={() => setPendingAction({ type: "publish" })}><Rocket size={16} />发布站点</button> : <span className="mvp-muted">由所有者或管理员发布</span>}</div></div>
     {error ? <div role="alert" className="mvp-feedback error">{error}</div> : null}{message ? <div role="status" className="mvp-feedback success">{message}</div> : null}
     <form onSubmit={submit}>
@@ -94,12 +94,12 @@ function SiteEditor({ site }: { site: Site }) {
     <Dialog open={pendingAction !== null} onOpenChange={(open) => { if (!open && !busy) setPendingAction(null); }}><DialogContent title={pendingAction?.type === "publish" ? "确认发布站点" : pendingAction?.type === "unpublish" ? "确认撤回站点" : "切换公开版本"} description={pendingAction?.type === "publish" ? `将公开所选 ${draft.navigation.length} 篇文档当前已保存的内容。后续内部修改需要再次发布才会上线。` : pendingAction?.type === "unpublish" ? "公开链接将不再提供内容，内部文档和发布历史会保留。" : `将公开站点切换到版本 ${pendingAction?.type === "activate" ? pendingAction.number : ""}，内部草稿保持不变。`}>
       {error ? <p className="mvp-feedback error">{error}</p> : null}<div className="site-dialog-actions"><button className="mvp-button" type="button" disabled={busy} onClick={() => setPendingAction(null)}>取消</button><button className="mvp-button primary" type="button" disabled={busy} onClick={() => void confirmAction()}>{busy ? "处理中…" : pendingAction?.type === "publish" ? "确认发布" : "确认操作"}</button></div>
     </DialogContent></Dialog>
-  </div></WorkspaceShell>;
+  </div></PageContainer></WorkspaceShell>;
 }
 
 export function SiteEditorPage() {
   const { siteId = "" } = useParams();
   const query = useSite(siteId);
-  if (!query.data) return <WorkspaceShell sectionTitle="发布与站点"><div className="mvp-page"><h1>{query.isPending ? "正在打开站点…" : "无法打开站点"}</h1>{query.error ? <p role="alert">{query.error.message}</p> : null}<Link to="/sites">返回所有站点</Link></div></WorkspaceShell>;
+  if (!query.data) return <WorkspaceShell><div className="mvp-page"><h1>{query.isPending ? "正在打开站点…" : "无法打开站点"}</h1>{query.error ? <p role="alert">{query.error.message}</p> : null}<Link to="/sites">返回所有站点</Link></div></WorkspaceShell>;
   return <SiteEditor key={siteId} site={query.data} />;
 }

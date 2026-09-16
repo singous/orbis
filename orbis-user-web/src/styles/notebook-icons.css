@@ -1,0 +1,65 @@
+.notebook-icon {
+  --notebook-icon-bg: #e9f0ff;
+  --notebook-icon-fg: #4b76cf;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: 11px;
+  background: var(--notebook-icon-bg);
+  color: var(--notebook-icon-fg);
+}
+.notebook-icon > svg { width: 21px; height: 21px; }
+.notebook-icon--blue { --notebook-icon-bg: #e9f0ff; --notebook-icon-fg: #4b76cf; }
+.notebook-icon--mint { --notebook-icon-bg: #e0f3eb; --notebook-icon-fg: #298568; }
+.notebook-icon--violet { --notebook-icon-bg: #eee8fc; --notebook-icon-fg: #8560bb; }
+.notebook-icon--amber { --notebook-icon-bg: #fcf0d6; --notebook-icon-fg: #b48125; }
+.notebook-icon--rose { --notebook-icon-bg: #fbe6ec; --notebook-icon-fg: #c46680; }
+.notebook-icon--cyan { --notebook-icon-bg: #e0f2f5; --notebook-icon-fg: #368ca0; }
+.notebook-icon--slate { --notebook-icon-bg: #e9ecf1; --notebook-icon-fg: #6b778d; }
+.notebook-icon--sm { width: 18px; height: 18px; border-radius: 5px; }
+.notebook-icon--sm > svg { width: 13px; height: 13px; }
+.notebook-icon--lg { width: 52px; height: 52px; border-radius: 14px; }
+.notebook-icon--lg > svg { width: 27px; height: 27px; }
+.notebook-icon--image { background: var(--surface-hover); }
+.notebook-icon > img { width: 100%; height: 100%; object-fit: cover; }
+.notebook-dialog { max-width: 476px; }
+.notebook-dialog-form { margin-top: 25px; }
+.notebook-icon-picker { margin-top: 24px; }
+.notebook-icon-picker-preview { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.notebook-icon-picker-preview > div { flex: 1; }
+.notebook-icon-picker-preview strong { font-size: 13px; font-weight: 550; color: var(--text-primary); }
+.notebook-icon-picker-preview p { margin-top: 5px; font-size: 12px; color: var(--text-tertiary); }
+.notebook-icon-picker-grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 5px; }
+.notebook-icon-picker-grid > button { display: flex; align-items: center; justify-content: center; padding: 3px; border: 1px solid transparent; border-radius: 10px; cursor: pointer; }
+.notebook-icon-picker-grid .notebook-icon { width: 35px; height: 35px; border-radius: 8px; }
+.notebook-icon-picker-grid .notebook-icon > svg { width: 19px; height: 19px; }
+.notebook-icon-picker-grid > button[aria-checked="true"] { border-color: var(--text-secondary); background: var(--surface-content); }
+.notebook-icon-picker-grid > button:hover { background: var(--surface-hover); }
+.notebook-icon-picker-grid > button:focus-visible,
+.notebook-icon-swatch:focus-visible,
+.notebook-icon-upload-label:focus-within { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
+.notebook-icon-picker-colors { display: flex; justify-content: center; gap: 15px; margin: 19px 0 24px; }
+.notebook-icon-swatch { display: inline-flex; align-items: center; justify-content: center; width: 23px; height: 23px; border-radius: 50%; background: var(--notebook-icon-fg); color: white; cursor: pointer; }
+.notebook-icon-swatch[aria-checked="true"] { box-shadow: 0 0 0 3px var(--surface-content), 0 0 0 4px var(--notebook-icon-fg); }
+.notebook-icon-picker button:disabled { opacity: .45; cursor: default; }
+.notebook-icon-upload { display: flex; align-items: center; flex-direction: column; gap: 8px; padding-top: 18px; border-top: 1px solid var(--border-subtle); }
+.notebook-icon-upload-label { border-color: var(--border-subtle); color: var(--text-secondary); cursor: pointer; }
+.notebook-icon-upload-label:hover { background: var(--surface-hover); }
+.notebook-icon-upload-label.is-disabled { opacity: .5; cursor: default; }
+.notebook-icon-upload-hint { font-size: 11px; color: var(--text-tertiary); }
+.notebook-icon-error { margin-top: 12px; font-size: 12px; line-height: 1.6; color: var(--danger); }
+@media (max-width: 420px) {
+  .notebook-icon-picker-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 2px; }
+  .notebook-icon-picker-grid .notebook-icon { width: 29px; height: 32px; }
+  .notebook-icon-picker-grid > button { padding: 1px; }
+  .notebook-icon-picker-preview { gap: 11px; }
+}
+
+@media (max-width: 360px) {
+  .notebook-icon-picker-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
+  .notebook-icon-picker-colors { gap: 10px; }
+}

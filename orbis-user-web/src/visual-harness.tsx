@@ -11,7 +11,10 @@ import ReactDOM from "react-dom/client";
 import { App } from "./app/App";
 import { authStore } from "./shared/auth/auth-store";
 import "./styles/index.css";
-import "./styles/glass-theme.css";
+import "./styles/auth.css";
+import "./styles/workspace-shell.css";
+import "./styles/workbench-pages.css";
+import "./styles/notebook-icons.css";
 
 const WORKSPACE_ID = "018ff7c4-a5b6-7000-8000-000000000002";
 const OWNER_ID = "018ff7c4-a5b6-7000-8000-000000000001";

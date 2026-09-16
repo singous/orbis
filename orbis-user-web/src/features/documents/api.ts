@@ -12,6 +12,7 @@ import {
   type DocumentGroup,
   type MarkdownExport,
   type Notebook,
+  type NotebookIconValue,
   type Note,
   type NoteBlocks,
   type NoteContent,
@@ -85,11 +86,11 @@ export async function listNotebooks(
   }), authOptions(auth)));
 }
 
-export async function createNotebook(payload: { title: string; group_id?: string | null; sort_order: number }, auth: AuthRequestOptions): Promise<Notebook> {
+export async function createNotebook(payload: { title: string; group_id?: string | null; sort_order: number; icon?: NotebookIconValue | null }, auth: AuthRequestOptions): Promise<Notebook> {
   return notebookSchema.parse(await apiRequest("/notebooks", { method: "POST", body: payload, ...authOptions(auth) }));
 }
 
-export async function updateNotebook(notebookId: string, payload: { title?: string; group_id?: string | null; sort_order?: number }, auth: AuthRequestOptions): Promise<Notebook> {
+export async function updateNotebook(notebookId: string, payload: { title?: string; group_id?: string | null; sort_order?: number; icon?: NotebookIconValue | null }, auth: AuthRequestOptions): Promise<Notebook> {
   return notebookSchema.parse(await apiRequest(`/notebooks/${notebookId}`, { method: "PATCH", body: payload, ...authOptions(auth) }));
 }
 

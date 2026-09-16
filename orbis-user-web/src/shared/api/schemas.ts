@@ -89,10 +89,27 @@ export const documentGroupSchema = resourceIdentitySchema.extend({
 
 export const documentGroupListResponseSchema = pageDataSchema(documentGroupSchema);
 
+export const notebookIconNameSchema = z.enum([
+  "book", "notebook", "folder", "file-text", "lightbulb", "code", "palette", "rocket",
+  "flask", "globe", "graduation-cap", "heart", "briefcase", "target", "coffee", "music",
+]);
+
+export const notebookIconColorSchema = z.enum(["blue", "mint", "violet", "amber", "rose", "cyan", "slate"]);
+
+export const notebookIconSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("preset"), name: notebookIconNameSchema, color: notebookIconColorSchema }),
+  z.object({ type: z.literal("image"), file_id: z.string().uuid() }),
+]);
+
+export type NotebookIconValue = z.infer<typeof notebookIconSchema>;
+export type NotebookIconName = z.infer<typeof notebookIconNameSchema>;
+export type NotebookIconColor = z.infer<typeof notebookIconColorSchema>;
+
 export const notebookSchema = resourceIdentitySchema.extend({
   group_id: z.string().uuid(),
   title: z.string(),
   sort_order: z.number(),
+  icon: notebookIconSchema.nullable().optional(),
 });
 
 export const notebookListResponseSchema = pageDataSchema(notebookSchema);

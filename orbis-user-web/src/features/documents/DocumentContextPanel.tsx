@@ -207,7 +207,7 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
       {main ? null : (
         <div className="document-context-header">
           <h2>文档目录</h2>
-          {canEdit ? <Button variant="ghost" className="document-context-create" icon={<Plus aria-hidden="true" size={14} />} onClick={() => setCreateParent(null)}>新建文档</Button> : null}
+          {canEdit ? <Button variant="secondary" className="document-context-create" icon={<Plus aria-hidden="true" size={14} />} onClick={() => setCreateParent(null)}>新建文档</Button> : null}
         </div>
       )}
       {treeQuery.isError ? <StatusMessage tone="error" title="目录加载失败"><Button className="mt-3" variant="secondary" onClick={() => void treeQuery.refetch()}>重试加载目录</Button></StatusMessage> : null}

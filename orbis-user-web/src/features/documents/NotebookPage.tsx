@@ -1,5 +1,5 @@
-import { ArrowLeft, BookOpen, Download, Import, Plus } from "lucide-react";
-import { type ChangeEvent, useEffect, useRef } from "react";
+import { ArrowLeft, Download, Import, Plus, Settings2 } from "lucide-react";
+import { type ChangeEvent, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useStore } from "zustand";
 
@@ -8,12 +8,15 @@ import { Button } from "../../shared/ui/Button";
 import { DocumentContextPanel, DocumentContextSummaryProvider, useDocumentContextSummary } from "./DocumentContextPanel";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { DocumentShell } from "./DocumentShell";
+import { NotebookDialog } from "./NotebookDialog";
+import { NotebookIcon } from "./NotebookIcon";
 import { NotebookSectionMenu } from "./NotebookSectionMenu";
 import {
   useCreateNote,
   useExportMarkdown,
   useImportMarkdown,
   useNotebooks,
+  useUpdateNotebook,
 } from "./queries";
 
 function NotebookPageContent({ collectionId }: { collectionId: string }) {
@@ -25,6 +28,8 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
   const importMarkdown = useImportMarkdown();
   const exportMarkdown = useExportMarkdown();
   const createNote = useCreateNote();
+  const updateNotebook = useUpdateNotebook();
+  const [editing, setEditing] = useState(false);
   const treeSummary = useDocumentContextSummary();
   const notebook = notebooksQuery.data?.items.find((item) => item.id === collectionId);
   const collectionUnavailable =
@@ -77,27 +82,28 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
   return (
     <DocumentShell sectionMenu={<NotebookSectionMenu notebookId={collectionId} />}>
       <div className="page-container">
-        <Link to="/documents" className="mb-8 inline-flex items-center gap-2 text-xs font-medium text-[var(--muted)] hover:text-black"><ArrowLeft aria-hidden="true" size={14} />文档中心</Link>
-        <header className="notebook-hero">
-          <div className="document-icon large"><BookOpen aria-hidden="true" size={25} /></div>
-          <div className="min-w-0 flex-1"><div className="page-eyebrow">笔记本</div><h1 className="page-title truncate">{notebook?.title ?? "正在加载…"}</h1><p className="page-description">集中管理这个笔记本里的章节与页面。子文档会继承清晰的层级，但内容始终独立保存。</p><div className="mt-5 flex flex-wrap gap-2"><span className="tag">{treeSummary.noteCount} 篇文档</span><span className="tag">结构化内容</span><span className="tag">自动保存</span></div></div>
-        </header>
-
-        <div className="section-heading mt-10">
-          <div>
-            <h2>文档列表</h2>
-            <p>在此笔记本内创建与管理文档</p>
+        <Link to="/documents" className="workbench-back"><ArrowLeft aria-hidden="true" size={14} />文档中心</Link>
+        <header className="page-header notebook-page-header">
+          <div className="notebook-identity">
+            <NotebookIcon icon={notebook?.icon} size="lg" />
+            <div className="notebook-identity-copy">
+              <h1 className="page-title truncate">{notebook?.title ?? "正在加载…"}</h1>
+              <p className="page-description">{treeSummary.noteCount} 篇文档</p>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="page-actions">
+            {canEdit ? <button type="button" className="icon-button" aria-label="编辑笔记本" title="编辑名称和图标" onClick={() => setEditing(true)}><Settings2 size={17} /></button> : null}
             <input ref={fileInputRef} className="hidden" type="file" accept=".md,text/markdown,text/plain" onChange={handleImport} />
-            {canEdit ? <Button variant="primary" icon={<Plus aria-hidden="true" size={14} />} onClick={() => void createDocument()} disabled={createNote.isPending}>新建文档</Button> : null}
-            {canEdit ? <Button variant="secondary" icon={<Import aria-hidden="true" size={14} />} onClick={() => fileInputRef.current?.click()} disabled={importMarkdown.isPending}>导入 Markdown</Button> : null}
             <Button variant="secondary" icon={<Download aria-hidden="true" size={14} />} onClick={exportAllVisible} disabled={!treeSummary.noteCount || exportMarkdown.isPending}>导出全部</Button>
+            {canEdit ? <Button variant="secondary" icon={<Import aria-hidden="true" size={14} />} onClick={() => fileInputRef.current?.click()} disabled={importMarkdown.isPending}>导入 Markdown</Button> : null}
+            {canEdit ? <Button variant="primary" icon={<Plus aria-hidden="true" size={14} />} onClick={() => void createDocument()} disabled={createNote.isPending}>新建文档</Button> : null}
           </div>
-        </div>
+        </header>
+        <div className="workbench-section-heading"><h2>文档列表</h2><span className="workbench-section-count">{treeSummary.noteCount} 篇</span></div>
 
         <DocumentContextPanel notebookId={collectionId} variant="main" />
       </div>
+      {notebook ? <NotebookDialog open={editing} title="编辑笔记本" initialValue={notebook.title} initialIcon={notebook.icon} submitLabel="保存" pending={updateNotebook.isPending} onClose={() => setEditing(false)} onSubmit={async ({ title, icon }) => { await updateNotebook.mutateAsync({ id: notebook.id, title, icon }); setEditing(false); }} /> : null}
     </DocumentShell>
   );
 }

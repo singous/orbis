@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, RouterProvider, Routes, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -341,6 +341,34 @@ function CurrentSearch() {
 }
 
 describe("document function pages", () => {
+  it("collapses a notebook group with keyboard and restores its choice after remount", async () => {
+    const actor = userEvent.setup();
+    const view = await renderRoute("/documents/collections");
+    const toggle = await screen.findByRole("button", { name: "收起分组 默认分组" });
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(within(screen.getByRole("region", { name: "笔记本" })).getByText("产品手册")).toBeVisible();
+    toggle.focus();
+    await actor.keyboard("{Enter}");
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(within(screen.getByRole("region", { name: "笔记本" })).queryByText("产品手册")).not.toBeVisible();
+    view.unmount();
+    await renderRoute("/documents/collections");
+    const restored = await screen.findByRole("button", { name: "展开分组 默认分组" });
+    expect(restored).toHaveAttribute("aria-expanded", "false");
+    await actor.click(restored);
+    expect(within(screen.getByRole("region", { name: "笔记本" })).getByText("产品手册")).toBeVisible();
+  });
+
+  it("keeps group creation actions independent of the collapsed content", async () => {
+    const actor = userEvent.setup();
+    await renderRoute("/documents/collections");
+    await actor.click(await screen.findByRole("button", { name: "收起分组 默认分组" }));
+    const collapsedGroup = screen.getByRole("button", { name: "展开分组 默认分组" });
+    await actor.click(screen.getByRole("button", { name: "+ 笔记本" }));
+    expect(screen.getByRole("dialog", { name: "新建笔记本" })).toBeVisible();
+    expect(collapsedGroup).toHaveAttribute("aria-expanded", "false");
+  });
+
   beforeEach(() => {
     mocks.archiveGroup.mockReset();
     mocks.archiveNotebook.mockReset();
@@ -448,7 +476,7 @@ describe("document function pages", () => {
       recent.textContent?.indexOf("最新文档") ?? -1,
     );
     expect(screen.queryByRole("navigation", { name: "在线文档功能" })).not.toBeInTheDocument();
-    expect(document.querySelector(".workspace-shell")).not.toHaveClass("has-section-menu");
+    expect(document.querySelector(".workspace-shell")).toHaveClass("has-section-menu");
   });
 
   it("keeps account settings on the workspace shell without document functions", async () => {
@@ -456,7 +484,7 @@ describe("document function pages", () => {
 
     expect(await screen.findByRole("heading", { name: "账号" })).toBeVisible();
     expect(screen.queryByRole("navigation", { name: "在线文档功能" })).not.toBeInTheDocument();
-    expect(document.querySelector(".workspace-shell")).not.toHaveClass("has-section-menu");
+    expect(document.querySelector(".workspace-shell")).toHaveClass("has-section-menu");
   });
 
   it("recommends notebook creation on the overview outside any notebook", async () => {

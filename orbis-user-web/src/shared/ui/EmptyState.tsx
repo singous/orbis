@@ -18,12 +18,11 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center gap-2 rounded-[var(--radius-container)]",
-        "border border-dashed border-[var(--border-strong)] px-6 py-14 text-center",
+        "flex flex-col items-center justify-center gap-3 px-6 py-16 text-center",
         className,
       )}
     >
-      {icon ? <div className="text-[var(--text-tertiary)]">{icon}</div> : null}
+      {icon ? <div className="mb-1 grid h-12 w-12 place-items-center rounded-xl bg-[var(--surface-hover)] text-[var(--text-secondary)]">{icon}</div> : null}
       <div className="text-sm font-semibold text-[var(--text-primary)]">{title}</div>
       {description ? (
         <p className="max-w-sm text-sm leading-6 text-[var(--text-secondary)]">{description}</p>

@@ -14,7 +14,6 @@ export function RecentDocumentsPage() {
   return (
     <DocumentShell>
       <PageContainer
-        eyebrow="文档中心"
         title="最近文档"
         description="按最近更新时间继续你的工作。"
       >
@@ -38,14 +37,14 @@ export function RecentDocumentsPage() {
           </div>
         ) : null}
         {notes.length ? (
-          <div className="divide-y divide-[var(--border)] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-content)]">
+          <div className="workbench-document-list">
             {notes.map((note) => (
               <Link
                 key={note.id}
                 to={`/documents/${note.id}`}
-                className="flex items-center gap-4 px-5 py-4 transition hover:bg-[var(--surface-hover)]"
+                className="workbench-document-row"
               >
-                <div className="document-icon small">
+                <div className="workbench-list-icon">
                   <FilePlus2 aria-hidden="true" size={15} />
                 </div>
                 <div className="min-w-0 flex-1">

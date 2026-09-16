@@ -1,6 +1,5 @@
-import { readFileSync } from "node:fs";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Link, MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -9,11 +8,23 @@ import { authStore } from "../../shared/auth/auth-store";
 import { DocumentShell } from "../documents/DocumentShell";
 import { WorkspaceShell } from "./WorkspaceShell";
 
-const workspaceStyles = readFileSync("src/styles/index.css", "utf8");
+const originalMatchMedia = window.matchMedia;
 
-function Providers({ children }: { children: React.ReactNode }) {
+function setViewport(width: number) {
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    value: (query: string) => ({
+      matches: width <= Number(query.match(/max-width:\s*(\d+)px/)?.[1] ?? 0),
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }),
+  });
+}
+
+function Providers({ children, client }: { children: React.ReactNode; client?: QueryClient }) {
   return (
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+    <QueryClientProvider client={client ?? new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
       {children}
     </QueryClientProvider>
   );
@@ -41,18 +52,15 @@ const workspace = {
 };
 
 function CurrentPath() {
-  return <output aria-label="current path">{useLocation().pathname}</output>;
+  const location = useLocation();
+  return <output aria-label="current path">{location.pathname}{location.search}</output>;
 }
 
 function renderShell(initialEntry = "/documents", contextPanel?: React.ReactNode, sectionMenu?: React.ReactNode) {
   return render(
     <Providers>
       <MemoryRouter initialEntries={[initialEntry]}>
-        <WorkspaceShell
-          sectionTitle="测试工作台"
-          sectionMenu={sectionMenu}
-          contextPanel={contextPanel}
-        >
+        <WorkspaceShell sectionTitle="测试工作台" sectionMenu={sectionMenu} contextPanel={contextPanel}>
           <div>文档内容</div>
         </WorkspaceShell>
         <CurrentPath />
@@ -61,100 +69,135 @@ function renderShell(initialEntry = "/documents", contextPanel?: React.ReactNode
   );
 }
 
-function renderDocumentShell(initialEntry = "/documents") {
-  return render(
-    <Providers>
-      <MemoryRouter initialEntries={[initialEntry]}>
-        <DocumentShell><div>文档内容</div></DocumentShell>
-        <CurrentPath />
-      </MemoryRouter>
-    </Providers>,
-  );
-}
-
-function mobileDisplayFor(selector: string): string | null {
-  const mediaStart = workspaceStyles.search(/@media[^{]*640px/);
-  const mobileStyles = mediaStart >= 0 ? workspaceStyles.slice(mediaStart) : "";
-  const selectorStart = mobileStyles.indexOf(`${selector} {`);
-  const selectorEnd = selectorStart >= 0 ? mobileStyles.indexOf("}", selectorStart) : -1;
-  const declarations = selectorEnd >= 0 ? mobileStyles.slice(selectorStart, selectorEnd) : "";
-  return declarations.match(/display\s*:\s*([^;}]+)/)?.[1].trim() ?? null;
-}
-
 describe("WorkspaceShell", () => {
   beforeEach(() => {
+    window.localStorage.clear();
+    setViewport(1440);
     act(() => {
-      authStore.setState({
-        accessToken: "access-token",
-        refreshToken: "refresh-token",
-        user,
-        workspace,
-      });
+      authStore.setState({ accessToken: "access-token", refreshToken: "refresh-token", user, workspace });
     });
   });
 
   afterEach(() => {
+    cleanup();
     act(() => authStore.getState().clearSession());
+    Object.defineProperty(window, "matchMedia", { configurable: true, value: originalMatchMedia });
   });
 
-  it("renders only the business rail when a workspace page supplies no section menu", () => {
-    render(
-      <Providers>
-        <MemoryRouter>
-          <WorkspaceShell><div>工作区内容</div></WorkspaceShell>
-        </MemoryRouter>
-      </Providers>,
-    );
+  it.each([["/home", "首页导航"], ["/documents", "文档导航"], ["/sites", "站点导航"]])("provides secondary navigation by default on %s", (path, navigationName) => {
+    renderShell(path);
 
     expect(screen.getByRole("navigation", { name: "业务板块" })).toBeInTheDocument();
-    expect(screen.queryByRole("navigation", { name: "在线文档功能" })).not.toBeInTheDocument();
-    expect(screen.queryByText("在线云文档")).not.toBeInTheDocument();
-    expect(document.querySelector(".workspace-shell")).not.toHaveClass("has-section-menu");
+    expect(screen.getByRole("navigation", { name: navigationName })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "收起侧栏" })).toBeInTheDocument();
   });
 
-  it("keeps the business tabs integrated with the backdrop and joins the section menu to the main panel", () => {
-    const style = document.createElement("style");
-    style.textContent = workspaceStyles;
-    document.head.append(style);
+  it.each([
+    ["/home", "首页导航", ["工作台"]],
+    ["/sites", "站点导航", ["我的站点"]],
+    ["/sites/guide", "站点导航", ["我的站点"]],
+    ["/knowledge", "知识库导航", ["知识中心"]],
+    ["/memory", "记忆导航", ["长期记忆"]],
+    ["/settings/account", "设置导航", ["个人资料", "成员管理"]],
+  ] as const)("limits the secondary menu to its own area on %s", (path, label, links) => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<Providers client={client}><MemoryRouter initialEntries={[path]}><WorkspaceShell>内容</WorkspaceShell></MemoryRouter></Providers>);
 
-    try {
-      renderShell("/documents", undefined, <nav className="workspace-function-menu" aria-label="测试功能"><Link to="/documents">文档概览</Link></nav>);
-
-      const grid = document.querySelector(".workspace-shell-grid");
-      const rail = document.querySelector(".workspace-business-rail");
-      const menu = screen.getByRole("navigation", { name: "测试功能" });
-      const main = screen.getByRole("region", { name: "主工作区" });
-
-      expect(Number.parseFloat(getComputedStyle(grid!).columnGap)).toBe(0);
-      expect(getComputedStyle(rail!).backgroundColor).toBe("rgba(0, 0, 0, 0)");
-      expect(Number.parseFloat(getComputedStyle(menu).borderTopRightRadius)).toBe(0);
-      expect(Number.parseFloat(getComputedStyle(main).borderTopLeftRadius)).toBe(0);
-    } finally {
-      style.remove();
-    }
+    const menu = screen.getByRole("navigation", { name: label });
+    expect(within(menu).getAllByRole("link").map((link) => link.textContent)).toEqual(links);
+    expect(screen.queryByRole("button", { name: "新建资产" })).not.toBeInTheDocument();
+    expect(client.getQueryCache().getAll()).toHaveLength(0);
   });
 
-  it("renders a supplied section title and menu beside the business rail", () => {
+  it("keeps the area selected while switching its internal pages and replaces menus between areas", async () => {
+    const actor = userEvent.setup();
+    renderShell("/documents");
+    const rail = screen.getByRole("navigation", { name: "业务板块" });
+    await actor.click(within(screen.getByRole("navigation", { name: "文档导航" })).getByRole("link", { name: "最近编辑" }));
+
+    expect(within(rail).getByRole("link", { name: "在线文档" })).toHaveAttribute("aria-current", "page");
+    expect(within(screen.getByRole("navigation", { name: "文档导航" })).getByRole("link", { name: "最近编辑" })).toHaveAttribute("aria-current", "page");
+    expect(within(screen.getByRole("navigation", { name: "文档导航" })).getByRole("link", { name: "文档概览" })).not.toHaveAttribute("aria-current");
+    await actor.click(within(rail).getByRole("link", { name: "站点" }));
+
+    expect(within(rail).getByRole("link", { name: "站点" })).toHaveAttribute("aria-current", "page");
+    expect(within(rail).getByRole("link", { name: "在线文档" })).not.toHaveAttribute("aria-current");
+    expect(screen.queryByRole("navigation", { name: "文档导航" })).not.toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "站点导航" })).toHaveTextContent("我的站点");
+    expect(screen.queryByRole("link", { name: "归档" })).not.toBeInTheDocument();
+  });
+
+  it("switches areas with the sidebar collapsed and expands the destination menu", async () => {
+    const actor = userEvent.setup();
+    renderShell("/documents/recent");
+    await actor.click(screen.getByRole("button", { name: "收起侧栏" }));
+    await actor.click(within(screen.getByRole("navigation", { name: "业务板块" })).getByRole("link", { name: "站点" }));
+    expect(window.localStorage.getItem("orbis.sidebarCollapsed")).toBe("1");
+    await actor.click(screen.getByRole("button", { name: "展开侧栏" }));
+    expect(screen.getByRole("navigation", { name: "站点导航" })).toBeVisible();
+    expect(screen.queryByRole("navigation", { name: "文档导航" })).not.toBeInTheDocument();
+  });
+
+  it.each(["/collections/notebook-id", "/documents/note-id", "/documents/search"])("keeps nested document routes in the document area on %s", (path) => {
+    renderShell(path);
+    expect(within(screen.getByRole("navigation", { name: "业务板块" })).getByRole("link", { name: "在线文档" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("navigation", { name: "文档导航" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "新建资产" })).toBeInTheDocument();
+  });
+
+  it("provides settings navigation on account settings", () => {
+    renderShell("/settings/account");
+
+    expect(screen.getByRole("navigation", { name: "设置导航" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "主工作区" })).toHaveTextContent("文档内容");
+  });
+
+  it("uses a supplied section menu in place of the default secondary navigation", () => {
     renderShell("/documents", undefined, <nav aria-label="测试功能"><Link to="/documents">文档概览</Link></nav>);
 
     expect(screen.getByRole("navigation", { name: "业务板块" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "测试功能" })).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "文档导航" })).not.toBeInTheDocument();
     expect(screen.getByText("测试工作台")).toBeInTheDocument();
-    expect(document.querySelector(".workspace-shell")).toHaveClass("has-section-menu");
   });
 
-  it("exposes search and the area tabs on the business rail", () => {
-    render(
-      <Providers>
-        <MemoryRouter initialEntries={["/documents"]}>
-          <DocumentShell><div>文档内容</div></DocumentShell>
-        </MemoryRouter>
-      </Providers>,
-    );
+  it("preserves labelled business links while secondary navigation is collapsed", async () => {
+    const actor = userEvent.setup();
+    renderShell();
 
-    expect(screen.getByRole("link", { name: "搜索" })).toHaveAttribute("href", "/documents/search");
-    expect(screen.getByRole("navigation", { name: "业务板块" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "常用笔记本" })).not.toBeInTheDocument();
+    await actor.click(screen.getByRole("button", { name: "收起侧栏" }));
+
+    expect(window.localStorage.getItem("orbis.sidebarCollapsed")).toBe("1");
+    expect(screen.queryByRole("navigation", { name: "文档导航" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "展开侧栏" })).toHaveFocus();
+    const rail = screen.getByRole("navigation", { name: "业务板块" });
+    expect(within(rail).getByRole("link", { name: "在线文档" })).toHaveAttribute("href", "/documents");
+    expect(within(screen.getByRole("complementary", { name: "应用导航" })).getByRole("link", { name: "搜索" })).toHaveAttribute("href", "/documents/search");
+
+    await actor.click(screen.getByRole("button", { name: "展开侧栏" }));
+    expect(screen.getByRole("navigation", { name: "文档导航" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "收起侧栏" })).toHaveFocus();
+    expect(window.localStorage.getItem("orbis.sidebarCollapsed")).not.toBe("1");
+  });
+
+  it("restores the persisted secondary-navigation preference", () => {
+    window.localStorage.setItem("orbis.sidebarCollapsed", "1");
+    renderShell();
+
+    expect(screen.getByRole("button", { name: "展开侧栏" })).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "文档导航" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "打开用户菜单" })).toBeInTheDocument();
+  });
+
+  it("submits global search as an encoded document-search query", async () => {
+    const actor = userEvent.setup();
+    renderShell("/home");
+
+    await actor.type(screen.getByRole("searchbox", { name: "全局搜索" }), "设计 规范{Enter}");
+
+    const destination = new URL(screen.getByRole("status", { name: "current path" }).textContent ?? "", "https://orbis.test");
+    expect(destination.pathname).toBe("/documents/search");
+    expect(destination.searchParams.get("q")).toBe("设计 规范");
   });
 
   it("keeps the optional context panel inside the main workspace column", () => {
@@ -162,83 +205,161 @@ describe("WorkspaceShell", () => {
 
     const mainWorkspace = screen.getByRole("region", { name: "主工作区" });
     const contextPanel = screen.getByRole("complementary", { name: "上下文面板" });
-    expect(mainWorkspace).toHaveClass("has-context");
     expect(mainWorkspace).toContainElement(contextPanel);
-    expect(mainWorkspace.lastElementChild).toBe(contextPanel);
-    expect(mainWorkspace.parentElement?.children).toHaveLength(2);
+    expect(contextPanel).toHaveTextContent("上下文内容");
+  });
+
+  it("keeps search and user access available while mobile navigation is closed", () => {
+    setViewport(390);
+    renderShell();
+
+    expect(screen.queryByRole("navigation", { name: "业务板块" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "打开主导航" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: "打开用户菜单" })).toBeInTheDocument();
+    expect(screen.getByRole("searchbox", { name: "全局搜索" })).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "文档导航" })).not.toBeInTheDocument();
+  });
+
+  it("opens mobile navigation even when the desktop sidebar preference is collapsed", async () => {
+    window.localStorage.setItem("orbis.sidebarCollapsed", "1");
+    setViewport(390);
+    const actor = userEvent.setup();
+    renderShell();
+
+    await actor.click(screen.getByRole("button", { name: "打开主导航" }));
+
+    expect(screen.getByRole("navigation", { name: "业务板块" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "文档导航" })).toBeInTheDocument();
+    expect(window.localStorage.getItem("orbis.sidebarCollapsed")).toBe("1");
+  });
+
+  it("closes the mobile navigation through Escape, backdrop and navigation links", async () => {
+    setViewport(390);
+    const actor = userEvent.setup();
+    renderShell("/home", undefined, <nav aria-label="测试功能"><Link to="/documents/recent">最近编辑</Link></nav>);
+    const trigger = screen.getByRole("button", { name: "打开主导航" });
+
+    await actor.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("navigation", { name: "测试功能" })).toBeInTheDocument();
+    await actor.keyboard("{Escape}");
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("navigation", { name: "测试功能" })).not.toBeInTheDocument();
+
+    await actor.click(trigger);
+    await actor.click(screen.getByRole("button", { name: "关闭主导航" }));
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+
+    await actor.click(trigger);
+    await actor.click(screen.getByRole("link", { name: "最近编辑" }));
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("status", { name: "current path" })).toHaveTextContent("/documents/recent");
+  });
+
+  it("keeps search shortcuts inside the mobile drawer until it is dismissed", async () => {
+    setViewport(390);
+    const actor = userEvent.setup();
+    renderShell();
+    const navigationTrigger = screen.getByRole("button", { name: "打开主导航" });
+    const search = screen.getByRole("searchbox", { name: "全局搜索" });
+
+    await actor.click(navigationTrigger);
+    const drawerFocus = document.activeElement;
+    expect(search.closest("header")).toHaveAttribute("inert");
+
+    await actor.keyboard("{Meta>}k{/Meta}");
+    expect(document.activeElement).toBe(drawerFocus);
+    await actor.keyboard("{Control>}k{/Control}");
+    expect(document.activeElement).toBe(drawerFocus);
+    expect(navigationTrigger).toHaveAttribute("aria-expanded", "true");
+
+    await actor.keyboard("{Escape}");
+    expect(search.closest("header")).not.toHaveAttribute("inert");
+    await actor.keyboard("{Control>}k{/Control}");
+    expect(search).toHaveFocus();
+  });
+
+  it("dismisses a nested quick-create menu before closing its mobile drawer", async () => {
+    setViewport(390);
+    const actor = userEvent.setup();
+    renderShell();
+    const navigationTrigger = screen.getByRole("button", { name: "打开主导航" });
+
+    await actor.click(navigationTrigger);
+    const createTrigger = screen.getByRole("button", { name: "新建资产" });
+    createTrigger.focus();
+    await actor.keyboard("{Enter}");
+    expect(screen.getByRole("menu")).toBeInTheDocument();
+
+    await actor.keyboard("{Escape}");
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(navigationTrigger).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("navigation", { name: "文档导航" })).toBeInTheDocument();
+    expect(createTrigger).toHaveFocus();
+
+    await actor.keyboard("{Escape}");
+    expect(navigationTrigger).toHaveAttribute("aria-expanded", "false");
+    expect(navigationTrigger).toHaveFocus();
   });
 
   it("collapses the mobile document context drawer when its panel is closed", async () => {
-    const originalMatchMedia = window.matchMedia;
-    Object.defineProperty(window, "matchMedia", {
-      configurable: true,
-      value: () => ({
-        matches: true,
-        addEventListener: () => undefined,
-        removeEventListener: () => undefined,
-      }),
-    });
+    setViewport(390);
     const actor = userEvent.setup();
+    render(
+      <Providers>
+        <MemoryRouter initialEntries={["/documents"]}>
+          <DocumentShell contextPanel={<nav aria-label="测试文档目录">文档目录</nav>}>
+            <div>文档内容</div>
+          </DocumentShell>
+        </MemoryRouter>
+      </Providers>,
+    );
+    const trigger = screen.getByRole("button", { name: "打开文档目录" });
 
-    try {
-      render(
-        <Providers>
-          <MemoryRouter initialEntries={["/documents"]}>
-            <DocumentShell contextPanel={<nav aria-label="测试文档目录">文档目录</nav>}>
-              <div>文档内容</div>
-            </DocumentShell>
-          </MemoryRouter>
-        </Providers>,
-      );
-      const trigger = screen.getByRole("button", { name: "打开文档目录" });
+    await actor.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    await actor.click(screen.getByRole("button", { name: "收起上下文面板" }));
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("navigation", { name: "测试文档目录" })).not.toBeInTheDocument();
 
-      await actor.click(trigger);
-      expect(trigger).toHaveAttribute("aria-expanded", "true");
-      await actor.click(screen.getByRole("button", { name: "收起上下文面板" }));
-
-      expect(trigger).toHaveAttribute("aria-expanded", "false");
-      const panel = document.querySelector('aside[aria-label="上下文面板"]');
-      expect(panel).toHaveAttribute("hidden");
-      expect(panel).toHaveAttribute("aria-hidden", "true");
-      expect(panel).toHaveAttribute("inert");
-
-      await actor.click(trigger);
-      expect(trigger).toHaveAttribute("aria-expanded", "true");
-      expect(panel).not.toHaveAttribute("hidden");
-    } finally {
-      Object.defineProperty(window, "matchMedia", {
-        configurable: true,
-        value: originalMatchMedia,
-      });
-    }
+    await actor.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("navigation", { name: "测试文档目录" })).toBeInTheDocument();
   });
 
-  it("does not hide the user access surface at mobile width", () => {
-    renderShell();
+  it("keeps mobile navigation and context drawers mutually exclusive", async () => {
+    setViewport(390);
+    const actor = userEvent.setup();
+    renderShell("/documents", <div>上下文内容</div>);
+    const navigation = screen.getByRole("button", { name: "打开主导航" });
+    const context = screen.getByRole("button", { name: "打开文档目录" });
 
-    expect(screen.getByRole("button", { name: "打开用户菜单" })).toBeInTheDocument();
-    expect(mobileDisplayFor(".workspace-user-menu")).toBe("block");
+    await actor.click(navigation);
+    await actor.click(context);
+    expect(navigation).toHaveAttribute("aria-expanded", "false");
+    expect(context).toHaveAttribute("aria-expanded", "true");
+
+    await actor.click(navigation);
+    expect(navigation).toHaveAttribute("aria-expanded", "true");
+    expect(context).toHaveAttribute("aria-expanded", "false");
   });
 
   it("hides workspace members from a normal user menu", async () => {
-    act(() => authStore.setState((state) => ({ ...state, workspace: state.workspace ? { ...state.workspace, role: "normal" } : null })));
+    act(() => authStore.setState({ workspace: { ...workspace, role: "normal" } }));
     const actor = userEvent.setup();
     renderShell();
 
     await actor.click(screen.getByRole("button", { name: "打开用户菜单" }));
-
     expect(screen.queryByRole("link", { name: "工作空间成员" })).not.toBeInTheDocument();
   });
 
-  it("uses ordinary navigation and button semantics for user actions", async () => {
+  it("preserves navigation and logout semantics in the user menu", async () => {
     const actor = userEvent.setup();
     renderShell();
 
     await actor.click(screen.getByRole("button", { name: "打开用户菜单" }));
-
-    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "工作空间成员" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "账号" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "工作空间成员" })).toHaveAttribute("href", "/settings/members");
+    expect(screen.getByRole("link", { name: "账号" })).toHaveAttribute("href", "/settings/account");
     expect(screen.getByRole("button", { name: "退出登录" })).toBeInTheDocument();
   });
 
@@ -269,42 +390,23 @@ describe("WorkspaceShell", () => {
 
   it("routes knowledge and memory entries to their placeholder pages", () => {
     renderShell();
+    const rail = screen.getByRole("navigation", { name: "业务板块" });
 
-    expect(screen.getByRole("link", { name: "知识库" })).toHaveAttribute("href", "/knowledge");
-    expect(screen.getByRole("link", { name: "记忆" })).toHaveAttribute("href", "/memory");
+    expect(within(rail).getByRole("link", { name: "知识库" })).toHaveAttribute("href", "/knowledge");
+    expect(within(rail).getByRole("link", { name: "记忆" })).toHaveAttribute("href", "/memory");
   });
 
-  it("places quick create above search on the rail", () => {
-    renderShell();
-
-    const createButton = screen.getByRole("button", { name: "新建资产" });
-    const searchLink = screen.getByRole("link", { name: "搜索" });
-    expect(
-      createButton.compareDocumentPosition(searchLink) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-  });
-
-  it("keeps the rail at one fixed form with labelled tiles and never expands", () => {
-    // The rail used to widen to 236px on hover or when pinned, swapping tiles
-    // for rows and a search box. That interaction is gone: one form only.
-    window.localStorage.setItem("orbis.railExpanded", "1");
-    renderShell();
-
-    expect(screen.getByRole("link", { name: "搜索" })).toBeInTheDocument();
-    expect(screen.queryByRole("searchbox", { name: "搜索文档" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "固定侧栏" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "收起侧栏" })).not.toBeInTheDocument();
-    expect(document.querySelector(".workspace-business-rail.is-expanded")).toBeNull();
-    expect(screen.getByRole("link", { name: "在线文档" })).toBeInTheDocument();
-
-    window.localStorage.removeItem("orbis.railExpanded");
-  });
-
-  it("keeps the application on its single visual theme", async () => {
+  it("opens quick create by keyboard and returns focus after Escape", async () => {
     const actor = userEvent.setup();
     renderShell();
+    const trigger = screen.getByRole("button", { name: "新建资产" });
 
-    await actor.click(screen.getByRole("button", { name: "打开用户菜单" }));
-    expect(screen.queryByRole("button", { name: /切换到.*模式/ })).not.toBeInTheDocument();
+    trigger.focus();
+    await actor.keyboard("{Enter}");
+    expect(screen.getByRole("menu")).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "笔记本" })).toBeInTheDocument();
+    await actor.keyboard("{Escape}");
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
   });
 });
