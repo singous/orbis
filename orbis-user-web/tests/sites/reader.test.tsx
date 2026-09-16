@@ -229,7 +229,7 @@ describe("Mint-style site reader", () => {
     const trigger = screen.getByRole("button", { name: "打开站点导航" });
     await user.click(trigger);
     const drawer = screen.getByRole("dialog", { name: "站点导航抽屉" });
-    expect(within(drawer).getByRole("link", { name: "开始使用" })).toHaveFocus();
+    expect(drawer.querySelector("summary")).toHaveFocus();
     await user.keyboard("{Shift>}{Tab}{/Shift}");
     expect(drawer).toContainElement(document.activeElement as HTMLElement);
     await user.keyboard("{Escape}");
@@ -237,6 +237,61 @@ describe("Mint-style site reader", () => {
     expect(trigger).toHaveFocus();
     expect(screen.getByRole("button", { name: "复制链接" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "复制页面" })).toBeInTheDocument();
+  });
+
+  it("wraps mobile drawer focus around visible controls when the final branch is collapsed", async () => {
+    const user = userEvent.setup();
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: vi.fn((query: string) => ({ matches: query.includes("max-width"), addEventListener: vi.fn(), removeEventListener: vi.fn() })),
+    });
+    const drawerSnapshot: SiteSnapshot = {
+      ...snapshot,
+      branding: { ...snapshot.branding!, footer_links: [] },
+      pages: [
+        ...snapshot.pages,
+        {
+          slug: "token-rotation",
+          title: "令牌轮换",
+          group: "安全",
+          section: "API",
+          parent_slug: "security",
+          plain_text: "定期轮换访问令牌。",
+          blocks: { schema_version: 2, blocks: [{ id: "token", type: "paragraph", content: "定期轮换访问令牌。", children: [] }] },
+        },
+        {
+          slug: "emergency-token",
+          title: "紧急令牌",
+          group: "安全",
+          section: "API",
+          parent_slug: "token-rotation",
+          plain_text: "创建一次性紧急令牌。",
+          blocks: { schema_version: 2, blocks: [{ id: "emergency", type: "paragraph", content: "创建一次性紧急令牌。", children: [] }] },
+        },
+      ],
+    };
+    render(<MemoryRouter><SiteReader snapshot={drawerSnapshot} basePath="/s/developer" /></MemoryRouter>);
+    await user.click(screen.getByRole("button", { name: "打开站点导航" }));
+    const drawer = screen.getByRole("dialog", { name: "站点导航抽屉" });
+    const summaries = drawer.querySelectorAll<HTMLElement>("summary");
+    const firstVisible = summaries[0];
+    const finalDetails = summaries[1].closest("details")!;
+    const lastVisible = within(drawer).getByRole("link", { name: "访问控制" });
+    const hiddenNested = within(drawer).getByRole("link", { name: "令牌轮换", hidden: true });
+    const hiddenDeepNested = within(drawer).getByRole("link", { name: "紧急令牌", hidden: true });
+    expect(finalDetails).not.toHaveAttribute("open");
+
+    lastVisible.focus();
+    await user.tab();
+    expect(firstVisible).toHaveFocus();
+    expect(hiddenNested).not.toHaveFocus();
+    expect(hiddenDeepNested).not.toHaveFocus();
+
+    firstVisible.focus();
+    await user.keyboard("{Shift>}{Tab}{/Shift}");
+    expect(lastVisible).toHaveFocus();
+    expect(hiddenNested).not.toHaveFocus();
+    expect(hiddenDeepNested).not.toHaveFocus();
   });
 
   it("announces clipboard success only after the browser write completes", async () => {

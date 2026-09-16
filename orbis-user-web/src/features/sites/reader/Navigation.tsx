@@ -30,15 +30,25 @@ export function Navigation({ sections, currentSlug, basePath, open, close, descr
   returnFocusRef: RefObject<HTMLButtonElement | null>;
 }) {
   const drawerRef = useRef<HTMLElement>(null);
+  const hiddenByCollapsedBranch = (element: HTMLElement) => {
+    let ancestor = element.parentElement;
+    while (ancestor && ancestor !== drawerRef.current) {
+      if (ancestor instanceof HTMLDetailsElement && !ancestor.open) {
+        const summary = Array.from(ancestor.children).find((child) => child.tagName === "SUMMARY");
+        if (!summary?.contains(element)) return true;
+      }
+      ancestor = ancestor.parentElement;
+    }
+    return false;
+  };
   const drawerFocusable = () => Array.from(drawerRef.current?.querySelectorAll<HTMLElement>("a[href], summary, button:not([disabled]), [tabindex]:not([tabindex='-1'])") ?? [])
-    .filter((element) => !(element.tagName === "SUMMARY" && element.querySelector("a[href]")));
+    .filter((element) => !hiddenByCollapsedBranch(element));
 
   useEffect(() => {
     if (!modal || !open) return;
-    const drawer = drawerRef.current;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    (drawer?.querySelector<HTMLElement>("a[href]") ?? drawer?.querySelector<HTMLElement>("summary, button:not([disabled])"))?.focus();
+    drawerFocusable()[0]?.focus();
     return () => {
       document.body.style.overflow = previousOverflow;
       returnFocusRef.current?.focus();
