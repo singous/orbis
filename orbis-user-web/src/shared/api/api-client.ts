@@ -6,6 +6,7 @@ export type ApiRequestOptions = {
   refreshToken?: string | null;
   body?: RequestBody;
   headers?: HeadersInit;
+  signal?: AbortSignal;
   onTokenRefresh?: (accessToken: string) => void;
   onUnauthorized?: () => void;
 };
@@ -87,6 +88,7 @@ function createRequestInit(options: ApiRequestOptions, token: string | null | un
     method: options.method ?? "GET",
     headers,
     body,
+    signal: options.signal,
   };
 }
 
@@ -126,11 +128,12 @@ async function parseSuccess<T>(response: Response): Promise<T> {
   return envelope?.data as T;
 }
 
-async function refreshAccessToken(refreshToken: string): Promise<string | null> {
+async function refreshAccessToken(refreshToken: string, signal?: AbortSignal): Promise<string | null> {
   const response = await fetch(`${apiBaseUrl()}/auth/refresh`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ refresh_token: refreshToken }),
+    signal,
   });
 
   if (!response.ok) {
@@ -156,17 +159,17 @@ async function handleError(response: Response, options: ApiRequestOptions): Prom
   );
 }
 
-export async function apiRequest<T = unknown>(path: string, options: ApiRequestOptions = {}): Promise<T> {
+async function requestWithParser<T>(path: string, options: ApiRequestOptions, parse: (response: Response) => Promise<T>): Promise<T> {
   const response = await fetch(`${apiBaseUrl()}${path}`, createRequestInit(options, options.token));
 
   if (!response.ok) {
     if (response.status === 401 && options.refreshToken) {
-      const nextAccessToken = await refreshAccessToken(options.refreshToken);
+      const nextAccessToken = await refreshAccessToken(options.refreshToken, options.signal);
       if (nextAccessToken) {
         options.onTokenRefresh?.(nextAccessToken);
         const retryResponse = await fetch(`${apiBaseUrl()}${path}`, createRequestInit(options, nextAccessToken));
         if (retryResponse.ok) {
-          return parseSuccess<T>(retryResponse);
+          return parse(retryResponse);
         }
         return handleError(retryResponse, options);
       }
@@ -175,5 +178,14 @@ export async function apiRequest<T = unknown>(path: string, options: ApiRequestO
     return handleError(response, options);
   }
 
-  return parseSuccess<T>(response);
+  return parse(response);
+}
+
+export function apiRequest<T = unknown>(path: string, options: ApiRequestOptions = {}): Promise<T> {
+  return requestWithParser(path, options, parseSuccess<T>);
+}
+
+/** Binary success bodies retain the same authentication refresh and JSON errors. */
+export function apiBlobRequest(path: string, options: ApiRequestOptions = {}): Promise<Blob> {
+  return requestWithParser(path, options, (response) => response.blob());
 }
