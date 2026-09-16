@@ -49,9 +49,19 @@ export function ContentMedia({ kind, reference, fallback, name, caption }: {
     {caption ? <figcaption>{caption}</figcaption> : null}</figure>;
 }
 
-export function ManagedContentLink({ reference, fallback, children }: { reference?: string; fallback: string | null; children: ReactNode }) {
+export function ManagedContentImage({ reference, fallback, alt, unavailable }: {
+  reference?: string;
+  fallback: string | null;
+  alt: string;
+  unavailable: ReactNode;
+}) {
+  const resource = useContentResource(reference, fallback);
+  return resource.url ? <img src={resource.url} alt={alt} /> : unavailable;
+}
+
+export function ManagedContentLink({ reference, fallback, children, className }: { reference?: string; fallback: string | null; children: ReactNode; className?: string }) {
   const resource = useContentResource(reference, fallback);
   const links = useContext(ContentLinkContext);
-  return resource.url ? <a href={links?.resolve(resource.url) ?? resource.url} onClick={links?.onClick ? (event) => links.onClick?.(event, resource.url!) : undefined} download={resource.managed || undefined} rel="noopener noreferrer">{children}</a>
-    : <span>{children}{resource.loading ? <small>（附件加载中…）</small> : resource.canRetry ? <button type="button" onClick={resource.retry}>重新加载附件</button> : null}</span>;
+  return resource.url ? <a className={className} href={links?.resolve(resource.url) ?? resource.url} onClick={links?.onClick ? (event) => links.onClick?.(event, resource.url!) : undefined} download={resource.managed || undefined} rel="noopener noreferrer">{children}</a>
+    : <span className={className}>{children}{resource.loading ? <small>（附件加载中…）</small> : resource.canRetry ? <button type="button" onClick={resource.retry}>重新加载附件</button> : null}</span>;
 }

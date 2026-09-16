@@ -2,6 +2,7 @@ import { ChevronRight } from "lucide-react";
 import { useEffect, useRef, type RefObject } from "react";
 import { Link } from "react-router-dom";
 
+import { ManagedContentLink } from "../../content/ContentMedia";
 import type { SiteBranding } from "../schemas";
 import type { NavigationNode, NavigationSection } from "./reader-model";
 import { pageHref } from "./reader-model";
@@ -80,7 +81,7 @@ export function Navigation({ sections, currentSlug, basePath, open, close, descr
         </section>)}
       </nav>
       <footer className="site-reader-navigation-footer">
-        {footerLinks.map((link) => <a key={`${link.label}-${link.url}`} href={link.url} rel="noopener noreferrer">{link.label}</a>)}
+        {footerLinks.map((link) => <ManagedContentLink key={`${link.label}-${link.url}`} reference={link.url} fallback={link.url}>{link.label}</ManagedContentLink>)}
         <span>由 <strong>Orbis</strong> 提供支持</span>
       </footer>
     </aside>

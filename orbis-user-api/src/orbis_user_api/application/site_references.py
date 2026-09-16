@@ -133,10 +133,7 @@ def _document_candidate(
     if not parsed.scheme and not parsed.netloc and parsed.path.startswith("/"):
         paths.add(_normalized_path(parsed.path))
     elif parsed.scheme in {"http", "https"} and parsed.hostname:
-        try:
-            value_origin = _origin(parsed)
-        except ValueError:
-            return None
+        value_origin = _origin(parsed)
         for app_origin, prefix in url_policy.internal_locations:
             if value_origin != app_origin:
                 continue
@@ -247,7 +244,10 @@ async def prepare_site_references(
             return
 
         note_value = _note_reference(value)
-        document_value = _document_candidate(value, url_policy)
+        try:
+            document_value = _document_candidate(value, url_policy)
+        except ValueError:
+            raise _reference_error(source_title, "包含格式错误的链接") from None
         if note_value is not None or document_value is not None:
             if media:
                 raise _reference_error(source_title, "把内部文档链接用作了媒体文件")

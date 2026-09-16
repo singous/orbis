@@ -311,6 +311,25 @@ def test_malformed_or_unresolved_internal_references_name_the_source_page(
     assert client.get("/public/sites/asset-handbook").status_code == 404
 
 
+def test_malformed_url_returns_page_specific_validation_for_preview_and_publish(
+    client: TestClient,
+    owner: dict[str, str],
+    document: dict[str, Any],
+) -> None:
+    malformed = "https://[broken/documents/0190a111-1111-7111-8111-111111111111"
+    _save_content(client, owner, document["id"], [_link_block(malformed)])
+    site = _create_site(client, owner, (document, "start"))
+
+    for method, suffix in ((client.get, "preview"), (client.post, "publish")):
+        response = method(f"/sites/{site['id']}/{suffix}", headers=owner)
+        assert response.status_code == 422, response.text
+        assert response.json()["code"] == "SITE_REFERENCE_INVALID"
+        assert document["title"] in response.json()["message"]
+        assert malformed not in response.text
+
+    assert client.get("/public/sites/asset-handbook").status_code == 404
+
+
 def test_unselected_note_and_cross_workspace_file_references_are_rejected(
     client: TestClient,
     owner: dict[str, str],

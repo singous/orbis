@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import { Link, Navigate } from "react-router-dom";
 
 import { ContentRenderer, contentOutline, safeContentUrl } from "../content/ContentRenderer";
+import { parseFileReference } from "../files/managed-files";
 import { SITE_KINDS, type PublishedPage, type SiteBranding, type SiteSnapshot } from "./schemas";
 import { Header, type ReaderThemeMode } from "./reader/Header";
 import { Navigation } from "./reader/Navigation";
@@ -64,12 +65,13 @@ async function pageMarkdown(page: PublishedPage): Promise<string> {
   return `# ${page.title}\n\n${page.plain_text}`.trim();
 }
 
-function safeBranding(branding?: SiteBranding): SiteBranding {
+function safeBranding(branding: SiteBranding | undefined, preview: boolean): SiteBranding {
   const value = branding ?? DEFAULT_BRANDING;
-  const links = value.links.filter((link) => Boolean(safeContentUrl(link.url)));
-  const footerLinks = value.footer_links.filter((link) => Boolean(safeContentUrl(link.url)));
-  const cta = value.cta && safeContentUrl(value.cta.url) ? value.cta : null;
-  return { ...value, logo_url: safeContentUrl(value.logo_url, true), links, footer_links: footerLinks, cta };
+  const safe = (url: string | null, media = false) => safeContentUrl(url, media) ?? (preview && url && parseFileReference(url) ? url : null);
+  const links = value.links.filter((link) => Boolean(safe(link.url)));
+  const footerLinks = value.footer_links.filter((link) => Boolean(safe(link.url)));
+  const cta = value.cta && safe(value.cta.url) ? value.cta : null;
+  return { ...value, logo_url: safe(value.logo_url, true), links, footer_links: footerLinks, cta };
 }
 
 function formatDate(timestamp?: number | null): string | null {
@@ -82,7 +84,7 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false }: {
   pageSlug?: string;
   preview?: boolean;
 }) {
-  const branding = useMemo(() => safeBranding(snapshot.branding), [snapshot.branding]);
+  const branding = useMemo(() => safeBranding(snapshot.branding, preview), [snapshot.branding, preview]);
   const [navigationOpen, setNavigationOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [themeMode, setThemeMode] = useState<ReaderThemeMode>(() => storedTheme(branding.theme));
@@ -164,7 +166,7 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false }: {
   if (redirectTarget && redirectTarget !== pageSlug) return <Navigate replace to={pageHref(basePath, redirectTarget)} />;
 
   const updatedAt = current?.updated_at_ms ?? snapshot.published_at_ms;
-  return <div className={`site-reader${headerSections.length ? " has-site-sections" : ""}`} data-theme={theme} data-theme-mode={themeMode} style={{ "--site-accent": snapshot.accent_color } as CSSProperties}>
+  const reader = <div className={`site-reader${headerSections.length ? " has-site-sections" : ""}`} data-theme={theme} data-theme-mode={themeMode} style={{ "--site-accent": snapshot.accent_color } as CSSProperties}>
     <a className="site-reader-skip-link" href="#site-content">跳转到正文</a>
     {preview ? <div className="site-reader-preview-banner">发布预览 · 此页面只有工作空间成员可见</div> : null}
     <Header name={snapshot.name} basePath={basePath} logoUrl={branding.logo_url} links={branding.links} cta={branding.cta} sections={headerSections} currentSection={current?.section} themeMode={themeMode} onThemeChange={changeTheme} onSearch={() => setSearchOpen(true)} searchButtonRef={searchButtonRef} navigationButtonRef={navigationButtonRef} navigationOpen={navigationOpen} onNavigationToggle={() => setNavigationOpen((open) => !open)} />
@@ -188,7 +190,7 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false }: {
             </div>
           </div>
           {compactOutline ? <Outline items={outline} mobile /> : null}
-          {preview ? <SitePreviewLinks siteSlug={snapshot.slug} basePath={basePath}><ContentRenderer blocks={current.blocks} pageTitle={current.title} /></SitePreviewLinks> : <ContentRenderer blocks={current.blocks} pageTitle={current.title} />}
+          <ContentRenderer blocks={current.blocks} pageTitle={current.title} />
           <nav className="site-reader-pagination" aria-label="相邻文档">
             {currentIndex > 0 ? <Link to={pageHref(basePath, snapshot.pages[currentIndex - 1].slug)}><ArrowLeft aria-hidden="true" size={17} /><span><small>上一篇</small>{snapshot.pages[currentIndex - 1].title}</span></Link> : <span />}
             {currentIndex < snapshot.pages.length - 1 ? <Link to={pageHref(basePath, snapshot.pages[currentIndex + 1].slug)}><span><small>下一篇</small>{snapshot.pages[currentIndex + 1].title}</span><ArrowRight aria-hidden="true" size={17} /></Link> : null}
@@ -200,4 +202,5 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false }: {
     </div>
     {searchOpen ? <SearchDialog pages={snapshot.pages} basePath={basePath} close={closeSearch} /> : null}
   </div>;
+  return preview ? <SitePreviewLinks siteSlug={snapshot.slug} basePath={basePath}>{reader}</SitePreviewLinks> : reader;
 }
