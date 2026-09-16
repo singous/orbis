@@ -6,7 +6,6 @@ from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
-
 from orbis_user_api.application.site_assets import file_reference
 from orbis_user_api.core.ids import new_uuidv7
 from orbis_user_api.models.file import FileAsset
@@ -323,7 +322,7 @@ def test_malformed_url_returns_page_specific_validation_for_preview_and_publish(
     for method, suffix in ((client.get, "preview"), (client.post, "publish")):
         response = method(f"/sites/{site['id']}/{suffix}", headers=owner)
         assert response.status_code == 422, response.text
-        assert response.json()["code"] == "SITE_REFERENCE_INVALID"
+        assert response.json()["code"] == "SITE_CONTENT_UNSAFE"
         assert document["title"] in response.json()["message"]
         assert malformed not in response.text
 

@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 
 from orbis_user_api.api import openapi_base_mvp as base_mvp
+from orbis_user_api.api.openapi_site_delivery import install_site_delivery_docs
 
 EXAMPLE_REQUEST_ID = "019fe1e0-1234-7abc-8def-0123456789ab"
 
@@ -530,6 +531,7 @@ def install_chinese_openapi(app: FastAPI) -> None:
         _install_component_docs(schema)
         _install_operation_docs(schema)
         _install_base_mvp_docs(schema)
+        install_site_delivery_docs(schema, _add_error_example, _envelope)
         app.openapi_schema = schema
         return schema
 

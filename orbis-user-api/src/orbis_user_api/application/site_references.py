@@ -247,7 +247,14 @@ async def prepare_site_references(
         try:
             document_value = _document_candidate(value, url_policy)
         except ValueError:
-            raise _reference_error(source_title, "包含格式错误的链接") from None
+            # A malformed URL is not evidence of a recognized internal reference.
+            # Preserve the established public URL policy error contract.
+            error = unsafe_site_content()
+            raise SiteError(
+                error.code,
+                f"页面「{source_title}」包含格式错误或不适合公开的链接，请修正后重新发布",
+                error.status_code,
+            ) from None
         if note_value is not None or document_value is not None:
             if media:
                 raise _reference_error(source_title, "把内部文档链接用作了媒体文件")

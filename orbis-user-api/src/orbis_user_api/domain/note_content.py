@@ -12,6 +12,7 @@ from orbis_user_api.domain.document_components import (
     component_title,
     validate_component,
 )
+from orbis_user_api.domain.markdown_urls import markdown_destination
 
 EMPTY_NOTE_BLOCKS: dict[str, Any] = {
     "schema_version": 1,
@@ -562,7 +563,7 @@ def _render_inline(nodes: list[dict[str, Any]]) -> str:
         for mark in node.get("marks", []):
             mark_type = mark["type"]
             if mark_type == "link":
-                value = f"[{value}]({mark['attrs']['href']})"
+                value = f"[{value}]({markdown_destination(mark['attrs']['href'])})"
             elif mark_type == "bold":
                 value = f"**{value}**"
             elif mark_type == "italic":
@@ -585,6 +586,12 @@ def _list_start(value: object, fallback: int = 1) -> int:
 
 def _indent_markdown(markdown: str, indent: str) -> str:
     return "\n".join(f"{indent}{line}" if line else "" for line in markdown.split("\n"))
+
+
+def _code_fence(source: str, language: object) -> str:
+    fence = "`" * max(3, max((len(run) for run in re.findall(r"`+", source)), default=0) + 1)
+    info = re.sub(r"[`\x00-\x1f\x7f]", "", str(language or "")).strip()
+    return f"{fence}{info}\n{source}\n{fence}"
 
 
 def _render_blocks(nodes: list[dict[str, Any]]) -> str:
@@ -631,7 +638,7 @@ def _render_blocks(nodes: list[dict[str, Any]]) -> str:
             )
         elif node_type == "codeBlock":
             blocks.append(
-                f"```{node.get('attrs', {}).get('language') or ''}\n{_node_text(node)}\n```"
+                _code_fence(_node_text(node), node.get("attrs", {}).get("language"))
             )
         elif node_type == "horizontalRule":
             blocks.append("---")
@@ -666,7 +673,7 @@ def _render_v2_inline(inline: object) -> str:
     if inline.get("type") == "link":
         content = inline.get("content", [])
         text = content if isinstance(content, str) else _render_v2_inline(content)
-        return f"[{text}]({inline.get('href', '')})"
+        return f"[{text}]({markdown_destination(inline.get('href', ''))})"
     value = inline.get("text", "")
     styles = inline.get("styles") or {}
     if styles.get("code"):
@@ -722,12 +729,21 @@ def _render_v2_blocks(block_list: list[dict[str, Any]], depth: int = 0) -> str:
             checked = "x" if block.get("props", {}).get("checked") else " "
             out.append(f"{indent}- [{checked}] {text}")
         elif block_type == "quote":
-            body = _render_v2_blocks(children, 0) if children else text
+            body = "\n\n".join(part for part in [text, _render_v2_blocks(children, 0)] if part)
             out.append("\n".join(f"> {line}" for line in (body or text).splitlines()))
+        elif block_type in {"image", "file", "audio", "video"}:
+            props = block.get("props", {})
+            url = props.get("url", "")
+            label = str(props.get("caption") or props.get("name") or text or block_type)
+            label = label.replace("\\", "\\\\").replace("[", "\\[").replace("]", "\\]")
+            prefix = "!" if block_type == "image" else ""
+            out.append(f"{prefix}[{label}]({markdown_destination(url)})" if url else label)
+            if children:
+                out.append(_render_v2_blocks(children, depth + 1))
         elif block_type == "codeBlock":
             language = block.get("props", {}).get("language") or ""
-            code = block.get("content", "") if isinstance(block.get("content"), str) else text
-            out.append(f"```{language}\n{code}\n```")
+            code = block.get("content", "") if isinstance(block.get("content"), str) else _v2_block_text(block)
+            out.append(_code_fence(code, language))
         elif block_type == "divider":
             out.append("---")
         elif block_type == "table" and (rows := _v2_table_rows(block.get("content"))) is not None:
@@ -738,6 +754,8 @@ def _render_v2_blocks(block_list: list[dict[str, Any]], depth: int = 0) -> str:
             out.append(f"{indent}{text}")
             if children:
                 out.append(_render_v2_blocks(children, depth + 1))
+        if block_type in {"heading", "codeBlock", "divider"} and children:
+            out.append(_render_v2_blocks(children, depth + 1))
         if marker is not None and children:
             out.append(_indent_markdown(_render_v2_blocks(children), indent + " " * len(marker)))
     return "\n\n".join(part for part in out if part)

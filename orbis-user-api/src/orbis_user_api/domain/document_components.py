@@ -7,6 +7,8 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from orbis_user_api.domain.markdown_urls import markdown_destination
+
 DOCUMENT_BLOCKS: dict[str, dict[str, Any]] = json.loads(
     Path(__file__).with_name("document_blocks.json").read_text(encoding="utf-8")
 )["blocks"]
@@ -76,7 +78,7 @@ def component_markdown(
         return "\n".join("> " + line if line else ">" for line in body.split("\n"))
     if kind in {"card", "step", "tab"}:
         href = block.get("props", {}).get("href") if kind == "card" else None
-        heading = f"### [{title}]({href})" if href else f"### {title}"
+        heading = f"### [{title}]({markdown_destination(href)})" if href else f"### {title}"
         return "\n\n".join(part for part in [heading, inline, render(children)] if part)
     if kind == "steps":
         parts = []
