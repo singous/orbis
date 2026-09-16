@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -60,6 +60,10 @@ const snapshot: SiteSnapshot = {
   ],
 };
 
+const originalMatchMedia = window.matchMedia;
+const originalClipboard = Object.getOwnPropertyDescriptor(navigator, "clipboard");
+const originalScrollIntoView = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "scrollIntoView");
+
 function LocationProbe() {
   return <output aria-label="当前路径">{useLocation().pathname}</output>;
 }
@@ -67,6 +71,11 @@ function LocationProbe() {
 afterEach(() => {
   localStorage.clear();
   vi.restoreAllMocks();
+  Object.defineProperty(window, "matchMedia", { configurable: true, value: originalMatchMedia });
+  if (originalClipboard) Object.defineProperty(navigator, "clipboard", originalClipboard);
+  else Reflect.deleteProperty(navigator, "clipboard");
+  if (originalScrollIntoView) Object.defineProperty(HTMLElement.prototype, "scrollIntoView", originalScrollIntoView);
+  else Reflect.deleteProperty(HTMLElement.prototype, "scrollIntoView");
 });
 
 describe("Mint-style site reader", () => {
@@ -88,11 +97,90 @@ describe("Mint-style site reader", () => {
 
     await user.type(search, "部署");
     const option = within(dialog).getByRole("option", { name: /部署到生产环境/ });
-    expect(option).toHaveTextContent("指南 / 开始使用");
+    expect(option).toHaveTextContent("文档 / 指南 / 开始使用");
     await user.keyboard("{ArrowDown}{Enter}");
 
     expect(screen.queryByRole("dialog", { name: "搜索文档" })).not.toBeInTheDocument();
     expect(screen.getByLabelText("当前路径")).toHaveTextContent("/s/developer/deploy");
+  });
+
+  it("keeps selection keys on the search input and preserves native button activation", async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={["/s/developer"]}>
+        <Routes>
+          <Route path="/s/developer/:pageSlug?" element={<><SiteReader snapshot={snapshot} basePath="/s/developer" /><LocationProbe /></>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await user.click(screen.getByRole("button", { name: "搜索文档" }));
+    const dialog = screen.getByRole("dialog", { name: "搜索文档" });
+    const input = within(dialog).getByRole("combobox", { name: "搜索文档" });
+    await user.type(input, "使用");
+    const options = within(dialog).getAllByRole("option");
+    expect(options).toHaveLength(2);
+
+    fireEvent.keyDown(input, { key: "Enter", isComposing: true });
+    expect(dialog).toBeInTheDocument();
+    expect(screen.getByLabelText("当前路径")).toHaveTextContent("/s/developer");
+
+    options[1].focus();
+    await user.keyboard("{Enter}");
+    expect(screen.queryByRole("dialog", { name: "搜索文档" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("当前路径")).toHaveTextContent("/s/developer/security");
+  });
+
+  it("moves through multiple search results with arrow keys and scrolls the active option into view", async () => {
+    const user = userEvent.setup();
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", { configurable: true, value: scrollIntoView });
+    render(
+      <MemoryRouter initialEntries={["/s/developer"]}>
+        <Routes>
+          <Route path="/s/developer/:pageSlug?" element={<><SiteReader snapshot={snapshot} basePath="/s/developer" /><LocationProbe /></>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await user.click(screen.getByRole("button", { name: "搜索文档" }));
+    const input = screen.getByRole("combobox", { name: "搜索文档" });
+    await user.type(input, "使用");
+    await user.keyboard("{ArrowDown}");
+    expect(screen.getAllByRole("option")[1]).toHaveAttribute("aria-selected", "true");
+    expect(scrollIntoView).toHaveBeenCalled();
+    await user.keyboard("{Enter}");
+    expect(screen.getByLabelText("当前路径")).toHaveTextContent("/s/developer/security");
+  });
+
+  it("lets a tabbed close button handle Enter without opening a search result", async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={["/s/developer"]}>
+        <Routes>
+          <Route path="/s/developer/:pageSlug?" element={<><SiteReader snapshot={snapshot} basePath="/s/developer" /><LocationProbe /></>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await user.click(screen.getByRole("button", { name: "搜索文档" }));
+    await user.type(screen.getByRole("combobox", { name: "搜索文档" }), "部署");
+    await user.tab();
+    expect(screen.getByRole("button", { name: "关闭搜索" })).toHaveFocus();
+    await user.keyboard("{Enter}");
+    expect(screen.queryByRole("dialog", { name: "搜索文档" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("当前路径")).toHaveTextContent("/s/developer");
+  });
+
+  it("shows section-first search paths without repeating identical labels", async () => {
+    const user = userEvent.setup();
+    const repeatedLabelSnapshot = {
+      ...snapshot,
+      pages: snapshot.pages.map((page) => page.slug === "deploy" ? { ...page, section: "指南" } : page),
+    };
+    render(<MemoryRouter><SiteReader snapshot={repeatedLabelSnapshot} basePath="/s/developer" /></MemoryRouter>);
+    await user.click(screen.getByRole("button", { name: "搜索文档" }));
+    await user.type(screen.getByRole("combobox", { name: "搜索文档" }), "部署");
+    const result = screen.getByRole("option", { name: /部署到生产环境/ });
+    expect(result).toHaveTextContent("指南 / 开始使用");
+    expect(result).not.toHaveTextContent("指南 / 指南");
   });
 
   it("closes search with Escape and restores focus to its trigger", async () => {
@@ -123,6 +211,62 @@ describe("Mint-style site reader", () => {
       </MemoryRouter>,
     );
     expect(screen.getByLabelText("当前路径")).toHaveTextContent("/s/developer/deploy");
+  });
+
+  it("renders malformed unknown paths as missing pages instead of decoding them again", () => {
+    const malformedSnapshot = { ...snapshot, redirects: {} };
+    expect(() => render(<MemoryRouter><SiteReader snapshot={malformedSnapshot} basePath="/s/developer" pageSlug="%" /></MemoryRouter>)).not.toThrow();
+    expect(screen.getByRole("heading", { name: "页面不存在" })).toBeInTheDocument();
+  });
+
+  it("traps focus in the mobile navigation drawer and restores the menu trigger on Escape", async () => {
+    const user = userEvent.setup();
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: vi.fn((query: string) => ({ matches: query.includes("max-width"), addEventListener: vi.fn(), removeEventListener: vi.fn() })),
+    });
+    render(<MemoryRouter><SiteReader snapshot={snapshot} basePath="/s/developer" /></MemoryRouter>);
+    const trigger = screen.getByRole("button", { name: "打开站点导航" });
+    await user.click(trigger);
+    const drawer = screen.getByRole("dialog", { name: "站点导航抽屉" });
+    expect(within(drawer).getByRole("link", { name: "开始使用" })).toHaveFocus();
+    await user.keyboard("{Shift>}{Tab}{/Shift}");
+    expect(drawer).toContainElement(document.activeElement as HTMLElement);
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog", { name: "站点导航抽屉" })).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+    expect(screen.getByRole("button", { name: "复制链接" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "复制页面" })).toBeInTheDocument();
+  });
+
+  it("announces clipboard success only after the browser write completes", async () => {
+    const user = userEvent.setup();
+    let finishWrite: (() => void) | undefined;
+    const writeText = vi.fn(() => new Promise<void>((resolve) => { finishWrite = resolve; }));
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+    render(<MemoryRouter><SiteReader snapshot={snapshot} basePath="/s/developer" /></MemoryRouter>);
+    const copyLink = screen.getByRole("button", { name: "复制链接" });
+    await user.click(copyLink);
+    expect(copyLink).toHaveAccessibleName("复制链接");
+    expect(screen.queryByText("链接已复制")).not.toBeInTheDocument();
+    finishWrite?.();
+    await waitFor(() => expect(screen.getByRole("button", { name: "链接已复制" })).toBeInTheDocument());
+  });
+
+  it("reports unavailable and rejected clipboard writes without claiming success", async () => {
+    const user = userEvent.setup();
+    Reflect.deleteProperty(navigator, "clipboard");
+    render(<MemoryRouter><SiteReader snapshot={snapshot} basePath="/s/developer" /></MemoryRouter>);
+    const copyLink = screen.getByRole("button", { name: "复制链接" });
+    const copyPage = screen.getByRole("button", { name: "复制页面" });
+    await user.click(copyLink);
+    expect(screen.getByRole("status")).toHaveTextContent("请从地址栏手动复制");
+    expect(copyLink).toHaveAccessibleName("复制链接");
+
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: vi.fn().mockRejectedValue(new Error("denied")) } });
+    await user.click(copyPage);
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("请检查浏览器权限后重试"));
+    expect(copyPage).toHaveAccessibleName("复制页面");
   });
 
   it("uses the published system theme and lets readers select an explicit theme", async () => {

@@ -9,7 +9,7 @@ export type ReaderThemeMode = "system" | "light" | "dark";
 const THEME_LABELS: Record<ReaderThemeMode, string> = { system: "跟随系统", light: "浅色", dark: "深色" };
 const NEXT_THEME: Record<ReaderThemeMode, ReaderThemeMode> = { system: "light", light: "dark", dark: "system" };
 
-export function Header({ name, basePath, logoUrl, links, cta, sections, currentSection, themeMode, onThemeChange, onSearch, searchButtonRef, navigationOpen, onNavigationToggle }: {
+export function Header({ name, basePath, logoUrl, links, cta, sections, currentSection, themeMode, onThemeChange, onSearch, searchButtonRef, navigationButtonRef, navigationOpen, onNavigationToggle }: {
   name: string;
   basePath: string;
   logoUrl: string | null;
@@ -21,6 +21,7 @@ export function Header({ name, basePath, logoUrl, links, cta, sections, currentS
   onThemeChange: (mode: ReaderThemeMode) => void;
   onSearch: () => void;
   searchButtonRef: RefObject<HTMLButtonElement | null>;
+  navigationButtonRef: RefObject<HTMLButtonElement | null>;
   navigationOpen: boolean;
   onNavigationToggle: () => void;
 }) {
@@ -40,7 +41,7 @@ export function Header({ name, basePath, logoUrl, links, cta, sections, currentS
         {links.map((link) => <a key={`${link.label}-${link.url}`} href={link.url} rel="noopener noreferrer">{link.label}</a>)}
         {cta ? <a className="site-reader-cta" href={cta.url} rel="noopener noreferrer">{cta.label}</a> : null}
         <button type="button" className="site-reader-icon-button" aria-label={themeActionLabel} title={`主题：${THEME_LABELS[themeMode]}，下一项：${THEME_LABELS[nextTheme]}`} onClick={() => onThemeChange(nextTheme)}><ThemeIcon aria-hidden="true" size={17} /></button>
-        <button type="button" className="site-reader-icon-button site-reader-menu-toggle" aria-label={navigationOpen ? "关闭站点导航" : "打开站点导航"} aria-expanded={navigationOpen} aria-controls="site-navigation" onClick={onNavigationToggle}>{navigationOpen ? <X aria-hidden="true" size={20} /> : <Menu aria-hidden="true" size={20} />}</button>
+        <button ref={navigationButtonRef} type="button" className="site-reader-icon-button site-reader-menu-toggle" aria-label={navigationOpen ? "关闭站点导航" : "打开站点导航"} aria-expanded={navigationOpen} aria-controls="site-navigation" onClick={onNavigationToggle}>{navigationOpen ? <X aria-hidden="true" size={20} /> : <Menu aria-hidden="true" size={20} />}</button>
       </div>
     </div>
     {sections.length ? <nav className="site-reader-sections" aria-label="文档栏目">

@@ -1,4 +1,5 @@
 import { ChevronRight } from "lucide-react";
+import { useEffect, useRef, type RefObject } from "react";
 import { Link } from "react-router-dom";
 
 import type { SiteBranding } from "../schemas";
@@ -17,7 +18,7 @@ function NavigationBranch({ node, currentSlug, basePath, depth, close }: { node:
   </li>;
 }
 
-export function Navigation({ sections, currentSlug, basePath, open, close, description, footerLinks }: {
+export function Navigation({ sections, currentSlug, basePath, open, close, description, footerLinks, modal, returnFocusRef }: {
   sections: NavigationSection[];
   currentSlug?: string;
   basePath: string;
@@ -25,10 +26,42 @@ export function Navigation({ sections, currentSlug, basePath, open, close, descr
   close: () => void;
   description?: string;
   footerLinks: SiteBranding["footer_links"];
+  modal: boolean;
+  returnFocusRef: RefObject<HTMLButtonElement | null>;
 }) {
+  const drawerRef = useRef<HTMLElement>(null);
+  const drawerFocusable = () => Array.from(drawerRef.current?.querySelectorAll<HTMLElement>("a[href], summary, button:not([disabled]), [tabindex]:not([tabindex='-1'])") ?? [])
+    .filter((element) => !(element.tagName === "SUMMARY" && element.querySelector("a[href]")));
+
+  useEffect(() => {
+    if (!modal || !open) return;
+    const drawer = drawerRef.current;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    (drawer?.querySelector<HTMLElement>("a[href]") ?? drawer?.querySelector<HTMLElement>("summary, button:not([disabled])"))?.focus();
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      returnFocusRef.current?.focus();
+    };
+  }, [modal, open, returnFocusRef]);
+
   return <>
     {open ? <button type="button" className="site-reader-navigation-scrim" aria-label="收起站点导航" onClick={close} /> : null}
-    <aside id="site-navigation" className={`site-reader-navigation${open ? " is-open" : ""}`}>
+    <aside ref={drawerRef} id="site-navigation" className={`site-reader-navigation${open ? " is-open" : ""}`} role={modal && open ? "dialog" : undefined} aria-modal={modal && open ? "true" : undefined} aria-label={modal && open ? "站点导航抽屉" : undefined} onKeyDown={(event) => {
+      if (!modal || !open) return;
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        close();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusable = drawerFocusable();
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    }}>
       {description ? <p className="site-reader-navigation-intro">{description}</p> : null}
       <nav aria-label="站点导航">
         {sections.map((section, index) => <section key={`${section.label}-${index}`}>

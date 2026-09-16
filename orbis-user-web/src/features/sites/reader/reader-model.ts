@@ -12,7 +12,7 @@ export function pageHref(basePath: string, slug: string): string {
 
 export function resolveRedirect(slug: string | undefined, redirects: SiteSnapshot["redirects"]): string | null {
   if (!slug || !redirects) return null;
-  const normalized = decodeURIComponent(slug).replace(/^\/+|\/+$/g, "");
+  const normalized = slug.replace(/^\/+|\/+$/g, "");
   const target = redirects[normalized] ?? redirects[`/${normalized}`];
   return target ? target.replace(/^\/+|\/+$/g, "") : null;
 }
@@ -90,9 +90,18 @@ export function searchPublishedPages(pages: PublishedPage[], rawQuery: string): 
     const ancestors = pageAncestors(pages, page);
     const description = page.description || "";
     const excerptSource = description.toLocaleLowerCase().includes(query) ? description : page.plain_text;
+    const pathParts: string[] = [];
+    const seenPathParts = new Set<string>();
+    for (const value of [page.section, page.group || DEFAULT_GROUP, ...ancestors.map((item) => item.title)]) {
+      const label = value?.trim();
+      if (label && !seenPathParts.has(label)) {
+        seenPathParts.add(label);
+        pathParts.push(label);
+      }
+    }
     results.push({
       page,
-      path: [page.group || DEFAULT_GROUP, ...ancestors.map((item) => item.title)].join(" / "),
+      path: pathParts.join(" / "),
       excerpt: excerptFor(excerptSource, query),
       score: (titleIndex >= 0 ? 10_000 - titleIndex * 10 : 1_000 - bodyIndex) - index / 1_000,
     });

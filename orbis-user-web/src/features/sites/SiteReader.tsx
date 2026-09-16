@@ -13,6 +13,7 @@ import "../../styles/site-reader.css";
 
 const THEME_STORAGE_KEY = "orbis-reader-theme";
 const DEFAULT_BRANDING: SiteBranding = { logo_url: null, links: [], footer_links: [], cta: null, theme: "light" };
+type CopyFeedback = { action: "link" | "page"; status: "success" | "error"; message: string };
 
 function storedTheme(fallback: ReaderThemeMode): ReaderThemeMode {
   try {
@@ -84,10 +85,12 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false }: {
   const [navigationOpen, setNavigationOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [themeMode, setThemeMode] = useState<ReaderThemeMode>(() => storedTheme(branding.theme));
-  const [copyState, setCopyState] = useState<"link" | "page" | null>(null);
+  const [copyFeedback, setCopyFeedback] = useState<CopyFeedback | null>(null);
   const searchButtonRef = useRef<HTMLButtonElement>(null);
+  const navigationButtonRef = useRef<HTMLButtonElement>(null);
   const theme = useEffectiveTheme(themeMode);
   const compactOutline = useMediaQuery("(max-width: 1180px)");
+  const mobileNavigation = useMediaQuery("(max-width: 800px)");
   const redirectTarget = resolveRedirect(pageSlug, snapshot.redirects);
   const currentIndex = pageSlug ? snapshot.pages.findIndex((page) => page.slug === pageSlug) : 0;
   const current = snapshot.pages[currentIndex];
@@ -115,7 +118,7 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false }: {
   useEffect(() => {
     setNavigationOpen(false);
     setSearchOpen(false);
-    setCopyState(null);
+    setCopyFeedback(null);
   }, [pageSlug]);
 
   useEffect(() => {
@@ -129,17 +132,32 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false }: {
     try { localStorage.setItem(THEME_STORAGE_KEY, mode); } catch { /* Reading remains available without storage. */ }
   }
 
+  async function writeClipboard(action: CopyFeedback["action"], value: string) {
+    if (!navigator.clipboard?.writeText) {
+      setCopyFeedback({ action, status: "error", message: action === "link" ? "浏览器不支持自动复制，请从地址栏手动复制。" : "浏览器不支持自动复制，请手动选择页面正文。" });
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopyFeedback({ action, status: "success", message: action === "link" ? "链接已复制" : "页面 Markdown 已复制" });
+    } catch {
+      setCopyFeedback({ action, status: "error", message: "复制失败，请检查浏览器权限后重试。" });
+    }
+  }
+
   async function copyLink() {
     if (!current) return;
     const url = new URL(pageHref(basePath, current.slug), window.location.href).href;
-    await navigator.clipboard?.writeText(url);
-    setCopyState("link");
+    await writeClipboard("link", url);
   }
 
   async function copyPage() {
     if (!current) return;
-    await navigator.clipboard?.writeText(await pageMarkdown(current));
-    setCopyState("page");
+    try {
+      await writeClipboard("page", await pageMarkdown(current));
+    } catch {
+      setCopyFeedback({ action: "page", status: "error", message: "无法生成页面 Markdown，请稍后重试。" });
+    }
   }
 
   if (redirectTarget && redirectTarget !== pageSlug) return <Navigate replace to={pageHref(basePath, redirectTarget)} />;
@@ -148,9 +166,9 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false }: {
   return <div className={`site-reader${headerSections.length ? " has-site-sections" : ""}`} data-theme={theme} data-theme-mode={themeMode} style={{ "--site-accent": snapshot.accent_color } as CSSProperties}>
     <a className="site-reader-skip-link" href="#site-content">跳转到正文</a>
     {preview ? <div className="site-reader-preview-banner">发布预览 · 此页面只有工作空间成员可见</div> : null}
-    <Header name={snapshot.name} basePath={basePath} logoUrl={branding.logo_url} links={branding.links} cta={branding.cta} sections={headerSections} currentSection={current?.section} themeMode={themeMode} onThemeChange={changeTheme} onSearch={() => setSearchOpen(true)} searchButtonRef={searchButtonRef} navigationOpen={navigationOpen} onNavigationToggle={() => setNavigationOpen((open) => !open)} />
+    <Header name={snapshot.name} basePath={basePath} logoUrl={branding.logo_url} links={branding.links} cta={branding.cta} sections={headerSections} currentSection={current?.section} themeMode={themeMode} onThemeChange={changeTheme} onSearch={() => setSearchOpen(true)} searchButtonRef={searchButtonRef} navigationButtonRef={navigationButtonRef} navigationOpen={navigationOpen} onNavigationToggle={() => setNavigationOpen((open) => !open)} />
     <div className="site-reader-layout">
-      <Navigation sections={sections} currentSlug={current?.slug} basePath={basePath} open={navigationOpen} close={() => setNavigationOpen(false)} description={snapshot.description} footerLinks={branding.footer_links} />
+      <Navigation sections={sections} currentSlug={current?.slug} basePath={basePath} open={navigationOpen} close={() => setNavigationOpen(false)} description={snapshot.description} footerLinks={branding.footer_links} modal={mobileNavigation} returnFocusRef={navigationButtonRef} />
       <main id="site-content" className="site-reader-content">
         {current ? <>
           <nav className="site-reader-breadcrumb" aria-label="面包屑">
@@ -160,9 +178,12 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false }: {
           </nav>
           <div className="site-reader-title-row">
             <div><h1>{current.title}</h1>{current.description ? <p>{current.description}</p> : null}</div>
-            <div className="site-reader-copy-actions">
-              <button type="button" onClick={() => void copyLink()}>{copyState === "link" ? <Check aria-hidden="true" size={15} /> : <Link2 aria-hidden="true" size={15} />}<span>{copyState === "link" ? "已复制" : "复制链接"}</span></button>
-              <button type="button" onClick={() => void copyPage()}>{copyState === "page" ? <Check aria-hidden="true" size={15} /> : <Copy aria-hidden="true" size={15} />}<span>{copyState === "page" ? "已复制" : "复制页面"}</span></button>
+            <div className="site-reader-copy-area">
+              <div className="site-reader-copy-actions">
+                <button type="button" aria-label={copyFeedback?.action === "link" && copyFeedback.status === "success" ? "链接已复制" : "复制链接"} onClick={() => void copyLink()}>{copyFeedback?.action === "link" && copyFeedback.status === "success" ? <Check aria-hidden="true" size={15} /> : <Link2 aria-hidden="true" size={15} />}<span>{copyFeedback?.action === "link" && copyFeedback.status === "success" ? "已复制" : "复制链接"}</span></button>
+                <button type="button" aria-label={copyFeedback?.action === "page" && copyFeedback.status === "success" ? "页面 Markdown 已复制" : "复制页面"} onClick={() => void copyPage()}>{copyFeedback?.action === "page" && copyFeedback.status === "success" ? <Check aria-hidden="true" size={15} /> : <Copy aria-hidden="true" size={15} />}<span>{copyFeedback?.action === "page" && copyFeedback.status === "success" ? "已复制" : "复制页面"}</span></button>
+              </div>
+              {copyFeedback ? <p className={`site-reader-copy-feedback is-${copyFeedback.status}`} role="status">{copyFeedback.message}</p> : null}
             </div>
           </div>
           {compactOutline ? <Outline items={outline} mobile /> : null}

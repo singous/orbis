@@ -94,10 +94,14 @@
 .site-reader-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 28px; margin-bottom: 35px; }
 .site-reader-title-row h1 { margin: 0; color: var(--reader-text); font-size: clamp(30px, 3vw, 38px); font-weight: 720; letter-spacing: -.045em; line-height: 1.22; }
 .site-reader-title-row p { max-width: 590px; margin: 13px 0 0; color: var(--reader-muted); font-size: 15px; line-height: 1.7; }
+.site-reader-copy-area { flex: none; display: grid; justify-items: end; gap: 7px; }
 .site-reader-copy-actions { flex: none; display: flex; margin-top: 1px; border: 1px solid var(--reader-border); border-radius: 9px; overflow: hidden; background: var(--reader-surface); box-shadow: 0 1px 2px #00000008; }
 .site-reader-copy-actions button { height: 34px; display: flex; align-items: center; gap: 7px; padding: 0 10px; border: 0; border-right: 1px solid var(--reader-border); background: transparent; color: var(--reader-muted); cursor: pointer; font-size: 11px; }
 .site-reader-copy-actions button:last-child { border-right: 0; }
 .site-reader-copy-actions button:hover { background: var(--reader-surface-soft); color: var(--reader-text); }
+.site-reader-copy-feedback { max-width: 240px; margin: 0; color: var(--reader-muted); text-align: right; font-size: 10px; line-height: 1.45; }
+.site-reader-copy-feedback.is-error { color: #b9473f; }
+.site-reader[data-theme="dark"] .site-reader-copy-feedback.is-error { color: #ff9d95; }
 
 .site-reader-outline { position: sticky; top: calc(var(--reader-header-height) + 29px); align-self: start; max-height: calc(100dvh - var(--reader-header-height) - 57px); margin-top: 47px; overflow: auto; }
 .site-reader-outline > span { display: flex; align-items: center; gap: 7px; margin-bottom: 14px; color: var(--reader-text); font-size: 11px; font-weight: 650; }
@@ -191,7 +195,9 @@
   .site-reader-title-row { display: block; margin-bottom: 28px; }
   .site-reader-title-row h1 { font-size: 29px; }
   .site-reader-title-row p { margin-top: 10px; font-size: 14px; }
-  .site-reader-copy-actions { width: max-content; margin-top: 18px; }
+  .site-reader-copy-area { width: max-content; justify-items: start; margin-top: 18px; }
+  .site-reader-copy-actions { width: max-content; }
+  .site-reader-copy-feedback { max-width: min(280px, calc(100vw - 40px)); text-align: left; }
   .site-reader .document-prose { font-size: 14px; line-height: 1.85; }
   .site-reader .document-prose h2 { margin-top: 36px; font-size: 21px; }
   .site-reader-pagination { margin-top: 46px; gap: 5px; }
