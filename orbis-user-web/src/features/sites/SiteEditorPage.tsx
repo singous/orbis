@@ -105,7 +105,7 @@ function SiteEditor({ site }: { site: Site }) {
     if (!previewBundle) return;
     setBusy(true); setPreviewError("");
     try {
-      await publishSite(site.id, auth, savedSource.kind === "notebooks" ? previewBundle.preview.source_fingerprint : undefined);
+      await publishSite(site.id, auth, previewBundle.preview.source_fingerprint);
       await updateCache(await getSite(site.id, auth));
       setPreviewBundle(null);
       setMessage("站点已发布，读者现在可以访问新版本。");

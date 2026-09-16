@@ -275,17 +275,23 @@ describe("notebook-backed site management", () => {
     }));
   });
 
-  it("publishes a legacy manual site without adding a fingerprint body", async () => {
+  it("publishes a legacy manual site's shown fingerprint and keeps the preview after a 409", async () => {
     const navigation = [{ note_id: PARENT_ID, slug: "kept-path", title: "开始使用", group: null }];
     const { source: _source, branding: _branding, ...legacySite } = baseSite;
     siteResponse = { ...legacySite, navigation };
+    publishConflict = true;
     renderRoute(`/sites/${SITE_ID}`, <SiteEditorPage />, "/sites/:siteId");
 
     await userEvent.click(await screen.findByRole("button", { name: "发布站点" }));
     const dialog = await screen.findByRole("dialog", { name: "确认发布站点" });
+    expect(within(dialog).getAllByText("冻结正文")).not.toHaveLength(0);
     await userEvent.click(within(dialog).getByRole("button", { name: "确认发布" }));
 
-    await waitFor(() => expect(requests.find((request) => request.path.endsWith("/publish"))?.body).toEqual({}));
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("来源内容已变化");
+    expect(requests.find((request) => request.path.endsWith("/publish"))?.body).toEqual({ expected_source_fingerprint: FINGERPRINT });
+    expect(requests.filter((request) => request.path.endsWith("/preview"))).toHaveLength(1);
+    expect(within(dialog).getAllByText("冻结正文")).not.toHaveLength(0);
+    expect(within(dialog).getByRole("button", { name: "重新预览" })).toBeVisible();
   });
 
   it("allows notebook mode with an empty manual navigation but blocks an empty resolved preview", async () => {

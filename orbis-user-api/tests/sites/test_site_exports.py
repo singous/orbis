@@ -501,6 +501,38 @@ def test_html_nested_headings_preserve_outline_order_and_safe_components():
     assert "&lt;unsafe&gt;" in html
 
 
+def test_legacy_merged_table_html_preserves_valid_cell_spans():
+    from orbis_user_api.application.site_html import DocumentHtml
+
+    values = [
+        {
+            "type": "table",
+            "content": [
+                {
+                    "type": "tableRow",
+                    "content": [
+                        {
+                            "type": "tableHeader",
+                            "attrs": {"colspan": 2, "rowspan": 2},
+                            "content": [block("paragraph", "Shared heading")],
+                        },
+                        {
+                            "type": "tableCell",
+                            "attrs": {"colspan": "2", "rowspan": "1"},
+                            "content": [block("paragraph", "Merged body")],
+                        },
+                    ],
+                }
+            ],
+        }
+    ]
+
+    html = DocumentHtml("https://docs.example.com", "Title").nodes(values, True)
+
+    assert '<th colspan="2" rowspan="2"><p>Shared heading</p></th>' in html
+    assert '<td colspan="2" rowspan="1"><p>Merged body</p></td>' in html
+
+
 @pytest.mark.parametrize(
     "url",
     [

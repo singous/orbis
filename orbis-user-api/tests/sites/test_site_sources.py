@@ -286,6 +286,46 @@ def test_manual_pages_can_swap_published_slugs(client, owner, document):
     } == {"Internal document": "second", "Second": "first"}
 
 
+def test_manual_publish_rejects_a_stale_fingerprint_and_keeps_no_body_compatibility(
+    client, owner, document
+):
+    site = client.post(
+        "/sites", headers=owner, json=manual_config((document, "start"))
+    ).json()["data"]
+    shown = preview(client, owner, site["id"])
+    changed = client.put(
+        f"/notes/{document['id']}/content",
+        headers=owner,
+        json={
+            "expected_version": 1,
+            "blocks": {
+                "schema_version": 1,
+                "editor": "tiptap",
+                "doc": {
+                    "type": "doc",
+                    "content": [
+                        {
+                            "type": "paragraph",
+                            "content": [
+                                {"type": "text", "text": "Changed after preview"}
+                            ],
+                        }
+                    ],
+                },
+            },
+        },
+    )
+    assert changed.status_code == 200, changed.text
+
+    stale = publish(client, owner, site["id"], shown["source_fingerprint"])
+    assert stale.status_code == 409, stale.text
+    assert stale.json()["code"] == "SITE_SOURCE_CONFLICT"
+
+    legacy = client.post(f"/sites/{site['id']}/publish", headers=owner)
+    assert legacy.status_code == 200, legacy.text
+    assert legacy.json()["data"]["pages"][0]["plain_text"] == "Changed after preview"
+
+
 def test_unknown_source_and_root_outside_notebook_are_rejected(client, owner, document):
     invalid = client.post("/sites", headers=owner, json=source_config(str(uuid4())))
     assert invalid.status_code == 422

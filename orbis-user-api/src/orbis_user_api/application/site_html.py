@@ -17,6 +17,12 @@ logger = logging.getLogger(__name__)
 BUILT_ASSET = re.compile(
     r"^[\w./-]+-[A-Za-z0-9_-]{6,}\.(?:js|css|woff2?|ttf|otf|png|jpe?g|gif|svg|webp|avif|ico)$"
 )
+HTML_MAX_COLSPAN = 1000
+HTML_MAX_ROWSPAN = 65534
+HTML_TABLE_SPAN_LIMITS = {
+    "colspan": HTML_MAX_COLSPAN,
+    "rowspan": HTML_MAX_ROWSPAN,
+}
 
 
 def built_asset(dist: Path, name: str) -> Path | None:
@@ -119,6 +125,25 @@ def _integer(
         return max(minimum, min(maximum, int(value)))
     except (ValueError, TypeError, OverflowError):
         return default
+
+
+def _table_spans(props: dict[str, Any]) -> str:
+    attributes: list[str] = []
+    for name, maximum in HTML_TABLE_SPAN_LIMITS.items():
+        value = props.get(name)
+        if isinstance(value, bool):
+            continue
+        try:
+            span = int(value)
+        except (ValueError, TypeError, OverflowError):
+            continue
+        if isinstance(value, float) and not value.is_integer():
+            continue
+        if isinstance(value, str) and not value.strip().isdigit():
+            continue
+        if span > 0:
+            attributes.append(f' {name}="{min(span, maximum)}"')
+    return "".join(attributes)
 
 
 class DocumentHtml:
@@ -254,11 +279,12 @@ class DocumentHtml:
         }
         if kind in tags:
             tag = tags[kind]
-            extra = (
-                f' start="{_integer(props.get("start"))}"'
-                if kind == "orderedList"
-                else ""
-            )
+            if kind == "orderedList":
+                extra = f' start="{_integer(props.get("start"))}"'
+            elif kind in {"tableCell", "tableHeader"}:
+                extra = _table_spans(props)
+            else:
+                extra = ""
             return f"<{tag}{extra}>{children}</{tag}>"
         if kind in {"bulletListItem", "numberedListItem", "checkListItem", "taskItem"}:
             checked = (
