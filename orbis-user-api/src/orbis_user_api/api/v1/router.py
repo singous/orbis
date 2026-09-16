@@ -2,7 +2,15 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from orbis_user_api.api import collaboration, members, notes, ownership, setup, sites
+from orbis_user_api.api import (
+    collaboration,
+    members,
+    notes,
+    ownership,
+    setup,
+    site_assets,
+    sites,
+)
 from orbis_user_api.api.v1 import (
     auth,
     document_groups,
@@ -19,6 +27,7 @@ api_router.include_router(notes.router)
 api_router.include_router(collaboration.router)
 api_router.include_router(sites.router)
 api_router.include_router(sites.public_router)
+api_router.include_router(site_assets.router)
 api_router.include_router(auth.router)
 api_router.include_router(users.router)
 api_router.include_router(document_groups.router)

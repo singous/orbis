@@ -40,7 +40,7 @@ OPERATION_DOCS = {
     ),
     ("get", "/sites/{site_id}/preview"): (
         "预览待发布站点",
-        "当前空间成员读取由最新站点配置与当前文档正文构建的认证预览。预览会校验文档及公开内容，可以为空；release_id、release_number、published_at_ms 均为 null，不创建发布历史。响应头 Cache-Control 为 no-store。",
+        "当前空间成员读取由最新站点配置与当前文档正文构建的认证预览。预览会校验文档、内部站内链接及当前空间文件引用，可以为空；内部文件仍保留鉴权引用，不会因此获得匿名访问权限。release_id、release_number、published_at_ms 均为 null，不创建发布历史。响应头包含 Cache-Control: no-store 与 X-Robots-Tag: noindex, nofollow。",
     ),
     ("get", "/sites/{site_id}/sources"): (
         "解析站点来源与待发布变化",
@@ -48,7 +48,7 @@ OPERATION_DOCS = {
     ),
     ("post", "/sites/{site_id}/publish"): (
         "发布站点不可变快照",
-        "仅所有者和管理员可以发布。至少包含一篇文档；发布前校验空间归属、活跃状态、内容格式及公开链接安全性。笔记本来源必须在请求体携带认证预览返回的 expected_source_fingerprint；缺失返回 SITE_PREVIEW_REQUIRED，过期或构建期间来源变化返回 SITE_SOURCE_CONFLICT。旧手选来源仍接受空请求体。成功后生成递增版本并原子切换公开指针，响应为 HTTP 200；后续保存不会修改快照，失败时保留原公开版本。",
+        "仅所有者和管理员可以发布。至少包含一篇文档；发布前校验空间归属、活跃状态、内容格式、公开链接安全性、内部文件原始字节及站内文档目标。选中页面间链接改写为公开页面路径，文件引用改写为当前发布版本清单授权的不可变资源路径。笔记本来源必须在请求体携带认证预览返回的 expected_source_fingerprint；缺失返回 SITE_PREVIEW_REQUIRED，过期或构建期间来源变化返回 SITE_SOURCE_CONFLICT。旧手选来源仍接受空请求体。成功后生成递增版本并原子切换公开指针，响应为 HTTP 200；后续保存不会修改快照，失败时保留原公开版本。",
     ),
     ("get", "/sites/{site_id}/releases"): (
         "分页查询站点发布历史",
@@ -411,6 +411,9 @@ ERROR_DOCS = {
         422,
         "文档包含不支持的内容或不适合公开的链接，请检查后重新发布",
     ),
+    "SITE_REFERENCE_INVALID": (422, "页面包含不可发布的内部文件或文档引用，请检查后重新发布"),
+    "SITE_ASSET_CHANGED": (409, "引用文件已变化，请重新预览后发布"),
+    "SITE_ASSET_CORRUPT": (409, "引用文件的发布副本校验失败"),
     "SITE_EMPTY": (422, "请先选择至少一篇文档再发布"),
     "NOTE_CONTENT_INVALID": (422, "文档内容无效"),
     "VALIDATION_ERROR": (422, "请求字段校验失败"),
@@ -442,6 +445,9 @@ OPERATION_ERRORS = {
         "SITE_NOT_FOUND",
         "SITE_DOCUMENT_INVALID",
         "SITE_CONTENT_UNSAFE",
+        "SITE_REFERENCE_INVALID",
+        "SITE_ASSET_CHANGED",
+        "SITE_ASSET_CORRUPT",
     ),
     ("post", "/sites/{site_id}/publish"): (
         "SITE_NOT_FOUND",
@@ -449,6 +455,9 @@ OPERATION_ERRORS = {
         "SITE_EMPTY",
         "SITE_DOCUMENT_INVALID",
         "SITE_CONTENT_UNSAFE",
+        "SITE_REFERENCE_INVALID",
+        "SITE_ASSET_CHANGED",
+        "SITE_ASSET_CORRUPT",
         "SITE_SLUG_CONFLICT",
         "SITE_VERSION_CONFLICT",
     ),

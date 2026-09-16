@@ -12,11 +12,13 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from fastapi.responses import FileResponse
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
 from orbis_user_api.application.site_errors import SiteError
 from orbis_user_api.models.file import FileAsset
+from orbis_user_api.models.site import Site, SiteRelease
 from orbis_user_api.services.file import secure_file_response
 from orbis_user_api.services.storage import LocalFileStorage
 
@@ -291,3 +293,42 @@ def public_asset_response(
         filename=asset.filename,
         media_type=asset.media_type,
     )
+
+
+def _public_asset_not_found() -> SiteError:
+    return SiteError(
+        "SITE_ASSET_NOT_FOUND", "公开站点资源不存在或不属于当前发布版本", 404
+    )
+
+
+async def active_public_asset(
+    site_slug: str, key: str, session: AsyncSession
+) -> PublishedAsset:
+    """Authorize an immutable asset only through the site's active release."""
+    if not SHA256_PATTERN.fullmatch(key):
+        raise _public_asset_not_found()
+    manifest = await session.scalar(
+        select(SiteRelease.asset_manifest)
+        .join(
+            Site,
+            (Site.published_release_id == SiteRelease.id)
+            & (Site.id == SiteRelease.site_id),
+        )
+        .where(Site.published_slug == site_slug)
+    )
+    if not isinstance(manifest, dict):
+        raise _public_asset_not_found()
+    metadata = next(
+        (
+            entry
+            for entry in manifest.values()
+            if isinstance(entry, dict) and entry.get("key") == key
+        ),
+        None,
+    )
+    if metadata is None:
+        raise _public_asset_not_found()
+    try:
+        return PublishedAsset(**metadata)
+    except (TypeError, ValueError):
+        raise _public_asset_not_found() from None

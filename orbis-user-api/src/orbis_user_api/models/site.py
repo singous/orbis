@@ -86,6 +86,9 @@ class SiteRelease(Base):
     source_manifest: Mapped[dict[str, Any]] = mapped_column(
         json_type, default=dict, server_default="{}", nullable=False
     )
+    asset_manifest: Mapped[dict[str, Any]] = mapped_column(
+        json_type, default=dict, server_default="{}", nullable=False
+    )
     published_at_ms: Mapped[int] = mapped_column(
         BigInteger, default=now_ms, server_default="0", nullable=False
     )

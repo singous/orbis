@@ -163,7 +163,10 @@ def test_all_json_operations_document_the_unified_success_envelope() -> None:
     assert ("GET", "/sites/{site_id}/sources") in {
         (method, path) for method, path, _ in operations
     }
-    binary_operations = {("GET", "/files/{file_id}/content")}
+    binary_operations = {
+        ("GET", "/files/{file_id}/content"),
+        ("GET", "/public/sites/{slug}/assets/{key}"),
+    }
     assert binary_operations.issubset(
         {(method, path) for method, path, _ in operations}
     )

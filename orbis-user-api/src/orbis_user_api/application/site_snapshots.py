@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from orbis_user_api.application.site_content import public_note_blocks
+from orbis_user_api.application.site_references import validate_site_reference
 from orbis_user_api.application.site_sources import (
     resolve_site_source,
 )
@@ -29,13 +30,15 @@ async def build_snapshot(
         )
     branding = SiteBranding.model_validate(site.branding or {})
     if branding.logo_url:
-        url_policy.validate(branding.logo_url, media=True)
+        branding.logo_url = validate_site_reference(
+            branding.logo_url, url_policy, media=True
+        )
     for link in [
         *branding.links,
         *branding.footer_links,
         *([branding.cta] if branding.cta else []),
     ]:
-        url_policy.validate(link.url)
+        link.url = validate_site_reference(link.url, url_policy)
     return SiteSnapshotOut(
         name=site.name,
         slug=site.slug,

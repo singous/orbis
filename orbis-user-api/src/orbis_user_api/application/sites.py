@@ -14,6 +14,10 @@ from orbis_user_api.application.site_errors import (
     site_version_conflict,
 )
 from orbis_user_api.application.site_navigation import PagePaths, manual_page_registry
+from orbis_user_api.application.site_references import (
+    prepare_site_references,
+    use_prepared_site_references,
+)
 from orbis_user_api.application.site_slugs import (
     release_unused_site_slugs,
     reserve_site_slug,
@@ -25,6 +29,7 @@ from orbis_user_api.application.site_sources import resolve_site_source
 from orbis_user_api.application.site_urls import PublicUrlPolicy
 from orbis_user_api.core.ids import new_uuidv7
 from orbis_user_api.core.time import now_ms
+from orbis_user_api.models.file import FileAsset
 from orbis_user_api.models.site import Site, SiteRelease
 from orbis_user_api.models.user import User
 from orbis_user_api.models.workspace import WorkspaceMember
@@ -38,6 +43,7 @@ from orbis_user_api.schemas.site import (
 )
 from orbis_user_api.schemas.site_source import SiteSource, SiteSourcesOut
 from orbis_user_api.services.authorization import AuthorizationService, Capability
+from orbis_user_api.services.storage import LocalFileStorage
 
 logger = logging.getLogger(__name__)
 PUBLISH_ROLES = frozenset({"owner", "admin"})
@@ -190,11 +196,25 @@ async def update_site(
 
 
 async def preview_site(
-    site_id: UUID, user: User, session: AsyncSession, *, url_policy: PublicUrlPolicy
+    site_id: UUID,
+    user: User,
+    session: AsyncSession,
+    *,
+    url_policy: PublicUrlPolicy,
+    storage: LocalFileStorage | None = None,
 ) -> SitePreviewOut:
     site, _ = await _site_actor(site_id, user, session)
     before = await resolve_site_source(site, session)
-    snapshot = await build_snapshot(site, session, url_policy=url_policy)
+    prepared = await prepare_site_references(
+        site,
+        before,
+        session,
+        storage,
+        url_policy=url_policy,
+        preview=True,
+    )
+    with use_prepared_site_references(prepared):
+        snapshot = await build_snapshot(site, session, url_policy=url_policy)
     after = await resolve_site_source(site, session)
     if before.fingerprint != after.fingerprint:
         raise SiteError(
@@ -227,6 +247,7 @@ async def publish_site(
     session: AsyncSession,
     *,
     url_policy: PublicUrlPolicy,
+    storage: LocalFileStorage | None = None,
     expected_source_fingerprint: str | None = None,
 ) -> SiteSnapshotOut:
     site, member = await _site_actor(site_id, user, session)
@@ -247,11 +268,34 @@ async def publish_site(
     if not before.pages:
         raise SiteError("SITE_EMPTY", "请先选择至少一篇文档再发布", 422)
     await _require_available_slug(site.slug, session, site.id)
-    snapshot = await build_snapshot(site, session, url_policy=url_policy)
+    prepared = await prepare_site_references(
+        site,
+        before,
+        session,
+        storage,
+        url_policy=url_policy,
+        preview=False,
+    )
+    with use_prepared_site_references(prepared):
+        snapshot = await build_snapshot(site, session, url_policy=url_policy)
     after = await resolve_site_source(site, session)
     if before.fingerprint != after.fingerprint:
         raise SiteError(
             "SITE_SOURCE_CONFLICT", "发布期间来源内容已变化，请重新预览后发布", 409
+        )
+    for file_id in prepared.asset_manifest:
+        await session.get(FileAsset, UUID(file_id), populate_existing=True)
+    verified = await prepare_site_references(
+        site,
+        after,
+        session,
+        storage,
+        url_policy=url_policy,
+        preview=False,
+    )
+    if verified.asset_manifest != prepared.asset_manifest:
+        raise SiteError(
+            "SITE_ASSET_CHANGED", "发布期间引用文件已变化，请重新预览后发布", 409
         )
     release_id = new_uuidv7()
     number = site.release_sequence + 1
@@ -295,6 +339,7 @@ async def publish_site(
                 release_number=number,
                 snapshot=snapshot.model_dump(mode="json"),
                 source_manifest=after.manifest,
+                asset_manifest=verified.asset_manifest,
                 published_at_ms=timestamp,
             )
         )

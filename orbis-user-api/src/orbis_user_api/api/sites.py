@@ -121,6 +121,7 @@ async def update_site(
 )
 async def preview_site(
     site_id: UUID,
+    request: Request,
     url_policy: Annotated[PublicUrlPolicy, Depends(_public_url_policy)],
     response: Response,
     user: Annotated[User, Depends(get_current_user)],
@@ -129,7 +130,13 @@ async def preview_site(
     response.headers["Cache-Control"] = "no-store"
     response.headers["X-Robots-Tag"] = "noindex, nofollow"
     with _site_errors():
-        return await sites.preview_site(site_id, user, session, url_policy=url_policy)
+        return await sites.preview_site(
+            site_id,
+            user,
+            session,
+            url_policy=url_policy,
+            storage=request.app.state.storage,
+        )
 
 
 @router.get(
@@ -155,6 +162,7 @@ async def get_site_sources(
 )
 async def publish_site(
     site_id: UUID,
+    request: Request,
     url_policy: Annotated[PublicUrlPolicy, Depends(_public_url_policy)],
     user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_session)],
@@ -166,6 +174,7 @@ async def publish_site(
             user,
             session,
             url_policy=url_policy,
+            storage=request.app.state.storage,
             expected_source_fingerprint=payload.expected_source_fingerprint,
         )
 
