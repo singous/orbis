@@ -458,4 +458,18 @@ def render_site(
 
 def error_html(code: str, message: str) -> str:
     title = "站点尚未发布或已撤回" if code == "SITE_NOT_FOUND" else "页面不存在"
-    return f'<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>{title} · Orbis</title><meta name="robots" content="noindex, nofollow"></head><body><main><h1>{title}</h1><p>{escape(message)}</p></main></body></html>'
+    styles = (
+        "html{color-scheme:light dark}"
+        "body{margin:0;background:#fafcfb;color:#17202a;font:16px/1.7 system-ui,sans-serif}"
+        "main{box-sizing:border-box;max-width:720px;margin:12vh auto;padding:32px 24px}"
+        "h1{margin:0 0 16px;font-size:clamp(1.5rem,4vw,2rem);line-height:1.4;letter-spacing:-.02em}"
+        "p{margin:0;color:#52605a;overflow-wrap:anywhere}"
+        "@media(prefers-color-scheme:dark){body{background:#111816;color:#edf3ef}p{color:#a9b8af}}"
+    )
+    return (
+        '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">'
+        '<meta name="viewport" content="width=device-width,initial-scale=1">'
+        f'<title>{title} · Orbis</title><meta name="robots" content="noindex, nofollow">'
+        f"<style>{styles}</style></head><body><main><h1>{title}</h1>"
+        f"<p>{escape(message)}</p></main></body></html>"
+    )
