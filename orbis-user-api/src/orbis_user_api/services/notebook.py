@@ -20,6 +20,7 @@ from orbis_user_api.services.exceptions import (
     NotebookNotFound,
 )
 from orbis_user_api.services.workspace import get_current_workspace
+from orbis_user_api.services.notebook_icon import validate_notebook_icon
 
 
 async def list_notebooks(
@@ -74,12 +75,14 @@ async def create_notebook(
         ):
             raise DocumentGroupNotFound
 
+    await validate_notebook_icon(payload.icon, workspace.id, session)
     notebook = Notebook(
         tenant_id=workspace.tenant_id,
         workspace_id=workspace.id,
         group_id=group_id,
         owner_id=user.id,
         title=payload.title.strip(),
+        icon=payload.icon.model_dump(mode="json") if payload.icon is not None else None,
         sort_order=payload.sort_order,
     )
     session.add(notebook)
@@ -132,6 +135,11 @@ async def update_notebook(
     ):
         raise NotebookNotFound
 
+    if "icon" in payload.model_fields_set:
+        await validate_notebook_icon(payload.icon, workspace.id, session)
+        notebook.icon = (
+            payload.icon.model_dump(mode="json") if payload.icon is not None else None
+        )
     if "group_id" in payload.model_fields_set:
         if payload.group_id is None:
             group = await get_default_document_group(session, workspace)

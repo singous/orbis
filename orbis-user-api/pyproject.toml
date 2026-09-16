@@ -12,6 +12,7 @@ dependencies = [
   "idna>=3.10",
   "pyjwt>=2.10.0",
   "pydantic-settings>=2.9.0",
+  "pillow>=11.3.0",
   "python-multipart>=0.0.20",
   "sqlalchemy[asyncio]>=2.0.40",
   "uuid6>=2024.7.10",

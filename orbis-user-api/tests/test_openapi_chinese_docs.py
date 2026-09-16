@@ -21,7 +21,7 @@ def test_every_operation_has_detailed_chinese_documentation() -> None:
     schema = create_app().openapi()
     operations = list(_operations(schema))
 
-    assert len(operations) == 58
+    assert len(operations) == 60
     for method, path, operation in operations:
         summary = operation.get("summary", "")
         description = operation.get("description", "")

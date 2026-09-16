@@ -54,6 +54,7 @@ class Notebook(Base):
     group_id: Mapped[UUID] = mapped_column(GUID(), index=True, nullable=False)
     owner_id: Mapped[UUID] = mapped_column(GUID(), index=True, nullable=False)
     title: Mapped[str] = mapped_column(String(160), nullable=False)
+    icon: Mapped[dict[str, Any] | None] = mapped_column(json_type, nullable=True)
     sort_order: Mapped[int] = mapped_column(
         Integer, default=0, server_default="0", nullable=False
     )
