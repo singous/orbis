@@ -43,10 +43,13 @@ it("reads authenticated binary bytes, refreshes once and shares one object URL p
   expect(fetcher).toHaveBeenLastCalledWith(`/api/files/${fileId}/content`, expect.objectContaining({ headers: { Authorization: "Bearer fresh-token" } }));
   expect(auth.onTokenRefresh).toHaveBeenCalledWith("fresh-token");
   expect(objectUrl).toHaveBeenCalledTimes(1);
-  const bytes = await new Promise((resolve) => {
+  const blob = objectUrl.mock.calls[0][0] as Blob;
+  // Native fetch and jsdom can expose Blobs from different realms.
+  const bytes = typeof blob.text === "function" ? await blob.text() : await new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
-    reader.readAsText(objectUrl.mock.calls[0][0] as Blob);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsText(blob);
   });
   expect(bytes).toBe("real-binary");
   files.dispose();

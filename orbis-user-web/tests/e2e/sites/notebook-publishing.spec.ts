@@ -125,6 +125,7 @@ test("a notebook publishes its complete tree and editable documentation componen
   const reader = await guest.newPage();
   reader.on("pageerror", (error) => errors.push(error.message));
   await reader.goto(`${webOrigin}/s/notebook-docs/${encodeURIComponent(snapshot.pages[0].slug)}`);
+  await expect(reader.locator("#orbis-site-bootstrap")).toHaveCount(0);
   await expect(reader.getByRole("heading", { name: "快速开始", level: 1 })).toBeVisible();
   const publicImage = reader.getByRole("img", { name: "documentation.png" });
   await expect.poll(async () => publicImage.evaluate((element) => (element as HTMLImageElement).naturalWidth)).toBe(12);

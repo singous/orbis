@@ -85,8 +85,13 @@ jobs:
       - name: Install Chromium and system dependencies
         working-directory: orbis-user-web
         run: npx playwright install --with-deps chromium
+      - name: Build frontend for server-rendered documentation
+        working-directory: orbis-user-web
+        run: npm run build
       - name: Run isolated browser tests
         working-directory: orbis-user-web
+        env:
+          ORBIS_E2E_PRODUCTION: "1"
         run: npm run test:e2e
       - name: Upload browser failure evidence
         if: failure()
