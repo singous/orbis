@@ -1,14 +1,21 @@
 from __future__ import annotations
 
+import os
 import re
+import stat
 from pathlib import Path
+from typing import Any
 from uuid import UUID
 
 from fastapi import UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.concurrency import run_in_threadpool
+from starlette.datastructures import Headers
+from starlette.responses import MalformedRangeHeader, RangeNotSatisfiable
 
+from orbis_user_api.api.errors import ApiError
 from orbis_user_api.core.ids import new_uuidv7
 from orbis_user_api.models.file import FileAsset
 from orbis_user_api.models.user import User
@@ -48,6 +55,45 @@ class FileAssetNotFound(Exception):
     pass
 
 
+class SecureFileResponse(FileResponse):
+    async def __call__(self, scope: dict[str, Any], receive, send) -> None:
+        if scope["type"] == "http":
+            headers = Headers(scope=scope)
+            http_range = headers.get("range")
+            http_if_range = headers.get("if-range")
+            if http_range is not None:
+                stat_result = self.stat_result
+                if stat_result is None:
+                    stat_result = await run_in_threadpool(os.stat, self.path)
+                    if not stat.S_ISREG(stat_result.st_mode):
+                        raise RuntimeError(f"File at path {self.path} is not a file.")
+                    self.set_stat_headers(stat_result)
+                    self.stat_result = stat_result
+            if http_range is not None and (
+                http_if_range is None or self._should_use_range(http_if_range)
+            ):
+                try:
+                    self._parse_range_header(http_range, stat_result.st_size)
+                except MalformedRangeHeader:
+                    raise ApiError(
+                        status_code=400,
+                        code="INVALID_RANGE",
+                        message="Range 请求头格式无效",
+                        headers=dict(SECURE_FILE_HEADERS),
+                    ) from None
+                except RangeNotSatisfiable as error:
+                    raise ApiError(
+                        status_code=416,
+                        code="RANGE_NOT_SATISFIABLE",
+                        message="请求的文件范围无法满足",
+                        headers={
+                            **SECURE_FILE_HEADERS,
+                            "Content-Range": f"bytes */{error.max_size}",
+                        },
+                    ) from None
+        await super().__call__(scope, receive, send)
+
+
 def _download_filename(filename: str) -> str:
     basename = re.split(r"[/\\]", filename)[-1]
     cleaned = "".join(
@@ -58,9 +104,7 @@ def _download_filename(filename: str) -> str:
     return cleaned[:255] or "download"
 
 
-def secure_file_response(
-    path: Path, *, filename: str, media_type: str
-) -> FileResponse:
+def secure_file_response(path: Path, *, filename: str, media_type: str) -> FileResponse:
     normalized_type = media_type.partition(";")[0].strip().lower()
     if normalized_type in SAFE_INLINE_MEDIA_TYPES:
         response_type = normalized_type
@@ -71,7 +115,7 @@ def secure_file_response(
     else:
         response_type = "application/octet-stream"
         disposition = "attachment"
-    return FileResponse(
+    return SecureFileResponse(
         path,
         media_type=response_type,
         filename=_download_filename(filename),

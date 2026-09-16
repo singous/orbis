@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from dataclasses import FrozenInstanceError
 from hashlib import sha256
 from pathlib import Path
@@ -8,11 +9,9 @@ from uuid import UUID
 import pytest
 from fastapi.responses import FileResponse
 from fastapi.testclient import TestClient
-
 from orbis_user_api.application.site_errors import SiteError
 from orbis_user_api.core.ids import new_uuidv7
 from orbis_user_api.models.file import FileAsset
-
 
 PASSWORD = "correct horse battery staple"
 
@@ -149,6 +148,55 @@ def test_prepare_public_asset_reuses_same_verified_hash_copy(
     assert len(list((client.app.state.storage.root / "public-assets").iterdir())) == 1
 
 
+@pytest.mark.parametrize(
+    "alias_type", ["destination-symlink", "parent-symlink", "hardlink"]
+)
+def test_prepare_public_asset_rejects_preexisting_publication_aliases(
+    client: TestClient,
+    uploaded: tuple[dict[str, object], UUID],
+    alias_type: str,
+) -> None:
+    from orbis_user_api.application.site_assets import prepare_public_asset
+
+    file_data, workspace_id = uploaded
+    storage = client.app.state.storage
+    source = storage.resolve(str(file_data["storage_key"]))
+    public_root = storage.root.resolve() / "public-assets"
+    expected_key = sha256(b"immutable asset bytes").hexdigest()
+    if alias_type == "parent-symlink":
+        outside_public_root = storage.root.resolve() / "attacker-public-assets"
+        outside_public_root.mkdir()
+        public_root.symlink_to(outside_public_root, target_is_directory=True)
+    else:
+        public_root.mkdir()
+        destination = public_root / expected_key
+        if alias_type == "destination-symlink":
+            destination.symlink_to(source)
+        else:
+            os.link(source, destination)
+
+    async def prepare() -> None:
+        async with client.app.state.session_factory() as session:
+            await prepare_public_asset(
+                UUID(str(file_data["id"])),
+                workspace_id,
+                session,
+                storage,
+            )
+
+    with pytest.raises(SiteError) as error:
+        client.portal.call(prepare)
+
+    assert error.value.code == "SITE_ASSET_CORRUPT"
+    assert source.read_bytes() == b"immutable asset bytes"
+    if alias_type == "parent-symlink":
+        assert list((storage.root.resolve() / "attacker-public-assets").iterdir()) == []
+    elif alias_type == "destination-symlink":
+        assert (public_root / expected_key).is_symlink()
+    else:
+        assert os.path.samefile(source, public_root / expected_key)
+
+
 @pytest.mark.parametrize("tampering", ["contents", "stored-size", "stored-sha"])
 def test_prepare_public_asset_rejects_source_or_metadata_tampering(
     client: TestClient,
@@ -184,7 +232,9 @@ def test_prepare_public_asset_rejects_source_or_metadata_tampering(
 
     assert error.value.code == "SITE_ASSET_CHANGED"
     assert source.read_bytes() == (
-        b"tampered asset bytes!" if tampering == "contents" else b"immutable asset bytes"
+        b"tampered asset bytes!"
+        if tampering == "contents"
+        else b"immutable asset bytes"
     )
     public_root = client.app.state.storage.root / "public-assets"
     assert not public_root.exists() or list(public_root.iterdir()) == []

@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import os
 import re
+import stat
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -79,8 +80,47 @@ def _hash_file(path: Path) -> tuple[int, str]:
     return size, digest.hexdigest()
 
 
-def _validate_public_copy(path: Path, *, size: int, sha256: str) -> None:
+def _publication_path(
+    storage: LocalFileStorage, key: str, *, create_parent: bool
+) -> Path:
+    if not SHA256_PATTERN.fullmatch(key):
+        raise _PublishedCopyCorrupt
+    storage_root = storage.root.resolve()
+    public_root = storage_root / PUBLIC_ASSET_DIRECTORY
     try:
+        public_root_stat = public_root.lstat()
+    except FileNotFoundError:
+        if not create_parent:
+            raise _PublishedCopyCorrupt from None
+        public_root.mkdir(mode=0o755)
+    else:
+        if stat.S_ISLNK(public_root_stat.st_mode) or not stat.S_ISDIR(
+            public_root_stat.st_mode
+        ):
+            raise _PublishedCopyCorrupt
+    public_copy = public_root / key
+    if public_copy.parent != public_root:
+        raise _PublishedCopyCorrupt
+    return public_copy
+
+
+def _validate_public_copy(
+    path: Path,
+    *,
+    size: int,
+    sha256: str,
+    source: Path | None = None,
+) -> None:
+    try:
+        destination_stat = path.lstat()
+        if (
+            stat.S_ISLNK(destination_stat.st_mode)
+            or not stat.S_ISREG(destination_stat.st_mode)
+            or destination_stat.st_nlink != 1
+        ):
+            raise _PublishedCopyCorrupt
+        if source is not None and os.path.samestat(source.stat(), destination_stat):
+            raise _PublishedCopyCorrupt
         actual_size, actual_sha256 = _hash_file(path)
     except (FileNotFoundError, IsADirectoryError, OSError) as exc:
         raise _PublishedCopyCorrupt from exc
@@ -90,12 +130,12 @@ def _validate_public_copy(path: Path, *, size: int, sha256: str) -> None:
 
 def _copy_verified_source(
     source: Path,
-    public_copy: Path,
+    storage: LocalFileStorage,
     *,
     expected_size: int,
     expected_sha256: str,
 ) -> None:
-    public_copy.parent.mkdir(parents=True, exist_ok=True)
+    public_copy = _publication_path(storage, expected_sha256, create_parent=True)
     temporary = public_copy.parent / f".{public_copy.name}.{uuid4().hex}.tmp"
     digest = hashlib.sha256()
     size = 0
@@ -117,6 +157,7 @@ def _copy_verified_source(
                 public_copy,
                 size=expected_size,
                 sha256=expected_sha256,
+                source=source,
             )
     except (FileNotFoundError, IsADirectoryError, PermissionError) as exc:
         raise _SourceAssetMissing from exc
@@ -155,11 +196,10 @@ async def prepare_public_asset(
     try:
         _validate_source_metadata(asset)
         source = storage.resolve(asset.storage_key)
-        public_copy = storage.resolve(f"{PUBLIC_ASSET_DIRECTORY}/{asset.sha256}")
         await run_in_threadpool(
             _copy_verified_source,
             source,
-            public_copy,
+            storage,
             expected_size=asset.file_size,
             expected_sha256=asset.sha256,
         )
@@ -192,9 +232,14 @@ async def prepare_public_asset(
 def public_asset_response(
     asset: PublishedAsset, storage: LocalFileStorage
 ) -> FileResponse:
-    """Build a response after the caller authorizes active-release membership."""
+    """Build a response after authorization, from a worker thread.
+
+    The caller must first confirm active-release membership. Integrity verification
+    reads the complete published file, so async route handlers must invoke this helper
+    in a worker thread.
+    """
     try:
-        path = storage.resolve(f"{PUBLIC_ASSET_DIRECTORY}/{asset.key}")
+        path = _publication_path(storage, asset.key, create_parent=False)
         _validate_public_copy(path, size=asset.size, sha256=asset.key)
     except (ValueError, _PublishedCopyCorrupt):
         raise SiteError(

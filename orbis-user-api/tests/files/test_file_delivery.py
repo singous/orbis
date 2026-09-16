@@ -5,12 +5,10 @@ from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
-
 from orbis_user_api.core.ids import new_uuidv7
 from orbis_user_api.models.file import FileAsset
 from orbis_user_api.models.workspace import WorkspaceMember
 from sqlalchemy import select
-
 
 PASSWORD = "correct horse battery staple"
 
@@ -112,6 +110,74 @@ def test_file_content_supports_http_range_requests(
     assert response.content == b"2345"
     assert response.headers["content-range"] == "bytes 2-5/10"
     assert response.headers["accept-ranges"] == "bytes"
+
+
+def test_file_content_range_validation_preserves_if_range_semantics(
+    client: TestClient, owner: dict[str, str]
+) -> None:
+    uploaded = upload_file(client, owner, contents=b"0123456789")
+    url = f"/files/{uploaded['id']}/content"
+    initial = client.get(url, headers=owner)
+
+    matching = client.get(
+        url,
+        headers={**owner, "Range": "bytes=2-5", "If-Range": initial.headers["etag"]},
+    )
+    stale = client.get(
+        url,
+        headers={**owner, "Range": "items=0-2", "If-Range": '"stale-etag"'},
+    )
+
+    assert matching.status_code == 206
+    assert matching.content == b"2345"
+    assert stale.status_code == 200
+    assert stale.content == b"0123456789"
+
+
+@pytest.mark.parametrize(
+    "range_header,expected_status,expected_code",
+    [
+        ("items=0-2", 400, "INVALID_RANGE"),
+        ("bytes=999-1000", 416, "RANGE_NOT_SATISFIABLE"),
+    ],
+    ids=["malformed", "unsatisfiable"],
+)
+def test_invalid_file_ranges_use_json_errors_and_security_headers(
+    client: TestClient,
+    owner: dict[str, str],
+    range_header: str,
+    expected_status: int,
+    expected_code: str,
+) -> None:
+    uploaded = upload_file(client, owner, contents=b"0123456789")
+
+    response = client.get(
+        f"/files/{uploaded['id']}/content",
+        headers={**owner, "Range": range_header},
+    )
+
+    assert response.status_code == expected_status
+    assert response.headers["content-type"].startswith("application/json")
+    assert response.headers["cache-control"] == "no-store"
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["content-security-policy"] == (
+        "default-src 'none'; sandbox; frame-ancestors 'none'"
+    )
+    payload = response.json()
+    assert payload == {
+        "code": expected_code,
+        "message": (
+            "Range 请求头格式无效"
+            if expected_status == 400
+            else "请求的文件范围无法满足"
+        ),
+        "request_id": response.headers["x-request-id"],
+        "data": None,
+    }
+    if expected_status == 416:
+        assert response.headers["content-range"] == "bytes */10"
+    else:
+        assert "content-range" not in response.headers
 
 
 @pytest.mark.parametrize("failure", ["foreign", "incomplete", "missing-bytes"])
@@ -241,11 +307,13 @@ def test_file_content_openapi_documents_binary_success_and_json_errors() -> None
     assert "二进制" in operation["description"]
     assert operation["parameters"][0]["description"] == "要读取的文件 UUID。"
     assert operation["responses"]["200"]["content"] == {
-        "application/octet-stream": {
-            "schema": {"type": "string", "format": "binary"}
-        }
+        "application/octet-stream": {"schema": {"type": "string", "format": "binary"}}
     }
     errors = operation["responses"]
-    assert "FILE_NOT_FOUND" in errors["404"]["content"]["application/json"][
-        "examples"
-    ]
+    assert "FILE_NOT_FOUND" in errors["404"]["content"]["application/json"]["examples"]
+    assert "INVALID_RANGE" in errors["400"]["content"]["application/json"]["examples"]
+    assert (
+        "RANGE_NOT_SATISFIABLE"
+        in errors["416"]["content"]["application/json"]["examples"]
+    )
+    assert errors["416"]["headers"]["Content-Range"]["schema"] == {"type": "string"}

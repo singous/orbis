@@ -376,6 +376,8 @@ def _install_operation_docs(schema: dict[str, Any]) -> None:
         ("get", "/notebooks/icons/{file_id}", 403, "ACTIVE_WORKSPACE_MEMBERSHIP_REQUIRED", "需要有效的工作空间成员身份"),
         ("get", "/notebooks/icons/{file_id}", 404, "NOTEBOOK_ICON_NOT_FOUND", "笔记本图标不存在或不属于当前工作空间"),
         ("get", "/files/{file_id}/content", 404, "FILE_NOT_FOUND", "文件不存在或不属于当前工作空间"),
+        ("get", "/files/{file_id}/content", 400, "INVALID_RANGE", "Range 请求头格式无效"),
+        ("get", "/files/{file_id}/content", 416, "RANGE_NOT_SATISFIABLE", "请求的文件范围无法满足"),
         ("post", "/notebooks", 404, "NOTEBOOK_ICON_NOT_FOUND", "笔记本图标不存在或不属于当前工作空间"),
         ("patch", "/notebooks/{notebook_id}", 404, "NOTEBOOK_ICON_NOT_FOUND", "笔记本图标不存在或不属于当前工作空间"),
         ("post", "/setup", 409, "SYSTEM_ALREADY_INITIALIZED", "系统已经完成初始化"),
@@ -400,6 +402,14 @@ def _install_operation_docs(schema: dict[str, Any]) -> None:
         _add_error_example(
             schema["paths"][path][method], status_code, code, message
         )
+    schema["paths"]["/files/{file_id}/content"]["get"]["responses"]["416"][
+        "headers"
+    ] = {
+        "Content-Range": {
+            "description": "无法满足范围请求时返回文件总长度，格式为 bytes */<length>。",
+            "schema": {"type": "string"},
+        }
+    }
 
 
 def _install_chinese_tags(schema: dict[str, Any]) -> None:
