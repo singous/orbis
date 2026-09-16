@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import os
+import threading
 from dataclasses import FrozenInstanceError
 from hashlib import sha256
 from pathlib import Path
@@ -146,6 +148,109 @@ def test_prepare_public_asset_reuses_same_verified_hash_copy(
     assert first == second
     assert first_inode == second_inode
     assert len(list((client.app.state.storage.root / "public-assets").iterdir())) == 1
+
+
+def test_concurrent_first_publications_create_one_shared_directory(
+    client: TestClient,
+    uploaded: tuple[dict[str, object], UUID],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from orbis_user_api.application.site_assets import prepare_public_asset
+
+    file_data, workspace_id = uploaded
+    storage = client.app.state.storage
+    public_root = storage.root.resolve() / "public-assets"
+    missing_directory_barrier = threading.Barrier(2, timeout=5)
+    original_lstat = Path.lstat
+
+    def synchronized_lstat(path: Path):
+        try:
+            return original_lstat(path)
+        except FileNotFoundError:
+            if path == public_root:
+                missing_directory_barrier.wait()
+            raise
+
+    monkeypatch.setattr(Path, "lstat", synchronized_lstat)
+
+    async def prepare_twice():
+        async def prepare_once():
+            async with client.app.state.session_factory() as session:
+                return await prepare_public_asset(
+                    UUID(str(file_data["id"])),
+                    workspace_id,
+                    session,
+                    storage,
+                )
+
+        return await asyncio.gather(prepare_once(), prepare_once())
+
+    first, second = client.portal.call(prepare_twice)
+
+    assert first == second
+    assert (public_root / first.key).read_bytes() == b"immutable asset bytes"
+
+
+def test_concurrent_same_content_reuse_waits_for_atomic_copy_completion(
+    client: TestClient,
+    uploaded: tuple[dict[str, object], UUID],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from orbis_user_api.application import site_assets
+
+    file_data, workspace_id = uploaded
+    storage = client.app.state.storage
+    (storage.root.resolve() / "public-assets").mkdir()
+    first_link_created = threading.Event()
+    validation_started = threading.Event()
+    allow_validation = threading.Event()
+    validation_finished = threading.Event()
+    original_link = site_assets.os.link
+    original_validate = site_assets._validate_public_copy
+
+    def synchronized_link(source: Path, destination: Path):
+        try:
+            result = original_link(source, destination)
+        except FileExistsError:
+            assert first_link_created.wait(timeout=5)
+            raise
+        first_link_created.set()
+        if validation_started.wait(timeout=1):
+            allow_validation.set()
+            assert validation_finished.wait(timeout=5)
+        else:
+            allow_validation.set()
+        return result
+
+    def synchronized_validation(*args, **kwargs):
+        validation_started.set()
+        assert allow_validation.wait(timeout=5)
+        try:
+            return original_validate(*args, **kwargs)
+        finally:
+            validation_finished.set()
+
+    monkeypatch.setattr(site_assets.os, "link", synchronized_link)
+    monkeypatch.setattr(site_assets, "_validate_public_copy", synchronized_validation)
+
+    async def prepare_twice():
+        async def prepare_once():
+            async with client.app.state.session_factory() as session:
+                return await site_assets.prepare_public_asset(
+                    UUID(str(file_data["id"])),
+                    workspace_id,
+                    session,
+                    storage,
+                )
+
+        return await asyncio.gather(prepare_once(), prepare_once())
+
+    first, second = client.portal.call(prepare_twice)
+
+    assert first == second
+    public_copy = storage.root.resolve() / "public-assets" / first.key
+    assert public_copy.stat().st_nlink == 1
+    assert public_copy.read_bytes() == b"immutable asset bytes"
 
 
 @pytest.mark.parametrize(

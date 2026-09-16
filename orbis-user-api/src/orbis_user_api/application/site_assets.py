@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import fcntl
 import hashlib
 import os
 import re
 import stat
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -20,6 +22,7 @@ from orbis_user_api.services.storage import LocalFileStorage
 
 FILE_REFERENCE_PREFIX = "orbis-file:"
 PUBLIC_ASSET_DIRECTORY = "public-assets"
+PUBLIC_ASSET_LOCK_FILE = ".public-assets.lock"
 COPY_CHUNK_SIZE = 1024 * 1024
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 
@@ -92,16 +95,49 @@ def _publication_path(
     except FileNotFoundError:
         if not create_parent:
             raise _PublishedCopyCorrupt from None
-        public_root.mkdir(mode=0o755)
-    else:
-        if stat.S_ISLNK(public_root_stat.st_mode) or not stat.S_ISDIR(
-            public_root_stat.st_mode
-        ):
-            raise _PublishedCopyCorrupt
+        try:
+            public_root.mkdir(mode=0o755)
+        except FileExistsError:
+            pass
+        try:
+            public_root_stat = public_root.lstat()
+        except FileNotFoundError:
+            raise _PublishedCopyCorrupt from None
+    if stat.S_ISLNK(public_root_stat.st_mode) or not stat.S_ISDIR(
+        public_root_stat.st_mode
+    ):
+        raise _PublishedCopyCorrupt
     public_copy = public_root / key
     if public_copy.parent != public_root:
         raise _PublishedCopyCorrupt
     return public_copy
+
+
+@contextmanager
+def _publication_lock(storage: LocalFileStorage):
+    lock_path = storage.root.resolve() / PUBLIC_ASSET_LOCK_FILE
+    flags = os.O_CREAT | os.O_RDWR
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    try:
+        descriptor = os.open(lock_path, flags, 0o600)
+    except OSError as exc:
+        raise _PublishedCopyCorrupt from exc
+    locked = False
+    try:
+        lock_stat = os.fstat(descriptor)
+        if not stat.S_ISREG(lock_stat.st_mode) or lock_stat.st_nlink != 1:
+            raise _PublishedCopyCorrupt
+        try:
+            fcntl.flock(descriptor, fcntl.LOCK_EX)
+            locked = True
+        except OSError as exc:
+            raise _PublishedCopyCorrupt from exc
+        yield
+    finally:
+        if locked:
+            fcntl.flock(descriptor, fcntl.LOCK_UN)
+        os.close(descriptor)
 
 
 def _validate_public_copy(
@@ -136,33 +172,35 @@ def _copy_verified_source(
     expected_sha256: str,
 ) -> None:
     public_copy = _publication_path(storage, expected_sha256, create_parent=True)
-    temporary = public_copy.parent / f".{public_copy.name}.{uuid4().hex}.tmp"
-    digest = hashlib.sha256()
-    size = 0
-    try:
-        with source.open("rb") as input_file, temporary.open("xb") as output_file:
-            while chunk := input_file.read(COPY_CHUNK_SIZE):
-                size += len(chunk)
-                digest.update(chunk)
-                output_file.write(chunk)
-            output_file.flush()
-            os.fsync(output_file.fileno())
-        if size != expected_size or digest.hexdigest() != expected_sha256:
-            raise _SourceAssetChanged
-        temporary.chmod(0o444)
+    with _publication_lock(storage):
+        public_copy = _publication_path(storage, expected_sha256, create_parent=True)
+        temporary = public_copy.parent / f".{public_copy.name}.{uuid4().hex}.tmp"
+        digest = hashlib.sha256()
+        size = 0
         try:
-            os.link(temporary, public_copy)
-        except FileExistsError:
-            _validate_public_copy(
-                public_copy,
-                size=expected_size,
-                sha256=expected_sha256,
-                source=source,
-            )
-    except (FileNotFoundError, IsADirectoryError, PermissionError) as exc:
-        raise _SourceAssetMissing from exc
-    finally:
-        temporary.unlink(missing_ok=True)
+            with source.open("rb") as input_file, temporary.open("xb") as output_file:
+                while chunk := input_file.read(COPY_CHUNK_SIZE):
+                    size += len(chunk)
+                    digest.update(chunk)
+                    output_file.write(chunk)
+                output_file.flush()
+                os.fsync(output_file.fileno())
+            if size != expected_size or digest.hexdigest() != expected_sha256:
+                raise _SourceAssetChanged
+            temporary.chmod(0o444)
+            try:
+                os.link(temporary, public_copy)
+            except FileExistsError:
+                _validate_public_copy(
+                    public_copy,
+                    size=expected_size,
+                    sha256=expected_sha256,
+                    source=source,
+                )
+        except (FileNotFoundError, IsADirectoryError, PermissionError) as exc:
+            raise _SourceAssetMissing from exc
+        finally:
+            temporary.unlink(missing_ok=True)
 
 
 def _validate_source_metadata(asset: FileAsset) -> None:
@@ -239,8 +277,9 @@ def public_asset_response(
     in a worker thread.
     """
     try:
-        path = _publication_path(storage, asset.key, create_parent=False)
-        _validate_public_copy(path, size=asset.size, sha256=asset.key)
+        with _publication_lock(storage):
+            path = _publication_path(storage, asset.key, create_parent=False)
+            _validate_public_copy(path, size=asset.size, sha256=asset.key)
     except (ValueError, _PublishedCopyCorrupt):
         raise SiteError(
             "SITE_ASSET_CORRUPT",
