@@ -1,4 +1,4 @@
-import { ArrowLeft, Download, Import, Plus, Settings2 } from "lucide-react";
+import { ArrowLeft, Download, Globe2, Import, Plus, Settings2 } from "lucide-react";
 import { type ChangeEvent, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useStore } from "zustand";
@@ -95,6 +95,7 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
             {canEdit ? <button type="button" className="icon-button" aria-label="编辑笔记本" title="编辑名称和图标" onClick={() => setEditing(true)}><Settings2 size={17} /></button> : null}
             <input ref={fileInputRef} className="hidden" type="file" accept=".md,text/markdown,text/plain" onChange={handleImport} />
             <Button variant="secondary" icon={<Download aria-hidden="true" size={14} />} onClick={exportAllVisible} disabled={!treeSummary.noteCount || exportMarkdown.isPending}>导出全部</Button>
+            {canEdit ? <Link className="ui-button ui-button--md border border-[var(--border-subtle)] bg-[var(--surface-content)] text-[var(--text-primary)] hover:bg-[var(--surface-hover)]" to={`/sites?notebook=${collectionId}`}><Globe2 aria-hidden="true" size={14} />创建文档站点</Link> : null}
             {canEdit ? <Button variant="secondary" icon={<Import aria-hidden="true" size={14} />} onClick={() => fileInputRef.current?.click()} disabled={importMarkdown.isPending}>导入 Markdown</Button> : null}
             {canEdit ? <Button variant="primary" icon={<Plus aria-hidden="true" size={14} />} onClick={() => void createDocument()} disabled={createNote.isPending}>新建文档</Button> : null}
           </div>

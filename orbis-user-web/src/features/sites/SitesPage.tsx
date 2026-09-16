@@ -1,8 +1,9 @@
 import { ArrowUpRight, ChevronRight, Globe, Plus } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useStore } from "zustand";
+import "../../styles/site-management.css";
 
 import { authStore } from "../../shared/auth/auth-store";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
@@ -15,16 +16,28 @@ import { createSite } from "./api";
 import { useSites } from "./queries";
 import { SITE_KINDS, type SiteConfig } from "./schemas";
 import { SiteSettingsForm } from "./SiteSettingsForm";
+import { SiteSourceEditor } from "./SiteSourceEditor";
 
-export const EMPTY_SITE_CONFIG: SiteConfig = { name: "", slug: "", description: "", site_kind: "knowledge", accent_color: "#0f766e", navigation: [] };
+export const EMPTY_SITE_CONFIG: SiteConfig = {
+  name: "", slug: "", description: "", site_kind: "knowledge", accent_color: "#0f766e", navigation: [],
+  source: { kind: "manual", notebooks: [], excluded_note_ids: [], page_overrides: [] },
+  branding: { logo_url: null, links: [], footer_links: [], cta: null, theme: "system" },
+};
+
+function createInitialConfig(notebookId: string | null): SiteConfig {
+  if (!notebookId) return { ...EMPTY_SITE_CONFIG };
+  return { ...EMPTY_SITE_CONFIG, source: { kind: "notebooks", notebooks: [{ notebook_id: notebookId, root_note_id: null, label: null }], excluded_note_ids: [], page_overrides: [] } };
+}
 
 export function SitesPage() {
   const workspace = useStore(authStore, (state) => state.workspace);
   const canEdit = canMutateWorkspaceContent(workspace);
+  const [searchParams] = useSearchParams();
+  const initialNotebookId = searchParams.get("notebook");
   const [page, setPage] = useState(1);
   const sites = useSites(page);
-  const [open, setOpen] = useState(false);
-  const [config, setConfig] = useState<SiteConfig>({ ...EMPTY_SITE_CONFIG });
+  const [open, setOpen] = useState(Boolean(initialNotebookId) && canEdit);
+  const [config, setConfig] = useState<SiteConfig>(() => createInitialConfig(initialNotebookId));
   const auth = useAuthRequest();
   const client = useQueryClient();
   const navigate = useNavigate();
@@ -64,7 +77,7 @@ export function SitesPage() {
           )}
         </section>
       </PageContainer>
-      <Dialog open={open} onOpenChange={setOpen}><DialogContent className="site-create-dialog" title="创建文档站点" description="先确定站点信息，下一步选择发布内容。"><form className="site-create-form" onSubmit={submit}><SiteSettingsForm value={config} onChange={setConfig} disabled={create.isPending} />{create.error ? <p role="alert" className="mvp-feedback error">{create.error.message}</p> : null}<div className="site-create-actions"><button className="mvp-button" type="button" disabled={create.isPending} onClick={() => setOpen(false)}>取消</button><button className="mvp-button primary" type="submit" disabled={create.isPending}>{create.isPending ? "创建中…" : "创建并选择文档"}</button></div></form></DialogContent></Dialog>
+      <Dialog open={open} onOpenChange={setOpen}><DialogContent className="site-create-dialog" title="创建文档站点" description="先确定站点信息与内容来源，提交前不会创建站点。"><form className="site-create-form" onSubmit={submit}><SiteSettingsForm value={config} onChange={setConfig} disabled={create.isPending} /><SiteSourceEditor value={config.source} onChange={(source) => setConfig({ ...config, source })} disabled={create.isPending} />{create.error ? <p role="alert" className="mvp-feedback error">{create.error.message}</p> : null}<div className="site-create-actions"><button className="mvp-button" type="button" disabled={create.isPending} onClick={() => setOpen(false)}>取消</button><button className="mvp-button primary" type="submit" disabled={create.isPending || config.source?.kind === "notebooks" && !config.source.notebooks.length}>{create.isPending ? "创建中…" : "创建站点"}</button></div></form></DialogContent></Dialog>
     </WorkspaceShell>
   );
 }

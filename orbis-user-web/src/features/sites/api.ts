@@ -1,7 +1,7 @@
 import { apiRequest } from "../../shared/api/api-client";
 import { authRequestOptions, type AuthRequestOptions } from "../../shared/auth/use-auth-request";
 import { noteSearchResponseSchema } from "../../shared/api/schemas";
-import { siteListSchema, siteReleaseListSchema, siteSchema, siteSnapshotSchema, type SiteConfig } from "./schemas";
+import { siteListSchema, sitePreviewSchema, siteReleaseListSchema, siteSchema, siteSnapshotSchema, siteSourcesSchema, type SiteConfig } from "./schemas";
 
 export async function listSites(auth: AuthRequestOptions, page = 1) {
   return siteListSchema.parse(await apiRequest(`/sites?page=${page}&page_size=20`, authRequestOptions(auth)));
@@ -16,10 +16,17 @@ export async function saveSite(id: string, config: SiteConfig, expectedVersion: 
   return siteSchema.parse(await apiRequest(`/sites/${id}`, { ...authRequestOptions(auth), method: "PUT", body: { ...config, expected_version: expectedVersion } }));
 }
 export async function previewSite(id: string, auth: AuthRequestOptions) {
-  return siteSnapshotSchema.parse(await apiRequest(`/sites/${id}/preview`, authRequestOptions(auth)));
+  return sitePreviewSchema.parse(await apiRequest(`/sites/${id}/preview`, authRequestOptions(auth)));
 }
-export async function publishSite(id: string, auth: AuthRequestOptions) {
-  return siteSnapshotSchema.parse(await apiRequest(`/sites/${id}/publish`, { ...authRequestOptions(auth), method: "POST" }));
+export async function getSiteSources(id: string, auth: AuthRequestOptions) {
+  return siteSourcesSchema.parse(await apiRequest(`/sites/${id}/sources`, authRequestOptions(auth)));
+}
+export async function publishSite(id: string, auth: AuthRequestOptions, expectedSourceFingerprint?: string) {
+  return siteSnapshotSchema.parse(await apiRequest(`/sites/${id}/publish`, {
+    ...authRequestOptions(auth),
+    method: "POST",
+    ...(expectedSourceFingerprint ? { body: { expected_source_fingerprint: expectedSourceFingerprint } } : {}),
+  }));
 }
 export async function listSiteReleases(id: string, auth: AuthRequestOptions, page = 1) {
   return siteReleaseListSchema.parse(await apiRequest(`/sites/${id}/releases?page=${page}&page_size=20`, authRequestOptions(auth)));
