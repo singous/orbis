@@ -56,6 +56,22 @@ def publish(client, owner, site_id, fingerprint):
     )
 
 
+def manual_config(*pages, name="Manual handbook", slug="manual-handbook"):
+    return {
+        "name": name,
+        "slug": slug,
+        "navigation": [
+            {
+                "note_id": page["id"],
+                "slug": page_slug,
+                "title": page["title"],
+                "group": None,
+            }
+            for page, page_slug in pages
+        ],
+    }
+
+
 def test_notebook_binding_includes_all_pages_and_preserves_readable_parents(
     client, owner, document
 ):
@@ -200,6 +216,74 @@ def test_explicit_page_path_change_keeps_redirect_and_old_release_can_be_restore
     )
     assert restored.status_code == 200, restored.text
     assert client.get("/public/sites/notebook-handbook").json()["data"] == first
+
+
+def test_manual_page_can_replace_previous_page_at_same_slug_and_keep_it_on_conversion(
+    client, owner, document
+):
+    replacement = add_note(
+        client, owner, document["notebook_id"], "Replacement", sort_order=1
+    )
+    site = client.post(
+        "/sites",
+        headers=owner,
+        json=manual_config((document, "start")),
+    ).json()["data"]
+    first = client.post(f"/sites/{site['id']}/publish", headers=owner)
+    assert first.status_code == 200, first.text
+
+    replaced = client.put(
+        f"/sites/{site['id']}",
+        headers=owner,
+        json={
+            **manual_config((replacement, "start")),
+            "expected_version": site["config_version"],
+        },
+    )
+    assert replaced.status_code == 200, replaced.text
+    second = client.post(f"/sites/{site['id']}/publish", headers=owner)
+    assert second.status_code == 200, second.text
+    assert [
+        (page["title"], page["slug"]) for page in second.json()["data"]["pages"]
+    ] == [("Replacement", "start")]
+
+    notebook_source = source_config(document["notebook_id"])
+    notebook_source.update(
+        slug="manual-handbook",
+        expected_version=replaced.json()["data"]["config_version"],
+    )
+    converted = client.put(f"/sites/{site['id']}", headers=owner, json=notebook_source)
+    assert converted.status_code == 200, converted.text
+    pages = preview(client, owner, site["id"])["pages"]
+    slugs = {page["title"]: page["slug"] for page in pages}
+    assert slugs["Replacement"] == "start"
+    assert slugs["Internal document"] != "start"
+
+
+def test_manual_pages_can_swap_published_slugs(client, owner, document):
+    second = add_note(client, owner, document["notebook_id"], "Second", sort_order=1)
+    site = client.post(
+        "/sites",
+        headers=owner,
+        json=manual_config((document, "first"), (second, "second")),
+    ).json()["data"]
+    released = client.post(f"/sites/{site['id']}/publish", headers=owner)
+    assert released.status_code == 200, released.text
+
+    swapped = client.put(
+        f"/sites/{site['id']}",
+        headers=owner,
+        json={
+            **manual_config((document, "second"), (second, "first")),
+            "expected_version": site["config_version"],
+        },
+    )
+    assert swapped.status_code == 200, swapped.text
+    next_release = client.post(f"/sites/{site['id']}/publish", headers=owner)
+    assert next_release.status_code == 200, next_release.text
+    assert {
+        page["title"]: page["slug"] for page in next_release.json()["data"]["pages"]
+    } == {"Internal document": "second", "Second": "first"}
 
 
 def test_unknown_source_and_root_outside_notebook_are_rejected(client, owner, document):
@@ -416,6 +500,98 @@ def test_legacy_release_diff_includes_removed_pages_without_source_identity(
     ]
     assert [page["slug"] for page in changes["removed"]] == ["first"]
     assert changes["removed"][0]["note_id"] is None
+
+
+def test_legacy_release_without_new_metadata_only_reports_real_changes(
+    client, owner, document
+):
+    from copy import deepcopy
+
+    from orbis_user_api.models.site import SiteRelease
+    from sqlalchemy import update
+
+    site = client.post(
+        "/sites", headers=owner, json=manual_config((document, "start"))
+    ).json()["data"]
+    release = client.post(f"/sites/{site['id']}/publish", headers=owner).json()["data"]
+
+    async def downgrade_snapshot():
+        async with client.app.state.session_factory() as session:
+            record = await session.get(SiteRelease, UUID(release["release_id"]))
+            snapshot = deepcopy(record.snapshot)
+            for key in ("description", "updated_at_ms", "parent_slug", "section"):
+                snapshot["pages"][0].pop(key)
+            await session.execute(
+                update(SiteRelease)
+                .where(SiteRelease.id == record.id)
+                .values(snapshot=snapshot, source_manifest={})
+            )
+            await session.commit()
+
+    client.portal.call(downgrade_snapshot)
+    unchanged = client.get(f"/sites/{site['id']}/sources", headers=owner)
+    assert unchanged.status_code == 200, unchanged.text
+    assert unchanged.json()["data"]["changes"]["modified"] == []
+
+    renamed = client.put(
+        f"/sites/{site['id']}",
+        headers=owner,
+        json={
+            **manual_config(({**document, "title": "Renamed"}, "start")),
+            "expected_version": site["config_version"],
+        },
+    )
+    assert renamed.status_code == 200, renamed.text
+    changed = client.get(f"/sites/{site['id']}/sources", headers=owner)
+    assert changed.status_code == 200, changed.text
+    assert [
+        page["note_id"] for page in changed.json()["data"]["changes"]["modified"]
+    ] == [document["id"]]
+
+
+def test_manual_reuses_removed_slug_and_converts_before_republication(
+    client, owner, document
+):
+    other = add_note(client, owner, document["notebook_id"], "Other")
+    replacement = add_note(client, owner, document["notebook_id"], "Replacement")
+    site = client.post(
+        "/sites",
+        headers=owner,
+        json=manual_config((document, "start"), (other, "other")),
+    ).json()["data"]
+    assert client.post(f"/sites/{site['id']}/publish", headers=owner).status_code == 200
+    removed = client.put(
+        f"/sites/{site['id']}",
+        headers=owner,
+        json={**manual_config((other, "other")), "expected_version": 1},
+    )
+    assert removed.status_code == 200, removed.text
+    reused = client.put(
+        f"/sites/{site['id']}",
+        headers=owner,
+        json={
+            **manual_config((other, "other"), (replacement, "start")),
+            "expected_version": 2,
+        },
+    )
+    assert reused.status_code == 200, reused.text
+    converted = client.put(
+        f"/sites/{site['id']}",
+        headers=owner,
+        json={
+            **source_config(document["notebook_id"]),
+            "slug": "manual-handbook",
+            "expected_version": 3,
+        },
+    )
+    assert converted.status_code == 200, converted.text
+    paths = {
+        page["title"]: page["slug"]
+        for page in preview(client, owner, site["id"])["pages"]
+    }
+    assert paths["Replacement"] == "start"
+    assert paths["Other"] == "other"
+    assert paths["Internal document"] not in {"start", "other"}
 
 
 def test_configuration_save_cannot_erase_registry_from_concurrent_publish(

@@ -13,7 +13,7 @@ from orbis_user_api.application.site_errors import (
     site_slug_conflict,
     site_version_conflict,
 )
-from orbis_user_api.application.site_navigation import PagePaths
+from orbis_user_api.application.site_navigation import PagePaths, manual_page_registry
 from orbis_user_api.application.site_slugs import (
     release_unused_site_slugs,
     reserve_site_slug,
@@ -143,8 +143,9 @@ async def update_site(
     ):
         # Old releases have no registry. Preserve configured addresses when
         # moving from explicit selection to notebook-driven navigation.
-        for entry in site.navigation:
-            registry.assign(entry["note_id"], entry["title"], entry["slug"])
+        registry = PagePaths(
+            manual_page_registry(site.page_registry or {}, site.navigation)
+        )
     candidate = Site(
         id=site.id,
         workspace_id=site.workspace_id,

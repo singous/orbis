@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from orbis_user_api.application.site_errors import SiteError, invalid_site_document
-from orbis_user_api.application.site_navigation import PagePaths
+from orbis_user_api.application.site_navigation import PagePaths, manual_page_registry
 from orbis_user_api.domain.site import MAX_NAVIGATION_PAGES
 from orbis_user_api.models.note import Note, Notebook, NoteContent, NoteGroup
 from orbis_user_api.models.site import Site
@@ -206,7 +206,10 @@ async def resolve_site_source(site: Site, session: AsyncSession) -> ResolvedSour
     )
     contents = {content.note_id: content for content in content_rows}
     overrides = {item.note_id: item for item in source.page_overrides}
-    paths = PagePaths(site.page_registry or {})
+    registry = site.page_registry or {}
+    if source.kind == "manual":
+        registry = manual_page_registry(registry, site.navigation)
+    paths = PagePaths(registry)
     for note, _, manual in selected:
         override = overrides.get(note.id) if manual is None else None
         explicit = manual.slug if manual else override.slug if override else None

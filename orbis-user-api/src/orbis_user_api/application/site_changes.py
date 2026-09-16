@@ -11,8 +11,13 @@ def _legacy_page_changed(
     page: ResolvedPage, previous: dict, position: int, old_position: int
 ) -> bool:
     metadata = page.metadata.model_dump(mode="json", exclude={"note_id"})
+    previous_metadata = SiteChangePage.model_validate(
+        {**previous, "note_id": None}
+    ).model_dump(mode="json", exclude={"note_id"})
+    if previous.get("updated_at_ms") is None:
+        metadata.pop("updated_at_ms")
     if position != old_position or any(
-        value != previous.get(key) for key, value in metadata.items()
+        value != previous_metadata.get(key) for key, value in metadata.items()
     ):
         return True
     try:

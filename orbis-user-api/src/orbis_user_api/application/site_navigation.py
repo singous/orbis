@@ -8,6 +8,23 @@ from orbis_user_api.application.site_errors import SiteError
 from orbis_user_api.domain.site import MAX_PAGE_SLUG_LENGTH
 
 
+def manual_page_registry(registry: dict, navigation: list[dict]) -> dict:
+    """Explicit manual paths can be reassigned, unlike automatic notebook paths."""
+    claimed = {entry["slug"] for entry in navigation}
+    result = {}
+    for entry in navigation:
+        identity = str(entry["note_id"])
+        previous = registry.get(identity, {})
+        aliases = set(previous.get("aliases", []))
+        if previous.get("slug"):
+            aliases.add(previous["slug"])
+        result[identity] = {
+            "slug": entry["slug"],
+            "aliases": sorted(aliases - claimed),
+        }
+    return result
+
+
 @dataclass
 class PagePaths:
     """Allocate paths without mutating persisted configuration during preview."""

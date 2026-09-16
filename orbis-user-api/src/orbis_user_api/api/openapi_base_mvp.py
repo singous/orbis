@@ -36,7 +36,7 @@ OPERATION_DOCS = {
     ),
     ("put", "/sites/{site_id}"): (
         "保存站点完整配置",
-        "所有者、管理员或编辑者以 expected_version 校验当前配置版本并完整替换配置，成功后 config_version 递增。可选字段省略时按默认值保存，navigation 省略时变为空数组。版本过期返回 SITE_VERSION_CONFLICT；后续草稿修改不影响当前公开快照及其路径。",
+        "所有者、管理员或编辑者以 expected_version 校验当前配置版本并完整保存配置，成功后 config_version 递增。source 和 branding 省略时保留已有值，其他可选字段省略时按默认值保存，navigation 省略时变为空数组。配置过期或保存期间发生发布时返回 SITE_VERSION_CONFLICT；草稿修改不影响当前公开快照及其路径。",
     ),
     ("get", "/sites/{site_id}/preview"): (
         "预览待发布站点",
@@ -48,7 +48,7 @@ OPERATION_DOCS = {
     ),
     ("post", "/sites/{site_id}/publish"): (
         "发布站点不可变快照",
-        "仅所有者和管理员可以发布。至少选择一篇文档；发布前校验空间归属、活跃状态、内容格式及公开链接安全性。成功后生成递增发布版本并原子切换公开指针，响应为 HTTP 200。文档后续保存不会修改本快照；校验或并发冲突失败时保留原有公开版本。本接口无需请求体。",
+        "仅所有者和管理员可以发布。至少包含一篇文档；发布前校验空间归属、活跃状态、内容格式及公开链接安全性。笔记本来源必须在请求体携带认证预览返回的 expected_source_fingerprint；缺失返回 SITE_PREVIEW_REQUIRED，过期或构建期间来源变化返回 SITE_SOURCE_CONFLICT。旧手选来源仍接受空请求体。成功后生成递增版本并原子切换公开指针，响应为 HTTP 200；后续保存不会修改快照，失败时保留原公开版本。",
     ),
     ("get", "/sites/{site_id}/releases"): (
         "分页查询站点发布历史",
