@@ -25,17 +25,19 @@ describe("SiteReader", () => {
   it("provides published navigation, outline anchors and next-page links", () => {
     render(<MemoryRouter><SiteReader snapshot={readerSnapshot} basePath="/s/orbis-guide" /></MemoryRouter>);
     expect(screen.getByRole("heading", { name: "欢迎使用", level: 1 })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "记录知识" })).toHaveAttribute("href", "#heading-0");
+    expect(screen.getAllByRole("link", { name: "记录知识" }).some((link) => link.getAttribute("href") === "#heading-0")).toBe(true);
     expect(screen.getByRole("link", { name: /下一篇.*发布站点/ })).toHaveAttribute("href", "/s/orbis-guide/publish");
     expect(screen.queryByRole("button", { name: "发布" })).not.toBeInTheDocument();
   });
 
-  it("searches only the supplied published pages and offers a result link", async () => {
+  it("searches only the supplied published pages and offers a keyboard-ready result", async () => {
     render(<MemoryRouter><SiteReader snapshot={readerSnapshot} basePath="/s/orbis-guide" /></MemoryRouter>);
-    await userEvent.type(screen.getByRole("searchbox", { name: "搜索文档" }), "独立版本");
-    expect(screen.getByRole("link", { name: /发布站点.*发布后生成独立版本/ })).toHaveAttribute("href", "/s/orbis-guide/publish");
-    await userEvent.clear(screen.getByRole("searchbox", { name: "搜索文档" }));
-    await userEvent.type(screen.getByRole("searchbox", { name: "搜索文档" }), "未发布秘密");
+    await userEvent.click(screen.getByRole("button", { name: "搜索文档" }));
+    const searchbox = screen.getByRole("combobox", { name: "搜索文档" });
+    await userEvent.type(searchbox, "独立版本");
+    expect(screen.getByRole("option", { name: /发布站点.*发布后生成独立版本/ })).toBeInTheDocument();
+    await userEvent.clear(searchbox);
+    await userEvent.type(searchbox, "未发布秘密");
     expect(screen.getByText("没有找到相关内容")).toBeInTheDocument();
   });
 

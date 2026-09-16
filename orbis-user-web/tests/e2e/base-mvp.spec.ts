@@ -76,9 +76,11 @@ test("personal writing, team discussion and a versioned documentation site work 
   await expect(reader.getByRole("heading", { name: "快速开始", level: 1 })).toBeVisible();
   await expect(reader.getByRole("table")).toContainText("产品手册");
   await reader.screenshot({ path: testInfo.outputPath("public-desktop.png"), fullPage: true });
-  await reader.getByRole("searchbox", { name: "搜索文档" }).fill("欢迎");
-  await expect(reader.getByLabel("搜索结果")).toContainText("欢迎使用 Orbis");
-  await reader.getByRole("searchbox", { name: "搜索文档" }).fill("");
+  await reader.getByRole("button", { name: "搜索文档" }).click();
+  const readerSearch = reader.getByRole("dialog", { name: "搜索文档" });
+  await readerSearch.getByRole("combobox", { name: "搜索文档" }).fill("欢迎");
+  await expect(readerSearch.getByRole("option", { name: /欢迎使用 Orbis/ })).toBeVisible();
+  await readerSearch.getByRole("combobox", { name: "搜索文档" }).press("Escape");
   await reader.getByRole("button", { name: "切换深色主题" }).click();
   await expect(reader.locator(".site-reader")).toHaveAttribute("data-theme", "dark");
   await reader.screenshot({ path: testInfo.outputPath("public-dark.png"), fullPage: true });
