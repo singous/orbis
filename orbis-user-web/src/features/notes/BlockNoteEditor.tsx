@@ -13,6 +13,7 @@ import { BookOpen } from "lucide-react";
 import "@blocknote/react/style.css";
 import "@blocknote/mantine/style.css";
 import { useEffect, useRef } from "react";
+import { useManagedFiles } from "../files/use-managed-files";
 
 import {
   canonicalJSON,
@@ -32,10 +33,11 @@ export function BlockNoteEditor({
   onChange: (next: { blocks: NoteBlocksV2; plainText: string }) => void;
   readOnly?: boolean;
 }) {
+  const files = useManagedFiles();
   // OrbisBlock mirrors BlockNote's Block shape; cast to avoid deep inline-style
   // generic friction (content is validated at the API boundary).
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const editor = useCreateBlockNote({ schema: documentEditorSchema, extensions: documentEditorExtensions, dictionary: zh, initialContent: blocks.blocks as any });
+  const editor = useCreateBlockNote({ schema: documentEditorSchema, extensions: documentEditorExtensions, dictionary: zh, uploadFile: files.upload, resolveFileUrl: files.resolve, initialContent: blocks.blocks as any });
   const lastEmitted = useRef<OrbisBlock[] | null>(null);
   const lastApplied = useRef(blocks.blocks);
 

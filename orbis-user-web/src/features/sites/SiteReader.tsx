@@ -8,6 +8,7 @@ import { Header, type ReaderThemeMode } from "./reader/Header";
 import { Navigation } from "./reader/Navigation";
 import { Outline } from "./reader/Outline";
 import { SearchDialog } from "./reader/SearchDialog";
+import { SitePreviewLinks } from "./SitePreviewLinks";
 import { navigationSections, pageAncestors, pageHref, resolveRedirect, topSections } from "./reader/reader-model";
 import "../../styles/site-reader.css";
 
@@ -187,7 +188,7 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false }: {
             </div>
           </div>
           {compactOutline ? <Outline items={outline} mobile /> : null}
-          <ContentRenderer blocks={current.blocks} pageTitle={current.title} />
+          {preview ? <SitePreviewLinks siteSlug={snapshot.slug} basePath={basePath}><ContentRenderer blocks={current.blocks} pageTitle={current.title} /></SitePreviewLinks> : <ContentRenderer blocks={current.blocks} pageTitle={current.title} />}
           <nav className="site-reader-pagination" aria-label="相邻文档">
             {currentIndex > 0 ? <Link to={pageHref(basePath, snapshot.pages[currentIndex - 1].slug)}><ArrowLeft aria-hidden="true" size={17} /><span><small>上一篇</small>{snapshot.pages[currentIndex - 1].title}</span></Link> : <span />}
             {currentIndex < snapshot.pages.length - 1 ? <Link to={pageHref(basePath, snapshot.pages[currentIndex + 1].slug)}><span><small>下一篇</small>{snapshot.pages[currentIndex + 1].title}</span><ArrowRight aria-hidden="true" size={17} /></Link> : null}

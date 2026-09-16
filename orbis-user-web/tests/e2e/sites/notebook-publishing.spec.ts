@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 const apiOrigin = `http://127.0.0.1:${process.env.ORBIS_E2E_API_PORT || "9311"}`;
 const webOrigin = `http://127.0.0.1:${process.env.ORBIS_E2E_WEB_PORT || "9310"}`;
 const password = "Orbis-browser-test-2026!";
+const imagePng = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAIAAADZF8uwAAAAF0lEQVR4nGNUW9PJQAgwEVQxqmgAggAAbWUBcxRSQZwAAAAASUVORK5CYII=", "base64");
 
 test("a notebook publishes its complete tree and editable documentation components", async ({ page, browser, request }, testInfo) => {
   const errors: string[] = [];
@@ -47,6 +48,8 @@ test("a notebook publishes its complete tree and editable documentation componen
     block("steps", {}, [], [block("step", { title: "创建笔记本" }, [], [paragraph("按主题整理内容。")]), block("step", { title: "发布站点" }, [], [paragraph("预览后确认公开版本。")])]),
     block("tabs", {}, [], [block("tab", { title: "Linux" }, [], [paragraph("Linux 环境配置")]), block("tab", { title: "macOS" }, [], [paragraph("macOS 环境配置")])]),
     block("codeGroup", {}, [], [block("codeBlock", { language: "python" }, "print('Hello Orbis')"), block("codeBlock", { language: "javascript" }, "console.log('Hello Orbis')")]),
+    block("paragraph", {}, [{ type: "link", href: `/documents/${ids[1]}`, content: [{ type: "text", text: "继续阅读安装指南" }] }]),
+    block("image", { url: "", name: "" }),
     paragraph(""),
   ] };
   const saved = await request.put(`${apiOrigin}/notes/${ids[0]}/content`, { headers, data: { expected_version: 1, blocks } });
@@ -80,6 +83,14 @@ test("a notebook publishes its complete tree and editable documentation componen
   expectValidGroupChildren(edited.blocks);
   await page.reload();
   await expect(page.locator('.doc-editor-callout input[value="编辑器插入的提示"]')).toBeVisible();
+  await page.getByText("添加图片", { exact: true }).click();
+  const chooser = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: "上传图片", exact: true }).click();
+  await (await chooser).setFiles({ name: "documentation.png", mimeType: "image/png", buffer: imagePng });
+  const image = page.locator('.bn-block-content[data-content-type="image"] img');
+  await expect(image).toBeVisible();
+  await expect.poll(async () => image.evaluate((element) => (element as HTMLImageElement).naturalWidth)).toBe(12);
+  await expect.poll(async () => JSON.stringify((await (await request.get(`${apiOrigin}/notes/${ids[0]}/content`, { headers })).json()).data.blocks)).toContain("orbis-file:");
 
   await page.goto(`/collections/${notebook.id}`);
   await page.getByRole("link", { name: "创建文档站点", exact: true }).click();
@@ -98,6 +109,12 @@ test("a notebook publishes its complete tree and editable documentation componen
   await expect(preview.getByText("25 篇页面", { exact: true })).toBeVisible();
   await expect(preview.getByRole("navigation", { name: "预览页面" }).getByRole("button")).toHaveCount(25);
   await expect(preview.getByRole("link", { name: "阅读入门指南" })).toBeVisible();
+  await expect.poll(async () => preview.getByRole("img", { name: "documentation.png" }).evaluate((element) => (element as HTMLImageElement).naturalWidth)).toBe(12);
+  await preview.getByRole("link", { name: "继续阅读安装指南" }).click();
+  await expect(preview.getByRole("heading", { name: "安装指南", exact: true })).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`/sites/${siteId}$`));
+  await preview.getByRole("navigation", { name: "预览页面" }).getByRole("button", { name: /快速开始/ }).click();
+  await expect(preview.getByRole("link", { name: "阅读入门指南" })).toBeVisible();
   await preview.getByRole("button", { name: "确认发布", exact: true }).click();
   await expect(page.getByText("站点已发布，读者现在可以访问新版本。", { exact: true })).toBeVisible();
   const snapshot = (await (await request.get(`${apiOrigin}/public/sites/notebook-docs`)).json()).data;
@@ -108,6 +125,16 @@ test("a notebook publishes its complete tree and editable documentation componen
   const reader = await guest.newPage();
   reader.on("pageerror", (error) => errors.push(error.message));
   await reader.goto(`${webOrigin}/s/notebook-docs/${encodeURIComponent(snapshot.pages[0].slug)}`);
+  await expect(reader.getByRole("heading", { name: "快速开始", level: 1 })).toBeVisible();
+  const publicImage = reader.getByRole("img", { name: "documentation.png" });
+  await expect.poll(async () => publicImage.evaluate((element) => (element as HTMLImageElement).naturalWidth)).toBe(12);
+  const assetUrl = await publicImage.getAttribute("src");
+  expect(assetUrl).toMatch(/^\/public\/sites\/notebook-docs\/assets\/[a-f0-9]{64}$/);
+  expect((await request.get(`${webOrigin}${assetUrl}`)).status()).toBe(200);
+  await expect(reader.getByRole("link", { name: "继续阅读安装指南" })).toHaveAttribute("href", `/s/notebook-docs/${snapshot.pages[1].slug}`);
+  await reader.getByRole("link", { name: "继续阅读安装指南" }).click();
+  await expect(reader.getByRole("heading", { name: "安装指南", level: 1 })).toBeVisible();
+  await reader.goBack();
   await expect(reader.getByRole("heading", { name: "快速开始", level: 1 })).toBeVisible();
   await expect(reader.getByRole("note", { name: "开始之前" })).toContainText("文档内容来自笔记本");
   await expect(reader.getByRole("note", { name: "编辑器插入的提示" })).toBeVisible();
@@ -144,7 +171,32 @@ test("a notebook publishes its complete tree and editable documentation componen
   await expect(navigation.getByRole("link", { name: "快速开始", exact: true })).toBeVisible();
   await navigation.getByRole("link", { name: "快速开始", exact: true }).click();
   await expect(reader.getByRole("heading", { name: "快速开始", level: 1 })).toBeVisible();
-  expect(siteId).toMatch(/^[a-f0-9-]+$/);
+  await page.goto(`/documents/${ids[0]}`);
+  await page.getByRole("textbox", { name: "卡片标题", exact: true }).first().fill("更新后的入门指南");
+  await expect.poll(async () => (await (await request.get(`${apiOrigin}/notes/${ids[0]}/content`, { headers })).json()).data.plain_text).toContain("更新后的入门指南");
+  await reader.reload();
+  await expect(reader.getByRole("link", { name: "阅读入门指南" })).toBeVisible();
+  await expect(reader.getByRole("link", { name: "更新后的入门指南" })).toHaveCount(0);
+  await page.goto(`/sites/${siteId}`);
+  await page.getByRole("button", { name: "发布站点", exact: true }).click();
+  const revisedPreview = page.getByRole("dialog", { name: "确认发布站点" });
+  await expect(revisedPreview.getByRole("link", { name: "更新后的入门指南" })).toBeVisible();
+  await revisedPreview.getByRole("button", { name: "确认发布", exact: true }).click();
+  await expect(page.getByText("站点已发布，读者现在可以访问新版本。", { exact: true })).toBeVisible();
+  await reader.reload();
+  await expect(reader.getByRole("link", { name: "更新后的入门指南" })).toBeVisible();
+  await page.getByRole("button", { name: "切换到此版本", exact: true }).click();
+  await page.getByRole("button", { name: "确认操作", exact: true }).click();
+  await expect(page.getByText("已切换公开版本，内部文档保持当前内容。", { exact: true })).toBeVisible();
+  await reader.reload();
+  await expect(reader.getByRole("link", { name: "阅读入门指南" })).toBeVisible();
+  expect((await request.get(`${webOrigin}${assetUrl}`)).status()).toBe(200);
+  await page.getByRole("button", { name: "撤回站点", exact: true }).click();
+  await page.getByRole("button", { name: "确认操作", exact: true }).click();
+  await expect(page.getByText("站点已撤回，公开入口现已关闭。", { exact: true })).toBeVisible();
+  await reader.reload();
+  await expect(reader.getByRole("heading", { name: "站点尚未发布或已撤回" })).toBeVisible();
+  expect((await request.get(`${webOrigin}${assetUrl}`)).status()).toBe(404);
   await guest.close();
   expect(errors).toEqual([]);
 });

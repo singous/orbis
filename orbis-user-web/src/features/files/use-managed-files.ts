@@ -26,8 +26,9 @@ export function useManagedFiles() {
       queueMicrotask(() => { if (!scope.consumers) scope.files.dispose(); });
     };
   }, [scope]);
-  return useMemo(() => ({
+  const operations = useMemo(() => ({
     resolve: (value: string) => current.current.files.resolve(value),
     upload: (file: File) => current.current.files.upload(file),
   }), []);
+  return useMemo(() => ({ ...operations, scope: sessionKey }), [operations, sessionKey]);
 }

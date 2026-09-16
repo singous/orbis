@@ -2,6 +2,7 @@ import { BookOpen, CircleCheck, ExternalLink, Info, OctagonAlert, TriangleAlert 
 import type { CSSProperties, ReactNode } from "react";
 import { codeLanguageLabel } from "./CodeBlock";
 import { DocumentTabs } from "./DocumentTabs";
+import { ManagedContentLink } from "./ContentMedia";
 import { documentBlockTitle } from "./document-components";
 
 type Node = Record<string, unknown>;
@@ -22,7 +23,7 @@ export function DocumentBlock({ kind, props, inline, children, childBlocks, path
   }
   if (kind === "card") {
     const href = props.href ? safeUrl(props.href) : null;
-    return <section className="doc-card"><BookOpen size={22} aria-hidden="true" /><h3>{href ? <a href={href} rel="noopener noreferrer">{title}<ExternalLink size={14} aria-hidden="true" /></a> : title}</h3><div>{children}</div></section>;
+    return <section className="doc-card"><BookOpen size={22} aria-hidden="true" /><h3>{props.href ? <ManagedContentLink reference={String(props.href)} fallback={href}>{title}<ExternalLink size={14} aria-hidden="true" /></ManagedContentLink> : title}</h3><div>{children}</div></section>;
   }
   if (kind === "cardGroup") return <div className="doc-card-grid" style={{ "--doc-card-columns": props.columns === 3 ? 3 : 2 } as CSSProperties}>{children}</div>;
   if (kind === "steps") return <ol className="doc-steps" aria-label="步骤">{childBlocks.map((child, index) => <li key={index}>{renderChild(child, [...path, index])}</li>)}</ol>;

@@ -1,11 +1,14 @@
 import { Fragment, createElement, type ReactNode } from "react";
 import { CodeBlock } from "./CodeBlock";
 import { DocumentBlock } from "./DocumentBlock";
+import { ContentMedia, ManagedContentLink } from "./ContentMedia";
 import { documentBlockDefinition } from "./document-components";
 import "../../styles/document-components.css";
 
 type ContentNode = Record<string, unknown>;
 export type ContentOutlineItem = { id: string; text: string; level: number };
+const PUBLIC_ASSET_PATH = /^\/public\/sites\/[a-z0-9]+(?:-[a-z0-9]+)*\/assets\/[0-9a-f]{64}$/;
+const PUBLIC_PAGE_PATH = /^\/s\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*(?:#[a-zA-Z0-9_-]+)?$/;
 
 function node(value: unknown): ContentNode {
   return value !== null && typeof value === "object" && !Array.isArray(value) ? value as ContentNode : {};
@@ -27,6 +30,7 @@ function text(value: unknown): string {
 /** Public content may link to HTTPS resources, email, or an anchor on this page. */
 export function safeContentUrl(value: unknown, media = false): string | null {
   if (typeof value !== "string" || /[\u0000-\u0020\u007f]/.test(value)) return null;
+  if (PUBLIC_ASSET_PATH.test(value) || !media && PUBLIC_PAGE_PATH.test(value)) return value;
   if (!media && value.startsWith("#")) return value;
   try {
     const parsed = new URL(value);
@@ -73,7 +77,7 @@ function inline(value: unknown): ReactNode {
   if (item.type === "link") {
     const href = safeContentUrl(item.href);
     const children = inline(item.content);
-    return href ? <a href={href} rel="noopener noreferrer">{children}</a> : children;
+    return <ManagedContentLink reference={typeof item.href === "string" ? item.href : undefined} fallback={href}>{children}</ManagedContentLink>;
   }
   let result: ReactNode = typeof item.text === "string" ? item.text : inline(item.content);
   const styles = { ...node(item.styles) };
@@ -81,7 +85,8 @@ function inline(value: unknown): ReactNode {
     const mark = node(value);
     if (mark.type === "link") {
       const href = safeContentUrl(node(mark.attrs).href);
-      if (href) result = <a href={href} rel="noopener noreferrer">{result}</a>;
+      const raw = node(mark.attrs).href;
+      result = <ManagedContentLink reference={typeof raw === "string" ? raw : undefined} fallback={href}>{result}</ManagedContentLink>;
     } else if (typeof mark.type === "string") styles[mark.type] = true;
   }
   if (styles.code) result = <code>{result}</code>;
@@ -110,13 +115,14 @@ function renderBlock(value: unknown, path: number[], legacy: boolean, pageTitle?
   const item = node(value);
   const props = node(legacy ? item.attrs : item.props);
   const content = inline(item.content);
-  const children = renderNodes(nodes(legacy ? item.content : item.children), path, legacy);
   if (!legacy && documentBlockDefinition(String(item.type))) {
+    const children = ["steps", "tabs", "codeGroup"].includes(String(item.type)) ? null : renderNodes(nodes(item.children), path, false);
     return <DocumentBlock kind={String(item.type)} props={props} inline={content} children={children}
       childBlocks={nodes(item.children)} path={path} safeUrl={safeContentUrl}
       renderChild={(child, childPath) => renderBlock(child, childPath, false)}
       renderChildren={(values, prefix) => renderNodes(values, prefix, false)} />;
   }
+  const children = renderNodes(nodes(legacy ? item.content : item.children), path, legacy);
   switch (item.type) {
     case "text": return inline(item);
     case "heading": {
@@ -151,14 +157,9 @@ function renderBlock(value: unknown, path: number[], legacy: boolean, pageTitle?
     case "video":
     case "audio":
     case "file": {
-      const url = safeContentUrl(props.url, true);
-      const caption = String(props.caption || props.name || "附件");
-      if (!url) return <><p className="content-unavailable">{caption}（资源不可用）</p>{children}</>;
-      return <><figure>{item.type === "image" ? <img src={url} alt={caption} loading="lazy" />
-        : item.type === "video" ? <video src={url} controls preload="metadata" aria-label={caption} />
-        : item.type === "audio" ? <audio src={url} controls preload="metadata" aria-label={caption} />
-        : <a href={url} rel="noopener noreferrer">{caption}</a>}
-        {props.caption ? <figcaption>{String(props.caption)}</figcaption> : null}</figure>{children}</>;
+      return <><ContentMedia kind={item.type} reference={typeof props.url === "string" ? props.url : undefined}
+        fallback={safeContentUrl(props.url, true)} name={String(props.name || props.caption || "附件")}
+        caption={props.caption ? String(props.caption) : undefined} />{children}</>;
     }
     default: return <>{content}{children}</>;
   }

@@ -4,6 +4,7 @@ import { ApiError } from "../../shared/api/api-client";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { getPublicSite, previewSite } from "./api";
 import { SiteReader } from "./SiteReader";
+import { AuthenticatedFileContent } from "../files/FileContent";
 
 function ReaderStatus({ loading, error, retry }: { loading: boolean; error: unknown; retry: () => void }) {
   const missing = error instanceof ApiError && error.status === 404;
@@ -21,5 +22,5 @@ export function SitePreviewPage() {
   const { siteId = "", pageSlug } = useParams();
   const auth = useAuthRequest();
   const query = useQuery({ queryKey: ["site-preview", siteId], queryFn: () => previewSite(siteId, auth), retry: false, staleTime: 0 });
-  return <><div className="site-preview-back"><Link to={`/sites/${siteId}`}>← 返回发布管理</Link></div>{!query.isError && query.data ? <SiteReader snapshot={query.data} pageSlug={pageSlug} basePath={`/sites/${siteId}/preview`} preview /> : <ReaderStatus loading={query.isPending} error={query.error} retry={() => void query.refetch()} />}</>;
+  return <><div className="site-preview-back"><Link to={`/sites/${siteId}`}>← 返回发布管理</Link></div>{!query.isError && query.data ? <AuthenticatedFileContent><SiteReader snapshot={query.data} pageSlug={pageSlug} basePath={`/sites/${siteId}/preview`} preview /></AuthenticatedFileContent> : <ReaderStatus loading={query.isPending} error={query.error} retry={() => void query.refetch()} />}</>;
 }

@@ -32,6 +32,10 @@ export default defineConfig({
     port: 9200,
     strictPort: true,
     proxy: {
+      "/public/sites": {
+        target: process.env.ORBIS_DEV_API_TARGET || "http://127.0.0.1:9201",
+        changeOrigin: true,
+      },
       "/api": {
         target: process.env.ORBIS_DEV_API_TARGET || "http://127.0.0.1:9201",
         changeOrigin: true,
