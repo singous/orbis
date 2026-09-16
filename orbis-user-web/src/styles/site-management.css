@@ -151,6 +151,7 @@
 .site-source-manual-note,
 .site-source-status,
 .site-source-query-error,
+.site-source-empty-selection,
 .site-preview-empty,
 .site-preview-error {
   border: 1px solid var(--border-subtle);
@@ -164,11 +165,20 @@
 }
 
 .site-source-manual-note p,
+.site-source-empty-selection p,
 .site-source-empty {
   margin: 5px 0 0;
   color: var(--text-secondary);
   font-size: 12px;
   line-height: 1.7;
+}
+
+.site-source-empty-selection {
+  margin-bottom: 14px;
+}
+
+.site-source-empty-selection strong {
+  font-size: 12px;
 }
 
 .site-source-binding {
@@ -240,6 +250,36 @@
 
 .site-source-tree {
   padding: 4px 0;
+}
+
+.site-source-hidden-exclusion {
+  display: grid;
+  gap: 6px;
+  border-bottom: 1px solid var(--warning-border);
+  background: var(--warning-bg);
+  padding: 12px 15px;
+  color: var(--warning-text);
+  font-size: 11px;
+}
+
+.site-source-hidden-exclusion p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.site-source-hidden-exclusion div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.site-source-hidden-exclusion button {
+  border-bottom: 1px solid currentColor;
+  font-weight: 600;
+}
+
+.site-source-hidden-exclusion button:disabled {
+  opacity: .45;
 }
 
 .site-source-node-row {

@@ -16,6 +16,7 @@ const GROUP_ID = "018ff7c4-a5b6-7000-8000-000000000004";
 const PARENT_ID = "018ff7c4-a5b6-7000-8000-000000000005";
 const CHILD_ID = "018ff7c4-a5b6-7000-8000-000000000006";
 const OTHER_NOTEBOOK_ID = "018ff7c4-a5b6-7000-8000-000000000007";
+const INVALID_NOTEBOOK_ID = "018ff7c4-a5b6-7000-8000-000000000008";
 const FINGERPRINT = "a".repeat(64);
 
 const branding = { logo_url: null, links: [], footer_links: [], cta: null, theme: "system" } as const;
@@ -108,6 +109,7 @@ let siteResponse: typeof baseSite | (Omit<typeof baseSite, "source" | "branding"
 let publishConflict: boolean;
 let notebooksSpanPages: boolean;
 let emptyPreview: boolean;
+let notebookFailuresRemaining: number;
 
 function installFetch() {
   vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
@@ -154,6 +156,10 @@ function installFetch() {
     }
     if (path.includes(`/api/sites/${SITE_ID}/releases`)) return response(page([]));
     if (path.startsWith("/api/notebooks?")) {
+      if (notebookFailuresRemaining > 0) {
+        notebookFailuresRemaining -= 1;
+        return response(null, 503, "NOTEBOOK_LIST_UNAVAILABLE", "笔记本列表暂不可用");
+      }
       const pageNumber = Number(new URL(path, "http://orbis.test").searchParams.get("page") ?? "1");
       if (notebooksSpanPages) return response(page(pageNumber === 1 ? [{ ...notebook, id: OTHER_NOTEBOOK_ID, title: "第一页笔记本" }] : [notebook], pageNumber, pageNumber === 1));
       return response(page([notebook]));
@@ -182,6 +188,7 @@ beforeEach(() => {
   publishConflict = false;
   notebooksSpanPages = false;
   emptyPreview = false;
+  notebookFailuresRemaining = 0;
   authStore.setState({
     accessToken: "test-token",
     refreshToken: "refresh-token",
@@ -291,6 +298,55 @@ describe("notebook-backed site management", () => {
     const dialog = await screen.findByRole("dialog", { name: "确认发布站点" });
     expect(within(dialog).getByText("来源中没有可发布页面")).toBeVisible();
     expect(within(dialog).getByRole("button", { name: "确认发布" })).toBeDisabled();
+  });
+
+  it("keeps a scoped root excluded until the user explicitly clears its hidden global ancestor", async () => {
+    siteResponse = {
+      ...baseSite,
+      source: {
+        ...notebookSource,
+        notebooks: [{ notebook_id: NOTEBOOK_ID, root_note_id: CHILD_ID, label: null }],
+        excluded_note_ids: [PARENT_ID],
+      },
+    };
+    renderRoute(`/sites/${SITE_ID}`, <SiteEditorPage />, "/sites/:siteId");
+
+    const childToggle = await screen.findByRole("checkbox", { name: "公开 安装客户端" });
+    expect(childToggle).not.toBeChecked();
+    expect(childToggle).toBeDisabled();
+    expect(screen.getByText(/隐藏上级“开始使用”已被全局排除/)).toBeVisible();
+    expect(screen.getByText(/会影响所有包含该文档的来源范围/)).toBeVisible();
+
+    const name = screen.getByRole("textbox", { name: "站点名称" });
+    await userEvent.type(name, "保留排除");
+    await userEvent.click(screen.getByRole("button", { name: "保存设置" }));
+    await waitFor(() => expect(requests.filter((request) => request.method === "PUT").at(-1)?.body.source).toMatchObject({ excluded_note_ids: [PARENT_ID] }));
+
+    await userEvent.click(screen.getByRole("button", { name: "清除全局排除 开始使用" }));
+    expect(childToggle).toBeEnabled();
+    expect(childToggle).toBeChecked();
+    await userEvent.click(screen.getByRole("button", { name: "保存设置" }));
+    await waitFor(() => expect(requests.filter((request) => request.method === "PUT").at(-1)?.body.source).toMatchObject({ excluded_note_ids: [] }));
+  });
+
+  it("does not auto-bind a notebook after the last invalid source is deliberately removed and the list refetches", async () => {
+    notebookFailuresRemaining = 1;
+    siteResponse = {
+      ...baseSite,
+      source: {
+        ...notebookSource,
+        notebooks: [{ notebook_id: INVALID_NOTEBOOK_ID, root_note_id: null, label: null }],
+      },
+    };
+    renderRoute(`/sites/${SITE_ID}`, <SiteEditorPage />, "/sites/:siteId");
+
+    expect(await screen.findByText("当前来源不可用")).toBeVisible();
+    await userEvent.click(screen.getByRole("button", { name: "移除来源 1" }));
+    expect(screen.queryByRole("combobox", { name: "来源笔记本 1" })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "重试" }));
+
+    expect(await screen.findByRole("button", { name: "添加来源" })).toBeVisible();
+    expect(screen.queryByRole("combobox", { name: "来源笔记本 1" })).not.toBeInTheDocument();
   });
 });
 

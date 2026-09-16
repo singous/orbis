@@ -125,6 +125,7 @@ function SiteEditor({ site }: { site: Site }) {
   }
 
   const draftSource = sourceOrManual(draft.source);
+  const sourceReady = draftSource.kind === "manual" || draftSource.notebooks.length > 0;
   const canPreparePublish = draftSource.kind === "notebooks" ? draftSource.notebooks.length > 0 : draft.navigation.length > 0;
 
   return <WorkspaceShell><PageContainer title={site.name} description="管理站点设置、内容来源与公开版本。" actions={<span className={`site-state${site.published_release_id ? " published" : ""}`}><span />{site.published_release_id ? "已发布" : "尚未发布"}</span>}><div className="workbench-site-editor site-management">
@@ -140,7 +141,7 @@ function SiteEditor({ site }: { site: Site }) {
           {draftSource.kind === "manual" ? <SiteNavigationEditor value={draft.navigation} onChange={(navigation) => setDraft({ ...draft, navigation })} disabled={!canEdit || busy} /> : null}
         </div>
       </div>
-      <div className="site-save-row"><span className="mvp-muted">{dirty ? "有尚未保存的设置" : "设置已与服务器同步"}</span>{canEdit ? <button className="mvp-button primary" type="submit" disabled={busy}>{busy ? "处理中…" : "保存设置"}</button> : null}</div>
+      <div className="site-save-row"><span className="mvp-muted">{!sourceReady ? "请添加来源或切换到手动选择" : dirty ? "有尚未保存的设置" : "设置已与服务器同步"}</span>{canEdit ? <button className="mvp-button primary" type="submit" disabled={busy || !sourceReady}>{busy ? "处理中…" : "保存设置"}</button> : null}</div>
     </form>
     <section className="site-releases"><div className="site-section-heading"><div><h2><History size={18} />发布历史</h2><p>切换版本只改变公开站点，草稿仍可继续编辑。</p></div>{canPublish && site.published_release_id ? <button className="mvp-button danger-text" type="button" disabled={busy} onClick={() => setPendingAction({ type: "unpublish" })}>撤回站点</button> : null}</div>
       {releases.isPending ? <p className="mvp-muted">正在加载发布记录…</p> : releases.isError ? <p role="alert">无法加载发布记录。<button onClick={() => void releases.refetch()} type="button">重试</button></p> : releases.data.items.length ? <>

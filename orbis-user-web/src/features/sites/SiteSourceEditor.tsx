@@ -1,5 +1,4 @@
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
-import { useEffect } from "react";
 
 import { useNoteTree, useNotebooks } from "../documents/queries";
 import type { NotebookSource, SiteSource, SiteSources } from "./schemas";
@@ -78,12 +77,6 @@ export function SiteSourceEditor({
   const notebookOptions = notebooks.data?.items ?? [];
   const latestSourceUpdate = sources?.pages.reduce<number | null>((latest, page) => page.updated_at_ms !== null && (latest === null || page.updated_at_ms > latest) ? page.updated_at_ms : latest, null) ?? null;
 
-  useEffect(() => {
-    if (source.kind === "notebooks" && !source.notebooks.length && notebookOptions[0] && !disabled) {
-      onChange({ ...source, notebooks: [{ notebook_id: notebookOptions[0].id, root_note_id: null, label: null }] });
-    }
-  }, [disabled, notebookOptions, onChange, source]);
-
   function setMode(kind: SiteSource["kind"]) {
     if (kind === "manual") onChange(MANUAL_SOURCE);
     else onChange({ ...source, kind: "notebooks", notebooks: source.notebooks.length ? source.notebooks : notebookOptions[0] ? [{ notebook_id: notebookOptions[0].id, root_note_id: null, label: null }] : [] });
@@ -121,6 +114,7 @@ export function SiteSourceEditor({
         onRemove={() => onChange({ ...source, notebooks: source.notebooks.filter((_, position) => position !== index) })}
         onMove={(direction) => moveBinding(index, direction)}
       />)}
+      {!source.notebooks.length ? <div className="site-source-empty-selection"><strong>尚未关联来源</strong><p>请明确添加一个笔记本，或切换到手动选择后再保存。</p></div> : null}
       {!disabled && notebookOptions.length ? <button className="site-source-add" type="button" onClick={() => {
         const next = notebookOptions.find((item) => !source.notebooks.some((binding) => binding.notebook_id === item.id)) ?? notebookOptions[0];
         onChange({ ...source, notebooks: [...source.notebooks, { notebook_id: next.id, root_note_id: null, label: null }] });

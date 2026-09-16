@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 
 import type { NoteTreeItem } from "../../shared/api/schemas";
 import type { SiteSource, SiteSources } from "./schemas";
-import { scopedNoteTree, updatePageOverride } from "./source-model";
+import { findNotePath, scopedNoteTree, updatePageOverride } from "./source-model";
 
 type Props = {
   items: NoteTreeItem[];
@@ -18,6 +18,8 @@ type Props = {
 export function SiteSourceTree({ items, rootNoteId, source, resolved, disabled, onChange }: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const excluded = new Set(source.excluded_note_ids);
+  const rootPath = rootNoteId ? findNotePath(items, rootNoteId) : null;
+  const hiddenExcludedAncestors = rootPath?.slice(0, -1).filter((item) => excluded.has(item.id)) ?? [];
   const resolvedById = new Map(resolved?.pages.map((page) => [page.note_id, page]));
   const overrides = new Map(source.page_overrides.map((entry) => [entry.note_id, entry]));
 
@@ -81,5 +83,12 @@ export function SiteSourceTree({ items, rootNoteId, source, resolved, disabled, 
   }
 
   const scoped = scopedNoteTree(items, rootNoteId);
-  return scoped.length ? <ul className="site-source-tree">{renderNodes(scoped, 0, false)}</ul> : <p className="site-source-empty">此范围内还没有文档。你仍可以保存来源，添加文档后会自动纳入。</p>;
+  return <>
+    {hiddenExcludedAncestors.length ? <aside className="site-source-hidden-exclusion" aria-label="隐藏上级排除提示">
+      <p>隐藏上级“{hiddenExcludedAncestors.map((item) => item.title).join("、")}”已被全局排除，当前范围也不会公开。</p>
+      <p>清除全局排除会影响所有包含该文档的来源范围，请确认后再恢复。</p>
+      <div>{hiddenExcludedAncestors.map((item) => <button key={item.id} type="button" disabled={disabled} onClick={() => onChange({ ...source, excluded_note_ids: source.excluded_note_ids.filter((id) => id !== item.id) })}>清除全局排除 {item.title}</button>)}</div>
+    </aside> : null}
+    {scoped.length ? <ul className="site-source-tree">{renderNodes(scoped, 0, hiddenExcludedAncestors.length > 0)}</ul> : <p className="site-source-empty">此范围内还没有文档。你仍可以保存来源，添加文档后会自动纳入。</p>}
+  </>;
 }

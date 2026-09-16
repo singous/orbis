@@ -24,6 +24,15 @@ export function flattenNoteTree(items: NoteTreeItem[]): NoteTreeItem[] {
   return flattened;
 }
 
+export function findNotePath(items: NoteTreeItem[], noteId: string): NoteTreeItem[] | null {
+  for (const item of items) {
+    if (item.id === noteId) return [item];
+    const childPath = findNotePath(item.children, noteId);
+    if (childPath) return [item, ...childPath];
+  }
+  return null;
+}
+
 export function scopedNoteTree(items: NoteTreeItem[], rootNoteId?: string | null): NoteTreeItem[] {
   if (!rootNoteId) return items;
   return flattenNoteTree(items).filter((item) => item.id === rootNoteId);
