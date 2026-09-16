@@ -10,6 +10,7 @@ import { Navigation } from "./reader/Navigation";
 import { Outline } from "./reader/Outline";
 import { SearchDialog } from "./reader/SearchDialog";
 import { SitePreviewLinks } from "./SitePreviewLinks";
+import { useReaderMetadata } from "./reader/head-metadata";
 import { navigationSections, pageAncestors, pageHref, resolveRedirect, topSections } from "./reader/reader-model";
 import "../../styles/site-reader.css";
 
@@ -78,11 +79,15 @@ function formatDate(timestamp?: number | null): string | null {
   return timestamp ? new Date(timestamp).toLocaleDateString("zh-CN", { timeZone: "Asia/Shanghai", year: "numeric", month: "long", day: "numeric" }) : null;
 }
 
-export function SiteReader({ snapshot, basePath, pageSlug, preview = false }: {
+export function SiteReader({ snapshot, basePath, pageSlug, preview = false, loadSearch, loadMarkdown, contentState, canonicalBasePath }: {
   snapshot: SiteSnapshot;
   basePath: string;
   pageSlug?: string;
   preview?: boolean;
+  loadSearch?: () => Promise<PublishedPage[]>;
+  loadMarkdown?: (slug: string) => Promise<string>;
+  contentState?: { loading: boolean; error?: string; retry: () => void };
+  canonicalBasePath?: string;
 }) {
   const branding = useMemo(() => safeBranding(snapshot.branding, preview), [snapshot.branding, preview]);
   const [navigationOpen, setNavigationOpen] = useState(false);
@@ -122,13 +127,11 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false }: {
     setNavigationOpen(false);
     setSearchOpen(false);
     setCopyFeedback(null);
+    if (!window.location.hash && (window.scrollY || window.scrollX)) window.scrollTo(0, 0);
   }, [pageSlug]);
 
-  useEffect(() => {
-    const previous = document.title;
-    document.title = `${current?.title || "文档"} · ${snapshot.name}`;
-    return () => { document.title = previous; };
-  }, [current?.title, snapshot.name]);
+  useReaderMetadata(`${current?.title || "文档"} · ${snapshot.name}`, current?.description || snapshot.description,
+    canonicalBasePath && current ? pageHref(canonicalBasePath, current.slug) : undefined, preview || !current);
 
   function changeTheme(mode: ReaderThemeMode) {
     setThemeMode(mode);
@@ -150,14 +153,14 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false }: {
 
   async function copyLink() {
     if (!current) return;
-    const url = new URL(pageHref(basePath, current.slug), window.location.href).href;
+    const url = new URL(pageHref(canonicalBasePath || basePath, current.slug), window.location.href).href;
     await writeClipboard("link", url);
   }
 
   async function copyPage() {
     if (!current) return;
     try {
-      await writeClipboard("page", await pageMarkdown(current));
+      await writeClipboard("page", loadMarkdown ? await loadMarkdown(current.slug) : await pageMarkdown(current));
     } catch {
       setCopyFeedback({ action: "page", status: "error", message: "无法生成页面 Markdown，请稍后重试。" });
     }
@@ -184,13 +187,13 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false }: {
             <div className="site-reader-copy-area">
               <div className="site-reader-copy-actions">
                 <button type="button" aria-label={copyFeedback?.action === "link" && copyFeedback.status === "success" ? "链接已复制" : "复制链接"} onClick={() => void copyLink()}>{copyFeedback?.action === "link" && copyFeedback.status === "success" ? <Check aria-hidden="true" size={15} /> : <Link2 aria-hidden="true" size={15} />}<span>{copyFeedback?.action === "link" && copyFeedback.status === "success" ? "已复制" : "复制链接"}</span></button>
-                <button type="button" aria-label={copyFeedback?.action === "page" && copyFeedback.status === "success" ? "页面 Markdown 已复制" : "复制页面"} onClick={() => void copyPage()}>{copyFeedback?.action === "page" && copyFeedback.status === "success" ? <Check aria-hidden="true" size={15} /> : <Copy aria-hidden="true" size={15} />}<span>{copyFeedback?.action === "page" && copyFeedback.status === "success" ? "已复制" : "复制页面"}</span></button>
+                <button type="button" disabled={contentState?.loading || Boolean(contentState?.error)} aria-label={copyFeedback?.action === "page" && copyFeedback.status === "success" ? "页面 Markdown 已复制" : "复制页面"} onClick={() => void copyPage()}>{copyFeedback?.action === "page" && copyFeedback.status === "success" ? <Check aria-hidden="true" size={15} /> : <Copy aria-hidden="true" size={15} />}<span>{copyFeedback?.action === "page" && copyFeedback.status === "success" ? "已复制" : "复制页面"}</span></button>
               </div>
               {copyFeedback ? <p className={`site-reader-copy-feedback is-${copyFeedback.status}`} role="status">{copyFeedback.message}</p> : null}
             </div>
           </div>
           {compactOutline ? <Outline items={outline} mobile /> : null}
-          <ContentRenderer blocks={current.blocks} pageTitle={current.title} />
+          {contentState?.loading ? <p role="status" className="site-reader-body-status">正在加载正文…</p> : contentState?.error ? <div role="alert" className="site-reader-body-status"><p>{contentState.error}</p><button type="button" onClick={contentState.retry}>重新加载正文</button></div> : <ContentRenderer blocks={current.blocks} pageTitle={current.title} />}
           <nav className="site-reader-pagination" aria-label="相邻文档">
             {currentIndex > 0 ? <Link to={pageHref(basePath, snapshot.pages[currentIndex - 1].slug)}><ArrowLeft aria-hidden="true" size={17} /><span><small>上一篇</small>{snapshot.pages[currentIndex - 1].title}</span></Link> : <span />}
             {currentIndex < snapshot.pages.length - 1 ? <Link to={pageHref(basePath, snapshot.pages[currentIndex + 1].slug)}><span><small>下一篇</small>{snapshot.pages[currentIndex + 1].title}</span><ArrowRight aria-hidden="true" size={17} /></Link> : null}
@@ -200,7 +203,7 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false }: {
       </main>
       {current && !compactOutline ? <Outline items={outline} /> : null}
     </div>
-    {searchOpen ? <SearchDialog pages={snapshot.pages} basePath={basePath} close={closeSearch} /> : null}
+    {searchOpen ? <SearchDialog pages={snapshot.pages} basePath={basePath} close={closeSearch} loadPages={loadSearch} /> : null}
   </div>;
   return preview ? <SitePreviewLinks siteSlug={snapshot.slug} basePath={basePath}>{reader}</SitePreviewLinks> : reader;
 }

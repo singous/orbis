@@ -2,9 +2,19 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { configDefaults, defineConfig } from "vitest/config";
 
+const apiTarget = process.env.ORBIS_DEV_API_TARGET || "http://127.0.0.1:9201";
+const proxy = {
+  "/api": { target: apiTarget, changeOrigin: true, rewrite: (path: string) => path.replace(/^\/api/, "") },
+  "/public/sites": { target: apiTarget, changeOrigin: true },
+  "^/s(?:/|$)": { target: apiTarget, changeOrigin: true },
+  "^/robots\\.txt$": { target: apiTarget, changeOrigin: true },
+  "/assets/": { target: apiTarget, changeOrigin: true },
+};
+
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
+    manifest: true,
     rollupOptions: {
       output: {
         manualChunks: {
@@ -31,22 +41,13 @@ export default defineConfig({
     host: "127.0.0.1",
     port: 9200,
     strictPort: true,
-    proxy: {
-      "/public/sites": {
-        target: process.env.ORBIS_DEV_API_TARGET || "http://127.0.0.1:9201",
-        changeOrigin: true,
-      },
-      "/api": {
-        target: process.env.ORBIS_DEV_API_TARGET || "http://127.0.0.1:9201",
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ""),
-      },
-    },
+    proxy,
   },
   preview: {
     host: "127.0.0.1",
     port: 9200,
     strictPort: true,
+    proxy,
   },
   test: {
     exclude: [...configDefaults.exclude, "tests/e2e/**"],

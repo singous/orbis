@@ -10,6 +10,7 @@ import type { JSONContent } from "@tiptap/react";
 
 import type { NoteBlocks } from "../../shared/api/schemas";
 import { documentBlockMarkdown, documentBlockTitle } from "../content/document-components";
+import { markdownCodeFence, markdownDestination } from "../content/markdown-urls";
 
 export type OrbisInlineStyle = Partial<
   Record<"bold" | "italic" | "underline" | "strike" | "code", true>
@@ -325,7 +326,7 @@ export function extractPlainTextV2(blocks: OrbisBlock[]): string {
 function renderInline(inline: OrbisInline): string {
   if (inline.type === "link") {
     const text = typeof inline.content === "string" ? inline.content : inline.content.map(renderInline).join("");
-    return `[${text}](${inline.href})`;
+    return `[${text}](${markdownDestination(inline.href)})`;
   }
   let value = inline.text;
   const styles = inline.styles ?? {};
@@ -409,11 +410,20 @@ function renderMarkdownBlocks(blocks: OrbisBlock[], depth: number): string {
         break;
       }
       case "codeBlock":
-        out.push(`\`\`\`${(block.props.language as string) ?? ""}\n${blockContentText(block)}\n\`\`\``);
+        out.push(markdownCodeFence(blockContentText(block), String(block.props.language || "")));
         break;
       case "divider":
         out.push("---");
         break;
+      case "image":
+      case "video":
+      case "audio":
+      case "file": {
+        const label = String(block.props.caption || block.props.name || text || block.type).replace(/([\\[\]])/g, "\\$1");
+        const url = String(block.props.url || "");
+        out.push(url ? `${block.type === "image" ? "!" : ""}[${label}](${markdownDestination(url)})` : label);
+        break;
+      }
       case "table": {
         const content = block.content;
         if (isLegacyTableContent(content)) {

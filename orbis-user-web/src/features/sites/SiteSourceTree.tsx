@@ -74,7 +74,7 @@ export function SiteSourceTree({ items, rootNoteId, source, resolved, disabled, 
         </div>
         {isExpanded ? <div className="site-source-overrides">
           <label>公开标题<input aria-label={`公开标题：${node.title}`} value={override?.title ?? ""} disabled={disabled} placeholder={node.title} onChange={(event) => onChange(updatePageOverride(source, node.id, { title: event.target.value || null }))} /></label>
-          <label>公开路径<input aria-label={`公开路径：${node.title}`} value={override?.slug ?? ""} disabled={disabled} pattern="[a-z0-9]+(-[a-z0-9]+)*" placeholder={resolvedPage?.slug ?? "保存后生成"} onChange={(event) => onChange(updatePageOverride(source, node.id, { slug: event.target.value || null }))} /></label>
+          <label>公开路径<input aria-label={`公开路径：${node.title}`} value={override?.slug ?? ""} disabled={disabled} pattern="[a-z0-9]+(-[a-z0-9]+)*(/[a-z0-9]+(-[a-z0-9]+)*)*" placeholder={resolvedPage?.slug ?? "保存后生成"} onChange={(event) => onChange(updatePageOverride(source, node.id, { slug: event.target.value || null }))} /></label>
           <label className="site-source-description">公开简介<textarea aria-label={`公开简介：${node.title}`} value={override?.description ?? ""} disabled={disabled} rows={2} onChange={(event) => onChange(updatePageOverride(source, node.id, { description: event.target.value || null }))} /></label>
         </div> : null}
         {node.children.length ? <ul>{renderNodes(node.children, depth + 1, affectedByParent || explicitlyExcluded)}</ul> : null}

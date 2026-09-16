@@ -1,5 +1,6 @@
 import type { JSONContent } from "@tiptap/react";
 import { Lexer } from "marked";
+import { markdownCodeFence, markdownDestination } from "../content/markdown-urls";
 
 import type { TiptapDocument } from "./note-contract";
 
@@ -232,7 +233,7 @@ function renderInline(nodes: JSONContent[] = []): string {
           return `\`${value}\``;
         }
         if (mark.type === "link") {
-          return `[${value}](${String(mark.attrs?.href ?? "")})`;
+          return `[${value}](${markdownDestination(String(mark.attrs?.href ?? ""))})`;
         }
         return value;
       }, escapeMarkdownText(node.text ?? ""));
@@ -297,7 +298,8 @@ function renderBlock(node: JSONContent, orderedDelimiter = "."): string {
   }
 
   if (node.type === "codeBlock") {
-    return `\`\`\`${node.attrs?.language ?? ""}\n${renderInline(node.content)}\n\`\`\``;
+    const literal = (nodes: JSONContent[] = []): string => nodes.map((item) => item.text ?? (item.type === "hardBreak" ? "\n" : literal(item.content))).join("");
+    return markdownCodeFence(literal(node.content), String(node.attrs?.language || ""));
   }
 
   if (node.type === "horizontalRule") {

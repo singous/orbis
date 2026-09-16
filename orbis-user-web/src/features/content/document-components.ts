@@ -1,5 +1,6 @@
 import contract from "./document-blocks.json";
 import type { OrbisBlock } from "../notes/block-model";
+import { markdownDestination } from "./markdown-urls";
 
 export type DocumentBlockKind = keyof typeof contract.blocks;
 export type DocumentPropRule = { default: string | number; values?: Array<string | number>; maxLength?: number };
@@ -33,7 +34,7 @@ export function documentBlockMarkdown(block: OrbisBlock, inline: string, render:
   }
   if (["card", "step", "tab"].includes(block.type)) {
     const href = block.type === "card" ? block.props.href : null;
-    const heading = href ? "### [" + title + "](" + String(href) + ")" : "### " + title;
+    const heading = href ? "### [" + title + "](" + markdownDestination(String(href)) + ")" : "### " + title;
     return [heading, inline, render(children)].filter(Boolean).join("\n\n");
   }
   if (block.type === "steps") {

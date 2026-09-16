@@ -136,6 +136,9 @@
 .site-reader-pagination a > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .site-reader-pagination small { display: block; margin-bottom: 2px; color: var(--reader-faint); font-size: 9px; }
 .site-reader-page-footer { margin-top: 25px; color: var(--reader-faint); font-size: 10px; }
+.site-reader-body-status { min-height: 35vh; padding: 30px 0; color: var(--reader-muted); font-size: 14px; }
+.site-reader-body-status button, .site-reader-search-empty > button { border: 1px solid var(--reader-border); border-radius: 7px; padding: 7px 11px; background: var(--reader-surface); color: var(--reader-text); cursor: pointer; }
+.site-reader-copy-actions button:disabled { opacity: .45; cursor: not-allowed; }
 .site-reader-empty { min-height: 55vh; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 17px; color: var(--reader-muted); }
 .site-reader-empty h1 { margin: 0; color: var(--reader-text); font-size: 28px; }
 .site-reader-empty p { margin: 0; font-size: 13px; }

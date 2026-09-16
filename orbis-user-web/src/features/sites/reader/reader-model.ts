@@ -7,7 +7,7 @@ export type SearchResult = { page: PublishedPage; path: string; excerpt: string;
 const DEFAULT_GROUP = "文档";
 
 export function pageHref(basePath: string, slug: string): string {
-  return `${basePath}/${encodeURIComponent(slug)}`;
+  return `${basePath}/${slug.split("/").map(encodeURIComponent).join("/")}`;
 }
 
 export function resolveRedirect(slug: string | undefined, redirects: SiteSnapshot["redirects"]): string | null {

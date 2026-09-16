@@ -24,10 +24,10 @@ const SitePreviewPage = lazy(() => import("../features/sites/PublicSitePage").th
 const siteFallback = <div className="site-reader-status" role="status">正在打开站点…</div>;
 
 export const router = createBrowserRouter([
-  { path: "/s/:slug/:pageSlug?", element: <Suspense fallback={siteFallback}><PublicSitePage /></Suspense> },
+  { path: "/s/:slug/*", element: <Suspense fallback={siteFallback}><PublicSitePage /></Suspense> },
   { path: "/sites", element: <RequireAuth><Suspense fallback={siteFallback}><SitesPage /></Suspense></RequireAuth> },
   { path: "/sites/:siteId", element: <RequireAuth><Suspense fallback={siteFallback}><SiteEditorPage /></Suspense></RequireAuth> },
-  { path: "/sites/:siteId/preview/:pageSlug?", element: <RequireAuth><Suspense fallback={siteFallback}><SitePreviewPage /></Suspense></RequireAuth> },
+  { path: "/sites/:siteId/preview/*", element: <RequireAuth><Suspense fallback={siteFallback}><SitePreviewPage /></Suspense></RequireAuth> },
   {
     path: "/",
     element: <Navigate to="/home" replace />,

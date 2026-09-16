@@ -11,6 +11,7 @@ for (const port of [webPort, apiPort]) {
 }
 const webOrigin = `http://127.0.0.1:${webPort}`;
 const apiOrigin = `http://127.0.0.1:${apiPort}`;
+const production = process.env.ORBIS_E2E_PRODUCTION === "1";
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -31,6 +32,6 @@ export default defineConfig({
   },
   webServer: [
     { command: "../.venv/bin/python tests/e2e/run_api.py", url: `${apiOrigin}/healthz`, reuseExistingServer: false, env: { ORBIS_E2E_DIR: process.env.ORBIS_E2E_DIR, ORBIS_E2E_API_PORT: String(apiPort), ORBIS_E2E_WEB_PORT: String(webPort) }, timeout: 30_000 },
-    { command: `npm run dev -- --port ${webPort}`, url: webOrigin, reuseExistingServer: false, env: { ORBIS_DEV_API_TARGET: apiOrigin }, timeout: 30_000 },
+    { command: `npm run ${production ? "preview" : "dev"} -- --port ${webPort}`, url: webOrigin, reuseExistingServer: false, env: { ORBIS_DEV_API_TARGET: apiOrigin }, timeout: 30_000 },
   ],
 });

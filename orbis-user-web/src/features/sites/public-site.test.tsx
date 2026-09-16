@@ -41,18 +41,21 @@ it("removes an old authenticated preview when current content fails publication 
   await screen.findByRole("heading", { name: "暂时无法打开站点" });
   expect(screen.getByText("文档包含不可公开的链接")).toBeInTheDocument();
   expect(screen.queryByText("已发布正文")).not.toBeInTheDocument();
+  expect(document.querySelector('meta[name="robots"]')).toHaveAttribute("content", "noindex, nofollow");
   client.clear();
 });
 
 it("stops displaying a cached release after a refresh reports that it was withdrawn", async () => {
   const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } });
-  client.setQueryData(["public-site", "guide"], snapshot);
+  client.setQueryData(["public-site", "guide", "manifest"], { ...snapshot, pages: snapshot.pages.map(({ blocks: _blocks, plain_text: _text, ...page }) => page) });
+  client.setQueryData(["public-site", "guide", "page", "r1", "a"], { release_id: "r1", page: snapshot.pages[0] });
   vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ code: "SITE_NOT_FOUND", message: "站点不存在", request_id: "test", data: null }), { status: 404, headers: { "Content-Type": "application/json" } })));
   render(<QueryClientProvider client={client}><MemoryRouter initialEntries={["/s/guide"]}><Routes><Route path="/s/:slug" element={<PublicSitePage />} /></Routes></MemoryRouter></QueryClientProvider>);
   expect(screen.getByRole("heading", { name: "第一篇" })).toBeInTheDocument();
   await act(async () => { await client.invalidateQueries({ queryKey: ["public-site", "guide"] }); });
   await waitFor(() => expect(screen.getByRole("heading", { name: "站点尚未发布或已撤回" })).toBeInTheDocument());
   expect(screen.queryByText("已发布正文")).not.toBeInTheDocument();
+  expect(document.querySelector('meta[name="robots"]')).toHaveAttribute("content", "noindex, nofollow");
   client.clear();
 });
 
@@ -105,17 +108,17 @@ it("resolves preview branding through the authenticated query and keeps note lin
 
 it("does not resolve private branding references in the anonymous reader", async () => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const fetchMock = vi.fn(async () => new Response(JSON.stringify({ code: "OK", message: "请求成功", request_id: "test", data: { ...brandedSnapshot, release_id: "r2", release_number: 2, published_at_ms: 2 } }), { status: 200, headers: { "Content-Type": "application/json" } }));
+  const fetchMock = vi.fn(async (path: string) => new Response(JSON.stringify({ code: "OK", message: "请求成功", request_id: "test", data: path.endsWith("/manifest") ? { ...brandedSnapshot, release_id: "r2", release_number: 2, published_at_ms: 2 } : { release_id: "r2", page: snapshot.pages[0] } }), { status: 200, headers: { "Content-Type": "application/json" } }));
   vi.stubGlobal("fetch", fetchMock);
 
   const view = render(<QueryClientProvider client={client}><MemoryRouter initialEntries={["/s/guide"]}><Routes><Route path="/s/:slug/:pageSlug?" element={<PublicSitePage />} /></Routes></MemoryRouter></QueryClientProvider>);
 
-  await screen.findByRole("heading", { name: "第一篇" });
+  await screen.findByText("已发布正文");
   expect(view.container.querySelector(".site-reader-brand img")).not.toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "顶栏附件" })).not.toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "页脚附件" })).not.toBeInTheDocument();
   expect(screen.getByRole("link", { name: "阅读第二篇" })).toHaveAttribute("href", "/s/guide/b");
   expect(screen.queryByRole("link", { name: "行动附件" })).not.toBeInTheDocument();
-  expect(fetchMock).toHaveBeenCalledTimes(1);
+  expect(fetchMock.mock.calls.map(([path]) => path)).toEqual(["/api/public/sites/guide/manifest", "/api/public/sites/guide/pages/a?expected_release_id=r2"]);
   client.clear();
 });
