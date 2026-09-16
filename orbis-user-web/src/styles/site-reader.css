@@ -11,6 +11,12 @@
   --reader-accent: color-mix(in srgb, var(--site-accent) 90%, #0c3523);
   --reader-accent-soft: color-mix(in srgb, var(--site-accent) 9%, #fff);
   --reader-header-height: 70px;
+  --reading-bg: var(--reader-bg);
+  --reading-text: var(--reader-text);
+  --reading-muted: var(--reader-muted);
+  --reading-border: var(--reader-border);
+  --reading-accent: var(--reader-accent);
+  --reading-muted-bg: var(--reader-surface-soft);
   min-height: 100dvh;
   background: var(--reader-bg);
   color: var(--reader-text);
@@ -113,7 +119,7 @@
 .site-reader .document-prose { color: var(--reader-text); font-size: 15px; line-height: 1.9; }
 .site-reader .document-prose h1, .site-reader .document-prose h2, .site-reader .document-prose h3, .site-reader .document-prose h4, .site-reader .document-prose h5, .site-reader .document-prose h6 { scroll-margin-top: 130px; color: var(--reader-text); font-weight: 680; letter-spacing: -.026em; }
 .site-reader .document-prose h2 { margin: 43px 0 15px; font-size: 23px; }
-.site-reader .document-prose h3 { margin: 34px 0 12px; font-size: 18px; }
+:where(.site-reader) .document-prose h3 { margin: 34px 0 12px; font-size: 18px; }
 .site-reader .document-prose p { margin: 15px 0; }
 .site-reader .document-prose a { color: var(--reader-accent); text-decoration-color: color-mix(in srgb, var(--reader-accent) 45%, transparent); }
 .site-reader .document-prose code { border-color: var(--reader-border); background: var(--reader-surface-soft); }

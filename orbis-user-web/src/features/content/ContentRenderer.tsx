@@ -1,4 +1,8 @@
 import { Fragment, createElement, type ReactNode } from "react";
+import { CodeBlock } from "./CodeBlock";
+import { DocumentBlock } from "./DocumentBlock";
+import { documentBlockDefinition } from "./document-components";
+import "../../styles/document-components.css";
 
 type ContentNode = Record<string, unknown>;
 export type ContentOutlineItem = { id: string; text: string; level: number };
@@ -107,6 +111,12 @@ function renderBlock(value: unknown, path: number[], legacy: boolean, pageTitle?
   const props = node(legacy ? item.attrs : item.props);
   const content = inline(item.content);
   const children = renderNodes(nodes(legacy ? item.content : item.children), path, legacy);
+  if (!legacy && documentBlockDefinition(String(item.type))) {
+    return <DocumentBlock kind={String(item.type)} props={props} inline={content} children={children}
+      childBlocks={nodes(item.children)} path={path} safeUrl={safeContentUrl}
+      renderChild={(child, childPath) => renderBlock(child, childPath, false)}
+      renderChildren={(values, prefix) => renderNodes(values, prefix, false)} />;
+  }
   switch (item.type) {
     case "text": return inline(item);
     case "heading": {
@@ -114,7 +124,7 @@ function renderBlock(value: unknown, path: number[], legacy: boolean, pageTitle?
       return <>{duplicateTitle ? null : createElement(`h${headingLevel(props.level)}`, { id: `heading-${path.join("-")}` }, content)}{legacy ? null : children}</>;
     }
     case "paragraph": return <><p>{content || <br />}</p>{legacy ? null : children}</>;
-    case "codeBlock": return <><div className="content-code"><div className="content-code-language">{String(props.language || "text")}</div><pre><code>{text(item.content)}</code></pre></div>{legacy ? null : children}</>;
+    case "codeBlock": return <><CodeBlock source={text(item.content)} language={String(props.language || "text")} />{legacy ? null : children}</>;
     case "blockquote": return <blockquote>{children}</blockquote>;
     case "quote": return <blockquote>{content}{children}</blockquote>;
     case "bulletList": return <ul>{children}</ul>;

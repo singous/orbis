@@ -1,6 +1,8 @@
 import { zh } from "@blocknote/core/locales";
 import { BlockNoteView } from "@blocknote/mantine";
-import { useCreateBlockNote } from "@blocknote/react";
+import { getDefaultReactSlashMenuItems, SuggestionMenuController, useCreateBlockNote } from "@blocknote/react";
+import { filterSuggestionItems, insertOrUpdateBlockForSlashMenu } from "@blocknote/core/extensions";
+import { BookOpen } from "lucide-react";
 // @blocknote/react 0.53 ships no default UI components by itself (its
 // ComponentsContext defaults to undefined), so a bare BlockNoteViewRaw renders
 // no slash menu / formatting toolbar / side menu at all. The mantine adapter
@@ -15,9 +17,11 @@ import { useEffect, useRef } from "react";
 import {
   canonicalJSON,
   extractPlainTextV2,
+  toV2,
   type NoteBlocksV2,
   type OrbisBlock,
 } from "./block-model";
+import { createDocumentBlock, documentBlockDefinition, documentEditorSchema, documentEditorExtensions, DocumentEditorReadOnly, INSERTABLE_DOCUMENT_BLOCKS } from "./DocumentBlockEditor";
 
 export function BlockNoteEditor({
   blocks,
@@ -31,7 +35,7 @@ export function BlockNoteEditor({
   // OrbisBlock mirrors BlockNote's Block shape; cast to avoid deep inline-style
   // generic friction (content is validated at the API boundary).
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const editor = useCreateBlockNote({ dictionary: zh, initialContent: blocks.blocks as any });
+  const editor = useCreateBlockNote({ schema: documentEditorSchema, extensions: documentEditorExtensions, dictionary: zh, initialContent: blocks.blocks as any });
   const lastEmitted = useRef<OrbisBlock[] | null>(null);
   const lastApplied = useRef(blocks.blocks);
 
@@ -47,7 +51,8 @@ export function BlockNoteEditor({
     if (!editor) return;
     if (blocks.blocks === lastEmitted.current) return;
     if (canonicalJSON(blocks.blocks) === canonicalJSON(lastApplied.current)) return;
-    if (canonicalJSON(blocks.blocks) === canonicalJSON(editor.document)) return;
+    const current = toV2({ schema_version: 2, editor: "blocknote", blocks: editor.document as unknown as OrbisBlock[] });
+    if (canonicalJSON(blocks.blocks) === canonicalJSON(current.blocks)) return;
     lastApplied.current = blocks.blocks;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     editor.replaceBlocks(editor.document, blocks.blocks as any);
@@ -59,11 +64,14 @@ export function BlockNoteEditor({
   }, [editor, readOnly]);
 
   return (
-    <BlockNoteView
+    <DocumentEditorReadOnly.Provider value={readOnly}><BlockNoteView
       editor={editor}
       className="orbis-bn"
       theme="light"
+      editable={!readOnly}
+      slashMenu={false}
       onChange={() => {
+        if (readOnly) return;
         const doc = editor.document as unknown as OrbisBlock[];
         const next: NoteBlocksV2 = {
           schema_version: 2,
@@ -73,6 +81,15 @@ export function BlockNoteEditor({
         lastEmitted.current = doc;
         onChange({ blocks: next, plainText: extractPlainTextV2(doc) });
       }}
-    />
+    ><SuggestionMenuController triggerCharacter="/" getItems={async (query) => filterSuggestionItems([
+      ...getDefaultReactSlashMenuItems(editor),
+      ...INSERTABLE_DOCUMENT_BLOCKS.map((kind) => ({
+        title: documentBlockDefinition(kind)!.label,
+        group: "文档组件",
+        aliases: [kind, kind.toLowerCase()],
+        icon: <BookOpen size={17} />,
+        onItemClick: () => insertOrUpdateBlockForSlashMenu(editor, createDocumentBlock(kind) as typeof documentEditorSchema.PartialBlock),
+      })),
+    ], query)} /></BlockNoteView></DocumentEditorReadOnly.Provider>
   );
 }

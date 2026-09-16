@@ -10,7 +10,10 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:e2e": "playwright test",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "sync:document-blocks": "node scripts/sync-document-blocks.mjs",
+    "check:document-blocks": "node scripts/sync-document-blocks.mjs --check",
+    "prebuild": "node scripts/sync-document-blocks.mjs --check"
   },
   "dependencies": {
     "@blocknote/core": "^0.53.0",
@@ -34,6 +37,7 @@
     "@tiptap/starter-kit": "^2.26.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "highlight.js": "11.12.0",
     "lucide-react": "^0.468.0",
     "marked": "^18.0.5",
     "react": "^19.1.0",

@@ -51,7 +51,7 @@ test("personal writing, team discussion and a versioned documentation site work 
   await page.getByLabel("站点路径", { exact: false }).fill("orbis-guide");
   await page.getByLabel("站点简介", { exact: true }).fill("记录、协作与发布，让团队知识持续生长。");
   await page.getByLabel("站点场景", { exact: false }).selectOption("handbook");
-  await page.getByRole("button", { name: "创建并选择文档" }).click();
+  await page.getByRole("dialog", { name: "创建文档站点" }).getByRole("button", { name: "创建站点", exact: true }).click();
   await expect(page).toHaveURL(/\/sites\/[0-9a-f-]+$/);
   const siteId = page.url().split("/").pop()!;
   await page.getByRole("button", { name: /欢迎使用 Orbis.*让知识被找到/ }).click();

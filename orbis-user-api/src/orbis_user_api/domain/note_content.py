@@ -5,6 +5,14 @@ import re
 from copy import deepcopy
 from typing import Any
 
+from orbis_user_api.domain.document_components import (
+    DOCUMENT_BLOCKS,
+    apply_component_defaults,
+    component_markdown,
+    component_title,
+    validate_component,
+)
+
 EMPTY_NOTE_BLOCKS: dict[str, Any] = {
     "schema_version": 1,
     "editor": "tiptap",
@@ -55,7 +63,7 @@ V2_BLOCK_TYPES = {
     "file",
     "audio",
     "video",
-}
+} | set(DOCUMENT_BLOCKS)
 
 
 class InvalidNoteContent(ValueError):
@@ -146,9 +154,8 @@ def _validate_v2_inline(inline: object) -> None:
     if inline_type == "text":
         if not isinstance(inline.get("text"), str):
             raise InvalidNoteContent
-    elif inline_type == "link":
-        if not isinstance(inline.get("href"), str):
-            raise InvalidNoteContent
+    elif inline_type == "link" and not isinstance(inline.get("href"), str):
+        raise InvalidNoteContent
 
 
 def _validate_v2_table_cell_content(content: object) -> None:
@@ -229,6 +236,10 @@ def _validate_v2_block(block: object) -> None:
         raise InvalidNoteContent
     for child in children:
         _validate_v2_block(child)
+    try:
+        validate_component(block)
+    except ValueError as error:
+        raise InvalidNoteContent(str(error)) from error
 
 
 def normalize_note_blocks(blocks: object) -> dict[str, Any]:
@@ -242,9 +253,12 @@ def normalize_note_blocks(blocks: object) -> dict[str, Any]:
             raise InvalidNoteContent
         for block in block_list:
             _validate_v2_block(block)
-        return deepcopy(
+        normalized = deepcopy(
             {"schema_version": 2, "editor": "blocknote", "blocks": block_list}
         )
+        for block in normalized["blocks"]:
+            apply_component_defaults(block)
+        return normalized
     if blocks.get("schema_version") != 1 or blocks.get("editor") != "tiptap":
         raise InvalidNoteContent
     doc = blocks.get("doc")
@@ -303,6 +317,9 @@ def derive_plain_text(blocks: dict[str, Any]) -> str:
         lines: list[str] = []
 
         def visit_v2(block: dict[str, Any]) -> None:
+            title = component_title(block).strip()
+            if title:
+                lines.append(title)
             text = _v2_block_text(block).strip()
             if text:
                 lines.append(text)
@@ -673,6 +690,11 @@ def _render_v2_blocks(block_list: list[dict[str, Any]], depth: int = 0) -> str:
         block_type = block.get("type")
         text = _render_v2_blocks_inline(block)
         children = block.get("children", [])
+        rendered_component = component_markdown(block, text, _render_v2_blocks)
+        if rendered_component is not None:
+            out.append(rendered_component)
+            next_number, previous_numbered, delimiter = 1, False, "."
+            continue
         marker: str | None = None
         if block_type == "numberedListItem":
             start = _list_start(block.get("props", {}).get("start"), next_number)

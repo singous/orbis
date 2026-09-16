@@ -9,6 +9,7 @@
 import type { JSONContent } from "@tiptap/react";
 
 import type { NoteBlocks } from "../../shared/api/schemas";
+import { documentBlockMarkdown, documentBlockTitle } from "../content/document-components";
 
 export type OrbisInlineStyle = Partial<
   Record<"bold" | "italic" | "underline" | "strike" | "code", true>
@@ -311,6 +312,8 @@ function tableCellValue(cell: OrbisTableCell, render: (inline: OrbisInline) => s
 export function extractPlainTextV2(blocks: OrbisBlock[]): string {
   const lines: string[] = [];
   const visit = (block: OrbisBlock) => {
+    const title = documentBlockTitle(block).trim();
+    if (title) lines.push(title);
     const text = blockContentText(block).trim();
     if (text) lines.push(text);
     block.children.forEach(visit);
@@ -365,6 +368,12 @@ function renderMarkdownBlocks(blocks: OrbisBlock[], depth: number): string {
   let delimiter = ".";
   for (const block of blocks) {
     const text = renderBlockContent(block);
+    const component = documentBlockMarkdown(block, text, (children) => renderMarkdownBlocks(children, 0));
+    if (component !== null) {
+      out.push(component);
+      nextNumber = 1; previousNumbered = false; delimiter = ".";
+      continue;
+    }
     let marker: string | undefined;
     if (block.type === "numberedListItem") {
       const start = Number.isInteger(block.props?.start) ? Number(block.props.start) : undefined;
