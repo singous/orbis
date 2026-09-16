@@ -223,7 +223,7 @@ async def site_html(
         )
     except SiteError as error:
         return HTMLResponse(
-            error_html(error.message),
+            error_html(error.code, error.message),
             status_code=error.status_code,
             headers={**NO_STORE, "X-Robots-Tag": "noindex, nofollow"},
         )

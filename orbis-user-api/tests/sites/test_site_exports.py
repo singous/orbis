@@ -615,3 +615,26 @@ def test_markdown_keeps_nested_content_after_heading_code_and_divider():
     )
     for kind in ("heading", "codeBlock", "divider"):
         assert "nested-" + kind in markdown
+
+
+def test_html_distinguishes_missing_pages_from_unpublished_sites(
+    client, owner, published
+):
+    site, _, _ = published
+    missing_page = client.get("/s/exports/missing")
+    unknown_site = client.get("/s/unknown-site")
+    assert (
+        client.post(f"/sites/{site['id']}/unpublish", headers=owner).status_code == 200
+    )
+    withdrawn_site = client.get("/s/exports/start")
+    for response, title in (
+        (missing_page, "页面不存在"),
+        (unknown_site, "站点尚未发布或已撤回"),
+        (withdrawn_site, "站点尚未发布或已撤回"),
+    ):
+        assert response.status_code == 404
+        assert response.headers["cache-control"] == "no-store"
+        assert response.headers["x-robots-tag"] == "noindex, nofollow"
+        assert '<meta name="robots" content="noindex, nofollow">' in response.text
+        assert f"<h1>{title}</h1>" in response.text
+        assert f"<title>{title} · Orbis</title>" in response.text
