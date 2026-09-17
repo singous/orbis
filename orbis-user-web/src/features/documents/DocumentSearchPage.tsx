@@ -1,6 +1,7 @@
 import { FilePlus2, Search, X } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 
+import { PageContainer } from "../../shared/ui/PageContainer";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { DocumentShell } from "./DocumentShell";
 import { useNotebooks, useNoteSearch } from "./queries";
@@ -28,15 +29,9 @@ export function DocumentSearchPage() {
 
   return (
     <DocumentShell>
-      <div className="mx-auto max-w-[1040px] px-5 py-8 lg:px-10 lg:py-10">
-        <header className="mb-8">
-          <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted-light)]">
-            Documents
-          </div>
-          <h1 className="text-4xl font-semibold tracking-[-0.045em] lg:text-5xl">
-            搜索文档
-          </h1>
-          <label className="relative mt-6 block max-w-2xl">
+      <PageContainer title="搜索文档" description="搜索工作空间中的标题与正文。">
+        <div className="mb-8">
+          <label className="relative block max-w-2xl">
             <Search
               aria-hidden="true"
               size={17}
@@ -46,13 +41,13 @@ export function DocumentSearchPage() {
               type="search"
               role="searchbox"
               aria-label="搜索文档"
-              className="h-12 w-full rounded-xl border border-[var(--border)] bg-white pl-10 pr-4 text-sm outline-none transition focus:border-[#8072f2] focus:ring-4 focus:ring-[#6757f5]/10"
+              className="workbench-search-field"
               placeholder="搜索标题或正文…"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
           </label>
-        </header>
+        </div>
         {notesQuery.isError ? (
           <StatusMessage tone="error" title="文档搜索失败">
             请检查 API 服务后重试。
@@ -84,30 +79,24 @@ export function DocumentSearchPage() {
           <div className="empty-panel">没有匹配的文档。试试更短的关键词。</div>
         ) : null}
         {trimmedQuery && notes.length ? (
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="workbench-document-list">
             {notes.map((note) => (
               <Link
                 key={note.id}
                 to={`/documents/${note.id}`}
-                className="document-card"
+                className="workbench-document-row workbench-search-result"
               >
-                <div className="mb-6 document-icon">
-                  <FilePlus2 aria-hidden="true" size={18} />
+                <FilePlus2 aria-hidden="true" size={19} />
+                <div className="workbench-resource-copy">
+                  <h2>{note.title}</h2>
+                  <span>{note.plain_text || "空白文档"}</span>
                 </div>
-                <h2 className="truncate text-base font-semibold">
-                  {note.title}
-                </h2>
-                <p className="mt-2 line-clamp-2 text-xs leading-5 text-[var(--muted)]">
-                  {note.plain_text || "空白文档"}
-                </p>
-                <p className="mt-3 text-xs text-[var(--muted-light)]">
-                  所属文集：{notebookNames.get(note.notebook_id) ?? "未知文集"}
-                </p>
+                <span className="workbench-search-notebook">所属笔记本：{notebookNames.get(note.notebook_id) ?? "未知笔记本"}</span>
               </Link>
             ))}
           </div>
         ) : null}
-      </div>
+      </PageContainer>
     </DocumentShell>
   );
 }

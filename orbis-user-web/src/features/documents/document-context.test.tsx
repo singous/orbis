@@ -34,6 +34,7 @@ type BriefDocumentContextPanelProps = {
   activeNoteId?: string;
   mobile?: boolean;
   onNavigate?: () => void;
+  variant?: "side" | "main";
 };
 
 type PanelPropKeysAreExact =
@@ -48,6 +49,25 @@ void panelPropKeysAreExact;
 
 vi.mock("./queries", () => ({
   useNoteTree: () => treeState,
+  useUpdateNotebook: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useDocumentGroups: () => ({
+    data: {
+      items: [{
+        id: "018ff7c4-a5b6-7000-8000-000000000005",
+        name: "默认分组",
+        is_default: true,
+        tenant_id: null,
+        workspace_id: "workspace-1",
+        owner_id: "018ff7c4-a5b6-7000-8000-000000000001",
+        sort_order: 0,
+        status: "active",
+        created_at_ms: 1,
+        updated_at_ms: 2,
+      }],
+    },
+    isLoading: false,
+    isError: false,
+  }),
   useNotebooks: () => ({
     data: {
       items: [{
@@ -67,6 +87,7 @@ vi.mock("./queries", () => ({
     isError: false,
   }),
   useCreateNote: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCreateNotebook: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useUpdateNote: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useArchiveNote: () => ({ mutateAsync: mocks.archiveNote, isPending: false }),
   useNote: () => noteState,
@@ -76,8 +97,8 @@ vi.mock("./queries", () => ({
   useExportMarkdown: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
-vi.mock("../notes/TiptapNoteEditor", () => ({
-  TiptapNoteEditor: () => <div>编辑器仍可用</div>,
+vi.mock("../notes/BlockNoteEditor", () => ({
+  BlockNoteEditor: () => <div>编辑器仍可用</div>,
 }));
 
 const user = {
@@ -293,7 +314,7 @@ describe("DocumentContextPanel", () => {
     expect(mocks.archiveNote).toHaveBeenNthCalledWith(2, { id: rootNote.id, archived: false });
   });
 
-  it("keeps the editor available when only its contextual tree fails", () => {
+  it("keeps the editor available when only its contextual tree fails", async () => {
     treeState = { data: undefined, isLoading: false, isError: true, refetch: mocks.refetchTree };
     render(
       <MemoryRouter initialEntries={[`/documents/${rootNote.id}`]}>
@@ -301,7 +322,7 @@ describe("DocumentContextPanel", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("编辑器仍可用")).toBeInTheDocument();
+    expect(await screen.findByText("编辑器仍可用")).toBeInTheDocument();
     expect(screen.getByText("目录加载失败")).toBeInTheDocument();
   });
 
@@ -341,8 +362,7 @@ describe("DocumentContextPanel", () => {
     expect(window.localStorage.getItem("orbis.document-context.open.workspace-1")).toBe("false");
   });
 
-  it("keeps the collection summary live while the contextual tree is closed", async () => {
-    window.localStorage.setItem("orbis.document-context.open.workspace-1", "false");
+  it("renders the notebook's document tree in the main column", async () => {
     render(
       <MemoryRouter initialEntries={[`/collections/${rootNote.notebook_id}`]}>
         <Routes><Route path="/collections/:collectionId" element={<NotebookPage />} /></Routes>
@@ -351,8 +371,10 @@ describe("DocumentContextPanel", () => {
 
     expect(await screen.findByText("2 篇文档")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "导出全部" })).toBeEnabled();
-    expect(screen.getByRole("region", { name: "主工作区" })).not.toHaveClass("has-context");
+    // The notebook page owns its document list; no shell context panel aside.
     expect(screen.queryByRole("complementary", { name: "上下文面板" })).not.toBeInTheDocument();
-    expect(document.querySelector('aside[aria-label="上下文面板"][hidden]')).toBeInTheDocument();
+    const tree = screen.getByRole("navigation", { name: "文档列表" });
+    expect(tree).toHaveTextContent("产品计划");
+    expect(tree).toHaveTextContent("发布范围");
   });
 });

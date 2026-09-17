@@ -5,6 +5,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from orbis_user_api.schemas.notebook_icon import NotebookIcon
+
 
 ResourceStatus: TypeAlias = Literal["active", "archived"]
 
@@ -109,12 +111,19 @@ class NotebookCreateRequest(BaseModel):
     title: str = Field(min_length=1, max_length=160)
     group_id: UUID | None = None
     sort_order: int = 0
+    icon: NotebookIcon | None = Field(
+        default=None,
+        description="笔记本图标：内置图标及配色，或当前工作空间已上传的自定义图片；省略或 null 使用默认图标。",
+    )
 
 
 class NotebookUpdateRequest(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=160)
     group_id: UUID | None = None
     sort_order: int | None = None
+    icon: NotebookIcon | None = Field(
+        default=None, description="笔记本图标；省略保持原值，显式 null 恢复默认图标。"
+    )
 
 
 class NotebookOut(BaseModel):
@@ -126,6 +135,10 @@ class NotebookOut(BaseModel):
     group_id: UUID
     owner_id: UUID
     title: str
+    icon: NotebookIcon | None = Field(
+        default=None,
+        description="笔记本图标配置；历史记录或默认图标返回 null。自定义图片须通过鉴权图标接口读取。",
+    )
     sort_order: int
     status: str
     created_at_ms: int

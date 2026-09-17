@@ -6,7 +6,6 @@ import { useStore } from "zustand";
 import { authStore } from "../../shared/auth/auth-store";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
 import { readDocumentContextOpen, writeDocumentContextOpen } from "./document-context-state";
-import { DocumentFunctionMenu } from "./DocumentFunctionMenu";
 
 type DocumentShellProps = {
   children: ReactNode;
@@ -14,9 +13,11 @@ type DocumentShellProps = {
   contextPanel?: ReactNode;
   contextOpen?: boolean;
   onOpenContext?: () => void;
+  /** Left function column (e.g. the notebook tree) between rail and content. */
+  sectionMenu?: ReactNode;
 };
 
-export function DocumentShell({ children, toolbar, contextPanel, contextOpen, onOpenContext }: DocumentShellProps) {
+export function DocumentShell({ children, toolbar, contextPanel, contextOpen, onOpenContext, sectionMenu }: DocumentShellProps) {
   const workspaceId = useStore(authStore, (state) => state.workspace?.id);
   const [storedContextOpen, setStoredContextOpen] = useState(() => workspaceId ? readDocumentContextOpen(workspaceId) : true);
   const isContextOpen = contextOpen ?? storedContextOpen;
@@ -32,8 +33,7 @@ export function DocumentShell({ children, toolbar, contextPanel, contextOpen, on
 
   return (
     <WorkspaceShell
-      sectionTitle="在线云文档"
-      sectionMenu={<DocumentFunctionMenu />}
+      sectionMenu={sectionMenu}
       toolbar={toolbar}
       contextPanel={contextPanel ? <div className="document-context-shell">{contextPanel}{isContextOpen ? <button type="button" className="document-context-close" aria-label="收起上下文面板" onClick={() => setContextOpen(false)}><PanelRightClose aria-hidden="true" size={15} /></button> : null}</div> : undefined}
       contextOpen={isContextOpen}

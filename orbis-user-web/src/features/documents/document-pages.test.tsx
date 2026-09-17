@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, RouterProvider, Routes, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -93,7 +93,7 @@ vi.mock("./queries", () => {
       ...common,
       id: ids.activeNotebookWithArchivedGroup,
       group_id: ids.archivedGroup,
-      title: "已归档分组中的活跃文集",
+      title: "已归档分组中的活跃笔记本",
       sort_order: 1,
       status: "active",
     },
@@ -139,7 +139,7 @@ vi.mock("./queries", () => {
       ...common,
       id: ids.archivedNotebook,
       group_id: ids.archivedGroup,
-      title: "已归档文集",
+      title: "已归档笔记本",
       sort_order: 0,
       status: "archived",
     },
@@ -147,7 +147,7 @@ vi.mock("./queries", () => {
       ...common,
       id: ids.archivedNotebookWithActiveGroup,
       group_id: ids.group,
-      title: "活跃分组中的已归档文集",
+      title: "活跃分组中的已归档笔记本",
       sort_order: 1,
       status: "archived",
     },
@@ -170,7 +170,7 @@ vi.mock("./queries", () => {
       notebook_id: ids.notebook,
       parent_id: null,
       sort_order: 1,
-      title: "活跃文集中的已归档文档",
+      title: "活跃笔记本中的已归档文档",
       note_type: "document",
       plain_text: "归档内容",
       status: "archived",
@@ -214,7 +214,7 @@ vi.mock("./queries", () => {
       notebook_id: ids.archivedNotebookWithActiveGroup,
       parent_id: null,
       sort_order: 5,
-      title: "已归档文集中的已归档文档",
+      title: "已归档笔记本中的已归档文档",
       note_type: "document",
       plain_text: "归档内容",
       status: "archived",
@@ -341,6 +341,34 @@ function CurrentSearch() {
 }
 
 describe("document function pages", () => {
+  it("collapses a notebook group with keyboard and restores its choice after remount", async () => {
+    const actor = userEvent.setup();
+    const view = await renderRoute("/documents/collections");
+    const toggle = await screen.findByRole("button", { name: "收起分组 默认分组" });
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(within(screen.getByRole("region", { name: "笔记本" })).getByText("产品手册")).toBeVisible();
+    toggle.focus();
+    await actor.keyboard("{Enter}");
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(within(screen.getByRole("region", { name: "笔记本" })).queryByText("产品手册")).not.toBeVisible();
+    view.unmount();
+    await renderRoute("/documents/collections");
+    const restored = await screen.findByRole("button", { name: "展开分组 默认分组" });
+    expect(restored).toHaveAttribute("aria-expanded", "false");
+    await actor.click(restored);
+    expect(within(screen.getByRole("region", { name: "笔记本" })).getByText("产品手册")).toBeVisible();
+  });
+
+  it("keeps group creation actions independent of the collapsed content", async () => {
+    const actor = userEvent.setup();
+    await renderRoute("/documents/collections");
+    await actor.click(await screen.findByRole("button", { name: "收起分组 默认分组" }));
+    const collapsedGroup = screen.getByRole("button", { name: "展开分组 默认分组" });
+    await actor.click(screen.getByRole("button", { name: "+ 笔记本" }));
+    expect(screen.getByRole("dialog", { name: "新建笔记本" })).toBeVisible();
+    expect(collapsedGroup).toHaveAttribute("aria-expanded", "false");
+  });
+
   beforeEach(() => {
     mocks.archiveGroup.mockReset();
     mocks.archiveNotebook.mockReset();
@@ -372,7 +400,7 @@ describe("document function pages", () => {
   it.each([
     ["/documents", "文档概览", "heading"],
     ["/documents/recent", "最近文档", "heading"],
-    ["/documents/collections", "我的文集", "heading"],
+    ["/documents/collections", "我的笔记本", "heading"],
     ["/documents/archive", "归档", "heading"],
   ] as const)("renders %s as the %s page", async (path, name, role) => {
     await renderRoute(path);
@@ -421,7 +449,7 @@ describe("document function pages", () => {
   it("shows each search result's collection without additional row requests", async () => {
     await renderRoute("/documents/search?q=%E6%9C%80%E6%96%B0");
 
-    expect(await screen.findByText("所属文集：产品手册")).toBeVisible();
+    expect(await screen.findByText("所属笔记本：产品手册")).toBeVisible();
   });
 
   it("provides a clear action to reset the document search", async () => {
@@ -448,7 +476,7 @@ describe("document function pages", () => {
       recent.textContent?.indexOf("最新文档") ?? -1,
     );
     expect(screen.queryByRole("navigation", { name: "在线文档功能" })).not.toBeInTheDocument();
-    expect(document.querySelector(".workspace-shell")).not.toHaveClass("has-section-menu");
+    expect(document.querySelector(".workspace-shell")).toHaveClass("has-section-menu");
   });
 
   it("keeps account settings on the workspace shell without document functions", async () => {
@@ -456,24 +484,24 @@ describe("document function pages", () => {
 
     expect(await screen.findByRole("heading", { name: "账号" })).toBeVisible();
     expect(screen.queryByRole("navigation", { name: "在线文档功能" })).not.toBeInTheDocument();
-    expect(document.querySelector(".workspace-shell")).not.toHaveClass("has-section-menu");
+    expect(document.querySelector(".workspace-shell")).toHaveClass("has-section-menu");
   });
 
-  it("links the overview quick actions to both document and collection creation", async () => {
+  it("recommends notebook creation on the overview outside any notebook", async () => {
     await renderRoute("/documents");
 
-    expect(await screen.findByRole("button", { name: "新建文档" })).toBeVisible();
-    expect(screen.getByRole("link", { name: "新建文集" })).toHaveAttribute(
+    expect(await screen.findByRole("link", { name: "新建笔记本" })).toHaveAttribute(
       "href",
       "/documents/collections",
     );
+    expect(screen.queryByRole("button", { name: "新建文档" })).not.toBeInTheDocument();
   });
 
   it("links the recent empty state to collections", async () => {
     mocks.activeNotes = [];
     await renderRoute("/documents/recent");
 
-    expect(await screen.findByRole("link", { name: "前往我的文集" })).toHaveAttribute(
+    expect(await screen.findByRole("link", { name: "前往我的笔记本" })).toHaveAttribute(
       "href",
       "/documents/collections",
     );
@@ -491,8 +519,8 @@ describe("document function pages", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("heading", { name: "我的文集" })).toBeVisible();
-    expect(screen.getByRole("alert")).toHaveTextContent("无法打开文集");
+    expect(await screen.findByRole("heading", { name: "我的笔记本" })).toBeVisible();
+    expect(screen.getByRole("alert")).toHaveTextContent("无法打开笔记本");
 
     await actor.click(screen.getByRole("button", { name: "关闭提示" }));
 
@@ -516,7 +544,7 @@ describe("document function pages", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("heading", { name: "我的文集" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "我的笔记本" })).toBeVisible();
     expect(screen.getByRole("alert")).toHaveTextContent("无法打开文档");
   });
 
@@ -531,19 +559,19 @@ describe("document function pages", () => {
     await renderRoute("/documents/018ff7c4-a5b6-7000-8000-000000000099");
 
     expect(await screen.findByText("无法打开文档")).toBeVisible();
-    expect(screen.queryByRole("heading", { name: "我的文集" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "我的笔记本" })).not.toBeInTheDocument();
   });
 
   it("requires parents to be restored before their archived descendants", async () => {
     await renderRoute("/documents/archive");
 
     expect(await screen.findByText("归属分组：已归档分组")).toBeVisible();
-    expect(screen.getByText("归属文集：已归档文集")).toBeVisible();
+    expect(screen.getByText("归属笔记本：已归档笔记本")).toBeVisible();
     expect(screen.getAllByText("请先恢复分组").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("请先恢复文集").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("请先恢复笔记本").length).toBeGreaterThan(0);
     expect(screen.getByText("请先恢复父文档")).toBeVisible();
     expect(
-      screen.getByRole("button", { name: "恢复 已归档文集" }),
+      screen.getByRole("button", { name: "恢复 已归档笔记本" }),
     ).toBeDisabled();
     expect(
       screen.getByRole("button", { name: "恢复 已归档文档" }),
@@ -554,10 +582,10 @@ describe("document function pages", () => {
     expect(groupBlockedNote).toBeDisabled();
     expect(groupBlockedNote.parentElement).toHaveTextContent("请先恢复分组");
     const notebookBlockedNote = screen.getByRole("button", {
-      name: "恢复 已归档文集中的已归档文档",
+      name: "恢复 已归档笔记本中的已归档文档",
     });
     expect(notebookBlockedNote).toBeDisabled();
-    expect(notebookBlockedNote.parentElement).toHaveTextContent("请先恢复文集");
+    expect(notebookBlockedNote.parentElement).toHaveTextContent("请先恢复笔记本");
     const parentBlockedNote = screen.getByRole("button", {
       name: "恢复 已归档子文档",
     });
@@ -595,10 +623,10 @@ describe("document function pages", () => {
     await renderRoute("/documents/archive");
 
     const notebookButton = await screen.findByRole("button", {
-      name: "恢复 活跃分组中的已归档文集",
+      name: "恢复 活跃分组中的已归档笔记本",
     });
     const noteButton = screen.getByRole("button", {
-      name: "恢复 活跃文集中的已归档文档",
+      name: "恢复 活跃笔记本中的已归档文档",
     });
     expect(notebookButton).toBeEnabled();
     expect(noteButton).toBeEnabled();

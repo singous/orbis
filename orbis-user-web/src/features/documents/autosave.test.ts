@@ -68,4 +68,48 @@ describe("AutosaveCoordinator", () => {
     expect(save).toHaveBeenCalledTimes(2);
     expect(autosave.state).toBe("saved");
   });
+
+  it("rate-limits back-to-back saves when minIntervalMs is set", async () => {
+    const save = vi.fn(async (draft: Draft) => ({ ...draft, version: draft.version + 1 }));
+    const autosave = new AutosaveCoordinator<Draft>({
+      delayMs: 750,
+      minIntervalMs: 2000,
+      fingerprint: (draft) => draft.title,
+      save,
+    });
+
+    autosave.hydrate({ title: "a", version: 1 });
+    autosave.change({ title: "b", version: 1 });
+    // The first save is not rate-limited: quiet period decides.
+    await vi.advanceTimersByTimeAsync(750);
+    expect(save).toHaveBeenCalledTimes(1);
+
+    // A burst right after the save coalesces to the next interval boundary
+    // (750 + 2000), not to its own quiet period (1500).
+    autosave.change({ title: "c", version: 1 });
+    await vi.advanceTimersByTimeAsync(750);
+    expect(save).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1250);
+    expect(save).toHaveBeenCalledTimes(2);
+  });
+
+  it("forces a save when typing never pauses (maxDelayMs)", async () => {
+    const save = vi.fn(async (draft: Draft) => ({ ...draft, version: draft.version + 1 }));
+    const autosave = new AutosaveCoordinator<Draft>({
+      delayMs: 750,
+      maxDelayMs: 3000,
+      fingerprint: (draft) => draft.title,
+      save,
+    });
+
+    autosave.hydrate({ title: "a", version: 1 });
+    // Continuous typing: the 750ms quiet period is never reached, but the
+    // dirty window caps at 3000ms.
+    for (let i = 0; i < 10; i += 1) {
+      autosave.change({ title: `typing ${i}`, version: 1 });
+      await vi.advanceTimersByTimeAsync(500);
+    }
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(save.mock.calls[0][0].title).toBe("typing 5");
+  });
 });

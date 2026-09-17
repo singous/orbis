@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version: "0.10.11"
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - name: Install backend dependencies
+        run: uv sync --frozen --package orbis-user-api --group dev
+      - name: Run backend tests
+        working-directory: orbis-user-api
+        run: ../.venv/bin/python -m pytest -q
+
+  frontend:
+    name: Frontend checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: orbis-user-web
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: orbis-user-web/package-lock.json
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Run frontend unit tests
+        run: npm run test:run
+      - name: Check frontend types
+        run: npm run typecheck
+      - name: Build frontend
+        run: npm run build
+
+  browser:
+    name: Browser E2E
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version: "0.10.11"
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: orbis-user-web/package-lock.json
+      - name: Install backend dependencies
+        run: uv sync --frozen --package orbis-user-api --group dev
+      - name: Install frontend dependencies
+        working-directory: orbis-user-web
+        run: npm ci
+      - name: Install Chromium and system dependencies
+        working-directory: orbis-user-web
+        run: npx playwright install --with-deps chromium
+      - name: Run isolated browser tests
+        working-directory: orbis-user-web
+        run: npm run test:e2e
+      - name: Upload browser failure evidence
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: browser-failure-evidence
+          path: orbis-user-web/test-results/browser/
+          if-no-files-found: ignore
+          retention-days: 7

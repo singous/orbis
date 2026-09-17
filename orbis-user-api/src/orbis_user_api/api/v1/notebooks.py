@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import Depends, Query, status
+from fastapi import Depends, File, Query, Request, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from orbis_user_api.api.contract import (
@@ -26,6 +26,17 @@ from orbis_user_api.schemas.note import (
     NotebookUpdateRequest,
     ResourceStatus,
 )
+from orbis_user_api.schemas.notebook_icon import (
+    NotebookIconImageOut,
+    NotebookIconUploadOut,
+)
+from orbis_user_api.services.notebook_icon import (
+    NotebookIconInvalidImage,
+    NotebookIconNotFound,
+    NotebookIconTooLarge,
+    read_notebook_icon,
+    upload_notebook_icon,
+)
 from orbis_user_api.services.exceptions import (
     ArchiveRestoreDependencyInactive,
     DefaultDocumentGroupMissing,
@@ -39,6 +50,74 @@ from orbis_user_api.services.notebook import set_notebook_archived
 from orbis_user_api.services.notebook import update_notebook as update_notebook_service
 
 router = ApiRouter(prefix="/notebooks", tags=["notebooks"])
+
+
+def _icon_not_found() -> ApiError:
+    return ApiError(
+        status_code=status.HTTP_404_NOT_FOUND,
+        code="NOTEBOOK_ICON_NOT_FOUND",
+        message="笔记本图标不存在或不属于当前工作空间",
+    )
+
+
+@router.post(
+    "/icons",
+    response_model=NotebookIconUploadOut,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_resource_manager)],
+)
+async def upload_icon(
+    request: Request,
+    upload: UploadFile = File(
+        alias="file",
+        description="PNG、JPEG 或 WebP 静态图片，最大 2 MiB、16,777,216 像素。",
+    ),
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> NotebookIconUploadOut:
+    try:
+        return await upload_notebook_icon(
+            upload, request.app.state.storage, user, session
+        )
+    except NotebookIconTooLarge:
+        raise ApiError(
+            status_code=413,
+            code="NOTEBOOK_ICON_TOO_LARGE",
+            message="图标图片不能超过 2 MiB",
+        ) from None
+    except NotebookIconInvalidImage:
+        raise ApiError(
+            status_code=422,
+            code="NOTEBOOK_ICON_INVALID_IMAGE",
+            message="请选择有效的 PNG、JPEG 或 WebP 静态图片，且不超过 16,777,216 像素",
+        ) from None
+    except UserWorkspaceMissing:
+        raise ApiError(
+            status_code=403,
+            code="ACTIVE_WORKSPACE_MEMBERSHIP_REQUIRED",
+            message="需要有效的工作空间成员身份",
+        ) from None
+
+
+@router.get("/icons/{file_id}", response_model=NotebookIconImageOut)
+async def get_icon(
+    file_id: UUID,
+    request: Request,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> NotebookIconImageOut:
+    try:
+        return await read_notebook_icon(
+            file_id, request.app.state.storage, user, session
+        )
+    except NotebookIconNotFound:
+        raise _icon_not_found() from None
+    except UserWorkspaceMissing:
+        raise ApiError(
+            status_code=403,
+            code="ACTIVE_WORKSPACE_MEMBERSHIP_REQUIRED",
+            message="需要有效的工作空间成员身份",
+        ) from None
 
 
 @router.get("", response_model=PageData[NotebookOut])
@@ -87,6 +166,8 @@ async def create_notebook(
 ) -> Notebook:
     try:
         return await create_notebook_service(payload, user, session)
+    except NotebookIconNotFound:
+        raise _icon_not_found() from None
     except UserWorkspaceMissing:
         raise ApiError(
             status_code=status.HTTP_409_CONFLICT,
@@ -120,6 +201,8 @@ async def update_notebook(
 ) -> Notebook:
     try:
         return await update_notebook_service(notebook_id, payload, user, session)
+    except NotebookIconNotFound:
+        raise _icon_not_found() from None
     except NotebookNotFound:
         raise ApiError(
             status_code=status.HTTP_404_NOT_FOUND,

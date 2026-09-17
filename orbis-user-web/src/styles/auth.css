@@ -1,0 +1,73 @@
+.auth-layout {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100dvh;
+  padding: 28px 40px;
+  background: var(--surface-app);
+}
+
+.auth-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.auth-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -.035em;
+  color: var(--text-primary);
+}
+
+.auth-brand-mark {
+  display: grid;
+  width: 35px;
+  height: 35px;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--surface-inverse);
+  color: var(--text-oninverse);
+}
+
+.auth-header-caption {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.auth-card {
+  align-self: center;
+  justify-self: center;
+  width: min(100%, 450px);
+  margin: 56px 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  background: var(--surface-content);
+  padding: 42px;
+  box-shadow: 0 2px 5px rgb(29 30 34 / 2%);
+}
+
+.auth-card-heading { margin-bottom: 32px; }
+.auth-card-kicker { margin-bottom: 10px; color: var(--text-secondary); font-size: 13px; }
+.auth-card-heading h1 { font-size: 25px; line-height: 1.4; font-weight: 650; letter-spacing: -.03em; }
+.auth-card-heading p { margin-top: 10px; font-size: 14px; line-height: 1.7; color: var(--text-secondary); }
+.auth-form { display: grid; gap: 22px; }
+.auth-form label { gap: 9px; }
+.auth-form input { height: var(--form-control-height); font-size: 14px; }
+.auth-submit { width: 100%; height: var(--form-control-height); margin-top: 6px; }
+.auth-submit svg { margin-left: auto; }
+.auth-card-footer { border-top: 1px solid var(--border-subtle); margin-top: 28px; padding-top: 23px; color: var(--text-secondary); font-size: 13px; line-height: 1.8; text-align: center; }
+.auth-card-footer a { margin-left: 4px; color: var(--text-primary); font-weight: 500; }
+.auth-card-footer a:hover { text-decoration: underline; text-underline-offset: 4px; }
+.auth-footer { text-align: center; font-size: 12px; letter-spacing: .16em; color: var(--text-tertiary); }
+.auth-brand:focus-visible, .auth-card-footer a:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 4px; border-radius: 4px; }
+
+@media (max-width: 640px) {
+  .auth-layout { padding: 22px 20px; }
+  .auth-header-caption { display: none; }
+  .auth-card { padding: 30px 24px; margin: 36px 0; }
+  .auth-form input { font-size: 16px; }
+}

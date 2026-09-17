@@ -1,8 +1,31 @@
 import { describe, expect, it } from "vitest";
+import { marked } from "marked";
 
 import { markdownToTiptapDoc, tiptapDocToMarkdown } from "./markdown-contract";
 
 describe("markdown contract", () => {
+  it("exports legacy ordered-list starts with nested numbering and continuation paragraphs", () => {
+    const paragraph = (text: string) => ({ type: "paragraph", content: [{ type: "text", text }] });
+    const markdown = tiptapDocToMarkdown({ type: "doc", content: [{ type: "orderedList", attrs: { start: 7 }, content: [
+      { type: "listItem", content: [paragraph("Seven"), paragraph("Continuation"),
+        { type: "orderedList", attrs: { start: 3 }, content: [
+          { type: "listItem", content: [paragraph("Nested three")] }, { type: "listItem", content: [paragraph("Nested four")] },
+        ] },
+      ] }, { type: "listItem", content: [paragraph("Eight")] },
+    ] }] });
+    const result = document.createElement("div");
+    result.innerHTML = marked.parse(markdown, { async: false });
+    expect(Array.from(result.querySelectorAll("ol"), (list) => list.start)).toEqual([7, 3]);
+    expect(result.querySelector("ol")?.children).toHaveLength(2);
+    expect(result).toHaveTextContent("Continuation");
+    expect(markdown).toMatch(/^8\. Eight$/m);
+    const imported = markdownToTiptapDoc(markdown);
+    expect(imported.content![0].attrs).toEqual({ start: 7 });
+    expect(imported.content![0].content![0].content).toMatchObject([
+      paragraph("Seven"), paragraph("Continuation"), { type: "orderedList", attrs: { start: 3 } },
+    ]);
+  });
+
   it("parses supported Markdown blocks into Tiptap JSON", () => {
     const doc = markdownToTiptapDoc(`# Orbis Notes
 

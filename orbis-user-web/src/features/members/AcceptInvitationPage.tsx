@@ -1,30 +1,22 @@
 import { useMutation } from "@tanstack/react-query";
 import { Check, UserPlus } from "lucide-react";
-import { type FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { useStore } from "zustand";
 
 import { ApiError } from "../../shared/api/api-client";
-import { authStore } from "../../shared/auth/auth-store";
+import { useOptionalAuthRequest } from "../../shared/auth/use-auth-request";
 import { Button } from "../../shared/ui/Button";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { TextInput } from "../../shared/ui/TextInput";
-import { acceptInvitation, type MemberAuth } from "./api";
+import { acceptInvitation } from "./api";
 
 export function AcceptInvitationPage() {
   const { token = "" } = useParams();
   const [searchParams] = useSearchParams();
   const invitationToken = token || searchParams.get("token") || "";
-  const accessToken = useStore(authStore, (state) => state.accessToken);
-  const refreshToken = useStore(authStore, (state) => state.refreshToken);
-  const onTokenRefresh = useStore(authStore, (state) => state.setAccessToken);
-  const onUnauthorized = useStore(authStore, (state) => state.clearSession);
+  const auth = useOptionalAuthRequest();
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
-  const auth = useMemo<MemberAuth | null>(
-    () => accessToken ? { accessToken, refreshToken, onTokenRefresh, onUnauthorized } : null,
-    [accessToken, refreshToken, onTokenRefresh, onUnauthorized],
-  );
   const accept = useMutation({
     mutationFn: () => acceptInvitation(
       { token: invitationToken, ...(auth ? {} : { password, display_name: displayName }) },
@@ -39,9 +31,9 @@ export function AcceptInvitationPage() {
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-[#f3f3f1] p-5">
-      <section className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-white p-7 shadow-xl shadow-black/5">
-        <div className="mb-6 grid h-12 w-12 place-items-center rounded-2xl bg-black text-white">
+    <main className="grid min-h-screen place-items-center bg-[var(--surface-app)] p-5">
+      <section className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--surface-content)] p-7 shadow-[var(--shadow-pop)]">
+        <div className="mb-6 grid h-12 w-12 place-items-center rounded-2xl bg-[var(--surface-inverse)] text-[var(--text-oninverse)]">
           {accept.isSuccess ? <Check aria-hidden="true" size={20} /> : <UserPlus aria-hidden="true" size={20} />}
         </div>
         {accept.isSuccess ? (

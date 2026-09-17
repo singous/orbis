@@ -2,6 +2,17 @@ export type AutosaveState = "saved" | "dirty" | "saving" | "error" | "conflict";
 
 type AutosaveOptions<T> = {
   delayMs: number;
+  /**
+   * Minimum time between two saves. Bursts separated by short pauses coalesce
+   * into one save — keeps full-document saves from scaling with keystroke
+   * rhythm on long documents.
+   */
+  minIntervalMs?: number;
+  /**
+   * Maximum time a draft may stay dirty without a save attempt, even while
+   * the user keeps typing — bounds the crash data-loss window.
+   */
+  maxDelayMs?: number;
   fingerprint: (value: T) => string;
   save: (current: T, saved: T) => Promise<T>;
   onStateChange?: (state: AutosaveState) => void;
@@ -13,6 +24,8 @@ function isConflict(error: unknown): boolean {
 
 export class AutosaveCoordinator<T> {
   readonly #delayMs: number;
+  readonly #minIntervalMs: number;
+  readonly #maxDelayMs: number | null;
   readonly #fingerprint: (value: T) => string;
   readonly #save: (current: T, saved: T) => Promise<T>;
   readonly #onStateChange?: (state: AutosaveState) => void;
@@ -21,9 +34,13 @@ export class AutosaveCoordinator<T> {
   #current: T | null = null;
   #saved: T | null = null;
   #state: AutosaveState = "saved";
+  #dirtySince: number | null = null;
+  #lastFlushAt = Number.NEGATIVE_INFINITY;
 
   constructor(options: AutosaveOptions<T>) {
     this.#delayMs = options.delayMs;
+    this.#minIntervalMs = options.minIntervalMs ?? 0;
+    this.#maxDelayMs = options.maxDelayMs ?? null;
     this.#fingerprint = options.fingerprint;
     this.#save = options.save;
     this.#onStateChange = options.onStateChange;
@@ -45,6 +62,7 @@ export class AutosaveCoordinator<T> {
     this.#clearTimer();
     this.#current = value;
     this.#saved = value;
+    this.#dirtySince = null;
     this.#setState("saved");
   }
 
@@ -52,9 +70,11 @@ export class AutosaveCoordinator<T> {
     this.#current = value;
     if (this.#saved && this.#fingerprint(value) === this.#fingerprint(this.#saved)) {
       this.#clearTimer();
+      this.#dirtySince = null;
       this.#setState("saved");
       return;
     }
+    this.#dirtySince ??= Date.now();
     this.#setState("dirty");
     this.#schedule();
   }
@@ -67,16 +87,20 @@ export class AutosaveCoordinator<T> {
     const current = this.#current;
     const saved = this.#saved;
     if (!current || !saved || this.#fingerprint(current) === this.#fingerprint(saved)) {
+      this.#dirtySince = null;
       this.#setState("saved");
       return;
     }
 
+    this.#lastFlushAt = Date.now();
+    this.#dirtySince = null;
     this.#setState("saving");
     const savingFingerprint = this.#fingerprint(current);
     this.#inFlight = this.#save(current, saved)
       .then((nextSaved) => {
         this.#saved = nextSaved;
         if (this.#current && this.#fingerprint(this.#current) !== this.#fingerprint(nextSaved)) {
+          this.#dirtySince ??= Date.now();
           this.#setState("dirty");
           this.#schedule();
         } else {
@@ -87,6 +111,7 @@ export class AutosaveCoordinator<T> {
         }
       })
       .catch((error: unknown) => {
+        this.#dirtySince ??= Date.now();
         this.#setState(isConflict(error) ? "conflict" : "error");
       })
       .finally(() => {
@@ -108,9 +133,19 @@ export class AutosaveCoordinator<T> {
 
   #schedule(): void {
     this.#clearTimer();
+    const now = Date.now();
+    // Quiet period coalesces keystrokes; the min interval rate-limits
+    // back-to-back saves; the max delay caps the crash-loss window.
+    const quietAt = now + this.#delayMs;
+    const intervalAt = this.#lastFlushAt + this.#minIntervalMs;
+    const maxAt =
+      this.#maxDelayMs != null && this.#dirtySince != null
+        ? this.#dirtySince + this.#maxDelayMs
+        : Number.POSITIVE_INFINITY;
+    const fireAt = Math.min(Math.max(quietAt, intervalAt), maxAt);
     this.#timer = setTimeout(() => {
       void this.flush();
-    }, this.#delayMs);
+    }, Math.max(0, fireAt - now));
   }
 
   #clearTimer(): void {

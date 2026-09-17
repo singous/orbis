@@ -8,6 +8,7 @@ import type { ReactNode } from "react";
 import { useStore } from "zustand";
 
 import { authStore } from "../../shared/auth/auth-store";
+import { PageContainer } from "../../shared/ui/PageContainer";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { DocumentShell } from "./DocumentShell";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
@@ -59,13 +60,13 @@ function ArchiveSection({
         </div>
       </div>
       {resources.length ? (
-        <div className="divide-y divide-[var(--border)] overflow-hidden rounded-xl border border-[var(--border)] bg-white">
+        <div className="workbench-document-list">
           {resources.map((resource) => (
             <div
               key={resource.id}
-              className="flex items-center gap-3 px-4 py-3.5"
+              className="workbench-document-row"
             >
-              <div className="document-icon small">{icon}</div>
+              <div className="workbench-list-icon">{icon}</div>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-semibold">{resource.label}</div>
                 {resource.parentLabel ? (
@@ -140,7 +141,7 @@ export function ArchivePage() {
       return "请先恢复分组";
     }
     if (archivedNotebooksById.has(note.notebook_id)) {
-      return "请先恢复文集";
+      return "请先恢复笔记本";
     }
     if (note.parent_id && archivedNotesById.has(note.parent_id)) {
       return "请先恢复父文档";
@@ -150,21 +151,14 @@ export function ArchivePage() {
 
   return (
     <DocumentShell>
-      <div className="mx-auto max-w-[1040px] px-5 py-8 lg:px-10 lg:py-10">
-        <header className="mb-9">
-          <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted-light)]">
-            Documents
-          </div>
-          <h1 className="text-4xl font-semibold tracking-[-0.045em] lg:text-5xl">
-            归档
-          </h1>
-          <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
-            已归档内容不会出现在在线文档中。
-            {canRestore
-              ? "你可以在此恢复它们。"
-              : "只有工作空间管理者可以恢复内容。"}
-          </p>
-        </header>
+      <PageContainer
+        title="归档"
+        description={
+          canRestore
+            ? "已归档内容不会出现在在线文档中，你可以在此恢复它们。"
+            : "已归档内容不会出现在在线文档中，只有工作空间管理者可以恢复内容。"
+        }
+      >
         {groupsQuery.isError || notebooksQuery.isError || activeNotebooksQuery.isError || notesQuery.isError ? (
           <StatusMessage tone="error" title="归档加载失败">
             请检查 API 服务后重试。
@@ -190,7 +184,7 @@ export function ArchivePage() {
           error={archiveGroup.error}
         />
         <ArchiveSection
-          title="文集"
+          title="笔记本"
           icon={<BookOpen aria-hidden="true" size={14} />}
           resources={notebooks.map((notebook) => ({
             id: notebook.id,
@@ -215,8 +209,8 @@ export function ArchivePage() {
             id: note.id,
             label: note.title,
             parentLabel: notebooksById.has(note.notebook_id)
-              ? `归属文集：${notebooksById.get(note.notebook_id)?.title}`
-              : "归属文集：已恢复",
+              ? `归属笔记本：${notebooksById.get(note.notebook_id)?.title}`
+              : "归属笔记本：已恢复",
             restoreBlockedReason: noteRestoreBlockedReason(note),
           }))}
           canRestore={canRestore}
@@ -225,7 +219,7 @@ export function ArchivePage() {
           errorId={archiveNote.isError ? archiveNote.variables?.id : undefined}
           error={archiveNote.error}
         />
-      </div>
+      </PageContainer>
     </DocumentShell>
   );
 }

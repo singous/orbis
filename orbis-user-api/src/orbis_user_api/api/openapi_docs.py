@@ -5,6 +5,8 @@ from typing import Any
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 
+from orbis_user_api.api import openapi_base_mvp as base_mvp
+
 EXAMPLE_REQUEST_ID = "019fe1e0-1234-7abc-8def-0123456789ab"
 
 TAG_DOCS: dict[str, tuple[str, str]] = {
@@ -18,6 +20,7 @@ TAG_DOCS: dict[str, tuple[str, str]] = {
     "notes": ("文档", "文档、内容、搜索与目录树"),
     "files": ("文件", "文件上传与查询"),
     "system": ("系统状态", "服务健康检查"),
+    **base_mvp.TAG_DOCS,
 }
 
 
@@ -58,8 +61,10 @@ OPERATION_DOCS: dict[tuple[str, str], tuple[str, str]] = {
     ("post", "/document-groups/{group_id}/archive"): ("归档文档分组", "归档指定文档分组。系统默认分组不可归档。"),
     ("post", "/document-groups/{group_id}/restore"): ("恢复文档分组", "恢复指定文档分组；恢复后其下级文集和文档仍需按依赖顺序分别恢复。"),
     ("get", "/notebooks"): ("分页查询文集", "分页查询当前工作空间的文集，可按文档分组、资源状态及父级状态过滤。"),
-    ("post", "/notebooks"): ("创建文集", "在指定文档分组中创建文集；未指定 group_id 时自动使用默认文档分组。"),
-    ("patch", "/notebooks/{notebook_id}"): ("修改文集", "修改文集标题、所属文档分组或排序值。目标文档分组必须处于活跃状态。"),
+    ("post", "/notebooks"): ("创建文集", "在指定文档分组中创建文集；未指定 group_id 时自动使用默认文档分组。可设置 icon 为内置图标及配色或当前空间上传的图标文件；省略或 null 使用默认图标。"),
+    ("patch", "/notebooks/{notebook_id}"): ("修改文集", "修改文集标题、所属文档分组、排序值或 icon 图标。目标文档分组必须处于活跃状态。icon 省略时保持原值，显式 null 恢复默认图标；图片必须来自当前工作空间的笔记本图标上传接口。"),
+    ("post", "/notebooks/icons"): ("上传笔记本图标", "以 multipart/form-data 的 file 字段上传 PNG、JPEG 或 WebP 静态图片，最大 2 MiB（2,097,152 字节）、16,777,216 像素。服务端验证实际图片内容，保留宽高比缩小至 256×256 以内并转换为 WebP，移除图片元数据。返回 file_id 和可预览的 data_url；保存笔记本时使用 type=image 及 file_id 绑定。要求当前工作空间资源管理权限。"),
+    ("get", "/notebooks/icons/{file_id}"): ("读取笔记本图标", "当前工作空间活跃成员鉴权读取已上传的笔记本图标，返回 WebP data_url。只读成员可读取；跨空间文件、普通附件或已丢失文件统一返回 NOTEBOOK_ICON_NOT_FOUND。响应不含令牌链接。"),
     ("post", "/notebooks/{notebook_id}/archive"): ("归档文集", "归档指定文集，归档后其中的文档不会出现在活跃列表和目录树中。"),
     ("post", "/notebooks/{notebook_id}/restore"): ("恢复文集", "恢复指定文集；所属文档分组必须已经恢复。"),
     ("post", "/files"): ("上传文件", "以 multipart/form-data 上传文件，保存文件元数据、大小和 SHA-256 摘要，并返回已创建的文件记录。"),
@@ -74,6 +79,7 @@ PUBLIC_OPERATIONS = {
     ("post", "/workspace/invitations/accept"),
     ("post", "/workspace/ownership-transfers/confirm"),
     ("get", "/healthz"),
+    base_mvp.PUBLIC_OPERATION,
 }
 
 PAGINATED_PATHS = {
@@ -83,6 +89,7 @@ PAGINATED_PATHS = {
     "/files",
     "/workspace/invitations",
     "/workspace/members",
+    *base_mvp.PAGINATED_PATHS,
 }
 
 FIELD_DESCRIPTIONS = {
@@ -140,8 +147,10 @@ SCHEMA_EXAMPLES: dict[str, dict[str, Any]] = {
     "SetupRequest": {"email": "owner@example.com", "password": "correct horse battery staple", "display_name": "Orbis Owner"},
     "DocumentGroupCreateRequest": {"name": "产品研发", "sort_order": 10},
     "DocumentGroupUpdateRequest": {"name": "产品与研发", "sort_order": 20},
-    "NotebookCreateRequest": {"title": "Orbis 产品文档", "group_id": "019fe1e0-1234-7abc-8def-012345678901", "sort_order": 10},
-    "NotebookUpdateRequest": {"title": "Orbis 产品与技术文档", "sort_order": 20},
+    "NotebookCreateRequest": {"title": "Orbis 产品文档", "group_id": "019fe1e0-1234-7abc-8def-012345678901", "sort_order": 10, "icon": {"type": "preset", "name": "book", "color": "blue"}},
+    "NotebookUpdateRequest": {"title": "Orbis 产品与技术文档", "sort_order": 20, "icon": {"type": "image", "file_id": "019fe1e0-1234-7abc-8def-012345678902"}},
+    "PresetNotebookIcon": {"type": "preset", "name": "palette", "color": "violet"},
+    "ImageNotebookIcon": {"type": "image", "file_id": "019fe1e0-1234-7abc-8def-012345678902"},
     "NoteCreateRequest": {"notebook_id": "019fe1e0-1234-7abc-8def-012345678901", "title": "统一接口规范", "parent_id": None, "sort_order": 10},
     "NoteMetadataUpdateRequest": {"title": "统一接口与错误码规范", "parent_id": None, "sort_order": 20},
     "NoteContentUpdateRequest": {"expected_version": 3, "blocks": {"schema_version": 1, "editor": "tiptap", "doc": {"type": "doc", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Orbis API 使用统一响应格式。"}]}]}}},
@@ -171,6 +180,11 @@ def _success_data(path: str, method: str) -> Any:
         }
     if path == "/healthz":
         return {"status": "ok"}
+    if path in {"/notebooks/icons", "/notebooks/icons/{file_id}"}:
+        data = {"data_url": "data:image/webp;base64,UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAUAmJaQAA3AA/v89WAAAAA=="}
+        if method == "post":
+            data["file_id"] = "019fe1e0-1234-7abc-8def-012345678902"
+        return data
     return {}
 
 
@@ -222,11 +236,14 @@ def _add_error_example(
 def _operation_description(
     method: str, path: str, business_description: str
 ) -> str:
-    auth_line = (
-        "无需 Bearer 访问令牌；请按接口说明提交凭据或一次性密钥。"
-        if (method, path) in PUBLIC_OPERATIONS
-        else "必须在 Authorization 请求头中携带 `Bearer <access_token>`；部分写操作还要求资源管理权限。"
-    )
+    if (method, path) == base_mvp.PUBLIC_OPERATION:
+        auth_line = "匿名公开读取，无需 Bearer 访问令牌或一次性密钥。"
+    else:
+        auth_line = (
+            "无需 Bearer 访问令牌；请按接口说明提交凭据或一次性密钥。"
+            if (method, path) in PUBLIC_OPERATIONS
+            else "必须在 Authorization 请求头中携带 `Bearer <access_token>`；部分写操作还要求资源管理权限。"
+        )
     pagination_line = (
         "本接口使用统一分页：`page` 默认 1，`page_size` 默认 20、最大 100；分页元数据位于 `data.pagination`。"
         if path in PAGINATED_PATHS and method == "get"
@@ -289,6 +306,7 @@ def _install_operation_docs(schema: dict[str, Any]) -> None:
             "/notes/import/markdown",
             "/document-groups",
             "/notebooks",
+            "/notebooks/icons",
             "/files",
         } else "200"
         success = operation["responses"][success_status]
@@ -331,6 +349,13 @@ def _install_operation_docs(schema: dict[str, Any]) -> None:
 
     # Add route-specific business-code examples used by client branching.
     route_errors = [
+        ("post", "/notebooks/icons", 413, "NOTEBOOK_ICON_TOO_LARGE", "图标图片不能超过 2 MiB"),
+        ("post", "/notebooks/icons", 422, "NOTEBOOK_ICON_INVALID_IMAGE", "请选择有效的 PNG、JPEG 或 WebP 静态图片，且不超过 16,777,216 像素"),
+        ("post", "/notebooks/icons", 403, "RESOURCE_MANAGEMENT_FORBIDDEN", "当前账号无资源管理权限"),
+        ("get", "/notebooks/icons/{file_id}", 403, "ACTIVE_WORKSPACE_MEMBERSHIP_REQUIRED", "需要有效的工作空间成员身份"),
+        ("get", "/notebooks/icons/{file_id}", 404, "NOTEBOOK_ICON_NOT_FOUND", "笔记本图标不存在或不属于当前工作空间"),
+        ("post", "/notebooks", 404, "NOTEBOOK_ICON_NOT_FOUND", "笔记本图标不存在或不属于当前工作空间"),
+        ("patch", "/notebooks/{notebook_id}", 404, "NOTEBOOK_ICON_NOT_FOUND", "笔记本图标不存在或不属于当前工作空间"),
         ("post", "/setup", 409, "SYSTEM_ALREADY_INITIALIZED", "系统已经完成初始化"),
         ("post", "/auth/login", 401, "INVALID_CREDENTIALS", "邮箱或密码错误"),
         ("post", "/auth/refresh", 401, "INVALID_REFRESH_TOKEN", "刷新令牌无效或已过期"),
@@ -369,6 +394,62 @@ def _install_chinese_tags(schema: dict[str, Any]) -> None:
             ]
 
 
+def _install_base_mvp_docs(schema: dict[str, Any]) -> None:
+    components = schema["components"]["schemas"]
+    for name, fields in base_mvp.SCHEMA_FIELD_DESCRIPTIONS.items():
+        for field_name, description in fields.items():
+            components[name]["properties"][field_name]["description"] = description
+    for name, examples in base_mvp.REQUEST_EXAMPLES.items():
+        components[name]["example"] = next(iter(examples.values()))["value"]
+
+    for key, (summary, description) in base_mvp.OPERATION_DOCS.items():
+        method, path = key
+        operation = schema["paths"][path][method]
+        operation["summary"] = summary
+        operation["description"] = _operation_description(method, path, description)
+        success_status = next(
+            code for code in operation["responses"] if code.startswith("2")
+        )
+        operation["responses"][success_status]["content"]["application/json"][
+            "examples"
+        ] = {
+            "success": {
+                "summary": "调用成功",
+                "value": _envelope(
+                    "CREATED" if success_status == "201" else "OK",
+                    "创建成功" if success_status == "201" else "请求成功",
+                    base_mvp.SUCCESS_DATA[key],
+                ),
+            }
+        }
+        for parameter in operation.get("parameters", []):
+            parameter["description"] = base_mvp.PARAMETER_DESCRIPTIONS[
+                parameter["name"]
+            ]
+        if "requestBody" in operation:
+            media = operation["requestBody"]["content"]["application/json"]
+            request_name = media["schema"]["$ref"].rsplit("/", 1)[-1]
+            media["examples"] = base_mvp.REQUEST_EXAMPLES[request_name]
+        errors = ["VALIDATION_ERROR", "INTERNAL_ERROR", *base_mvp.OPERATION_ERRORS[key]]
+        if key != base_mvp.PUBLIC_OPERATION:
+            errors.extend(
+                (
+                    "AUTH_REQUIRED",
+                    "INVALID_ACCESS_TOKEN",
+                    "ACTIVE_WORKSPACE_MEMBERSHIP_REQUIRED",
+                )
+            )
+        for code in errors:
+            status_code, message = base_mvp.ERROR_DOCS[code]
+            if key == base_mvp.PUBLIC_OPERATION and code == "SITE_NOT_FOUND":
+                message = "站点不存在或尚未发布"
+            _add_error_example(operation, status_code, code, message)
+        validation = operation["responses"]["422"]["content"]["application/json"][
+            "examples"
+        ]["VALIDATION_ERROR"]["value"]
+        validation["data"] = base_mvp.validation_error_data(method, path)
+
+
 def install_chinese_openapi(app: FastAPI) -> None:
     def custom_openapi() -> dict[str, Any]:
         if app.openapi_schema is not None:
@@ -386,6 +467,7 @@ def install_chinese_openapi(app: FastAPI) -> None:
         _install_chinese_tags(schema)
         _install_component_docs(schema)
         _install_operation_docs(schema)
+        _install_base_mvp_docs(schema)
         app.openapi_schema = schema
         return schema
 

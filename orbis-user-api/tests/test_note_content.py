@@ -200,6 +200,96 @@ def test_note_content_rejects_unknown_block_type(client: TestClient) -> None:
     assert response.json()["message"] == "文档内容无效"
 
 
+def test_v2_table_content_round_trips_and_contributes_plain_text(
+    client: TestClient,
+) -> None:
+    token, _, note = setup_note(client)
+    table = {
+        "id": "018ff7c4-a5b6-7000-8000-000000000099",
+        "type": "table",
+        "props": {"textColor": "default"},
+        "content": {
+            "type": "tableContent",
+            "columnWidths": [180, 240],
+            "headerRows": 1,
+            "rows": [
+                {"cells": ["块类型", "检查重点"]},
+                {"cells": ["表格", "边框与滚动"]},
+            ],
+        },
+        "children": [],
+    }
+
+    response = client.put(
+        f"/notes/{note['id']}/content",
+        headers=auth_header(token),
+        json={
+            "expected_version": 1,
+            "blocks": {
+                "schema_version": 2,
+                "editor": "blocknote",
+                "blocks": [table],
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    content = response.json()["data"]
+    assert content["blocks"]["blocks"][0]["content"] == table["content"]
+    assert content["plain_text"] == "块类型\t检查重点\n表格\t边框与滚动"
+    loaded = client.get(
+        f"/notes/{note['id']}/content", headers=auth_header(token)
+    )
+    assert loaded.json()["data"]["blocks"] == content["blocks"]
+    exported = client.get(
+        f"/notes/{note['id']}/markdown", headers=auth_header(token)
+    )
+    assert exported.status_code == 200
+    assert exported.json()["data"]["markdown"] == (
+        "| 块类型 | 检查重点 |\n| --- | --- |\n| 表格 | 边框与滚动 |"
+    )
+
+
+@pytest.mark.parametrize(("block_list", "expected_text", "expected_markdown"), [
+    (
+        [
+            {"id": "old", "type": "paragraph", "content": "Legacy paragraph"},
+            {"id": "parent", "type": "paragraph", "content": "Parent", "children": [
+                {"id": "nested", "type": "paragraph", "content": "Nested paragraph"},
+                {"id": "empty", "type": "paragraph"},
+            ]},
+        ],
+        "Legacy paragraph\nParent\nNested paragraph",
+        "Legacy paragraph\n\nParent\n\n  Nested paragraph",
+    ),
+    (
+        [{"id": "old-table", "type": "table", "content": [
+            [[{"type": "text", "text": "Name", "styles": {"bold": True}}], [{"type": "text", "text": "State"}]],
+            [[{"type": "link", "href": "https://orbis.dev", "content": [{"type": "text", "text": "Orbis"}]}], "Ready"],
+        ]}],
+        "Name\tState\nOrbis\tReady",
+        "| **Name** | State |\n| --- | --- |\n| [Orbis](https://orbis.dev) | Ready |",
+    ),
+])
+def test_legacy_v2_content_can_still_be_saved_read_and_exported(
+    client: TestClient, block_list: list[dict[str, Any]], expected_text: str, expected_markdown: str,
+) -> None:
+    token, _, note = setup_note(client)
+    blocks = {"schema_version": 2, "editor": "blocknote", "blocks": block_list}
+    saved = client.put(
+        f"/notes/{note['id']}/content", headers=auth_header(token),
+        json={"expected_version": 1, "blocks": blocks},
+    )
+    assert saved.status_code == 200
+    assert saved.json()["data"]["blocks"] == blocks
+    assert saved.json()["data"]["plain_text"] == expected_text
+    loaded = client.get(f"/notes/{note['id']}/content", headers=auth_header(token))
+    assert loaded.json()["data"]["blocks"] == blocks
+    exported = client.get(f"/notes/{note['id']}/markdown", headers=auth_header(token))
+    assert exported.status_code == 200
+    assert exported.json()["data"]["markdown"] == expected_markdown
+
+
 def test_markdown_import_and_export_cover_supported_boundary_types(
     client: TestClient,
 ) -> None:

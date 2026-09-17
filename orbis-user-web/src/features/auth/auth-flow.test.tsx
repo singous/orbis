@@ -33,6 +33,7 @@ describe("community auth flow", () => {
   it("defaults to login and exposes setup without public registration", () => {
     renderPage("login");
     expect(screen.getByRole("heading", { name: "登录工作空间" })).toBeInTheDocument();
+    expect(screen.getByRole("form", { name: "登录工作空间" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /初始化管理员账号/ })).toHaveAttribute("href", "/setup");
     expect(screen.queryByText(/注册账号/)).not.toBeInTheDocument();
   });

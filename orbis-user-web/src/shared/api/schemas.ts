@@ -54,11 +54,22 @@ export const authResponseSchema = z.object({
 
 export type AuthResponse = z.infer<typeof authResponseSchema>;
 
-export const noteBlocksSchema = z.object({
+export const noteBlocksV1Schema = z.object({
   schema_version: z.literal(1),
   editor: z.literal("tiptap"),
   doc: z.record(z.unknown()),
 });
+
+export const noteBlocksV2Schema = z.object({
+  schema_version: z.literal(2),
+  editor: z.literal("blocknote"),
+  blocks: z.array(z.record(z.unknown())),
+});
+
+export const noteBlocksSchema = z.union([noteBlocksV1Schema, noteBlocksV2Schema]);
+
+export type NoteBlocksV1 = z.infer<typeof noteBlocksV1Schema>;
+export type NoteBlocksV2Stored = z.infer<typeof noteBlocksV2Schema>;
 
 const resourceIdentitySchema = z.object({
   id: z.string().uuid(),
@@ -78,10 +89,27 @@ export const documentGroupSchema = resourceIdentitySchema.extend({
 
 export const documentGroupListResponseSchema = pageDataSchema(documentGroupSchema);
 
+export const notebookIconNameSchema = z.enum([
+  "book", "notebook", "folder", "file-text", "lightbulb", "code", "palette", "rocket",
+  "flask", "globe", "graduation-cap", "heart", "briefcase", "target", "coffee", "music",
+]);
+
+export const notebookIconColorSchema = z.enum(["blue", "mint", "violet", "amber", "rose", "cyan", "slate"]);
+
+export const notebookIconSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("preset"), name: notebookIconNameSchema, color: notebookIconColorSchema }),
+  z.object({ type: z.literal("image"), file_id: z.string().uuid() }),
+]);
+
+export type NotebookIconValue = z.infer<typeof notebookIconSchema>;
+export type NotebookIconName = z.infer<typeof notebookIconNameSchema>;
+export type NotebookIconColor = z.infer<typeof notebookIconColorSchema>;
+
 export const notebookSchema = resourceIdentitySchema.extend({
   group_id: z.string().uuid(),
   title: z.string(),
   sort_order: z.number(),
+  icon: notebookIconSchema.nullable().optional(),
 });
 
 export const notebookListResponseSchema = pageDataSchema(notebookSchema);

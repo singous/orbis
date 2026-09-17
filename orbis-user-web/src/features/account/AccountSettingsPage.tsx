@@ -1,7 +1,10 @@
+import { UserRound } from "lucide-react";
 import { useStore } from "zustand";
 
 import { authStore } from "../../shared/auth/auth-store";
+import { PageContainer } from "../../shared/ui/PageContainer";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
+import { workspaceRoleLabel } from "../workspace/capabilities";
 
 export function AccountSettingsPage() {
   const user = useStore(authStore, (state) => state.user);
@@ -10,34 +13,22 @@ export function AccountSettingsPage() {
     ["名称", user?.display_name || "未设置"],
     ["邮箱", user?.email || "未设置"],
     ["工作空间", workspace?.name || "私人工作空间"],
-    ["角色", workspace?.role || "member"],
+    ["角色", workspaceRoleLabel(workspace?.role)],
   ] as const;
+
   return (
     <WorkspaceShell>
-      <div className="mx-auto max-w-3xl px-5 py-8 lg:px-10 lg:py-10">
-        <header className="mb-9">
-          <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted-light)]">
-            Settings
+      <PageContainer title="账号" description="当前登录账号与工作空间信息。">
+        <section className="workbench-settings-section" aria-label="个人资料">
+          <div className="workbench-profile">
+            <span className="workbench-profile-avatar">{user?.display_name?.slice(0, 1) || <UserRound aria-hidden="true" size={24} />}</span>
+            <div><h2>{user?.display_name || "我的账号"}</h2><p>{user?.email || "尚未设置邮箱"}</p></div>
           </div>
-          <h1 className="text-4xl font-semibold tracking-[-0.045em] lg:text-5xl">
-            账号
-          </h1>
-          <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
-            当前登录账号与工作空间信息。
-          </p>
-        </header>
-        <dl className="overflow-hidden rounded-2xl border border-[var(--border)] bg-white">
-          {values.map(([label, value]) => (
-            <div
-              key={label}
-              className="flex items-center justify-between gap-6 border-b border-[var(--border)] px-5 py-4 last:border-b-0"
-            >
-              <dt className="text-sm text-[var(--muted)]">{label}</dt>
-              <dd className="text-right text-sm font-semibold">{value}</dd>
-            </div>
-          ))}
-        </dl>
-      </div>
+          <dl className="workbench-settings-list">
+            {values.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
+          </dl>
+        </section>
+      </PageContainer>
     </WorkspaceShell>
   );
 }

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useStore } from "zustand";
 
-import { authStore } from "../../shared/auth/auth-store";
+import type { NotebookIconValue } from "../../shared/api/schemas";
+import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import {
   createDocumentGroup,
   createNote,
@@ -27,14 +27,7 @@ import {
 } from "./api";
 
 export function useDocumentAuth(): AuthRequestOptions {
-  const accessToken = useStore(authStore, (state) => state.accessToken);
-  const refreshToken = useStore(authStore, (state) => state.refreshToken);
-  const onTokenRefresh = useStore(authStore, (state) => state.setAccessToken);
-  const onUnauthorized = useStore(authStore, (state) => state.clearSession);
-  if (!accessToken) {
-    throw new Error("Authenticated document access required");
-  }
-  return { accessToken, refreshToken, onTokenRefresh, onUnauthorized };
+  return useAuthRequest();
 }
 
 export function useDocumentGroups(status: ResourceStatus = "active") {
@@ -131,13 +124,13 @@ export function useArchiveDocumentGroup() {
 export function useCreateNotebook() {
   const auth = useDocumentAuth();
   const refresh = useRefreshDocuments();
-  return useMutation({ mutationFn: (payload: { title: string; group_id?: string | null; sort_order: number }) => createNotebook(payload, auth), onSuccess: refresh });
+  return useMutation({ mutationFn: (payload: { title: string; group_id?: string | null; sort_order: number; icon?: NotebookIconValue | null }) => createNotebook(payload, auth), onSuccess: refresh });
 }
 
 export function useUpdateNotebook() {
   const auth = useDocumentAuth();
   const refresh = useRefreshDocuments();
-  return useMutation({ mutationFn: ({ id, ...payload }: { id: string; title?: string; group_id?: string | null; sort_order?: number }) => updateNotebook(id, payload, auth), onSuccess: refresh });
+  return useMutation({ mutationFn: ({ id, ...payload }: { id: string; title?: string; group_id?: string | null; sort_order?: number; icon?: NotebookIconValue | null }) => updateNotebook(id, payload, auth), onSuccess: refresh });
 }
 
 export function useArchiveNotebook() {
@@ -186,6 +179,7 @@ export function useSaveNoteContent() {
     mutationFn: (payload: { noteId: string; expectedVersion: number; blocks: Parameters<typeof saveNoteContent>[0]["blocks"] }) => saveNoteContent(payload, auth),
     onSuccess: (content) => {
       queryClient.setQueryData(["note-content", content.note_id], content);
+      void queryClient.invalidateQueries({ queryKey: ["collaboration", content.note_id, "revisions"] });
       void queryClient.invalidateQueries({ queryKey: ["note-search"] });
     },
   });

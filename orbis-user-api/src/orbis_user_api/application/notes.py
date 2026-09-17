@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import logging
 from collections import defaultdict
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from orbis_user_api.application.note_revisions import record_content_revisions
 from orbis_user_api.core.time import now_ms
 from orbis_user_api.domain.note_content import (
     InvalidNoteContent,
@@ -34,6 +36,8 @@ from orbis_user_api.services.exceptions import (
     NoteVersionConflict,
 )
 from orbis_user_api.services.workspace import get_current_workspace
+
+logger = logging.getLogger(__name__)
 
 
 async def _get_active_notebook(
@@ -283,17 +287,48 @@ async def update_note_content(
     content = result.scalar_one_or_none()
     if content is None:
         raise NoteNotFound
-    if content.content_version != payload.expected_version:
-        raise NoteVersionConflict
-
     timestamp = now_ms()
-    content.blocks = blocks
-    content.plain_text = derive_plain_text(blocks)
-    content.content_version += 1
-    content.updated_at_ms = timestamp
-    note.updated_at_ms = timestamp
-    await session.commit()
+    plain_text = derive_plain_text(blocks)
+    try:
+        if content.content_version != payload.expected_version:
+            raise NoteVersionConflict
+        # The database predicate decides the winner even if both requests read
+        # the same version. Keep the old ORM state for its immutable snapshot.
+        result = await session.execute(
+            update(NoteContent)
+            .where(
+                NoteContent.note_id == note.id,
+                NoteContent.content_version == payload.expected_version,
+            )
+            .values(
+                blocks=blocks,
+                plain_text=plain_text,
+                content_version=payload.expected_version + 1,
+                updated_at_ms=timestamp,
+            )
+            .execution_options(synchronize_session=False)
+        )
+        if result.rowcount != 1:
+            raise NoteVersionConflict
+        await record_content_revisions(
+            note,
+            content,
+            blocks=blocks,
+            plain_text=plain_text,
+            author=user,
+            timestamp=timestamp,
+            session=session,
+        )
+        note.updated_at_ms = timestamp
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise
     await session.refresh(content)
+    logger.info(
+        "Note content saved with revision history",
+        extra={"note_id": str(note_id), "content_version": content.content_version},
+    )
     return content
 
 
