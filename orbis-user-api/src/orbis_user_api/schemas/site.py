@@ -10,6 +10,7 @@ from orbis_user_api.domain.site import (
     MAX_NAVIGATION_PAGES,
     SLUG_PATTERN,
 )
+from orbis_user_api.schemas.site_source import SiteBranding, SiteSource
 
 SiteKind = Literal["knowledge", "handbook", "help"]
 
@@ -64,6 +65,12 @@ class SiteConfig(BaseModel):
         max_length=MAX_NAVIGATION_PAGES,
         description="独立公开导航，数组顺序决定页面顺序",
     )
+    source: SiteSource = Field(
+        default_factory=SiteSource, description="手选文档或关联笔记本来源"
+    )
+    branding: SiteBranding = Field(
+        default_factory=SiteBranding, description="随发布版本固定的品牌与阅读配置"
+    )
 
     @field_validator("name")
     @classmethod
@@ -108,6 +115,10 @@ class SitePageOut(BaseModel):
     group: str | None
     blocks: dict[str, Any] = Field(description="经过公开安全校验的 v1 或 v2 结构化正文")
     plain_text: str = Field(description="从公开正文派生的纯文本，可用于本快照内搜索")
+    parent_slug: str | None = None
+    section: str | None = None
+    description: str = ""
+    updated_at_ms: int | None = None
 
 
 class SiteSnapshotOut(BaseModel):
@@ -117,10 +128,18 @@ class SiteSnapshotOut(BaseModel):
     site_kind: SiteKind
     accent_color: str
     pages: list[SitePageOut]
+    branding: SiteBranding = Field(default_factory=SiteBranding)
+    redirects: dict[str, str] = Field(default_factory=dict)
     release_id: UUID | None = Field(description="发布版本 UUID；认证预览为 null")
     release_number: int | None = Field(description="递增发布版本号；认证预览为 null")
     published_at_ms: int | None = Field(
         description="发布时间，UTC Unix 毫秒时间戳；认证预览为 null"
+    )
+
+
+class SitePreviewOut(SiteSnapshotOut):
+    source_fingerprint: str = Field(
+        description="认证预览的来源指纹，发布时用于检测内容变化"
     )
 
 

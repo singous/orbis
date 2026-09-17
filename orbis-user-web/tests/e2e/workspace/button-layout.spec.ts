@@ -138,7 +138,7 @@ test("workspace actions share sizing and notebook headings retain breathing room
   await page.setViewportSize({ width: 1440, height: 897 });
   await page.goto("/sites");
   await page.getByRole("button", { name: "创建站点", exact: true }).click();
-  const siteAction = await actionMetrics(page.getByRole("button", { name: "创建并选择文档", exact: true }));
+  const siteAction = await actionMetrics(page.getByRole("dialog", { name: "创建文档站点" }).getByRole("button", { name: "创建站点", exact: true }));
   measurements.siteDialog = siteAction;
   expect.soft(siteAction.height, "site dialog primary action height").toBe(36);
   expect.soft(siteAction.fontSize, "site dialog primary action font").toBe("14px");

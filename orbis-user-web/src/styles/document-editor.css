@@ -1,0 +1,14 @@
+.orbis-bn .doc-editor-block { width: 100%; min-width: 0; padding: 10px 13px; border-left: 2px solid var(--border-strong, #d5ddd9); background: var(--surface-hover, #f7f9f8); border-radius: 5px; }
+.orbis-bn .doc-editor-heading { display: flex; align-items: center; gap: 7px; color: var(--text-secondary, #65736c); font-size: 11px; line-height: 1.6; margin-bottom: 7px; }
+.orbis-bn .doc-editor-heading svg { color: var(--accent, #0f766e); }
+.orbis-bn .doc-editor-controls { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 10px; font-family: inherit; }
+.orbis-bn .doc-editor-controls label { display: grid; gap: 3px; min-width: 125px; flex: 1; margin: 0; }
+.orbis-bn .doc-editor-controls label > span { color: var(--text-tertiary, #87928b); font-size: 10px; }
+.orbis-bn .doc-editor-controls input, .orbis-bn .doc-editor-controls select { min-width: 0; width: 100%; border: 1px solid var(--border-subtle, #e0e6e2); background: var(--surface, #fff); color: var(--text-primary, #22322a); border-radius: 5px; padding: 5px 8px; font: inherit; font-size: 13px; line-height: 1.6; }
+.orbis-bn .doc-editor-controls input:focus, .orbis-bn .doc-editor-controls select:focus { outline: 2px solid color-mix(in srgb, var(--accent, #0f766e) 25%, transparent); outline-offset: 1px; border-color: var(--accent, #0f766e); }
+.orbis-bn .doc-editor-controls button { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--border-subtle, #e0e6e2); background: var(--surface, #fff); color: var(--text-secondary, #65736c); border-radius: 5px; padding: 5px 9px; cursor: pointer; font-size: 12px; line-height: 1.6; }
+.orbis-bn .doc-editor-controls button:focus-visible { outline: 2px solid var(--accent, #0f766e); outline-offset: 2px; }
+.orbis-bn .doc-editor-inline { margin-top: 10px; min-height: 1.6em; line-height: 1.75; }
+.orbis-bn .doc-editor-title { display: block; font-size: 16px; }
+.orbis-bn .doc-editor-callout { border-left-color: #488cb6; }
+.orbis-bn .bn-block-content[data-content-type="codeBlock"] select { margin: 4px 0 8px; max-width: 170px; font-size: 12px; border: 1px solid var(--border-subtle, #e0e6e2); border-radius: 4px; padding: 3px 7px; background: var(--surface, #fff); color: var(--text-secondary, #65736c); }

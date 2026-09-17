@@ -21,7 +21,10 @@ def test_every_operation_has_detailed_chinese_documentation() -> None:
     schema = create_app().openapi()
     operations = list(_operations(schema))
 
-    assert len(operations) == 60
+    assert operations
+    assert ("get", "/sites/{site_id}/sources") in {
+        (method, path) for method, path, _ in operations
+    }
     for method, path, operation in operations:
         summary = operation.get("summary", "")
         description = operation.get("description", "")

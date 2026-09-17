@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 
 from orbis_user_api.api import openapi_base_mvp as base_mvp
+from orbis_user_api.api.openapi_site_delivery import install_site_delivery_docs
 
 EXAMPLE_REQUEST_ID = "019fe1e0-1234-7abc-8def-0123456789ab"
 
@@ -69,6 +70,14 @@ OPERATION_DOCS: dict[tuple[str, str], tuple[str, str]] = {
     ("post", "/notebooks/{notebook_id}/restore"): ("恢复文集", "恢复指定文集；所属文档分组必须已经恢复。"),
     ("post", "/files"): ("上传文件", "以 multipart/form-data 上传文件，保存文件元数据、大小和 SHA-256 摘要，并返回已创建的文件记录。"),
     ("get", "/files"): ("分页查询文件", "分页查询当前用户上传的文件，结果按创建时间倒序排列。"),
+    ("get", "/files/{file_id}/content"): ("读取文件内容", "当前工作空间活跃成员鉴权读取已完成上传的文件二进制内容。跨空间、上传未完成、存储文件丢失或路径异常统一返回 FILE_NOT_FOUND。"),
+    (
+        "get",
+        "/public/sites/{slug}/assets/{key}",
+    ): (
+        "读取公开站点资源",
+        "匿名读取公开站点当前活动发布版本清单中引用的不可变文件。资源必须同时匹配公开站点路径、活动发布版本与清单键；历史版本、撤回站点、未引用文件和其他站点文件统一返回 404。",
+    ),
     ("get", "/healthz"): ("检查服务健康状态", "用于部署探针和人工诊断的轻量健康检查，不依赖登录态。"),
 }
 
@@ -80,6 +89,11 @@ PUBLIC_OPERATIONS = {
     ("post", "/workspace/ownership-transfers/confirm"),
     ("get", "/healthz"),
     base_mvp.PUBLIC_OPERATION,
+    ("get", "/public/sites/{slug}/assets/{key}"),
+}
+BINARY_OPERATIONS = {
+    ("get", "/files/{file_id}/content"),
+    ("get", "/public/sites/{slug}/assets/{key}"),
 }
 
 PAGINATED_PATHS = {
@@ -249,16 +263,31 @@ def _operation_description(
         if path in PAGINATED_PATHS and method == "get"
         else "本接口不使用分页；业务结果直接位于 `data`。"
     )
+    if (method, path) in BINARY_OPERATIONS:
+        response_lines = (
+            "- 成功时直接返回文件二进制内容，不使用 JSON 成功信封。\n"
+            "- Content-Disposition 根据安全 MIME 类型选择 inline 或 attachment；响应同时包含 no-store、nosniff 和限制性 CSP。\n"
+            "- 错误仍使用 code、message、request_id、data 统一 JSON 格式；request_id 也会写入 X-Request-ID 响应头。"
+        )
+    else:
+        response_lines = (
+            "- 顶层固定为 `code`、`message`、`request_id`、`data`。\n"
+            "- `code` 是稳定业务码，`message` 是中文说明，全部业务字段都放在 `data`。\n"
+            "- `request_id` 与响应头 `X-Request-ID` 相同，可用于日志检索和问题排查。"
+        )
+    encoding_line = (
+        "本接口无请求体；成功响应是原始二进制文件，错误响应使用 UTF-8 JSON。"
+        if (method, path) in BINARY_OPERATIONS
+        else "请求体和响应体均使用 UTF-8；除文件上传外，请使用 `application/json`。"
+    )
     return (
         f"{business_description}\n\n"
         "**调用说明**\n\n"
         f"- {auth_line}\n"
         f"- {pagination_line}\n"
-        "- 请求体和响应体均使用 UTF-8；除文件上传外，请使用 `application/json`。\n\n"
+        f"- {encoding_line}\n\n"
         "**响应格式**\n\n"
-        "- 顶层固定为 `code`、`message`、`request_id`、`data`。\n"
-        "- `code` 是稳定业务码，`message` 是中文说明，全部业务字段都放在 `data`。\n"
-        "- `request_id` 与响应头 `X-Request-ID` 相同，可用于日志检索和问题排查。"
+        f"{response_lines}"
     )
 
 
@@ -310,18 +339,29 @@ def _install_operation_docs(schema: dict[str, Any]) -> None:
             "/files",
         } else "200"
         success = operation["responses"][success_status]
-        success.setdefault("content", {}).setdefault("application/json", {})[
-            "examples"
-        ] = {
-            "success": {
-                "summary": "调用成功",
-                "value": _envelope(
-                    "CREATED" if success_status == "201" else "OK",
-                    "创建成功" if success_status == "201" else "请求成功",
-                    _success_data(path, method),
-                ),
+        if (method, path) not in BINARY_OPERATIONS:
+            success.setdefault("content", {}).setdefault("application/json", {})[
+                "examples"
+            ] = {
+                "success": {
+                    "summary": "调用成功",
+                    "value": _envelope(
+                        "CREATED" if success_status == "201" else "OK",
+                        "创建成功" if success_status == "201" else "请求成功",
+                        _success_data(path, method),
+                    ),
+                }
             }
-        }
+        elif (method, path) == ("get", "/files/{file_id}/content"):
+            for parameter in operation.get("parameters", []):
+                if parameter["name"] == "file_id":
+                    parameter["description"] = "要读取的文件 UUID。"
+        else:
+            for parameter in operation.get("parameters", []):
+                parameter["description"] = {
+                    "slug": "当前公开站点路径。",
+                    "key": "活动发布版本资源清单中的 SHA-256 资源键。",
+                }[parameter["name"]]
 
         responses = operation["responses"]
         _add_error_example(operation, 500, "INTERNAL_ERROR", "服务内部错误")
@@ -354,6 +394,13 @@ def _install_operation_docs(schema: dict[str, Any]) -> None:
         ("post", "/notebooks/icons", 403, "RESOURCE_MANAGEMENT_FORBIDDEN", "当前账号无资源管理权限"),
         ("get", "/notebooks/icons/{file_id}", 403, "ACTIVE_WORKSPACE_MEMBERSHIP_REQUIRED", "需要有效的工作空间成员身份"),
         ("get", "/notebooks/icons/{file_id}", 404, "NOTEBOOK_ICON_NOT_FOUND", "笔记本图标不存在或不属于当前工作空间"),
+        ("get", "/files/{file_id}/content", 404, "FILE_NOT_FOUND", "文件不存在或不属于当前工作空间"),
+        ("get", "/files/{file_id}/content", 400, "INVALID_RANGE", "Range 请求头格式无效"),
+        ("get", "/files/{file_id}/content", 416, "RANGE_NOT_SATISFIABLE", "请求的文件范围无法满足"),
+        ("get", "/public/sites/{slug}/assets/{key}", 404, "SITE_ASSET_NOT_FOUND", "公开站点资源不存在或不属于当前发布版本"),
+        ("get", "/public/sites/{slug}/assets/{key}", 404, "SITE_ASSET_CORRUPT", "公开站点资源不存在或完整性校验失败"),
+        ("get", "/public/sites/{slug}/assets/{key}", 400, "INVALID_RANGE", "Range 请求头格式无效"),
+        ("get", "/public/sites/{slug}/assets/{key}", 416, "RANGE_NOT_SATISFIABLE", "请求的文件范围无法满足"),
         ("post", "/notebooks", 404, "NOTEBOOK_ICON_NOT_FOUND", "笔记本图标不存在或不属于当前工作空间"),
         ("patch", "/notebooks/{notebook_id}", 404, "NOTEBOOK_ICON_NOT_FOUND", "笔记本图标不存在或不属于当前工作空间"),
         ("post", "/setup", 409, "SYSTEM_ALREADY_INITIALIZED", "系统已经完成初始化"),
@@ -378,6 +425,22 @@ def _install_operation_docs(schema: dict[str, Any]) -> None:
         _add_error_example(
             schema["paths"][path][method], status_code, code, message
         )
+    schema["paths"]["/files/{file_id}/content"]["get"]["responses"]["416"][
+        "headers"
+    ] = {
+        "Content-Range": {
+            "description": "无法满足范围请求时返回文件总长度，格式为 bytes */<length>。",
+            "schema": {"type": "string"},
+        }
+    }
+    schema["paths"]["/public/sites/{slug}/assets/{key}"]["get"]["responses"][
+        "416"
+    ]["headers"] = {
+        "Content-Range": {
+            "description": "无法满足范围请求时返回文件总长度，格式为 bytes */<length>。",
+            "schema": {"type": "string"},
+        }
+    }
 
 
 def _install_chinese_tags(schema: dict[str, Any]) -> None:
@@ -468,6 +531,7 @@ def install_chinese_openapi(app: FastAPI) -> None:
         _install_component_docs(schema)
         _install_operation_docs(schema)
         _install_base_mvp_docs(schema)
+        install_site_delivery_docs(schema, _add_error_example, _envelope)
         app.openapi_schema = schema
         return schema
 

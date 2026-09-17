@@ -840,13 +840,28 @@ def test_public_projection_rejects_absolute_internal_resources(
     )
     url = url_template.format(note_id=document["id"])
     save_content(client, owner, document["id"], _linked_content(url, content_kind))
+    internal_document_link = url_template in {
+        "https://orbis.example.test:443/documents/{note_id}",
+        "https://orbis.example.test/orbis/documents/{note_id}",
+    }
     for method, suffix in ((client.get, "preview"), (client.post, "publish")):
         response = method(f"/sites/{site['id']}/{suffix}", headers=owner)
-        assert response.status_code == 422, response.text
-        assert response.json()["code"] == "SITE_CONTENT_UNSAFE"
+        if internal_document_link and content_kind != "media":
+            assert response.status_code == 200, response.text
+            assert "/s/handbook/start" in response.text
+            assert url not in response.text
+        else:
+            assert response.status_code == 422, response.text
+            assert response.json()["code"] in {
+                "SITE_CONTENT_UNSAFE",
+                "SITE_REFERENCE_INVALID",
+            }
     public = client.get("/public/sites/handbook")
-    assert public.json()["data"] == original
-    assert document["id"] not in public.text
+    if internal_document_link and content_kind != "media":
+        assert "/s/handbook/start" in public.text
+    else:
+        assert public.json()["data"] == original
+        assert document["id"] not in public.text
     assert "synthetic-review-token" not in public.text
 
 
@@ -985,7 +1000,7 @@ def test_release_history_query_does_not_load_snapshot_payloads(client, owner, do
         ("0x8080808", "8.8.8.8"),
     ],
 )
-def test_equivalent_internal_hostnames_cannot_publish_private_document_urls(
+def test_equivalent_application_origins_rewrite_selected_document_urls(
     client,
     owner,
     document,
@@ -1004,13 +1019,21 @@ def test_equivalent_internal_hostnames_cannot_publish_private_document_urls(
             "v2",
         ),
     )
+    can_canonicalize = canonical_host != "0x8080808"
     for method, suffix in ((client.get, "preview"), (client.post, "publish")):
         response = method(f"/sites/{site['id']}/{suffix}", headers=owner)
-        assert response.status_code == 422, response.text
-        assert response.json()["code"] == "SITE_CONTENT_UNSAFE"
+        if can_canonicalize:
+            assert response.status_code == 200, response.text
+            assert "/s/handbook/start" in response.text
+        else:
+            assert response.status_code == 422, response.text
+            assert response.json()["code"] == "SITE_CONTENT_UNSAFE"
     public = client.get("/public/sites/handbook")
-    assert public.json()["data"] == original
-    assert document["id"] not in public.text
+    if can_canonicalize:
+        assert "/s/handbook/start" in public.text
+        assert document["id"] not in public.text
+    else:
+        assert public.json()["data"] == original
 
 
 @pytest.mark.parametrize(

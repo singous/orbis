@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     mail_outbox_dir: Path = Path("./storage/mail-outbox")
     mail_sender: str = "Orbis <no-reply@localhost>"
     user_web_base_url: str = "http://127.0.0.1:9200"
+    user_web_dist_dir: Path = _SERVICE_ROOT.parent / "orbis-user-web" / "dist"
     smtp_host: str | None = None
     smtp_port: int = 587
     smtp_username: str | None = None

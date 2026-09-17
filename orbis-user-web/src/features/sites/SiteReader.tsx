@@ -1,94 +1,209 @@
-import { ArrowLeft, ArrowRight, BookOpen, Menu, Moon, Search, Sun, X } from "lucide-react";
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
-import { Link } from "react-router-dom";
+import { ArrowLeft, ArrowRight, BookOpen, Check, Copy, Link2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Link, Navigate } from "react-router-dom";
 
-import { ContentRenderer, contentOutline } from "../content/ContentRenderer";
-import { SITE_KINDS, type SiteSnapshot } from "./schemas";
+import { ContentRenderer, contentOutline, safeContentUrl } from "../content/ContentRenderer";
+import { parseFileReference } from "../files/managed-files";
+import { SITE_KINDS, type PublishedPage, type SiteBranding, type SiteSnapshot } from "./schemas";
+import { Header, type ReaderThemeMode } from "./reader/Header";
+import { Navigation } from "./reader/Navigation";
+import { Outline } from "./reader/Outline";
+import { SearchDialog } from "./reader/SearchDialog";
+import { SitePreviewLinks } from "./SitePreviewLinks";
+import { useReaderMetadata } from "./reader/head-metadata";
+import { navigationSections, pageAncestors, pageHref, resolveRedirect, topSections } from "./reader/reader-model";
+import "../../styles/site-reader.css";
 
-function loadTheme(): "light" | "dark" {
-  try { return localStorage.getItem("orbis-reader-theme") === "dark" ? "dark" : "light"; }
-  catch { return "light"; }
+const THEME_STORAGE_KEY = "orbis-reader-theme";
+const DEFAULT_BRANDING: SiteBranding = { logo_url: null, links: [], footer_links: [], cta: null, theme: "light" };
+type CopyFeedback = { action: "link" | "page"; status: "success" | "error"; message: string };
+
+function storedTheme(fallback: ReaderThemeMode): ReaderThemeMode {
+  try {
+    const value = localStorage.getItem(THEME_STORAGE_KEY);
+    return value === "system" || value === "light" || value === "dark" ? value : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
-export function SiteReader({ snapshot, basePath, pageSlug, preview = false }: {
-  snapshot: SiteSnapshot; basePath: string; pageSlug?: string; preview?: boolean;
+function useEffectiveTheme(mode: ReaderThemeMode): "light" | "dark" {
+  const [systemTheme, setSystemTheme] = useState<"light" | "dark">(() => typeof window.matchMedia === "function" && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const update = () => setSystemTheme(media.matches ? "dark" : "light");
+    update();
+    media.addEventListener?.("change", update);
+    return () => media.removeEventListener?.("change", update);
+  }, []);
+  return mode === "system" ? systemTheme : mode;
+}
+
+function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(() => typeof window.matchMedia === "function" && window.matchMedia(query).matches);
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const media = window.matchMedia(query);
+    const update = () => setMatches(media.matches);
+    update();
+    media.addEventListener?.("change", update);
+    return () => media.removeEventListener?.("change", update);
+  }, [query]);
+  return matches;
+}
+
+async function pageMarkdown(page: PublishedPage): Promise<string> {
+  const document = page.blocks as { schema_version?: number; blocks?: unknown[]; doc?: unknown };
+  if (document.schema_version === 2 && Array.isArray(document.blocks)) {
+    const { v2ToMarkdown } = await import("../notes/block-model");
+    return `# ${page.title}\n\n${v2ToMarkdown(document.blocks as Parameters<typeof v2ToMarkdown>[0])}`.trim();
+  }
+  if (document.doc && typeof document.doc === "object") {
+    const { tiptapDocToMarkdown } = await import("../notes/markdown-contract");
+    return `# ${page.title}\n\n${tiptapDocToMarkdown(document.doc as Parameters<typeof tiptapDocToMarkdown>[0])}`.trim();
+  }
+  return `# ${page.title}\n\n${page.plain_text}`.trim();
+}
+
+function safeBranding(branding: SiteBranding | undefined, preview: boolean): SiteBranding {
+  const value = branding ?? DEFAULT_BRANDING;
+  const safe = (url: string | null, media = false) => safeContentUrl(url, media) ?? (preview && url && parseFileReference(url) ? url : null);
+  const links = value.links.filter((link) => Boolean(safe(link.url)));
+  const footerLinks = value.footer_links.filter((link) => Boolean(safe(link.url)));
+  const cta = value.cta && safe(value.cta.url) ? value.cta : null;
+  return { ...value, logo_url: safe(value.logo_url, true), links, footer_links: footerLinks, cta };
+}
+
+function formatDate(timestamp?: number | null): string | null {
+  return timestamp ? new Date(timestamp).toLocaleDateString("zh-CN", { timeZone: "Asia/Shanghai", year: "numeric", month: "long", day: "numeric" }) : null;
+}
+
+export function SiteReader({ snapshot, basePath, pageSlug, preview = false, loadSearch, loadMarkdown, contentState, canonicalBasePath }: {
+  snapshot: SiteSnapshot;
+  basePath: string;
+  pageSlug?: string;
+  preview?: boolean;
+  loadSearch?: () => Promise<PublishedPage[]>;
+  loadMarkdown?: (slug: string) => Promise<string>;
+  contentState?: { loading: boolean; error?: string; retry: () => void };
+  canonicalBasePath?: string;
 }) {
-  const [query, setQuery] = useState("");
+  const branding = useMemo(() => safeBranding(snapshot.branding, preview), [snapshot.branding, preview]);
   const [navigationOpen, setNavigationOpen] = useState(false);
-  const [theme, setTheme] = useState(loadTheme);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [themeMode, setThemeMode] = useState<ReaderThemeMode>(() => storedTheme(branding.theme));
+  const [copyFeedback, setCopyFeedback] = useState<CopyFeedback | null>(null);
+  const searchButtonRef = useRef<HTMLButtonElement>(null);
+  const navigationButtonRef = useRef<HTMLButtonElement>(null);
+  const theme = useEffectiveTheme(themeMode);
+  const compactOutline = useMediaQuery("(max-width: 1180px)");
+  const mobileNavigation = useMediaQuery("(max-width: 800px)");
+  const redirectTarget = resolveRedirect(pageSlug, snapshot.redirects);
   const currentIndex = pageSlug ? snapshot.pages.findIndex((page) => page.slug === pageSlug) : 0;
   const current = snapshot.pages[currentIndex];
   const outline = useMemo(() => current ? contentOutline(current.blocks, current.title) : [], [current]);
-  const matches = useMemo(() => {
-    const normalized = query.trim().toLocaleLowerCase();
-    return normalized ? snapshot.pages.filter((page) => `${page.title}\n${page.plain_text}`.toLocaleLowerCase().includes(normalized)) : [];
-  }, [query, snapshot.pages]);
-  const groups = useMemo(() => {
-    const values: Array<[string, typeof snapshot.pages]> = [];
-    for (const page of snapshot.pages) {
-      const key = page.group || "文档";
-      const last = values[values.length - 1];
-      if (last?.[0] === key) last[1].push(page);
-      else values.push([key, [page]]);
-    }
-    return values;
-  }, [snapshot.pages]);
+  const sections = useMemo(() => navigationSections(snapshot.pages), [snapshot.pages]);
+  const headerSections = useMemo(() => topSections(snapshot.pages), [snapshot.pages]);
+  const ancestors = useMemo(() => current ? pageAncestors(snapshot.pages, current) : [], [current, snapshot.pages]);
 
-  useEffect(() => { setNavigationOpen(false); setQuery(""); }, [pageSlug]);
+  const closeSearch = useCallback(() => {
+    setSearchOpen(false);
+    window.setTimeout(() => searchButtonRef.current?.focus(), 0);
+  }, []);
+
   useEffect(() => {
-    const previous = document.title;
-    document.title = `${current?.title || "文档"} · ${snapshot.name}`;
-    return () => { document.title = previous; };
-  }, [current?.title, snapshot.name]);
+    const openSearch = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLocaleLowerCase() === "k") {
+        event.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener("keydown", openSearch);
+    return () => window.removeEventListener("keydown", openSearch);
+  }, []);
 
-  function toggleTheme() {
-    const next = theme === "light" ? "dark" : "light";
-    setTheme(next);
-    try { localStorage.setItem("orbis-reader-theme", next); } catch { /* Storage is optional for reading. */ }
+  useEffect(() => {
+    setNavigationOpen(false);
+    setSearchOpen(false);
+    setCopyFeedback(null);
+    if (!window.location.hash && (window.scrollY || window.scrollX)) window.scrollTo(0, 0);
+  }, [pageSlug]);
+
+  useReaderMetadata(`${current?.title || "文档"} · ${snapshot.name}`, current?.description || snapshot.description,
+    canonicalBasePath && current ? pageHref(canonicalBasePath, current.slug) : undefined, preview || !current);
+
+  function changeTheme(mode: ReaderThemeMode) {
+    setThemeMode(mode);
+    try { localStorage.setItem(THEME_STORAGE_KEY, mode); } catch { /* Reading remains available without storage. */ }
   }
-  const href = (slug: string) => `${basePath}/${encodeURIComponent(slug)}`;
 
-  return (
-    <div className="site-reader" data-theme={theme} style={{ "--site-accent": snapshot.accent_color } as CSSProperties}>
-      <a className="site-skip-link" href="#site-content">跳转到正文</a>
-      {preview ? <div className="site-preview-banner">发布预览 · 此页面只有工作空间成员可见</div> : null}
-      <header className="site-header">
-        <Link to={basePath} className="site-brand"><span className="site-brand-symbol"><BookOpen size={19} /></span><span>{snapshot.name}</span></Link>
-        <div className="site-search">
-          <Search size={16} aria-hidden="true" />
-          <input type="search" aria-label="搜索文档" placeholder="搜索文档…" value={query} onChange={(event) => setQuery(event.target.value)} />
-          {query.trim() ? <div className="site-search-results" aria-label="搜索结果">
-            <p className="site-search-count">{matches.length} 条结果</p>
-            {matches.length ? matches.map((page) => <Link key={page.slug} to={href(page.slug)} onClick={() => setQuery("")}><strong>{page.title}</strong><span>{page.plain_text.slice(Math.max(0, page.plain_text.toLocaleLowerCase().indexOf(query.trim().toLocaleLowerCase()) - 20), Math.max(0, page.plain_text.toLocaleLowerCase().indexOf(query.trim().toLocaleLowerCase()) - 20) + 120)}</span></Link>) : <p>没有找到相关内容</p>}
-          </div> : null}
-        </div>
-        <div className="site-header-actions">
-          <span className="site-kind-label">{SITE_KINDS[snapshot.site_kind].label}</span>
-          <button type="button" className="site-icon-button" onClick={toggleTheme} aria-label={theme === "light" ? "切换深色主题" : "切换浅色主题"}>{theme === "light" ? <Moon size={17} /> : <Sun size={17} />}</button>
-          <button type="button" className="site-icon-button site-menu-toggle" aria-label={navigationOpen ? "关闭站点导航" : "打开站点导航"} aria-expanded={navigationOpen} aria-controls="site-navigation" onClick={() => setNavigationOpen(!navigationOpen)}>{navigationOpen ? <X size={20} /> : <Menu size={20} />}</button>
-        </div>
-      </header>
-      <div className="site-body">
-        {navigationOpen ? <button type="button" className="site-navigation-scrim" aria-label="收起站点导航" onClick={() => setNavigationOpen(false)} /> : null}
-        <aside id="site-navigation" className={`site-navigation${navigationOpen ? " is-open" : ""}`}>
-          <div className="site-navigation-intro"><span>文档中心</span>{snapshot.description ? <p>{snapshot.description}</p> : null}</div>
-          <nav aria-label="站点导航">{groups.map(([group, pages], index) => <section key={`${group}-${index}`}><h2>{group}</h2>{pages.map((page) => <Link key={page.slug} to={href(page.slug)} aria-current={current?.slug === page.slug ? "page" : undefined} onClick={() => setNavigationOpen(false)}>{page.title}</Link>)}</section>)}</nav>
-          <div className="site-navigation-footer">由 <span>Orbis</span> 提供支持</div>
-        </aside>
-        <main id="site-content" className="site-content">
-          {current ? <>
-            <div className="site-breadcrumb">{current.group || SITE_KINDS[snapshot.site_kind].label}</div>
-            <h1>{current.title}</h1>
-            <ContentRenderer blocks={current.blocks} pageTitle={current.title} />
-            <nav className="site-page-pagination" aria-label="相邻文档">
-              {currentIndex > 0 ? <Link to={href(snapshot.pages[currentIndex - 1].slug)}><ArrowLeft size={17} /><span><small>上一篇</small>{snapshot.pages[currentIndex - 1].title}</span></Link> : <span />}
-              {currentIndex < snapshot.pages.length - 1 ? <Link to={href(snapshot.pages[currentIndex + 1].slug)}><span><small>下一篇</small>{snapshot.pages[currentIndex + 1].title}</span><ArrowRight size={17} /></Link> : null}
-            </nav>
-            {snapshot.published_at_ms ? <footer className="site-page-footer">更新于 {new Date(snapshot.published_at_ms).toLocaleDateString("zh-CN", { timeZone: "Asia/Shanghai" })}</footer> : null}
-          </> : <div className="site-empty"><BookOpen size={30} /><h1>{snapshot.pages.length ? "页面不存在" : "还没有文档"}</h1><p>{snapshot.pages.length ? "这个地址可能已经变更，请从目录查找文档。" : "选择一些文档，开始建立你的站点。"}</p><Link to={basePath}>返回文档首页</Link></div>}
-        </main>
-        <aside className="site-outline"><span>本页目录</span><nav aria-label="本页目录">{outline.map((item) => <a key={item.id} href={`#${item.id}`} style={{ paddingLeft: Math.max(0, item.level - 2) * 12 }}>{item.text}</a>)}</nav></aside>
-      </div>
+  async function writeClipboard(action: CopyFeedback["action"], value: string) {
+    if (!navigator.clipboard?.writeText) {
+      setCopyFeedback({ action, status: "error", message: action === "link" ? "浏览器不支持自动复制，请从地址栏手动复制。" : "浏览器不支持自动复制，请手动选择页面正文。" });
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopyFeedback({ action, status: "success", message: action === "link" ? "链接已复制" : "页面 Markdown 已复制" });
+    } catch {
+      setCopyFeedback({ action, status: "error", message: "复制失败，请检查浏览器权限后重试。" });
+    }
+  }
+
+  async function copyLink() {
+    if (!current) return;
+    const url = new URL(pageHref(canonicalBasePath || basePath, current.slug), window.location.href).href;
+    await writeClipboard("link", url);
+  }
+
+  async function copyPage() {
+    if (!current) return;
+    try {
+      await writeClipboard("page", loadMarkdown ? await loadMarkdown(current.slug) : await pageMarkdown(current));
+    } catch {
+      setCopyFeedback({ action: "page", status: "error", message: "无法生成页面 Markdown，请稍后重试。" });
+    }
+  }
+
+  if (redirectTarget && redirectTarget !== pageSlug) return <Navigate replace to={pageHref(basePath, redirectTarget)} />;
+
+  const updatedAt = current?.updated_at_ms ?? snapshot.published_at_ms;
+  const reader = <div className={`site-reader${headerSections.length ? " has-site-sections" : ""}`} data-theme={theme} data-theme-mode={themeMode} style={{ "--site-accent": snapshot.accent_color } as CSSProperties}>
+    <a className="site-reader-skip-link" href="#site-content">跳转到正文</a>
+    {preview ? <div className="site-reader-preview-banner">发布预览 · 此页面只有工作空间成员可见</div> : null}
+    <Header name={snapshot.name} basePath={basePath} logoUrl={branding.logo_url} links={branding.links} cta={branding.cta} sections={headerSections} currentSection={current?.section} themeMode={themeMode} onThemeChange={changeTheme} onSearch={() => setSearchOpen(true)} searchButtonRef={searchButtonRef} navigationButtonRef={navigationButtonRef} navigationOpen={navigationOpen} onNavigationToggle={() => setNavigationOpen((open) => !open)} />
+    <div className="site-reader-layout">
+      <Navigation sections={sections} currentSlug={current?.slug} basePath={basePath} open={navigationOpen} close={() => setNavigationOpen(false)} description={snapshot.description} footerLinks={branding.footer_links} modal={mobileNavigation} returnFocusRef={navigationButtonRef} />
+      <main id="site-content" className="site-reader-content">
+        {current ? <>
+          <nav className="site-reader-breadcrumb" aria-label="面包屑">
+            <span>{current.section || current.group || SITE_KINDS[snapshot.site_kind].label}</span>
+            {ancestors.map((page) => <Link key={page.slug} to={pageHref(basePath, page.slug)}>{page.title}</Link>)}
+            <span aria-current="page">{current.title}</span>
+          </nav>
+          <div className="site-reader-title-row">
+            <div><h1>{current.title}</h1>{current.description ? <p>{current.description}</p> : null}</div>
+            <div className="site-reader-copy-area">
+              <div className="site-reader-copy-actions">
+                <button type="button" aria-label={copyFeedback?.action === "link" && copyFeedback.status === "success" ? "链接已复制" : "复制链接"} onClick={() => void copyLink()}>{copyFeedback?.action === "link" && copyFeedback.status === "success" ? <Check aria-hidden="true" size={15} /> : <Link2 aria-hidden="true" size={15} />}<span>{copyFeedback?.action === "link" && copyFeedback.status === "success" ? "已复制" : "复制链接"}</span></button>
+                <button type="button" disabled={contentState?.loading || Boolean(contentState?.error)} aria-label={copyFeedback?.action === "page" && copyFeedback.status === "success" ? "页面 Markdown 已复制" : "复制页面"} onClick={() => void copyPage()}>{copyFeedback?.action === "page" && copyFeedback.status === "success" ? <Check aria-hidden="true" size={15} /> : <Copy aria-hidden="true" size={15} />}<span>{copyFeedback?.action === "page" && copyFeedback.status === "success" ? "已复制" : "复制页面"}</span></button>
+              </div>
+              {copyFeedback ? <p className={`site-reader-copy-feedback is-${copyFeedback.status}`} role="status">{copyFeedback.message}</p> : null}
+            </div>
+          </div>
+          {compactOutline ? <Outline items={outline} mobile /> : null}
+          {contentState?.loading ? <p role="status" className="site-reader-body-status">正在加载正文…</p> : contentState?.error ? <div role="alert" className="site-reader-body-status"><p>{contentState.error}</p><button type="button" onClick={contentState.retry}>重新加载正文</button></div> : <ContentRenderer blocks={current.blocks} pageTitle={current.title} />}
+          <nav className="site-reader-pagination" aria-label="相邻文档">
+            {currentIndex > 0 ? <Link to={pageHref(basePath, snapshot.pages[currentIndex - 1].slug)}><ArrowLeft aria-hidden="true" size={17} /><span><small>上一篇</small>{snapshot.pages[currentIndex - 1].title}</span></Link> : <span />}
+            {currentIndex < snapshot.pages.length - 1 ? <Link to={pageHref(basePath, snapshot.pages[currentIndex + 1].slug)}><span><small>下一篇</small>{snapshot.pages[currentIndex + 1].title}</span><ArrowRight aria-hidden="true" size={17} /></Link> : null}
+          </nav>
+          {updatedAt ? <footer className="site-reader-page-footer">最后更新于 {formatDate(updatedAt)}</footer> : null}
+        </> : <div className="site-reader-empty"><BookOpen aria-hidden="true" size={30} /><h1>{snapshot.pages.length ? "页面不存在" : "还没有文档"}</h1><p>{snapshot.pages.length ? "这个地址可能已经变更，请从目录查找文档。" : "选择一些文档，开始建立你的站点。"}</p><Link to={basePath}>返回文档首页</Link></div>}
+      </main>
+      {current && !compactOutline ? <Outline items={outline} /> : null}
     </div>
-  );
+    {searchOpen ? <SearchDialog pages={snapshot.pages} basePath={basePath} close={closeSearch} loadPages={loadSearch} /> : null}
+  </div>;
+  return preview ? <SitePreviewLinks siteSlug={snapshot.slug} basePath={basePath}>{reader}</SitePreviewLinks> : reader;
 }

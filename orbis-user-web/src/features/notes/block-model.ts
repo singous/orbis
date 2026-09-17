@@ -9,6 +9,8 @@
 import type { JSONContent } from "@tiptap/react";
 
 import type { NoteBlocks } from "../../shared/api/schemas";
+import { documentBlockMarkdown, documentBlockTitle } from "../content/document-components";
+import { markdownCodeFence, markdownDestination } from "../content/markdown-urls";
 
 export type OrbisInlineStyle = Partial<
   Record<"bold" | "italic" | "underline" | "strike" | "code", true>
@@ -311,6 +313,8 @@ function tableCellValue(cell: OrbisTableCell, render: (inline: OrbisInline) => s
 export function extractPlainTextV2(blocks: OrbisBlock[]): string {
   const lines: string[] = [];
   const visit = (block: OrbisBlock) => {
+    const title = documentBlockTitle(block).trim();
+    if (title) lines.push(title);
     const text = blockContentText(block).trim();
     if (text) lines.push(text);
     block.children.forEach(visit);
@@ -322,7 +326,7 @@ export function extractPlainTextV2(blocks: OrbisBlock[]): string {
 function renderInline(inline: OrbisInline): string {
   if (inline.type === "link") {
     const text = typeof inline.content === "string" ? inline.content : inline.content.map(renderInline).join("");
-    return `[${text}](${inline.href})`;
+    return `[${text}](${markdownDestination(inline.href)})`;
   }
   let value = inline.text;
   const styles = inline.styles ?? {};
@@ -365,6 +369,12 @@ function renderMarkdownBlocks(blocks: OrbisBlock[], depth: number): string {
   let delimiter = ".";
   for (const block of blocks) {
     const text = renderBlockContent(block);
+    const component = documentBlockMarkdown(block, text, (children) => renderMarkdownBlocks(children, 0));
+    if (component !== null) {
+      out.push(component);
+      nextNumber = 1; previousNumbered = false; delimiter = ".";
+      continue;
+    }
     let marker: string | undefined;
     if (block.type === "numberedListItem") {
       const start = Number.isInteger(block.props?.start) ? Number(block.props.start) : undefined;
@@ -400,11 +410,20 @@ function renderMarkdownBlocks(blocks: OrbisBlock[], depth: number): string {
         break;
       }
       case "codeBlock":
-        out.push(`\`\`\`${(block.props.language as string) ?? ""}\n${blockContentText(block)}\n\`\`\``);
+        out.push(markdownCodeFence(blockContentText(block), String(block.props.language || "")));
         break;
       case "divider":
         out.push("---");
         break;
+      case "image":
+      case "video":
+      case "audio":
+      case "file": {
+        const label = String(block.props.caption || block.props.name || text || block.type).replace(/([\\[\]])/g, "\\$1");
+        const url = String(block.props.url || "");
+        out.push(url ? `${block.type === "image" ? "!" : ""}[${label}](${markdownDestination(url)})` : label);
+        break;
+      }
       case "table": {
         const content = block.content;
         if (isLegacyTableContent(content)) {

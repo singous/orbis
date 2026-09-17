@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "blocks": {
+    "callout": {"label": "提示块", "content": "inline", "children": "any", "props": {"title": {"default": "", "maxLength": 240}, "tone": {"default": "info", "values": ["info", "success", "warning", "danger"]}}},
+    "card": {"label": "卡片", "content": "none", "children": "any", "props": {"title": {"default": "卡片标题", "maxLength": 240}, "href": {"default": "", "maxLength": 2048}}},
+    "cardGroup": {"label": "卡片组", "content": "none", "children": ["card"], "props": {"columns": {"default": 2, "values": [2, 3]}}},
+    "steps": {"label": "步骤组", "content": "none", "children": ["step"], "props": {}},
+    "step": {"label": "步骤", "content": "none", "children": "any", "props": {"title": {"default": "步骤标题", "maxLength": 240}}},
+    "tabs": {"label": "标签页", "content": "none", "children": ["tab"], "props": {}},
+    "tab": {"label": "标签", "content": "none", "children": "any", "props": {"title": {"default": "标签标题", "maxLength": 160}}},
+    "codeGroup": {"label": "代码组", "content": "none", "children": ["codeBlock"], "props": {}}
+  }
+}

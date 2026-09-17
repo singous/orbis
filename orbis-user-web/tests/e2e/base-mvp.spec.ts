@@ -3,7 +3,8 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 const password = "Orbis-browser-test-2026!";
-const apiOrigin = "http://127.0.0.1:9311";
+const apiOrigin = `http://127.0.0.1:${process.env.ORBIS_E2E_API_PORT || "9311"}`;
+const webOrigin = `http://127.0.0.1:${process.env.ORBIS_E2E_WEB_PORT || "9310"}`;
 
 test("personal writing, team discussion and a versioned documentation site work together", async ({ page, browser, request }, testInfo) => {
   const errors: string[] = [];
@@ -50,7 +51,7 @@ test("personal writing, team discussion and a versioned documentation site work 
   await page.getByLabel("站点路径", { exact: false }).fill("orbis-guide");
   await page.getByLabel("站点简介", { exact: true }).fill("记录、协作与发布，让团队知识持续生长。");
   await page.getByLabel("站点场景", { exact: false }).selectOption("handbook");
-  await page.getByRole("button", { name: "创建并选择文档" }).click();
+  await page.getByRole("dialog", { name: "创建文档站点" }).getByRole("button", { name: "创建站点", exact: true }).click();
   await expect(page).toHaveURL(/\/sites\/[0-9a-f-]+$/);
   const siteId = page.url().split("/").pop()!;
   await page.getByRole("button", { name: /欢迎使用 Orbis.*让知识被找到/ }).click();
@@ -72,13 +73,16 @@ test("personal writing, team discussion and a versioned documentation site work 
 
   const guest = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
   const reader = await guest.newPage();
-  await reader.goto("http://127.0.0.1:9310/s/orbis-guide/quickstart");
+  await reader.goto(`${webOrigin}/s/orbis-guide/quickstart`);
   await expect(reader.getByRole("heading", { name: "快速开始", level: 1 })).toBeVisible();
   await expect(reader.getByRole("table")).toContainText("产品手册");
   await reader.screenshot({ path: testInfo.outputPath("public-desktop.png"), fullPage: true });
-  await reader.getByRole("searchbox", { name: "搜索文档" }).fill("欢迎");
-  await expect(reader.getByLabel("搜索结果")).toContainText("欢迎使用 Orbis");
-  await reader.getByRole("searchbox", { name: "搜索文档" }).fill("");
+  await reader.getByRole("button", { name: "搜索文档" }).click();
+  const readerSearch = reader.getByRole("dialog", { name: "搜索文档" });
+  await readerSearch.getByRole("combobox", { name: "搜索文档" }).fill("欢迎");
+  await expect(readerSearch.getByRole("option", { name: /欢迎使用 Orbis/ })).toBeVisible();
+  await readerSearch.getByRole("combobox", { name: "搜索文档" }).press("Escape");
+  await reader.getByRole("button", { name: "当前跟随系统主题，切换为浅色主题" }).click();
   await reader.getByRole("button", { name: "切换深色主题" }).click();
   await expect(reader.locator(".site-reader")).toHaveAttribute("data-theme", "dark");
   await reader.screenshot({ path: testInfo.outputPath("public-dark.png"), fullPage: true });
@@ -125,7 +129,7 @@ test("personal writing, team discussion and a versioned documentation site work 
   await member.getByLabel("密码", { exact: true }).fill(password);
   await member.getByRole("button", { name: "登录 Orbis", exact: true }).click();
   await expect(member).toHaveURL(/\/documents$/);
-  await member.goto(`http://127.0.0.1:9310/documents/${noteId}`);
+  await member.goto(`${webOrigin}/documents/${noteId}`);
   await expect(member.getByRole("textbox", { name: "文档标题" })).toHaveAttribute("readonly", "");
   await member.getByRole("button", { name: "评论与历史", exact: true }).click();
   await member.getByLabel("新评论", { exact: true }).fill("我已经检查，可以继续完善内容。");

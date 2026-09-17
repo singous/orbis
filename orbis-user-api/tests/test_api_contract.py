@@ -5,7 +5,6 @@ from pathlib import Path
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-
 from orbis_user_api.api.contract import install_api_contract
 from orbis_user_api.api.errors import ApiError
 
@@ -159,7 +158,25 @@ def test_all_json_operations_document_the_unified_success_envelope() -> None:
                 continue
             operations.append((method.upper(), path, operation))
 
-    assert len(operations) == 60
+    assert operations
+    assert ("GET", "/sites/{site_id}/sources") in {
+        (method, path) for method, path, _ in operations
+    }
+    binary_operations = {
+        ("GET", "/files/{file_id}/content"),
+        ("GET", "/public/sites/{slug}/assets/{key}"),
+    }
+    text_operations = {
+        ("GET", "/s/{slug}/sitemap.xml"): "application/xml",
+        ("GET", "/s/{slug}/robots.txt"): "text/plain",
+        ("GET", "/s/{slug}/llms.txt"): "text/plain",
+        ("GET", "/s/{slug}/llms-full.txt"): "text/plain",
+        ("GET", "/s/{slug}/pages/{page_slug}.md"): "text/markdown",
+    }
+    assert text_operations.keys() <= {(method, path) for method, path, _ in operations}
+    assert binary_operations.issubset(
+        {(method, path) for method, path, _ in operations}
+    )
     for method, path, operation in operations:
         success_responses = [
             (status_code, response)
@@ -169,6 +186,16 @@ def test_all_json_operations_document_the_unified_success_envelope() -> None:
         assert len(success_responses) == 1, (method, path, success_responses)
         status_code, response = success_responses[0]
         assert status_code != "204", (method, path)
+        if (method, path) in binary_operations:
+            assert response["content"] == {
+                "application/octet-stream": {
+                    "schema": {"type": "string", "format": "binary"}
+                }
+            }
+            continue
+        if (method, path) in text_operations:
+            assert response["content"] == {text_operations[(method, path)]: {"schema": {"type": "string"}}}
+            continue
         schema = response["content"]["application/json"]["schema"]
         if "$ref" in schema:
             schema = components[schema["$ref"].rsplit("/", 1)[-1]]

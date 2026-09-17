@@ -77,13 +77,21 @@ export async function listNotebooks(
   status: ResourceStatus = "active",
   options: { includeInactiveParents?: boolean } = {},
 ): Promise<PageData<Notebook>> {
-  return notebookListResponseSchema.parse(await apiRequest(queryPath("/notebooks", {
-    group_id: groupId,
-    status: status === "archived" ? status : null,
-    include_inactive_parents: options.includeInactiveParents ? "true" : null,
-    page: DEFAULT_PAGE,
-    page_size: DEFAULT_PAGE_SIZE,
-  }), authOptions(auth)));
+  const items: Notebook[] = [];
+  let pageNumber = Number(DEFAULT_PAGE);
+  let result: PageData<Notebook>;
+  do {
+    result = notebookListResponseSchema.parse(await apiRequest(queryPath("/notebooks", {
+      group_id: groupId,
+      status: status === "archived" ? status : null,
+      include_inactive_parents: options.includeInactiveParents ? "true" : null,
+      page: String(pageNumber),
+      page_size: DEFAULT_PAGE_SIZE,
+    }), authOptions(auth)));
+    items.push(...result.items);
+    pageNumber += 1;
+  } while (result.pagination.has_next);
+  return { items, pagination: { ...result.pagination, page: 1, has_next: false, has_previous: false } };
 }
 
 export async function createNotebook(payload: { title: string; group_id?: string | null; sort_order: number; icon?: NotebookIconValue | null }, auth: AuthRequestOptions): Promise<Notebook> {

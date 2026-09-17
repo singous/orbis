@@ -3,7 +3,9 @@ from __future__ import annotations
 from typing import Any
 
 from orbis_user_api.application.site_errors import unsafe_site_content
+from orbis_user_api.application.site_references import validate_site_reference
 from orbis_user_api.application.site_urls import PublicUrlPolicy
+from orbis_user_api.domain.document_components import DOCUMENT_BLOCKS
 from orbis_user_api.domain.note_content import InvalidNoteContent, normalize_note_blocks
 
 MEDIA_TYPES = frozenset({"image", "file", "audio", "video"})
@@ -44,7 +46,11 @@ def _public_v1(node: dict[str, Any], policy: PublicUrlPolicy) -> dict[str, Any]:
         for mark in node.get("marks", []):
             item: dict[str, Any] = {"type": mark["type"]}
             if mark["type"] == "link":
-                item["attrs"] = {"href": policy.validate(mark["attrs"]["href"])}
+                item["attrs"] = {
+                    "href": validate_site_reference(
+                        mark["attrs"]["href"], policy
+                    )
+                }
             marks.append(item)
         if marks:
             result["marks"] = marks
@@ -97,7 +103,7 @@ def _public_inline(content: Any, policy: PublicUrlPolicy) -> Any:
             raise unsafe_site_content()
         return {
             "type": "link",
-            "href": policy.validate(content.get("href")),
+            "href": validate_site_reference(content.get("href"), policy),
             "content": _public_inline(children, policy),
         }
     if content.get("type") == "tableCell":
@@ -149,17 +155,26 @@ def _public_v2(
     block: dict[str, Any], path: str, policy: PublicUrlPolicy
 ) -> dict[str, Any]:
     props = block.get("props", {})
+    definition = DOCUMENT_BLOCKS.get(block["type"])
+    allowed_props = (
+        {"textAlignment", "textColor", "backgroundColor"} | set(definition["props"])
+        if definition else PUBLIC_BLOCK_PROPS
+    )
     result: dict[str, Any] = {
         "id": f"public-{path}",
         "type": block["type"],
         "props": {
             key: value
             for key, value in props.items()
-            if key in PUBLIC_BLOCK_PROPS and isinstance(value, (str, int, float, bool))
+            if key in allowed_props and isinstance(value, (str, int, float, bool))
         },
     }
     if block["type"] in MEDIA_TYPES:
-        result["props"]["url"] = policy.validate(props.get("url"), media=True)
+        result["props"]["url"] = validate_site_reference(
+            props.get("url"), policy, media=True
+        )
+    if block["type"] == "card" and props.get("href"):
+        result["props"]["href"] = validate_site_reference(props["href"], policy)
     content = block.get("content", [])
     result["content"] = (
         _public_table(content, policy)

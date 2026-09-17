@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { ApiError } from "../../shared/api/api-client";
 import type { NoteContent } from "../../shared/api/schemas";
 import { ContentRenderer } from "../content/ContentRenderer";
+import { AuthenticatedFileContent } from "../files/FileContent";
 import { useComments, useCreateComment, useRevision, useRevisions, useRestoreRevision, useUpdateComment } from "./queries";
 import type { DocumentComment } from "./schemas";
 
@@ -106,7 +107,7 @@ function Revisions({ noteId, canManage, onRestore, onBusyChange }: Pick<Props, "
       {detail.isPending ? <p role="status">正在加载版本正文…</p> : null}
       <ErrorNotice error={detail.error} />
       {detail.isError ? <button type="button" className="mvp-button secondary" onClick={() => void detail.refetch()}>重试加载正文</button> : null}
-      {detail.data ? <><h3>版本 {detail.data.content_version} 预览</h3><ContentRenderer blocks={detail.data.blocks} />{canManage ? <div className="collaboration-restore"><p className="collaboration-hint">恢复会先保存当前草稿，再将此正文保存为新版本。文档标题保持当前值。</p><button className="mvp-button primary" type="button" onClick={restoreSelected} disabled={pending}>{pending ? "正在保存草稿并恢复…" : "恢复此版本"}</button></div> : null}</> : null}
+      {detail.data ? <><h3>版本 {detail.data.content_version} 预览</h3><AuthenticatedFileContent><ContentRenderer blocks={detail.data.blocks} /></AuthenticatedFileContent>{canManage ? <div className="collaboration-restore"><p className="collaboration-hint">恢复会先保存当前草稿，再将此正文保存为新版本。文档标题保持当前值。</p><button className="mvp-button primary" type="button" onClick={restoreSelected} disabled={pending}>{pending ? "正在保存草稿并恢复…" : "恢复此版本"}</button></div> : null}</> : null}
       <ErrorNotice error={error} />
       {restored ? <p className="collaboration-success" role="status" aria-label="恢复结果">已恢复为新版本，原正文可在历史中找回。</p> : null}
     </div> : null}

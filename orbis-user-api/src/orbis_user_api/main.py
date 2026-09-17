@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 
 from orbis_user_api.api.contract import ApiResponse, api_success, install_api_contract
 from orbis_user_api.api.openapi_docs import install_chinese_openapi
@@ -36,6 +36,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="Orbis User API", version="0.1.0", lifespan=lifespan)
     install_api_contract(app)
     app.include_router(api_router)
+
+    @app.middleware("http")
+    async def public_delivery_cache_policy(request: Request, call_next):
+        response = await call_next(request)
+        # Apply even to validation errors before a public route handler runs.
+        if request.url.path.startswith(("/s/", "/public/sites/")):
+            response.headers["Cache-Control"] = "no-store"
+        return response
 
     @app.get("/healthz", tags=["system"], response_model=ApiResponse[dict[str, str]])
     async def healthz() -> ApiResponse[dict[str, str]]:
