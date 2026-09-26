@@ -1,10 +1,10 @@
-import { Button as HeroButton } from "@heroui/react/button";
 import { Dropdown } from "@heroui/react/dropdown";
 import { Header } from "@heroui/react/header";
 import { Label } from "@heroui/react/label";
 import { BookOpen, FilePlus2, Plus } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ActionButton } from "../../shared/ui/ActionButton";
 
 import { useToast } from "../../shared/ui/Toast";
 import { NotebookDialog } from "../documents/NotebookDialog";
@@ -66,7 +66,7 @@ export function RailCreateMenu() {
   return (
     <>
       <Dropdown onOpenChange={setArmed}>
-        <HeroButton variant="ghost" className="rail-create-trigger" aria-label="新建资产"><Plus size={18} aria-hidden="true" /></HeroButton>
+        <ActionButton type="button" className="rail-create-trigger" aria-label="新建资产"><Plus size={18} aria-hidden="true" /></ActionButton>
         <Dropdown.Popover className="rail-create-popover" placement="bottom start" offset={10}>
           <Dropdown.Menu aria-label="在当前空间新建" onAction={(key) => {
             if (key === "document") void createDocument().catch(() => toast({ title: "文档创建失败，请重试", tone: "danger" }));

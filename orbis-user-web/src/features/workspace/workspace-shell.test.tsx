@@ -358,11 +358,22 @@ describe("WorkspaceShell", () => {
     renderShell();
 
     await actor.click(screen.getByRole("button", { name: "打开用户菜单" }));
-    expect(screen.getByRole("menuitem", { name: "工作空间成员" })).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: "账号" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "工作空间成员" })).toHaveAttribute("href", "/settings/members");
+    expect(screen.getByRole("menuitem", { name: "账号" })).toHaveAttribute("href", "/settings/account");
     expect(screen.getByRole("menuitem", { name: "退出登录" })).toBeInTheDocument();
     await actor.click(screen.getByRole("menuitem", { name: "账号" }));
     expect(screen.getByRole("status", { name: "current path" })).toHaveTextContent("/settings/account");
+  });
+
+  it("opens workspace details as a popover and restores focus after Escape", async () => {
+    const actor = userEvent.setup();
+    renderShell();
+    const trigger = screen.getByRole("button", { name: "切换工作空间" });
+    await actor.click(trigger);
+    expect(screen.getByRole("dialog", { name: "工作空间详情" })).toHaveTextContent("我自己");
+    await actor.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "工作空间详情" })).not.toBeInTheDocument());
+    await waitFor(() => expect(trigger).toHaveFocus());
   });
 
   it("closes user actions on Escape and returns focus to the trigger", async () => {

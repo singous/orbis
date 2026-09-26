@@ -1,6 +1,47 @@
 @import "tailwindcss";
 @import "@heroui/styles";
 
+@layer components {
+  /* Feature controls keep their native layout while HeroUI owns interaction states. */
+  .orbis-action-button {
+    position: static;
+    isolation: auto;
+    display: inline-block;
+    width: auto;
+    height: auto;
+    min-width: 0;
+    padding: 0;
+    border-radius: 0;
+    font: inherit;
+    color: inherit;
+    text-align: inherit;
+    white-space: normal;
+    justify-content: normal;
+    gap: normal;
+    --button-bg-hover: transparent;
+    --button-bg-pressed: transparent;
+  }
+
+  .orbis-action-button,
+  .orbis-action-button:active,
+  .orbis-action-button[data-pressed="true"] {
+    transform: none;
+  }
+
+  .orbis-action-button svg {
+    width: auto;
+    height: auto;
+    margin: 0;
+    align-self: auto;
+  }
+
+  .orbis-action-button[data-focus-visible="true"] {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    box-shadow: none;
+  }
+}
+
 /* Opaque, neutral workbench surfaces. Layout owners consume these tokens. */
 :root {
   --gray-0: #ffffff;
@@ -109,6 +150,7 @@
   --field-foreground: var(--text-primary);
   --field-placeholder: var(--text-tertiary);
   --field-border: var(--border-strong);
+  --field-shadow: 0 0 0 0 transparent;
   --focus: var(--focus-ring);
   --radius: var(--radius-control);
   --field-radius: var(--radius-control);
@@ -141,6 +183,15 @@ body {
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
   line-height: 1.5;
+}
+
+/* Composite controls draw their own border and focus treatment around the input. */
+.orbis-embedded-input {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 

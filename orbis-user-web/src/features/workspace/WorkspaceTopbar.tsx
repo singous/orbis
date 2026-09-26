@@ -47,7 +47,7 @@ export function WorkspaceTopbar({ disabled = false }: { disabled?: boolean }) {
         </div>
         <form className="workspace-global-search" role="search" aria-label="全局搜索" onSubmit={search}>
           <Search size={16} aria-hidden="true" />
-          <HeroInput ref={inputRef} aria-label="全局搜索" type="search" placeholder="搜索文档…" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
+          <HeroInput ref={inputRef} className="orbis-embedded-input" aria-label="全局搜索" type="search" placeholder="搜索文档…" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
           <kbd>⌘ K</kbd>
         </form>
       </div>

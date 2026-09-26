@@ -300,7 +300,7 @@ export function DocumentEditorPage() {
             <Link to={`/collections/${noteQuery.data.notebook_id}`} className="mb-7 inline-flex items-center gap-2 text-xs font-medium text-[var(--muted)] hover:text-black"><ArrowLeft aria-hidden="true" size={14} />返回笔记本</Link>
             <HeroInput
               aria-label="文档标题"
-              className="editor-title"
+              className="orbis-embedded-input editor-title"
               placeholder="无标题"
               value={draft.title}
               readOnly={!canEdit || editorBusy}

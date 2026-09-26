@@ -42,6 +42,12 @@ describe("Button", () => {
 });
 
 describe("ActionButton", () => {
+  it("preserves native help text on standard and feature buttons", () => {
+    render(<><Button title="保存当前内容">保存</Button><ActionButton title="编辑名称和图标">编辑</ActionButton></>);
+    expect(screen.getByRole("button", { name: "保存" })).toHaveAttribute("title", "保存当前内容");
+    expect(screen.getByRole("button", { name: "编辑" })).toHaveAttribute("title", "编辑名称和图标");
+  });
+
   it("keeps native button form submission for feature actions", async () => {
     const submit = vi.fn((event: FormEvent<HTMLFormElement>) => event.preventDefault());
     const user = userEvent.setup();
