@@ -1,3 +1,4 @@
+import { ActionButton } from "../../shared/ui/ActionButton";
 import { Archive, ArrowDown, ArrowUp, FilePlus2, MoreHorizontal, Plus, Undo2 } from "lucide-react";
 import { type ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -102,11 +103,11 @@ function DocumentTree({ items, depth, activeNoteId, canEdit, main = false, onNav
           </Link>
           {canEdit ? (
             <div className="document-context-actions">
-              <button type="button" className="icon-button" aria-label={`上移 ${note.title}`} onClick={() => onMove(note, -1)} disabled={index === 0}><ArrowUp aria-hidden="true" size={13} /></button>
-              <button type="button" className="icon-button" aria-label={`下移 ${note.title}`} onClick={() => onMove(note, 1)} disabled={index === items.length - 1}><ArrowDown aria-hidden="true" size={13} /></button>
-              <button type="button" className="icon-button" aria-label={`新建子文档 ${note.title}`} onClick={() => onCreateChild(note.id)}><Plus aria-hidden="true" size={13} /></button>
-              <button type="button" className="icon-button" aria-label={`重命名 ${note.title}`} onClick={() => onRename(note)}><MoreHorizontal aria-hidden="true" size={13} /></button>
-              <button type="button" className="icon-button danger-hover" aria-label={`归档 ${note.title}`} onClick={() => onArchive(note)}><Archive aria-hidden="true" size={13} /></button>
+              <ActionButton type="button" className="icon-button" aria-label={`上移 ${note.title}`} onClick={() => onMove(note, -1)} disabled={index === 0}><ArrowUp aria-hidden="true" size={13} /></ActionButton>
+              <ActionButton type="button" className="icon-button" aria-label={`下移 ${note.title}`} onClick={() => onMove(note, 1)} disabled={index === items.length - 1}><ArrowDown aria-hidden="true" size={13} /></ActionButton>
+              <ActionButton type="button" className="icon-button" aria-label={`新建子文档 ${note.title}`} onClick={() => onCreateChild(note.id)}><Plus aria-hidden="true" size={13} /></ActionButton>
+              <ActionButton type="button" className="icon-button" aria-label={`重命名 ${note.title}`} onClick={() => onRename(note)}><MoreHorizontal aria-hidden="true" size={13} /></ActionButton>
+              <ActionButton type="button" className="icon-button danger-hover" aria-label={`归档 ${note.title}`} onClick={() => onArchive(note)}><Archive aria-hidden="true" size={13} /></ActionButton>
             </div>
           ) : null}
           <time className="flex-none pl-2 text-xs text-[var(--muted-light)]">{formatDate(note.updated_at_ms)}</time>
@@ -130,11 +131,11 @@ function DocumentTree({ items, depth, activeNoteId, canEdit, main = false, onNav
         </Link>
         {canEdit ? (
           <div className="document-context-actions">
-            <button type="button" className="icon-button" aria-label={`上移 ${note.title}`} onClick={() => onMove(note, -1)} disabled={index === 0}><ArrowUp aria-hidden="true" size={13} /></button>
-            <button type="button" className="icon-button" aria-label={`下移 ${note.title}`} onClick={() => onMove(note, 1)} disabled={index === items.length - 1}><ArrowDown aria-hidden="true" size={13} /></button>
-            <button type="button" className="icon-button" aria-label={`新建子文档 ${note.title}`} onClick={() => onCreateChild(note.id)}><Plus aria-hidden="true" size={13} /></button>
-            <button type="button" className="icon-button" aria-label={`重命名 ${note.title}`} onClick={() => onRename(note)}><MoreHorizontal aria-hidden="true" size={13} /></button>
-            <button type="button" className="icon-button danger-hover" aria-label={`归档 ${note.title}`} onClick={() => onArchive(note)}><Archive aria-hidden="true" size={13} /></button>
+            <ActionButton type="button" className="icon-button" aria-label={`上移 ${note.title}`} onClick={() => onMove(note, -1)} disabled={index === 0}><ArrowUp aria-hidden="true" size={13} /></ActionButton>
+            <ActionButton type="button" className="icon-button" aria-label={`下移 ${note.title}`} onClick={() => onMove(note, 1)} disabled={index === items.length - 1}><ArrowDown aria-hidden="true" size={13} /></ActionButton>
+            <ActionButton type="button" className="icon-button" aria-label={`新建子文档 ${note.title}`} onClick={() => onCreateChild(note.id)}><Plus aria-hidden="true" size={13} /></ActionButton>
+            <ActionButton type="button" className="icon-button" aria-label={`重命名 ${note.title}`} onClick={() => onRename(note)}><MoreHorizontal aria-hidden="true" size={13} /></ActionButton>
+            <ActionButton type="button" className="icon-button danger-hover" aria-label={`归档 ${note.title}`} onClick={() => onArchive(note)}><Archive aria-hidden="true" size={13} /></ActionButton>
           </div>
         ) : null}
       </div>
@@ -226,7 +227,7 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
       {!treeQuery.isLoading && !treeQuery.isError ? <nav className={main ? "grid gap-0.5" : "document-context-tree"} aria-label={main ? "文档列表" : "笔记本文档"}><DocumentTree items={treeItems} depth={0} activeNoteId={activeNoteId} canEdit={canEdit} main={main} onNavigate={mobile ? onNavigate : undefined} onCreateChild={setCreateParent} onRename={setRenameTarget} onArchive={(note) => void handleArchive(note)} onMove={(note, delta) => void handleMove(note, delta)} /></nav> : null}
       <ResourceDialog open={createParent !== undefined} title={createParent ? "新建子文档" : "新建文档"} label="文档标题" placeholder="未命名文档" submitLabel="创建并打开" pending={createNote.isPending} onClose={() => setCreateParent(undefined)} onSubmit={handleCreate} />
       <ResourceDialog open={Boolean(renameTarget)} title="重命名文档" label="文档标题" placeholder="文档标题" initialValue={renameTarget?.title ?? ""} submitLabel="保存" pending={updateNote.isPending} onClose={() => setRenameTarget(null)} onSubmit={handleRename} />
-      {undoNote ? <div className="toast"><div><div className="text-sm font-semibold">文档已归档</div><div className="mt-0.5 text-xs text-[var(--text-oninverse)] opacity-60">{undoNote.title}</div></div><button type="button" className="toast-action" onClick={() => void handleUndo()}><Undo2 aria-hidden="true" size={14} />撤销</button></div> : null}
+      {undoNote ? <div className="toast"><div><div className="text-sm font-semibold">文档已归档</div><div className="mt-0.5 text-xs text-[var(--text-oninverse)] opacity-60">{undoNote.title}</div></div><ActionButton type="button" className="toast-action" onClick={() => void handleUndo()}><Undo2 aria-hidden="true" size={14} />撤销</ActionButton></div> : null}
     </section>
   );
 }

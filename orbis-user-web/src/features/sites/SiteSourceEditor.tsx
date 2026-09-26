@@ -1,3 +1,5 @@
+import { Input as HeroInput } from "@heroui/react/input";
+import { ActionButton } from "../../shared/ui/ActionButton";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 
 import { useNoteTree, useNotebooks } from "../documents/queries";
@@ -37,9 +39,9 @@ function SourceBinding({
     <header>
       <div><strong>{notebook?.title ?? "来源笔记本不可用"}</strong><span>来源 {index + 1}</span></div>
       {!disabled ? <div className="site-source-order-actions">
-        <button type="button" aria-label={`上移来源 ${index + 1}`} disabled={index === 0} onClick={() => onMove(-1)}><ArrowUp size={14} /></button>
-        <button type="button" aria-label={`下移来源 ${index + 1}`} disabled={index === source.notebooks.length - 1} onClick={() => onMove(1)}><ArrowDown size={14} /></button>
-        <button type="button" aria-label={`移除来源 ${index + 1}`} onClick={onRemove}><Trash2 size={14} /></button>
+        <ActionButton type="button" aria-label={`上移来源 ${index + 1}`} disabled={index === 0} onClick={() => onMove(-1)}><ArrowUp size={14} /></ActionButton>
+        <ActionButton type="button" aria-label={`下移来源 ${index + 1}`} disabled={index === source.notebooks.length - 1} onClick={() => onMove(1)}><ArrowDown size={14} /></ActionButton>
+        <ActionButton type="button" aria-label={`移除来源 ${index + 1}`} onClick={onRemove}><Trash2 size={14} /></ActionButton>
       </div> : null}
     </header>
     <div className="site-source-binding-fields">
@@ -51,9 +53,9 @@ function SourceBinding({
         <option value="">整个笔记本</option>
         {flatTree.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
       </select></label>
-      <label>栏目名称<input aria-label={`栏目名称 ${index + 1}`} disabled={disabled} value={binding.label ?? ""} placeholder={notebook?.title ?? "默认使用笔记本名称"} onChange={(event) => onChange({ ...binding, label: event.target.value || null })} /></label>
+      <label>栏目名称<HeroInput aria-label={`栏目名称 ${index + 1}`} disabled={disabled} value={binding.label ?? ""} placeholder={notebook?.title ?? "默认使用笔记本名称"} onChange={(event) => onChange({ ...binding, label: event.target.value || null })} /></label>
     </div>
-    {tree.isPending ? <p className="mvp-muted">正在加载真实文档树…</p> : tree.isError ? <p role="alert" className="site-source-inline-error">文档树加载失败。<button type="button" onClick={() => void tree.refetch()}>重试</button></p> : <SiteSourceTree items={tree.data.items} rootNoteId={binding.root_note_id} source={source} resolved={saved ? sources : undefined} disabled={disabled} onChange={onSourceChange} />}
+    {tree.isPending ? <p className="mvp-muted">正在加载真实文档树…</p> : tree.isError ? <p role="alert" className="site-source-inline-error">文档树加载失败。<ActionButton type="button" onClick={() => void tree.refetch()}>重试</ActionButton></p> : <SiteSourceTree items={tree.data.items} rootNoteId={binding.root_note_id} source={source} resolved={saved ? sources : undefined} disabled={disabled} onChange={onSourceChange} />}
   </article>;
 }
 
@@ -99,7 +101,7 @@ export function SiteSourceEditor({
       <label><input type="radio" name="site-source-kind" checked={source.kind === "manual"} onChange={() => setMode("manual")} />手动选择</label>
     </fieldset>
     {source.kind === "manual" ? <div className="site-source-manual-note"><strong>手动选择目录</strong><p>继续使用下方站点目录。切换到笔记本来源不会删除这些手选项，切回后仍可继续编辑。</p></div> : <>
-      {notebooks.isPending ? <p className="mvp-muted">正在加载笔记本…</p> : notebooks.isError ? <p role="alert" className="site-source-inline-error">无法加载笔记本。<button type="button" onClick={() => void notebooks.refetch()}>重试</button></p> : null}
+      {notebooks.isPending ? <p className="mvp-muted">正在加载笔记本…</p> : notebooks.isError ? <p role="alert" className="site-source-inline-error">无法加载笔记本。<ActionButton type="button" onClick={() => void notebooks.refetch()}>重试</ActionButton></p> : null}
       {source.notebooks.map((binding, index) => <SourceBinding
         key={`${binding.notebook_id}-${index}`}
         binding={binding}
@@ -115,10 +117,10 @@ export function SiteSourceEditor({
         onMove={(direction) => moveBinding(index, direction)}
       />)}
       {!source.notebooks.length ? <div className="site-source-empty-selection"><strong>尚未关联来源</strong><p>请明确添加一个笔记本，或切换到手动选择后再保存。</p></div> : null}
-      {!disabled && notebookOptions.length ? <button className="site-source-add" type="button" onClick={() => {
+      {!disabled && notebookOptions.length ? <ActionButton className="site-source-add" type="button" onClick={() => {
         const next = notebookOptions.find((item) => !source.notebooks.some((binding) => binding.notebook_id === item.id)) ?? notebookOptions[0];
         onChange({ ...source, notebooks: [...source.notebooks, { notebook_id: next.id, root_note_id: null, label: null }] });
-      }}><Plus size={14} />添加来源</button> : null}
+      }}><Plus size={14} />添加来源</ActionButton> : null}
       <div className="site-source-status">
         <span>{saved ? `来源配置已保存${savedAtMs ? ` · ${formatSavedTime(savedAtMs)}` : ""}` : "来源配置尚未保存，公开路径将在保存后生成"}</span>
         {saved && sources ? <span>当前解析 {sources.pages.length} 篇 · 排除 {sources.excluded_count} 篇</span> : null}

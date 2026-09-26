@@ -1,3 +1,4 @@
+import { ActionButton } from "../../shared/ui/ActionButton";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Crown, Mail, RefreshCw, Shield, Trash2, UserPlus, Users } from "lucide-react";
 import { type FormEvent, useState } from "react";
@@ -119,7 +120,7 @@ export function MemberSettingsPage() {
                       </select>
                     ) : <span className="tag"><Shield aria-hidden="true" className="mr-1" size={11} />{member.role}</span>}
                     {workspace?.role === "owner" && member.role === "admin" ? <Button variant="secondary" onClick={() => confirmTransfer(member.id)} disabled={!mailQuery.data?.available || transferMutation.isPending}>转让所有权</Button> : null}
-                    {member.role !== "owner" && actorCanChange ? <button type="button" className="icon-button danger-hover" aria-label={`移除 ${member.email}`} onClick={() => confirmRemove(member.id, member.email)}><Trash2 aria-hidden="true" size={14} /></button> : null}
+                    {member.role !== "owner" && actorCanChange ? <ActionButton type="button" className="icon-button danger-hover" aria-label={`移除 ${member.email}`} onClick={() => confirmRemove(member.id, member.email)}><Trash2 aria-hidden="true" size={14} /></ActionButton> : null}
                   </div>
                 </div>
               );
@@ -135,8 +136,8 @@ export function MemberSettingsPage() {
                 <div key={item.id} className="workbench-member-row">
                   <Users aria-hidden="true" size={17} className="text-[var(--muted)]" />
                   <div className="min-w-[200px] flex-1"><div className="text-sm font-semibold">{item.email}</div><div className="mt-1 text-xs text-[var(--muted)]">{item.role} · {item.email_sent ? "已发送" : "发送失败"}</div></div>
-                  <button type="button" className="icon-button" aria-label={`重发 ${item.email}`} onClick={() => resendMutation.mutate(item.id)}><RefreshCw aria-hidden="true" size={14} /></button>
-                  <button type="button" className="icon-button danger-hover" aria-label={`撤销 ${item.email} 的邀请`} onClick={() => revokeMutation.mutate(item.id)}><Trash2 aria-hidden="true" size={14} /></button>
+                  <ActionButton type="button" className="icon-button" aria-label={`重发 ${item.email}`} onClick={() => resendMutation.mutate(item.id)}><RefreshCw aria-hidden="true" size={14} /></ActionButton>
+                  <ActionButton type="button" className="icon-button danger-hover" aria-label={`撤销 ${item.email} 的邀请`} onClick={() => revokeMutation.mutate(item.id)}><Trash2 aria-hidden="true" size={14} /></ActionButton>
                 </div>
               ))}
             </div>

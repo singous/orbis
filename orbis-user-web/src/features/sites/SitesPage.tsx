@@ -1,3 +1,4 @@
+import { ActionButton } from "../../shared/ui/ActionButton";
 import { ArrowUpRight, ChevronRight, Globe, Plus } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
@@ -60,7 +61,7 @@ export function SitesPage() {
         <section className="workbench-section" aria-label="文档站点">
           <header className="workbench-section-heading"><h2>全部站点</h2>{sites.data ? <span className="workbench-section-count">{sites.data.pagination.total} 个站点</span> : null}</header>
           {sites.isPending ? <div className="empty-panel">正在加载站点…</div> : sites.isError ? (
-            <div className="mvp-feedback error" role="alert">无法加载站点。<button type="button" onClick={() => void sites.refetch()}>重新加载</button></div>
+            <div className="mvp-feedback error" role="alert">无法加载站点。<ActionButton type="button" onClick={() => void sites.refetch()}>重新加载</ActionButton></div>
           ) : sites.data.items.length ? <>
             <div className="workbench-resource-grid">
               {sites.data.items.map((site) => (
@@ -71,13 +72,13 @@ export function SitesPage() {
                 </Link>
               ))}
             </div>
-            <div className="mvp-pagination"><button type="button" disabled={!sites.data.pagination.has_previous} onClick={() => setPage(page - 1)}>上一页</button><span>第 {page} 页 · 共 {sites.data.pagination.total} 个站点</span><button type="button" disabled={!sites.data.pagination.has_next} onClick={() => setPage(page + 1)}>下一页</button></div>
+            <div className="mvp-pagination"><ActionButton type="button" disabled={!sites.data.pagination.has_previous} onClick={() => setPage(page - 1)}>上一页</ActionButton><span>第 {page} 页 · 共 {sites.data.pagination.total} 个站点</span><ActionButton type="button" disabled={!sites.data.pagination.has_next} onClick={() => setPage(page + 1)}>下一页</ActionButton></div>
           </> : (
             <div className="workbench-empty-section workbench-site-empty"><Globe aria-hidden="true" size={30} /><h2>从第一篇文档开始</h2><p>选择内容、安排目录、预览发布。<br />读者看到你确认发布的版本。</p>{canEdit ? <Button variant="secondary" onClick={openCreate}>创建第一个站点<ArrowUpRight aria-hidden="true" size={15} /></Button> : <p>工作空间的编辑者可以创建站点。</p>}</div>
           )}
         </section>
       </PageContainer>
-      <Dialog open={open} onOpenChange={setOpen}><DialogContent className="site-create-dialog" title="创建文档站点" description="先确定站点信息与内容来源，提交前不会创建站点。"><form className="site-create-form" onSubmit={submit}><SiteSettingsForm value={config} onChange={setConfig} disabled={create.isPending} /><SiteSourceEditor value={config.source} onChange={(source) => setConfig({ ...config, source })} disabled={create.isPending} />{create.error ? <p role="alert" className="mvp-feedback error">{create.error.message}</p> : null}<div className="site-create-actions"><button className="mvp-button" type="button" disabled={create.isPending} onClick={() => setOpen(false)}>取消</button><button className="mvp-button primary" type="submit" disabled={create.isPending || config.source?.kind === "notebooks" && !config.source.notebooks.length}>{create.isPending ? "创建中…" : "创建站点"}</button></div></form></DialogContent></Dialog>
+      <Dialog open={open} onOpenChange={setOpen}><DialogContent className="site-create-dialog" title="创建文档站点" description="先确定站点信息与内容来源，提交前不会创建站点。"><form className="site-create-form" onSubmit={submit}><SiteSettingsForm value={config} onChange={setConfig} disabled={create.isPending} /><SiteSourceEditor value={config.source} onChange={(source) => setConfig({ ...config, source })} disabled={create.isPending} />{create.error ? <p role="alert" className="mvp-feedback error">{create.error.message}</p> : null}<div className="site-create-actions"><ActionButton className="mvp-button" type="button" disabled={create.isPending} onClick={() => setOpen(false)}>取消</ActionButton><ActionButton className="mvp-button primary" type="submit" disabled={create.isPending || config.source?.kind === "notebooks" && !config.source.notebooks.length}>{create.isPending ? "创建中…" : "创建站点"}</ActionButton></div></form></DialogContent></Dialog>
     </WorkspaceShell>
   );
 }

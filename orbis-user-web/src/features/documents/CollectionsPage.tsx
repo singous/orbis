@@ -1,3 +1,4 @@
+import { ActionButton } from "../../shared/ui/ActionButton";
 import {
   Archive,
   BookOpen,
@@ -156,7 +157,7 @@ export function CollectionsPage() {
             <StatusMessage tone="error" title="无法打开资源">
               <div className="flex items-center justify-between gap-3">
                 <span>{resourceError}</span>
-                <button
+                <ActionButton
                   type="button"
                   className="shrink-0 font-semibold underline"
                   aria-label="关闭提示"
@@ -165,7 +166,7 @@ export function CollectionsPage() {
                   }
                 >
                   关闭
-                </button>
+                </ActionButton>
               </div>
             </StatusMessage>
           </div>
@@ -207,7 +208,7 @@ export function CollectionsPage() {
               return (
                 <div key={group.id} className={`workbench-collection-group${collapsed ? " is-collapsed" : ""}`}>
                   <div className="workbench-section-heading">
-                    <h3 className="workbench-group-heading"><button type="button" className="workbench-group-toggle" aria-expanded={!collapsed} aria-controls={contentId} aria-label={`${collapsed ? "展开" : "收起"}分组 ${group.name}`} onClick={() => toggleGroup(group.id)}>
+                    <h3 className="workbench-group-heading"><ActionButton type="button" className="workbench-group-toggle" aria-expanded={!collapsed} aria-controls={contentId} aria-label={`${collapsed ? "展开" : "收起"}分组 ${group.name}`} onClick={() => toggleGroup(group.id)}>
                       <ChevronDown size={16} aria-hidden="true" className="workbench-group-chevron" />
                       <span className="workbench-group-name" title={group.name}>{group.name}</span>
                       {group.is_default ? (
@@ -216,10 +217,10 @@ export function CollectionsPage() {
                       <span className="text-xs text-[var(--muted-light)]">
                         {groupNotebooks.length}
                       </span>
-                    </button></h3>
+                    </ActionButton></h3>
                     {canEdit ? (
                       <div className="flex items-center gap-1">
-                        <button
+                        <ActionButton
                           className="text-action"
                           type="button"
                           aria-label="+ 笔记本"
@@ -228,8 +229,8 @@ export function CollectionsPage() {
                           }
                         >
                           <Plus aria-hidden="true" size={16} />笔记本
-                        </button>
-                        <button
+                        </ActionButton>
+                        <ActionButton
                           className="icon-button"
                           type="button"
                           aria-label={`重命名 ${group.name}`}
@@ -238,9 +239,9 @@ export function CollectionsPage() {
                           }
                         >
                           <MoreHorizontal aria-hidden="true" size={15} />
-                        </button>
+                        </ActionButton>
                         {!group.is_default ? (
-                          <button
+                          <ActionButton
                             className="icon-button danger-hover"
                             type="button"
                             aria-label={`归档 ${group.name}`}
@@ -252,7 +253,7 @@ export function CollectionsPage() {
                             }
                           >
                             <Archive aria-hidden="true" size={14} />
-                          </button>
+                          </ActionButton>
                         ) : null}
                       </div>
                     ) : null}
@@ -270,7 +271,7 @@ export function CollectionsPage() {
                             </span>
                           </Link>
                           <div className="workbench-collection-actions">
-                            <button
+                            <ActionButton
                               type="button"
                               className={`icon-button${isPinned(notebook.id) ? " is-pinned" : ""}`}
                               aria-label={isPinned(notebook.id) ? `取消置顶 ${notebook.title}` : `置顶 ${notebook.title}`}
@@ -278,14 +279,14 @@ export function CollectionsPage() {
                               onClick={() => togglePin(notebook.id)}
                             >
                               <Pin aria-hidden="true" size={14} />
-                            </button>
+                            </ActionButton>
                             {canEdit ? <>
-                              <button type="button" className="icon-button" aria-label={`编辑笔记本 ${notebook.title}`} title="编辑名称和图标" onClick={() => setDialog({ kind: "edit-notebook", resource: notebook })}>
+                              <ActionButton type="button" className="icon-button" aria-label={`编辑笔记本 ${notebook.title}`} title="编辑名称和图标" onClick={() => setDialog({ kind: "edit-notebook", resource: notebook })}>
                                 <MoreHorizontal aria-hidden="true" size={15} />
-                              </button>
-                              <button type="button" className="icon-button danger-hover" aria-label={`归档 ${notebook.title}`} onClick={() => archiveNotebook.mutate({ id: notebook.id, archived: true })}>
+                              </ActionButton>
+                              <ActionButton type="button" className="icon-button danger-hover" aria-label={`归档 ${notebook.title}`} onClick={() => archiveNotebook.mutate({ id: notebook.id, archived: true })}>
                                 <Archive aria-hidden="true" size={14} />
-                              </button>
+                              </ActionButton>
                             </> : null}
                           </div>
                           {canEdit && (notebookCounts.get(notebook.id) ?? 0) === 0 ? (
@@ -295,7 +296,7 @@ export function CollectionsPage() {
                       ))}
                     </div>
                   ) : (
-                    <button
+                    <ActionButton
                       type="button"
                       disabled={!canEdit}
                       onClick={() =>
@@ -304,7 +305,7 @@ export function CollectionsPage() {
                       className="workbench-empty-group"
                     >
                       此分组暂无笔记本{canEdit ? "，点击创建" : ""}
-                    </button>
+                    </ActionButton>
                   )}
                   </div>
                 </div>

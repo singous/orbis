@@ -1,3 +1,5 @@
+import { TextArea as HeroTextArea } from "@heroui/react/textarea";
+import { ActionButton } from "../../shared/ui/ActionButton";
 import * as Dialog from "@radix-ui/react-dialog";
 import { History, MessageSquare, X } from "lucide-react";
 import { useState, type FormEvent } from "react";
@@ -26,9 +28,9 @@ function CommentForm({ label, submitLabel, initialBody = "", onSubmit, onCancel 
     try { await onSubmit(body.trim()); setBody(""); } catch (cause) { setError(cause); } finally { setPending(false); }
   }
   return <form className="collaboration-form" onSubmit={submit}>
-    <label><span>{label}</span><textarea aria-label={label} value={body} onChange={(event) => setBody(event.target.value)} maxLength={MAX_COMMENT_LENGTH} rows={3} disabled={pending} required /></label>
+    <label><span>{label}</span><HeroTextArea aria-label={label} value={body} onChange={(event) => setBody(event.target.value)} maxLength={MAX_COMMENT_LENGTH} rows={3} disabled={pending} required /></label>
     <ErrorNotice error={error} />
-    <div className="collaboration-actions"><button className="mvp-button primary" type="submit" disabled={pending || !body.trim()}>{pending ? "正在提交…" : submitLabel}</button>{onCancel ? <button className="mvp-button secondary" type="button" disabled={pending} onClick={onCancel}>取消</button> : null}</div>
+    <div className="collaboration-actions"><ActionButton className="mvp-button primary" type="submit" disabled={pending || !body.trim()}>{pending ? "正在提交…" : submitLabel}</ActionButton>{onCancel ? <ActionButton className="mvp-button secondary" type="button" disabled={pending} onClick={onCancel}>取消</ActionButton> : null}</div>
   </form>;
 }
 
@@ -45,9 +47,9 @@ function CommentItem({ comment, parent, canManage, currentUserId, onChanged }: {
     <header><strong>{comment.author_name}</strong><time dateTime={new Date(comment.created_at_ms).toISOString()} title="UTC+8">{timestamp.format(comment.created_at_ms)}</time>{comment.is_resolved ? <span className="collaboration-resolved">已解决</span> : null}</header>
     {mode === "edit" ? <CommentForm label="编辑评论正文" submitLabel="保存评论" initialBody={comment.body} onCancel={() => setMode(null)} onSubmit={async (body) => { onChanged(await update.mutateAsync({ commentId: comment.id, body })); setMode(null); }} /> : <p className="collaboration-comment-body">{comment.body}</p>}
     <div className="collaboration-actions">
-      <button className="collaboration-text-button" type="button" aria-label="回复评论" onClick={() => setMode(mode === "reply" ? null : "reply")} disabled={create.isPending || update.isPending}>回复</button>
-      {isAuthor ? <button className="collaboration-text-button" type="button" aria-label="编辑评论" disabled={update.isPending || create.isPending} onClick={() => setMode("edit")}>编辑</button> : null}
-      {isAuthor || canManage ? <button className="collaboration-text-button" type="button" disabled={update.isPending || create.isPending} onClick={toggleResolved}>{comment.is_resolved ? "重新打开讨论" : "解决讨论"}</button> : null}
+      <ActionButton className="collaboration-text-button" type="button" aria-label="回复评论" onClick={() => setMode(mode === "reply" ? null : "reply")} disabled={create.isPending || update.isPending}>回复</ActionButton>
+      {isAuthor ? <ActionButton className="collaboration-text-button" type="button" aria-label="编辑评论" disabled={update.isPending || create.isPending} onClick={() => setMode("edit")}>编辑</ActionButton> : null}
+      {isAuthor || canManage ? <ActionButton className="collaboration-text-button" type="button" disabled={update.isPending || create.isPending} onClick={toggleResolved}>{comment.is_resolved ? "重新打开讨论" : "解决讨论"}</ActionButton> : null}
     </div>
     {mode !== "edit" ? <ErrorNotice error={update.error} /> : null}
     {mode === "reply" ? <CommentForm label="回复内容" submitLabel="发送回复" onCancel={() => setMode(null)} onSubmit={async (body) => { onChanged(await create.mutateAsync({ body, parent_id: comment.id })); setMode(null); }} /> : null}
@@ -72,10 +74,10 @@ function Comments({ noteId, canManage, currentUserId }: Pick<Props, "noteId" | "
     <CommentForm label="新评论" submitLabel="发表评论" onSubmit={async (body) => { rememberComment(await create.mutateAsync({ body })); }} />
     {query.isPending ? <p role="status">正在加载评论…</p> : null}
     <ErrorNotice error={query.error} />
-    {query.isError ? <button type="button" className="mvp-button secondary" onClick={() => void query.refetch()}>重试加载评论</button> : null}
+    {query.isError ? <ActionButton type="button" className="mvp-button secondary" onClick={() => void query.refetch()}>重试加载评论</ActionButton> : null}
     {!query.isPending && !query.isError && comments.length === 0 ? <p className="collaboration-empty">暂无评论，写下第一条想法。</p> : null}
     <div className="collaboration-comments">{comments.map((comment) => <CommentItem key={comment.id} comment={comment} parent={comment.parent_id ? byId.get(comment.parent_id) : undefined} canManage={canManage} currentUserId={currentUserId} onChanged={rememberComment} />)}</div>
-    {query.hasNextPage ? <button type="button" className="mvp-button secondary" disabled={query.isFetchingNextPage} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? "正在加载…" : "加载更多评论"}</button> : null}
+    {query.hasNextPage ? <ActionButton type="button" className="mvp-button secondary" disabled={query.isFetchingNextPage} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? "正在加载…" : "加载更多评论"}</ActionButton> : null}
   </section>;
 }
 
@@ -99,15 +101,15 @@ function Revisions({ noteId, canManage, onRestore, onBusyChange }: Pick<Props, "
     {!canManage ? <p className="collaboration-hint">只读成员可以查看历史，恢复需要编辑权限。</p> : null}
     {query.isPending ? <p role="status">正在加载历史…</p> : null}
     <ErrorNotice error={query.error} />
-    {query.isError ? <button type="button" className="mvp-button secondary" onClick={() => void query.refetch()}>重试加载历史</button> : null}
+    {query.isError ? <ActionButton type="button" className="mvp-button secondary" onClick={() => void query.refetch()}>重试加载历史</ActionButton> : null}
     {query.data?.pages[0].items.length === 0 ? <p className="collaboration-empty">暂无历史版本，首次保存正文后会在这里显示。</p> : null}
-    <div className="collaboration-revisions">{query.data?.pages.flatMap((page) => page.items).map((revision) => <button type="button" className="collaboration-revision" key={revision.id} aria-label={`查看版本 ${revision.content_version}`} aria-pressed={selectedId === revision.id} disabled={pending} onClick={() => { setSelectedId(revision.id); setError(null); setRestored(false); }}><span>版本 {revision.content_version}</span><small>{revision.author_name} · {timestamp.format(revision.created_at_ms)}</small></button>)}</div>
-    {query.hasNextPage ? <button type="button" className="mvp-button secondary" disabled={query.isFetchingNextPage || pending} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? "正在加载…" : "加载更多版本"}</button> : null}
+    <div className="collaboration-revisions">{query.data?.pages.flatMap((page) => page.items).map((revision) => <ActionButton type="button" className="collaboration-revision" key={revision.id} aria-label={`查看版本 ${revision.content_version}`} aria-pressed={selectedId === revision.id} disabled={pending} onClick={() => { setSelectedId(revision.id); setError(null); setRestored(false); }}><span>版本 {revision.content_version}</span><small>{revision.author_name} · {timestamp.format(revision.created_at_ms)}</small></ActionButton>)}</div>
+    {query.hasNextPage ? <ActionButton type="button" className="mvp-button secondary" disabled={query.isFetchingNextPage || pending} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? "正在加载…" : "加载更多版本"}</ActionButton> : null}
     {selectedId ? <div className="collaboration-preview">
       {detail.isPending ? <p role="status">正在加载版本正文…</p> : null}
       <ErrorNotice error={detail.error} />
-      {detail.isError ? <button type="button" className="mvp-button secondary" onClick={() => void detail.refetch()}>重试加载正文</button> : null}
-      {detail.data ? <><h3>版本 {detail.data.content_version} 预览</h3><AuthenticatedFileContent><ContentRenderer blocks={detail.data.blocks} /></AuthenticatedFileContent>{canManage ? <div className="collaboration-restore"><p className="collaboration-hint">恢复会先保存当前草稿，再将此正文保存为新版本。文档标题保持当前值。</p><button className="mvp-button primary" type="button" onClick={restoreSelected} disabled={pending}>{pending ? "正在保存草稿并恢复…" : "恢复此版本"}</button></div> : null}</> : null}
+      {detail.isError ? <ActionButton type="button" className="mvp-button secondary" onClick={() => void detail.refetch()}>重试加载正文</ActionButton> : null}
+      {detail.data ? <><h3>版本 {detail.data.content_version} 预览</h3><AuthenticatedFileContent><ContentRenderer blocks={detail.data.blocks} /></AuthenticatedFileContent>{canManage ? <div className="collaboration-restore"><p className="collaboration-hint">恢复会先保存当前草稿，再将此正文保存为新版本。文档标题保持当前值。</p><ActionButton className="mvp-button primary" type="button" onClick={restoreSelected} disabled={pending}>{pending ? "正在保存草稿并恢复…" : "恢复此版本"}</ActionButton></div> : null}</> : null}
       <ErrorNotice error={error} />
       {restored ? <p className="collaboration-success" role="status" aria-label="恢复结果">已恢复为新版本，原正文可在历史中找回。</p> : null}
     </div> : null}
@@ -119,8 +121,8 @@ export function DocumentCollaborationPanel(props: Props) {
   const [tab, setTab] = useState<"comments" | "revisions">("comments");
   return <Dialog.Root open onOpenChange={(open) => { if (!open && !busy) props.onClose(); }}>
     <Dialog.Portal><Dialog.Overlay className="collaboration-overlay" /><Dialog.Content className="collaboration-panel" aria-describedby="collaboration-description">
-      <header className="collaboration-panel-header"><div><Dialog.Title>评论与历史</Dialog.Title><Dialog.Description id="collaboration-description">讨论文档，查看和恢复已保存的正文。</Dialog.Description></div><Dialog.Close asChild><button className="icon-button" type="button" aria-label="关闭评论与历史" disabled={busy}><X size={18} aria-hidden="true" /></button></Dialog.Close></header>
-      <div className="collaboration-tabs" aria-label="协作面板内容"><button type="button" disabled={busy} aria-pressed={tab === "comments"} onClick={() => setTab("comments")}><MessageSquare size={15} aria-hidden="true" />评论</button><button type="button" disabled={busy} aria-pressed={tab === "revisions"} onClick={() => setTab("revisions")}><History size={15} aria-hidden="true" />历史版本</button></div>
+      <header className="collaboration-panel-header"><div><Dialog.Title>评论与历史</Dialog.Title><Dialog.Description id="collaboration-description">讨论文档，查看和恢复已保存的正文。</Dialog.Description></div><Dialog.Close asChild><ActionButton className="icon-button" type="button" aria-label="关闭评论与历史" disabled={busy}><X size={18} aria-hidden="true" /></ActionButton></Dialog.Close></header>
+      <div className="collaboration-tabs" aria-label="协作面板内容"><ActionButton type="button" disabled={busy} aria-pressed={tab === "comments"} onClick={() => setTab("comments")}><MessageSquare size={15} aria-hidden="true" />评论</ActionButton><ActionButton type="button" disabled={busy} aria-pressed={tab === "revisions"} onClick={() => setTab("revisions")}><History size={15} aria-hidden="true" />历史版本</ActionButton></div>
       <div className="collaboration-panel-scroll"><div hidden={tab !== "comments"}><Comments {...props} /></div>{tab === "revisions" ? <Revisions {...props} onBusyChange={setBusy} /> : null}</div>
     </Dialog.Content></Dialog.Portal>
   </Dialog.Root>;

@@ -1,3 +1,5 @@
+import { Input as HeroInput } from "@heroui/react/input";
+import { ActionButton } from "../../shared/ui/ActionButton";
 import {
   ArrowRight,
   BookOpen,
@@ -78,8 +80,8 @@ export function HomePage() {
             <h2>工作空间</h2>
             <form className="workbench-inline-search" onSubmit={submitSearch} role="search">
               <Search aria-hidden="true" size={15} />
-              <input type="search" aria-label="搜索文档" placeholder="搜索文档…" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
-              <button type="submit" aria-label="搜索"><ArrowRight aria-hidden="true" size={15} /></button>
+              <HeroInput type="search" aria-label="搜索文档" placeholder="搜索文档…" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
+              <ActionButton type="submit" aria-label="搜索"><ArrowRight aria-hidden="true" size={15} /></ActionButton>
             </form>
           </header>
           <div className="workbench-resource-grid">

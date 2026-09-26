@@ -1,3 +1,5 @@
+import { Input as HeroInput } from "@heroui/react/input";
+import { ActionButton } from "../../shared/ui/ActionButton";
 import { AlertTriangle, Archive, ArrowLeft, Check, Cloud, Download, Eye, EyeOff, MessageSquare, RefreshCw, RotateCcw, Save, WifiOff } from "lucide-react";
 import { Component, lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -284,9 +286,9 @@ export function DocumentEditorPage() {
 
   const toolbar = (
     <div className="flex items-center gap-2">
-      <button ref={collaborationTriggerRef} type="button" className="icon-button" aria-label="评论与历史" aria-haspopup="dialog" aria-expanded={collaborationOpen} disabled={!draft || archiving} onClick={() => setCollaborationOpen(true)}><MessageSquare aria-hidden="true" size={16} /></button>
+      <ActionButton ref={collaborationTriggerRef} type="button" className="icon-button" aria-label="评论与历史" aria-haspopup="dialog" aria-expanded={collaborationOpen} disabled={!draft || archiving} onClick={() => setCollaborationOpen(true)}><MessageSquare aria-hidden="true" size={16} /></ActionButton>
       <span className={`save-indicator state-${saveState}`}><StateIcon aria-hidden="true" size={13} className={saveState === "saving" ? "animate-spin" : ""} />{stateCopy.label}</span>
-      {canEdit ? <button type="button" className="icon-button danger-hover" aria-label="归档文档" disabled={!draft || editorBusy} onClick={handleArchive}><Archive aria-hidden="true" size={15} /></button> : null}
+      {canEdit ? <ActionButton type="button" className="icon-button danger-hover" aria-label="归档文档" disabled={!draft || editorBusy} onClick={handleArchive}><Archive aria-hidden="true" size={15} /></ActionButton> : null}
     </div>
   );
 
@@ -296,7 +298,7 @@ export function DocumentEditorPage() {
         <div className={`editor-layout${outlineOpen ? " outline-open" : ""}`}>
           <article className="editor-canvas">
             <Link to={`/collections/${noteQuery.data.notebook_id}`} className="mb-7 inline-flex items-center gap-2 text-xs font-medium text-[var(--muted)] hover:text-black"><ArrowLeft aria-hidden="true" size={14} />返回笔记本</Link>
-            <input
+            <HeroInput
               aria-label="文档标题"
               className="editor-title"
               placeholder="无标题"
@@ -328,7 +330,7 @@ export function DocumentEditorPage() {
             onMouseEnter={() => setOutlineHovered(true)}
             onMouseLeave={() => setOutlineHovered(false)}
           >
-            <button
+            <ActionButton
               type="button"
               className="editor-outline-pin"
               aria-label={outlinePinned ? "取消大纲常驻" : "大纲常驻"}
@@ -337,7 +339,7 @@ export function DocumentEditorPage() {
               onClick={() => setOutlinePinned((v) => !v)}
             >
               {outlinePinned ? <Eye aria-hidden="true" size={14} /> : <EyeOff aria-hidden="true" size={14} />}
-            </button>
+            </ActionButton>
             <div className="editor-outline-body">
               <div className="mb-4 text-xs font-semibold text-[var(--muted)]">大纲</div>
               {outline.length ? <nav className="space-y-1">{outline.map((item) => <div key={item.id} className="truncate rounded-md py-1.5 text-xs text-[var(--muted)]" style={{ paddingLeft: `${(item.level - 1) * 10}px` }}>{item.text}</div>)}</nav> : <p className="text-xs leading-5 text-[var(--muted-light)]">添加标题后，这里会自动生成大纲。</p>}

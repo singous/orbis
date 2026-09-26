@@ -1,3 +1,4 @@
+import { ActionButton } from "../../shared/ui/ActionButton";
 import {
   ArchiveRestore,
   BookOpen,
@@ -89,7 +90,7 @@ function ArchiveSection({
                 ) : null}
               </div>
               {canRestore ? (
-                <button
+                <ActionButton
                   type="button"
                   className="text-action inline-flex items-center gap-1"
                   aria-label={pendingId === resource.id ? `正在恢复 ${resource.label}` : `恢复 ${resource.label}`}
@@ -98,7 +99,7 @@ function ArchiveSection({
                 >
                   <ArchiveRestore aria-hidden="true" size={14} />
                   {pendingId === resource.id ? "正在恢复" : "恢复"}
-                </button>
+                </ActionButton>
               ) : null}
             </div>
           ))}

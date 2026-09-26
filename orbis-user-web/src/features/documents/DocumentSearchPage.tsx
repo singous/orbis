@@ -1,3 +1,5 @@
+import { Input as HeroInput } from "@heroui/react/input";
+import { ActionButton } from "../../shared/ui/ActionButton";
 import { FilePlus2, Search, X } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 
@@ -37,7 +39,7 @@ export function DocumentSearchPage() {
               size={17}
               className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--muted-light)]"
             />
-            <input
+            <HeroInput
               type="search"
               role="searchbox"
               aria-label="搜索文档"
@@ -63,14 +65,14 @@ export function DocumentSearchPage() {
           </p>
         )}
         {trimmedQuery ? (
-          <button
+          <ActionButton
             type="button"
             className="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-[var(--muted)] hover:text-black"
             onClick={() => setQuery("")}
           >
             <X aria-hidden="true" size={14} />
             清空搜索
-          </button>
+          </ActionButton>
         ) : null}
         {trimmedQuery && notesQuery.isLoading ? (
           <div className="empty-panel">正在搜索…</div>
