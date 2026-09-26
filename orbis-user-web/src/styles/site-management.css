@@ -120,6 +120,7 @@
 
 .site-source-mode {
   display: inline-flex;
+  flex-direction: row;
   gap: 4px;
   border: 0;
   border-radius: 10px;
@@ -300,10 +301,16 @@
   place-items: center;
 }
 
-.site-source-check input {
+.site-source-check .checkbox__control {
   width: 14px;
   height: 14px;
-  accent-color: var(--surface-inverse);
+  border-radius: 3px;
+  border: 1px solid var(--border-strong);
+}
+
+.site-source-check .checkbox__indicator svg {
+  width: 10px;
+  height: 10px;
 }
 
 .site-source-node-row > svg {

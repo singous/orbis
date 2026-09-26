@@ -1,4 +1,6 @@
 import { Input as HeroInput } from "@heroui/react/input";
+import { Radio } from "@heroui/react/radio";
+import { RadioGroup } from "@heroui/react/radio-group";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 
@@ -96,10 +98,10 @@ export function SiteSourceEditor({
 
   return <section className="site-source-editor" aria-labelledby="site-source-title">
     <div className="site-section-heading"><div><h2 id="site-source-title">内容来源</h2><p>关联笔记本后，新文档与标题更新会在下次预览时自动出现。</p></div></div>
-    <fieldset className="site-source-mode" disabled={disabled}>
-      <label><input type="radio" name="site-source-kind" checked={source.kind === "notebooks"} onChange={() => setMode("notebooks")} />关联笔记本</label>
-      <label><input type="radio" name="site-source-kind" checked={source.kind === "manual"} onChange={() => setMode("manual")} />手动选择</label>
-    </fieldset>
+    <RadioGroup className="site-source-mode" aria-label="内容来源方式" name="site-source-kind" orientation="horizontal" isDisabled={disabled} value={source.kind} onChange={(kind) => { if (kind === "notebooks" || kind === "manual") setMode(kind); }}>
+      <Radio value="notebooks"><Radio.Content>关联笔记本</Radio.Content></Radio>
+      <Radio value="manual"><Radio.Content>手动选择</Radio.Content></Radio>
+    </RadioGroup>
     {source.kind === "manual" ? <div className="site-source-manual-note"><strong>手动选择目录</strong><p>继续使用下方站点目录。切换到笔记本来源不会删除这些手选项，切回后仍可继续编辑。</p></div> : <>
       {notebooks.isPending ? <p className="mvp-muted">正在加载笔记本…</p> : notebooks.isError ? <p role="alert" className="site-source-inline-error">无法加载笔记本。<ActionButton type="button" onClick={() => void notebooks.refetch()}>重试</ActionButton></p> : null}
       {source.notebooks.map((binding, index) => <SourceBinding

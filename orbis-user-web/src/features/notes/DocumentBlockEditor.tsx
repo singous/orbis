@@ -1,3 +1,5 @@
+import { Input as HeroInput } from "@heroui/react/input";
+import { ActionButton } from "../../shared/ui/ActionButton";
 import { BlockNoteSchema, createCodeBlockSpec, defaultBlockSpecs, type PropSchema } from "@blocknote/core";
 import { createReactBlockSpec } from "@blocknote/react";
 import { BookOpen, Code2, Info, Layers, ListOrdered, Plus } from "lucide-react";
@@ -57,11 +59,11 @@ function ComponentEditor({ kind, props, contentRef, updateProps, addChild }: {
         const label = name === "title" ? definition.label + "标题" : PROP_LABELS[name] || name;
         return <label key={name}><span>{label}</span>{rule.values ? <select aria-label={label} value={String(props[name] ?? rule.default)} onChange={(event) => updateProps({ [name]: typeof rule.default === "number" ? Number(event.target.value) : event.target.value })}>
           {rule.values.map((value) => <option key={value} value={value}>{VALUE_LABELS[String(value)] || String(value)}</option>)}
-        </select> : <input aria-label={label} maxLength={rule.maxLength} value={String(props[name] ?? rule.default)}
+        </select> : <HeroInput aria-label={label} maxLength={rule.maxLength} value={String(props[name] ?? rule.default)}
           placeholder={name === "href" ? "https://… 或内部文档链接" : "输入标题"}
           onChange={(event) => updateProps({ [name]: event.target.value })} />}</label>;
       })}
-      {GROUP_CHILD[kind] ? <button type="button" onClick={addChild}><Plus size={13} aria-hidden="true" />添加{kind === "codeGroup" ? "代码示例" : DOCUMENT_BLOCKS[GROUP_CHILD[kind] as DocumentBlockKind].label}</button> : null}
+      {GROUP_CHILD[kind] ? <ActionButton type="button" onClick={addChild}><Plus size={13} aria-hidden="true" />添加{kind === "codeGroup" ? "代码示例" : DOCUMENT_BLOCKS[GROUP_CHILD[kind] as DocumentBlockKind].label}</ActionButton> : null}
     </div>}
     {definition.content === "inline" ? <div ref={contentRef} className="doc-editor-inline" /> : null}
   </div>;

@@ -41,8 +41,16 @@ test("notebook icons persist through preset creation, group folding, image uploa
   const group = page.locator(".workbench-collection-group").filter({ has: page.locator(".workbench-group-name").filter({ hasText: groupName }) });
   await group.getByRole("button", { name: "+ 笔记本", exact: true }).click();
   await page.getByLabel("笔记本名称", { exact: true }).fill(notebookTitle);
-  await page.getByRole("radio", { name: "灵感", exact: true }).click();
-  await page.getByRole("radio", { name: "琥珀黄", exact: true }).click();
+  await page.getByTitle("灵感", { exact: true }).click();
+  await page.getByRole("radio", { name: "灵感", exact: true }).press("ArrowRight");
+  await expect(page.getByRole("radio", { name: "代码", exact: true })).toBeChecked();
+  await expect(page.getByRole("radio", { name: "代码", exact: true })).toBeFocused();
+  await page.getByRole("radio", { name: "代码", exact: true }).press("Home");
+  await expect(page.getByRole("radio", { name: "书本", exact: true })).toBeChecked();
+  await page.getByRole("radio", { name: "书本", exact: true }).press("End");
+  await expect(page.getByRole("radio", { name: "音乐", exact: true })).toBeChecked();
+  await page.getByTitle("灵感", { exact: true }).click();
+  await page.getByTitle("琥珀黄", { exact: true }).click();
   await page.getByRole("button", { name: "创建笔记本", exact: true }).click();
   await expect(page).toHaveURL(/\/collections\/[0-9a-f-]+$/);
   const notebookId = page.url().split("/").pop()!;
@@ -62,7 +70,7 @@ test("notebook icons persist through preset creation, group folding, image uploa
 
   await card.getByRole("button", { name: `编辑笔记本 ${notebookTitle}`, exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "编辑笔记本", exact: true });
-  await expect(dialog.getByRole("radio", { name: "灵感", exact: true })).toHaveAttribute("aria-checked", "true");
+  await expect(dialog.getByRole("radio", { name: "灵感", exact: true })).toBeChecked();
   await dialog.getByLabel("上传自定义图标", { exact: true }).setInputFiles({ name: "mint-icon.png", mimeType: "image/png", buffer: iconPng });
   const preview = dialog.getByAltText("自定义笔记本图标", { exact: true });
   await expect(preview).toBeVisible();

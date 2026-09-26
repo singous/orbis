@@ -1,6 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 export function DocumentTabs({ id, panels }: { id: string; panels: Array<{ title: string; content: ReactNode }> }) {
+  // Published HTML owns these stable anchor IDs. Keep every panel mounted so a
+  // hash link into hidden content can reveal its panel before scrolling.
   const [selected, setSelected] = useState(0);
   const controls = useRef<Array<HTMLButtonElement | null>>([]);
   const containers = useRef<Array<HTMLDivElement | null>>([]);

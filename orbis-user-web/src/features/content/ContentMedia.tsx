@@ -1,3 +1,4 @@
+import { ActionButton } from "../../shared/ui/ActionButton";
 import { createContext, useContext, useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import { FileContentContext } from "../files/FileContent";
 import { parseFileReference } from "../files/managed-files";
@@ -41,7 +42,7 @@ export function ContentMedia({ kind, reference, fallback, name, caption }: {
   caption?: string;
 }) {
   const resource = useContentResource(reference, fallback);
-  if (!resource.url) return <p className="content-unavailable">{name}（{resource.loading ? "正在加载…" : "资源不可用"}）{resource.canRetry ? <button type="button" onClick={resource.retry}>重新加载附件</button> : null}</p>;
+  if (!resource.url) return <p className="content-unavailable">{name}（{resource.loading ? "正在加载…" : "资源不可用"}）{resource.canRetry ? <ActionButton type="button" onClick={resource.retry}>重新加载附件</ActionButton> : null}</p>;
   return <figure>{kind === "image" ? <img src={resource.url} alt={caption || name} loading="lazy" />
     : kind === "video" ? <video src={resource.url} controls preload="metadata" aria-label={caption || name} />
     : kind === "audio" ? <audio src={resource.url} controls preload="metadata" aria-label={caption || name} />
@@ -63,5 +64,5 @@ export function ManagedContentLink({ reference, fallback, children, className }:
   const resource = useContentResource(reference, fallback);
   const links = useContext(ContentLinkContext);
   return resource.url ? <a className={className} href={links?.resolve(resource.url) ?? resource.url} onClick={links?.onClick ? (event) => links.onClick?.(event, resource.url!) : undefined} download={resource.managed || undefined} rel="noopener noreferrer">{children}</a>
-    : <span className={className}>{children}{resource.loading ? <small>（附件加载中…）</small> : resource.canRetry ? <button type="button" onClick={resource.retry}>重新加载附件</button> : null}</span>;
+    : <span className={className}>{children}{resource.loading ? <small>（附件加载中…）</small> : resource.canRetry ? <ActionButton type="button" onClick={resource.retry}>重新加载附件</ActionButton> : null}</span>;
 }

@@ -1,3 +1,4 @@
+import { ActionButton } from "../../shared/ui/ActionButton";
 import { Check, Copy } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -31,7 +32,7 @@ export function CodeBlock({ source, language = "text" }: { source: string; langu
   }
   const html = highlighted?.source === source && highlighted.language === language ? highlighted.html : null;
   return <div className="content-code">
-    <div className="content-code-toolbar"><span>{codeLanguageLabel(language)}</span><button type="button" aria-label="复制代码" onClick={() => void copy()}>{copyState === "copied" ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}<span>{copyState === "copied" ? "已复制" : "复制"}</span></button></div>
+    <div className="content-code-toolbar"><span>{codeLanguageLabel(language)}</span><ActionButton type="button" aria-label="复制代码" onClick={() => void copy()}>{copyState === "copied" ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}<span>{copyState === "copied" ? "已复制" : "复制"}</span></ActionButton></div>
     <pre tabIndex={0} aria-label={codeLanguageLabel(language) + " 代码"}>{html === null ? <code>{source}</code> : <code dangerouslySetInnerHTML={{ __html: html }} />}</pre>
     {copyState === "failed" ? <p className="content-copy-feedback" role="status">复制失败，请选择代码后手动复制。</p> : null}
   </div>;

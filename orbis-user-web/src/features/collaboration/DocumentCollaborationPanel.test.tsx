@@ -8,10 +8,10 @@ import { DocumentCollaborationPanel } from "./DocumentCollaborationPanel";
 import { COMMENT_ID, NEXT_ID, NOTE_ID, OTHER_ID, REVISION_ID, USER_ID, blocks, comment, content, http, page, response, revision, session } from "./collaboration.test-utils";
 
 const clients: QueryClient[] = [];
-function showPanel({ canManage = true, onRestore = async (restore: (version: number) => Promise<NoteContent>) => { await restore(4); } } = {}) {
+function showPanel({ canManage = true, onClose = () => {}, onRestore = async (restore: (version: number) => Promise<NoteContent>) => { await restore(4); } } = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   clients.push(client);
-  render(<QueryClientProvider client={client}><DocumentCollaborationPanel noteId={NOTE_ID} currentUserId={USER_ID} canManage={canManage} onClose={() => {}} onRestore={onRestore} /></QueryClientProvider>);
+  render(<QueryClientProvider client={client}><DocumentCollaborationPanel noteId={NOTE_ID} currentUserId={USER_ID} canManage={canManage} onClose={onClose} onRestore={onRestore} /></QueryClientProvider>);
   return client;
 }
 
@@ -19,6 +19,27 @@ beforeEach(() => { act(() => authStore.setState(session)); });
 afterEach(() => { cleanup(); clients.forEach((client) => client.clear()); clients.length = 0; vi.unstubAllGlobals(); act(() => authStore.getState().clearSession()); });
 
 describe("document collaboration", () => {
+  it("blocks dismissal while restoring and allows Escape after the operation finishes", async () => {
+    http((url) => response(url.pathname.endsWith(REVISION_ID)
+      ? { ...revision, blocks: blocks("历史正文"), plain_text: "历史正文" }
+      : page(url.pathname.endsWith("revisions") ? [revision] : [])));
+    let finish: () => void = () => {};
+    const pending = new Promise<void>((resolve) => { finish = resolve; });
+    const onClose = vi.fn();
+    const user = userEvent.setup();
+    showPanel({ onClose, onRestore: async () => { await pending; } });
+    await user.click(screen.getByRole("button", { name: "历史版本" }));
+    await user.click(await screen.findByRole("button", { name: "查看版本 2" }));
+    await user.click(await screen.findByRole("button", { name: "恢复此版本" }));
+    expect(screen.getByRole("button", { name: "关闭评论与历史" })).toBeDisabled();
+    await user.keyboard("{Escape}");
+    expect(onClose).not.toHaveBeenCalled();
+    await act(async () => { finish(); await pending; });
+    await screen.findByRole("status", { name: "恢复结果" });
+    await user.keyboard("{Escape}");
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
   it("submits a comment and reply, then edits and resolves through the real query cache", async () => {
     let comments = [comment()];
     const requests = http((url, init) => {

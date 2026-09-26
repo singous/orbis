@@ -53,7 +53,7 @@ describe("notebook icons", () => {
     await user.type(screen.getByRole("textbox", { name: "笔记本名称" }), "  产品想法  ");
     await user.click(screen.getByRole("radio", { name: "灵感" }));
     await user.click(screen.getByRole("radio", { name: "琥珀黄" }));
-    expect(screen.getByRole("radio", { name: "灵感" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: "灵感" })).toBeChecked();
     await user.click(screen.getByRole("button", { name: "创建" }));
     expect(onSubmit).toHaveBeenCalledWith({ title: "产品想法", icon: { type: "preset", name: "lightbulb", color: "amber" } });
   });
@@ -65,7 +65,7 @@ describe("notebook icons", () => {
     await user.click(screen.getByRole("radio", { name: "灵感" }));
     await user.keyboard("[ArrowRight]");
     expect(screen.getByRole("radio", { name: "代码" })).toHaveFocus();
-    expect(screen.getByRole("radio", { name: "代码" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: "代码" })).toBeChecked();
     await user.keyboard("[Home]");
     expect(screen.getByRole("radio", { name: "书本" })).toHaveFocus();
     await user.keyboard("[End]");
@@ -88,7 +88,7 @@ describe("notebook icons", () => {
     expect(onSubmit).toHaveBeenCalledWith({ title: "研发", icon: null });
     view.rerender(<NotebookDialog open={false} {...props} />);
     view.rerender(<NotebookDialog open {...props} />);
-    expect(screen.getByRole("radio", { name: "代码" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: "代码" })).toBeChecked();
   });
 
   it("blocks submission during upload and saves the server file id after previewing", async () => {
@@ -135,7 +135,7 @@ describe("notebook icons", () => {
     await user.click(screen.getByRole("radio", { name: "火箭" }));
     await user.upload(screen.getByLabelText("上传自定义图标"), new File(["image"], "icon.png", { type: "image/png" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("图标上传失败");
-    expect(screen.getByRole("radio", { name: "火箭" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: "火箭" })).toBeChecked();
     await user.click(screen.getByRole("button", { name: "创建" }));
     await waitFor(() => expect(screen.getAllByRole("alert").some((node) => node.textContent?.includes("笔记本名称已存在"))).toBe(true));
   });

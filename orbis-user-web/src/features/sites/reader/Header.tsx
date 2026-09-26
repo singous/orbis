@@ -1,3 +1,4 @@
+import { ActionButton } from "../../../shared/ui/ActionButton";
 import { BookOpen, Menu, Monitor, Moon, Search, Sun, X } from "lucide-react";
 import type { RefObject } from "react";
 import { Link } from "react-router-dom";
@@ -36,14 +37,14 @@ export function Header({ name, basePath, logoUrl, links, cta, sections, currentS
         {logoUrl ? <ManagedContentImage reference={logoUrl} fallback={logoUrl} alt="" unavailable={brandMark} /> : brandMark}
         <span>{name}</span>
       </Link>
-      <button ref={searchButtonRef} type="button" className="site-reader-search-trigger" aria-label="搜索文档" onClick={onSearch}>
+      <ActionButton ref={searchButtonRef} type="button" className="site-reader-search-trigger" aria-label="搜索文档" onClick={onSearch}>
         <Search aria-hidden="true" size={15} /><span>搜索文档</span><kbd>⌘ K</kbd>
-      </button>
+      </ActionButton>
       <div className="site-reader-header-links">
         {links.map((link) => <ManagedContentLink key={`${link.label}-${link.url}`} reference={link.url} fallback={link.url}>{link.label}</ManagedContentLink>)}
         {cta ? <ManagedContentLink className="site-reader-cta" reference={cta.url} fallback={cta.url}>{cta.label}</ManagedContentLink> : null}
-        <button type="button" className="site-reader-icon-button" aria-label={themeActionLabel} title={`主题：${THEME_LABELS[themeMode]}，下一项：${THEME_LABELS[nextTheme]}`} onClick={() => onThemeChange(nextTheme)}><ThemeIcon aria-hidden="true" size={17} /></button>
-        <button ref={navigationButtonRef} type="button" className="site-reader-icon-button site-reader-menu-toggle" aria-label={navigationOpen ? "关闭站点导航" : "打开站点导航"} aria-expanded={navigationOpen} aria-controls="site-navigation" onClick={onNavigationToggle}>{navigationOpen ? <X aria-hidden="true" size={20} /> : <Menu aria-hidden="true" size={20} />}</button>
+        <ActionButton type="button" className="site-reader-icon-button" aria-label={themeActionLabel} title={`主题：${THEME_LABELS[themeMode]}，下一项：${THEME_LABELS[nextTheme]}`} onClick={() => onThemeChange(nextTheme)}><ThemeIcon aria-hidden="true" size={17} /></ActionButton>
+        <ActionButton ref={navigationButtonRef} type="button" className="site-reader-icon-button site-reader-menu-toggle" aria-label={navigationOpen ? "关闭站点导航" : "打开站点导航"} aria-expanded={navigationOpen} aria-controls="site-navigation" onClick={onNavigationToggle}>{navigationOpen ? <X aria-hidden="true" size={20} /> : <Menu aria-hidden="true" size={20} />}</ActionButton>
       </div>
     </div>
     {sections.length ? <nav className="site-reader-sections" aria-label="文档栏目">

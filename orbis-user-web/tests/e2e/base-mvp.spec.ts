@@ -37,6 +37,46 @@ test("personal writing, team discussion and a versioned documentation site work 
   await page.getByLabel("新评论", { exact: true }).fill("这一版欢迎页可以进入发布预览。");
   await page.getByRole("button", { name: "发表评论", exact: true }).click();
   await expect(page.getByText("这一版欢迎页可以进入发布预览。", { exact: true })).toBeVisible();
+  const comment = page.getByText("这一版欢迎页可以进入发布预览。", { exact: true });
+  await comment.hover();
+  await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).userSelect)).not.toBe("none");
+  const commentBounds = (await comment.boundingBox())!;
+  await page.mouse.move(commentBounds.x + 3, commentBounds.y + commentBounds.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(commentBounds.x + 230, commentBounds.y + commentBounds.height / 2, { steps: 12 });
+  await page.mouse.up();
+  await expect(page.getByRole("dialog", { name: "评论与历史", exact: true })).toBeVisible();
+  expect(await page.evaluate(() => window.getSelection()?.toString())).toContain("欢迎页");
+
+  const longComment = await request.post(`${apiOrigin}/notes/${noteId}/comments`, {
+    headers, data: { body: "在手机上滚动阅读较长的讨论内容，评论面板应保持打开。\n".repeat(24) },
+  });
+  expect(longComment.status()).toBe(201);
+  const touchContext = await browser.newContext({
+    viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true,
+    storageState: await page.context().storageState(),
+  });
+  const touchPage = await touchContext.newPage();
+  await touchPage.goto(`${webOrigin}/documents/${noteId}`);
+  await touchPage.getByRole("button", { name: "评论与历史", exact: true }).click();
+  const touchDialog = touchPage.getByRole("dialog", { name: "评论与历史", exact: true });
+  const scrollBody = touchDialog.locator(".collaboration-panel-scroll");
+  await expect.poll(() => scrollBody.evaluate((body) => body.scrollHeight - body.clientHeight)).toBeGreaterThan(100);
+  await expect.poll(async () => Math.round((await touchDialog.boundingBox())!.x)).toBe(0);
+  const scrollBounds = (await scrollBody.boundingBox())!;
+  const touchSession = await touchContext.newCDPSession(touchPage);
+  const touchX = scrollBounds.x + scrollBounds.width / 2;
+  const touchStartY = scrollBounds.y + scrollBounds.height - 48;
+  await touchSession.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: touchX, y: touchStartY }] });
+  for (let step = 1; step <= 10; step += 1) {
+    await touchSession.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: touchX, y: touchStartY - step * 30 }] });
+    await touchPage.waitForTimeout(16); // Model consecutive touch frames for a real scroll gesture.
+  }
+  await touchSession.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  await expect.poll(() => scrollBody.evaluate((body) => body.scrollTop)).toBeGreaterThan(100);
+  await expect(touchDialog).toBeVisible();
+  await touchContext.close();
+
   await page.getByRole("button", { name: "历史版本", exact: true }).click();
   await page.getByRole("button", { name: "查看版本 1", exact: true }).click();
   await expect(page.getByRole("heading", { name: "版本 1 预览" })).toBeVisible();

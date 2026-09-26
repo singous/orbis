@@ -1,6 +1,6 @@
 import { TextArea as HeroTextArea } from "@heroui/react/textarea";
 import { ActionButton } from "../../shared/ui/ActionButton";
-import * as Dialog from "@radix-ui/react-dialog";
+import { Drawer } from "@heroui/react/drawer";
 import { History, MessageSquare, X } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { ApiError } from "../../shared/api/api-client";
@@ -119,11 +119,11 @@ function Revisions({ noteId, canManage, onRestore, onBusyChange }: Pick<Props, "
 export function DocumentCollaborationPanel(props: Props) {
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<"comments" | "revisions">("comments");
-  return <Dialog.Root open onOpenChange={(open) => { if (!open && !busy) props.onClose(); }}>
-    <Dialog.Portal><Dialog.Overlay className="collaboration-overlay" /><Dialog.Content className="collaboration-panel" aria-describedby="collaboration-description">
-      <header className="collaboration-panel-header"><div><Dialog.Title>评论与历史</Dialog.Title><Dialog.Description id="collaboration-description">讨论文档，查看和恢复已保存的正文。</Dialog.Description></div><Dialog.Close asChild><ActionButton className="icon-button" type="button" aria-label="关闭评论与历史" disabled={busy}><X size={18} aria-hidden="true" /></ActionButton></Dialog.Close></header>
+  return <Drawer.Backdrop isOpen isDismissable={!busy} isKeyboardDismissDisabled={busy} onOpenChange={(open) => { if (!open && !busy) props.onClose(); }} className="collaboration-overlay">
+    <Drawer.Content placement="right" className="collaboration-drawer"><Drawer.Dialog className="collaboration-panel" aria-describedby="collaboration-description">
+      <header className="collaboration-panel-header"><div><Drawer.Heading>评论与历史</Drawer.Heading><p id="collaboration-description">讨论文档，查看和恢复已保存的正文。</p></div><ActionButton className="icon-button" type="button" aria-label="关闭评论与历史" disabled={busy} onClick={props.onClose}><X size={18} aria-hidden="true" /></ActionButton></header>
       <div className="collaboration-tabs" aria-label="协作面板内容"><ActionButton type="button" disabled={busy} aria-pressed={tab === "comments"} onClick={() => setTab("comments")}><MessageSquare size={15} aria-hidden="true" />评论</ActionButton><ActionButton type="button" disabled={busy} aria-pressed={tab === "revisions"} onClick={() => setTab("revisions")}><History size={15} aria-hidden="true" />历史版本</ActionButton></div>
-      <div className="collaboration-panel-scroll"><div hidden={tab !== "comments"}><Comments {...props} /></div>{tab === "revisions" ? <Revisions {...props} onBusyChange={setBusy} /> : null}</div>
-    </Dialog.Content></Dialog.Portal>
-  </Dialog.Root>;
+      <Drawer.Body className="collaboration-panel-scroll"><div hidden={tab !== "comments"}><Comments {...props} /></div>{tab === "revisions" ? <Revisions {...props} onBusyChange={setBusy} /> : null}</Drawer.Body>
+    </Drawer.Dialog></Drawer.Content>
+  </Drawer.Backdrop>;
 }

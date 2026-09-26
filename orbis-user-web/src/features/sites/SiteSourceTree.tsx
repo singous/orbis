@@ -1,4 +1,5 @@
 import { Input as HeroInput } from "@heroui/react/input";
+import { Checkbox } from "@heroui/react/checkbox";
 import { TextArea as HeroTextArea } from "@heroui/react/textarea";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { ChevronDown, ChevronRight, FileText, PencilLine } from "lucide-react";
@@ -45,20 +46,19 @@ export function SiteSourceTree({ items, rootNoteId, source, resolved, disabled, 
       const resolvedPage = resolvedById.get(node.id);
       return <li key={node.id} className="site-source-node" style={{ "--source-depth": depth } as React.CSSProperties}>
         <div className="site-source-node-row">
-          <label className="site-source-check">
-            <input
-              type="checkbox"
+          <Checkbox className="site-source-check"
               aria-label={`公开 ${node.title}`}
-              checked={publiclyIncluded}
-              disabled={disabled || affectedByParent}
-              onChange={(event) => onChange({
+              isSelected={publiclyIncluded}
+              isDisabled={disabled || affectedByParent}
+              onChange={(checked) => onChange({
                 ...source,
-                excluded_note_ids: event.target.checked
+                excluded_note_ids: checked
                   ? source.excluded_note_ids.filter((id) => id !== node.id)
                   : [...source.excluded_note_ids, node.id],
               })}
-            />
-          </label>
+          >
+            <Checkbox.Content><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control></Checkbox.Content>
+          </Checkbox>
           <FileText aria-hidden="true" size={15} />
           <div className="site-source-node-copy">
             <Link to={`/documents/${node.id}`}>{node.title}</Link>
