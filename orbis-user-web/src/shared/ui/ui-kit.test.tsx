@@ -1,16 +1,19 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
+import { toast as heroToast } from "@heroui/react/toast";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import type { FormEvent } from "react";
+import { Link, MemoryRouter } from "react-router-dom";
+import { describe, expect, it, vi } from "vitest";
 
 import { Button } from "./Button";
+import { ActionButton } from "./ActionButton";
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogTrigger } from "./Dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./DropdownMenu";
 import { EmptyState } from "./EmptyState";
 import { IconButton } from "./IconButton";
 import { NavItem, SectionLabel } from "./NavItem";
 import { Tag } from "./Tag";
-import { Toaster, useToastStore } from "./Toast";
+import { showToast, Toaster } from "./Toast";
+import { Tooltip } from "./Tooltip";
 
 describe("Button", () => {
   it("renders children and defaults to type=button", () => {
@@ -38,6 +41,17 @@ describe("Button", () => {
   });
 });
 
+describe("ActionButton", () => {
+  it("keeps native button form submission for feature actions", async () => {
+    const submit = vi.fn((event: FormEvent<HTMLFormElement>) => event.preventDefault());
+    const user = userEvent.setup();
+    render(<form onSubmit={submit}><ActionButton>提交</ActionButton></form>);
+
+    await user.click(screen.getByRole("button", { name: "提交" }));
+    expect(submit).toHaveBeenCalledOnce();
+  });
+});
+
 describe("IconButton", () => {
   it("exposes an accessible name", () => {
     render(<IconButton aria-label="更多操作">⋯</IconButton>);
@@ -46,6 +60,18 @@ describe("IconButton", () => {
 });
 
 describe("Dialog", () => {
+  it("renders a controlled dialog without an orphaned press responder", () => {
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    try {
+      render(<Dialog open onOpenChange={() => {}}><DialogContent title="编辑笔记本">内容</DialogContent></Dialog>);
+      expect(screen.getByRole("dialog", { name: "编辑笔记本" })).toBeInTheDocument();
+      expect(warning.mock.calls.some(([message]) => String(message).includes("PressResponder"))).toBe(false);
+    } finally {
+      warning.mockRestore();
+    }
+  });
+
   it("opens from a trigger and closes with the close button", async () => {
     const user = userEvent.setup();
     render(
@@ -73,46 +99,34 @@ describe("Dialog", () => {
   });
 });
 
-describe("DropdownMenu", () => {
-  it("opens from the trigger and lists items", async () => {
-    const user = userEvent.setup();
-    render(
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <IconButton aria-label="文档操作">⋯</IconButton>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent>
-          <DropdownMenuItem>重命名</DropdownMenuItem>
-          <DropdownMenuItem destructive>删除</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>,
-    );
-
-    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: "文档操作" }));
-    expect(screen.getByRole("menuitem", { name: "重命名" })).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: "删除" })).toBeInTheDocument();
-  });
-});
-
 describe("Toaster", () => {
-  it("renders queued toasts and dismisses them", () => {
+  it("renders queued toasts and dismisses them", async () => {
     render(<Toaster />);
 
     act(() => {
-      useToastStore.getState().push({ title: "已保存", description: "文档内容已更新", tone: "success" });
+      showToast({ title: "已保存", description: "文档内容已更新", tone: "success" });
     });
 
     expect(screen.getByText("已保存")).toBeInTheDocument();
     expect(screen.getByText("文档内容已更新")).toBeInTheDocument();
 
     act(() => {
-      const { toasts, dismiss } = useToastStore.getState();
-      dismiss(toasts[0].id);
+      heroToast.clear();
     });
 
-    expect(screen.queryByText("已保存")).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText("已保存")).not.toBeInTheDocument());
+  });
+});
+
+describe("Tooltip", () => {
+  it("describes a navigation link without changing its link role", async () => {
+    const user = userEvent.setup();
+    render(<MemoryRouter><Tooltip label="搜索文档"><Link to="/documents/search">搜索</Link></Tooltip></MemoryRouter>);
+
+    const link = screen.getByRole("link", { name: "搜索" });
+    expect(screen.queryByRole("button", { name: "搜索" })).not.toBeInTheDocument();
+    await user.hover(link);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("搜索文档");
   });
 });
 

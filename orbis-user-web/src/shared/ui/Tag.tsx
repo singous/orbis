@@ -1,3 +1,4 @@
+import { Chip } from "@heroui/react/chip";
 import { cva, type VariantProps } from "class-variance-authority";
 import type { ReactNode } from "react";
 
@@ -27,5 +28,5 @@ export type TagProps = VariantProps<typeof tagVariants> & {
 };
 
 export function Tag({ tone, className, children }: TagProps) {
-  return <span className={cn(tagVariants({ tone }), className)}>{children}</span>;
+  return <Chip size="sm" variant="soft" color={tone === "neutral" || !tone ? "default" : tone} className={cn(tagVariants({ tone }), className)}>{children}</Chip>;
 }

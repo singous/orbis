@@ -1,5 +1,6 @@
 import { cva, type VariantProps } from "class-variance-authority";
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { Button as HeroButton } from "@heroui/react/button";
+import type { ComponentProps, ReactNode } from "react";
 
 import { cn } from "./cn";
 
@@ -32,16 +33,27 @@ export const buttonVariants = cva(
   },
 );
 
-export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
+export type ButtonProps = Omit<ComponentProps<typeof HeroButton>, "variant" | "size" | "className" | "children"> &
   VariantProps<typeof buttonVariants> & {
+    className?: string;
+    children?: ReactNode;
     icon?: ReactNode;
+    disabled?: boolean;
+    title?: string;
   };
 
-export function Button({ variant, size, icon, className, children, type = "button", ...props }: ButtonProps) {
+export function Button({ variant, size, icon, className, children, disabled, isDisabled, type = "button", ...props }: ButtonProps) {
   return (
-    <button className={cn(buttonVariants({ variant, size }), className)} type={type} {...props}>
+    <HeroButton
+      className={cn(buttonVariants({ variant, size }), className)}
+      variant={variant ?? "secondary"}
+      size={size ?? "md"}
+      isDisabled={disabled ?? isDisabled}
+      type={type}
+      {...props}
+    >
       {icon}
       {children}
-    </button>
+    </HeroButton>
   );
 }

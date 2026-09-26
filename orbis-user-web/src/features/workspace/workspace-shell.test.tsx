@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Link, MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -295,7 +295,7 @@ describe("WorkspaceShell", () => {
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
     expect(navigationTrigger).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("navigation", { name: "文档导航" })).toBeInTheDocument();
-    expect(createTrigger).toHaveFocus();
+    await waitFor(() => expect(createTrigger).toHaveFocus());
 
     await actor.keyboard("{Escape}");
     expect(navigationTrigger).toHaveAttribute("aria-expanded", "false");
@@ -350,7 +350,7 @@ describe("WorkspaceShell", () => {
     renderShell();
 
     await actor.click(screen.getByRole("button", { name: "打开用户菜单" }));
-    expect(screen.queryByRole("link", { name: "工作空间成员" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "工作空间成员" })).not.toBeInTheDocument();
   });
 
   it("preserves navigation and logout semantics in the user menu", async () => {
@@ -358,9 +358,11 @@ describe("WorkspaceShell", () => {
     renderShell();
 
     await actor.click(screen.getByRole("button", { name: "打开用户菜单" }));
-    expect(screen.getByRole("link", { name: "工作空间成员" })).toHaveAttribute("href", "/settings/members");
-    expect(screen.getByRole("link", { name: "账号" })).toHaveAttribute("href", "/settings/account");
-    expect(screen.getByRole("button", { name: "退出登录" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "工作空间成员" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "账号" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "退出登录" })).toBeInTheDocument();
+    await actor.click(screen.getByRole("menuitem", { name: "账号" }));
+    expect(screen.getByRole("status", { name: "current path" })).toHaveTextContent("/settings/account");
   });
 
   it("closes user actions on Escape and returns focus to the trigger", async () => {
@@ -369,12 +371,12 @@ describe("WorkspaceShell", () => {
     const trigger = screen.getByRole("button", { name: "打开用户菜单" });
 
     await actor.click(trigger);
-    screen.getByRole("link", { name: "账号" }).focus();
+    screen.getByRole("menuitem", { name: "账号" }).focus();
     await actor.keyboard("{Escape}");
 
     expect(trigger).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByRole("link", { name: "账号" })).not.toBeInTheDocument();
-    expect(trigger).toHaveFocus();
+    expect(screen.queryByRole("menuitem", { name: "账号" })).not.toBeInTheDocument();
+    await waitFor(() => expect(trigger).toHaveFocus());
   });
 
   it("clears the session and returns to login when the user logs out", async () => {
@@ -382,7 +384,7 @@ describe("WorkspaceShell", () => {
     renderShell();
 
     await actor.click(screen.getByRole("button", { name: "打开用户菜单" }));
-    await actor.click(screen.getByRole("button", { name: "退出登录" }));
+    await actor.click(screen.getByRole("menuitem", { name: "退出登录" }));
 
     expect(authStore.getState().accessToken).toBeNull();
     expect(screen.getByRole("status", { name: "current path" })).toHaveTextContent("/login");
@@ -407,6 +409,6 @@ describe("WorkspaceShell", () => {
     expect(screen.getByRole("menuitem", { name: "笔记本" })).toBeInTheDocument();
     await actor.keyboard("{Escape}");
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
-    expect(trigger).toHaveFocus();
+    await waitFor(() => expect(trigger).toHaveFocus());
   });
 });

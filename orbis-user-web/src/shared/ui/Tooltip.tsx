@@ -1,12 +1,8 @@
-import * as RadixTooltip from "@radix-ui/react-tooltip";
-import type { ReactNode } from "react";
+import { Tooltip as HeroTooltip } from "@heroui/react/tooltip";
+import { cloneElement, type ComponentProps, type ReactElement, type ReactNode } from "react";
 
 import { cn } from "./cn";
 
-/**
- * Self-contained tooltip: ships its own provider so it works anywhere
- * without app-level wiring.
- */
 export function Tooltip({
   label,
   children,
@@ -14,28 +10,30 @@ export function Tooltip({
   align = "center",
 }: {
   label: string;
-  children: ReactNode;
+  children: ReactElement;
   side?: "top" | "right" | "bottom" | "left";
   align?: "start" | "center" | "end";
 }) {
+  const placement = (align === "center" ? side : `${side} ${align}`) as ComponentProps<typeof HeroTooltip.Content>["placement"];
+  const trigger = children as ReactElement<{ className?: string; children?: ReactNode }>;
+
   return (
-    <RadixTooltip.Provider delayDuration={300}>
-      <RadixTooltip.Root>
-        <RadixTooltip.Trigger asChild>{children}</RadixTooltip.Trigger>
-        <RadixTooltip.Portal>
-          <RadixTooltip.Content
-            side={side}
-            align={align}
-            sideOffset={6}
-            className={cn(
-              "z-50 rounded-[var(--radius-control)] border border-[var(--border-inverse)] bg-[var(--surface-inverse)] px-2 py-1",
-              "text-xs text-[var(--text-oninverse)] shadow-[var(--shadow-pop)]",
-            )}
-          >
-            {label}
-          </RadixTooltip.Content>
-        </RadixTooltip.Portal>
-      </RadixTooltip.Root>
-    </RadixTooltip.Provider>
+    <HeroTooltip delay={300}>
+      <HeroTooltip.Trigger render={({ role: _role, className, ...props }) => cloneElement(trigger, {
+        ...props,
+        className: cn(trigger.props.className, className),
+        children: trigger.props.children,
+      })} />
+      <HeroTooltip.Content
+        placement={placement}
+        offset={6}
+        className={cn(
+          "z-50 rounded-[var(--radius-control)] border border-[var(--border-inverse)] bg-[var(--surface-inverse)] px-2 py-1",
+          "text-xs text-[var(--text-oninverse)] shadow-[var(--shadow-pop)]",
+        )}
+      >
+        {label}
+      </HeroTooltip.Content>
+    </HeroTooltip>
   );
 }

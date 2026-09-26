@@ -1,3 +1,4 @@
+import { ActionButton } from "../../shared/ui/ActionButton";
 import { BookOpen, ChevronsRight, Globe, Home, LibraryBig, Orbit, Search, Settings, Sparkles } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
@@ -21,7 +22,7 @@ export function BusinessRail({ collapsed, onExpand }: BusinessRailProps) {
   const activeArea = resolveWorkspaceArea(pathname);
   return (
     <aside className="workspace-business-rail" aria-label="应用导航">
-      {collapsed ? <Tooltip label="展开侧栏" side="right"><button className="rail-action rail-expand" type="button" aria-label="展开侧栏" onClick={onExpand}><ChevronsRight size={19} /></button></Tooltip> : null}
+      {collapsed ? <Tooltip label="展开侧栏" side="right"><ActionButton className="rail-action rail-expand" type="button" aria-label="展开侧栏" onClick={onExpand}><ChevronsRight size={19} /></ActionButton></Tooltip> : null}
       <Link to="/home" className="rail-brand" aria-label="Orbis 首页"><Orbit size={26} strokeWidth={1.8} /></Link>
       <nav className="workspace-business-nav" aria-label="业务板块">
         {areas.map(({ id, label, href }) => {

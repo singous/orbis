@@ -1,6 +1,8 @@
+import { Button as HeroButton } from "@heroui/react/button";
+import { Dropdown } from "@heroui/react/dropdown";
+import { Label } from "@heroui/react/label";
 import { LogOut, Settings, Users } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import type { User, Workspace } from "../../shared/api/schemas";
 import { canManageWorkspaceMembers, workspaceRoleLabel } from "./capabilities";
@@ -12,85 +14,47 @@ export type UserMenuProps = {
 };
 
 export function UserMenu({ user, workspace, onLogout }: UserMenuProps) {
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
+  const navigate = useNavigate();
   const userName = user?.display_name || user?.email || "Orbis";
 
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    function handlePointerDown(event: PointerEvent) {
-      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        setOpen(false);
-        triggerRef.current?.focus();
-      }
-    }
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [open]);
-
   return (
-    <div ref={rootRef} className="workspace-user-menu">
-      {open ? (
-        <div id="workspace-user-actions" className="workspace-user-popover">
+    <div className="workspace-user-menu">
+      <Dropdown>
+        <HeroButton variant="ghost" className="workspace-user-trigger" aria-label="打开用户菜单">
+          <span className="workspace-user-avatar">{userName.slice(0, 1).toUpperCase()}</span>
+          <span className="workspace-user-trigger-copy">
+            <span className="truncate">{userName}</span>
+            <span className="workspace-user-trigger-role">{workspaceRoleLabel(workspace?.role)}</span>
+          </span>
+        </HeroButton>
+        <Dropdown.Popover className="workspace-user-popover" placement="bottom end" offset={12}>
           <div className="workspace-user-profile">
             <span className="workspace-user-avatar">{userName.slice(0, 1).toUpperCase()}</span>
             <div>
-            <div className="workspace-user-name">{userName}</div>
-            <div className="workspace-user-space">
-              {workspace?.name ?? "私人工作空间"}
-            </div>
+              <div className="workspace-user-name">{userName}</div>
+              <div className="workspace-user-space">{workspace?.name ?? "私人工作空间"}</div>
             </div>
           </div>
           <div className="workspace-user-actions-label">设置</div>
-          <div className="p-1">
+          <Dropdown.Menu aria-label="用户操作" className="p-1" onAction={(key) => {
+            if (key === "members") navigate("/settings/members");
+            if (key === "account") navigate("/settings/account");
+            if (key === "logout") onLogout();
+          }}>
             {canManageWorkspaceMembers(workspace) ? (
-              <Link to="/settings/members" className="workspace-user-menu-item" onClick={() => setOpen(false)}>
-                <Users aria-hidden="true" size={14} />
-                工作空间成员
-              </Link>
+              <Dropdown.Item id="members" textValue="工作空间成员" className="workspace-user-menu-item">
+                <Users aria-hidden="true" size={14} /><Label>工作空间成员</Label>
+              </Dropdown.Item>
             ) : null}
-            <Link to="/settings/account" className="workspace-user-menu-item" onClick={() => setOpen(false)}>
-              <Settings aria-hidden="true" size={14} />
-              账号
-            </Link>
-            <button type="button" className="workspace-user-menu-item" onClick={onLogout}>
-              <LogOut aria-hidden="true" size={14} />
-              退出登录
-            </button>
-          </div>
-        </div>
-      ) : null}
-      <button
-        ref={triggerRef}
-        type="button"
-        className="workspace-user-trigger"
-        aria-label="打开用户菜单"
-        aria-controls="workspace-user-actions"
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
-      >
-        <span className="workspace-user-avatar">{userName.slice(0, 1).toUpperCase()}</span>
-        <span className="workspace-user-trigger-copy">
-          <span className="truncate">{userName}</span>
-          <span className="workspace-user-trigger-role">{workspaceRoleLabel(workspace?.role)}</span>
-        </span>
-      </button>
+            <Dropdown.Item id="account" textValue="账号" className="workspace-user-menu-item">
+              <Settings aria-hidden="true" size={14} /><Label>账号</Label>
+            </Dropdown.Item>
+            <Dropdown.Item id="logout" textValue="退出登录" className="workspace-user-menu-item">
+              <LogOut aria-hidden="true" size={14} /><Label>退出登录</Label>
+            </Dropdown.Item>
+          </Dropdown.Menu>
+        </Dropdown.Popover>
+      </Dropdown>
     </div>
   );
 }

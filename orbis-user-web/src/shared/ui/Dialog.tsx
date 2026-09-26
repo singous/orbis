@@ -1,13 +1,33 @@
-import * as RadixDialog from "@radix-ui/react-dialog";
+import { Modal } from "@heroui/react/modal";
 import { X } from "lucide-react";
-import type { ReactNode } from "react";
+import { cloneElement, createContext, isValidElement, useContext, useId, type ReactElement, type ReactNode } from "react";
 
 import { cn } from "./cn";
-import { IconButton } from "./IconButton";
 
-export const Dialog = RadixDialog.Root;
-export const DialogTrigger = RadixDialog.Trigger;
-export const DialogClose = RadixDialog.Close;
+type DialogProps = {
+  open?: boolean;
+  defaultOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  children: ReactNode;
+};
+
+const ControlledDialogContext = createContext<Pick<DialogProps, "open" | "onOpenChange"> | null>(null);
+
+export function Dialog({ open, defaultOpen, onOpenChange, children }: DialogProps) {
+  if (open !== undefined) {
+    return <ControlledDialogContext.Provider value={{ open, onOpenChange }}>{children}</ControlledDialogContext.Provider>;
+  }
+  return <Modal isOpen={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>{children}</Modal>;
+}
+
+// Modal uses its direct button child as the trigger. Keep the existing call sites intact.
+export function DialogTrigger({ children }: { asChild?: boolean; children: ReactNode }) {
+  return <>{children}</>;
+}
+
+export function DialogClose({ children }: { asChild?: boolean; children: ReactElement<{ slot?: string }> }) {
+  return isValidElement(children) ? cloneElement(children, { slot: "close" }) : null;
+}
 
 export function DialogContent({
   title,
@@ -22,43 +42,36 @@ export function DialogContent({
   children?: ReactNode;
   hideCloseButton?: boolean;
 }) {
+  const controlled = useContext(ControlledDialogContext);
+  const descriptionId = useId();
+
   return (
-    <RadixDialog.Portal>
-      <RadixDialog.Overlay className="fixed inset-0 z-40 bg-[#24252a]/30" />
-      <RadixDialog.Content
-        className={cn(
-          "fixed left-1/2 top-1/2 z-50 w-[calc(100vw-32px)] max-w-md -translate-x-1/2 -translate-y-1/2",
-          "max-h-[calc(100dvh-48px)] overflow-y-auto rounded-[var(--radius-pop)] border border-[var(--border-subtle)] bg-[var(--surface-overlay)] p-7",
-          "shadow-[var(--shadow-pop)]",
-          "focus:outline-none",
-          className,
-        )}
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div className="grid gap-1">
-            <RadixDialog.Title className="text-lg font-semibold tracking-tight text-[var(--text-primary)]">
-              {title}
-            </RadixDialog.Title>
-            {description ? (
-              <RadixDialog.Description className="text-sm leading-6 text-[var(--text-secondary)]">
-                {description}
-              </RadixDialog.Description>
-            ) : null}
-          </div>
-          {hideCloseButton ? null : (
-            <RadixDialog.Close asChild>
-              <IconButton aria-label="关闭" size="sm">
+    <Modal.Backdrop className="orbis-modal-backdrop" isOpen={controlled?.open} onOpenChange={controlled?.onOpenChange}>
+      <Modal.Container className="orbis-modal-container">
+        <Modal.Dialog
+          aria-describedby={description ? descriptionId : undefined}
+          className={cn("orbis-modal-dialog", className)}
+        >
+          <Modal.Header className="orbis-modal-header">
+            <div>
+              <Modal.Heading className="text-lg font-semibold tracking-tight text-[var(--text-primary)]">
+                {title}
+              </Modal.Heading>
+              {description ? <p id={descriptionId} className="text-sm leading-6 text-[var(--text-secondary)]">{description}</p> : null}
+            </div>
+            {hideCloseButton ? null : (
+              <Modal.CloseTrigger aria-label="关闭" className="orbis-modal-close">
                 <X aria-hidden="true" size={14} />
-              </IconButton>
-            </RadixDialog.Close>
-          )}
-        </div>
-        {children}
-      </RadixDialog.Content>
-    </RadixDialog.Portal>
+              </Modal.CloseTrigger>
+            )}
+          </Modal.Header>
+          {children}
+        </Modal.Dialog>
+      </Modal.Container>
+    </Modal.Backdrop>
   );
 }
 
 export function DialogFooter({ className, children }: { className?: string; children?: ReactNode }) {
-  return <div className={cn("mt-5 flex justify-end gap-2", className)}>{children}</div>;
+  return <Modal.Footer className={cn("mt-5 flex justify-end gap-2", className)}>{children}</Modal.Footer>;
 }

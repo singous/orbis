@@ -1,5 +1,6 @@
 import { cva, type VariantProps } from "class-variance-authority";
-import type { ButtonHTMLAttributes } from "react";
+import { Button as HeroButton } from "@heroui/react/button";
+import type { ComponentProps } from "react";
 
 import { cn } from "./cn";
 
@@ -30,12 +31,14 @@ const iconButtonVariants = cva(
   },
 );
 
-export type IconButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "aria-label"> &
+export type IconButtonProps = Omit<ComponentProps<typeof HeroButton>, "variant" | "size" | "className" | "aria-label"> &
   VariantProps<typeof iconButtonVariants> & {
+    className?: string;
+    disabled?: boolean;
     /** Required — icon-only buttons must always expose an accessible name. */
     "aria-label": string;
   };
 
-export function IconButton({ variant, size, className, type = "button", ...props }: IconButtonProps) {
-  return <button className={cn(iconButtonVariants({ variant, size }), className)} type={type} {...props} />;
+export function IconButton({ variant, size, className, disabled, isDisabled, type = "button", ...props }: IconButtonProps) {
+  return <HeroButton isIconOnly variant="ghost" size="sm" className={cn(iconButtonVariants({ variant, size }), className)} isDisabled={disabled ?? isDisabled} type={type} {...props} />;
 }

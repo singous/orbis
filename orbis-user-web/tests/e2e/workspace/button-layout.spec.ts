@@ -24,6 +24,7 @@ async function actionMetrics(action: Locator, containingLabel = false) {
 }
 
 test("workspace actions share sizing and notebook headings retain breathing room", async ({ page, request }, testInfo) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/setup");
   await page.getByLabel("显示名称", { exact: true }).fill("排版测试工作空间");
   await page.getByLabel("邮箱", { exact: true }).fill(owner.email);

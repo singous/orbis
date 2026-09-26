@@ -1,14 +1,16 @@
-import type { InputHTMLAttributes } from "react";
+import { Input as HeroInput } from "@heroui/react/input";
+import type { ComponentProps } from "react";
 
 import { cn } from "./cn";
 
-type TextInputProps = InputHTMLAttributes<HTMLInputElement> & {
+type TextInputProps = Omit<ComponentProps<typeof HeroInput>, "className"> & {
+  className?: string;
   label?: string;
 };
 
 export function TextInput({ label, className, ...props }: TextInputProps) {
   const input = (
-    <input
+    <HeroInput
       className={cn(
         "h-9 w-full rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface-content)] px-3 text-sm text-[var(--text-primary)]",
         "placeholder:text-[var(--text-tertiary)]",

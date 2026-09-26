@@ -1,3 +1,4 @@
+import { ActionButton } from "../../shared/ui/ActionButton";
 import type { ReactNode } from "react";
 import { ChevronsLeft, Menu, PanelRightOpen, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -108,15 +109,15 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
     <main className={`workspace-shell has-section-menu${sidebarHidden ? " sidebar-collapsed" : ""}${mainNavigationOpen ? " main-navigation-open" : ""}${documentContextExpanded ? " document-context-drawer-open" : ""}`}>
       <WorkspaceTopbar disabled={drawerOpen} />
       <div className="workspace-shell-grid">
-        {drawerOpen ? <button type="button" className="workspace-drawer-backdrop" aria-label={mainNavigationOpen ? "关闭主导航" : "关闭文档目录"} onClick={() => { setMainNavigationOpen(false); setDocumentContextOpen(false); }} /> : null}
+        {drawerOpen ? <ActionButton type="button" className="workspace-drawer-backdrop" aria-label={mainNavigationOpen ? "关闭主导航" : "关闭文档目录"} onClick={() => { setMainNavigationOpen(false); setDocumentContextOpen(false); }} /> : null}
         <div ref={navigationRef} className="workspace-main-navigation" aria-hidden={compact && !mainNavigationOpen ? true : undefined} inert={compact && !mainNavigationOpen ? true : undefined} onClick={closeAfterLink}>
           <BusinessRail collapsed={sidebarHidden} onExpand={() => changeCollapsed(false)} />
           <section id="workspace-sidebar" className="workspace-sidebar" hidden={sidebarHidden} aria-label="侧栏">
             <header className="workspace-sidebar-header">
               <h2>{area.title}</h2>
-              <button type="button" className="sidebar-collapse" aria-label="收起侧栏" aria-expanded="true" aria-controls="workspace-sidebar" onClick={() => changeCollapsed(true)}><ChevronsLeft size={18} /></button>
+              <ActionButton type="button" className="sidebar-collapse" aria-label="收起侧栏" aria-expanded="true" aria-controls="workspace-sidebar" onClick={() => changeCollapsed(true)}><ChevronsLeft size={18} /></ActionButton>
               {area.id === "documents" && accessToken && canMutateWorkspaceContent(workspace) ? <RailCreateMenu /> : null}
-              <button type="button" className="sidebar-mobile-close" aria-label="关闭侧栏" onClick={() => setMainNavigationOpen(false)}><X size={18} /></button>
+              <ActionButton type="button" className="sidebar-mobile-close" aria-label="关闭侧栏" onClick={() => setMainNavigationOpen(false)}><X size={18} /></ActionButton>
             </header>
             {sectionMenu ?? (accessToken ? <WorkspaceNavigation /> : null)}
           </section>
@@ -125,11 +126,11 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
           <section className="workspace-content" inert={drawerOpen ? true : undefined}>
             {showToolbar ? (
               <header className="workspace-toolbar">
-                <button ref={menuTriggerRef} type="button" aria-label="打开主导航" aria-expanded={mainNavigationOpen} className="workspace-mobile-drawer-control" onClick={() => { setMainNavigationOpen(true); setDocumentContextOpen(false); }}><Menu aria-hidden="true" size={18} /></button>
+                <ActionButton ref={menuTriggerRef} type="button" aria-label="打开主导航" aria-expanded={mainNavigationOpen} className="workspace-mobile-drawer-control" onClick={() => { setMainNavigationOpen(true); setDocumentContextOpen(false); }}><Menu aria-hidden="true" size={18} /></ActionButton>
                 {sectionTitle ? <span className="workspace-toolbar-title">{sectionTitle}</span> : <span className="workspace-toolbar-spacer" />}
                 <div className="workspace-toolbar-actions">{toolbar}</div>
-                {contextPanel ? <button ref={contextTriggerRef} type="button" aria-label="打开文档目录" aria-expanded={documentContextExpanded} className="workspace-mobile-drawer-control" onClick={() => { onOpenContext?.(); setDocumentContextOpen(true); setMainNavigationOpen(false); }}><PanelRightOpen aria-hidden="true" size={18} /></button> : null}
-                {contextPanel && onOpenContext ? <button type="button" aria-label="打开上下文面板" className="icon-button workspace-context-open-control" onClick={onOpenContext}><PanelRightOpen aria-hidden="true" size={16} /></button> : null}
+                {contextPanel ? <ActionButton ref={contextTriggerRef} type="button" aria-label="打开文档目录" aria-expanded={documentContextExpanded} className="workspace-mobile-drawer-control" onClick={() => { onOpenContext?.(); setDocumentContextOpen(true); setMainNavigationOpen(false); }}><PanelRightOpen aria-hidden="true" size={18} /></ActionButton> : null}
+                {contextPanel && onOpenContext ? <ActionButton type="button" aria-label="打开上下文面板" className="icon-button workspace-context-open-control" onClick={onOpenContext}><PanelRightOpen aria-hidden="true" size={16} /></ActionButton> : null}
               </header>
             ) : null}
             {children}

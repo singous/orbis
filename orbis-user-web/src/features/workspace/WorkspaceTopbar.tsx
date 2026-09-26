@@ -1,3 +1,5 @@
+import { Input as HeroInput } from "@heroui/react/input";
+import { ActionButton } from "../../shared/ui/ActionButton";
 import { ArrowLeft, ArrowRight, Search } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -40,12 +42,12 @@ export function WorkspaceTopbar({ disabled = false }: { disabled?: boolean }) {
       <WorkspaceSwitcher />
       <div className="workspace-topbar-center">
         <div className="workspace-history">
-          <button type="button" aria-label="返回上一页" onClick={() => navigate(-1)}><ArrowLeft size={17} /></button>
-          <button type="button" aria-label="前往下一页" onClick={() => navigate(1)}><ArrowRight size={17} /></button>
+          <ActionButton type="button" aria-label="返回上一页" onClick={() => navigate(-1)}><ArrowLeft size={17} /></ActionButton>
+          <ActionButton type="button" aria-label="前往下一页" onClick={() => navigate(1)}><ArrowRight size={17} /></ActionButton>
         </div>
         <form className="workspace-global-search" role="search" aria-label="全局搜索" onSubmit={search}>
           <Search size={16} aria-hidden="true" />
-          <input ref={inputRef} aria-label="全局搜索" type="search" placeholder="搜索文档…" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
+          <HeroInput ref={inputRef} aria-label="全局搜索" type="search" placeholder="搜索文档…" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
           <kbd>⌘ K</kbd>
         </form>
       </div>

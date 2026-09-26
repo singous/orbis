@@ -1,3 +1,4 @@
+import { ActionButton } from "../../shared/ui/ActionButton";
 import { Boxes, Check, ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useStore } from "zustand";
@@ -73,7 +74,7 @@ export function WorkspaceSwitcher() {
           )}
         </div>
       ) : null}
-      <button
+      <ActionButton
         ref={triggerRef}
         type="button"
         className="workspace-brand"
@@ -85,7 +86,7 @@ export function WorkspaceSwitcher() {
         <span className="workspace-brand-mark"><Boxes size={16} aria-hidden="true" /></span>
         <span className="workspace-brand-word">{workspace?.name ?? "Orbis"}</span>
         <ChevronDown size={14} aria-hidden="true" />
-      </button>
+      </ActionButton>
     </div>
   );
 }
