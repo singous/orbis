@@ -481,7 +481,7 @@ body {
   letter-spacing: -0.03em;
   line-height: 1.15;
   outline: none;
-  /* Match BlockNote's 54px content gutter so title and body align. */
+  /* Align the title with the document body. */
   padding-inline: 54px;
 }
 
@@ -489,171 +489,8 @@ body {
   color: var(--text-tertiary);
 }
 
-/* Chrome inside the canvas (back link, meta row, banners) aligns with
-   BlockNote's 54px content gutter, same as the title. */
-.editor-canvas > :not(.editor-title):not(.bn-container) {
+.editor-canvas > :not(.editor-title) {
   margin-inline: 54px;
-}
-
-/* ============================================================
-   BlockNote skin — Notion/Yuque-style editor
-
-   `.orbis-bn` is applied to the BlockNote container AND to every
-   popup portal root (slash menu, formatting toolbar, drag-handle
-   menu …), so this one scope themes the canvas and all floating UI.
-
-   The doubled class (.orbis-bn.orbis-bn) beats BlockNote's own
-   `.bn-root[data-color-scheme="dark"]` variable block: BlockNote's
-   stylesheet loads lazily after index.css, so ties would lose.
-   ============================================================ */
-
-/* --- Theme bridge: drive BlockNote's light variables from Orbis tokens. --- */
-body .orbis-bn.orbis-bn {
-  --bn-font-family: inherit;
-  --bn-colors-editor-background: transparent;
-  --bn-colors-editor-text: var(--text-primary);
-  --bn-colors-menu-background: var(--surface-overlay);
-  --bn-colors-menu-text: var(--text-primary);
-  --bn-colors-hovered-background: var(--surface-hover);
-  --bn-colors-hovered-text: var(--text-primary);
-  --bn-colors-selected-background: var(--surface-inverse);
-  --bn-colors-selected-text: var(--text-oninverse);
-  --bn-colors-disabled-background: var(--surface-hover);
-  --bn-colors-disabled-text: var(--text-tertiary);
-  --bn-colors-tooltip-background: var(--surface-inverse);
-  --bn-colors-tooltip-text: var(--text-oninverse);
-  --bn-colors-side-menu: var(--text-tertiary);
-  --bn-colors-border: var(--border-subtle);
-  --bn-shadow-medium: var(--shadow-pop);
-  --bn-shadow-light: var(--shadow-pop);
-  --bn-border-radius: var(--radius-container);
-}
-
-/* --- Canvas typography: 16px / 1.75 reading rhythm --- */
-.orbis-bn .bn-editor {
-  min-height: 50vh;
-  background: transparent;
-  color: var(--text-primary);
-  font-size: 16px;
-  line-height: 1.75;
-}
-
-/* Headings: Notion scale instead of BlockNote's oversized defaults
-   (level size is driven by BlockNote's own --level variable). */
-.orbis-bn .bn-block-content[data-content-type="heading"] {
-  letter-spacing: -0.015em;
-}
-
-.orbis-bn .bn-block-content[data-content-type="heading"]:not([data-level]),
-.orbis-bn .bn-block-content[data-content-type="heading"][data-level="1"] {
-  --level: 1.875em;
-  padding-top: 28px;
-}
-
-.orbis-bn .bn-block-content[data-content-type="heading"][data-level="2"] {
-  --level: 1.5em;
-  padding-top: 20px;
-}
-
-.orbis-bn .bn-block-content[data-content-type="heading"][data-level="3"] {
-  --level: 1.25em;
-  padding-top: 14px;
-}
-
-/* Quote: quiet left bar, sans-serif (Yuque/Notion), secondary ink */
-.orbis-bn .bn-block-content[data-content-type="quote"] blockquote {
-  border-left: 3px solid var(--border-strong);
-  padding-left: 0.9em;
-  color: var(--text-secondary);
-}
-
-/* Code block: light gray well with a hairline border, Notion-style.
-   --gray-100 flips to a dark well in dark theme automatically. */
-.orbis-bn .bn-block-content[data-content-type="codeBlock"] {
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-container);
-  background: var(--gray-100);
-  color: var(--text-primary);
-}
-
-.orbis-bn .bn-block-content[data-content-type="codeBlock"] > pre {
-  padding: 14px 16px;
-  font-family: var(--font-mono);
-  font-size: 0.875em;
-  line-height: 1.7;
-}
-
-/* Language picker sits on the code well — keep it legible on light bg */
-.orbis-bn .bn-block-content[data-content-type="codeBlock"] > div > select {
-  color: var(--text-tertiary);
-}
-
-/* Inline code: quiet gray chip */
-.orbis-bn .bn-inline-content code {
-  border-radius: 4px;
-  background: var(--gray-150);
-  padding: 0.1em 0.35em;
-  font-family: var(--font-mono);
-  font-size: 0.86em;
-}
-
-/* Links */
-.orbis-bn .bn-inline-content a {
-  color: var(--accent-text);
-  text-decoration: underline;
-  text-decoration-color: var(--accent-border);
-  text-underline-offset: 2px;
-}
-
-/* Lists: muted markers, accent checkbox, checked items fade out */
-.orbis-bn .bn-editor ::marker {
-  color: var(--text-tertiary);
-}
-
-.orbis-bn .bn-block-content[data-content-type="checkListItem"] input[type="checkbox"] {
-  width: 14px;
-  accent-color: var(--accent);
-}
-
-.orbis-bn .bn-block-content[data-content-type="checkListItem"][data-checked="true"] .bn-inline-content {
-  color: var(--text-tertiary);
-}
-
-/* Divider: hairline, not a bar */
-.orbis-bn .bn-block-content[data-content-type="divider"] hr {
-  border-top: 1px solid var(--border-subtle);
-  margin: 0.6em 0;
-}
-
-/* Placeholder text (BlockNote injects the ::after content itself;
-   we only set the color, so no specificity race with its <style>). */
-.orbis-bn .bn-block-content[data-is-empty-and-focused]:has(.ProseMirror-trailingBreak:only-child)::after,
-.orbis-bn .bn-block-content[data-is-only-empty-block]:has(.ProseMirror-trailingBreak:only-child)::after {
-  color: var(--text-tertiary);
-}
-
-/* Slash-menu icon badges and shortcut chips reuse BlockNote's tooltip
-   colors (inverse surface) — restyle them as quiet gray chips instead.
-   `body` prefix wins over BlockNote's lazily-loaded stylesheet. */
-body .orbis-bn .mantine-Badge-root,
-body .orbis-bn .bn-mt-suggestion-menu-item-section[data-position="left"] {
-  background: var(--surface-hover);
-  color: var(--text-secondary);
-}
-
-body .orbis-bn .bn-mt-suggestion-menu-item-section {
-  color: var(--text-secondary);
-}
-
-/* Tables: hairline cell borders; cell selection tint follows the accent
-   (BlockNote's defaults are a light-only #ddd and a blue overlay). */
-.orbis-bn .bn-editor td,
-.orbis-bn .bn-editor th {
-  border-color: var(--border-subtle);
-}
-
-.orbis-bn .bn-editor .selectedCell::after {
-  background: color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
 .editor-outline {
@@ -905,6 +742,8 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 }
 
 @media (max-width: 640px) {
+  .editor-title { padding-inline: 20px; }
+  .editor-canvas > :not(.editor-title) { margin-inline: 20px; }
   .page-container { padding: 24px 20px 48px; }
   .page-header { align-items: flex-start; flex-wrap: wrap; gap: 18px; margin-bottom: 24px; padding-bottom: 22px; }
   .page-title { font-size: 21px; }

@@ -1,14 +1,34 @@
-.orbis-bn .doc-editor-block { width: 100%; min-width: 0; padding: 10px 13px; border-left: 2px solid var(--border-strong, #d5ddd9); background: var(--surface-hover, #f7f9f8); border-radius: 5px; }
-.orbis-bn .doc-editor-heading { display: flex; align-items: center; gap: 7px; color: var(--text-secondary, #65736c); font-size: 11px; line-height: 1.6; margin-bottom: 7px; }
-.orbis-bn .doc-editor-heading svg { color: var(--accent, #0f766e); }
-.orbis-bn .doc-editor-controls { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 10px; font-family: inherit; }
-.orbis-bn .doc-editor-controls label { display: grid; gap: 3px; min-width: 125px; flex: 1; margin: 0; }
-.orbis-bn .doc-editor-controls label > span { color: var(--text-tertiary, #87928b); font-size: 10px; }
-.orbis-bn .doc-editor-controls input, .orbis-bn .doc-editor-controls select { min-width: 0; width: 100%; border: 1px solid var(--border-subtle, #e0e6e2); background: var(--surface, #fff); color: var(--text-primary, #22322a); border-radius: 5px; padding: 5px 8px; font: inherit; font-size: 13px; line-height: 1.6; }
-.orbis-bn .doc-editor-controls input:focus, .orbis-bn .doc-editor-controls select:focus { outline: 2px solid color-mix(in srgb, var(--accent, #0f766e) 25%, transparent); outline-offset: 1px; border-color: var(--accent, #0f766e); }
-.orbis-bn .doc-editor-controls button { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--border-subtle, #e0e6e2); background: var(--surface, #fff); color: var(--text-secondary, #65736c); border-radius: 5px; padding: 5px 9px; cursor: pointer; font-size: 12px; line-height: 1.6; }
-.orbis-bn .doc-editor-controls button:focus-visible { outline: 2px solid var(--accent, #0f766e); outline-offset: 2px; }
-.orbis-bn .doc-editor-inline { margin-top: 10px; min-height: 1.6em; line-height: 1.75; }
-.orbis-bn .doc-editor-title { display: block; font-size: 16px; }
-.orbis-bn .doc-editor-callout { border-left-color: #488cb6; }
-.orbis-bn .bn-block-content[data-content-type="codeBlock"] select { margin: 4px 0 8px; max-width: 170px; font-size: 12px; border: 1px solid var(--border-subtle, #e0e6e2); border-radius: 4px; padding: 3px 7px; background: var(--surface, #fff); color: var(--text-secondary, #65736c); }
+.orbis-tiptap .doc-editor-block { width: 100%; min-width: 0; margin: 24px 0; color: var(--reading-text); }
+.orbis-tiptap .doc-editor-heading { display: flex; align-items: center; gap: 7px; color: var(--reading-muted); font-size: 11px; line-height: 1.6; margin-bottom: 7px; }
+.orbis-tiptap .doc-editor-heading svg { color: var(--reading-accent); }
+.orbis-tiptap .doc-editor-title { display: block; margin: 0 0 8px; font-size: 16px; font-weight: 650; line-height: 1.5; }
+.orbis-tiptap .doc-editor-content { min-width: 0; }
+.orbis-tiptap .doc-editor-content > :first-child { margin-top: 0; }
+.orbis-tiptap .doc-editor-controls { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 10px; margin: 9px 0; padding: 9px 0; border-top: 1px solid var(--reading-border); font-family: inherit; }
+.orbis-tiptap .doc-editor-controls label { display: grid; gap: 3px; min-width: 125px; flex: 1; margin: 0; }
+.orbis-tiptap .doc-editor-controls label > span { color: var(--text-tertiary); font-size: 10px; }
+.orbis-tiptap .doc-editor-controls input, .orbis-tiptap .doc-editor-controls select { min-width: 0; width: 100%; border: 1px solid var(--reading-border); background: var(--reading-bg); color: var(--reading-text); border-radius: 5px; padding: 5px 8px; font: inherit; font-size: 13px; line-height: 1.6; }
+.orbis-tiptap .doc-editor-controls input:focus, .orbis-tiptap .doc-editor-controls select:focus { outline: 2px solid color-mix(in srgb, var(--reading-accent) 25%, transparent); outline-offset: 1px; border-color: var(--reading-accent); }
+.orbis-tiptap .doc-editor-controls button { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--reading-border); background: var(--reading-bg); color: var(--reading-muted); border-radius: 5px; padding: 5px 9px; cursor: pointer; font-size: 12px; line-height: 1.6; }
+.orbis-tiptap .doc-editor-controls button:focus-visible { outline: 2px solid var(--reading-accent); outline-offset: 2px; }
+.orbis-tiptap .doc-editor-callout { padding: 17px 20px; border: 1px solid #cae1ee; border-radius: 10px; background: #eff8fd; font-size: 14px; line-height: 1.85; }
+.orbis-tiptap .doc-editor-callout[data-tone="warning"] { border-color: #edd9af; background: #fff9eb; }
+.orbis-tiptap .doc-editor-callout[data-tone="success"] { border-color: #c5e4d0; background: #f1faf4; }
+.orbis-tiptap .doc-editor-callout[data-tone="danger"] { border-color: #edcbca; background: #fff3f2; }
+.orbis-tiptap .doc-editor-callout .doc-editor-title { font-size: 14px; }
+.orbis-tiptap .doc-editor-cardGroup > div > .doc-editor-content { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px; }
+.orbis-tiptap .doc-editor-cardGroup[data-columns="3"] > div > .doc-editor-content { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.orbis-tiptap .doc-editor-card { margin: 0; padding: 22px; border: 1px solid var(--reading-border); border-radius: 12px; background: var(--reading-bg); }
+.orbis-tiptap .doc-editor-card .doc-editor-title { font-size: 16px; }
+.orbis-tiptap .doc-editor-steps > div > .doc-editor-content { counter-reset: doc-step; }
+.orbis-tiptap .doc-editor-step { position: relative; counter-increment: doc-step; min-height: 48px; margin: 0; padding: 0 0 28px 46px; }
+.orbis-tiptap .doc-editor-step::before { content: counter(doc-step); display: grid; place-items: center; position: absolute; top: 2px; left: 0; width: 28px; height: 28px; border: 1px solid var(--reading-border); border-radius: 50%; background: var(--reading-muted-bg); color: var(--reading-muted); font-size: 12px; font-weight: 600; }
+.orbis-tiptap .doc-editor-step:not(:last-child)::after { content: ""; position: absolute; top: 38px; bottom: 9px; left: 14px; border-left: 1px solid var(--reading-border); }
+.orbis-tiptap .doc-editor-step .doc-editor-title { font-size: 17px; }
+.orbis-tiptap .doc-editor-panes { display: flex; gap: 24px; border-bottom: 1px solid var(--reading-border); overflow-x: auto; }
+.orbis-tiptap .doc-editor-panes button { flex: none; padding: 10px 1px 11px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--reading-muted); font-size: 13px; cursor: pointer; }
+.orbis-tiptap .doc-editor-panes button[aria-selected="true"] { color: var(--reading-accent); border-bottom-color: var(--reading-accent); }
+.orbis-tiptap .doc-editor-tab { margin: 0; padding-top: 16px; }
+.orbis-tiptap .doc-editor-tab > .doc-editor-heading { display: none; }
+.orbis-tiptap .doc-editor-codeGroup > div > .doc-editor-content > .orbis-code { margin-top: 16px; }
+@media (max-width: 700px) { .orbis-tiptap .doc-editor-cardGroup > div > .doc-editor-content { grid-template-columns: 1fr; }.orbis-tiptap .doc-editor-card { padding: 19px; }.orbis-tiptap .doc-editor-callout { padding: 14px; }.orbis-tiptap .doc-editor-step { padding-left: 40px; } }

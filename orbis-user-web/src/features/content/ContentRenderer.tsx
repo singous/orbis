@@ -2,6 +2,7 @@ import { Fragment, createElement, type ReactNode } from "react";
 import { CodeBlock } from "./CodeBlock";
 import { DocumentBlock } from "./DocumentBlock";
 import { ContentMedia, ManagedContentLink } from "./ContentMedia";
+import { contentCellStyle, contentInlineStyle, contentTextAlignment } from "./content-format";
 import { documentBlockDefinition } from "./document-components";
 import "../../styles/document-components.css";
 
@@ -94,6 +95,8 @@ function inline(value: unknown): ReactNode {
   if (styles.italic) result = <em>{result}</em>;
   if (styles.underline) result = <u>{result}</u>;
   if (styles.strike) result = <s>{result}</s>;
+  const colorStyle = contentInlineStyle(styles);
+  if (colorStyle.color || colorStyle.backgroundColor) result = <span style={colorStyle}>{result}</span>;
   return result;
 }
 
@@ -105,7 +108,7 @@ function nativeTable(content: ContentNode): ReactNode {
       const value = cellNode.type === "tableCell" ? cellNode.content : cell;
       const Tag = rowIndex < headerRows || cellIndex < Number(content.headerCols || 0) ? "th" : "td";
       const props = node(cellNode.props);
-      return <Tag key={cellIndex} scope={Tag === "th" ? rowIndex < headerRows ? "col" : "row" : undefined} colSpan={Number(props.colspan) || undefined} rowSpan={Number(props.rowspan) || undefined}>{inline(value)}</Tag>;
+      return <Tag key={cellIndex} scope={Tag === "th" ? rowIndex < headerRows ? "col" : "row" : undefined} colSpan={Number(props.colspan) || undefined} rowSpan={Number(props.rowspan) || undefined} style={contentCellStyle(props)}>{inline(value)}</Tag>;
     })}</tr>
   ));
   return <div className="content-table-scroll"><table><tbody>{rows}</tbody></table></div>;
@@ -127,9 +130,9 @@ function renderBlock(value: unknown, path: number[], legacy: boolean, pageTitle?
     case "text": return inline(item);
     case "heading": {
       const duplicateTitle = path.length === 1 && path[0] === 0 && text(item.content).trim() === pageTitle?.trim();
-      return <>{duplicateTitle ? null : createElement(`h${headingLevel(props.level)}`, { id: `heading-${path.join("-")}` }, content)}{legacy ? null : children}</>;
+      return <>{duplicateTitle ? null : createElement(`h${headingLevel(props.level)}`, { id: `heading-${path.join("-")}`, style: { textAlign: contentTextAlignment(props.textAlignment) } }, content)}{legacy ? null : children}</>;
     }
-    case "paragraph": return <><p>{content || <br />}</p>{legacy ? null : children}</>;
+    case "paragraph": return <><p style={{ textAlign: contentTextAlignment(props.textAlignment) }}>{content || <br />}</p>{legacy ? null : children}</>;
     case "codeBlock": return <><CodeBlock source={text(item.content)} language={String(props.language || "text")} />{legacy ? null : children}</>;
     case "blockquote": return <blockquote>{children}</blockquote>;
     case "quote": return <blockquote>{content}{children}</blockquote>;

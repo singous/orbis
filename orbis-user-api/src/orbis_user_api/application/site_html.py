@@ -23,6 +23,29 @@ HTML_TABLE_SPAN_LIMITS = {
     "colspan": HTML_MAX_COLSPAN,
     "rowspan": HTML_MAX_ROWSPAN,
 }
+NAMED_CONTENT_COLORS = frozenset({"black", "white", "gray", "red", "orange", "yellow", "green", "blue", "purple", "pink"})
+CONTENT_ALIGNMENTS = frozenset({"left", "center", "right", "justify"})
+
+
+def _content_color(value: Any) -> str | None:
+    return value if isinstance(value, str) and (value in NAMED_CONTENT_COLORS or re.fullmatch(r"#[\da-fA-F]{3,8}", value)) else None
+
+
+def _alignment_style(props: dict[str, Any]) -> str:
+    alignment = props.get("textAlignment")
+    return f' style="text-align: {alignment}"' if isinstance(alignment, str) and alignment in CONTENT_ALIGNMENTS else ""
+
+
+def _cell_style(props: dict[str, Any]) -> str:
+    styles: list[str] = []
+    if ink := _content_color(props.get("textColor")):
+        styles.append(f"color: {ink}")
+    if background := _content_color(props.get("backgroundColor")):
+        styles.append(f"background-color: {background}")
+    alignment = props.get("textAlignment")
+    if isinstance(alignment, str) and alignment in CONTENT_ALIGNMENTS:
+        styles.append(f"text-align: {alignment}")
+    return f' style="{"; ".join(styles)}"' if styles else ""
 
 
 def built_asset(dist: Path, name: str) -> Path | None:
@@ -185,6 +208,13 @@ class DocumentHtml:
         ):
             if styles.get(key):
                 rendered = f"<{tag}>{rendered}</{tag}>"
+        colors = [
+            f"color: {ink}" for ink in [_content_color(styles.get("textColor"))] if ink
+        ] + [
+            f"background-color: {background}" for background in [_content_color(styles.get("backgroundColor"))] if background
+        ]
+        if colors:
+            rendered = f'<span style="{"; ".join(colors)}">{rendered}</span>'
         return rendered
 
     def nodes(self, values: list, legacy: bool, prefix: tuple[int, ...] = ()) -> str:
@@ -250,9 +280,9 @@ class DocumentHtml:
                 return suffix
             anchor = "heading-" + "-".join(map(str, path))
             level = _integer(props.get("level"), 2, 1, 6)
-            return f'<h{level} id="{anchor}">{content}</h{level}>' + suffix
+            return f'<h{level} id="{anchor}"{_alignment_style(props)}>{content}</h{level}>' + suffix
         if kind == "paragraph":
-            return f"<p>{content}</p>" + suffix
+            return f"<p{_alignment_style(props)}>{content}</p>" + suffix
         if kind == "codeBlock":
             language = escape(str(props.get("language") or "text"))
             return (
@@ -344,7 +374,7 @@ class DocumentHtml:
                             if key in cell_props
                         )
                         cells.append(
-                            f"<{tag}{spans}>"
+                            f"<{tag}{spans}{_cell_style(cell_props)}>"
                             + self.inline(
                                 cell.get("content", [])
                                 if isinstance(cell, dict)

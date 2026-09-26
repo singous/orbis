@@ -86,10 +86,11 @@
 
 /* The public reading layout lives in site-reader.css and is loaded by SiteReader. */
 
-.document-prose { font-size: 15px; line-height: 1.95; overflow-wrap: anywhere; color: var(--reading-text, var(--text-primary)); }
-.document-prose h1, .document-prose h2, .document-prose h3, .document-prose h4, .document-prose h5, .document-prose h6 { font-weight: 620; letter-spacing: -.025em; line-height: 1.5; margin: 34px 0 16px; scroll-margin-top: 100px; }
+.document-prose { font-size: 15px; line-height: 1.9; overflow-wrap: anywhere; color: var(--reading-text, var(--text-primary)); }
+.document-prose h1, .document-prose h2, .document-prose h3, .document-prose h4, .document-prose h5, .document-prose h6 { font-weight: 680; letter-spacing: -.026em; line-height: 1.5; margin: 34px 0 16px; scroll-margin-top: 100px; }
 .document-prose h1 { font-size: 29px; }.document-prose h2 { font-size: 23px; }.document-prose h3 { font-size: 18px; }
-.document-prose p { margin: 14px 0; }.document-prose > :first-child { margin-top: 0; }
+.document-prose h2 { margin-top: 43px; margin-bottom: 15px; }
+.document-prose p { margin: 15px 0; }.document-prose > :first-child { margin-top: 0; }
 .document-prose ul, .document-prose ol { padding-left: 25px; margin: 18px 0; }.document-prose ul { list-style: disc; }.document-prose ol { list-style: decimal; }
 .document-prose li { padding-left: 4px; margin: 7px 0; }.document-prose li > p { margin: 0; }
 .document-prose a { color: var(--reading-accent, var(--accent)); text-decoration: underline; text-underline-offset: 4px; }

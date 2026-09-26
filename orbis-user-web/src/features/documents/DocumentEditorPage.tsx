@@ -14,9 +14,9 @@ import { AutosaveCoordinator, type AutosaveState } from "./autosave";
 import { DocumentShell } from "./DocumentShell";
 import { NotebookSectionMenu } from "./NotebookSectionMenu";
 
-// BlockNote is heavy; load it only when the editor page renders.
-const BlockNoteEditor = lazy(() =>
-  import("../notes/BlockNoteEditor").then((m) => ({ default: m.BlockNoteEditor })),
+// Load the editor only on document pages; readers use the lightweight renderer.
+const TiptapEditor = lazy(() =>
+  import("../notes/TiptapEditor").then((m) => ({ default: m.TiptapEditor })),
 );
 import {
   useArchiveNote,
@@ -65,7 +65,7 @@ class EditorErrorBoundary extends Component<{ children: ReactNode }, { hasError:
     if (this.state.hasError) {
       return (
         <StatusMessage tone="error" title="编辑器加载失败">
-          文档内容暂时无法以块编辑器打开。请刷新重试，或返回文档中心。
+          文档内容暂时无法在编辑器中打开。请刷新重试，或返回文档中心。
         </StatusMessage>
       );
     }
@@ -314,7 +314,7 @@ export function DocumentEditorPage() {
 
             <EditorErrorBoundary key={noteId}>
               <Suspense fallback={<div className="grid min-h-[40vh] place-items-center text-sm text-[var(--muted)]">正在加载编辑器…</div>}>
-                <BlockNoteEditor
+                <TiptapEditor
                   blocks={draft.blocks}
                   readOnly={!canEdit || editorBusy}
                   onChange={({ blocks }) => changeDraft({ ...draft, blocks })}

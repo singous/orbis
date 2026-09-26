@@ -182,7 +182,7 @@ def _iter_references(value: Any) -> Iterator[tuple[str, bool]]:
             yield href, False
     props = value.get("props")
     if isinstance(props, dict):
-        if item_type in MEDIA_TYPES and isinstance(props.get("url"), str):
+        if item_type in MEDIA_TYPES and isinstance(props.get("url"), str) and props["url"]:
             yield props["url"], True
         if item_type == "card" and isinstance(props.get("href"), str):
             yield props["href"], False

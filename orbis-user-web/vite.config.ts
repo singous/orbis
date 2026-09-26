@@ -22,6 +22,8 @@ export default defineConfig({
           editor: [
             "@tiptap/react",
             "@tiptap/starter-kit",
+            "@tiptap/extension-code-block",
+            "@tiptap/extension-underline",
             "@tiptap/extension-placeholder",
             "@tiptap/extension-link",
             "@tiptap/extension-task-list",

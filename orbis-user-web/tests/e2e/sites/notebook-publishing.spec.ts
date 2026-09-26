@@ -5,6 +5,27 @@ const webOrigin = `http://127.0.0.1:${process.env.ORBIS_E2E_WEB_PORT || "9310"}`
 const password = "Orbis-browser-test-2026!";
 const imagePng = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAIAAADZF8uwAAAAF0lEQVR4nGNUW9PJQAgwEVQxqmgAggAAbWUBcxRSQZwAAAAASUVORK5CYII=", "base64");
 
+function contentShape(root: Element) {
+  const find = (selector: string, text: string) => Array.from(root.querySelectorAll<HTMLElement>(selector)).find((element) => element.textContent?.includes(text));
+  const heading = find("h2", "开始之前");
+  const rich = find("p", "强调")!;
+  const table = find("table", "兼容性")!;
+  const code = find("pre code", "const answer = 42")!;
+  if (!heading || !rich || !table || !code) throw new Error("Representative document content is missing");
+  const styles = (element: Element) => {
+    const value = getComputedStyle(element);
+    return { fontSize: value.fontSize, fontWeight: value.fontWeight, lineHeight: value.lineHeight };
+  };
+  return {
+    heading: { tag: heading.tagName, text: heading.textContent, style: styles(heading) },
+    paragraph: { tag: rich.tagName, bold: rich.querySelector("strong")?.textContent, href: rich.querySelector("a")?.getAttribute("href"), color: getComputedStyle(rich.querySelector("span[style*='color']") ?? rich.querySelector("strong")!).color, alignment: getComputedStyle(rich).textAlign, style: styles(rich) },
+    list: { start: root.querySelector("ol")?.getAttribute("start") ?? "1", text: root.querySelector("ol")?.textContent?.trim() },
+    table: { rows: table.querySelectorAll("tr").length, header: table.querySelector("th")?.textContent?.trim(), headerBackground: getComputedStyle(table.querySelector("th")!).backgroundColor, headerAlignment: getComputedStyle(table.querySelector("th")!).textAlign, style: styles(table) },
+    code: { text: code.textContent, style: styles(code) },
+    image: root.querySelector("img[alt='documentation.png']")?.getAttribute("alt"),
+  };
+}
+
 test("a notebook publishes its complete tree and editable documentation components", async ({ page, browser, request }, testInfo) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -43,6 +64,16 @@ test("a notebook publishes its complete tree and editable documentation componen
   const blocks = { schema_version: 2, editor: "blocknote", blocks: [
     paragraph("把团队知识整理成清晰、易读的开发者文档。"),
     block("heading", { level: 2 }, [{ type: "text", text: "开始之前" }]),
+    block("paragraph", { textAlignment: "center" }, [{ type: "text", text: "强调", styles: { bold: true, textColor: "#aabbcc" } }, { type: "text", text: "和" }, { type: "link", href: "https://example.com", content: [{ type: "text", text: "链接" }] }]),
+    block("numberedListItem", { start: 3 }, [{ type: "text", text: "第三步" }]),
+    block("bulletListItem", {}, [{ type: "text", text: "列表项" }]),
+    block("checkListItem", { checked: true }, [{ type: "text", text: "已完成" }]),
+    block("table", {}, { type: "tableContent", headerRows: 1, headerCols: 0, columnWidths: [140, 220], rows: [
+      { cells: [{ type: "tableCell", props: { colspan: 1, rowspan: 1, backgroundColor: "#f1faf4", textAlignment: "center" }, content: [{ type: "text", text: "兼容性" }] }, { type: "tableCell", props: { colspan: 1, rowspan: 1 }, content: [{ type: "text", text: "结果" }] }] },
+      { cells: [{ type: "tableCell", props: { colspan: 1, rowspan: 1 }, content: [{ type: "text", text: "旧文档" }] }, { type: "tableCell", props: { colspan: 1, rowspan: 1 }, content: [{ type: "text", text: "保留" }] }] },
+    ] }),
+    block("codeBlock", { language: "javascript" }, "const answer = 42"),
+    block("quote", {}, [], [paragraph("引用内容仍可阅读。")]),
     block("callout", { title: "开始之前", tone: "info" }, [{ type: "text", text: "文档内容来自笔记本，修改后预览并发布。" }]),
     block("cardGroup", { columns: 2 }, [], [block("card", { title: "原始标题", href: "https://example.com/start" }, [], [paragraph("创建你的第一篇公开文档。")])]),
     block("steps", {}, [], [block("step", { title: "创建笔记本" }, [], [paragraph("按主题整理内容。")]), block("step", { title: "发布站点" }, [], [paragraph("预览后确认公开版本。")])]),
@@ -63,9 +94,11 @@ test("a notebook publishes its complete tree and editable documentation componen
   await page.reload();
   await expect(page.getByRole("textbox", { name: "卡片标题", exact: true }).first()).toHaveValue("阅读入门指南");
   await expect(page.getByRole("textbox", { name: "卡片标题", exact: true }).nth(1)).toHaveValue("了解发布流程");
-  await page.locator('[contenteditable="true"]').first().click();
-  await page.keyboard.press("ControlOrMeta+End");
-  await page.keyboard.press("Enter");
+  await page.getByRole("tablist", { name: "文档标签" }).getByRole("tab", { name: "macOS" }).click();
+  await expect(page.getByText("macOS 环境配置", { exact: true })).toBeVisible();
+  await page.getByRole("tablist", { name: "代码语言" }).getByRole("tab", { name: "JavaScript" }).click();
+  await expect(page.locator(".doc-editor-codeGroup .orbis-code:visible code")).toContainText("console.log('Hello Orbis')");
+  await page.locator(".orbis-tiptap .ProseMirror > p").last().click();
   await page.keyboard.type("/callout");
   await page.getByRole("option", { name: "提示块", exact: true }).click();
   await expect(page.getByRole("textbox", { name: "提示块标题", exact: true })).toHaveCount(2);
@@ -83,14 +116,16 @@ test("a notebook publishes its complete tree and editable documentation componen
   expectValidGroupChildren(edited.blocks);
   await page.reload();
   await expect(page.locator('.doc-editor-callout input[value="编辑器插入的提示"]')).toBeVisible();
-  await page.getByText("添加图片", { exact: true }).click();
-  const chooser = page.waitForEvent("filechooser");
-  await page.getByRole("button", { name: "上传图片", exact: true }).click();
-  await (await chooser).setFiles({ name: "documentation.png", mimeType: "image/png", buffer: imagePng });
-  const image = page.locator('.bn-block-content[data-content-type="image"] img');
+  await page.getByLabel("选择上传文件").setInputFiles({ name: "documentation.png", mimeType: "image/png", buffer: imagePng });
+  const image = page.locator('.orbis-media img[alt="documentation.png"]');
   await expect(image).toBeVisible();
   await expect.poll(async () => image.evaluate((element) => (element as HTMLImageElement).naturalWidth)).toBe(12);
   await expect.poll(async () => JSON.stringify((await (await request.get(`${apiOrigin}/notes/${ids[0]}/content`, { headers })).json()).data.blocks)).toContain("orbis-file:");
+  const editorShape = await page.locator(".orbis-tiptap .ProseMirror").evaluate(contentShape);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByRole("toolbar", { name: "文档格式" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.setViewportSize({ width: 1440, height: 1000 });
 
   await page.goto(`/collections/${notebook.id}`);
   await page.getByRole("link", { name: "创建文档站点", exact: true }).click();
@@ -110,6 +145,7 @@ test("a notebook publishes its complete tree and editable documentation componen
   await expect(preview.getByRole("navigation", { name: "预览页面" }).getByRole("button")).toHaveCount(25);
   await expect(preview.getByRole("link", { name: "阅读入门指南" })).toBeVisible();
   await expect.poll(async () => preview.getByRole("img", { name: "documentation.png" }).evaluate((element) => (element as HTMLImageElement).naturalWidth)).toBe(12);
+  await expect.poll(() => preview.locator(".site-preview-page .document-prose").evaluate(contentShape)).toEqual(editorShape);
   await preview.getByRole("link", { name: "继续阅读安装指南" }).click();
   await expect(preview.getByRole("heading", { name: "安装指南", exact: true })).toBeVisible();
   await expect(page).toHaveURL(new RegExp(`/sites/${siteId}$`));
@@ -129,6 +165,7 @@ test("a notebook publishes its complete tree and editable documentation componen
   await expect(reader.getByRole("heading", { name: "快速开始", level: 1 })).toBeVisible();
   const publicImage = reader.getByRole("img", { name: "documentation.png" });
   await expect.poll(async () => publicImage.evaluate((element) => (element as HTMLImageElement).naturalWidth)).toBe(12);
+  await expect.poll(() => reader.locator(".site-reader .document-prose").evaluate(contentShape)).toEqual(editorShape);
   const assetUrl = await publicImage.getAttribute("src");
   expect(assetUrl).toMatch(/^\/public\/sites\/notebook-docs\/assets\/[a-f0-9]{64}$/);
   expect((await request.get(`${webOrigin}${assetUrl}`)).status()).toBe(200);
@@ -143,9 +180,10 @@ test("a notebook publishes its complete tree and editable documentation componen
   await reader.getByRole("tab", { name: "macOS", exact: true }).click();
   await expect(reader.getByText("macOS 环境配置", { exact: true })).toBeVisible();
   await reader.getByRole("tab", { name: "JavaScript", exact: true }).click();
-  await expect(reader.getByLabel("JavaScript 代码", { exact: true })).toContainText("console.log('Hello Orbis')");
-  await expect(reader.locator(".content-code:visible .hljs-string")).toBeVisible();
-  await reader.getByRole("button", { name: "复制代码", exact: true }).click();
+  const javascriptPanel = reader.getByRole("tabpanel", { name: "JavaScript" });
+  await expect(javascriptPanel.getByLabel("JavaScript 代码", { exact: true })).toContainText("console.log('Hello Orbis')");
+  await expect(javascriptPanel.locator(".hljs-string")).toBeVisible();
+  await javascriptPanel.getByRole("button", { name: "复制代码", exact: true }).click();
   expect(await reader.evaluate(() => navigator.clipboard.readText())).toBe("console.log('Hello Orbis')");
   await reader.evaluate(() => window.scrollTo(0, 0));
   await reader.screenshot({ path: testInfo.outputPath("components-desktop.png"), fullPage: true });
