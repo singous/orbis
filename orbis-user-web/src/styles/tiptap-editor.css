@@ -11,7 +11,7 @@
 .orbis-tiptap .orbis-code-toolbar select { border: 0; background: transparent; color: var(--reading-muted); font-size: 11px; }
 .orbis-tiptap .orbis-code pre { margin: 0; padding: 18px; overflow-x: auto; white-space: pre; line-height: 1.8; }
 .orbis-tiptap .orbis-code code { padding: 0; border: 0; background: none; font-size: .85em; }
-.orbis-tiptap .ProseMirror table { border-collapse: collapse; width: 100%; max-width: 100%; margin: 24px 0; font-size: 13px; }
+.orbis-tiptap .ProseMirror table { border-collapse: collapse; width: 100%; margin: 0; font-size: 13px; }
 .orbis-tiptap .ProseMirror td, .orbis-tiptap .ProseMirror th { border: 1px solid var(--reading-border); text-align: left; padding: 10px 14px; min-width: 90px; vertical-align: top; }
 .orbis-tiptap .ProseMirror th { background: var(--reading-muted-bg); font-weight: 600; }
 .orbis-tiptap .ProseMirror td p, .orbis-tiptap .ProseMirror th p { margin: 0; }
@@ -40,3 +40,18 @@
 .orbis-tiptap-menu p, .orbis-tiptap-error { margin: 4px 8px; color: var(--text-secondary); font-size: 12px; }
 .orbis-tiptap-error { color: var(--error, #b42318); }
 @media (max-width: 700px) { .orbis-tiptap-toolbar { position: static; margin-inline: 0; }.orbis-tiptap .ProseMirror { min-height: 45vh; padding-bottom: 40px; }.orbis-tiptap-menu { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.orbis-tiptap .ProseMirror li > p, .orbis-tiptap .ProseMirror li > div > p:first-child { margin: 0; }
+.orbis-tiptap .ProseMirror ul[data-type="taskList"] li > label { display: flex; align-items: center; height: 28.5px; margin: 0; }
+.orbis-tiptap .ProseMirror ul[data-type="taskList"] li > div { flex: 1; min-width: 0; }
+.orbis-tiptap .orbis-media { position: relative; }
+.orbis-tiptap .orbis-code [data-node-view-content], .orbis-tiptap .orbis-code [data-node-view-content-react] { white-space: pre; }
+.orbis-tiptap .orbis-code pre { overflow-x: auto; max-width: 100%; }
+.orbis-tiptap .orbis-tiptap-toolbar { box-shadow: 0 3px 14px #0000000a; }
+.orbis-tiptap-error { padding: 12px; border: 1px solid currentColor; border-radius: 6px; }
+.orbis-tiptap-error button { padding: 5px 10px; text-decoration: underline; cursor: pointer; }
+@media (max-width: 700px) { .orbis-tiptap-toolbar { flex-wrap: wrap; overflow: visible; gap: 3px; } }
+
+.orbis-tiptap .content-table-scroll { overflow-x: auto; max-width: 100%; margin: 24px 0; }
+.orbis-tiptap .ProseMirror blockquote > p { margin: 0; }
+.orbis-tiptap-menu button[aria-selected="true"] { background: var(--surface-hover); }

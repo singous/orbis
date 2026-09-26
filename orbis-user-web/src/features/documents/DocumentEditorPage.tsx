@@ -85,6 +85,8 @@ export function DocumentEditorPage() {
   const saveContent = useSaveNoteContent();
   const archiveNote = useArchiveNote();
   const [draft, setDraft] = useState<EditorDraft | null>(null);
+  const [editorError, setEditorError] = useState<string | null>(null);
+  const editorErrorRef = useRef<string | null>(null);
   const [autosaveState, setSaveState] = useState<AutosaveState>("saved");
   const [collaborationOpen, setCollaborationOpen] = useState(false);
   const [restoring, setRestoring] = useState(false);
@@ -94,7 +96,7 @@ export function DocumentEditorPage() {
   const restoringRef = useRef(false);
   const archivingRef = useRef<AutosaveCoordinator<EditorDraft> | null>(null);
   const collaborationTriggerRef = useRef<HTMLButtonElement>(null);
-  const saveState = restorationConflict ? "conflict" : autosaveState;
+  const saveState = editorError ? "error" : restorationConflict ? "conflict" : autosaveState;
   const [outlinePinned, setOutlinePinned] = useState(false);
   const [outlineHovered, setOutlineHovered] = useState(false);
   const coordinatorRef = useRef<AutosaveCoordinator<EditorDraft> | null>(null);
@@ -151,6 +153,8 @@ export function DocumentEditorPage() {
   }, [contentQuery.data?.content_version, noteId, noteQuery.data?.title]);
 
   useEffect(() => {
+    setEditorError(null);
+    editorErrorRef.current = null;
     setArchiving(false);
     setArchiveError(null);
     return () => {
@@ -164,7 +168,7 @@ export function DocumentEditorPage() {
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if ((coordinatorRef.current && coordinatorRef.current.state !== "saved") || restoringRef.current || archivingRef.current) {
+      if (editorErrorRef.current || (coordinatorRef.current && coordinatorRef.current.state !== "saved") || restoringRef.current || archivingRef.current) {
         event.preventDefault();
         if (coordinatorRef.current?.state === "dirty") void coordinatorRef.current.flush();
       }
@@ -211,6 +215,7 @@ export function DocumentEditorPage() {
   }
 
   async function flushCurrentDraft(coordinator: AutosaveCoordinator<EditorDraft>) {
+    if (editorErrorRef.current) throw new Error(editorErrorRef.current);
     await coordinator.flush();
     if (coordinatorRef.current !== coordinator) throw new Error("文档已切换，请在当前文档中重新操作。");
     const saved = coordinator.saved;
@@ -310,13 +315,14 @@ export function DocumentEditorPage() {
             {saveState === "conflict" ? <div className="mb-5"><StatusMessage tone="warning" title="检测到其他窗口的更新">本地草稿仍保留。建议先复制本地 Markdown，再载入服务端版本。
               <div className="mt-3 flex flex-wrap gap-2"><Button variant="secondary" icon={<Download aria-hidden="true" size={14} />} onClick={() => navigator.clipboard?.writeText(v2ToMarkdown(draft.blocks.blocks))}>复制本地 Markdown</Button><Button variant="secondary" icon={<RotateCcw aria-hidden="true" size={14} />} onClick={reloadServer}>载入服务端版本</Button></div>
             </StatusMessage></div> : null}
-            {saveState === "error" ? <div className="mb-5"><StatusMessage tone="error" title="自动保存失败">网络恢复后可手动重试，本地草稿不会丢失。<div className="mt-3"><Button variant="secondary" icon={<RefreshCw aria-hidden="true" size={14} />} onClick={() => coordinatorRef.current?.retry()}>重试保存</Button></div></StatusMessage></div> : null}
+            {saveState === "error" && !editorError ? <div className="mb-5"><StatusMessage tone="error" title="自动保存失败">网络恢复后可手动重试，本地草稿不会丢失。<div className="mt-3"><Button variant="secondary" icon={<RefreshCw aria-hidden="true" size={14} />} onClick={() => coordinatorRef.current?.retry()}>重试保存</Button></div></StatusMessage></div> : null}
 
             <EditorErrorBoundary key={noteId}>
               <Suspense fallback={<div className="grid min-h-[40vh] place-items-center text-sm text-[var(--muted)]">正在加载编辑器…</div>}>
                 <TiptapEditor
                   blocks={draft.blocks}
                   readOnly={!canEdit || editorBusy}
+                  onError={(message) => { editorErrorRef.current = message; setEditorError(message); }}
                   onChange={({ blocks }) => changeDraft({ ...draft, blocks })}
                 />
               </Suspense>

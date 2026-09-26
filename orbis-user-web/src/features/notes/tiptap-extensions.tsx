@@ -11,17 +11,20 @@ import TaskList from "@tiptap/extension-task-list";
 import Underline from "@tiptap/extension-underline";
 import { NodeViewContent, NodeViewWrapper, ReactNodeViewRenderer, type NodeViewProps } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { BookOpen, Code2, Info, Layers, ListOrdered, Plus } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { BookOpen, Code2, Info, Layers, ListOrdered, Plus, Settings2, CircleCheck, TriangleAlert, OctagonAlert } from "lucide-react";
+import { useContext, useEffect, useRef, useState } from "react";
 
 import { ContentMedia } from "../content/ContentMedia";
 import { contentCellStyle, contentInlineStyle, contentTextAlignment } from "../content/content-format";
 import { CODE_LANGUAGES } from "../content/CodeBlock";
-import { DOCUMENT_BLOCKS, documentBlockTitle, type DocumentBlockKind } from "../content/document-components";
+import { DOCUMENT_BLOCKS, documentBlockTitle, documentBlockDefinition, type DocumentBlockKind } from "../content/document-components";
 import { safeContentUrl } from "../content/ContentRenderer";
+import { EditorReadOnlyContext } from "./tiptap-editor-context";
 import { createDocumentBlock } from "./tiptap-insert";
+import { clipboardPropsAttribute, parseClipboardProps } from "./tiptap-clipboard";
 import { OrbisBlockIds } from "./tiptap-block-ids";
 import { OrbisGroupEditing } from "./tiptap-group-editing";
+import { OrbisCodeHighlight } from "./tiptap-code-highlight";
 import { toTiptapDocument } from "./tiptap-model";
 import "../../styles/document-editor.css";
 
@@ -33,13 +36,13 @@ const OrbisMetadata = Extension.create({
   addGlobalAttributes() {
     return [{
       types: ["paragraph", "heading", "codeBlock", "horizontalRule", "blockquote", "listItem", "taskItem", "table", "tableCell", "tableHeader"],
-      attributes: { orbisId: hidden, orbisProps: { ...hidden, renderHTML: (attributes: Record<string, unknown>) => {
+      attributes: { orbisId: hidden, orbisProps: { ...hidden, parseHTML: (element: HTMLElement) => parseClipboardProps(element), renderHTML: (attributes: Record<string, unknown>) => {
         const alignment = contentTextAlignment((attributes.orbisProps as Record<string, unknown> | undefined)?.textAlignment);
-        return alignment ? { style: `text-align: ${alignment}` } : {};
-      } }, orbisOriginal: hidden, orbisSignature: hidden, orbisOwn: { ...hidden, default: false }, orbisCellOriginal: hidden, orbisCellProps: { ...hidden, renderHTML: (attributes: Record<string, unknown>) => {
+        return { ...clipboardPropsAttribute(attributes.orbisProps), ...(alignment ? { style: `text-align: ${alignment}` } : {}) };
+      } }, orbisOriginal: hidden, orbisSignature: hidden, orbisOwn: { default: false, parseHTML: (element: HTMLElement) => element.hasAttribute("data-orbis-own"), renderHTML: (attributes: Record<string, unknown>) => attributes.orbisOwn ? { "data-orbis-own": "true" } : {} }, orbisCellOriginal: hidden, orbisCellProps: { ...hidden, parseHTML: (element: HTMLElement) => parseClipboardProps(element, "data-orbis-cell-props"), renderHTML: (attributes: Record<string, unknown>) => {
         const style = contentCellStyle((attributes.orbisCellProps ?? {}) as Record<string, unknown>);
         const values = [style.color ? `color: ${style.color}` : "", style.backgroundColor ? `background-color: ${style.backgroundColor}` : "", style.textAlign ? `text-align: ${style.textAlign}` : ""].filter(Boolean);
-        return values.length ? { style: values.join("; ") } : {};
+        return { ...clipboardPropsAttribute(attributes.orbisCellProps, "data-orbis-cell-props"), ...(values.length ? { style: values.join("; ") } : {}) };
       } }, headerRows: hidden, headerCols: hidden, columnWidths: hidden },
     }];
   },
@@ -48,11 +51,11 @@ const OrbisMetadata = Extension.create({
 const OrbisStyle = Mark.create({
   name: "orbisStyle",
   addAttributes() { return { styles: { default: {} } }; },
-  parseHTML() { return [{ tag: "span[data-orbis-style]" }]; },
+  parseHTML() { return [{ tag: "span[data-orbis-style]", getAttrs: (element) => ({ styles: parseClipboardProps(element as HTMLElement, "data-orbis-styles") }) }]; },
   renderHTML({ HTMLAttributes }) {
     const colors = contentInlineStyle(HTMLAttributes.styles ?? {});
     const style = [colors.color ? `color: ${colors.color}` : "", colors.backgroundColor ? `background-color: ${colors.backgroundColor}` : ""].filter(Boolean).join("; ");
-    return ["span", { "data-orbis-style": "true", ...(style ? { style } : {}) }, 0];
+    return ["span", { "data-orbis-style": "true", ...clipboardPropsAttribute(HTMLAttributes.styles, "data-orbis-styles"), ...(style ? { style } : {}) }, 0];
   },
 });
 
@@ -61,12 +64,15 @@ const PROP_LABELS: Record<string, string> = { title: "标题", href: "链接", t
 const VALUE_LABELS: Record<string, string> = { info: "说明", success: "成功", warning: "注意", danger: "警告" };
 
 function ComponentView({ node, editor, updateAttributes, getPos }: NodeViewProps) {
+  const readOnly = useContext(EditorReadOnlyContext);
   const kind = node.attrs.kind as DocumentBlockKind;
   const definition = DOCUMENT_BLOCKS[kind];
   const props = (node.attrs.orbisProps ?? {}) as Record<string, unknown>;
   const title = documentBlockTitle({ type: kind, props });
-  const Icon = kind === "callout" ? Info : kind === "steps" || kind === "step" ? ListOrdered : kind === "codeGroup" ? Code2 : kind === "tabs" || kind === "tab" ? Layers : BookOpen;
+  const CalloutIcon = ({ info: Info, success: CircleCheck, warning: TriangleAlert, danger: OctagonAlert } as Record<string, typeof Info>)[String(props.tone)] || Info;
+  const Icon = kind === "callout" ? CalloutIcon : kind === "steps" || kind === "step" ? ListOrdered : kind === "codeGroup" ? Code2 : kind === "tabs" || kind === "tab" ? Layers : BookOpen;
   const [activePane, setActivePane] = useState(0);
+  const [editingProps, setEditingProps] = useState(false);
   const paneShell = useRef<HTMLDivElement>(null);
   const switchable = kind === "tabs" || kind === "codeGroup";
   const paneLabels = switchable ? Array.from({ length: node.childCount }, (_, index) => {
@@ -100,9 +106,10 @@ function ComponentView({ node, editor, updateAttributes, getPos }: NodeViewProps
     if (content) editor.chain().focus().insertContentAt(position + node.nodeSize - 1, content).run();
   }
   return <NodeViewWrapper as="section" className={`doc-editor-block doc-editor-${kind}`} data-document-component={kind} data-tone={kind === "callout" ? String(props.tone ?? "info") : undefined} data-columns={kind === "cardGroup" ? String(props.columns ?? 2) : undefined}>
-    <div className="doc-editor-heading" contentEditable={false}><Icon size={15} aria-hidden="true" /><span>{definition.label}</span></div>
-    {title ? <strong contentEditable={false} className="doc-editor-title">{title}</strong> : null}
-    {editor.isEditable ? <div className="doc-editor-controls" contentEditable={false} onKeyDown={(event) => event.stopPropagation()}>
+    {!readOnly ? <button type="button" className="doc-editor-settings" contentEditable={false} aria-label={`编辑${definition.label}属性`} aria-expanded={editingProps} onClick={() => setEditingProps((value) => !value)}><Settings2 size={14} aria-hidden="true" /></button> : null}
+    {kind === "card" || kind === "callout" ? <div className="doc-editor-heading" contentEditable={false}><Icon size={kind === "card" ? 22 : 19} aria-hidden="true" /></div> : null}
+    {title && kind !== "tab" ? <strong contentEditable={false} className="doc-editor-title">{title}</strong> : null}
+    {!readOnly && editingProps ? <div className="doc-editor-controls" contentEditable={false} onKeyDown={(event) => event.stopPropagation()}>
       {Object.entries(definition.props).map(([name, rule]) => {
         const label = name === "title" ? definition.label + "标题" : PROP_LABELS[name] || name;
         return <label key={name}><span>{label}</span>{rule.values ? <select aria-label={label} value={String(props[name] ?? rule.default)} onChange={(event) => updateProps({ [name]: typeof rule.default === "number" ? Number(event.target.value) : event.target.value })}>
@@ -114,46 +121,59 @@ function ComponentView({ node, editor, updateAttributes, getPos }: NodeViewProps
       {GROUP_CHILD[kind] ? <button type="button" onClick={addChild}><Plus size={13} aria-hidden="true" />添加{kind === "codeGroup" ? "代码示例" : DOCUMENT_BLOCKS[GROUP_CHILD[kind] as DocumentBlockKind].label}</button> : null}
     </div> : null}
     {switchable ? <div role="tablist" aria-label={kind === "tabs" ? "文档标签" : "代码语言"} className="doc-editor-panes" contentEditable={false}>{paneLabels.map((label, index) => <button key={index} role="tab" aria-selected={index === activePane} type="button" onClick={() => setActivePane(index)}>{label}</button>)}</div> : null}
-    <div ref={paneShell}><NodeViewContent as="div" className="doc-editor-content" /></div>
+    <div ref={paneShell} className="doc-editor-body"><NodeViewContent as="div" className="doc-editor-content" /></div>
   </NodeViewWrapper>;
 }
 
 const OrbisComponent = Node.create({
   name: "orbisComponent", group: "block", content: "block*", defining: true,
-  addAttributes() { return { orbisId: hidden, orbisProps: hidden, orbisOriginal: hidden, orbisSignature: hidden, kind: { default: "callout" } }; },
-  parseHTML() { return [{ tag: "section[data-document-component]", getAttrs: (element) => ({ kind: (element as HTMLElement).dataset.documentComponent }) }]; },
+  addAttributes() { return { orbisId: hidden, orbisProps: { ...hidden, parseHTML: (element: HTMLElement) => parseClipboardProps(element), renderHTML: (attributes: Record<string, unknown>) => clipboardPropsAttribute(attributes.orbisProps) }, orbisOriginal: hidden, orbisSignature: hidden, kind: { default: "callout", parseHTML: () => null, rendered: false } }; },
+  parseHTML() { return [{ tag: "section[data-document-component]", getAttrs: (element) => { const kind = (element as HTMLElement).dataset.documentComponent; return kind && documentBlockDefinition(kind) ? { kind } : false; } }]; },
   renderHTML({ node, HTMLAttributes }) { return ["section", mergeAttributes(HTMLAttributes, { "data-document-component": node.attrs.kind }), 0]; },
   addNodeView() { return ReactNodeViewRenderer(ComponentView); },
 });
 
 function MediaView({ node, editor, updateAttributes }: NodeViewProps) {
+  const readOnly = useContext(EditorReadOnlyContext);
   const kind = node.attrs.kind as "image" | "video" | "audio" | "file";
   const props = (node.attrs.orbisProps ?? {}) as Record<string, unknown>;
   const caption = String(props.caption ?? props.name ?? "");
   const reference = String(node.attrs.url ?? "");
+  const [editingCaption, setEditingCaption] = useState(false);
   return <NodeViewWrapper className="orbis-media" contentEditable={false}>
-    <ContentMedia kind={kind} reference={reference} fallback={safeContentUrl(reference, true)} name={caption || "附件"} caption={caption || undefined} />
-    {editor.isEditable ? <label className="orbis-media-caption">说明<input aria-label="媒体说明" value={caption} onChange={(event) => updateAttributes({ orbisProps: { ...props, caption: event.target.value }, caption: event.target.value })} /></label> : null}
+    <ContentMedia kind={kind} reference={reference} fallback={safeContentUrl(reference, true)} name={caption || "附件"} caption={caption || undefined} previewWidth={props.previewWidth} />
+    {!readOnly ? <button type="button" className="doc-editor-settings" aria-label="编辑媒体说明" aria-expanded={editingCaption} onClick={() => setEditingCaption((value) => !value)}><Settings2 size={14} /></button> : null}
+    {!readOnly && editingCaption ? <label className="orbis-media-caption">说明<input aria-label="媒体说明" value={caption} onChange={(event) => updateAttributes({ orbisProps: { ...props, caption: event.target.value }, caption: event.target.value })} /></label> : null}
   </NodeViewWrapper>;
 }
 
 const OrbisMedia = Node.create({
   name: "orbisMedia", group: "block", atom: true, selectable: true,
-  addAttributes() { return { orbisId: hidden, orbisProps: hidden, orbisOriginal: hidden, orbisSignature: hidden, kind: { default: "file" }, url: { default: "" }, caption: { default: "" } }; },
-  parseHTML() { return [{ tag: "figure[data-orbis-media]", getAttrs: (element) => ({ kind: (element as HTMLElement).dataset.orbisMedia }) }]; },
-  renderHTML({ node }) { return ["figure", { "data-orbis-media": node.attrs.kind, "data-src": node.attrs.url }, ["figcaption", {}, node.attrs.caption || ""]]; },
+  addAttributes() { return { orbisId: hidden, orbisProps: hidden, orbisOriginal: hidden, orbisSignature: hidden, kind: { default: "file", parseHTML: () => null }, url: { default: "", parseHTML: () => null }, caption: { default: "", parseHTML: () => null } }; },
+  parseHTML() { return [{ tag: "figure[data-orbis-media]", getAttrs: (element) => {
+    const figure = element as HTMLElement;
+    const kind = figure.dataset.orbisMedia;
+    if (!kind || !["image", "video", "audio", "file"].includes(kind)) return false;
+    const props = parseClipboardProps(figure);
+    const url = String(props.url ?? figure.dataset.src ?? "");
+    const caption = String(props.caption ?? figure.querySelector("figcaption")?.textContent ?? "");
+    return { kind, url, caption, orbisProps: { ...props, url, caption } };
+  } }]; },
+  renderHTML({ node }) { return ["figure", { "data-orbis-media": node.attrs.kind, "data-src": node.attrs.url, ...clipboardPropsAttribute({ ...node.attrs.orbisProps, url: node.attrs.url, caption: node.attrs.caption }) }, ["figcaption", {}, node.attrs.caption || ""]]; },
   addNodeView() { return ReactNodeViewRenderer(MediaView); },
 });
 
-function ToggleView({ editor }: NodeViewProps) {
-  return <NodeViewWrapper as="details" className="orbis-toggle" open><summary contentEditable={false}>展开内容</summary><NodeViewContent as="div" /></NodeViewWrapper>;
-}
+const OrbisToggleSummary = Node.create({
+  name: "orbisToggleSummary", content: "inline*", defining: true,
+  addAttributes() { return { orbisOwn: { default: true, rendered: false } }; },
+  parseHTML() { return [{ tag: "summary" }]; },
+  renderHTML() { return ["summary", {}, 0]; },
+});
 const OrbisToggle = Node.create({
-  name: "orbisToggle", group: "block", content: "block*", defining: true,
+  name: "orbisToggle", group: "block", content: "orbisToggleSummary block*", defining: true,
   addAttributes() { return { orbisId: hidden, orbisProps: hidden, orbisOriginal: hidden, orbisSignature: hidden }; },
   parseHTML() { return [{ tag: "details[data-orbis-toggle]" }]; },
-  renderHTML() { return ["details", { "data-orbis-toggle": "true" }, 0]; },
-  addNodeView() { return ReactNodeViewRenderer(ToggleView); },
+  renderHTML() { return ["details", { "data-orbis-toggle": "true", class: "orbis-toggle", open: "" }, 0]; },
 });
 
 const OrbisContainer = Node.create({
@@ -164,12 +184,13 @@ const OrbisContainer = Node.create({
 });
 
 function CodeView({ node, editor, updateAttributes }: NodeViewProps) {
+  const readOnly = useContext(EditorReadOnlyContext);
   const language = String(node.attrs.language ?? "text");
   return <NodeViewWrapper as="div" className="orbis-code">
-    <div className="orbis-code-toolbar" contentEditable={false}>{editor.isEditable ? <select aria-label="代码语言" value={language} onChange={(event) => updateAttributes({ language: event.target.value })}>
+    <div className="orbis-code-toolbar" contentEditable={false}>{!readOnly ? <select aria-label="代码语言" value={language} onChange={(event) => updateAttributes({ language: event.target.value })}>
       {Object.entries({ ...CODE_LANGUAGES, ...(Object.hasOwn(CODE_LANGUAGES, language) ? {} : { [language]: language }) }).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
     </select> : <select aria-label="代码语言" value={language} disabled><option value={language}>{CODE_LANGUAGES[language] || language}</option></select>}</div>
-    <pre><NodeViewContent as="code" /></pre>
+    <pre><NodeViewContent as="code" style={{ whiteSpace: "pre" }} /></pre>
   </NodeViewWrapper>;
 }
 
@@ -177,11 +198,15 @@ const EditableCodeBlock = CodeBlock.extend({
   addNodeView() { return ReactNodeViewRenderer(CodeView); },
 });
 
+const ScrollableTable = Table.extend({
+  renderHTML(props) { return ["div", { class: "content-table-scroll" }, this.parent!(props)]; },
+});
+
 export const tiptapExtensions = [
   StarterKit.configure({ codeBlock: false }), EditableCodeBlock, Underline,
   Link.configure({ openOnClick: false, autolink: true }),
   Placeholder.configure({ placeholder: "输入正文，或输入 / 插入内容…" }),
   TaskList, TaskItem.configure({ nested: true }),
-  Table.configure({ resizable: false }), TableRow, TableHeader, TableCell,
-  OrbisMetadata, OrbisStyle, OrbisComponent, OrbisMedia, OrbisToggle, OrbisContainer, OrbisBlockIds, OrbisGroupEditing,
+  ScrollableTable.configure({ resizable: false }), TableRow, TableHeader, TableCell,
+  OrbisMetadata, OrbisStyle, OrbisComponent, OrbisMedia, OrbisToggle, OrbisToggleSummary, OrbisContainer, OrbisBlockIds, OrbisGroupEditing, OrbisCodeHighlight,
 ];

@@ -464,8 +464,10 @@ body {
 
 /* Content column, not a sheet of paper: no border, no shadow, transparent bg. */
 .editor-canvas {
+  --editor-content-gutter: 54px;
+  --editor-body-width: 760px;
   width: 100%;
-  max-width: 760px;
+  max-width: calc(var(--editor-body-width) + 2 * var(--editor-content-gutter));
   justify-self: center;
   background: transparent;
   padding: 8px 0 0;

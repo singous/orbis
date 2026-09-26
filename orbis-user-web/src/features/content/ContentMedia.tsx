@@ -33,16 +33,18 @@ function useContentResource(reference: string | undefined, fallback: string | nu
   };
 }
 
-export function ContentMedia({ kind, reference, fallback, name, caption }: {
+export function ContentMedia({ kind, reference, fallback, name, caption, previewWidth }: {
   kind: "image" | "video" | "audio" | "file";
   reference?: string;
   fallback: string | null;
   name: string;
   caption?: string;
+  previewWidth?: unknown;
 }) {
   const resource = useContentResource(reference, fallback);
   if (!resource.url) return <p className="content-unavailable">{name}（{resource.loading ? "正在加载…" : "资源不可用"}）{resource.canRetry ? <button type="button" onClick={resource.retry}>重新加载附件</button> : null}</p>;
-  return <figure>{kind === "image" ? <img src={resource.url} alt={caption || name} loading="lazy" />
+  const width = typeof previewWidth === "number" && Number.isFinite(previewWidth) && previewWidth > 0 ? previewWidth : undefined;
+  return <figure style={kind === "image" || kind === "video" ? { width, maxWidth: "100%" } : undefined}>{kind === "image" ? <img src={resource.url} alt={caption || name} loading="lazy" />
     : kind === "video" ? <video src={resource.url} controls preload="metadata" aria-label={caption || name} />
     : kind === "audio" ? <audio src={resource.url} controls preload="metadata" aria-label={caption || name} />
     : <a href={resource.url} download={resource.managed ? name : undefined} rel="noopener noreferrer">{caption || name}</a>}

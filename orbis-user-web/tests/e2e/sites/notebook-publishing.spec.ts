@@ -11,6 +11,7 @@ function contentShape(root: Element) {
   const rich = find("p", "强调")!;
   const table = find("table", "兼容性")!;
   const code = find("pre code", "const answer = 42")!;
+  const cardBody = root.querySelector(".doc-editor-card p, .doc-card p")!;
   if (!heading || !rich || !table || !code) throw new Error("Representative document content is missing");
   const styles = (element: Element) => {
     const value = getComputedStyle(element);
@@ -23,6 +24,7 @@ function contentShape(root: Element) {
     table: { rows: table.querySelectorAll("tr").length, header: table.querySelector("th")?.textContent?.trim(), headerBackground: getComputedStyle(table.querySelector("th")!).backgroundColor, headerAlignment: getComputedStyle(table.querySelector("th")!).textAlign, style: styles(table) },
     code: { text: code.textContent, style: styles(code) },
     image: root.querySelector("img[alt='documentation.png']")?.getAttribute("alt"),
+    cardBody: { ...styles(cardBody), marginTop: getComputedStyle(cardBody).marginTop, marginBottom: getComputedStyle(cardBody).marginBottom },
   };
 }
 
@@ -87,11 +89,16 @@ test("a notebook publishes its complete tree and editable documentation componen
   expect(saved.status()).toBe(200);
 
   await page.goto(`/documents/${ids[0]}`);
+  await page.getByRole("button", { name: "编辑卡片属性", exact: true }).click();
   await page.getByRole("textbox", { name: "卡片标题", exact: true }).fill("阅读入门指南");
+  await page.getByRole("button", { name: "编辑卡片组属性", exact: true }).click();
   await page.getByRole("button", { name: "添加卡片", exact: true }).click();
+  await page.getByRole("button", { name: "编辑卡片属性", exact: true }).nth(1).click();
   await page.getByRole("textbox", { name: "卡片标题", exact: true }).nth(1).fill("了解发布流程");
   await expect.poll(async () => (await (await request.get(`${apiOrigin}/notes/${ids[0]}/content`, { headers })).json()).data.plain_text).toContain("了解发布流程");
   await page.reload();
+  await page.getByRole("button", { name: "编辑卡片属性", exact: true }).nth(0).click();
+  await page.getByRole("button", { name: "编辑卡片属性", exact: true }).nth(1).click();
   await expect(page.getByRole("textbox", { name: "卡片标题", exact: true }).first()).toHaveValue("阅读入门指南");
   await expect(page.getByRole("textbox", { name: "卡片标题", exact: true }).nth(1)).toHaveValue("了解发布流程");
   await page.getByRole("tablist", { name: "文档标签" }).getByRole("tab", { name: "macOS" }).click();
@@ -101,6 +108,8 @@ test("a notebook publishes its complete tree and editable documentation componen
   await page.locator(".orbis-tiptap .ProseMirror > p").last().click();
   await page.keyboard.type("/callout");
   await page.getByRole("option", { name: "提示块", exact: true }).click();
+  await page.getByRole("button", { name: "编辑提示块属性", exact: true }).nth(0).click();
+  await page.getByRole("button", { name: "编辑提示块属性", exact: true }).nth(1).click();
   await expect(page.getByRole("textbox", { name: "提示块标题", exact: true })).toHaveCount(2);
   await page.locator('.doc-editor-callout input[value=""]').fill("编辑器插入的提示");
   await expect.poll(async () => (await (await request.get(`${apiOrigin}/notes/${ids[0]}/content`, { headers })).json()).data.plain_text).toContain("编辑器插入的提示");
@@ -115,13 +124,17 @@ test("a notebook publishes its complete tree and editable documentation componen
   }
   expectValidGroupChildren(edited.blocks);
   await page.reload();
-  await expect(page.locator('.doc-editor-callout input[value="编辑器插入的提示"]')).toBeVisible();
+  await expect(page.locator(".doc-editor-callout .doc-editor-title").filter({ hasText: "编辑器插入的提示" })).toBeVisible();
   await page.getByLabel("选择上传文件").setInputFiles({ name: "documentation.png", mimeType: "image/png", buffer: imagePng });
   const image = page.locator('.orbis-media img[alt="documentation.png"]');
   await expect(image).toBeVisible();
   await expect.poll(async () => image.evaluate((element) => (element as HTMLImageElement).naturalWidth)).toBe(12);
   await expect.poll(async () => JSON.stringify((await (await request.get(`${apiOrigin}/notes/${ids[0]}/content`, { headers })).json()).data.blocks)).toContain("orbis-file:");
   const editorShape = await page.locator(".orbis-tiptap .ProseMirror").evaluate(contentShape);
+  const cards = await page.locator(".doc-editor-cardGroup .doc-editor-card").evaluateAll((elements) => elements.map((element) => ({ x: element.getBoundingClientRect().x, y: element.getBoundingClientRect().y })));
+  expect(Math.abs(cards[0].y - cards[1].y)).toBeLessThan(2);
+  expect(cards[1].x).toBeGreaterThan(cards[0].x);
+  expect(await page.locator(".orbis-code code").first().evaluate((element) => getComputedStyle(element).whiteSpace)).toBe("pre");
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByRole("toolbar", { name: "文档格式" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -211,6 +224,7 @@ test("a notebook publishes its complete tree and editable documentation componen
   await navigation.getByRole("link", { name: "快速开始", exact: true }).click();
   await expect(reader.getByRole("heading", { name: "快速开始", level: 1 })).toBeVisible();
   await page.goto(`/documents/${ids[0]}`);
+  await page.getByRole("button", { name: "编辑卡片属性", exact: true }).first().click();
   await page.getByRole("textbox", { name: "卡片标题", exact: true }).first().fill("更新后的入门指南");
   await expect.poll(async () => (await (await request.get(`${apiOrigin}/notes/${ids[0]}/content`, { headers })).json()).data.plain_text).toContain("更新后的入门指南");
   await reader.reload();

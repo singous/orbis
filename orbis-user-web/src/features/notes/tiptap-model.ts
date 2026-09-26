@@ -18,7 +18,7 @@ function signature(node: JSONContent): string {
   const kept = Object.fromEntries(Object.entries(attrs).filter(([key, value]) =>
     !["orbisOriginal", "orbisSignature"].includes(key) && value !== null && value !== undefined &&
     !(key === "colspan" && value === 1) && !(key === "rowspan" && value === 1) &&
-    !(key === "start" && value === 1) && !(key === "checked" && value === false),
+    !(key === "start" && value === 1) && !(["checked", "orbisOwn"].includes(key) && value === false),
   ));
   return canonicalJSON({ type: node.type, text: node.text, marks: node.marks, attrs: kept, content: node.content?.map((child) => signature(child)) });
 }
@@ -88,39 +88,109 @@ function attrs(node: JSONContent) { return node.attrs ?? {}; }
 function props(node: JSONContent): Record<string, unknown> { return clone((attrs(node).orbisProps ?? {}) as Record<string, unknown>); }
 function id(node: JSONContent): string | undefined { return typeof attrs(node).orbisId === "string" ? String(attrs(node).orbisId) : undefined; }
 
+type TablePosition = { cell: JSONContent; row: number; column: number; colspan: number; rowspan: number };
+
+/** Cell indices are not column indices when preceding cells span rows or columns. */
+function tableLayout(node: JSONContent): { cells: TablePosition[]; grid: JSONContent[][]; width: number } {
+  const rows = node.content ?? [];
+  const grid: JSONContent[][] = rows.map(() => []);
+  const cells: TablePosition[] = [];
+  rows.forEach((row, rowIndex) => {
+    let column = 0;
+    for (const cell of row.content ?? []) {
+      while (grid[rowIndex][column]) column += 1;
+      const colspan = Number(cell.attrs?.colspan ?? 1);
+      const rowspan = Number(cell.attrs?.rowspan ?? 1);
+      cells.push({ cell, row: rowIndex, column, colspan, rowspan });
+      for (let rowOffset = 0; rowOffset < rowspan && rowIndex + rowOffset < rows.length; rowOffset += 1) {
+        for (let columnOffset = 0; columnOffset < colspan; columnOffset += 1) grid[rowIndex + rowOffset][column + columnOffset] = cell;
+      }
+      column += colspan;
+    }
+  });
+  return { cells, grid, width: Math.max(0, ...grid.map((row) => row.length)) };
+}
+
+function tableAttributes(node: JSONContent): Pick<OrbisTableContent, "headerRows" | "headerCols" | "columnWidths"> {
+  const { cells, grid, width } = tableLayout(node);
+  const storedRows = Number(attrs(node).headerRows ?? 0);
+  const storedCols = Number(attrs(node).headerCols ?? 0);
+  // Stored counts disambiguate all-header tables, provided live cell types agree.
+  const storedHeadersMatch = storedRows <= grid.length && storedCols <= width && cells.every(({ cell, row, column }) =>
+    (cell.type === "tableHeader") === (row < storedRows || column < storedCols),
+  );
+  let headerRows = 0;
+  let headerCols = 0;
+  if (storedHeadersMatch) {
+    headerRows = storedRows;
+    headerCols = storedCols;
+  } else {
+    while (headerRows < grid.length && grid[headerRows].length === width && grid[headerRows].every((cell) => cell?.type === "tableHeader")) headerRows += 1;
+    const bodyRows = grid.slice(headerRows);
+    while (headerCols < width && bodyRows.length && bodyRows.every((row) => row[headerCols]?.type === "tableHeader")) headerCols += 1;
+  }
+  const columnWidths: Array<number | null> = Array(width).fill(null);
+  for (const { cell, column, colspan } of cells) {
+    const widths = cell.attrs?.colwidth as Array<number | null> | null | undefined;
+    for (let offset = 0; offset < colspan; offset += 1) {
+      const value = widths?.[offset];
+      if (typeof value === "number" && value > 0 && columnWidths[column + offset] === null) columnWidths[column + offset] = value;
+    }
+  }
+  const hasWidths = columnWidths.some((value) => value !== null) || (Array.isArray(attrs(node).columnWidths) && attrs(node).columnWidths.length > 0);
+  return { headerRows, headerCols, columnWidths: hasWidths ? columnWidths : [] };
+}
+
+/** The storage contract has inline cells. Preserve nested pasted block text and
+ * explicit paragraph boundaries while flattening it to that existing shape. */
+function cellInlineNodes(nodes: JSONContent[]): JSONContent[] {
+  const result: JSONContent[] = [];
+  const isInline = (node: JSONContent) => node.type === "text" || node.type === "hardBreak";
+  nodes.forEach((node, index) => {
+    if (index && (!isInline(nodes[index - 1]) || !isInline(node))) result.push({ type: "hardBreak" });
+    result.push(...(isInline(node) ? [node] : cellInlineNodes(node.content ?? [])));
+  });
+  return result;
+}
+
 function tableToNode(table: OrbisBlock): StoredNode {
   const data = table.content as OrbisTableContent;
   const rows = data.rows ?? [];
-  return own({ type: "table", attrs: { ...metadata(table), headerRows: data.headerRows ?? 0, headerCols: data.headerCols ?? 0, columnWidths: data.columnWidths ?? [] }, content: rows.map((row, rowIndex) => ({
-    type: "tableRow", content: row.cells.map((cell, cellIndex) => {
+  const node: StoredNode = { type: "table", attrs: { ...metadata(table), headerRows: data.headerRows ?? 0, headerCols: data.headerCols ?? 0, columnWidths: data.columnWidths ?? [] }, content: rows.map((row) => ({
+    type: "tableRow", content: row.cells.map((cell) => {
       const value = typeof cell === "object" && !Array.isArray(cell) ? cell.content ?? [] : cell;
       const cellProps = typeof cell === "object" && !Array.isArray(cell) ? cell.props ?? {} : {};
-      const colspan = Number(cellProps.colspan ?? 1);
-      const preceding = row.cells.slice(0, cellIndex).reduce((total, prior) => total + Number(typeof prior === "object" && !Array.isArray(prior) ? prior.props?.colspan ?? 1 : 1), 0);
-      const widths = (data.columnWidths ?? []).slice(preceding, preceding + colspan);
       return {
-        type: rowIndex < (data.headerRows ?? 0) || cellIndex < (data.headerCols ?? 0) ? "tableHeader" : "tableCell",
-        attrs: { colspan, rowspan: Number(cellProps.rowspan ?? 1), colwidth: widths.some((width) => width !== null) ? widths : null, orbisCellOriginal: clone(cell), orbisCellProps: clone(cellProps) },
+        type: "tableCell",
+        attrs: { colspan: Number(cellProps.colspan ?? 1), rowspan: Number(cellProps.rowspan ?? 1), colwidth: null, orbisCellOriginal: clone(cell), orbisCellProps: clone(cellProps) },
         content: [{ type: "paragraph", content: inlineToNodes(value) }],
       };
     }),
-  })) }, table);
+  })) };
+  for (const { cell, row, column, colspan } of tableLayout(node).cells) {
+    cell.type = row < (data.headerRows ?? 0) || column < (data.headerCols ?? 0) ? "tableHeader" : "tableCell";
+    const widths = (data.columnWidths ?? []).slice(column, column + colspan);
+    cell.attrs!.colwidth = widths.some((width) => width !== null) ? widths : null;
+  }
+  return own(node, table);
 }
 
 function tableFromNode(node: JSONContent): OrbisBlock {
   const saved = original(node, "table");
   if (saved) return saved;
   const rows = (node.content ?? []).map((row) => ({ cells: (row.content ?? []).map((cell) => {
-    const previous = cell.attrs?.orbisCellOriginal as OrbisTableCell | undefined;
-    const nextContent = nodesToInline((cell.content ?? []).flatMap((paragraph) => paragraph.content ?? []));
-    const previousContent = typeof previous === "object" && !Array.isArray(previous) ? previous.content ?? [] : previous;
+    const previous = cell.attrs?.orbisCellOriginal as OrbisTableCell | null | undefined;
+    const nextNodes = cellInlineNodes(cell.content ?? []);
+    const nextContent = nodesToInline(nextNodes);
+    const previousCell = previous && typeof previous === "object" && !Array.isArray(previous) ? previous : undefined;
+    const previousContent = previousCell ? previousCell.content ?? [] : previous;
     const previousNodes = inlineToNodes(previousContent ?? []);
-    if (previous !== undefined && canonicalJSON(previousNodes) === canonicalJSON((cell.content ?? []).flatMap((paragraph) => paragraph.content ?? [])) &&
-      Number(cell.attrs?.colspan ?? 1) === Number(typeof previous === "object" && !Array.isArray(previous) ? previous.props?.colspan ?? 1 : 1) &&
-      Number(cell.attrs?.rowspan ?? 1) === Number(typeof previous === "object" && !Array.isArray(previous) ? previous.props?.rowspan ?? 1 : 1)) return clone(previous);
+    if (previous != null && canonicalJSON(previousNodes) === canonicalJSON(nextNodes) &&
+      Number(cell.attrs?.colspan ?? 1) === Number(previousCell?.props?.colspan ?? 1) &&
+      Number(cell.attrs?.rowspan ?? 1) === Number(previousCell?.props?.rowspan ?? 1)) return clone(previous);
     return { type: "tableCell" as const, props: { ...((cell.attrs?.orbisCellProps ?? {}) as Record<string, unknown>), colspan: Number(cell.attrs?.colspan ?? 1), rowspan: Number(cell.attrs?.rowspan ?? 1) }, content: nextContent };
   }) }));
-  const tableContent: OrbisTableContent = { type: "tableContent", rows, headerRows: Number(attrs(node).headerRows ?? 0), headerCols: Number(attrs(node).headerCols ?? 0), columnWidths: (attrs(node).columnWidths ?? []) as Array<number | null> };
+  const tableContent: OrbisTableContent = { type: "tableContent", rows, ...tableAttributes(node) };
   return block(id(node), "table", props(node), tableContent);
 }
 
@@ -154,14 +224,14 @@ function singleNode(value: OrbisBlock): StoredNode {
   }
   if (["image", "video", "audio", "file"].includes(value.type)) return own({ type: "orbisMedia", attrs: { ...meta, kind: value.type, url: value.props.url ?? "", caption: value.props.caption ?? value.props.name ?? "" } }, value);
   if (value.type === "toggleListItem") return own({ type: "orbisToggle", attrs: meta, content: [
-    { type: "paragraph", attrs: { orbisOwn: true }, content: inlineToNodes(value.content) }, ...blocksToNodes(value.children),
+    { type: "orbisToggleSummary", attrs: { orbisOwn: true }, content: inlineToNodes(value.content) }, ...blocksToNodes(value.children),
   ] }, value);
   if (value.type === "table") return tableToNode(value);
   if (value.type === "quote") return own({ type: "blockquote", attrs: meta, content: [
     ...(typeof value.content === "string" ? value.content : Array.isArray(value.content) ? value.content : []).length ? [{ type: "paragraph", attrs: { orbisOwn: true }, content: inlineToNodes(value.content) }] : [],
     ...blocksToNodes(value.children),
   ] }, value);
-  const codeText = String(value.content ?? "");
+  const codeText = inlineToNodes(value.content).map((node) => node.type === "hardBreak" ? "\n" : node.text ?? "").join("");
   const ownContent = value.type === "codeBlock" ? codeText ? [{ type: "text", text: codeText }] : [] : inlineToNodes(value.content);
   const type = value.type === "divider" ? "horizontalRule" : value.type;
   return own({ type, attrs: { ...meta, ...(type === "heading" ? { level: Number(value.props.level ?? 1) } : {}), ...(type === "codeBlock" ? { language: value.props.language ?? null } : {}) }, ...(["horizontalRule"].includes(type) ? {} : { content: ownContent }) }, value);
@@ -205,14 +275,14 @@ function nodeToBlock(node: JSONContent): OrbisBlock[] {
     if (saved) return [saved];
     const [head, ...children] = node.content ?? [];
     const first = head ? nodeToBlock(head)[0] : block(id(node), String(attrs(node).kind), props(node), []);
-    return [{ ...first, id: id(node) ?? first.id, props: props(node), children: nodesToBlocks(children) }];
+    return [{ ...first, id: id(node) ?? first.id, props: { ...props(node), ...first.props }, children: nodesToBlocks(children) }];
   }
   if (type === "orbisComponent" || type === "orbisToggle") {
     const kind = type === "orbisToggle" ? "toggleListItem" : String(attrs(node).kind);
     const saved = original(node, kind);
     if (saved) return [saved];
     const content = node.content ?? [];
-    const ownFirst = Boolean(content[0]?.attrs?.orbisOwn);
+    const ownFirst = content[0]?.type === "orbisToggleSummary" || Boolean(content[0]?.attrs?.orbisOwn);
     return [block(id(node), kind, props(node), ownFirst ? nodesToInline(content[0]?.content) : [], nodesToBlocks(content.slice(ownFirst ? 1 : 0)))];
   }
   if (type === "orbisMedia") {

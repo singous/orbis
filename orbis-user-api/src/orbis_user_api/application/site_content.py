@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from orbis_user_api.application.site_block_paths import public_block_path
 from orbis_user_api.application.site_errors import unsafe_site_content
 from orbis_user_api.application.site_references import validate_site_reference
 from orbis_user_api.application.site_urls import PublicUrlPolicy
@@ -167,6 +168,7 @@ def _public_table(content: Any, policy: PublicUrlPolicy) -> Any:
 def _public_v2(
     block: dict[str, Any], path: str, policy: PublicUrlPolicy
 ) -> dict[str, Any]:
+    path = public_block_path(block, path)
     props = block.get("props", {})
     definition = DOCUMENT_BLOCKS.get(block["type"])
     allowed_props = (

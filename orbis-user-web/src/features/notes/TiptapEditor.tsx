@@ -11,6 +11,7 @@ import { parseFileReference } from "../files/managed-files";
 import { canonicalJSON, extractPlainTextV2, newBlockId, type NoteBlocksV2, type OrbisBlock } from "./block-model";
 import { createDocumentBlock, INSERTABLE_DOCUMENT_BLOCKS } from "./tiptap-insert";
 import { tiptapExtensions } from "./tiptap-extensions";
+import { EditorReadOnlyContext } from "./tiptap-editor-context";
 import { fromTiptapDocument, toTiptapDocument } from "./tiptap-model";
 import "../../styles/tiptap-editor.css";
 
@@ -36,7 +37,7 @@ const COMMANDS: Command[] = [
 ];
 
 function Tool({ title, active, onClick, children }: { title: string; active?: boolean; onClick: () => void; children: ReactNode }) {
-  return <button type="button" title={title} aria-label={title} aria-pressed={active ?? false} onMouseDown={(event) => event.preventDefault()} onClick={onClick}>{children}</button>;
+  return <button type="button" title={title} aria-label={title} aria-pressed={active} onMouseDown={(event) => event.preventDefault()} onClick={onClick}>{children}</button>;
 }
 
 function inlineLink(editor: Editor) {
@@ -57,22 +58,43 @@ function slashQuery(editor: Editor): { query: string; from: number; to: number }
   return match ? { query: match[1].toLocaleLowerCase(), from: $from.pos - before.length, to: $from.pos } : null;
 }
 
-export function TiptapEditor({ blocks, onChange, readOnly = false }: {
+export function TiptapEditor({ blocks, onChange, onError, readOnly = false }: {
   blocks: NoteBlocksV2;
   onChange: (next: EditorChange) => void;
+  onError?: (message: string | null) => void;
   readOnly?: boolean;
 }) {
   const files = useManagedFiles();
   const onChangeRef = useRef(onChange);
   const readOnlyRef = useRef(readOnly);
+  const errorCallback = useRef(onError);
+  errorCallback.current = onError;
   const lastEmitted = useRef<string | null>(null);
+  const lastApplied = useRef(canonicalJSON(blocks));
   const inputRef = useRef<HTMLInputElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [activeCommand, setActiveCommand] = useState(0);
   const [slash, setSlash] = useState<{ query: string; from: number; to: number } | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [contentError, setContentError] = useState<string | null>(null);
   const [, rerender] = useState(0);
   onChangeRef.current = onChange;
   readOnlyRef.current = readOnly;
+
+  function emitChange(current: Editor) {
+    if (readOnlyRef.current) return;
+    try {
+      const next = fromTiptapDocument(current.getJSON());
+      lastEmitted.current = canonicalJSON(next);
+      onChangeRef.current({ blocks: next, plainText: extractPlainTextV2(next.blocks) });
+      setContentError(null);
+      errorCallback.current?.(null);
+    } catch {
+      const message = "正文暂未保存：内容转换失败。当前编辑仍保留，请重试保存。";
+      setContentError(message);
+      errorCallback.current?.(message);
+    }
+  }
 
   const editor = useEditor({
     extensions: tiptapExtensions,
@@ -80,10 +102,7 @@ export function TiptapEditor({ blocks, onChange, readOnly = false }: {
     editable: !readOnly,
     immediatelyRender: false,
     onUpdate: ({ editor: current }) => {
-      if (readOnlyRef.current) return;
-      const next = fromTiptapDocument(current.getJSON());
-      lastEmitted.current = canonicalJSON(next);
-      onChangeRef.current({ blocks: next, plainText: extractPlainTextV2(next.blocks) });
+      emitChange(current);
       setSlash(slashQuery(current));
       rerender((value) => value + 1);
     },
@@ -91,11 +110,15 @@ export function TiptapEditor({ blocks, onChange, readOnly = false }: {
   });
 
   useEffect(() => {
-    if (!editor || canonicalJSON(blocks) === lastEmitted.current) return;
+    if (!editor) return;
+    const incoming = canonicalJSON(blocks);
+    if (incoming === lastApplied.current) return;
+    lastApplied.current = incoming;
+    if (incoming === lastEmitted.current) return;
     const current = fromTiptapDocument(editor.getJSON());
-    if (canonicalJSON(blocks) === canonicalJSON(current)) return;
+    if (incoming === canonicalJSON(current)) return;
     editor.commands.setContent(toTiptapDocument(blocks), false);
-    lastEmitted.current = canonicalJSON(blocks);
+    lastEmitted.current = null;
   }, [blocks, editor]);
 
   // Apply a restored/server revision before changing editability. setEditable
@@ -103,7 +126,7 @@ export function TiptapEditor({ blocks, onChange, readOnly = false }: {
   // during the same render and overwrite the restored revision.
   useEffect(() => {
     if (!editor) return;
-    editor.setEditable(!readOnly);
+    editor.setEditable(!readOnly, false);
   }, [editor, readOnly]);
 
   async function upload(event: ChangeEvent<HTMLInputElement>) {
@@ -113,6 +136,7 @@ export function TiptapEditor({ blocks, onChange, readOnly = false }: {
     setUploadError(null);
     try {
       const url = await files.upload(file);
+      if (editor.isDestroyed || readOnlyRef.current) return;
       const kind = file.type.startsWith("image/") ? "image" : file.type.startsWith("video/") ? "video" : file.type.startsWith("audio/") ? "audio" : "file";
       insertBlock(editor, { id: newBlockId(), type: kind, props: { url, name: file.name, caption: file.name }, content: [], children: [] });
     } catch (error) {
@@ -128,7 +152,14 @@ export function TiptapEditor({ blocks, onChange, readOnly = false }: {
   }
 
   const visible = slash ? COMMANDS.filter((item) => `${item.label} ${item.keywords}`.toLocaleLowerCase().includes(slash.query)) : COMMANDS;
-  return <FileContentContext.Provider value={files}><div className="orbis-tiptap document-prose" data-testid="orbis-tiptap-editor">
+  return <EditorReadOnlyContext.Provider value={readOnly}><FileContentContext.Provider value={files}><div className="orbis-tiptap document-prose" data-testid="orbis-tiptap-editor" onKeyDownCapture={(event) => {
+    if (readOnly || (!menuOpen && !slash)) return;
+    if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); setMenuOpen(false); setSlash(null); return; }
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault(); event.stopPropagation();
+      setActiveCommand((index) => (index + (event.key === "ArrowDown" ? 1 : -1) + visible.length) % Math.max(visible.length, 1));
+    } else if (event.key === "Enter" && visible.length) { event.preventDefault(); event.stopPropagation(); run(visible[activeCommand % visible.length]); }
+  }}>
     {!readOnly && editor ? <div className="orbis-tiptap-toolbar" role="toolbar" aria-label="文档格式">
       <Tool title="撤销" onClick={() => editor.chain().focus().undo().run()}><Undo2 size={16} /></Tool>
       <Tool title="重做" onClick={() => editor.chain().focus().redo().run()}><Redo2 size={16} /></Tool>
@@ -147,11 +178,12 @@ export function TiptapEditor({ blocks, onChange, readOnly = false }: {
       <Tool title="任务清单" active={editor.isActive("taskList")} onClick={() => editor.chain().focus().toggleTaskList().run()}><ListChecks size={16} /></Tool>
       <Tool title="表格" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}><Table2 size={16} /></Tool>
       <Tool title="上传媒体或附件" onClick={() => inputRef.current?.click()}><Image size={16} /><Paperclip size={13} /></Tool>
-      <button type="button" className="orbis-tiptap-insert" aria-label="插入内容" aria-expanded={menuOpen} onClick={() => setMenuOpen((value) => !value)}><Plus size={15} />插入</button>
+      <button type="button" className="orbis-tiptap-insert" aria-label="插入内容" aria-expanded={menuOpen} onClick={() => { setActiveCommand(0); setMenuOpen((value) => !value); }}><Plus size={15} />插入</button>
       <input ref={inputRef} type="file" aria-label="选择上传文件" hidden onChange={(event) => void upload(event)} />
     </div> : null}
     {uploadError ? <p role="alert" className="orbis-tiptap-error">{uploadError}</p> : null}
-    {!readOnly && editor && (slash || menuOpen) ? <div className="orbis-tiptap-menu" role="listbox" aria-label="插入内容">{visible.length ? visible.map((item) => <button type="button" role="option" aria-selected={false} key={item.label} onMouseDown={(event) => event.preventDefault()} onClick={() => run(item)}>{item.icon}{item.label}</button>) : <p>没有匹配的内容块</p>}</div> : null}
+    {contentError ? <div role="alert" className="orbis-tiptap-error"><p>{contentError}</p><button type="button" disabled={readOnly} onClick={() => editor && emitChange(editor)}>重试保存正文</button></div> : null}
+    {!readOnly && editor && (slash || menuOpen) ? <div className="orbis-tiptap-menu" role="listbox" aria-label="插入内容">{visible.length ? visible.map((item, index) => <button type="button" role="option" aria-selected={index === activeCommand % visible.length} key={item.label} onMouseDown={(event) => event.preventDefault()} onClick={() => run(item)}>{item.icon}{item.label}</button>) : <p>没有匹配的内容块</p>}</div> : null}
     <EditorContent editor={editor} aria-label="文档正文" />
-  </div></FileContentContext.Provider>;
+  </div></FileContentContext.Provider></EditorReadOnlyContext.Provider>;
 }

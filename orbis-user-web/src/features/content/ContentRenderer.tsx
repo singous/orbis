@@ -52,15 +52,22 @@ function headingLevel(value: unknown): number {
   return Math.max(1, Math.min(6, Number(value) || 2));
 }
 
+function headingPath(item: ContentNode, path: number[], legacy: boolean): string {
+  const id = item.id;
+  return !legacy && typeof id === "string" && /^public-(?:0|[1-9][0-9]*)(?:-(?:0|[1-9][0-9]*))*$/.test(id)
+    ? id.slice("public-".length) : path.join("-");
+}
+
 export function contentOutline(blocks: unknown, pageTitle?: string): ContentOutlineItem[] {
   const { items, legacy } = roots(blocks);
   const result: ContentOutlineItem[] = [];
   const walk = (values: unknown[], prefix: number[]) => values.forEach((value, index) => {
     const item = node(value);
     const path = [...prefix, index];
-    const duplicateTitle = path.length === 1 && index === 0 && text(item.content).trim() === pageTitle?.trim();
+    const anchor = headingPath(item, path, legacy);
+    const duplicateTitle = anchor === "0" && text(item.content).trim() === pageTitle?.trim();
     if (item.type === "heading" && !duplicateTitle) result.push({
-      id: `heading-${path.join("-")}`,
+      id: `heading-${anchor}`,
       text: text(item.content),
       level: headingLevel(node(legacy ? item.attrs : item.props).level),
     });
@@ -101,6 +108,8 @@ function inline(value: unknown): ReactNode {
 }
 
 function nativeTable(content: ContentNode): ReactNode {
+  const widths = nodes(content.columnWidths).map((value) => typeof value === "number" && Number.isFinite(value) && value > 0 ? value : undefined);
+  const fixedWidth = widths.length && widths.every((value) => value !== undefined) ? widths.reduce<number>((total, value) => total + (value ?? 0), 0) : undefined;
   const headerRows = Number(content.headerRows) || 0;
   const rows = nodes(content.rows).map((row, rowIndex) => (
     <tr key={rowIndex}>{nodes(node(row).cells).map((cell, cellIndex) => {
@@ -111,7 +120,7 @@ function nativeTable(content: ContentNode): ReactNode {
       return <Tag key={cellIndex} scope={Tag === "th" ? rowIndex < headerRows ? "col" : "row" : undefined} colSpan={Number(props.colspan) || undefined} rowSpan={Number(props.rowspan) || undefined} style={contentCellStyle(props)}>{inline(value)}</Tag>;
     })}</tr>
   ));
-  return <div className="content-table-scroll"><table><tbody>{rows}</tbody></table></div>;
+  return <div className="content-table-scroll"><table style={fixedWidth ? { width: fixedWidth } : undefined}>{widths.length ? <colgroup>{widths.map((width, index) => <col key={index} style={width ? { width } : undefined} />)}</colgroup> : null}<tbody>{rows}</tbody></table></div>;
 }
 
 function renderBlock(value: unknown, path: number[], legacy: boolean, pageTitle?: string): ReactNode {
@@ -129,8 +138,9 @@ function renderBlock(value: unknown, path: number[], legacy: boolean, pageTitle?
   switch (item.type) {
     case "text": return inline(item);
     case "heading": {
-      const duplicateTitle = path.length === 1 && path[0] === 0 && text(item.content).trim() === pageTitle?.trim();
-      return <>{duplicateTitle ? null : createElement(`h${headingLevel(props.level)}`, { id: `heading-${path.join("-")}`, style: { textAlign: contentTextAlignment(props.textAlignment) } }, content)}{legacy ? null : children}</>;
+      const anchor = headingPath(item, path, legacy);
+      const duplicateTitle = anchor === "0" && text(item.content).trim() === pageTitle?.trim();
+      return <>{duplicateTitle ? null : createElement(`h${headingLevel(props.level)}`, { id: `heading-${anchor}`, style: { textAlign: contentTextAlignment(props.textAlignment) } }, content)}{legacy ? null : children}</>;
     }
     case "paragraph": return <><p style={{ textAlign: contentTextAlignment(props.textAlignment) }}>{content || <br />}</p>{legacy ? null : children}</>;
     case "codeBlock": return <><CodeBlock source={text(item.content)} language={String(props.language || "text")} />{legacy ? null : children}</>;
@@ -162,7 +172,7 @@ function renderBlock(value: unknown, path: number[], legacy: boolean, pageTitle?
     case "file": {
       return <><ContentMedia kind={item.type} reference={typeof props.url === "string" ? props.url : undefined}
         fallback={safeContentUrl(props.url, true)} name={String(props.name || props.caption || "附件")}
-        caption={props.caption ? String(props.caption) : undefined} />{children}</>;
+        caption={props.caption ? String(props.caption) : undefined} previewWidth={props.previewWidth} />{children}</>;
     }
     default: return <>{content}{children}</>;
   }

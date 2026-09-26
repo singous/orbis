@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import re
 from html import escape
 from pathlib import Path
 from typing import Any
 
+from orbis_user_api.application.site_block_paths import public_block_path
 from orbis_user_api.application.site_delivery import manifest, page_delivery
 from orbis_user_api.application.site_exports import public_url, site_path
 from orbis_user_api.schemas.site import SitePageOut, SiteSnapshotOut
@@ -46,6 +48,16 @@ def _cell_style(props: dict[str, Any]) -> str:
     if isinstance(alignment, str) and alignment in CONTENT_ALIGNMENTS:
         styles.append(f"text-align: {alignment}")
     return f' style="{"; ".join(styles)}"' if styles else ""
+
+
+def _pixel_width(value: Any, *, allow_zero: bool = True) -> str | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    if value < 0 or (value == 0 and not allow_zero):
+        return None
+    return f"{value}px"
 
 
 def built_asset(dist: Path, name: str) -> Path | None:
@@ -217,7 +229,7 @@ class DocumentHtml:
             rendered = f'<span style="{"; ".join(colors)}">{rendered}</span>'
         return rendered
 
-    def nodes(self, values: list, legacy: bool, prefix: tuple[int, ...] = ()) -> str:
+    def nodes(self, values: list, legacy: bool, prefix: tuple[int | str, ...] = ()) -> str:
         output: list[str] = []
         list_tag: str | None = None
         for index, item in enumerate(values):
@@ -243,15 +255,19 @@ class DocumentHtml:
             output.append(f"</{list_tag}>")
         return "".join(output)
 
-    def block(self, item: dict, legacy: bool, path: tuple[int, ...]) -> str:
+    def block(self, item: dict, legacy: bool, path: tuple[int | str, ...]) -> str:
+        path_key = "-".join(map(str, path))
+        if not legacy:
+            path_key = public_block_path(item, path_key)
+            path = tuple(path_key.split("-"))
         kind = item.get("type")
         props = item.get("attrs" if legacy else "props") or {}
         content = self.inline(item.get("content"))
         if kind == "heading" and not (
-            path == (0,) and _text(item.get("content")).strip() == self.title.strip()
+            path_key == "0" and _text(item.get("content")).strip() == self.title.strip()
         ):
             self.outline.append(
-                ("heading-" + "-".join(map(str, path)), _text(item.get("content")))
+                ("heading-" + path_key, _text(item.get("content")))
             )
         child_values = item.get("content" if legacy else "children", [])
         # Inline legacy nodes are rendered only once by their containing block.
@@ -274,11 +290,11 @@ class DocumentHtml:
             return self.inline(item)
         if kind == "heading":
             if (
-                path == (0,)
+                path_key == "0"
                 and _text(item.get("content")).strip() == self.title.strip()
             ):
                 return suffix
-            anchor = "heading-" + "-".join(map(str, path))
+            anchor = "heading-" + path_key
             level = _integer(props.get("level"), 2, 1, 6)
             return f'<h{level} id="{anchor}"{_alignment_style(props)}>{content}</h{level}>' + suffix
         if kind == "paragraph":
@@ -339,8 +355,16 @@ class DocumentHtml:
         if kind == "toggleListItem":
             return f"<details open><summary>{content}</summary>{children}</details>"
         if kind == "table":
+            colgroup = ""
             if not legacy:
                 table = item.get("content", {})
+                widths = table.get("columnWidths") if isinstance(table, dict) else None
+                if isinstance(widths, list) and widths:
+                    columns = [
+                        f'<col style="width: {pixels}">' if (pixels := _pixel_width(width)) else "<col>"
+                        for width in widths
+                    ]
+                    colgroup = "<colgroup>" + "".join(columns) + "</colgroup>"
                 rows = (
                     table.get("rows", [])
                     if isinstance(table, dict)
@@ -387,7 +411,9 @@ class DocumentHtml:
             else:
                 table_body = children
             return (
-                '<div class="content-table-scroll"><table><tbody>'
+                '<div class="content-table-scroll"><table>'
+                + colgroup
+                + "<tbody>"
                 + table_body
                 + "</tbody></table></div>"
                 + suffix
@@ -405,7 +431,13 @@ class DocumentHtml:
                 if kind in {"audio", "video"}
                 else f'<a href="{src}">{label}</a>'
             )
-            return f"<figure>{media}<figcaption>{label}</figcaption></figure>" + suffix
+            width = _pixel_width(props.get("previewWidth"), allow_zero=False)
+            style = (
+                f' style="max-width: 100%; width: {width}"'
+                if kind in {"image", "video"} and width
+                else ""
+            )
+            return f"<figure{style}>{media}<figcaption>{label}</figcaption></figure>" + suffix
         title = escape(str(props.get("title") or ""))
         if kind == "card":
             return (
@@ -508,7 +540,7 @@ def render_site(
         else "#0f766e"
     )
     # This scoped fallback also makes small-screen navigation usable without JS.
-    fallback = "<style>.site-reader-ssr{font:16px/1.7 system-ui,sans-serif;color:var(--reading-text,#17202a);background:var(--reading-bg,#fff);min-height:100vh}.site-reader-ssr a{color:#0f766e}.site-reader-ssr .site-reader-header-inner{display:flex;gap:2rem;align-items:center;padding:1rem 2rem}.site-reader-ssr .site-reader-layout{display:grid;grid-template-columns:240px minmax(0,760px) 200px;gap:2rem;max-width:1320px;margin:auto;padding:2rem}.site-reader-ssr .site-reader-content{min-width:0}.site-reader-ssr pre{overflow:auto;background:#f5f7f8;padding:1rem}.site-reader-ssr img,.site-reader-ssr video{max-width:100%}.site-reader-ssr .site-reader-navigation,.site-reader-ssr .site-reader-outline{display:block;position:static;transform:none}.site-reader-ssr .site-reader-navigation ul{list-style:none;padding:0}.site-reader-ssr table{border-collapse:collapse}.site-reader-ssr td,.site-reader-ssr th{border:1px solid #dce3e8;padding:.5rem}.site-reader-ssr .site-reader-navigation-item a{display:block;padding:.3rem}.site-reader-ssr .doc-tab-panel{display:block}.site-reader-ssr .site-reader-navigation-footer{position:static}@media(max-width:800px){.site-reader-ssr .site-reader-layout{grid-template-columns:1fr;padding:1rem}.site-reader-ssr .site-reader-navigation{width:auto;max-height:none;visibility:visible}.site-reader-ssr .site-reader-header-inner{flex-wrap:wrap}}</style>"
+    fallback = "<style>.site-reader-ssr{font:16px/1.7 system-ui,sans-serif;color:var(--reading-text,#17202a);background:var(--reading-bg,#fff);min-height:100vh}.site-reader-ssr a{color:#0f766e}.site-reader-ssr .site-reader-header-inner{display:flex;gap:2rem;align-items:center;padding:1rem 2rem}.site-reader-ssr .site-reader-layout{display:grid;grid-template-columns:240px minmax(0,760px) 200px;gap:2rem;max-width:1320px;margin:auto;padding:2rem}.site-reader-ssr .site-reader-content{min-width:0}.site-reader-ssr pre{overflow:auto;background:#f5f7f8;padding:1rem}.site-reader-ssr img,.site-reader-ssr video{max-width:100%}.site-reader-ssr .site-reader-navigation,.site-reader-ssr .site-reader-outline{display:block;position:static;transform:none}.site-reader-ssr .site-reader-navigation ul{list-style:none;padding:0}.site-reader-ssr .content-table-scroll{max-width:100%;overflow-x:auto}.site-reader-ssr table{border-collapse:collapse}.site-reader-ssr td,.site-reader-ssr th{border:1px solid #dce3e8;padding:.5rem}.site-reader-ssr .site-reader-navigation-item a{display:block;padding:.3rem}.site-reader-ssr .doc-tab-panel{display:block}.site-reader-ssr .site-reader-navigation-footer{position:static}@media(max-width:800px){.site-reader-ssr .site-reader-layout{grid-template-columns:1fr;padding:1rem}.site-reader-ssr .site-reader-navigation{width:auto;max-height:none;visibility:visible}.site-reader-ssr .site-reader-header-inner{flex-wrap:wrap}}</style>"
     return f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{escape(title)}</title><meta name="description" content="{escape(description, quote=True)}"><link rel="canonical" href="{escape(canonical, quote=True)}"><meta property="og:title" content="{escape(title, quote=True)}"><meta property="og:description" content="{escape(description, quote=True)}"><meta property="og:url" content="{escape(canonical, quote=True)}"><meta property="og:type" content="article"><meta name="robots" content="index, follow"><link rel="sitemap" type="application/xml" href="{site_path(snapshot.slug)}/sitemap.xml"><link rel="alternate" type="text/markdown" href="{markdown}"><link rel="describedby" href="{site_path(snapshot.slug)}/llms.txt">{bundle}{fallback}</head><body><div id="root"><div class="site-reader site-reader-ssr" data-theme="{theme}" style="--site-accent:{accent}"><a class="site-reader-skip-link" href="#site-content">跳转到正文</a><header class="site-reader-header"><div class="site-reader-header-inner"><a class="site-reader-brand" href="{site_path(snapshot.slug)}">{logo_html}{escape(snapshot.name)}</a>{header_links}</div></header><div class="site-reader-layout"><aside class="site-reader-navigation"><p class="site-reader-navigation-intro">{escape(snapshot.description)}</p><nav aria-label="站点导航"><ul>{nav}</ul></nav><footer class="site-reader-navigation-footer">{footer_links}<span>由 Orbis 提供支持</span></footer></aside><main id="site-content" class="site-reader-content"><div class="site-reader-title-row"><div><h1>{escape(page.title)}</h1><p>{escape(page.description)}</p></div><a href="{markdown}">Markdown</a></div><article class="document-prose">{body}</article></main><aside class="site-reader-outline"><span>本页目录</span><nav aria-label="本页目录"><ul>{outline}</ul></nav></aside></div></div></div><script id="orbis-site-bootstrap" type="application/json">{bootstrap}</script></body></html>'''
 
 

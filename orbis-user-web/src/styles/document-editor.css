@@ -1,4 +1,4 @@
-.orbis-tiptap .doc-editor-block { width: 100%; min-width: 0; margin: 24px 0; color: var(--reading-text); }
+.orbis-tiptap .doc-editor-block { position: relative; width: 100%; min-width: 0; margin: 24px 0; color: var(--reading-text); }
 .orbis-tiptap .doc-editor-heading { display: flex; align-items: center; gap: 7px; color: var(--reading-muted); font-size: 11px; line-height: 1.6; margin-bottom: 7px; }
 .orbis-tiptap .doc-editor-heading svg { color: var(--reading-accent); }
 .orbis-tiptap .doc-editor-title { display: block; margin: 0 0 8px; font-size: 16px; font-weight: 650; line-height: 1.5; }
@@ -16,11 +16,11 @@
 .orbis-tiptap .doc-editor-callout[data-tone="success"] { border-color: #c5e4d0; background: #f1faf4; }
 .orbis-tiptap .doc-editor-callout[data-tone="danger"] { border-color: #edcbca; background: #fff3f2; }
 .orbis-tiptap .doc-editor-callout .doc-editor-title { font-size: 14px; }
-.orbis-tiptap .doc-editor-cardGroup > div > .doc-editor-content { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px; }
-.orbis-tiptap .doc-editor-cardGroup[data-columns="3"] > div > .doc-editor-content { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.orbis-tiptap .doc-editor-cardGroup > div > .doc-editor-content > [data-node-view-content-react] { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px; }
+.orbis-tiptap .doc-editor-cardGroup[data-columns="3"] > div > .doc-editor-content > [data-node-view-content-react] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .orbis-tiptap .doc-editor-card { margin: 0; padding: 22px; border: 1px solid var(--reading-border); border-radius: 12px; background: var(--reading-bg); }
 .orbis-tiptap .doc-editor-card .doc-editor-title { font-size: 16px; }
-.orbis-tiptap .doc-editor-steps > div > .doc-editor-content { counter-reset: doc-step; }
+.orbis-tiptap .doc-editor-steps > div > .doc-editor-content > [data-node-view-content-react] { counter-reset: doc-step; }
 .orbis-tiptap .doc-editor-step { position: relative; counter-increment: doc-step; min-height: 48px; margin: 0; padding: 0 0 28px 46px; }
 .orbis-tiptap .doc-editor-step::before { content: counter(doc-step); display: grid; place-items: center; position: absolute; top: 2px; left: 0; width: 28px; height: 28px; border: 1px solid var(--reading-border); border-radius: 50%; background: var(--reading-muted-bg); color: var(--reading-muted); font-size: 12px; font-weight: 600; }
 .orbis-tiptap .doc-editor-step:not(:last-child)::after { content: ""; position: absolute; top: 38px; bottom: 9px; left: 14px; border-left: 1px solid var(--reading-border); }
@@ -30,5 +30,27 @@
 .orbis-tiptap .doc-editor-panes button[aria-selected="true"] { color: var(--reading-accent); border-bottom-color: var(--reading-accent); }
 .orbis-tiptap .doc-editor-tab { margin: 0; padding-top: 16px; }
 .orbis-tiptap .doc-editor-tab > .doc-editor-heading { display: none; }
-.orbis-tiptap .doc-editor-codeGroup > div > .doc-editor-content > .orbis-code { margin-top: 16px; }
-@media (max-width: 700px) { .orbis-tiptap .doc-editor-cardGroup > div > .doc-editor-content { grid-template-columns: 1fr; }.orbis-tiptap .doc-editor-card { padding: 19px; }.orbis-tiptap .doc-editor-callout { padding: 14px; }.orbis-tiptap .doc-editor-step { padding-left: 40px; } }
+.orbis-tiptap .doc-editor-codeGroup > div > .doc-editor-content > [data-node-view-content-react] > .orbis-code { margin-top: 16px; }
+@media (max-width: 700px) { .orbis-tiptap .doc-editor-cardGroup > div > .doc-editor-content > [data-node-view-content-react] { grid-template-columns: 1fr; }.orbis-tiptap .doc-editor-card { padding: 19px; }.orbis-tiptap .doc-editor-callout { padding: 14px; }.orbis-tiptap .doc-editor-step { padding-left: 40px; } }
+
+.orbis-tiptap .doc-editor-settings { position: absolute; top: 4px; right: 4px; z-index: 2; display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid transparent; border-radius: 5px; background: var(--reading-bg); color: var(--reading-muted); cursor: pointer; opacity: .65; }
+.orbis-tiptap .doc-editor-settings:hover, .orbis-tiptap .doc-editor-settings:focus-visible { opacity: 1; border-color: var(--reading-border); outline-color: var(--reading-accent); }
+.orbis-tiptap .doc-editor-card .doc-editor-heading { margin-bottom: 12px; }
+.orbis-tiptap .ProseMirror .doc-editor-card p { margin: 6px 0; font-size: 14px; line-height: 1.8; color: var(--reading-muted); }
+.orbis-tiptap .doc-editor-cardGroup > .doc-editor-body > .doc-editor-content > [data-node-view-content-react] > * { min-width: 0; }
+.orbis-tiptap .doc-editor-cardGroup .doc-editor-card { height: 100%; }
+.orbis-tiptap .doc-editor-cardGroup, .orbis-tiptap .doc-editor-steps, .orbis-tiptap .doc-editor-tabs, .orbis-tiptap .doc-editor-codeGroup { padding-top: 0; }
+.orbis-tiptap .doc-editor-cardGroup > .doc-editor-settings, .orbis-tiptap .doc-editor-steps > .doc-editor-settings { top: -25px; }
+.orbis-tiptap .doc-editor-tabs > .doc-editor-settings, .orbis-tiptap .doc-editor-codeGroup > .doc-editor-settings { top: 5px; }
+.orbis-tiptap .doc-editor-panes { padding-right: 35px; }
+.orbis-tiptap .doc-editor-tab > .doc-editor-settings { top: 0; }
+.orbis-tiptap .doc-editor-callout { display: grid; grid-template-columns: 19px minmax(0, 1fr); column-gap: 13px; }
+.orbis-tiptap .doc-editor-callout > .doc-editor-heading { grid-column: 1; grid-row: 1 / 3; margin-top: 3px; }
+.orbis-tiptap .doc-editor-callout > .doc-editor-title, .orbis-tiptap .doc-editor-callout > .doc-editor-body { grid-column: 2; }
+.orbis-tiptap .doc-editor-callout > .doc-editor-controls { grid-column: 1 / -1; }
+.orbis-tiptap .ProseMirror .doc-editor-callout p { margin: 8px 0 0; font-size: 14px; line-height: 1.85; }
+.orbis-tiptap .ProseMirror .doc-editor-callout .doc-editor-content > [data-node-view-content-react] > p:first-child { margin-top: 0; }
+@media (max-width: 700px) { .orbis-tiptap .doc-editor-cardGroup[data-columns] > div > .doc-editor-content > [data-node-view-content-react] { grid-template-columns: 1fr; } }
+
+.orbis-tiptap .doc-editor-callout > .doc-editor-heading { align-self: start; }
+.orbis-tiptap .doc-editor-callout > .doc-editor-title { margin-bottom: 4px; font-weight: 700; }
