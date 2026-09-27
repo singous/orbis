@@ -923,49 +923,123 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   font-weight: 550;
 }
 
+.document-context-link > svg { flex: none; }
+.document-context-link > span { min-width: 0; }
+
 .document-context-link:hover {
   background: var(--surface-hover);
   color: var(--text);
 }
 
 .document-context-link.is-active {
-  background: var(--accent-soft);
   color: var(--accent-strong);
 }
 
-.document-context-item > div,
-.document-main-item > div {
-  position: relative;
+.document-context-row,
+.document-main-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 2px;
+  border-radius: 8px;
+  transition: background 140ms ease;
 }
 
-/* Row actions float as a hover toolbar chip instead of taking flow space,
-   so document titles keep their full width. */
+.document-context-row:hover,
+.document-main-row:hover,
+.document-context-row.is-active { background: var(--surface-hover); }
+.document-context-row.is-active { background: var(--accent-soft); }
+
+.document-context-row {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  column-gap: 2px;
+  padding: 2px 4px;
+}
+.document-context-row .document-drag-handle { grid-column: 1; grid-row: 1; }
+.document-context-row .document-context-link { grid-column: 2; grid-row: 1; width: 100%; }
+.document-context-row:not(.has-drag-handle) .document-context-link { grid-column: 1 / -1; }
+.document-context-row .document-context-actions { grid-column: 1 / -1; justify-self: end; }
+.document-context-link > span {
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+}
+
+.document-drag-handle {
+  display: grid;
+  flex: none;
+  width: 22px;
+  height: 28px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.document-drag-handle:hover { color: var(--text-primary); background: var(--surface-hover); }
+.document-drag-handle:active { cursor: grabbing; }
+.document-drag-handle:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
 .document-context-actions {
-  position: absolute;
-  top: 50%;
-  right: 6px;
   display: flex;
   flex: none;
-  gap: 1px;
-  transform: translateY(-50%);
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: var(--surface-content);
-  box-shadow: var(--shadow-pop);
-  padding: 2px;
-  opacity: 0;
+  align-items: center;
+  gap: 0;
 }
-
-.document-context-item:hover > div > .document-context-actions,
-.document-main-item:hover .document-context-actions,
-.document-context-actions:focus-within {
-  opacity: 1;
+.document-context-actions .icon-button {
+  display: grid;
+  flex: none;
+  width: 26px;
+  height: 28px;
+  min-width: 26px;
+  min-height: 28px;
+  place-items: center;
+  padding: 0;
+  border-radius: 6px;
+  color: var(--text-tertiary);
+  background: transparent;
 }
+.document-context-actions .icon-button:hover { color: var(--text-primary); background: var(--surface-active); }
+.document-context-actions .danger-hover:hover { color: var(--danger); }
 
-/* Fade long titles under the floating action chip. */
-.document-context-item:hover .document-context-link,
-.document-main-item:hover > div > a {
-  mask-image: linear-gradient(to right, black 52%, transparent 96%);
+.document-context-item[data-dragging="true"],
+.document-main-item[data-dragging="true"] { position: relative; z-index: 2; opacity: .65; }
+.document-context-item[data-drop-target="true"] > .document-context-row,
+.document-main-item[data-drop-target="true"] > .document-main-row { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.document-main-row { min-height: 48px; padding: 3px 8px; }
+.document-main-link {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  gap: 11px;
+  padding: 7px 3px;
+  color: var(--text-primary);
+}
+.document-main-link > svg { flex: none; color: var(--text-tertiary); }
+.document-main-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 550; }
+.document-main-link[aria-current="page"] .document-main-title { font-weight: 650; }
+.document-main-link time { flex: none; margin-left: auto; white-space: nowrap; font-size: 12px; color: var(--text-tertiary); }
+.document-main-children { padding-left: 28px; }
+
+@media (max-width: 600px) {
+  .document-main-row { display: grid; grid-template-columns: 22px minmax(0, 1fr); column-gap: 2px; }
+  .document-main-row .document-drag-handle { grid-column: 1; grid-row: 1; }
+  .document-main-row .document-main-link { grid-column: 2; grid-row: 1; }
+  .document-main-row:not(.has-drag-handle) .document-main-link { grid-column: 1 / -1; }
+  .document-main-row .document-context-actions { grid-column: 1 / -1; justify-self: end; }
+  .document-main-link { display: grid; grid-template-columns: 15px minmax(0, 1fr); column-gap: 8px; row-gap: 1px; }
+  .document-main-title { display: -webkit-box; overflow-wrap: anywhere; white-space: normal; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+  .document-main-link time { grid-column: 2; margin-left: 0; font-size: 11px; }
 }
 
 /* Notebook page main-column document list (DocumentContextPanel variant="main"). */

@@ -1,4 +1,5 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render as renderTestingLibrary, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { act } from "react";
@@ -47,6 +48,10 @@ type PanelPropKeysAreExact =
 const panelPropKeysAreExact: PanelPropKeysAreExact = true;
 void panelPropKeysAreExact;
 
+function render(ui: React.ReactElement) {
+  return renderTestingLibrary(<QueryClientProvider client={new QueryClient()}>{ui}</QueryClientProvider>);
+}
+
 vi.mock("./queries", () => ({
   useNoteTree: () => treeState,
   useUpdateNotebook: () => ({ mutateAsync: vi.fn(), isPending: false }),
@@ -89,6 +94,7 @@ vi.mock("./queries", () => ({
   useCreateNote: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useCreateNotebook: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useUpdateNote: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useReorderNotes: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useArchiveNote: () => ({ mutateAsync: mocks.archiveNote, isPending: false }),
   useNote: () => noteState,
   useNoteContent: () => contentState,
@@ -249,6 +255,7 @@ describe("DocumentContextPanel", () => {
   });
 
   it("does not offer document mutations to a Normal workspace member", () => {
+    treeState.data = { items: [rootNote, { ...rootNote, id: "018ff7c4-a5b6-7000-8000-000000000006", title: "另一篇", sort_order: 1, children: [] }] };
     act(() => authStore.setState((state) => ({ ...state, workspace: state.workspace ? { ...state.workspace, role: "normal" } : null })));
 
     renderPanel();
@@ -256,6 +263,7 @@ describe("DocumentContextPanel", () => {
     expect(screen.queryByRole("button", { name: "新建文档" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "新建子文档 发布范围" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "归档 发布范围" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "拖动排序 产品计划" })).not.toBeInTheDocument();
   });
 
   it("does not offer document mutations without a current workspace", () => {
