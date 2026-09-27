@@ -11,6 +11,7 @@ import { useStore } from "zustand";
 import { authStore } from "../../shared/auth/auth-store";
 import { PageContainer } from "../../shared/ui/PageContainer";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
+import { showToast } from "../../shared/ui/Toast";
 import { DocumentShell } from "./DocumentShell";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import {
@@ -29,10 +30,6 @@ type ArchiveResource = {
   restoreBlockedReason?: string;
 };
 
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "恢复失败，请稍后重试。";
-}
-
 function ArchiveSection({
   title,
   icon,
@@ -40,8 +37,6 @@ function ArchiveSection({
   canRestore,
   onRestore,
   pendingId,
-  errorId,
-  error,
 }: {
   title: string;
   icon: ReactNode;
@@ -49,8 +44,6 @@ function ArchiveSection({
   canRestore: boolean;
   onRestore: (id: string) => void;
   pendingId?: string;
-  errorId?: string;
-  error?: unknown;
 }) {
   return (
     <section className="mb-8">
@@ -82,11 +75,6 @@ function ArchiveSection({
                 ) : null}
                 {pendingId === resource.id ? (
                   <div className="mt-1 text-xs text-[var(--muted)]">正在恢复…</div>
-                ) : null}
-                {errorId === resource.id && error ? (
-                  <div role="alert" className="mt-1 text-xs text-[var(--danger-text)]">
-                    {errorMessage(error)}
-                  </div>
                 ) : null}
               </div>
               {canRestore ? (
@@ -150,6 +138,15 @@ export function ArchivePage() {
     return undefined;
   }
 
+  async function completeRestore(action: () => Promise<unknown>) {
+    try {
+      await action();
+      showToast({ title: "已恢复", tone: "success" });
+    } catch (error) {
+      showToast({ title: "恢复失败", description: error instanceof Error ? error.message : "请稍后重试。", tone: "danger" });
+    }
+  }
+
   return (
     <DocumentShell>
       <PageContainer
@@ -179,10 +176,8 @@ export function ArchivePage() {
             label: group.name,
           }))}
           canRestore={canRestore}
-          onRestore={(id) => archiveGroup.mutate({ id, archived: false })}
+          onRestore={(id) => void completeRestore(() => archiveGroup.mutateAsync({ id, archived: false }))}
           pendingId={archiveGroup.isPending ? archiveGroup.variables?.id : undefined}
-          errorId={archiveGroup.isError ? archiveGroup.variables?.id : undefined}
-          error={archiveGroup.error}
         />
         <ArchiveSection
           title="笔记本"
@@ -198,10 +193,8 @@ export function ArchivePage() {
               : undefined,
           }))}
           canRestore={canRestore}
-          onRestore={(id) => archiveNotebook.mutate({ id, archived: false })}
+          onRestore={(id) => void completeRestore(() => archiveNotebook.mutateAsync({ id, archived: false }))}
           pendingId={archiveNotebook.isPending ? archiveNotebook.variables?.id : undefined}
-          errorId={archiveNotebook.isError ? archiveNotebook.variables?.id : undefined}
-          error={archiveNotebook.error}
         />
         <ArchiveSection
           title="文档"
@@ -215,10 +208,8 @@ export function ArchivePage() {
             restoreBlockedReason: noteRestoreBlockedReason(note),
           }))}
           canRestore={canRestore}
-          onRestore={(id) => archiveNote.mutate({ id, archived: false })}
+          onRestore={(id) => void completeRestore(() => archiveNote.mutateAsync({ id, archived: false }))}
           pendingId={archiveNote.isPending ? archiveNote.variables?.id : undefined}
-          errorId={archiveNote.isError ? archiveNote.variables?.id : undefined}
-          error={archiveNote.error}
         />
       </PageContainer>
     </DocumentShell>

@@ -36,7 +36,6 @@
 .content-code-toolbar button { display: inline-flex; gap: 6px; align-items: center; border: 0; background: transparent; padding: 3px; color: inherit; cursor: pointer; font-size: 11px; }
 .content-code-toolbar button:hover { color: var(--reading-text, var(--text-primary)); }
 .content-code-toolbar button:focus-visible { outline: 2px solid var(--reading-accent, var(--accent)); outline-offset: 3px; border-radius: 3px; }
-.document-prose .content-copy-feedback { font-size: 12px; margin: 0; padding: 0 16px 10px; color: var(--reading-muted, var(--text-secondary)); }
 .document-prose .hljs-keyword, .document-prose .hljs-selector-tag, .document-prose .hljs-built_in { color: var(--doc-keyword); }
 .document-prose .hljs-string, .document-prose .hljs-attr, .document-prose .hljs-regexp { color: var(--doc-string); }
 .document-prose .hljs-number, .document-prose .hljs-literal, .document-prose .hljs-symbol { color: var(--doc-number); }

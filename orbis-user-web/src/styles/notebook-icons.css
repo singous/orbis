@@ -53,7 +53,6 @@
 .notebook-icon-upload-label:hover { background: var(--surface-hover); }
 .notebook-icon-upload-label.is-disabled { opacity: .5; cursor: default; }
 .notebook-icon-upload-hint { font-size: 11px; color: var(--text-tertiary); }
-.notebook-icon-error { margin-top: 12px; font-size: 12px; line-height: 1.6; color: var(--danger); }
 @media (max-width: 420px) {
   .notebook-icon-picker-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 2px; }
   .notebook-icon-picker-grid .notebook-icon { width: 29px; height: 32px; }

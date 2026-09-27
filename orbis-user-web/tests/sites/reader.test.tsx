@@ -1,10 +1,16 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { toast as heroToast } from "@heroui/react/toast";
+import { act, fireEvent, render as renderTestingLibrary, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SiteReader } from "../../src/features/sites/SiteReader";
 import type { SiteSnapshot } from "../../src/features/sites/schemas";
+import { Toaster } from "../../src/shared/ui/Toast";
+
+function render(ui: Parameters<typeof renderTestingLibrary>[0]) {
+  return renderTestingLibrary(<>{ui}<Toaster /></>);
+}
 
 const snapshot: SiteSnapshot = {
   name: "Orbis 开发者文档",
@@ -69,6 +75,7 @@ function LocationProbe() {
 }
 
 afterEach(() => {
+  act(() => heroToast.clear());
   localStorage.clear();
   vi.restoreAllMocks();
   Object.defineProperty(window, "matchMedia", { configurable: true, value: originalMatchMedia });
@@ -315,12 +322,12 @@ describe("Mint-style site reader", () => {
     const copyLink = screen.getByRole("button", { name: "复制链接" });
     const copyPage = screen.getByRole("button", { name: "复制页面" });
     await user.click(copyLink);
-    expect(screen.getByRole("status")).toHaveTextContent("请从地址栏手动复制");
+    expect(screen.getByText("请从地址栏手动复制。")).toBeInTheDocument();
     expect(copyLink).toHaveAccessibleName("复制链接");
 
     Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: vi.fn().mockRejectedValue(new Error("denied")) } });
     await user.click(copyPage);
-    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("请检查浏览器权限后重试"));
+    expect(await screen.findByText("请检查浏览器权限后重试。")).toBeInTheDocument();
     expect(copyPage).toHaveAccessibleName("复制页面");
   });
 

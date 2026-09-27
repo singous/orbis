@@ -2,6 +2,7 @@ import { ActionButton } from "../../shared/ui/ActionButton";
 import { ArrowLeft, ArrowRight, BookOpen, Check, Copy, Link2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Link, Navigate } from "react-router-dom";
+import { showToast } from "../../shared/ui/Toast";
 
 import { ContentRenderer, contentOutline, safeContentUrl } from "../content/ContentRenderer";
 import { parseFileReference } from "../files/managed-files";
@@ -17,7 +18,7 @@ import "../../styles/site-reader.css";
 
 const THEME_STORAGE_KEY = "orbis-reader-theme";
 const DEFAULT_BRANDING: SiteBranding = { logo_url: null, links: [], footer_links: [], cta: null, theme: "light" };
-type CopyFeedback = { action: "link" | "page"; status: "success" | "error"; message: string };
+type CopyFeedback = { action: "link" | "page"; status: "success" | "error" };
 
 function storedTheme(fallback: ReaderThemeMode): ReaderThemeMode {
   try {
@@ -141,14 +142,17 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false, load
 
   async function writeClipboard(action: CopyFeedback["action"], value: string) {
     if (!navigator.clipboard?.writeText) {
-      setCopyFeedback({ action, status: "error", message: action === "link" ? "浏览器不支持自动复制，请从地址栏手动复制。" : "浏览器不支持自动复制，请手动选择页面正文。" });
+      setCopyFeedback({ action, status: "error" });
+      showToast({ title: "无法复制", description: action === "link" ? "请从地址栏手动复制。" : "请手动选择页面正文。", tone: "danger" });
       return;
     }
     try {
       await navigator.clipboard.writeText(value);
-      setCopyFeedback({ action, status: "success", message: action === "link" ? "链接已复制" : "页面 Markdown 已复制" });
+      setCopyFeedback({ action, status: "success" });
+      showToast({ title: action === "link" ? "链接已复制" : "页面 Markdown 已复制", tone: "success" });
     } catch {
-      setCopyFeedback({ action, status: "error", message: "复制失败，请检查浏览器权限后重试。" });
+      setCopyFeedback({ action, status: "error" });
+      showToast({ title: "复制失败", description: "请检查浏览器权限后重试。", tone: "danger" });
     }
   }
 
@@ -163,7 +167,8 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false, load
     try {
       await writeClipboard("page", loadMarkdown ? await loadMarkdown(current.slug) : await pageMarkdown(current));
     } catch {
-      setCopyFeedback({ action: "page", status: "error", message: "无法生成页面 Markdown，请稍后重试。" });
+      setCopyFeedback({ action: "page", status: "error" });
+      showToast({ title: "无法生成页面 Markdown", description: "请稍后重试。", tone: "danger" });
     }
   }
 
@@ -190,7 +195,6 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false, load
                 <ActionButton type="button" aria-label={copyFeedback?.action === "link" && copyFeedback.status === "success" ? "链接已复制" : "复制链接"} onClick={() => void copyLink()}>{copyFeedback?.action === "link" && copyFeedback.status === "success" ? <Check aria-hidden="true" size={15} /> : <Link2 aria-hidden="true" size={15} />}<span>{copyFeedback?.action === "link" && copyFeedback.status === "success" ? "已复制" : "复制链接"}</span></ActionButton>
                 <ActionButton type="button" disabled={contentState?.loading || Boolean(contentState?.error)} aria-label={copyFeedback?.action === "page" && copyFeedback.status === "success" ? "页面 Markdown 已复制" : "复制页面"} onClick={() => void copyPage()}>{copyFeedback?.action === "page" && copyFeedback.status === "success" ? <Check aria-hidden="true" size={15} /> : <Copy aria-hidden="true" size={15} />}<span>{copyFeedback?.action === "page" && copyFeedback.status === "success" ? "已复制" : "复制页面"}</span></ActionButton>
               </div>
-              {copyFeedback ? <p className={`site-reader-copy-feedback is-${copyFeedback.status}`} role="status">{copyFeedback.message}</p> : null}
             </div>
           </div>
           {compactOutline ? <Outline items={outline} mobile /> : null}

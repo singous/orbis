@@ -2,7 +2,7 @@ import { ActionButton } from "../../shared/ui/ActionButton";
 import { DragDropProvider } from "@dnd-kit/react";
 import { isSortable, useSortable } from "@dnd-kit/react/sortable";
 import { useIsMutating } from "@tanstack/react-query";
-import { Archive, FilePlus2, GripVertical, Pencil, Plus, Undo2 } from "lucide-react";
+import { Archive, FilePlus2, GripVertical, Pencil, Plus } from "lucide-react";
 import { type KeyboardEvent, type ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
@@ -12,6 +12,7 @@ import { authStore } from "../../shared/auth/auth-store";
 import { formatDate } from "../../shared/format/date";
 import { Button } from "../../shared/ui/Button";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
+import { dismissToast, showToast } from "../../shared/ui/Toast";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { ResourceDialog } from "./ResourceDialog";
 import { useArchiveNote, useCreateNote, useNoteTree, useReorderNotes, useUpdateNote } from "./queries";
@@ -183,8 +184,6 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
   const archiveNote = useArchiveNote();
   const [createParent, setCreateParent] = useState<string | null | undefined>(undefined);
   const [renameTarget, setRenameTarget] = useState<NoteTreeItem | null>(null);
-  const [undoNote, setUndoNote] = useState<NoteTreeItem | null>(null);
-  const [reorderError, setReorderError] = useState<string | null>(null);
   const noteIds = useMemo(() => collectNoteIds(treeQuery.data?.items ?? []), [treeQuery.data?.items]);
   const treeItems = treeQuery.data?.items ?? [];
   const main = variant === "main";
@@ -218,14 +217,25 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
 
   async function handleArchive(note: NoteTreeItem) {
     await archiveNote.mutateAsync({ id: note.id, archived: true });
-    setUndoNote(note);
+    let undoPending = false;
+    const toastId = showToast({
+      title: "文档已归档",
+      description: note.title,
+      tone: "success",
+      timeout: 0,
+      action: {
+        label: "撤销",
+        onPress: () => {
+          if (undoPending) return;
+          undoPending = true;
+          void archiveNote.mutateAsync({ id: note.id, archived: false })
+            .then(() => dismissToast(toastId))
+            .catch((error) => showToast({ title: "恢复文档失败", description: error instanceof Error ? error.message : "请稍后重试。", tone: "danger" }))
+            .finally(() => { undoPending = false; });
+        },
+      },
+    });
     if (note.id === activeNoteId) navigate(`/collections/${notebookId}`, { replace: true });
-  }
-
-  async function handleUndo() {
-    if (!undoNote) return;
-    await archiveNote.mutateAsync({ id: undoNote.id, archived: false });
-    setUndoNote(null);
   }
 
   async function handleReorder(noteId: string, targetIndex: number, focusHandle?: HTMLButtonElement) {
@@ -238,25 +248,23 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
     const noteIds = [...currentIds];
     noteIds.splice(initialIndex, 1);
     noteIds.splice(targetIndex, 0, noteId);
-    const focusTree = focusHandle?.closest("nav");
-    setReorderError(null);
     try {
       await reorderNotes.mutateAsync({ parent_id: group.parentId, expected_note_ids: currentIds, note_ids: noteIds });
     } catch (error) {
-      setReorderError(error instanceof Error ? error.message : "文档排序未保存，请刷新后重试。");
+      showToast({ title: "排序未保存", description: error instanceof Error ? error.message : "请刷新后重试。", tone: "danger" });
     } finally {
       const focusMayBeRestored = document.activeElement === focusHandle || document.activeElement === document.body;
-      if (focusTree?.isConnected && focusMayBeRestored) {
-        // Wait briefly for the sortable handle to leave its disabled state.
+      if (focusHandle && focusMayBeRestored) {
+        // The tree can remount as the optimistic order is reconciled with the server.
         let remainingFrames = MAX_FOCUS_RESTORE_FRAMES;
         const restoreWhenReady = () => {
-          if (document.activeElement !== focusHandle && document.activeElement !== document.body) return;
-          const handle = focusTree.querySelector<HTMLButtonElement>(`[data-note-id="${noteId}"] > div > .document-drag-handle`);
-          if (handle?.getAttribute("aria-disabled") === "true" && remainingFrames-- > 0) {
-            requestAnimationFrame(restoreWhenReady);
-          } else if (handle?.getAttribute("aria-disabled") !== "true") {
-            handle?.focus();
-          }
+          if (remainingFrames-- <= 0) return;
+          const tree = document.querySelector<HTMLElement>(`nav[aria-label="${main ? "文档列表" : "笔记本文档"}"]`);
+          const handle = tree?.querySelector<HTMLButtonElement>(`[data-note-id="${noteId}"] > div > .document-drag-handle`);
+          const active = document.activeElement;
+          if (active !== focusHandle && active !== document.body && active !== handle) return;
+          if (handle && handle.getAttribute("aria-disabled") !== "true" && active !== handle) handle.focus();
+          requestAnimationFrame(restoreWhenReady);
         };
         requestAnimationFrame(restoreWhenReady);
       }
@@ -272,7 +280,6 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
         </div>
       )}
       {treeQuery.isError ? <StatusMessage tone="error" title="目录加载失败"><Button className="mt-3" variant="secondary" onClick={() => void treeQuery.refetch()}>重试加载目录</Button></StatusMessage> : null}
-      {reorderError ? <StatusMessage tone="error" title="排序未保存">{reorderError}</StatusMessage> : null}
       {treeQuery.isLoading ? <div className={main ? "empty-panel" : "px-3 py-5 text-xs text-[var(--muted)]"}>正在加载文档目录…</div> : null}
       {!treeQuery.isLoading && !treeQuery.isError && !treeItems.length ? (
         main ? (
@@ -292,7 +299,6 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
       }}><nav className={main ? "document-main-list" : "document-context-tree"} aria-label={main ? "文档列表" : "笔记本文档"}><DocumentTree items={treeItems} depth={0} parentId={null} activeNoteId={activeNoteId} canEdit={canEdit} reordering={reordering} main={main} onNavigate={mobile ? onNavigate : undefined} onCreateChild={setCreateParent} onRename={setRenameTarget} onArchive={(note) => void handleArchive(note)} onKeyboardMove={(noteId, delta, handle) => void handleReorder(noteId, (findSiblingGroup(treeItems, noteId)?.items.findIndex((item) => item.id === noteId) ?? -1) + delta, handle)} /></nav></DragDropProvider> : null}
       <ResourceDialog open={createParent !== undefined} title={createParent ? "新建子文档" : "新建文档"} label="文档标题" placeholder="未命名文档" submitLabel="创建并打开" pending={createNote.isPending} onClose={() => setCreateParent(undefined)} onSubmit={handleCreate} />
       <ResourceDialog open={Boolean(renameTarget)} title="重命名文档" label="文档标题" placeholder="文档标题" initialValue={renameTarget?.title ?? ""} submitLabel="保存" pending={updateNote.isPending} onClose={() => setRenameTarget(null)} onSubmit={handleRename} />
-      {undoNote ? <div className="toast"><div><div className="text-sm font-semibold">文档已归档</div><div className="mt-0.5 text-xs text-[var(--text-oninverse)] opacity-60">{undoNote.title}</div></div><ActionButton type="button" className="toast-action" onClick={() => void handleUndo()}><Undo2 aria-hidden="true" size={14} />撤销</ActionButton></div> : null}
     </section>
   );
 }

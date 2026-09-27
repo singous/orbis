@@ -530,36 +530,6 @@ body {
   padding-bottom: 36px;
 }
 
-/* Toast stays dark in both themes — floating inverse surface. */
-.toast {
-  position: fixed;
-  right: 24px;
-  bottom: 24px;
-  z-index: 60;
-  display: flex;
-  min-width: 280px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  border: 1px solid var(--border-inverse);
-  border-radius: var(--radius-pop);
-  background: var(--surface-inverse);
-  padding: 14px 16px;
-  color: var(--text-oninverse);
-  box-shadow: var(--shadow-pop);
-}
-
-.toast-action {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border-radius: 7px;
-  background: rgb(255 255 255 / 10%);
-  padding: 7px 9px;
-  font-size: 12px;
-  font-weight: 650;
-}
-
 /* The editor retains a continuous reading canvas inside the workbench. */
 .editor-layout {
   display: grid;
@@ -1100,7 +1070,6 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   .notebook-hero { flex-direction: column; }
   .editor-canvas { padding: 24px 0 52px; }
   .editor-layout { padding-right: 0; padding-left: 0; }
-  .toast { right: 12px; bottom: 12px; left: 12px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

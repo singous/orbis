@@ -7,9 +7,11 @@ import { useStore } from "zustand";
 import "../../styles/site-management.css";
 
 import { authStore } from "../../shared/auth/auth-store";
+import { ApiError } from "../../shared/api/api-client";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { Dialog, DialogContent } from "../../shared/ui/Dialog";
 import { PageContainer } from "../../shared/ui/PageContainer";
+import { showToast } from "../../shared/ui/Toast";
 import { canManageWorkspaceMembers, canMutateWorkspaceContent } from "../workspace/capabilities";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
 import { activateSiteRelease, getSite, getSiteSources, previewSite, publishSite, saveSite, unpublishSite } from "./api";
@@ -34,7 +36,6 @@ function SiteEditor({ site }: { site: Site }) {
   const [version, setVersion] = useState(site.config_version);
   const [savedAtMs, setSavedAtMs] = useState(site.updated_at_ms);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [previewError, setPreviewError] = useState("");
   const [previewBundle, setPreviewBundle] = useState<PreviewBundle | null>(null);
@@ -74,15 +75,18 @@ function SiteEditor({ site }: { site: Site }) {
   async function perform(operation: () => Promise<void>) {
     setBusy(true);
     setError("");
-    setMessage("");
     try { await operation(); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : "操作失败，请重试"); }
+    catch (cause) {
+      const description = cause instanceof Error ? cause.message : "操作失败，请重试";
+      if (cause instanceof ApiError && cause.code === "SITE_VERSION_CONFLICT") setError(description);
+      else showToast({ title: "操作未完成", description, tone: "danger" });
+    }
     finally { setBusy(false); }
   }
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    void perform(async () => { await saveCurrent(); setMessage("设置已保存"); });
+    void perform(async () => { await saveCurrent(); showToast({ title: "设置已保存", tone: "success" }); });
   }
 
   async function openReaderPreview() {
@@ -98,7 +102,9 @@ function SiteEditor({ site }: { site: Site }) {
       setPreviewBundle({ sources, preview });
     } catch (cause) {
       const nextError = cause instanceof Error ? cause.message : "无法生成发布预览，请重试";
-      if (previewBundle) setPreviewError(nextError); else setError(nextError);
+      if (previewBundle) setPreviewError(nextError);
+      else if (cause instanceof ApiError && cause.code === "SITE_VERSION_CONFLICT") setError(nextError);
+      else showToast({ title: "无法生成发布预览", description: nextError, tone: "danger" });
     } finally { setBusy(false); }
   }
 
@@ -109,7 +115,7 @@ function SiteEditor({ site }: { site: Site }) {
       await publishSite(site.id, auth, previewBundle.preview.source_fingerprint);
       await updateCache(await getSite(site.id, auth));
       setPreviewBundle(null);
-      setMessage("站点已发布，读者现在可以访问新版本。");
+      showToast({ title: "站点已发布", description: "读者现在可以访问新版本。", tone: "success" });
     } catch (cause) { setPreviewError(cause instanceof Error ? cause.message : "发布失败，请重试"); }
     finally { setBusy(false); }
   }
@@ -120,7 +126,7 @@ function SiteEditor({ site }: { site: Site }) {
       const next = pendingAction.type === "unpublish" ? await unpublishSite(site.id, auth) : await activateSiteRelease(site.id, pendingAction.releaseId, auth);
       if (JSON.stringify(siteConfigSchema.parse(next)) === JSON.stringify(saved)) setVersion(next.config_version);
       await updateCache(next);
-      setMessage(pendingAction.type === "unpublish" ? "站点已撤回，公开入口现已关闭。" : "已切换公开版本，内部文档保持当前内容。");
+      showToast({ title: pendingAction.type === "unpublish" ? "站点已撤回" : "公开版本已切换", description: pendingAction.type === "unpublish" ? "公开入口现已关闭。" : "内部文档保持当前内容。", tone: "success" });
       setPendingAction(null);
     });
   }
@@ -132,7 +138,7 @@ function SiteEditor({ site }: { site: Site }) {
   return <WorkspaceShell><PageContainer title={site.name} description="管理站点设置、内容来源与公开版本。" actions={<span className={`site-state${site.published_release_id ? " published" : ""}`}><span />{site.published_release_id ? "已发布" : "尚未发布"}</span>}><div className="workbench-site-editor site-management">
     <Link className="workbench-back" to="/sites"><ArrowLeft aria-hidden="true" size={15} />所有站点</Link>
     <div className="site-publishing-bar"><span><Globe size={17} />{site.published_slug ? <Link to={`/s/${site.published_slug}`} target="_blank" rel="noopener noreferrer">查看公开站点<ExternalLink size={14} /></Link> : "站点将在发布后对外开放"}</span><div><ActionButton type="button" className="mvp-button" disabled={busy} onClick={() => void openReaderPreview()}><Eye size={16} />预览</ActionButton>{canPublish ? <ActionButton type="button" className="mvp-button primary" disabled={busy || !canPreparePublish} onClick={() => void preparePublishPreview()}><Rocket size={16} />发布站点</ActionButton> : <span className="mvp-muted">由所有者或管理员发布</span>}</div></div>
-    {error ? <div role="alert" className="mvp-feedback error">{error}</div> : null}{message ? <div role="status" className="mvp-feedback success">{message}</div> : null}
+    {error ? <div role="alert" className="mvp-feedback error">{error}</div> : null}
     <form onSubmit={submit}>
       <div className="site-editor-layout">
         <section className="site-settings-section"><div className="site-section-heading"><div><h2>站点设置</h2><p>名称、场景、品牌与阅读外观。</p></div></div><SiteSettingsForm value={draft} onChange={setDraft} disabled={!canEdit || busy} /></section>

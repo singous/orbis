@@ -8,7 +8,7 @@ import {
   Pin,
   Plus,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
 
@@ -18,6 +18,7 @@ import { formatDate } from "../../shared/format/date";
 import { Button } from "../../shared/ui/Button";
 import { PageContainer } from "../../shared/ui/PageContainer";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
+import { showToast } from "../../shared/ui/Toast";
 import { DocumentShell } from "./DocumentShell";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { usePinnedNotebooks } from "./pinned-notebooks";
@@ -73,6 +74,13 @@ export function CollectionsPage() {
   const notes = notesQuery.data?.items ?? [];
   const resourceError = (location.state as CollectionLocationState | null)
     ?.resourceError;
+  const shownResourceError = useRef<string | null>(null);
+  useEffect(() => {
+    if (!resourceError || shownResourceError.current === resourceError) return;
+    shownResourceError.current = resourceError;
+    showToast({ title: "无法打开资源", description: resourceError, tone: "danger" });
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, navigate, resourceError]);
   const notebookCounts = useMemo(
     () =>
       notes.reduce(
@@ -152,25 +160,6 @@ export function CollectionsPage() {
           ) : null
         }
       >
-        {resourceError ? (
-          <div role="alert" className="mb-5">
-            <StatusMessage tone="error" title="无法打开资源">
-              <div className="flex items-center justify-between gap-3">
-                <span>{resourceError}</span>
-                <ActionButton
-                  type="button"
-                  className="shrink-0 font-semibold underline"
-                  aria-label="关闭提示"
-                  onClick={() =>
-                    navigate(location.pathname, { replace: true, state: null })
-                  }
-                >
-                  关闭
-                </ActionButton>
-              </div>
-            </StatusMessage>
-          </div>
-        ) : null}
         {groupsQuery.isError || notebooksQuery.isError || notesQuery.isError ? (
           <StatusMessage tone="error" title="笔记本加载失败">
             请检查 API 服务后重试。

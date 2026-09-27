@@ -11,6 +11,7 @@ import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { Button } from "../../shared/ui/Button";
 import { Dialog, DialogContent } from "../../shared/ui/Dialog";
 import { PageContainer } from "../../shared/ui/PageContainer";
+import { showToast } from "../../shared/ui/Toast";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
 import { createSite } from "./api";
@@ -42,7 +43,11 @@ export function SitesPage() {
   const auth = useAuthRequest();
   const client = useQueryClient();
   const navigate = useNavigate();
-  const create = useMutation({ mutationFn: () => createSite(config, auth), onSuccess: async (site) => { await client.invalidateQueries({ queryKey: ["sites"] }); navigate(`/sites/${site.id}`); } });
+  const create = useMutation({
+    mutationFn: () => createSite(config, auth),
+    onSuccess: async (site) => { await client.invalidateQueries({ queryKey: ["sites"] }); navigate(`/sites/${site.id}`); },
+    onError: (error) => showToast({ title: "创建站点失败", description: error instanceof Error ? error.message : "请稍后重试。", tone: "danger" }),
+  });
 
   function openCreate() {
     setConfig({ ...EMPTY_SITE_CONFIG });
@@ -78,7 +83,7 @@ export function SitesPage() {
           )}
         </section>
       </PageContainer>
-      <Dialog open={open} onOpenChange={setOpen}><DialogContent className="site-create-dialog" title="创建文档站点" description="先确定站点信息与内容来源，提交前不会创建站点。"><form className="site-create-form" onSubmit={submit}><SiteSettingsForm value={config} onChange={setConfig} disabled={create.isPending} /><SiteSourceEditor value={config.source} onChange={(source) => setConfig({ ...config, source })} disabled={create.isPending} />{create.error ? <p role="alert" className="mvp-feedback error">{create.error.message}</p> : null}<div className="site-create-actions"><ActionButton className="mvp-button" type="button" disabled={create.isPending} onClick={() => setOpen(false)}>取消</ActionButton><ActionButton className="mvp-button primary" type="submit" disabled={create.isPending || config.source?.kind === "notebooks" && !config.source.notebooks.length}>{create.isPending ? "创建中…" : "创建站点"}</ActionButton></div></form></DialogContent></Dialog>
+      <Dialog open={open} onOpenChange={setOpen}><DialogContent className="site-create-dialog" title="创建文档站点" description="先确定站点信息与内容来源，提交前不会创建站点。"><form className="site-create-form" onSubmit={submit}><SiteSettingsForm value={config} onChange={setConfig} disabled={create.isPending} /><SiteSourceEditor value={config.source} onChange={(source) => setConfig({ ...config, source })} disabled={create.isPending} /><div className="site-create-actions"><ActionButton className="mvp-button" type="button" disabled={create.isPending} onClick={() => setOpen(false)}>取消</ActionButton><ActionButton className="mvp-button primary" type="submit" disabled={create.isPending || config.source?.kind === "notebooks" && !config.source.notebooks.length}>{create.isPending ? "创建中…" : "创建站点"}</ActionButton></div></form></DialogContent></Dialog>
     </WorkspaceShell>
   );
 }

@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, RouterProvider, Routes, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -10,6 +10,7 @@ import { NotebookPage } from "./NotebookPage";
 import { ApiError } from "../../shared/api/api-client";
 
 const mocks = vi.hoisted(() => ({
+  toast: vi.fn(),
   archiveGroup: vi.fn(),
   archiveNotebook: vi.fn(),
   archiveNote: vi.fn(),
@@ -44,6 +45,13 @@ const mocks = vi.hoisted(() => ({
     status?: string;
     options?: { includeInactiveParents?: boolean };
   }>,
+}));
+
+vi.mock("../../shared/ui/Toast", () => ({
+  showToast: mocks.toast,
+  dismissToast: vi.fn(),
+  useToast: () => ({ toast: mocks.toast }),
+  Toaster: () => null,
 }));
 
 vi.mock("./queries", () => {
@@ -370,6 +378,7 @@ describe("document function pages", () => {
   });
 
   beforeEach(() => {
+    mocks.toast.mockReset();
     mocks.archiveGroup.mockReset();
     mocks.archiveNotebook.mockReset();
     mocks.archiveNote.mockReset();
@@ -507,8 +516,7 @@ describe("document function pages", () => {
     );
   });
 
-  it("redirects an unavailable collection to collections with a persistent, dismissible error", async () => {
-    const actor = userEvent.setup();
+  it("redirects an unavailable collection and shows a floating error", async () => {
     mocks.activeNotebooks = [];
     render(
       <MemoryRouter initialEntries={["/collections/018ff7c4-a5b6-7000-8000-000000000099"]}>
@@ -520,14 +528,15 @@ describe("document function pages", () => {
     );
 
     expect(await screen.findByRole("heading", { name: "我的笔记本" })).toBeVisible();
-    expect(screen.getByRole("alert")).toHaveTextContent("无法打开笔记本");
-
-    await actor.click(screen.getByRole("button", { name: "关闭提示" }));
-
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    await waitFor(() => expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({
+      title: "无法打开资源",
+      description: expect.stringContaining("无法打开笔记本"),
+      tone: "danger",
+    })));
+    expect(screen.queryByRole("button", { name: "关闭提示" })).not.toBeInTheDocument();
   });
 
-  it("redirects a missing document to collections with a persistent error", async () => {
+  it("redirects a missing document to collections with a floating error", async () => {
     mocks.noteQueryResult = {
       data: undefined,
       isLoading: false,
@@ -545,7 +554,11 @@ describe("document function pages", () => {
     );
 
     expect(await screen.findByRole("heading", { name: "我的笔记本" })).toBeVisible();
-    expect(screen.getByRole("alert")).toHaveTextContent("无法打开文档");
+    await waitFor(() => expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({
+      title: "无法打开资源",
+      description: expect.stringContaining("无法打开文档"),
+      tone: "danger",
+    })));
   });
 
   it("keeps a transient document query error on the current route", async () => {
@@ -662,16 +675,16 @@ describe("document function pages", () => {
     new ApiError(403, "Permission denied"),
     new ApiError(409, "Parent resources must be restored first"),
     new Error("Network request failed"),
-  ])("shows a visible restore error: %s", async (error) => {
-    mocks.archiveNoteState.isError = true;
-    mocks.archiveNoteState.error = error;
-    mocks.archiveNoteState.variables = {
-      id: "018ff7c4-a5b6-7000-8000-000000000007",
-      archived: false,
-    };
+  ])("shows a floating restore error: %s", async (error) => {
+    mocks.archiveNote.mockRejectedValue(error);
+    const actor = userEvent.setup();
     await renderRoute("/documents/archive");
-
-    expect(await screen.findByRole("alert")).toHaveTextContent(error.message);
+    await actor.click(await screen.findByRole("button", { name: "恢复 活跃笔记本中的已归档文档" }));
+    await waitFor(() => expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({
+      title: "恢复失败",
+      description: error.message,
+      tone: "danger",
+    })));
   });
 
   it("does not offer restore controls to a normal member", async () => {

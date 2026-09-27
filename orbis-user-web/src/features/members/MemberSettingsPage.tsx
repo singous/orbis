@@ -10,6 +10,7 @@ import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { Button } from "../../shared/ui/Button";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { TextInput } from "../../shared/ui/TextInput";
+import { showToast } from "../../shared/ui/Toast";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
 import { PageContainer } from "../../shared/ui/PageContainer";
 import {
@@ -42,20 +43,28 @@ export function MemberSettingsPage() {
     queryClient.invalidateQueries({ queryKey: ["members"] }),
     queryClient.invalidateQueries({ queryKey: ["invitations"] }),
   ]);
+  const notifyFailure = (error: unknown) => showToast({
+    title: "操作未完成",
+    description: error instanceof ApiError && error.code === "MAIL_SERVICE_UNAVAILABLE"
+      ? "邮件服务不可用，暂时无法发送邀请或转让确认。"
+      : error instanceof Error ? error.message : "请稍后重试。",
+    tone: "danger",
+  });
   const invite = useMutation({
     mutationFn: () => inviteMember({ email, role }, auth),
-    onSuccess: async () => { setEmail(""); await refresh(); },
+    onSuccess: async () => { setEmail(""); await refresh(); showToast({ title: "邀请已发送", tone: "success" }); },
+    onError: notifyFailure,
   });
   const roleMutation = useMutation({
     mutationFn: ({ id, nextRole }: { id: string; nextRole: "admin" | "editor" | "normal" }) => updateMemberRole(id, nextRole, auth),
-    onSuccess: refresh,
+    onSuccess: async () => { await refresh(); showToast({ title: "成员角色已更新", tone: "success" }); },
+    onError: notifyFailure,
   });
-  const removeMutation = useMutation({ mutationFn: (id: string) => removeMember(id, auth), onSuccess: refresh });
-  const revokeMutation = useMutation({ mutationFn: (id: string) => revokeInvitation(id, auth), onSuccess: refresh });
-  const resendMutation = useMutation({ mutationFn: (id: string) => resendInvitation(id, auth), onSuccess: refresh });
-  const transferMutation = useMutation({ mutationFn: (id: string) => startOwnershipTransfer(id, auth) });
+  const removeMutation = useMutation({ mutationFn: (id: string) => removeMember(id, auth), onSuccess: async () => { await refresh(); showToast({ title: "成员已移除", tone: "success" }); }, onError: notifyFailure });
+  const revokeMutation = useMutation({ mutationFn: (id: string) => revokeInvitation(id, auth), onSuccess: async () => { await refresh(); showToast({ title: "邀请已撤销", tone: "success" }); }, onError: notifyFailure });
+  const resendMutation = useMutation({ mutationFn: (id: string) => resendInvitation(id, auth), onSuccess: async () => { await refresh(); showToast({ title: "邀请已重新发送", tone: "success" }); }, onError: notifyFailure });
+  const transferMutation = useMutation({ mutationFn: (id: string) => startOwnershipTransfer(id, auth), onSuccess: () => showToast({ title: "所有权转让已发起", description: "等待目标管理员通过邮件确认", tone: "success" }), onError: notifyFailure });
   const pendingInvitations = invitesQuery.data?.items.filter((item) => item.status === "pending") ?? [];
-  const operationError = (invite.error || roleMutation.error || removeMutation.error || transferMutation.error) as ApiError | null;
 
   function submitInvite(event: FormEvent) {
     event.preventDefault();
@@ -79,9 +88,6 @@ export function MemberSettingsPage() {
       <PageContainer title="成员与权限" description="管理工作空间中的协作者与访问权限。">
         {!canManage ? <StatusMessage tone="info" title="只读成员列表">你的角色不能邀请、移除或调整其他成员。</StatusMessage> : null}
         {membersQuery.isError ? <div className="mb-5"><StatusMessage tone="error" title="成员列表加载失败">请刷新页面后重试。</StatusMessage></div> : null}
-        {operationError ? (
-          <div className="mb-5"><StatusMessage tone="error" title="操作未完成">{operationError.code === "MAIL_SERVICE_UNAVAILABLE" ? "邮件服务不可用，暂时无法发送邀请或转让确认。" : operationError.message}</StatusMessage></div>
-        ) : null}
 
         {canManage ? (
           <section className="workbench-member-invite">
@@ -144,7 +150,6 @@ export function MemberSettingsPage() {
           </section>
         ) : null}
 
-        {transferMutation.data ? <div className="toast"><div><div className="text-sm font-semibold">所有权转让已发起</div><div className="mt-0.5 text-xs text-[var(--text-oninverse)] opacity-60">等待目标管理员通过邮件确认</div></div><Crown aria-hidden="true" size={17} /></div> : null}
       </PageContainer>
     </WorkspaceShell>
   );

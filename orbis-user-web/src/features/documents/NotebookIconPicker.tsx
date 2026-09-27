@@ -4,6 +4,7 @@ import { ImagePlus, RotateCcw, Check, LoaderCircle } from "lucide-react";
 import { type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
 
 import { Button } from "../../shared/ui/Button";
+import { showToast } from "../../shared/ui/Toast";
 import { NotebookIcon } from "./NotebookIcon";
 import type { UploadedNotebookIcon } from "./notebook-icon-api";
 import {
@@ -36,7 +37,6 @@ export function NotebookIconPicker({ value, onChange, uploadFile, onPendingChang
   const uploadId = useId();
   const uploadVersion = useRef(0);
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<UploadedNotebookIcon | null>(null);
   const selected = value?.type === "preset" ? value : DEFAULT_NOTEBOOK_ICON;
   const blocked = disabled || pending;
@@ -44,7 +44,6 @@ export function NotebookIconPicker({ value, onChange, uploadFile, onPendingChang
   useEffect(() => () => { uploadVersion.current += 1; }, []);
 
   function chooseIcon(icon: NotebookIconValue | null) {
-    setError(null);
     setPreview(null);
     onChange(icon);
   }
@@ -52,8 +51,10 @@ export function NotebookIconPicker({ value, onChange, uploadFile, onPendingChang
   async function handleFile(file: File | undefined) {
     if (!file) return;
     const validationError = validateNotebookIconFile(file);
-    setError(validationError);
-    if (validationError) return;
+    if (validationError) {
+      showToast({ title: "无法上传图标", description: validationError, tone: "danger" });
+      return;
+    }
     const version = ++uploadVersion.current;
     setPending(true);
     onPendingChange?.(true);
@@ -64,7 +65,7 @@ export function NotebookIconPicker({ value, onChange, uploadFile, onPendingChang
       onChange({ type: "image", file_id: uploaded.file_id });
     } catch (uploadError) {
       if (version === uploadVersion.current) {
-        setError(uploadError instanceof Error ? uploadError.message : "图标上传失败，请重试。");
+        showToast({ title: "图标上传失败", description: uploadError instanceof Error ? uploadError.message : "请重试。", tone: "danger" });
       }
     } finally {
       if (version === uploadVersion.current) {
@@ -108,6 +109,5 @@ export function NotebookIconPicker({ value, onChange, uploadFile, onPendingChang
       </label>
       <span className="notebook-icon-upload-hint">PNG、JPEG、WebP · 最大 2 MB</span>
     </div>
-    {error ? <p className="notebook-icon-error" role="alert">{error}</p> : null}
   </div>;
 }

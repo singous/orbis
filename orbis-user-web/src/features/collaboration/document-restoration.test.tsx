@@ -1,9 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { toast as heroToast } from "@heroui/react/toast";
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { authStore } from "../../shared/auth/auth-store";
+import { Toaster } from "../../shared/ui/Toast";
 import type { NoteBlocksV2 } from "../notes/block-model";
 import { DocumentEditorPage } from "../documents/DocumentEditorPage";
 import { NOTE_ID, NOTEBOOK_ID, REVISION_ID, WORKSPACE_ID, USER_ID, blocks, content, http, page, response, revision, session } from "./collaboration.test-utils";
@@ -12,9 +14,9 @@ vi.mock("../documents/DocumentShell", () => ({ DocumentShell: ({ toolbar, childr
 vi.mock("../notes/BlockNoteEditor", () => ({ BlockNoteEditor: ({ blocks: value, onChange, readOnly }: { blocks: NoteBlocksV2; onChange: (next: { blocks: ReturnType<typeof blocks> }) => void; readOnly: boolean }) => <textarea aria-label="编辑正文" readOnly={readOnly} value={String((value.blocks[0]?.content as { text: string }[])?.[0]?.text ?? "")} onChange={(event) => onChange({ blocks: blocks(event.target.value) })} /> }));
 let client: QueryClient;
 beforeEach(() => { act(() => authStore.setState(session)); client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } }); });
-afterEach(() => { cleanup(); client.clear(); vi.unstubAllGlobals(); act(() => authStore.getState().clearSession()); });
+afterEach(() => { act(() => heroToast.clear()); cleanup(); client.clear(); vi.unstubAllGlobals(); act(() => authStore.getState().clearSession()); });
 function showEditor() {
-  return render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[`/documents/${NOTE_ID}`]}><Routes><Route path="/documents/:noteId" element={<DocumentEditorPage />} /></Routes></MemoryRouter></QueryClientProvider>);
+  return render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[`/documents/${NOTE_ID}`]}><Routes><Route path="/documents/:noteId" element={<DocumentEditorPage />} /></Routes></MemoryRouter><Toaster /></QueryClientProvider>);
 }
 function server(mutate: (url: URL, init: RequestInit) => Response | Promise<Response>) {
   return http((url, init) => {
@@ -50,7 +52,7 @@ describe("restoring from the editor", () => {
     expect(screen.getByRole("button", { name: "关闭评论与历史" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "评论" })).toBeDisabled();
     await act(async () => { finishSave(response(content(5, "恢复前草稿"))); });
-    await screen.findByRole("status", { name: "恢复结果" });
+    await screen.findByText("历史版本已恢复");
     expect(requests.filter((request) => request.method === "PUT").map((request) => request.body)).toEqual([{ expected_version: 4, blocks: blocks("恢复前草稿") }]);
     expect(requests.find((request) => request.method === "POST")?.body).toEqual({ expected_version: 5 });
     await user.click(screen.getByRole("button", { name: "关闭评论与历史" }));

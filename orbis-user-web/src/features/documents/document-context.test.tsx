@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { toast as heroToast } from "@heroui/react/toast";
 import { render as renderTestingLibrary, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
@@ -7,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { authStore } from "../../shared/auth/auth-store";
 import { ApiError } from "../../shared/api/api-client";
+import { Toaster } from "../../shared/ui/Toast";
 import {
   DocumentContextPanel,
   DocumentContextSummaryProvider,
@@ -49,7 +51,7 @@ const panelPropKeysAreExact: PanelPropKeysAreExact = true;
 void panelPropKeysAreExact;
 
 function render(ui: React.ReactElement) {
-  return renderTestingLibrary(<QueryClientProvider client={new QueryClient()}>{ui}</QueryClientProvider>);
+  return renderTestingLibrary(<QueryClientProvider client={new QueryClient()}>{ui}<Toaster /></QueryClientProvider>);
 }
 
 vi.mock("./queries", () => ({
@@ -229,6 +231,7 @@ describe("DocumentContextPanel", () => {
   });
 
   afterEach(() => {
+    act(() => heroToast.clear());
     act(() => authStore.getState().clearSession());
   });
 
@@ -320,6 +323,7 @@ describe("DocumentContextPanel", () => {
 
     expect(mocks.archiveNote).toHaveBeenNthCalledWith(1, { id: rootNote.id, archived: true });
     expect(mocks.archiveNote).toHaveBeenNthCalledWith(2, { id: rootNote.id, archived: false });
+    await waitFor(() => expect(screen.queryByRole("button", { name: "撤销" })).not.toBeInTheDocument());
   });
 
   it("keeps the editor available when only its contextual tree fails", async () => {

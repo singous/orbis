@@ -1,9 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { toast as heroToast } from "@heroui/react/toast";
 import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { NoteContent } from "../../shared/api/schemas";
 import { authStore } from "../../shared/auth/auth-store";
+import { Toaster } from "../../shared/ui/Toast";
 import { DocumentCollaborationPanel } from "./DocumentCollaborationPanel";
 import { COMMENT_ID, NEXT_ID, NOTE_ID, OTHER_ID, REVISION_ID, USER_ID, blocks, comment, content, http, page, response, revision, session } from "./collaboration.test-utils";
 
@@ -11,12 +13,12 @@ const clients: QueryClient[] = [];
 function showPanel({ canManage = true, onClose = () => {}, onRestore = async (restore: (version: number) => Promise<NoteContent>) => { await restore(4); } } = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   clients.push(client);
-  render(<QueryClientProvider client={client}><DocumentCollaborationPanel noteId={NOTE_ID} currentUserId={USER_ID} canManage={canManage} onClose={onClose} onRestore={onRestore} /></QueryClientProvider>);
+  render(<QueryClientProvider client={client}><DocumentCollaborationPanel noteId={NOTE_ID} currentUserId={USER_ID} canManage={canManage} onClose={onClose} onRestore={onRestore} /><Toaster /></QueryClientProvider>);
   return client;
 }
 
 beforeEach(() => { act(() => authStore.setState(session)); });
-afterEach(() => { cleanup(); clients.forEach((client) => client.clear()); clients.length = 0; vi.unstubAllGlobals(); act(() => authStore.getState().clearSession()); });
+afterEach(() => { act(() => heroToast.clear()); cleanup(); clients.forEach((client) => client.clear()); clients.length = 0; vi.unstubAllGlobals(); act(() => authStore.getState().clearSession()); });
 
 describe("document collaboration", () => {
   it("blocks dismissal while restoring and allows Escape after the operation finishes", async () => {
@@ -35,7 +37,7 @@ describe("document collaboration", () => {
     await user.keyboard("{Escape}");
     expect(onClose).not.toHaveBeenCalled();
     await act(async () => { finish(); await pending; });
-    await screen.findByRole("status", { name: "恢复结果" });
+    await screen.findByText("历史版本已恢复");
     await user.keyboard("{Escape}");
     expect(onClose).toHaveBeenCalledOnce();
   });
@@ -98,7 +100,7 @@ describe("document collaboration", () => {
     showPanel();
     await user.type(screen.getByLabelText("新评论"), "不能丢失的评论");
     await user.click(screen.getByRole("button", { name: "发表评论" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("评论保存失败");
+    expect(await screen.findByText("评论保存失败")).toBeInTheDocument();
     expect(screen.getByLabelText("新评论")).toHaveValue("不能丢失的评论");
     expect(screen.getByRole("button", { name: "发表评论" })).toBeEnabled();
   });
@@ -131,7 +133,7 @@ describe("document collaboration", () => {
     await user.click(await screen.findByRole("button", { name: /查看版本 2/ }));
     await screen.findByText("历史正文");
     await user.click(screen.getByRole("button", { name: "恢复此版本" }));
-    await screen.findByRole("status", { name: "恢复结果" });
+    await screen.findByText("历史版本已恢复");
     expect(requests.find((request) => request.method === "POST")?.body).toEqual({ expected_version: 8 });
     expect(client.getQueryData(["note-content", NOTE_ID])).toEqual(content(9, "历史正文"));
   });

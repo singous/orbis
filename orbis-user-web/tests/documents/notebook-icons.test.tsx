@@ -1,11 +1,13 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { toast as heroToast } from "@heroui/react/toast";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { NotebookDialog } from "../../src/features/documents/NotebookDialog";
 import { NotebookIcon } from "../../src/features/documents/NotebookIcon";
 import { authStore } from "../../src/shared/auth/auth-store";
+import { Toaster } from "../../src/shared/ui/Toast";
 
 const fileId = "018ff7c4-a5b6-7000-8000-000000000040";
 const dataUrl = "data:image/webp;base64,aWNvbg==";
@@ -17,10 +19,11 @@ function envelope(data: unknown, status = 200) {
 }
 
 function openDialog(onSubmit = vi.fn()) {
-  return { onSubmit, ...render(<NotebookDialog open onClose={vi.fn()} onSubmit={onSubmit} />) };
+  return { onSubmit, ...render(<><NotebookDialog open onClose={vi.fn()} onSubmit={onSubmit} /><Toaster /></>) };
 }
 
 afterEach(() => {
+  act(() => heroToast.clear());
   vi.unstubAllGlobals();
   act(() => authStore.getState().clearSession());
 });
@@ -119,13 +122,13 @@ describe("notebook icons", () => {
     openDialog();
     const input = screen.getByLabelText("上传自定义图标");
     fireEvent.change(input, { target: { files: [new File(["<svg/>"], "icon.svg", { type: "image/svg+xml" })] } });
-    expect(screen.getByRole("alert")).toHaveTextContent("PNG、JPEG 或 WebP");
+    expect(screen.getByText(/PNG、JPEG 或 WebP/)).toBeInTheDocument();
     fireEvent.change(input, { target: { files: [new File([new Uint8Array(2 * 1024 * 1024 + 1)], "large.png", { type: "image/png" })] } });
-    expect(screen.getByRole("alert")).toHaveTextContent("2 MB");
+    expect(screen.getByText("图片大小不能超过 2 MB。")).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("retains the selected preset after upload failure and shows save errors inline", async () => {
+  it("retains the selected preset after upload failure and shows save errors in toasts", async () => {
     const user = userEvent.setup();
     authStore.setState({ accessToken: "icon-access-token" });
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(envelope(null, 422)));
@@ -134,9 +137,9 @@ describe("notebook icons", () => {
     await user.type(screen.getByRole("textbox", { name: "笔记本名称" }), "测试");
     await user.click(screen.getByRole("radio", { name: "火箭" }));
     await user.upload(screen.getByLabelText("上传自定义图标"), new File(["image"], "icon.png", { type: "image/png" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("图标上传失败");
+    expect(await screen.findByText("图标上传失败，请重试")).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "火箭" })).toBeChecked();
     await user.click(screen.getByRole("button", { name: "创建" }));
-    await waitFor(() => expect(screen.getAllByRole("alert").some((node) => node.textContent?.includes("笔记本名称已存在"))).toBe(true));
+    expect(await screen.findByText("笔记本名称已存在")).toBeInTheDocument();
   });
 });

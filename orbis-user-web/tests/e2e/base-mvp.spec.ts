@@ -109,7 +109,7 @@ test("personal writing, team discussion and a versioned documentation site work 
   await page.getByRole("link", { name: "← 返回发布管理" }).click();
   await page.getByRole("button", { name: "发布站点", exact: true }).click();
   await page.getByRole("button", { name: "确认发布", exact: true }).click();
-  await expect(page.getByText("站点已发布，读者现在可以访问新版本。", { exact: true })).toBeVisible();
+  await expect(page.getByRole("alertdialog", { name: "站点已发布" })).toContainText("读者现在可以访问新版本。");
 
   const guest = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
   const reader = await guest.newPage();
@@ -142,12 +142,12 @@ test("personal writing, team discussion and a versioned documentation site work 
   await page.goto(`/sites/${siteId}`);
   await page.getByRole("button", { name: "发布站点", exact: true }).click();
   await page.getByRole("button", { name: "确认发布", exact: true }).click();
-  await expect(page.getByText("站点已发布，读者现在可以访问新版本。", { exact: true })).toBeVisible();
+  await expect(page.getByRole("alertdialog", { name: "站点已发布" })).toContainText("读者现在可以访问新版本。");
   await reader.reload();
   await expect(reader.getByText("未发布的新内容，等待团队确认。", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "切换到此版本", exact: true }).click();
   await page.getByRole("button", { name: "确认操作", exact: true }).click();
-  await expect(page.getByText("已切换公开版本，内部文档保持当前内容。", { exact: true })).toBeVisible();
+  await expect(page.getByRole("alertdialog", { name: "公开版本已切换" })).toContainText("内部文档保持当前内容。");
   await reader.reload();
   await expect(reader.getByText("让知识被找到，让协作更轻松。", { exact: true })).toBeVisible();
 
@@ -185,7 +185,7 @@ test("personal writing, team discussion and a versioned documentation site work 
   await page.getByRole("button", { name: "历史版本", exact: true }).click();
   await page.getByRole("button", { name: "查看版本 2", exact: true }).click();
   await page.getByRole("button", { name: "恢复此版本", exact: true }).click();
-  await expect(page.getByRole("status", { name: "恢复结果" })).toContainText("已恢复为新版本");
+  await expect(page.getByRole("alertdialog", { name: "历史版本已恢复" })).toContainText("原正文可在历史中找回。");
   await page.getByRole("button", { name: "关闭评论与历史" }).click();
   await expect(page.locator('[contenteditable="true"]').first()).toContainText("让知识被找到，让协作更轻松。");
   const history = await (await request.get(`${apiOrigin}/notes/${noteId}/revisions`, { headers })).json();
@@ -246,7 +246,7 @@ test("personal writing, team discussion and a versioned documentation site work 
   await page.goto(`/sites/${siteId}`);
   await page.getByRole("button", { name: "撤回站点", exact: true }).click();
   await page.getByRole("button", { name: "确认操作", exact: true }).click();
-  await expect(page.getByText("站点已撤回，公开入口现已关闭。", { exact: true })).toBeVisible();
+  await expect(page.getByRole("alertdialog", { name: "站点已撤回" })).toContainText("公开入口现已关闭。");
   await reader.reload();
   await expect(reader.getByRole("heading", { name: "站点尚未发布或已撤回" })).toBeVisible();
   await guest.close();

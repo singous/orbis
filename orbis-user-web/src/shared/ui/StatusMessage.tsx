@@ -11,6 +11,7 @@ const toneClass: Record<StatusTone, string> = {
   success: "border-[var(--success-border)] bg-[var(--success-bg)] text-[var(--success-text)]",
 };
 
+/** Persistent context, such as load failures or conflicts with a recovery action. Use Toast for transient operation feedback. */
 export function StatusMessage({
   tone = "info",
   title,
