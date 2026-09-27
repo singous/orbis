@@ -53,6 +53,7 @@ OPERATION_DOCS: dict[tuple[str, str], tuple[str, str]] = {
     ("post", "/notes/{note_id}/archive"): ("归档文档", "归档指定文档；归档父文档后，其子树不会出现在活跃文档树中。"),
     ("post", "/notes/{note_id}/restore"): ("恢复文档", "恢复指定文档。文集、文档分组以及全部父文档必须已经恢复。"),
     ("get", "/notebooks/{notebook_id}/notes/tree"): ("查询文档目录树", "一次性返回指定文集的活跃文档树，子节点位于 children 字段。树接口不分页。"),
+    ("put", "/notebooks/{notebook_id}/notes/order"): ("调整同级文档顺序", "提交同一父文档下完整的文档 ID 顺序，并携带调整前顺序用于冲突校验；成功后原子更新排序并返回最新目录树。目录变化时返回 NOTE_ORDER_CONFLICT。"),
     ("post", "/auth/login"): ("账号登录", "使用邮箱和密码登录，返回访问令牌、刷新令牌、用户信息和当前工作空间。"),
     ("post", "/auth/refresh"): ("刷新访问令牌", "使用有效刷新令牌换取新的短期访问令牌；刷新令牌无效、过期或成员资格失效时拒绝刷新。"),
     ("get", "/users/me"): ("查询当前用户", "根据 Bearer 访问令牌返回当前登录用户的基础资料和当前工作空间标识。"),
