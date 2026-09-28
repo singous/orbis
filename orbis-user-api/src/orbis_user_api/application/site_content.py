@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from orbis_user_api.application.site_block_paths import public_block_path
 from orbis_user_api.application.site_errors import unsafe_site_content
 from orbis_user_api.application.site_references import validate_site_reference
 from orbis_user_api.application.site_urls import PublicUrlPolicy
@@ -9,6 +10,19 @@ from orbis_user_api.domain.document_components import DOCUMENT_BLOCKS
 from orbis_user_api.domain.note_content import InvalidNoteContent, normalize_note_blocks
 
 MEDIA_TYPES = frozenset({"image", "file", "audio", "video"})
+
+
+def _empty_media_placeholder(block: dict[str, Any]) -> bool:
+    """An unfinished upload has no reader-visible content to publish."""
+    props = block.get("props", {})
+    return (
+        block.get("type") in MEDIA_TYPES
+        and not props.get("url")
+        and not props.get("name")
+        and not props.get("caption")
+        and not block.get("content")
+        and not block.get("children")
+    )
 PUBLIC_TEXT_STYLES = frozenset(
     {"bold", "italic", "underline", "strike", "code", "textColor", "backgroundColor"}
 )
@@ -154,6 +168,7 @@ def _public_table(content: Any, policy: PublicUrlPolicy) -> Any:
 def _public_v2(
     block: dict[str, Any], path: str, policy: PublicUrlPolicy
 ) -> dict[str, Any]:
+    path = public_block_path(block, path)
     props = block.get("props", {})
     definition = DOCUMENT_BLOCKS.get(block["type"])
     allowed_props = (
@@ -184,6 +199,7 @@ def _public_v2(
     result["children"] = [
         _public_v2(child, f"{path}-{index}", policy)
         for index, child in enumerate(block.get("children", []))
+        if not _empty_media_placeholder(child)
     ]
     return result
 
@@ -209,5 +225,6 @@ def public_note_blocks(
         "blocks": [
             _public_v2(block, str(index), policy)
             for index, block in enumerate(canonical["blocks"])
+            if not _empty_media_placeholder(block)
         ],
     }

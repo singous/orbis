@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { BlockNoteEditor } from "@blocknote/core";
 import { marked } from "marked";
 import { getSchema } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
@@ -9,6 +8,8 @@ import Table from "@tiptap/extension-table";
 import TableRow from "@tiptap/extension-table-row";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
+import { tiptapExtensions } from "./tiptap-extensions";
+import { fromTiptapDocument, toTiptapDocument } from "./tiptap-model";
 
 import type { NoteBlocks } from "../../shared/api/schemas";
 import { markdownToTiptapDoc, tiptapDocToMarkdown } from "./markdown-contract";
@@ -46,10 +47,16 @@ const v1: NoteBlocks = {
   },
 };
 
+function openInTiptap(blocks: OrbisBlock[]) {
+  const doc = getSchema(tiptapExtensions).nodeFromJSON(toTiptapDocument({ schema_version: 2, editor: "blocknote", blocks }));
+  doc.check();
+  return { document: fromTiptapDocument(doc.toJSON()).blocks };
+}
+
 describe("tiptapDocToV2", () => {
   const v2 = tiptapDocToV2(v1.doc);
 
-  it("opens legacy ordered-list starts and nested starts in the actual BlockNote editor", () => {
+  it("opens legacy ordered-list starts and nested starts in the actual Tiptap editor", () => {
     const paragraph = (text: string) => ({ type: "paragraph", content: [{ type: "text", text }] });
     const converted = tiptapDocToV2({ type: "doc", content: [
       { type: "orderedList", attrs: { start: 7 }, content: [
@@ -64,15 +71,15 @@ describe("tiptapDocToV2", () => {
       { type: "orderedList", attrs: { start: 20 }, content: [{ type: "listItem", content: [paragraph("Twenty")] }] },
       { type: "orderedList", content: [{ type: "listItem", content: [paragraph("One")] }] },
     ] });
-    const editor = BlockNoteEditor.create({ initialContent: converted.blocks as never });
-    expect(editor.document.map((block) => block.props)).toMatchObject([{ start: 7 }, {}, { start: 20 }, { start: 1 }]);
+    const editor = openInTiptap(converted.blocks);
+    expect(editor.document.map((block) => block.props)).toMatchObject([{ start: 7 }, {}, { start: 20 }, {}]);
     expect(editor.document[0].children).toMatchObject([
       { type: "paragraph" }, { type: "numberedListItem", props: { start: 3 } }, { type: "numberedListItem", props: {} },
     ]);
     expect(extractPlainTextV2(editor.document as OrbisBlock[])).toBe("Seven\nContinuation\nNested three\nNested four\nEight\nTwenty\nOne");
   });
 
-  it("maps block types to BlockNote types", () => {
+  it("maps legacy node types to Orbis block types", () => {
     const types = v2.blocks.map((b) => b.type);
     expect(types).toEqual([
       "heading",
@@ -170,7 +177,7 @@ describe("list child block compatibility", () => {
   ];
 
   describe.each(["orderedList", "bulletList", "taskList"])("%s", (listType) => {
-    it.each(children)("preserves %s through Tiptap validation, real BlockNote, export and import", (childType, childMarkdown) => {
+    it.each(children)("preserves %s through Tiptap validation, real Tiptap, export and import", (childType, childMarkdown) => {
       const first = listType === "orderedList" ? "7. Install" : listType === "taskList" ? "- [x] Install" : "- Install";
       const second = listType === "orderedList" ? "8. Run" : listType === "taskList" ? "- [ ] Run" : "- Run";
       const indent = listType === "orderedList" ? "   " : "  ";
@@ -178,13 +185,13 @@ describe("list child block compatibility", () => {
       const legacy = markdownToTiptapDoc(markdown);
       expect(() => legacySchema.nodeFromJSON(legacy).check()).not.toThrow();
       expect(legacy.content![0].content![0].content![1].type).toBe(childType);
-      const editor = BlockNoteEditor.create({ initialContent: tiptapDocToV2(legacy).blocks as never });
+      const editor = openInTiptap(tiptapDocToV2(legacy).blocks);
       const saved = editor.document as OrbisBlock[];
       const exported = v2ToMarkdown(saved);
       const reimported = markdownToTiptapDoc(exported);
       expect(() => legacySchema.nodeFromJSON(reimported).check()).not.toThrow();
       expect(reimported.content![0].content![0].content![1].type).toBe(childType);
-      const reopened = BlockNoteEditor.create({ initialContent: tiptapDocToV2(reimported).blocks as never });
+      const reopened = openInTiptap(tiptapDocToV2(reimported).blocks);
       expect(extractPlainTextV2(reopened.document as OrbisBlock[])).toBe(extractPlainTextV2(saved));
       if (listType === "orderedList") expect(reopened.document[0].props).toMatchObject({ start: 7 });
       expect(reopened.document).toHaveLength(2);
@@ -211,7 +218,7 @@ describe("toV2", () => {
     };
     const before = JSON.stringify(stored);
     const converted = toV2(stored);
-    const editor = BlockNoteEditor.create({ initialContent: converted.blocks as never });
+    const editor = openInTiptap(converted.blocks);
     expect(editor.document[0]).toMatchObject({ id: "old", type: "paragraph" });
     expect(editor.document[1].children[0]).toMatchObject({ id: "nested", type: "heading" });
     expect(extractPlainTextV2(converted.blocks)).toBe("Legacy paragraph\nParent\nNested heading");
@@ -231,7 +238,7 @@ describe("toV2", () => {
     }] };
     const before = JSON.stringify(stored);
     const converted = toV2(stored);
-    const editor = BlockNoteEditor.create({ initialContent: converted.blocks as never });
+    const editor = openInTiptap(converted.blocks);
     expect(editor.document[0]).toMatchObject({ id: "old-table", type: "table", content: {
       type: "tableContent", rows: [{ cells: [expect.anything(), expect.anything()] }, { cells: [expect.anything(), expect.anything()] }],
     } });
@@ -271,7 +278,7 @@ describe("toV2", () => {
     { schema_version: 2, editor: "blocknote", blocks: [{ id: "empty-row", type: "table", props: {}, content: { type: "tableContent", rows: [{ cells: [] }] }, children: [] }] },
   ])("opens a stored empty table in the actual editor: $editor", (stored) => {
     const blocks = toV2(stored as NoteBlocks | NoteBlocksV2).blocks;
-    const editor = BlockNoteEditor.create({ initialContent: blocks as never });
+    const editor = openInTiptap(blocks);
     expect(editor.document[0].type).toBe("table");
     expect(extractPlainTextV2(editor.document as OrbisBlock[])).toBe("");
   });
@@ -328,7 +335,7 @@ describe("extractPlainTextV2 / v2ToMarkdown", () => {
     const importedChildren = importedLists[0].content![0].content!;
     expect(importedChildren.filter((node) => node.type === "orderedList").map((node) => node.attrs?.start)).toEqual([3, 10]);
     expect(importedChildren.map((node) => node.type)).toEqual(["paragraph", "paragraph", "bulletList", "orderedList", "orderedList"]);
-    const reopened = BlockNoteEditor.create({ initialContent: tiptapDocToV2(imported).blocks as never });
+    const reopened = openInTiptap(tiptapDocToV2(imported).blocks);
     expect(reopened.document[0].props).toMatchObject({ start: 7 });
     expect(reopened.document[2].props).toMatchObject({ start: 20 });
     expect(extractPlainTextV2(reopened.document as OrbisBlock[])).toBe(extractPlainTextV2(blocks));
@@ -352,7 +359,7 @@ describe("extractPlainTextV2 / v2ToMarkdown", () => {
     expect(md).toContain("> 引用");
     expect(md).toContain("---");
   });
-  it("extracts and exports native BlockNote table and code content", () => {
+  it("extracts and exports stored table and code content", () => {
     const blocks = [
       {
         id: "table-1",

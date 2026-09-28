@@ -44,8 +44,8 @@ const ownerSession = {
 };
 
 vi.mock("./DocumentShell", () => ({ DocumentShell: ({ children }: { children: React.ReactNode }) => <main>{children}</main> }));
-vi.mock("../notes/BlockNoteEditor", () => ({
-  BlockNoteEditor: ({ onChange, readOnly }: { onChange: (next: { blocks: { schema_version: 2; editor: "blocknote"; blocks: unknown[] }; plainText: string }) => void; readOnly: boolean }) => <button type="button" disabled={readOnly} onClick={() => onChange({ blocks: { schema_version: 2, editor: "blocknote", blocks: [{ id: "b1", type: "paragraph", props: {}, content: [{ type: "text", text: "已编辑" }], children: [] }] }, plainText: "已编辑" })}>模拟编辑</button>,
+vi.mock("../notes/TiptapEditor", () => ({
+  TiptapEditor: ({ onChange, readOnly }: { onChange: (next: { blocks: { schema_version: 2; editor: "blocknote"; blocks: unknown[] }; plainText: string }) => void; readOnly: boolean }) => <button type="button" disabled={readOnly} onClick={() => onChange({ blocks: { schema_version: 2, editor: "blocknote", blocks: [{ id: "b1", type: "paragraph", props: {}, content: [{ type: "text", text: "已编辑" }], children: [] }] }, plainText: "已编辑" })}>模拟编辑</button>,
 }));
 vi.mock("./queries", () => ({
   useNote: () => ({ data: { id: "018ff7c4-a5b6-7000-8000-000000000001", notebook_id: "018ff7c4-a5b6-7000-8000-000000000004", title: "产品计划" }, isError: false }),

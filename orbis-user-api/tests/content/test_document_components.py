@@ -4,6 +4,7 @@ from copy import deepcopy
 
 import pytest
 from orbis_user_api.application.site_content import public_note_blocks
+from orbis_user_api.application.site_html import DocumentHtml
 from orbis_user_api.application.site_errors import SiteError
 from orbis_user_api.domain.note_content import (
     InvalidNoteContent,
@@ -167,3 +168,25 @@ def test_normalization_supplies_component_defaults_without_mutating_input():
     normalized = normalize_note_blocks(value)
     assert normalized["blocks"][0]["props"]["tone"] == "info"
     assert value["blocks"][0]["props"] == {}
+
+
+def test_public_projection_skips_only_empty_media_placeholders_without_changing_saved_blocks():
+    empty = block("image", props={"url": "", "name": ""})
+    value = document(block("paragraph", text="保留正文"), empty)
+    original = deepcopy(value)
+    public = public_note_blocks(value)
+    assert [item["type"] for item in public["blocks"]] == ["paragraph"]
+    assert value == original
+    with pytest.raises(SiteError):
+        public_note_blocks(document(block("image", props={"url": "", "name": "有名称的附件"})))
+
+
+def test_static_public_html_keeps_supported_inline_colors_and_alignment():
+    renderer = DocumentHtml("https://example.com", "公开文档")
+    value = block("paragraph", props={"textAlignment": "center"})
+    value["content"] = [{"type": "text", "text": "强调", "styles": {"bold": True, "textColor": "#aabbcc"}}]
+    html = renderer.block(value, False, (0,))
+    assert '<p style="text-align: center">' in html
+    assert '<span style="color: #aabbcc"><strong>强调</strong></span>' in html
+    table = {"type": "table", "props": {}, "content": {"type": "tableContent", "headerRows": 1, "rows": [{"cells": [{"type": "tableCell", "props": {"backgroundColor": "#f1faf4", "textAlignment": "center"}, "content": "兼容性"}]}]}, "children": []}
+    assert '<th style="background-color: #f1faf4; text-align: center">兼容性</th>' in renderer.block(table, False, (1,))

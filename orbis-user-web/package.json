@@ -16,15 +16,10 @@
     "prebuild": "node scripts/sync-document-blocks.mjs --check"
   },
   "dependencies": {
-    "@blocknote/core": "^0.53.0",
-    "@blocknote/mantine": "^0.53.0",
-    "@blocknote/react": "^0.53.0",
-    "@dnd-kit/react": "^0.5.0",
-    "@fontsource-variable/inter": "^5.3.0",
-    "@heroui/react": "^3.2.6",
-    "@heroui/styles": "^3.2.6",
     "@tailwindcss/vite": "^4.1.10",
     "@tanstack/react-query": "^5.81.2",
+    "@tiptap/core": "^2.27.3",
+    "@tiptap/extension-code-block": "^2.27.3",
     "@tiptap/extension-link": "^2.26.1",
     "@tiptap/extension-placeholder": "^2.26.1",
     "@tiptap/extension-table": "^2.26.1",
@@ -33,6 +28,8 @@
     "@tiptap/extension-table-row": "^2.26.1",
     "@tiptap/extension-task-item": "^2.26.1",
     "@tiptap/extension-task-list": "^2.26.1",
+    "@tiptap/extension-underline": "^2.27.3",
+    "@tiptap/pm": "^2.27.3",
     "@tiptap/react": "^2.26.1",
     "@tiptap/starter-kit": "^2.26.1",
     "class-variance-authority": "^0.7.1",
@@ -46,7 +43,11 @@
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.1.10",
     "zod": "^3.25.67",
-    "zustand": "^5.0.5"
+    "zustand": "^5.0.5",
+    "@dnd-kit/react": "^0.5.0",
+    "@fontsource-variable/inter": "^5.3.0",
+    "@heroui/react": "^3.2.6",
+    "@heroui/styles": "^3.2.6"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

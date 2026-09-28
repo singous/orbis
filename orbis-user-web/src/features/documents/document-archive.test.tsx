@@ -9,8 +9,8 @@ import type { NoteBlocksV2 } from "../notes/block-model";
 import { DocumentEditorPage } from "./DocumentEditorPage";
 
 vi.mock("./DocumentShell", () => ({ DocumentShell: ({ toolbar, children }: { toolbar: React.ReactNode; children: React.ReactNode }) => <main>{toolbar}{children}</main> }));
-vi.mock("../notes/BlockNoteEditor", () => ({
-  BlockNoteEditor: ({ blocks: value, onChange, readOnly }: { blocks: NoteBlocksV2; onChange: (next: { blocks: ReturnType<typeof blocks> }) => void; readOnly: boolean }) => (
+vi.mock("../notes/TiptapEditor", () => ({
+  TiptapEditor: ({ blocks: value, onChange, readOnly }: { blocks: NoteBlocksV2; onChange: (next: { blocks: ReturnType<typeof blocks> }) => void; readOnly: boolean }) => (
     <textarea aria-label="编辑正文" readOnly={readOnly} value={String((value.blocks[0]?.content as { text: string }[])?.[0]?.text ?? "")} onChange={(event) => onChange({ blocks: blocks(event.target.value) })} />
   ),
 }));

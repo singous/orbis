@@ -106,8 +106,8 @@ vi.mock("./queries", () => ({
   useExportMarkdown: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
-vi.mock("../notes/BlockNoteEditor", () => ({
-  BlockNoteEditor: () => <div>编辑器仍可用</div>,
+vi.mock("../notes/TiptapEditor", () => ({
+  TiptapEditor: () => <div>编辑器仍可用</div>,
 }));
 
 const user = {

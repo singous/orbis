@@ -16,6 +16,7 @@ from orbis_user_api.application.site_assets import (
     parse_file_reference,
     prepare_public_asset,
 )
+from orbis_user_api.application.site_block_paths import public_block_path
 from orbis_user_api.application.site_errors import SiteError, unsafe_site_content
 from orbis_user_api.application.site_sources import ResolvedPage, ResolvedSource
 from orbis_user_api.application.site_urls import (
@@ -100,24 +101,25 @@ def _heading_anchors(page: ResolvedPage) -> set[str]:
     roots = blocks["doc"].get("content", []) if legacy else blocks["blocks"]
     anchors: set[str] = set()
 
-    def walk(items: Any, prefix: tuple[int, ...]) -> None:
+    def walk(items: Any, prefix: str) -> None:
         if not isinstance(items, list):
             return
         for index, item in enumerate(items):
             if not isinstance(item, dict):
                 continue
-            path = (*prefix, index)
+            path = f"{prefix}-{index}" if prefix else str(index)
+            if not legacy:
+                path = public_block_path(item, path)
             duplicate_title = (
-                len(path) == 1
-                and path[0] == 0
+                path == "0"
                 and _inline_text(item.get("content")).strip()
                 == page.metadata.title.strip()
             )
             if item.get("type") == "heading" and not duplicate_title:
-                anchors.add("heading-" + "-".join(str(part) for part in path))
+                anchors.add("heading-" + path)
             walk(item.get("content") if legacy else item.get("children"), path)
 
-    walk(roots, ())
+    walk(roots, "")
     return anchors
 
 
@@ -182,7 +184,7 @@ def _iter_references(value: Any) -> Iterator[tuple[str, bool]]:
             yield href, False
     props = value.get("props")
     if isinstance(props, dict):
-        if item_type in MEDIA_TYPES and isinstance(props.get("url"), str):
+        if item_type in MEDIA_TYPES and isinstance(props.get("url"), str) and props["url"]:
             yield props["url"], True
         if item_type == "card" and isinstance(props.get("href"), str):
             yield props["href"], False

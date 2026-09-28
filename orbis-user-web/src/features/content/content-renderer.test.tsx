@@ -4,6 +4,19 @@ import { describe, expect, it } from "vitest";
 import { ContentRenderer, contentOutline, safeContentUrl } from "./ContentRenderer";
 
 describe("published content rendering", () => {
+  it("shows supported inline colors and paragraph alignment from stored blocks", () => {
+    const { container } = render(<ContentRenderer blocks={{ schema_version: 2, blocks: [{
+      type: "paragraph", props: { textAlignment: "center" }, content: [{ type: "text", text: "强调", styles: { bold: true, textColor: "#aabbcc" } }], children: [],
+    }] }} />);
+    expect(container.querySelector("p")).toHaveStyle({ textAlign: "center" });
+    expect(container.querySelector("p span")).toHaveStyle({ color: "#aabbcc" });
+  });
+  it("keeps stored table cell background and alignment visible", () => {
+    const { container } = render(<ContentRenderer blocks={{ schema_version: 2, blocks: [{
+      type: "table", props: {}, content: { type: "tableContent", headerRows: 1, rows: [{ cells: [{ type: "tableCell", props: { backgroundColor: "#f1faf4", textAlignment: "center" }, content: "兼容性" }] }] }, children: [],
+    }] }} />);
+    expect(container.querySelector("th")).toHaveStyle({ backgroundColor: "#f1faf4", textAlign: "center" });
+  });
   it("renders native ordered starts, middle restarts, and nested lists independently", () => {
     const item = (content: string, start?: number, children: unknown[] = []) => ({
       type: "numberedListItem", props: start === undefined ? {} : { start }, content, children,

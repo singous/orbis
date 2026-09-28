@@ -89,6 +89,22 @@ import {
   Users as LucideUsers,
   WifiOff as LucideWifiOff,
   X as LucideX,
+  Bold as LucideBold,
+  Code as LucideCode,
+  Heading1 as LucideHeading1,
+  Heading2 as LucideHeading2,
+  Heading3 as LucideHeading3,
+  Image as LucideImage,
+  Italic as LucideItalic,
+  ListChecks as LucideListChecks,
+  Minus as LucideMinus,
+  Paperclip as LucidePaperclip,
+  Quote as LucideQuote,
+  Redo2 as LucideRedo2,
+  Strikethrough as LucideStrikethrough,
+  Table2 as LucideTable2,
+  Underline as LucideUnderline,
+  Undo2 as LucideUndo2,
   type LucideIcon, type LucideProps,
 } from "lucide-react";
 import { forwardRef } from "react";
@@ -199,3 +215,19 @@ export const UserRound = /* @__PURE__ */ appIcon(LucideUserRound, "UserRound", "
 export const Users = /* @__PURE__ */ appIcon(LucideUsers, "Users", "blue");
 export const WifiOff = /* @__PURE__ */ appIcon(LucideWifiOff, "WifiOff", "danger");
 export const X = /* @__PURE__ */ appIcon(LucideX, "X");
+export const Bold = /* @__PURE__ */ appIcon(LucideBold, "Bold");
+export const Code = /* @__PURE__ */ appIcon(LucideCode, "Code");
+export const Heading1 = /* @__PURE__ */ appIcon(LucideHeading1, "Heading1");
+export const Heading2 = /* @__PURE__ */ appIcon(LucideHeading2, "Heading2");
+export const Heading3 = /* @__PURE__ */ appIcon(LucideHeading3, "Heading3");
+export const Image = /* @__PURE__ */ appIcon(LucideImage, "Image");
+export const Italic = /* @__PURE__ */ appIcon(LucideItalic, "Italic");
+export const ListChecks = /* @__PURE__ */ appIcon(LucideListChecks, "ListChecks");
+export const Minus = /* @__PURE__ */ appIcon(LucideMinus, "Minus");
+export const Paperclip = /* @__PURE__ */ appIcon(LucidePaperclip, "Paperclip");
+export const Quote = /* @__PURE__ */ appIcon(LucideQuote, "Quote");
+export const Redo2 = /* @__PURE__ */ appIcon(LucideRedo2, "Redo2");
+export const Strikethrough = /* @__PURE__ */ appIcon(LucideStrikethrough, "Strikethrough");
+export const Table2 = /* @__PURE__ */ appIcon(LucideTable2, "Table2");
+export const Underline = /* @__PURE__ */ appIcon(LucideUnderline, "Underline");
+export const Undo2 = /* @__PURE__ */ appIcon(LucideUndo2, "Undo2");

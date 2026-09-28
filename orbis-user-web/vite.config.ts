@@ -22,6 +22,8 @@ export default defineConfig({
           editor: [
             "@tiptap/react",
             "@tiptap/starter-kit",
+            "@tiptap/extension-code-block",
+            "@tiptap/extension-underline",
             "@tiptap/extension-placeholder",
             "@tiptap/extension-link",
             "@tiptap/extension-task-list",
@@ -50,7 +52,7 @@ export default defineConfig({
     proxy,
   },
   test: {
-    exclude: [...configDefaults.exclude, "tests/e2e/**"],
+    exclude: [...configDefaults.exclude, "tests/e2e/**", "test-results/**", "docs/**"],
     environment: "jsdom",
     globals: true,
     setupFiles: "./vitest.setup.ts",
