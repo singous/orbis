@@ -96,7 +96,7 @@
 /* Menus share the same opaque, softly elevated surface. */
 .workspace-switcher { position: relative; min-width: 0; }
 .workspace-brand { display: flex; align-items: center; gap: 8px; min-width: 0; max-width: 250px; color: var(--text-primary); font-size: 13px; font-weight: 550; }
-.workspace-brand-mark { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; color: var(--text-oninverse); background: linear-gradient(145deg, color-mix(in oklab, var(--brand-mark) 85%, white), var(--brand-mark)); flex: none; }
+.workspace-brand-mark { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; color: var(--text-oninverse); background: var(--surface-inverse); flex: none; }
 .workspace-brand-word { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .workspace-brand > svg { flex: none; color: var(--text-secondary); }
 .workspace-switcher-popover, .workspace-user-popover { position: absolute; z-index: 60; top: calc(100% + 12px); width: 268px; padding: 8px; }

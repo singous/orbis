@@ -51,7 +51,7 @@ test("the global scrollbar skin preserves wheel and keyboard scrolling", async (
   await page.screenshot({ path: testInfo.outputPath("themed-scrollbar.png") });
 });
 
-test("colorful module icons remain consistent across navigation, themes and dialogs", async ({ page, request }, testInfo) => {
+test("destination accents stay colorful while navigation and controls stay neutral", async ({ page, request }, testInfo) => {
   await signIn(page, request);
   const moduleIcons = page.locator(".workbench-resource-icon .orbis-icon");
   await expect(moduleIcons).toHaveCount(6);
@@ -60,11 +60,21 @@ test("colorful module icons remain consistent across navigation, themes and dial
     const palette = await moduleIcons.evaluateAll((icons) => icons.map((icon) => ({
       color: getComputedStyle(icon).color,
       stroke: getComputedStyle(icon).strokeWidth,
-      background: getComputedStyle(icon.parentElement!).backgroundImage,
+      background: getComputedStyle(icon.parentElement!).backgroundColor,
+      image: getComputedStyle(icon.parentElement!).backgroundImage,
     })));
     expect(new Set(palette.map((icon) => icon.color)).size).toBeGreaterThanOrEqual(5);
     expect(palette.every((icon) => icon.stroke === "1.8px")).toBe(true);
-    expect(palette.every((icon) => icon.background.includes("gradient"))).toBe(true);
+    expect(new Set(palette.map((icon) => icon.background)).size).toBeGreaterThanOrEqual(5);
+    expect(palette.every((icon) => icon.image === "none")).toBe(true);
+    const navigation = await page.locator(".rail-action .orbis-icon, .workspace-function-link .orbis-icon, .workspace-header .orbis-icon").evaluateAll((icons) => icons.map((icon) => ({
+      color: getComputedStyle(icon).color,
+      inherited: getComputedStyle(icon.parentElement!).color,
+      background: getComputedStyle(icon.parentElement!).backgroundImage,
+    })));
+    expect(navigation.length).toBeGreaterThan(5);
+    await expect.poll(() => page.locator(".rail-action .orbis-icon, .workspace-function-link .orbis-icon, .workspace-header .orbis-icon").evaluateAll((icons) => icons.filter((icon) => getComputedStyle(icon).color !== getComputedStyle(icon.parentElement!).color).length)).toBe(0);
+    expect(navigation.every((icon) => icon.background === "none")).toBe(true);
     await page.screenshot({ path: testInfo.outputPath(`module-icons-${theme}.png`) });
   }
   await page.goto("/sites");

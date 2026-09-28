@@ -88,7 +88,7 @@ export function HomePage() {
           <div className="workbench-resource-grid">
             {areas.map(({ title, description, to, icon: Icon, soon }) => (
               <Link key={title} to={to} className="workbench-resource-card">
-                <span className="workbench-resource-icon"><Icon aria-hidden="true" size={24} /></span>
+                <span className="workbench-resource-icon icon-accent"><Icon aria-hidden="true" size={24} /></span>
                 <span className="workbench-resource-copy"><strong>{title}</strong><span>{description}</span></span>
                 {soon ? <span className="workbench-availability">即将推出</span> : <ChevronRight className="workbench-resource-chevron" aria-hidden="true" size={18} />}
               </Link>
