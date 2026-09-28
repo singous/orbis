@@ -1,4 +1,4 @@
-import { Avatar } from "@heroui/react/avatar";
+import { UserAvatar, identityColor } from "../../shared/ui/UserAvatar";
 import { Dropdown } from "@heroui/react/dropdown";
 import { Label } from "@heroui/react/label";
 import { LogOut, Settings, Users } from "../../shared/ui/icons";
@@ -21,7 +21,7 @@ export function UserMenu({ user, workspace, onLogout }: UserMenuProps) {
     <div className="workspace-user-menu">
       <Dropdown>
         <ActionButton type="button" className="workspace-user-trigger" aria-label="打开用户菜单">
-          <Avatar size="sm" className="workspace-user-avatar"><Avatar.Fallback>{userName.slice(0, 1).toUpperCase()}</Avatar.Fallback></Avatar>
+          <UserAvatar user={user} className="workspace-user-avatar" />
           <span className="workspace-user-trigger-copy">
             <span className="truncate">{userName}</span>
             <span className="workspace-user-trigger-role">{workspaceRoleLabel(workspace?.role)}</span>
@@ -29,7 +29,7 @@ export function UserMenu({ user, workspace, onLogout }: UserMenuProps) {
         </ActionButton>
         <Dropdown.Popover className="workspace-user-popover" placement="bottom end" offset={12}>
           <div className="workspace-user-profile">
-            <Avatar size="sm" className="workspace-user-avatar"><Avatar.Fallback>{userName.slice(0, 1).toUpperCase()}</Avatar.Fallback></Avatar>
+            <UserAvatar user={user} className="workspace-user-avatar" />
             <div>
               <div className="workspace-user-name">{userName}</div>
               <div className="workspace-user-space">{workspace?.name ?? "私人工作空间"}</div>

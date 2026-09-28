@@ -181,3 +181,17 @@ a.workbench-document-row:hover { background: var(--surface-hover); }
 }
 
 .workbench-search-group { height: 32px; }
+
+/* Identity accents are separate from neutral navigation and action icons. */
+.identity-avatar, .identity-mark { color: var(--identity-color); background: color-mix(in oklab, var(--identity-color) 14%, var(--surface)); }
+.identity-avatar .avatar__fallback { color: inherit; background: transparent; }
+.workspace-brand-mark.identity-mark { color: var(--identity-color); background: color-mix(in oklab, var(--identity-color) 14%, var(--surface)); }
+.profile-identity { min-width: 0; }
+.profile-identity p { overflow-wrap: anywhere; }
+.profile-avatar-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.profile-upload-help { max-width: 430px; font-size: 12px !important; }
+.profile-edit-form { display: grid; gap: 24px; max-width: 520px; }
+.profile-field { display: grid; gap: 6px; font-size: 14px; font-weight: 500; }
+.profile-field textarea { min-height: 100px; }
+.profile-form-actions { display: flex; justify-content: flex-end; }
+.profile-workspace-info { margin-top: 36px; }

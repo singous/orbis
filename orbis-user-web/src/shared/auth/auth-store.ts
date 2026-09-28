@@ -18,6 +18,7 @@ export type AuthState = {
   user: User | null;
   workspace: Workspace | null;
   setSession: (session: AuthSession) => void;
+  updateUser: (user: User, sessionKey: string) => void;
   setAccessToken: (accessToken: string) => void;
   clearSession: () => void;
 };
@@ -75,6 +76,13 @@ export function createAuthStore() {
         user: nextSession.user,
         workspace: nextSession.workspace,
       }));
+    },
+    updateUser: (user, sessionKey) => {
+      set((current) => {
+        if (getAuthSessionKey(current) !== sessionKey || user.id !== current.user?.id || user.updated_at_ms < current.user.updated_at_ms || !current.accessToken || !current.refreshToken) return current;
+        writeSession({ accessToken: current.accessToken, refreshToken: current.refreshToken, user, workspace: current.workspace });
+        return { user };
+      });
     },
     setAccessToken: (accessToken) => {
       set((current) => {

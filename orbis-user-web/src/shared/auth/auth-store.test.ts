@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { createAuthStore } from "./auth-store";
+import { getAuthSessionKey, createAuthStore } from "./auth-store";
 
 describe("auth store", () => {
   beforeEach(() => {
@@ -111,4 +111,18 @@ describe("auth store", () => {
     store.getState().clearSession();
     expect(store.getState().sessionGeneration).toBe(loginGeneration + 2);
   });
+  it("persists profile changes without resetting the session and rejects late responses", () => {
+    const store = createAuthStore();
+    const session = { accessToken: "access", refreshToken: "refresh", workspace: null,
+      user: { id: "account-a", tenant_id: null, email: "a@example.com", display_name: "A", current_workspace_id: null, status: "active", created_at_ms: 1, updated_at_ms: 1 } };
+    store.getState().setSession(session);
+    const key = getAuthSessionKey(store.getState());
+    store.getState().updateUser({ ...session.user, display_name: "Updated", bio: "My notes" }, key);
+    expect(getAuthSessionKey(store.getState())).toBe(key);
+    expect(createAuthStore().getState().user?.bio).toBe("My notes");
+    store.getState().setSession(session);
+    store.getState().updateUser({ ...session.user, display_name: "Late response" }, key);
+    expect(store.getState().user?.display_name).toBe("A");
+  });
+
 });

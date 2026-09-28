@@ -491,7 +491,7 @@ describe("document function pages", () => {
   it("keeps account settings on the workspace shell without document functions", async () => {
     await renderRoute("/settings/account");
 
-    expect(await screen.findByRole("heading", { name: "账号" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "个人资料", level: 1 })).toBeVisible();
     expect(screen.queryByRole("navigation", { name: "在线文档功能" })).not.toBeInTheDocument();
     expect(document.querySelector(".workspace-shell")).toHaveClass("has-section-menu");
   });
