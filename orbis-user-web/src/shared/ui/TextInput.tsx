@@ -14,7 +14,6 @@ export function TextInput({ label, className, ...props }: TextInputProps) {
       className={cn(
         "h-9 w-full rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface-content)] px-3 text-sm text-[var(--text-primary)]",
         "placeholder:text-[var(--text-tertiary)]",
-        "focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-soft)]",
         "disabled:pointer-events-none disabled:opacity-50",
         className,
       )}

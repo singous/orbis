@@ -2,6 +2,7 @@ import { Input as HeroInput } from "@heroui/react/input";
 import { Radio } from "@heroui/react/radio";
 import { RadioGroup } from "@heroui/react/radio-group";
 import { ActionButton } from "../../shared/ui/ActionButton";
+import { SelectField } from "../../shared/ui/SelectField";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 
 import { useNoteTree, useNotebooks } from "../documents/queries";
@@ -47,14 +48,8 @@ function SourceBinding({
       </div> : null}
     </header>
     <div className="site-source-binding-fields">
-      <label>来源笔记本<select aria-label={`来源笔记本 ${index + 1}`} disabled={disabled} value={binding.notebook_id} onChange={(event) => onChange({ notebook_id: event.target.value, root_note_id: null, label: binding.label ?? null })}>
-        {!notebook ? <option value={binding.notebook_id}>当前来源不可用</option> : null}
-        {notebookOptions.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
-      </select></label>
-      <label>内容范围<select aria-label={`内容范围 ${index + 1}`} disabled={disabled || tree.isPending} value={binding.root_note_id ?? ""} onChange={(event) => onChange({ ...binding, root_note_id: event.target.value || null })}>
-        <option value="">整个笔记本</option>
-        {flatTree.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
-      </select></label>
+      <SelectField label="来源笔记本" aria-label={`来源笔记本 ${index + 1}`} disabled={disabled} value={binding.notebook_id} onChange={(notebook_id) => onChange({ notebook_id, root_note_id: null, label: binding.label ?? null })} options={[...(!notebook ? [{ value: binding.notebook_id, label: "当前来源不可用" }] : []), ...notebookOptions.map((item) => ({ value: item.id, label: item.title }))]} />
+      <SelectField label="内容范围" aria-label={`内容范围 ${index + 1}`} disabled={disabled || tree.isPending} value={binding.root_note_id ?? ""} onChange={(rootId) => onChange({ ...binding, root_note_id: rootId || null })} options={[{ value: "", label: "整个笔记本" }, ...flatTree.map((item) => ({ value: item.id, label: item.title }))]} />
       <label>栏目名称<HeroInput aria-label={`栏目名称 ${index + 1}`} disabled={disabled} value={binding.label ?? ""} placeholder={notebook?.title ?? "默认使用笔记本名称"} onChange={(event) => onChange({ ...binding, label: event.target.value || null })} /></label>
     </div>
     {tree.isPending ? <p className="mvp-muted">正在加载真实文档树…</p> : tree.isError ? <p role="alert" className="site-source-inline-error">文档树加载失败。<ActionButton type="button" onClick={() => void tree.refetch()}>重试</ActionButton></p> : <SiteSourceTree items={tree.data.items} rootNoteId={binding.root_note_id} source={source} resolved={saved ? sources : undefined} disabled={disabled} onChange={onSourceChange} />}

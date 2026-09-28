@@ -346,13 +346,13 @@ describe("notebook-backed site management", () => {
     };
     renderRoute(`/sites/${SITE_ID}`, <SiteEditorPage />, "/sites/:siteId");
 
-    expect(await screen.findByText("当前来源不可用")).toBeVisible();
+    expect(await screen.findByRole("button", { name: /来源笔记本 1/ })).toHaveTextContent("当前来源不可用");
     await userEvent.click(screen.getByRole("button", { name: "移除来源 1" }));
-    expect(screen.queryByRole("combobox", { name: "来源笔记本 1" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /来源笔记本 1/ })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "重试" }));
 
     expect(await screen.findByRole("button", { name: "添加来源" })).toBeVisible();
-    expect(screen.queryByRole("combobox", { name: "来源笔记本 1" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /来源笔记本 1/ })).not.toBeInTheDocument();
   });
 });
 
@@ -363,7 +363,7 @@ describe("notebook entry points", () => {
 
     const dialog = await screen.findByRole("dialog", { name: "创建文档站点" });
     expect(within(dialog).getByRole("radio", { name: "关联笔记本" })).toBeChecked();
-    await waitFor(() => expect(within(dialog).getByRole("combobox", { name: "来源笔记本 1" })).toHaveValue(NOTEBOOK_ID));
+    await waitFor(() => expect(within(dialog).getByRole("button", { name: /来源笔记本 1/ })).toHaveTextContent("产品知识库"));
     expect(await within(dialog).findAllByText("产品知识库")).not.toHaveLength(0);
     expect(requests.some((request) => request.method === "POST" && request.path === "/api/sites")).toBe(false);
   });

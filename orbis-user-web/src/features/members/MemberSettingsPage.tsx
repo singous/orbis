@@ -10,6 +10,7 @@ import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { Button } from "../../shared/ui/Button";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { TextInput } from "../../shared/ui/TextInput";
+import { SelectField } from "../../shared/ui/SelectField";
 import { showToast } from "../../shared/ui/Toast";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
 import { PageContainer } from "../../shared/ui/PageContainer";
@@ -97,13 +98,7 @@ export function MemberSettingsPage() {
             </div>
             <form className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_150px_auto] sm:items-end" onSubmit={submitInvite}>
               <TextInput label="邮箱" type="email" placeholder="member@example.com" value={email} onChange={(event) => setEmail(event.target.value)} />
-              <label className="grid gap-1.5 text-sm font-medium">
-                <span>角色</span>
-                <select className="h-9 rounded-[var(--radius-control)] border border-[var(--border)] bg-[var(--surface-content)] px-3 text-sm" value={role} onChange={(event) => setRole(event.target.value as typeof role)}>
-                  {workspace?.role === "owner" ? <option value="admin">管理员</option> : null}
-                  <option value="editor">编辑者</option><option value="normal">普通成员</option>
-                </select>
-              </label>
+              <SelectField label="角色" value={role} onChange={(next) => setRole(next as typeof role)} options={[...(workspace?.role === "owner" ? [{ value: "admin", label: "管理员" }] : []), { value: "editor", label: "编辑者" }, { value: "normal", label: "普通成员" }]} />
               <Button type="submit" variant="primary" disabled={!mailQuery.data?.available || !email.trim() || invite.isPending} icon={<Mail aria-hidden="true" size={14} />}>发送邀请</Button>
             </form>
           </section>
@@ -121,9 +116,7 @@ export function MemberSettingsPage() {
                   <div className="min-w-[180px] flex-1"><div className="text-sm font-semibold">{member.display_name || member.email}</div><div className="mt-1 text-xs text-[var(--muted)]">{member.email}</div></div>
                   <div className="flex items-center gap-2">
                     {member.role === "owner" ? <span className="tag"><Crown aria-hidden="true" className="mr-1" size={11} />所有者</span> : actorCanChange ? (
-                      <select aria-label={`调整 ${member.email} 的角色`} className="h-9 rounded-lg border border-[var(--border)] bg-[var(--surface-content)] px-2 text-xs" value={member.role} onChange={(event) => roleMutation.mutate({ id: member.id, nextRole: event.target.value as "admin" | "editor" | "normal" })}>
-                        {workspace?.role === "owner" ? <option value="admin">管理员</option> : null}<option value="editor">编辑者</option><option value="normal">普通成员</option>
-                      </select>
+                      <SelectField aria-label={`调整 ${member.email} 的角色`} className="member-role-select" value={member.role} disabled={roleMutation.isPending} onChange={(nextRole) => roleMutation.mutate({ id: member.id, nextRole: nextRole as "admin" | "editor" | "normal" })} options={[...(workspace?.role === "owner" ? [{ value: "admin", label: "管理员" }] : []), { value: "editor", label: "编辑者" }, { value: "normal", label: "普通成员" }]} />
                     ) : <span className="tag"><Shield aria-hidden="true" className="mr-1" size={11} />{member.role}</span>}
                     {workspace?.role === "owner" && member.role === "admin" ? <Button variant="secondary" onClick={() => confirmTransfer(member.id)} disabled={!mailQuery.data?.available || transferMutation.isPending}>转让所有权</Button> : null}
                     {member.role !== "owner" && actorCanChange ? <ActionButton type="button" className="icon-button danger-hover" aria-label={`移除 ${member.email}`} onClick={() => confirmRemove(member.id, member.email)}><Trash2 aria-hidden="true" size={14} /></ActionButton> : null}

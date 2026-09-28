@@ -44,7 +44,7 @@
 
 .site-reader a { color: inherit; text-decoration: none; }
 .site-reader button, .site-reader input { font: inherit; }
-.site-reader button:focus-visible, .site-reader a:focus-visible, .site-reader summary:focus-visible, .site-reader input:focus-visible { outline: 2px solid var(--reader-accent); outline-offset: 2px; }
+.site-reader button:focus-visible, .site-reader a:focus-visible, .site-reader summary:focus-visible, .site-reader input:not(.input):not([data-slot="input-group-input"]):focus-visible { outline: 2px solid var(--reader-accent); outline-offset: 2px; }
 
 .site-reader-skip-link { position: fixed; z-index: 100; top: -80px; left: 18px; padding: 10px 14px; border: 1px solid var(--reader-accent); border-radius: 8px; background: var(--reader-surface); font-size: 13px; }
 .site-reader-skip-link:focus { top: 12px; }

@@ -9,7 +9,6 @@ export const buttonVariants = cva(
     "ui-button border border-transparent",
     "transition-colors duration-100",
     "disabled:pointer-events-none disabled:opacity-50",
-    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]",
   ],
   {
     variants: {

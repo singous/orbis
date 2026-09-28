@@ -62,33 +62,7 @@
   grid-template-columns: minmax(90px, .65fr) minmax(140px, 1.35fr);
 }
 
-.site-branding-link-list input,
-.site-branding-cta input,
-.site-source-binding-fields input,
-.site-source-binding-fields select,
-.site-source-overrides input,
-.site-source-overrides textarea {
-  width: 100%;
-  min-width: 0;
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
-  outline: none;
-  background: var(--surface-content);
-  padding: 8px 9px;
-  color: var(--text-primary);
-  font: inherit;
-  font-size: 12px;
-}
-
-.site-branding-link-list input:focus,
-.site-branding-cta input:focus,
-.site-source-binding-fields input:focus,
-.site-source-binding-fields select:focus,
-.site-source-overrides input:focus,
-.site-source-overrides textarea:focus {
-  border-color: var(--border-strong);
-  box-shadow: 0 0 0 2px var(--surface-active);
-}
+.site-branding-link-list input, .site-branding-cta input, .site-source-binding-fields input, .site-source-overrides input, .site-source-overrides textarea { width: 100%; min-width: 0; font-size: 12px; }
 
 .site-branding-link-list button,
 .site-source-order-actions button,

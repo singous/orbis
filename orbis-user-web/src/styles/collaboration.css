@@ -37,7 +37,7 @@
 .collaboration-error { padding: 11px 12px; border-radius: 8px; font-size: 12px; line-height: 1.7; margin: 10px 0 0; overflow-wrap: anywhere; }
 .collaboration-error { color: var(--danger-text, #a52b2b); background: var(--danger-surface, #fff1f1); }
 .collaboration-panel button:disabled { opacity: .45; cursor: not-allowed; }
-.collaboration-panel button:focus-visible, .collaboration-form textarea:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
+.collaboration-panel button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
 @media (max-width: 600px) {
   .collaboration-panel { border-left: 0; }
   .collaboration-panel-header { padding: max(20px, env(safe-area-inset-top)) 18px 18px; }

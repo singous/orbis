@@ -70,6 +70,12 @@ test("a notebook publishes its complete tree and editable documentation componen
   await page.getByRole("option", { name: "提示块", exact: true }).click();
   await expect(page.getByRole("textbox", { name: "提示块标题", exact: true })).toHaveCount(2);
   await page.locator('.doc-editor-callout input[value=""]').fill("编辑器插入的提示");
+  await page.locator('.doc-editor-callout:has(input[value="编辑器插入的提示"])').getByRole("button", { name: /提示类型/ }).click();
+  await page.getByRole("option", { name: "注意", exact: true }).click();
+  await expect.poll(async () => {
+    const content = (await (await request.get(`${apiOrigin}/notes/${ids[0]}/content`, { headers })).json()).data;
+    return content.blocks.blocks.find((item: { type: string; props?: { title?: string; tone?: string } }) => item.type === "callout" && item.props?.title === "编辑器插入的提示")?.props.tone;
+  }).toBe("warning");
   await expect.poll(async () => (await (await request.get(`${apiOrigin}/notes/${ids[0]}/content`, { headers })).json()).data.plain_text).toContain("编辑器插入的提示");
   const edited = (await (await request.get(`${apiOrigin}/notes/${ids[0]}/content`, { headers })).json()).data.blocks;
   const allowedChildren: Record<string, string> = { cardGroup: "card", steps: "step", tabs: "tab", codeGroup: "codeBlock" };
@@ -97,7 +103,7 @@ test("a notebook publishes its complete tree and editable documentation componen
   await page.getByRole("menuitem", { name: "创建文档站点", exact: true }).click();
   const create = page.getByRole("dialog", { name: "创建文档站点" });
   await expect(create.getByRole("radio", { name: "关联笔记本" })).toBeChecked();
-  await expect(create.getByLabel("来源笔记本 1")).toHaveValue(notebook.id);
+  await expect(create.getByRole("button", { name: /来源笔记本 1/ })).toContainText("开发者文档");
   await create.getByLabel("站点名称", { exact: true }).fill("Orbis 开发者文档");
   await create.getByLabel("站点路径", { exact: false }).fill("notebook-docs");
   await create.getByLabel("站点简介", { exact: true }).fill("从笔记本持续发布产品知识。");

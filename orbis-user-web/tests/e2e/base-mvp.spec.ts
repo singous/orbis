@@ -90,7 +90,8 @@ test("personal writing, team discussion and a versioned documentation site work 
   await page.getByLabel("站点名称", { exact: true }).fill("Orbis 知识指南");
   await page.getByLabel("站点路径", { exact: false }).fill("orbis-guide");
   await page.getByLabel("站点简介", { exact: true }).fill("记录、协作与发布，让团队知识持续生长。");
-  await page.getByLabel("站点场景", { exact: false }).selectOption("handbook");
+  await page.getByRole("button", { name: /站点场景/ }).click();
+  await page.getByRole("option", { name: "产品手册", exact: true }).click();
   await page.getByRole("dialog", { name: "创建文档站点" }).getByRole("button", { name: "创建站点", exact: true }).click();
   await expect(page).toHaveURL(/\/sites\/[0-9a-f-]+$/);
   const siteId = page.url().split("/").pop()!;
@@ -153,7 +154,8 @@ test("personal writing, team discussion and a versioned documentation site work 
 
   await page.goto("/settings/members");
   await page.getByLabel("邮箱", { exact: true }).fill("reader@example.com");
-  await page.getByRole("combobox").first().selectOption("normal");
+  await page.getByRole("button", { name: /角色/ }).click();
+  await page.getByRole("option", { name: "普通成员", exact: true }).click();
   await page.getByRole("button", { name: "发送邀请", exact: true }).click();
   await expect(page.getByText("reader@example.com", { exact: true })).toBeVisible();
   const outbox = join(process.env.ORBIS_E2E_DIR!, "outbox");

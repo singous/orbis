@@ -1,0 +1,53 @@
+import { expect, test } from "@playwright/test";
+
+test("site form uses one focus treatment and HeroUI selection overlays", async ({ page, request }, testInfo) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const owner = { email: "owner@example.com", password: "Orbis-browser-test-2026!" };
+  const setup = await request.post("/api/setup", { data: { ...owner, display_name: "表单验收" } });
+  expect([201, 409]).toContain(setup.status());
+  await page.goto("/login");
+  await page.getByLabel("邮箱", { exact: true }).fill(owner.email);
+  await page.getByLabel("密码", { exact: true }).fill(owner.password);
+  await page.getByRole("button", { name: "登录 Orbis", exact: true }).click();
+  await expect(page).toHaveURL(/\/documents$/);
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/sites");
+    await page.getByRole("button", { name: "创建站点", exact: true }).click();
+    const dialog = page.getByRole("dialog", { name: "创建文档站点", exact: true });
+    const name = dialog.getByLabel("站点名称", { exact: true });
+    await name.focus();
+    await expect(name).toBeFocused();
+    expect(await name.evaluate((element) => getComputedStyle(element).outlineStyle)).toBe("none");
+    expect(await name.evaluate((element) => getComputedStyle(element).boxShadow)).not.toBe("none");
+    await page.screenshot({ path: testInfo.outputPath(`site-form-focus-${width}.png`) });
+    const slug = dialog.getByLabel("站点路径", { exact: false });
+    await slug.focus();
+    expect(await slug.evaluate((element) => getComputedStyle(element).outlineStyle)).toBe("none");
+    expect(await slug.evaluate((element) => getComputedStyle(element.closest('[data-slot="input-group"]')!).outlineStyle)).toBe("none");
+    expect(await slug.evaluate((element) => getComputedStyle(element.closest('[data-slot="input-group"]')!).boxShadow)).not.toBe("none");
+    const kind = dialog.getByRole("button", { name: /站点场景/ });
+    await kind.click();
+    const option = page.getByRole("option", { name: "产品手册", exact: true });
+    await expect(option).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath(`site-select-${width}.png`) });
+    const bounds = (await page.getByRole("listbox", { name: "站点场景", exact: true }).boundingBox())!;
+    expect(bounds.x).toBeGreaterThanOrEqual(0);
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(width);
+    await option.click();
+    await expect(kind).toContainText("产品手册");
+    await expect(kind).toBeFocused();
+    await dialog.getByRole("button", { name: "选择主题色" }).click();
+    const color = page.getByRole("textbox", { name: "十六进制颜色" });
+    await color.fill("#123456");
+    await color.press("Tab");
+    await page.keyboard.press("Escape");
+    await expect(dialog.getByRole("button", { name: "选择主题色" })).toContainText("#123456");
+    const theme = dialog.getByRole("button", { name: /阅读主题/ });
+    await theme.click();
+    await page.getByRole("option", { name: "深色", exact: true }).click();
+    await expect(theme).toContainText("深色");
+    expect(await dialog.evaluate((element) => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(1);
+    await dialog.getByRole("button", { name: "取消", exact: true }).click();
+  }
+});

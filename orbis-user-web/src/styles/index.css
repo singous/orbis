@@ -152,6 +152,7 @@
   --field-foreground: var(--text-primary);
   --field-placeholder: var(--text-tertiary);
   --field-border: var(--border-strong);
+  --field-border-width: 1px;
   --field-shadow: 0 0 0 0 transparent;
   --focus: var(--focus-ring);
   --radius: var(--radius-control);
@@ -1101,3 +1102,15 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
 }
+
+/* HeroUI owns field focus rings; these rules only arrange controls and copy. */
+.orbis-select-field { min-width: 0; gap: 8px; }
+.orbis-select-field [data-slot="select-trigger"] { width: 100%; min-width: 0; font-weight: 400; }
+.orbis-select-popover { max-width: calc(100vw - 24px); }
+.orbis-field-description { color: var(--text-secondary); font-size: 12px; line-height: 1.7; font-weight: 400; }
+.orbis-field-label, .site-settings-fields .orbis-select-field > label { font-size: 12px; font-weight: 550; }
+.orbis-color-field { display: grid; align-content: start; min-width: 0; gap: 8px; }
+.orbis-color-field [data-slot="color-picker-trigger"] { display: flex; gap: 10px; align-items: center; min-height: 36px; font-size: 13px; }
+.orbis-color-popover { width: 260px; max-width: calc(100vw - 24px); display: grid; gap: 16px; padding: 16px; }
+.orbis-color-popover [data-slot="color-area"] { width: 100%; height: 160px; }
+.member-role-select { min-width: 120px; }
