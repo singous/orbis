@@ -93,7 +93,8 @@ test("a notebook publishes its complete tree and editable documentation componen
   await expect.poll(async () => JSON.stringify((await (await request.get(`${apiOrigin}/notes/${ids[0]}/content`, { headers })).json()).data.blocks)).toContain("orbis-file:");
 
   await page.goto(`/collections/${notebook.id}`);
-  await page.getByRole("link", { name: "创建文档站点", exact: true }).click();
+  await page.getByRole("button", { name: "笔记本操作", exact: true }).click();
+  await page.getByRole("menuitem", { name: "创建文档站点", exact: true }).click();
   const create = page.getByRole("dialog", { name: "创建文档站点" });
   await expect(create.getByRole("radio", { name: "关联笔记本" })).toBeChecked();
   await expect(create.getByLabel("来源笔记本 1")).toHaveValue(notebook.id);

@@ -60,12 +60,16 @@ test("workspace actions share sizing and notebook headings retain breathing room
     const primary = await actionMetrics(main.getByRole("button", { name: "新建文档", exact: true }));
     const secondary = await actionMetrics(sidebar.getByRole("button", { name: "新建文档", exact: true }));
     measurements[`create-${width}`] = { main: primary, sidebar: secondary };
-    expect.soft(secondary, `${width}px: both new-document actions use the same dimensions and typography`).toEqual(primary);
-    for (const name of ["新建文档", "导出全部", "导入 Markdown"]) {
-      const metrics = await actionMetrics(main.getByRole("button", { name, exact: true }));
-      expect.soft(metrics.height, `${width}px: ${name} height`).toBe(36);
-      expect.soft(metrics.fontSize, `${width}px: ${name} font`).toBe("14px");
-    }
+    expect.soft(primary.height, `${width}px: the primary action uses standard sizing`).toBe(36);
+    expect.soft(primary.fontSize, `${width}px: primary action typography`).toBe("14px");
+    expect.soft(secondary.height, `${width}px: the directory uses a compact, accessible action`).toBeGreaterThanOrEqual(28);
+    expect.soft(secondary.width, `${width}px: compact action has room for its icon`).toBeGreaterThanOrEqual(28);
+    await expect(main.getByRole("button", { name: "导出全部", exact: true })).toHaveCount(0);
+    await expect(main.getByRole("button", { name: "导入 Markdown", exact: true })).toHaveCount(0);
+    await main.getByRole("button", { name: "笔记本操作", exact: true }).click();
+    await expect(page.getByRole("menuitem", { name: "导出全部", exact: true })).toBeVisible();
+    await expect(page.getByRole("menuitem", { name: "导入 Markdown", exact: true })).toBeVisible();
+    await page.keyboard.press("Escape");
 
     const heading = main.getByRole("heading", { name: notebookTitle, exact: true });
     const geometry = await heading.evaluate((element) => {
@@ -93,7 +97,8 @@ test("workspace actions share sizing and notebook headings retain breathing room
     expect.soft(geometry.overlaps, `${width}px: header actions do not overlap notebook identity`).toBe(false);
   }
 
-  await page.getByRole("button", { name: "编辑笔记本", exact: true }).click();
+  await page.getByRole("button", { name: "笔记本操作", exact: true }).click();
+  await page.getByRole("menuitem", { name: "编辑笔记本", exact: true }).click();
   const notebookDialog = page.getByRole("dialog", { name: "编辑笔记本", exact: true });
   const uploadAction = await actionMetrics(notebookDialog.getByLabel("上传自定义图标", { exact: true }), true);
   const saveAction = await actionMetrics(notebookDialog.getByRole("button", { name: "保存", exact: true }));

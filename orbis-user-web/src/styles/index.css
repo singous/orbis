@@ -44,6 +44,8 @@
 
 /* Opaque, neutral workbench surfaces. Layout owners consume these tokens. */
 :root {
+  /* Dialogs must overlay workspace navigation drawers. */
+  --layer-dialog: 80;
   --gray-0: #ffffff;
   --gray-25: #fbfbfd;
   --gray-50: #f8f8fa;
@@ -297,7 +299,7 @@ body {
 }
 
 .orbis-modal-backdrop {
-  z-index: 40;
+  z-index: var(--layer-dialog);
   background: var(--backdrop);
 }
 
@@ -849,30 +851,33 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 }
 
 .document-context {
-  padding: 14px 8px;
+  padding: 16px 0 8px;
 }
 
 .document-context-header {
   display: flex;
-  min-height: 34px;
+  min-height: 30px;
   align-items: center;
   flex-wrap: wrap;
   justify-content: space-between;
   gap: 8px;
-  padding: 0 4px 12px;
+  padding: 0 6px 8px;
 }
 
 .document-context-header h2 {
   margin: 0;
   white-space: nowrap;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 550;
 }
+.document-context-create { display: grid; width: 28px; height: 28px; min-width: 28px; min-height: 28px; place-items: center; padding: 0; border-radius: 6px; color: var(--text-secondary); }
+.document-context-create:hover { color: var(--text-primary); background: var(--surface-hover); }
 
 
 .document-context-tree {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1px;
 }
 
@@ -885,9 +890,9 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   min-width: 0;
   flex: 1;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   border-radius: 7px;
-  padding: 7px 6px;
+  padding: 6px 2px;
   color: var(--muted);
   font-size: 12px;
   font-weight: 550;
@@ -921,29 +926,29 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 .document-context-row.is-active { background: var(--accent-soft); }
 
 .document-context-row {
-  display: grid;
-  grid-template-columns: 22px minmax(0, 1fr);
-  column-gap: 2px;
-  padding: 2px 4px;
+  min-height: 34px;
+  padding: 1px 3px;
 }
-.document-context-row .document-drag-handle { grid-column: 1; grid-row: 1; }
-.document-context-row .document-context-link { grid-column: 2; grid-row: 1; width: 100%; }
-.document-context-row:not(.has-drag-handle) .document-context-link { grid-column: 1 / -1; }
-.document-context-row .document-context-actions { grid-column: 1 / -1; justify-self: end; }
 .document-context-link > span {
-  display: -webkit-box;
+  display: block;
   overflow: hidden;
-  overflow-wrap: anywhere;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  white-space: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+.document-context-children { padding-left: 12px; }
+.document-tree-prefix { display: flex; flex: none; align-items: center; }
+.document-drag-placeholder { width: 20px; flex: none; }
+.document-disclosure-placeholder { width: 20px; flex: none; }
+.document-tree-disclosure { display: grid; width: 20px; min-width: 20px; height: 30px; min-height: 30px; place-items: center; padding: 0; border-radius: 5px; color: var(--text-tertiary); }
+.document-tree-disclosure:hover { background: var(--surface-active); color: var(--text-primary); }
+.document-tree-disclosure svg { transition: transform 140ms ease; }
+.document-tree-disclosure[aria-expanded="false"] svg { transform: rotate(-90deg); }
 
 .document-drag-handle {
   display: grid;
   flex: none;
-  width: 22px;
-  height: 28px;
+  width: 20px;
+  height: 30px;
   place-items: center;
   padding: 0;
   border: 0;
@@ -968,9 +973,9 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   display: grid;
   flex: none;
   width: 26px;
-  height: 28px;
+  height: 30px;
   min-width: 26px;
-  min-height: 28px;
+  min-height: 30px;
   place-items: center;
   padding: 0;
   border-radius: 6px;
@@ -979,42 +984,63 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 }
 .document-context-actions .icon-button:hover { color: var(--text-primary); background: var(--surface-active); }
 .document-context-actions .danger-hover:hover { color: var(--danger); }
+.document-actions-popover { width: 180px; padding: 5px; }
+.document-actions-popover [role="menuitem"] { min-height: 36px; font-size: 13px; }
+.document-actions-popover [role="menuitem"] svg { width: 15px; height: 15px; flex: none; }
+.document-actions-popover .document-archive-action { color: var(--danger-text); }
+
+@media (hover: hover) and (pointer: fine) {
+  .document-context-actions { opacity: 0; pointer-events: none; transition: opacity 100ms ease; }
+  .document-context-row .document-create-child { display: none; }
+  .document-context-row:hover .document-create-child,
+  .document-context-row:focus-within .document-create-child,
+  .document-context-row .document-context-actions[data-menu-open="true"] .document-create-child { display: grid; }
+  .document-context-row:hover > .document-context-actions,
+  .document-main-row:hover > .document-context-actions,
+  .document-context-row:focus-within > .document-context-actions,
+  .document-main-row:focus-within > .document-context-actions,
+  .document-context-actions[data-menu-open="true"] { opacity: 1; pointer-events: auto; }
+}
 
 .document-context-item[data-dragging="true"],
 .document-main-item[data-dragging="true"] { position: relative; z-index: 2; opacity: .65; }
 .document-context-item[data-drop-target="true"] > .document-context-row,
 .document-main-item[data-drop-target="true"] > .document-main-row { outline: 2px solid var(--accent); outline-offset: -2px; }
 
-.document-main-row { min-height: 48px; padding: 3px 8px; }
+.document-main-row { min-height: 44px; padding: 3px 6px; }
 .document-main-link {
   display: flex;
   flex: 1;
   min-width: 0;
   align-items: center;
   gap: 11px;
-  padding: 7px 3px;
+  padding: 6px 3px;
   color: var(--text-primary);
 }
 .document-main-link > svg { flex: none; color: var(--text-tertiary); }
-.document-main-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 550; }
+.document-main-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 450; }
+.document-main-leader { flex: 1; min-width: 16px; border-bottom: 1px dashed var(--border-subtle); }
 .document-main-link[aria-current="page"] .document-main-title { font-weight: 650; }
-.document-main-link time { flex: none; margin-left: auto; white-space: nowrap; font-size: 12px; color: var(--text-tertiary); }
-.document-main-children { padding-left: 28px; }
+.document-main-link time { flex: none; white-space: nowrap; font-size: 12px; color: var(--text-tertiary); }
+.document-main-item, .document-main-children { min-width: 0; }
+.document-main-children { padding-left: 20px; }
 
 @media (max-width: 600px) {
-  .document-main-row { display: grid; grid-template-columns: 22px minmax(0, 1fr); column-gap: 2px; }
-  .document-main-row .document-drag-handle { grid-column: 1; grid-row: 1; }
-  .document-main-row .document-main-link { grid-column: 2; grid-row: 1; }
-  .document-main-row:not(.has-drag-handle) .document-main-link { grid-column: 1 / -1; }
-  .document-main-row .document-context-actions { grid-column: 1 / -1; justify-self: end; }
-  .document-main-link { display: grid; grid-template-columns: 15px minmax(0, 1fr); column-gap: 8px; row-gap: 1px; }
-  .document-main-title { display: -webkit-box; overflow-wrap: anywhere; white-space: normal; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-  .document-main-link time { grid-column: 2; margin-left: 0; font-size: 11px; }
+  .document-main-row { min-height: 44px; padding: 2px 0; }
+  .document-main-link { gap: 8px; }
+  .document-main-leader, .document-main-link time { display: none; }
+  .document-main-title { flex: 1; }
+  .document-create-child { display: none !important; }
+  .document-context-actions { opacity: 1; pointer-events: auto; }
+  .document-context-actions .icon-button { width: 32px; min-width: 32px; height: 32px; min-height: 32px; }
+  .document-tree-disclosure, .document-disclosure-placeholder { width: 24px; min-width: 24px; }
+  .document-drag-handle { height: 32px; }
 }
 
 /* Notebook page main-column document list (DocumentContextPanel variant="main"). */
 .document-main-list {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
 }
 

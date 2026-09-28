@@ -12,7 +12,7 @@ async function signIn(page: Page, request: APIRequestContext) {
   await expect(page).toHaveURL(/\/documents$/);
 }
 
-test("document actions stay inside each row and sibling drag order survives reload", async ({ page, request, browser }) => {
+test("notebook directories fold, keep compact actions, and preserve sibling drag order", async ({ page, request, browser }) => {
   await signIn(page, request);
   const token = await page.evaluate(() => JSON.parse(localStorage.getItem("orbis.auth")!).accessToken as string);
   const headers = { Authorization: `Bearer ${token}` };
@@ -27,7 +27,8 @@ test("document actions stay inside each row and sibling drag order survives relo
   const first = await createNote("第一篇", 0);
   const second = await createNote("第二篇", 1);
   const third = await createNote("第三篇", 2);
-  const child = await createNote("第一篇的子文档", 0, first);
+  const childTitle = "第一篇的子文档：组件尺寸、禁用状态、键盘操作和移动端展示约定";
+  const child = await createNote(childTitle, 0, first);
   const secondChild = await createNote("第一篇的另一篇子文档", 1, first);
   const treeUrl = `/api/notebooks/${notebookId}/notes/tree`;
   async function readTree() {
@@ -38,24 +39,45 @@ test("document actions stay inside each row and sibling drag order survives relo
 
   await page.goto(`/collections/${notebookId}`);
   const main = page.getByRole("navigation", { name: "文档列表" });
-  await expect(main.getByRole("link", { name: "第一篇的子文档", exact: true })).toBeEnabled();
+  await expect(main.getByRole("link", { name: childTitle, exact: true })).toBeEnabled();
+  await expect(page.getByRole("link", { name: "笔记本首页" })).toHaveAttribute("aria-current", "page");
+  const sidebar = page.getByRole("navigation", { name: "笔记本文档" });
+  await main.getByRole("button", { name: "收起子目录 第一篇", exact: true }).click();
+  await expect(main.getByRole("link", { name: childTitle, exact: true })).toHaveCount(0);
+  await expect(sidebar.getByRole("link", { name: childTitle, exact: true })).toHaveCount(0);
+  await expect(page.getByText("5 篇文档", { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(main.getByRole("button", { name: "展开子目录 第一篇", exact: true })).toHaveAttribute("aria-expanded", "false");
+  await page.goto(`/documents/${child}`);
+  await expect(sidebar.getByRole("link", { name: childTitle, exact: true })).toHaveAttribute("aria-current", "page");
+  await page.getByRole("link", { name: "笔记本首页" }).click();
+  await expect(page).toHaveURL(new RegExp(`/collections/${notebookId}$`));
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 844 });
     if (width === 390) await expect(page.locator(".workspace-main-navigation")).toBeHidden();
     const row = main.locator('.document-main-item[data-parent-id="root"] > .document-main-row').first();
     await expect(row).toBeVisible();
+    if (width === 1440) await row.hover();
     const bounds = await row.evaluate((element) => {
       const line = element.getBoundingClientRect();
       const link = element.querySelector("a")!.getBoundingClientRect();
       const actions = element.querySelector(".document-context-actions")!.getBoundingClientRect();
-      return { overlap: link.left < actions.right && link.right > actions.left && link.top < actions.bottom && link.bottom > actions.top, outside: actions.top < line.top || actions.bottom > line.bottom, overflow: document.documentElement.scrollWidth - window.innerWidth };
+      const content = document.querySelector('.workspace-content')!;
+      return { overlap: link.left < actions.right && link.right > actions.left && link.top < actions.bottom && link.bottom > actions.top, outside: actions.top < line.top || actions.bottom > line.bottom, overflow: document.documentElement.scrollWidth - window.innerWidth, contentOverflow: content.scrollWidth - content.clientWidth };
     });
     expect(bounds.overlap).toBe(false);
     expect(bounds.outside).toBe(false);
-    expect(bounds.overflow).toBeLessThanOrEqual(1);
-    await expect(row.getByRole("button", { name: "新建子文档 第一篇" })).toBeVisible();
-    await expect(row.getByRole("button", { name: "重命名 第一篇" })).toBeVisible();
-    await expect(row.getByRole("button", { name: "归档 第一篇" })).toBeVisible();
+    expect.soft(bounds.overflow).toBeLessThanOrEqual(1);
+    expect.soft(bounds.contentOverflow).toBeLessThanOrEqual(1);
+    expect((await row.boundingBox())!.height).toBeLessThanOrEqual(48);
+    if (width === 1440) await expect(row.getByRole("button", { name: "新建子文档 第一篇" })).toBeVisible();
+    const more = row.getByRole("button", { name: "文档操作 第一篇" });
+    await more.click();
+    await expect(page.getByRole("menuitem", { name: "新建子文档", exact: true })).toBeVisible();
+    await expect(page.getByRole("menuitem", { name: "重命名", exact: true })).toBeVisible();
+    await expect(page.getByRole("menuitem", { name: "归档", exact: true })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(more).toBeFocused();
     await expect(row.getByRole("button", { name: /上移|下移/ })).toHaveCount(0);
   }
 
@@ -112,8 +134,23 @@ test("document actions stay inside each row and sibling drag order survives relo
   const touchPage = await touchContext.newPage();
   await touchPage.goto(`/documents/${first}`);
   await touchPage.getByRole("button", { name: "打开主导航", exact: true }).click();
-  const sidebar = touchPage.getByRole("navigation", { name: "笔记本文档" });
-  const siblingRows = sidebar.locator(`.document-context-item[data-parent-id="${first}"] > .document-context-row`);
+  const touchSidebar = touchPage.getByRole("navigation", { name: "笔记本文档" });
+  await touchSidebar.getByRole("button", { name: `文档操作 ${childTitle}`, exact: true }).click();
+  await touchPage.getByRole("menuitem", { name: "重命名", exact: true }).click();
+  const renameDialog = touchPage.getByRole("dialog", { name: "重命名文档", exact: true });
+  await expect(renameDialog.getByLabel("文档标题")).toBeFocused();
+  expect.soft(await renameDialog.evaluate((element) => {
+    const modal = element.closest('.orbis-modal-backdrop')!;
+    const navigation = document.querySelector('.workspace-main-navigation')!;
+    return Number(getComputedStyle(modal).zIndex) > Number(getComputedStyle(navigation).zIndex);
+  })).toBe(true);
+  expect(await renameDialog.getByLabel("文档标题").evaluate((element) => {
+    const box = element.getBoundingClientRect();
+    return document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2) === element;
+  })).toBe(true);
+  await renameDialog.getByRole("button", { name: "取消", exact: true }).click();
+  await expect(renameDialog).toHaveCount(0);
+  const siblingRows = touchSidebar.locator(`.document-context-item[data-parent-id="${first}"] > .document-context-row`);
   await expect(siblingRows).toHaveCount(2);
   for (const row of await siblingRows.all()) {
     const layout = await row.evaluate((element) => {
@@ -125,8 +162,8 @@ test("document actions stay inside each row and sibling drag order survives relo
     expect(layout.overlap).toBe(false);
     expect(layout.outside).toBe(false);
   }
-  const touchHandle = sidebar.getByRole("button", { name: "拖动排序 第一篇的另一篇子文档", exact: true });
-  const touchTarget = sidebar.getByRole("button", { name: "拖动排序 第一篇的子文档", exact: true });
+  const touchHandle = touchSidebar.getByRole("button", { name: "拖动排序 第一篇的另一篇子文档", exact: true });
+  const touchTarget = touchSidebar.getByRole("button", { name: `拖动排序 ${childTitle}`, exact: true });
   await expect.poll(async () => Math.round((await touchPage.locator(".workspace-main-navigation").boundingBox())!.x)).toBe(6);
   await touchHandle.scrollIntoViewIfNeeded();
   await expect(touchHandle).toHaveAttribute("aria-roledescription", "draggable");
@@ -135,7 +172,7 @@ test("document actions stay inside each row and sibling drag order survives relo
   const touchX = touchStart.x + touchStart.width / 2;
   const touchY = touchStart.y + touchStart.height / 2;
   const targetY = touchEnd.y + 3;
-  expect(await touchPage.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest("button")?.getAttribute("aria-label"), { x: touchX, y: touchY })).toBe("拖动排序 第一篇的另一篇子文档");
+  await expect.poll(() => touchPage.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest("button")?.getAttribute("aria-label"), { x: touchX, y: touchY })).toBe("拖动排序 第一篇的另一篇子文档");
   const touchSession = await touchContext.newCDPSession(touchPage);
   await touchSession.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: touchX, y: touchY }] });
   await touchPage.waitForTimeout(300); // Hold long enough to activate the touch drag without scrolling.

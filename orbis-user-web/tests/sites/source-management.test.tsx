@@ -371,7 +371,8 @@ describe("notebook entry points", () => {
   it("links notebook management to a prefilled site draft", async () => {
     renderRoute(`/documents/collections/${NOTEBOOK_ID}`, <NotebookPage />, "/documents/collections/:collectionId");
 
-    const link = await screen.findByRole("link", { name: "创建文档站点" });
+    await userEvent.click(await screen.findByRole("button", { name: "笔记本操作" }));
+    const link = screen.getByRole("menuitem", { name: "创建文档站点" });
     expect(link).toHaveAttribute("href", `/sites?notebook=${NOTEBOOK_ID}`);
   });
 });

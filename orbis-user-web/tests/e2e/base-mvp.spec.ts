@@ -218,7 +218,8 @@ test("personal writing, team discussion and a versioned documentation site work 
   await expect(page).toHaveURL(/\/collections\//);
   const exchangeNotebook = page.url();
   const chooserPromise = page.waitForEvent("filechooser");
-  await page.getByRole("button", { name: "导入 Markdown", exact: true }).click();
+  await page.getByRole("button", { name: "笔记本操作", exact: true }).click();
+  await page.getByRole("menuitem", { name: "导入 Markdown", exact: true }).click();
   const chooser = await chooserPromise;
   await chooser.setFiles({ name: "交换格式.md", mimeType: "text/markdown", buffer: Buffer.from("# 交换格式\n\nMarkdown 往返保留正文。\n\n- 第一项\n- 第二项\n") });
   await expect(page).toHaveURL(/\/documents\/[0-9a-f-]+$/);
@@ -226,7 +227,8 @@ test("personal writing, team discussion and a versioned documentation site work 
   await expect(page.locator('[contenteditable="true"]').first()).toContainText("Markdown 往返保留正文。");
   await page.goto(exchangeNotebook);
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "导出全部", exact: true }).click();
+  await page.getByRole("button", { name: "笔记本操作", exact: true }).click();
+  await page.getByRole("menuitem", { name: "导出全部", exact: true }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toBe("交换格式.md");
   expect(readFileSync((await download.path())!, "utf8")).toContain("Markdown 往返保留正文。");

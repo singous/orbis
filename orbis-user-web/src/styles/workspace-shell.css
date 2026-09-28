@@ -58,7 +58,9 @@
 .workspace-function-heading { padding: 7px 10px 17px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 8px; }
 .notebook-menu-back { display: flex; align-items: center; gap: 5px; color: var(--text-tertiary); font-size: 12px; margin-bottom: 12px; }
 .notebook-menu-back:hover { color: var(--text-primary); }
-.notebook-menu-title { font-size: 14px; font-weight: 550; }
+.notebook-menu-title { font-size: 14px; font-weight: 550; min-height: 28px; }
+.notebook-menu-title:hover { color: var(--accent-strong); }
+.notebook-home-link { margin-top: 3px; }
 .workspace-function-menu > .document-tree-panel { padding: 0; }
 .workspace-main-area { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; min-height: 0; overflow: hidden; border: 1px solid var(--border-subtle); border-radius: 11px; background: var(--surface-panel); box-shadow: 0 1px 2px #18182305; }
 .workspace-main-area.has-context { grid-template-columns: minmax(0, 1fr) 270px; }
