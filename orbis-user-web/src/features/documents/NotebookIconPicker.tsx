@@ -36,6 +36,7 @@ function handleRadioGroupKeyDown(event: KeyboardEvent<HTMLDivElement>) {
 export function NotebookIconPicker({ value, onChange, uploadFile, onPendingChange, disabled = false }: NotebookIconPickerProps) {
   const uploadId = useId();
   const uploadVersion = useRef(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState(false);
   const [preview, setPreview] = useState<UploadedNotebookIcon | null>(null);
   const selected = value?.type === "preset" ? value : DEFAULT_NOTEBOOK_ICON;
@@ -102,11 +103,11 @@ export function NotebookIconPicker({ value, onChange, uploadFile, onPendingChang
       </Radio>)}
     </RadioGroup>
     <div className="notebook-icon-upload">
-      <label htmlFor={uploadId} className={blocked ? "notebook-icon-upload-label is-disabled" : "notebook-icon-upload-label"}>
+      <Button variant="secondary" disabled={blocked} onPress={() => fileInputRef.current?.click()}>
         {pending ? <LoaderCircle size={15} className="animate-spin" aria-hidden="true" /> : <ImagePlus size={15} aria-hidden="true" />}
         <span>{pending ? "正在上传图片…" : "上传自定义图标"}</span>
-        <input id={uploadId} type="file" accept={NOTEBOOK_ICON_MIME_TYPES.join(",")} disabled={blocked} className="sr-only" aria-label="上传自定义图标" onChange={(event) => { void handleFile(event.target.files?.[0]); event.target.value = ""; }} />
-      </label>
+      </Button>
+      <input hidden ref={fileInputRef} id={uploadId} type="file" accept={NOTEBOOK_ICON_MIME_TYPES.join(",")} disabled={blocked} aria-label="上传自定义图标" onChange={(event) => { void handleFile(event.target.files?.[0]); event.target.value = ""; }} />
       <span className="notebook-icon-upload-hint">PNG、JPEG、WebP · 最大 2 MB</span>
     </div>
   </div>;

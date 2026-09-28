@@ -1,3 +1,4 @@
+import { Avatar } from "@heroui/react/avatar";
 import { Tag } from "../../shared/ui/Tag";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -113,7 +114,7 @@ export function MemberSettingsPage() {
               const actorCanChange = canManage && (workspace?.role === "owner" || member.role !== "admin");
               return (
                 <div key={member.id} className="workbench-member-row">
-                  <div className="grid h-9 w-9 place-items-center rounded-full bg-[var(--surface-inverse)] text-xs font-semibold text-[var(--text-oninverse)]">{(member.display_name || member.email).slice(0, 1).toUpperCase()}</div>
+                  <Avatar size="sm" className="h-9 w-9"><Avatar.Fallback>{(member.display_name || member.email).slice(0, 1).toUpperCase()}</Avatar.Fallback></Avatar>
                   <div className="min-w-[180px] flex-1"><div className="text-sm font-semibold">{member.display_name || member.email}</div><div className="mt-1 text-xs text-[var(--muted)]">{member.email}</div></div>
                   <div className="flex items-center gap-2">
                     {member.role === "owner" ? <Tag><Crown aria-hidden="true" className="mr-1" size={11} />所有者</Tag> : actorCanChange ? (

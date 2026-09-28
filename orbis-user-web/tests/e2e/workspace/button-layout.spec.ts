@@ -3,10 +3,9 @@ import { expect, test, type Locator } from "@playwright/test";
 const owner = { email: "owner@example.com", password: "Orbis-browser-test-2026!" };
 const notebookTitle = "图标与排版验证";
 
-async function actionMetrics(action: Locator, containingLabel = false) {
+async function actionMetrics(action: Locator) {
   await expect(action).toBeVisible();
-  return action.evaluate((node, useLabel) => {
-    const element = useLabel ? node.closest("label")! : node;
+  return action.evaluate((element) => {
     const style = getComputedStyle(element);
     const bounds = element.getBoundingClientRect();
     const icon = element.querySelector("svg")?.getBoundingClientRect();
@@ -20,7 +19,7 @@ async function actionMetrics(action: Locator, containingLabel = false) {
       iconWidth: icon?.width,
       iconHeight: icon?.height,
     };
-  }, containingLabel);
+  });
 }
 
 test("workspace actions share sizing and notebook headings retain breathing room", async ({ page, request }, testInfo) => {
@@ -100,7 +99,7 @@ test("workspace actions share sizing and notebook headings retain breathing room
   await page.getByRole("button", { name: "笔记本操作", exact: true }).click();
   await page.getByRole("menuitem", { name: "编辑笔记本", exact: true }).click();
   const notebookDialog = page.getByRole("dialog", { name: "编辑笔记本", exact: true });
-  const uploadAction = await actionMetrics(notebookDialog.getByLabel("上传自定义图标", { exact: true }), true);
+  const uploadAction = await actionMetrics(notebookDialog.getByRole("button", { name: "上传自定义图标", exact: true }));
   const saveAction = await actionMetrics(notebookDialog.getByRole("button", { name: "保存", exact: true }));
   measurements.notebookDialog = { upload: uploadAction, save: saveAction };
   for (const [name, metrics] of [["upload", uploadAction], ["save", saveAction]] as const) {
