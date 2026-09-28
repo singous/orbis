@@ -10,7 +10,7 @@ async function signIn(page: Page, request: APIRequestContext) {
   await page.getByLabel("密码", { exact: true }).fill(owner.password);
   await page.getByRole("button", { name: "登录 Orbis", exact: true }).click();
   await expect(page).toHaveURL(/\/documents$/);
-  await page.goto("/home");
+  await page.goto("/documents");
 }
 
 const width = (page: Page) => page.locator(".workspace-main-navigation").evaluate((element) => element.getBoundingClientRect().width);

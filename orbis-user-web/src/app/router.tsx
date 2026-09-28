@@ -2,6 +2,7 @@ import { Navigate, createBrowserRouter } from "react-router-dom";
 import { lazy, Suspense } from "react";
 
 import { AccountSettingsPage } from "../features/account/AccountSettingsPage";
+import { HomePage } from "../features/home/HomePage";
 import { DEFAULT_WORKSPACE_PATH } from "../features/workspace/workspace-areas";
 import { ArchivePage } from "../features/documents/ArchivePage";
 import { CollectionsPage } from "../features/documents/CollectionsPage";
@@ -46,8 +47,7 @@ export const router = createBrowserRouter([
   { path: "/ownership-transfers/confirm", element: <ConfirmOwnershipPage /> },
   {
     path: "/home",
-    // Keep existing bookmarks working while the standalone home is temporarily hidden.
-    element: <Navigate to={DEFAULT_WORKSPACE_PATH} replace />,
+    element: <RequireAuth><HomePage /></RequireAuth>,
   },
   {
     path: "/documents",

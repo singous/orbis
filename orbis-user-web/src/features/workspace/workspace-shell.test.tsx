@@ -84,12 +84,25 @@ describe("WorkspaceShell", () => {
     Object.defineProperty(window, "matchMedia", { configurable: true, value: originalMatchMedia });
   });
 
-  it.each([["/home", "文档导航"], ["/documents", "文档导航"], ["/sites", "站点导航"]])("provides secondary navigation by default on %s", (path, navigationName) => {
+  it.each([["/documents", "文档导航"], ["/sites", "站点导航"]])("provides secondary navigation by default on %s", (path, navigationName) => {
     renderShell(path);
 
     expect(screen.getByRole("navigation", { name: "业务板块" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: navigationName })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "收起侧栏" })).toBeInTheDocument();
+  });
+
+  it("keeps the home rail without a function sidebar or width control", async () => {
+    const actor = userEvent.setup();
+    renderShell("/home");
+    expect(screen.getByRole("navigation", { name: "业务板块" })).toBeVisible();
+    expect(screen.queryByRole("region", { name: "侧栏" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "展开侧栏" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("separator", { name: "调整侧栏宽度" })).not.toBeInTheDocument();
+    expect(screen.getByRole("searchbox", { name: "全局搜索" })).toBeVisible();
+    await actor.click(screen.getByRole("link", { name: "在线文档" }));
+    expect(screen.getByRole("navigation", { name: "文档导航" })).toBeVisible();
+    expect(localStorage.getItem("orbis.sidebarCollapsed")).toBeNull();
   });
 
   it.each([
@@ -235,7 +248,7 @@ describe("WorkspaceShell", () => {
   it("closes the mobile navigation through Escape, backdrop and navigation links", async () => {
     setViewport(390);
     const actor = userEvent.setup();
-    renderShell("/home", undefined, <nav aria-label="测试功能"><Link to="/documents/recent">最近编辑</Link></nav>);
+    renderShell("/documents", undefined, <nav aria-label="测试功能"><Link to="/documents/recent">最近编辑</Link></nav>);
     const trigger = screen.getByRole("button", { name: "打开主导航" });
 
     await actor.click(trigger);

@@ -44,6 +44,7 @@ function useCompactNavigation(): boolean {
 export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, contextPanel, contextOpen = true, onOpenContext }: WorkspaceShellProps) {
   const { pathname } = useLocation();
   const area = resolveWorkspaceArea(pathname);
+  const showFunctionSidebar = area.showFunctionSidebar;
   const workspace = useStore(authStore, (state) => state.workspace);
   const accessToken = useStore(authStore, (state) => state.accessToken);
   const [mainNavigationOpen, setMainNavigationOpen] = useState(false);
@@ -60,8 +61,8 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
   const compact = useCompactNavigation();
   const documentContextExpanded = documentContextOpen && contextOpen;
   const drawerOpen = compact && (mainNavigationOpen || documentContextExpanded);
-  const sidebarHidden = !compact && collapsed;
-  const sidebarResizeEnabled = !compact && !collapsed;
+  const sidebarHidden = !showFunctionSidebar || (!compact && collapsed);
+  const sidebarResizeEnabled = showFunctionSidebar && !compact && !collapsed;
   const sidebarResize = useSidebarResize(gridRef, sidebarResizeEnabled, Boolean(contextPanel && contextOpen));
   const showToolbar = compact || Boolean(sectionTitle) || Boolean(toolbar) || Boolean(contextPanel && onOpenContext);
 
@@ -111,13 +112,13 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
   }
 
   return (
-    <main style={sidebarResize.style} className={`workspace-shell has-section-menu${sidebarHidden ? " sidebar-collapsed" : ""}${mainNavigationOpen ? " main-navigation-open" : ""}${documentContextExpanded ? " document-context-drawer-open" : ""}`}>
+    <main style={sidebarResize.style} className={`workspace-shell${showFunctionSidebar ? " has-section-menu" : " sidebar-unavailable"}${sidebarHidden ? " sidebar-collapsed" : ""}${mainNavigationOpen ? " main-navigation-open" : ""}${documentContextExpanded ? " document-context-drawer-open" : ""}`}>
       <WorkspaceTopbar disabled={drawerOpen} />
       <div ref={gridRef} className="workspace-shell-grid">
         {drawerOpen ? <ActionButton type="button" className="workspace-drawer-backdrop" aria-label={mainNavigationOpen ? "关闭主导航" : "关闭文档目录"} onClick={() => { setMainNavigationOpen(false); setDocumentContextOpen(false); }} /> : null}
         <div ref={navigationRef} className="workspace-main-navigation" aria-hidden={compact && !mainNavigationOpen ? true : undefined} inert={compact && !mainNavigationOpen ? true : undefined} onClick={closeAfterLink}>
-          <BusinessRail collapsed={sidebarHidden} onExpand={() => changeCollapsed(false)} />
-          <section id="workspace-sidebar" className="workspace-sidebar" hidden={sidebarHidden} aria-label="侧栏">
+          <BusinessRail collapsed={showFunctionSidebar && sidebarHidden} onExpand={() => changeCollapsed(false)} onClose={compact && !showFunctionSidebar ? () => setMainNavigationOpen(false) : undefined} />
+          {showFunctionSidebar ? <section id="workspace-sidebar" className="workspace-sidebar" hidden={sidebarHidden} aria-label="侧栏">
             <header className="workspace-sidebar-header">
               <h2>{area.title}</h2>
               <ActionButton type="button" className="sidebar-collapse" aria-label="收起侧栏" aria-expanded="true" aria-controls="workspace-sidebar" onClick={() => changeCollapsed(true)}><ChevronsLeft size={18} /></ActionButton>
@@ -125,7 +126,7 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
               <ActionButton type="button" className="sidebar-mobile-close" aria-label="关闭侧栏" onClick={() => setMainNavigationOpen(false)}><X size={18} /></ActionButton>
             </header>
             {sectionMenu ?? (accessToken ? <WorkspaceNavigation /> : null)}
-          </section>
+          </section> : null}
         </div>
         {sidebarResizeEnabled ? <SidebarResizeHandle {...sidebarResize} /> : null}
         <section className={`workspace-main-area${contextPanel && contextOpen ? " has-context" : ""}`} aria-label="主工作区">

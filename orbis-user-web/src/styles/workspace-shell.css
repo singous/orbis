@@ -188,3 +188,8 @@
 html.workspace-resizing, html.workspace-resizing * { cursor: col-resize !important; user-select: none !important; }
 @media (max-width: 767px) { .workspace-sidebar-resizer { display: none; } }
 @media (prefers-reduced-motion: reduce) { .workspace-resize-line { transition: none; } }
+
+@media (max-width: 767px) {
+  .workspace-shell.sidebar-unavailable .workspace-main-navigation { width: var(--rail-width); }
+  .rail-mobile-close { margin: -7px 0 10px; }
+}
