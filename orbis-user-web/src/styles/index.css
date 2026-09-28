@@ -412,7 +412,7 @@ body {
   border-radius: var(--radius-card);
   background: var(--surface-content);
   padding: 18px;
-  transition: 180ms ease;
+  transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
 }
 
 .collection-card {
@@ -422,7 +422,9 @@ body {
 
 .document-card:hover,
 .collection-card:hover {
-  border-color: var(--border-strong);
+  border-color: transparent;
+  background: color-mix(in oklab, var(--surface-hover) 70%, var(--surface-content));
+  box-shadow: none;
 }
 
 .document-icon {
