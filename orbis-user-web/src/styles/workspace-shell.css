@@ -3,11 +3,13 @@
   --workspace-canvas-start: #f0f4fa;
   --workspace-canvas-end: #f5f2f8;
   --workspace-panel-background: #fcfcfd;
+  --workspace-shadow-color: var(--foreground);
 }
 .dark, [data-theme="dark"] {
   --workspace-canvas-start: var(--background);
   --workspace-canvas-end: color-mix(in oklab, var(--background) 80%, var(--surface));
   --workspace-panel-background: var(--surface);
+  --workspace-shadow-color: var(--background);
 }
 
 /* Desktop workspace: persistent icon rail, collapsible navigation, separate canvas. */
@@ -17,6 +19,12 @@
   --sidebar-width: var(--sidebar-default-width);
   --topbar-height: 46px;
   --shell-gutter: 10px;
+  --workspace-outline: color-mix(in oklab, var(--foreground) 6%, var(--workspace-panel-background));
+  --workspace-divider: color-mix(in oklab, var(--foreground) 3%, var(--workspace-panel-background));
+  --workspace-hover-outline: color-mix(in oklab, var(--foreground) 10%, var(--workspace-panel-background));
+  --workspace-panel-shadow: 0 1px 3px color-mix(in srgb, var(--workspace-shadow-color) 3%, transparent);
+  --border-subtle: var(--workspace-outline);
+  --border-strong: var(--workspace-hover-outline);
   height: 100dvh;
   min-width: 0;
   overflow: hidden;
@@ -34,8 +42,8 @@
 .workspace-global-search kbd { flex: none; font: 10px var(--font-sans); color: var(--text-tertiary); }
 .workspace-shell-grid { position: relative; background: linear-gradient(135deg, var(--workspace-canvas-start), var(--workspace-canvas-end)); background-attachment: fixed; display: grid; grid-template-columns: calc(var(--rail-width) + var(--sidebar-width)) minmax(0, 1fr); gap: var(--shell-gutter); height: calc(100dvh - var(--topbar-height)); min-height: 0; padding: 0 var(--shell-gutter) var(--shell-gutter); }
 .workspace-shell.sidebar-collapsed .workspace-shell-grid { grid-template-columns: var(--rail-width) minmax(0, 1fr); }
-.workspace-main-navigation { display: flex; min-height: 0; min-width: 0; border: 1px solid var(--border-subtle); border-radius: 11px; background: var(--workspace-panel-background); box-shadow: 0 1px 2px #18182305; }
-.workspace-business-rail { width: var(--rail-width); flex: none; min-height: 0; display: flex; flex-direction: column; align-items: center; padding: 16px 7px 10px; border-right: 1px solid var(--border-subtle); }
+.workspace-main-navigation { display: flex; min-height: 0; min-width: 0; border: 1px solid var(--border-subtle); border-radius: 11px; background: var(--workspace-panel-background); box-shadow: var(--workspace-panel-shadow); }
+.workspace-business-rail { width: var(--rail-width); flex: none; min-height: 0; display: flex; flex-direction: column; align-items: center; padding: 16px 7px 10px; border-right: 1px solid var(--workspace-divider); }
 .sidebar-collapsed .workspace-business-rail { border: 0; }
 .rail-brand { width: 38px; height: 38px; display: grid; place-items: center; color: var(--brand-mark); margin-bottom: 36px; }
 .workspace-business-nav { display: flex; flex-direction: column; align-items: center; gap: 15px; }
@@ -66,23 +74,25 @@
 .workspace-nav-muted { color: var(--text-tertiary); }
 .workspace-nav-soon { font-size: 10px; margin-left: auto; white-space: nowrap; color: var(--text-tertiary); }
 .workspace-nav-footer { margin-top: auto; padding-top: 25px; }
-.workspace-edition { display: block; padding: 15px 10px 4px; margin-top: 9px; border-top: 1px solid var(--border-subtle); font-size: 10px; color: var(--text-tertiary); letter-spacing: .015em; }
-.workspace-function-heading { padding: 7px 10px 17px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 8px; }
+.workspace-edition { display: block; padding: 15px 10px 4px; margin-top: 9px; border-top: 1px solid var(--workspace-divider); font-size: 10px; color: var(--text-tertiary); letter-spacing: .015em; }
+.workspace-function-heading { padding: 7px 10px 17px; border-bottom: 1px solid var(--workspace-divider); margin-bottom: 8px; }
 .notebook-menu-back { display: flex; align-items: center; gap: 5px; color: var(--text-tertiary); font-size: 12px; margin-bottom: 12px; }
 .notebook-menu-back:hover { color: var(--text-primary); }
 .notebook-menu-title { font-size: 14px; font-weight: 550; min-height: 28px; }
 .notebook-menu-title:hover { color: var(--accent-strong); }
 .notebook-home-link { margin-top: 3px; }
 .workspace-function-menu > .document-tree-panel { padding: 0; }
-.workspace-main-area { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; min-height: 0; overflow: hidden; border: 1px solid var(--border-subtle); border-radius: 11px; background: var(--workspace-panel-background); box-shadow: 0 1px 2px #18182305; }
+.workspace-main-area { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; min-height: 0; overflow: hidden; border: 1px solid var(--border-subtle); border-radius: 11px; background: var(--workspace-panel-background); box-shadow: var(--workspace-panel-shadow); }
 .workspace-main-area.has-context { grid-template-columns: minmax(0, 1fr) 270px; }
 .workspace-content { background: var(--workspace-panel-background); min-width: 0; min-height: 0; overflow: auto; overscroll-behavior: contain; }
 .workspace-content > .page-container { background: inherit; }
-.workspace-toolbar { display: flex; align-items: center; gap: 12px; min-height: 55px; padding: 10px 25px; border-bottom: 1px solid var(--border-subtle); position: sticky; top: 0; z-index: 10; background: var(--surface-panel); }
+.workspace-content .page-header { border-bottom-color: transparent; }
+.workspace-content, .workspace-function-menu, .workspace-context-panel { scrollbar-width: thin; scrollbar-color: var(--scrollbar) transparent; }
+.workspace-toolbar { display: flex; align-items: center; gap: 12px; min-height: 55px; padding: 10px 25px; border-bottom: 1px solid var(--workspace-divider); position: sticky; top: 0; z-index: 10; background: var(--surface-panel); }
 .workspace-toolbar-title { font-size: 12px; color: var(--text-tertiary); flex: 1; }
 .workspace-toolbar-spacer { flex: 1; }
 .workspace-toolbar-actions { display: flex; min-width: 0; gap: 8px; align-items: center; flex-wrap: wrap; }
-.workspace-context-panel { min-width: 0; min-height: 0; overflow: auto; border-left: 1px solid var(--border-subtle); background: var(--surface-panel); }
+.workspace-context-panel { min-width: 0; min-height: 0; overflow: auto; border-left: 1px solid var(--workspace-divider); background: var(--surface-panel); }
 .workspace-context-panel[hidden] { display: none; }
 .workspace-mobile-drawer-control, .workspace-drawer-backdrop { display: none; }
 /* Menus share the same opaque, softly elevated surface. */
