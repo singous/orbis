@@ -1,6 +1,9 @@
 import { expect, test } from "@playwright/test";
 
 test("site form uses one focus treatment and HeroUI selection overlays", async ({ page, request }, testInfo) => {
+  // Exercise overlay focus restoration while rendering is slower than input.
+  const cpu = await page.context().newCDPSession(page);
+  await cpu.send("Emulation.setCPUThrottlingRate", { rate: 6 });
   await page.emulateMedia({ reducedMotion: "reduce" });
   const owner = { email: "owner@example.com", password: "Orbis-browser-test-2026!" };
   const setup = await request.post("/api/setup", { data: { ...owner, display_name: "表单验收" } });
@@ -16,7 +19,6 @@ test("site form uses one focus treatment and HeroUI selection overlays", async (
     await page.getByRole("button", { name: "创建站点", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "创建文档站点", exact: true });
     const name = dialog.getByLabel("站点名称", { exact: true });
-    await name.focus();
     await expect(name).toBeFocused();
     expect(await name.evaluate((element) => getComputedStyle(element).outlineStyle)).toBe("none");
     expect(await name.evaluate((element) => getComputedStyle(element).boxShadow)).not.toBe("none");
@@ -36,7 +38,7 @@ test("site form uses one focus treatment and HeroUI selection overlays", async (
     expect(bounds.x + bounds.width).toBeLessThanOrEqual(width);
     await option.click();
     await expect(kind).toContainText("产品手册");
-    await expect(kind).toBeFocused();
+    await expect.poll(() => kind.evaluate((element) => element === document.activeElement ? "trigger" : document.activeElement?.getAttribute("data-slot"))).toBe("trigger");
     await dialog.getByRole("button", { name: "选择主题色" }).click();
     const color = page.getByRole("textbox", { name: "十六进制颜色" });
     await color.fill("#123456");

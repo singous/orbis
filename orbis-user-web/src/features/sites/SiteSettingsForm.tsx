@@ -21,8 +21,8 @@ function LinkList({ label, value, onChange }: { label: string; value: SiteBrandi
   </div>;
 }
 
-export function SiteSettingsForm({ value, onChange, disabled = false }: {
-  value: SiteConfig; onChange: (value: SiteConfig) => void; disabled?: boolean;
+export function SiteSettingsForm({ value, onChange, disabled = false, autoFocusName = false }: {
+  value: SiteConfig; onChange: (value: SiteConfig) => void; disabled?: boolean; autoFocusName?: boolean;
 }) {
   const branding = value.branding ?? DEFAULT_BRANDING;
   const updateBranding = (patch: Partial<SiteBranding>) => onChange({ ...value, branding: { ...branding, ...patch } });
@@ -31,7 +31,7 @@ export function SiteSettingsForm({ value, onChange, disabled = false }: {
     updateBranding({ cta: next.label || next.url ? next : null });
   };
   return <fieldset className="site-settings-fields" disabled={disabled}>
-    <label className="mvp-field">站点名称<HeroInput required maxLength={160} value={value.name} onChange={(event) => onChange({ ...value, name: event.target.value })} placeholder="例如：Orbis 使用手册" /></label>
+    <label className="mvp-field">站点名称<HeroInput autoFocus={autoFocusName} required maxLength={160} value={value.name} onChange={(event) => onChange({ ...value, name: event.target.value })} placeholder="例如：Orbis 使用手册" /></label>
     <label className="mvp-field">站点路径<InputGroup fullWidth className="site-slug-field"><InputGroup.Prefix>/s/</InputGroup.Prefix><InputGroup.Input required pattern="[a-z0-9]+(-[a-z0-9]+)*" maxLength={80} value={value.slug} onChange={(event) => onChange({ ...value, slug: event.target.value })} placeholder="team-handbook" /></InputGroup><small>小写英文、数字和连字符。发布后可通过此路径访问。</small></label>
     <label className="mvp-field site-description-field">站点简介<HeroTextArea rows={3} maxLength={2000} value={value.description} onChange={(event) => onChange({ ...value, description: event.target.value })} placeholder="告诉读者，他们可以在这里找到什么。" /></label>
     <SelectField label="站点场景" value={value.site_kind} disabled={disabled} onChange={(site_kind) => onChange({ ...value, site_kind: site_kind as SiteKind })} options={Object.entries(SITE_KINDS).map(([kind, item]) => ({ value: kind, label: item.label }))} description={SITE_KINDS[value.site_kind].description} />

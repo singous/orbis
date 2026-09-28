@@ -11,12 +11,20 @@ test("the supplied theme reaches rendered fields in both color schemes", async (
     const rendered = await email.evaluate(async (element) => {
       await document.fonts.ready;
       const field = getComputedStyle(element);
+      // Compare resolved colors; production CSS may serialize tokens differently.
+      const probe = document.createElement("span");
+      probe.style.color = field.getPropertyValue("--focus");
+      probe.style.borderColor = field.getPropertyValue("--field-border");
+      element.parentElement!.appendChild(probe);
+      const focus = getComputedStyle(probe).color;
+      const fieldBorder = getComputedStyle(probe).borderColor;
+      probe.remove();
       return {
         background: getComputedStyle(document.body).backgroundColor,
         fieldBackground: field.backgroundColor,
         radius: field.borderRadius,
-        focus: field.getPropertyValue("--focus").trim(),
-        fieldBorder: field.getPropertyValue("--field-border").trim(),
+        focus,
+        fieldBorder,
         outline: field.outlineStyle,
         font: field.fontFamily,
         loadedInter: Array.from(document.fonts).some((font) => font.family.includes("Inter Variable") && font.status === "loaded"),
@@ -26,7 +34,7 @@ test("the supplied theme reaches rendered fields in both color schemes", async (
     expect(rendered.fieldBackground).toBe(mode === "light" ? "oklch(1 0 0)" : "oklch(0.2103 0 0)");
     expect(rendered.radius).toBe("8px");
     expect(rendered.focus).toBe(mode === "light" ? "oklch(0 0 0)" : "oklch(0.9848 0 0)");
-    expect(rendered.fieldBorder).toBe("transparent");
+    expect(rendered.fieldBorder).toBe("rgba(0, 0, 0, 0)");
     expect(rendered.outline).toBe("none");
     expect(rendered.font).toContain("Inter Variable");
     expect(rendered.loadedInter).toBe(true);

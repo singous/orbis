@@ -63,8 +63,8 @@ test("a notebook publishes its complete tree and editable documentation componen
   await page.reload();
   await expect(page.getByRole("textbox", { name: "卡片标题", exact: true }).first()).toHaveValue("阅读入门指南");
   await expect(page.getByRole("textbox", { name: "卡片标题", exact: true }).nth(1)).toHaveValue("了解发布流程");
-  await page.locator('[contenteditable="true"]').first().click();
-  await page.keyboard.press("ControlOrMeta+End");
+  await page.locator('[data-id="component-22"] .bn-inline-content').click();
+  await page.keyboard.press("End");
   await page.keyboard.press("Enter");
   await page.keyboard.type("/callout");
   await page.getByRole("option", { name: "提示块", exact: true }).click();
