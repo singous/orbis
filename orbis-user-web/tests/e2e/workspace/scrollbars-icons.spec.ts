@@ -19,6 +19,16 @@ async function signIn(page: Page, request: APIRequestContext) {
 test("the global scrollbar skin preserves wheel and keyboard scrolling", async ({ page, request }, testInfo) => {
   await page.setViewportSize({ width: 1000, height: 600 });
   await signIn(page, request);
+  const token = await page.evaluate(() => JSON.parse(localStorage.getItem("orbis.auth")!).accessToken as string);
+  const headers = { Authorization: `Bearer ${token}` };
+  const notebook = await request.post("/api/notebooks", { headers, data: { title: "滚动验收笔记本" } });
+  expect(notebook.status()).toBe(201);
+  const notebookId = (await notebook.json()).data.id;
+  for (let index = 0; index < 5; index++) {
+    const created = await request.post("/api/notes", { headers, data: { notebook_id: notebookId, title: `滚动验收文档 ${index + 1}` } });
+    expect(created.status()).toBe(201);
+  }
+  await page.reload();
   const scroller = page.locator(".workspace-content");
   await expect.poll(() => scroller.evaluate((element) => element.scrollHeight - element.clientHeight)).toBeGreaterThan(100);
   const skin = await scroller.evaluate((element) => ({
@@ -51,10 +61,12 @@ test("the global scrollbar skin preserves wheel and keyboard scrolling", async (
   await page.screenshot({ path: testInfo.outputPath("themed-scrollbar.png") });
 });
 
-test("destination accents stay colorful while navigation and controls stay neutral", async ({ page, request }, testInfo) => {
+test("the temporary document home keeps navigation neutral and selected icons filled", async ({ page, request }, testInfo) => {
   await signIn(page, request);
-  const moduleIcons = page.locator(".workbench-resource-icon .orbis-icon");
-  await expect(moduleIcons).toHaveCount(6);
+  await expect(page).toHaveURL(/\/documents$/);
+  await expect(page.getByRole("heading", { name: "文档概览", exact: true })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "首页导航", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "业务板块" }).getByRole("link", { name: "首页", exact: true })).toHaveCount(0);
   for (const theme of ["light", "dark"] as const) {
     await page.evaluate((mode) => { document.documentElement.dataset.theme = mode; }, theme);
     const selectedGlyphs = page.locator(".rail-action.is-active > svg > .orbis-icon-solid, .workspace-function-link.is-active > svg > .orbis-icon-solid");
@@ -62,25 +74,17 @@ test("destination accents stay colorful while navigation and controls stay neutr
     expect(await selectedGlyphs.evaluateAll(glyphs => glyphs.every(glyph => getComputedStyle(glyph).display !== "none" && getComputedStyle(glyph).fillRule === "evenodd"))).toBe(true);
     const inactiveGlyphs = page.locator(".rail-action:not(.is-active) > svg > .orbis-icon-solid");
     expect(await inactiveGlyphs.evaluateAll(glyphs => glyphs.every(glyph => getComputedStyle(glyph).display === "none"))).toBe(true);
-    const palette = await moduleIcons.evaluateAll((icons) => icons.map((icon) => ({
-      color: getComputedStyle(icon).color,
-      stroke: getComputedStyle(icon).strokeWidth,
-      background: getComputedStyle(icon.parentElement!).backgroundColor,
-      image: getComputedStyle(icon.parentElement!).backgroundImage,
-    })));
-    expect(new Set(palette.map((icon) => icon.color)).size).toBeGreaterThanOrEqual(5);
-    expect(palette.every((icon) => icon.stroke === "1.8px")).toBe(true);
-    expect(new Set(palette.map((icon) => icon.background)).size).toBeGreaterThanOrEqual(5);
-    expect(palette.every((icon) => icon.image === "none")).toBe(true);
     const navigation = await page.locator(".rail-action .orbis-icon, .workspace-function-link .orbis-icon, .workspace-header .orbis-icon").evaluateAll((icons) => icons.map((icon) => ({
       color: getComputedStyle(icon).color,
+      stroke: getComputedStyle(icon).strokeWidth,
       inherited: getComputedStyle(icon.parentElement!).color,
       background: getComputedStyle(icon.parentElement!).backgroundImage,
     })));
     expect(navigation.length).toBeGreaterThan(5);
+    expect(navigation.every(icon => icon.stroke === "1.8px")).toBe(true);
     await expect.poll(() => page.locator(".rail-action .orbis-icon, .workspace-function-link .orbis-icon, .workspace-header .orbis-icon").evaluateAll((icons) => icons.filter((icon) => getComputedStyle(icon).color !== getComputedStyle(icon.parentElement!).color).length)).toBe(0);
     expect(navigation.every((icon) => icon.background === "none")).toBe(true);
-    await page.screenshot({ path: testInfo.outputPath(`module-icons-${theme}.png`) });
+    await page.screenshot({ path: testInfo.outputPath(`document-home-icons-${theme}.png`) });
   }
   expect(await page.locator('.rail-action.is-active > svg').evaluate(element => getComputedStyle(element).animationName)).toBe("none");
   await page.emulateMedia({ reducedMotion: "no-preference" });

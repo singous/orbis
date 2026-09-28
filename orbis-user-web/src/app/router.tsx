@@ -2,7 +2,7 @@ import { Navigate, createBrowserRouter } from "react-router-dom";
 import { lazy, Suspense } from "react";
 
 import { AccountSettingsPage } from "../features/account/AccountSettingsPage";
-import { HomePage } from "../features/home/HomePage";
+import { DEFAULT_WORKSPACE_PATH } from "../features/workspace/workspace-areas";
 import { ArchivePage } from "../features/documents/ArchivePage";
 import { CollectionsPage } from "../features/documents/CollectionsPage";
 import { DocumentEditorPage } from "../features/documents/DocumentEditorPage";
@@ -30,7 +30,7 @@ export const router = createBrowserRouter([
   { path: "/sites/:siteId/preview/*", element: <RequireAuth><Suspense fallback={siteFallback}><SitePreviewPage /></Suspense></RequireAuth> },
   {
     path: "/",
-    element: <Navigate to="/home" replace />,
+    element: <Navigate to={DEFAULT_WORKSPACE_PATH} replace />,
   },
   {
     path: "/login",
@@ -46,11 +46,8 @@ export const router = createBrowserRouter([
   { path: "/ownership-transfers/confirm", element: <ConfirmOwnershipPage /> },
   {
     path: "/home",
-    element: (
-      <RequireAuth>
-        <HomePage />
-      </RequireAuth>
-    ),
+    // Keep existing bookmarks working while the standalone home is temporarily hidden.
+    element: <Navigate to={DEFAULT_WORKSPACE_PATH} replace />,
   },
   {
     path: "/documents",
@@ -140,5 +137,5 @@ export const router = createBrowserRouter([
       </RequireAuth>
     ),
   },
-  { path: "*", element: <Navigate to="/home" replace /> },
+  { path: "*", element: <Navigate to={DEFAULT_WORKSPACE_PATH} replace /> },
 ]);

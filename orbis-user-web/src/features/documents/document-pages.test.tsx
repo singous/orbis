@@ -1,3 +1,4 @@
+import { transferableAbortController } from "node:util";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, RouterProvider, Routes, useLocation } from "react-router-dom";
@@ -378,6 +379,8 @@ describe("document function pages", () => {
   });
 
   beforeEach(() => {
+    // React Router uses Node's Request in jsdom; its signal must use the same realm.
+    vi.stubGlobal("AbortController", transferableAbortController().constructor);
     mocks.toast.mockReset();
     mocks.archiveGroup.mockReset();
     mocks.archiveNotebook.mockReset();
@@ -403,6 +406,7 @@ describe("document function pages", () => {
   });
 
   afterEach(() => {
+    vi.unstubAllGlobals();
     window.localStorage.clear();
   });
 
@@ -475,17 +479,28 @@ describe("document function pages", () => {
     expect(screen.getByRole("status", { name: "current search" })).toHaveTextContent("");
   });
 
-  it("shows recent home documents in the API order", async () => {
+  it("uses the document overview as the temporary home with newest documents first", async () => {
     await renderRoute("/home");
 
-    const recent = await screen.findByRole("region", { name: "最近编辑" });
+    const recent = await screen.findByRole("region", { name: "最近更新" });
     expect(recent).toHaveTextContent("更新较早的文档");
     expect(recent).toHaveTextContent("最新文档");
-    expect(recent.textContent?.indexOf("更新较早的文档")).toBeLessThan(
-      recent.textContent?.indexOf("最新文档") ?? -1,
+    expect(recent.textContent?.indexOf("最新文档")).toBeLessThan(
+      recent.textContent?.indexOf("更新较早的文档") ?? -1,
     );
     expect(screen.queryByRole("navigation", { name: "在线文档功能" })).not.toBeInTheDocument();
     expect(document.querySelector(".workspace-shell")).toHaveClass("has-section-menu");
+  });
+
+  it.each(["/", "/home"])("opens the temporary document home from %s and hides the standalone entry", async (path) => {
+    await renderRoute(path);
+    expect(await screen.findByRole("heading", { name: "文档概览", level: 1 })).toBeVisible();
+    expect(window.location.pathname).toBe("/documents");
+    expect(screen.getByRole("navigation", { name: "文档导航" })).toBeVisible();
+    const rail = screen.getByRole("navigation", { name: "业务板块" });
+    expect(within(rail).queryByRole("link", { name: "首页" })).not.toBeInTheDocument();
+    expect(within(rail).getByRole("link", { name: "在线文档" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Orbis 首页" })).toHaveAttribute("href", "/documents");
   });
 
   it("keeps account settings on the workspace shell without document functions", async () => {

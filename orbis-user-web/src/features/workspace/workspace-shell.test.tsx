@@ -84,7 +84,7 @@ describe("WorkspaceShell", () => {
     Object.defineProperty(window, "matchMedia", { configurable: true, value: originalMatchMedia });
   });
 
-  it.each([["/home", "首页导航"], ["/documents", "文档导航"], ["/sites", "站点导航"]])("provides secondary navigation by default on %s", (path, navigationName) => {
+  it.each([["/home", "文档导航"], ["/documents", "文档导航"], ["/sites", "站点导航"]])("provides secondary navigation by default on %s", (path, navigationName) => {
     renderShell(path);
 
     expect(screen.getByRole("navigation", { name: "业务板块" })).toBeInTheDocument();
@@ -93,7 +93,6 @@ describe("WorkspaceShell", () => {
   });
 
   it.each([
-    ["/home", "首页导航", ["工作台"]],
     ["/sites", "站点导航", ["我的站点"]],
     ["/sites/guide", "站点导航", ["我的站点"]],
     ["/knowledge", "知识库导航", ["知识中心"]],

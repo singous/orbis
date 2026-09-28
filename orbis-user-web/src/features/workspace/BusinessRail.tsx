@@ -3,7 +3,7 @@ import { BookOpen, ChevronsRight, Globe, Home, LibraryBig, Orbit, Search, Settin
 import { Link, useLocation } from "react-router-dom";
 
 import { Tooltip } from "../../shared/ui/Tooltip";
-import { resolveWorkspaceArea, WORKSPACE_AREAS, type WorkspaceAreaId } from "./workspace-areas";
+import { DEFAULT_WORKSPACE_PATH, resolveWorkspaceArea, WORKSPACE_AREAS, type WorkspaceAreaId } from "./workspace-areas";
 
 type BusinessRailProps = { collapsed: boolean; onExpand: () => void };
 
@@ -15,7 +15,7 @@ const areaIcons = {
   memory: Sparkles,
   settings: Settings,
 } satisfies Record<WorkspaceAreaId, typeof Home>;
-const areas = WORKSPACE_AREAS.filter((area) => area.id !== "settings");
+const areas = WORKSPACE_AREAS.filter((area) => area.visibleInRail);
 
 export function BusinessRail({ collapsed, onExpand }: BusinessRailProps) {
   const { pathname } = useLocation();
@@ -24,7 +24,7 @@ export function BusinessRail({ collapsed, onExpand }: BusinessRailProps) {
   return (
     <aside className="workspace-business-rail" aria-label="应用导航">
       {collapsed ? <Tooltip label="展开侧栏" side="right"><ActionButton className="rail-action rail-expand" type="button" aria-label="展开侧栏" onClick={onExpand}><ChevronsRight size={20} /></ActionButton></Tooltip> : null}
-      <Link to="/home" className="rail-brand" aria-label="Orbis 首页"><Orbit size={28} strokeWidth={1.8} /></Link>
+      <Link to={DEFAULT_WORKSPACE_PATH} className="rail-brand" aria-label="Orbis 首页"><Orbit size={28} strokeWidth={1.8} /></Link>
       <nav className="workspace-business-nav" aria-label="业务板块">
         {areas.map(({ id, label, href }) => {
           const Icon = areaIcons[id];

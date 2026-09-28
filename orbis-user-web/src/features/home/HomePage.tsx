@@ -34,6 +34,8 @@ type WorkspaceArea = {
   soon?: boolean;
 };
 
+// Retained for future home development; the entry route currently uses DocumentOverviewPage
+// because its full document navigation is useful while the standalone home menu is incomplete.
 export function HomePage() {
   const navigate = useNavigate();
   const workspace = useStore(authStore, (state) => state.workspace);
