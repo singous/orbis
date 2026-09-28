@@ -67,7 +67,7 @@ export function DocumentSearchPage() {
         {trimmedQuery ? (
           <ActionButton
             type="button"
-            className="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-[var(--muted)] hover:text-black"
+            className="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-[var(--muted)] hover:text-[var(--text-primary)]"
             onClick={() => setQuery("")}
           >
             <X aria-hidden="true" size={14} />

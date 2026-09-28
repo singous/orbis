@@ -1,13 +1,13 @@
 /* Public reading experience. Workspace publishing controls remain in base-mvp.css. */
 .site-reader {
-  --reader-bg: #fff;
-  --reader-surface: #fff;
-  --reader-surface-soft: #f7f9f8;
-  --reader-surface-strong: #eef3f0;
-  --reader-text: #18221d;
-  --reader-muted: #66736c;
-  --reader-faint: #929c96;
-  --reader-border: #e5eae7;
+  --reader-bg: var(--surface);
+  --reader-surface: var(--surface);
+  --reader-surface-soft: var(--surface-secondary);
+  --reader-surface-strong: var(--surface-tertiary);
+  --reader-text: var(--foreground);
+  --reader-muted: var(--muted);
+  --reader-faint: var(--muted);
+  --reader-border: var(--border);
   --reader-accent: color-mix(in srgb, var(--site-accent) 90%, #0c3523);
   --reader-accent-soft: color-mix(in srgb, var(--site-accent) 9%, #fff);
   --reader-header-height: 70px;
@@ -17,26 +17,15 @@
   --reading-border: var(--reader-border);
   --reading-accent: var(--reader-accent);
   --reading-muted-bg: var(--reader-surface-soft);
-  --focus: var(--reader-accent);
-  --background: var(--reader-bg);
-  --foreground: var(--reader-text);
   min-height: 100dvh;
   background: var(--reader-bg);
   color: var(--reader-text);
   color-scheme: light;
-  font-family: "IBM Plex Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-family: var(--font-sans);
 }
 .site-reader.has-site-sections { --reader-header-height: 113px; }
 
 .site-reader[data-theme="dark"] {
-  --reader-bg: #0d1210;
-  --reader-surface: #111815;
-  --reader-surface-soft: #161f1a;
-  --reader-surface-strong: #202c25;
-  --reader-text: #edf3ef;
-  --reader-muted: #a0ada5;
-  --reader-faint: #748079;
-  --reader-border: #27332c;
   --reader-accent: color-mix(in srgb, var(--site-accent) 42%, #a7f3c4);
   --reader-accent-soft: color-mix(in srgb, var(--site-accent) 14%, #111815);
   color-scheme: dark;
@@ -55,7 +44,7 @@
 .site-reader-brand { min-width: 0; display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 680; letter-spacing: -.02em; }
 .site-reader-brand > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .site-reader-brand img { width: auto; max-width: 132px; height: 28px; object-fit: contain; }
-.site-reader-brand-mark { width: 29px; height: 29px; flex: none; display: grid; place-items: center; border-radius: 8px; background: var(--reader-accent); color: #fff; box-shadow: 0 5px 14px color-mix(in srgb, var(--site-accent) 24%, transparent); }
+.site-reader-brand-mark { width: 29px; height: 29px; flex: none; display: grid; place-items: center; border-radius: 8px; background: var(--reader-accent); color: var(--accent-foreground); box-shadow: 0 5px 14px color-mix(in srgb, var(--site-accent) 24%, transparent); }
 
 .site-reader-search-trigger { width: 100%; min-width: 0; display: flex; align-items: center; gap: 9px; padding: 9px 11px; border: 1px solid var(--reader-border); border-radius: 9px; background: var(--reader-surface); color: var(--reader-muted); cursor: pointer; box-shadow: 0 1px 2px #00000008; }
 .site-reader-search-trigger:hover { border-color: color-mix(in srgb, var(--reader-accent) 42%, var(--reader-border)); color: var(--reader-text); }
@@ -64,7 +53,7 @@
 
 .site-reader-header-links { min-width: 0; display: flex; align-items: center; justify-content: flex-end; gap: 18px; font-size: 12px; color: var(--reader-muted); }
 .site-reader-header-links > a:hover { color: var(--reader-text); }
-.site-reader-header-links .site-reader-cta { padding: 8px 13px; border-radius: 8px; background: var(--reader-accent); color: #fff; font-weight: 650; box-shadow: 0 4px 12px color-mix(in srgb, var(--site-accent) 18%, transparent); }
+.site-reader-header-links .site-reader-cta { padding: 8px 13px; border-radius: 8px; background: var(--reader-accent); color: var(--accent-foreground); font-weight: 650; box-shadow: 0 4px 12px color-mix(in srgb, var(--site-accent) 18%, transparent); }
 .site-reader-icon-button { width: 31px; height: 31px; display: inline-grid; place-items: center; flex: none; border: 0; border-radius: 7px; background: transparent; color: var(--reader-muted); cursor: pointer; }
 .site-reader-icon-button:hover { background: var(--reader-surface-soft); color: var(--reader-text); }
 .site-reader-menu-toggle { display: none; }
@@ -169,7 +158,7 @@
 .site-reader-search-dialog kbd { margin-right: 3px; padding: 1px 4px; border: 1px solid var(--reader-border); border-radius: 4px; background: var(--reader-surface); color: var(--reader-muted); font: inherit; }
 .site-reader-navigation-scrim { display: none; }
 
-.site-reader-status { min-height: 70vh; display: grid; align-content: center; justify-items: center; gap: 16px; padding: 30px; background: #fff; color: #18221d; }
+.site-reader-status { min-height: 70vh; display: grid; align-content: center; justify-items: center; gap: 16px; padding: 30px; background: var(--surface); color: var(--foreground); }
 .site-reader-status h1 { margin: 0; font-size: 24px; font-weight: 680; }
 .site-reader-status p { margin: 0; color: #66736c; font-size: 13px; }
 .site-preview-back { padding: 10px 28px; background: #eaf8f0; color: #156144; font-size: 11px; }

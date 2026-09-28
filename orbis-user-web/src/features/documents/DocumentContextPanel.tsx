@@ -314,7 +314,7 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
         main ? (
           <div className="empty-panel py-14">
             <FilePlus2 aria-hidden="true" className="mx-auto mb-3" size={24} />
-            <div className="font-semibold text-black">从第一篇文档开始</div>
+            <div className="font-semibold text-[var(--text-primary)]">从第一篇文档开始</div>
             <p className="mt-1">可以直接写作，也可以导入已有 Markdown。</p>
           </div>
         ) : (

@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @import "@heroui/styles";
+@import "@fontsource-variable/inter";
+@import "./heroui-theme.css";
 
 @layer components {
   /* Feature controls keep their native layout while HeroUI owns interaction states. */
@@ -42,81 +44,14 @@
   }
 }
 
-/* Opaque, neutral workbench surfaces. Layout owners consume these tokens. */
+/* Shared dimensions and font assets do not override the HeroUI theme. */
 :root {
-  /* Dialogs must overlay workspace navigation drawers. */
   --layer-dialog: 80;
-  --gray-0: #ffffff;
-  --gray-25: #fbfbfd;
-  --gray-50: #f8f8fa;
-  --gray-75: #f4f4f7;
-  --gray-100: #efeff3;
-  --gray-150: #e9e9ee;
-  --gray-200: #dedee6;
-  --gray-300: #cdced7;
-  --gray-400: #a9aab6;
-  --gray-500: #81828f;
-  --gray-600: #686974;
-  --gray-700: #4d4e56;
-  --gray-800: #34353b;
-  --gray-900: #24252a;
-  --gray-950: #1d1e22;
-
+  --font-inter: "Inter Variable", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
   --brand-mark: #23ad83;
   --avatar-background: #daf3f5;
   --avatar-foreground: #238d9d;
-
-  --surface-app: #f1f1f7;
-  --surface-sidebar: #fbfbfd;
-  --surface-panel: #fbfbfd;
-  --surface-content: #ffffff;
-  --surface-hover: #f4f4f7;
-  --surface-active: #ededf2;
-  --surface-overlay: #ffffff;
-  --surface-inverse: #1d1e22;
-  --surface-inverse-hover: #34353b;
-
-  --text-primary: #24252a;
-  --text-secondary: #777884;
-  --text-tertiary: #999aa6;
-  --text-oncolor: #ffffff;
-  --text-oninverse: #ffffff;
-  --border-subtle: #ebebf0;
-  --border-strong: #d7d8e0;
-  --border-inverse: rgb(255 255 255 / 14%);
-
-  --rail-bg: var(--surface-sidebar);
-  --rail-border: var(--border-subtle);
-  --rail-text: var(--text-secondary);
-  --rail-text-strong: var(--text-primary);
-  --rail-dim: var(--text-tertiary);
-  --rail-hover: var(--surface-hover);
-  --rail-active: var(--surface-active);
-  --rail-chip-bg: var(--surface-inverse);
-  --rail-chip-text: var(--text-oninverse);
-
-  --accent: #24252a;
-  --accent-strong: #1d1e22;
-  --accent-deep: #111215;
-  --accent-soft: #ededf2;
-  --accent-softer: #f5f5f8;
-  --accent-border: #d7d8e0;
-  --accent-text: #34353b;
-  --focus-ring: #767787;
-
-  --danger: #c5484e;
-  --danger-strong: #a33137;
-  --danger-bg: #fff2f2;
-  --danger-border: #f4d4d7;
-  --danger-text: #a33137;
-  --warning-bg: #fff9ed;
-  --warning-border: #f1dfb5;
-  --warning-text: #86631f;
-  --success-bg: #ecf8f0;
-  --success-border: #c8ead4;
-  --success-text: #29834c;
-
-  --shadow-pop: 0 4px 12px rgb(30 31 38 / 5%), 0 16px 42px rgb(30 31 38 / 12%);
   --action-height: 36px;
   --action-font-size: 14px;
   --action-line-height: 20px;
@@ -126,52 +61,81 @@
   --action-icon-size: 16px;
   --compact-control-height: 32px;
   --form-control-height: 42px;
-  --radius-control: 8px;
-  --radius-container: 12px;
-  --radius-pop: 14px;
-  --radius-card: 12px;
   --radius-pill: 999px;
-  --font-sans: "SF Pro Text", "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--font-sans);
+  font-size: 16px;
+}
 
-  /* Map HeroUI surfaces and control states onto the workbench palette. */
-  --background: var(--surface-app);
-  --foreground: var(--text-primary);
-  --surface: var(--surface-content);
-  --surface-foreground: var(--text-primary);
-  --surface-secondary: var(--surface-hover);
-  --surface-secondary-foreground: var(--text-primary);
-  --overlay: var(--surface-overlay);
-  --overlay-foreground: var(--text-primary);
-  --muted: var(--text-secondary);
-  --default: var(--surface-active);
-  --default-foreground: var(--text-primary);
-  --accent-foreground: var(--text-oncolor);
-  --danger-foreground: var(--text-oncolor);
-  --field-background: var(--surface-content);
-  --field-foreground: var(--text-primary);
-  --field-placeholder: var(--text-tertiary);
-  --field-border: var(--border-strong);
-  --field-border-width: 1px;
-  --field-shadow: 0 0 0 0 transparent;
-  --focus: var(--focus-ring);
-  --radius: var(--radius-control);
-  --field-radius: var(--radius-control);
-  --backdrop: rgb(36 37 42 / 30%);
-
-  /* Existing business components share the same semantic palette. */
+/* Resolve aliases in each theme scope, including nested reader themes. */
+:root, .light, .default, [data-theme="light"], [data-theme="default"], .dark, [data-theme="dark"] {
+  --gray-0: var(--surface);
+  --gray-25: var(--surface);
+  --gray-50: var(--background);
+  --gray-75: var(--surface-secondary);
+  --gray-100: var(--default);
+  --gray-150: var(--separator);
+  --gray-200: var(--border);
+  --gray-300: color-mix(in oklab, var(--foreground) 30%, var(--background));
+  --gray-400: color-mix(in oklab, var(--foreground) 45%, var(--background));
+  --gray-500: var(--muted);
+  --gray-600: color-mix(in oklab, var(--foreground) 75%, var(--background));
+  --gray-700: var(--foreground);
+  --gray-800: var(--foreground);
+  --gray-900: var(--foreground);
+  --gray-950: var(--foreground);
+  --surface-app: var(--background);
+  --surface-sidebar: var(--surface);
+  --surface-panel: var(--surface);
+  --surface-content: var(--surface);
+  --surface-hover: var(--surface-secondary);
+  --surface-active: var(--default);
+  --surface-overlay: var(--overlay);
+  --surface-inverse: var(--accent);
+  --surface-inverse-hover: color-mix(in oklab, var(--accent) 85%, var(--background));
+  --text-primary: var(--foreground);
+  --text-secondary: var(--muted);
+  --text-tertiary: var(--muted);
+  --text-oncolor: var(--accent-foreground);
+  --text-oninverse: var(--accent-foreground);
+  --border-subtle: var(--border);
+  --border-strong: var(--border);
+  --border-inverse: color-mix(in oklab, var(--accent-foreground) 20%, transparent);
+  --rail-bg: var(--surface-sidebar);
+  --rail-border: var(--border-subtle);
+  --rail-text: var(--text-secondary);
+  --rail-text-strong: var(--text-primary);
+  --rail-dim: var(--text-tertiary);
+  --rail-hover: var(--surface-hover);
+  --rail-active: var(--surface-active);
+  --rail-chip-bg: var(--surface-inverse);
+  --rail-chip-text: var(--text-oninverse);
+  --accent-strong: var(--accent);
+  --accent-deep: var(--accent);
+  --accent-softer: var(--accent-soft);
+  --accent-border: var(--border);
+  --accent-text: var(--accent);
+  --focus-ring: var(--focus);
+  --danger-strong: var(--danger);
+  --danger-bg: var(--danger-soft);
+  --danger-border: color-mix(in oklab, var(--danger) 25%, var(--surface));
+  --danger-text: var(--danger);
+  --warning-bg: var(--warning-soft);
+  --warning-border: color-mix(in oklab, var(--warning) 25%, var(--surface));
+  --warning-text: var(--warning-soft-foreground);
+  --success-bg: var(--success-soft);
+  --success-border: color-mix(in oklab, var(--success) 25%, var(--surface));
+  --success-text: var(--success-soft-foreground);
+  --shadow-pop: var(--overlay-shadow);
+  --radius-control: var(--radius);
+  --radius-container: calc(var(--radius) * 3);
+  --radius-pop: calc(var(--radius) * 3);
+  --radius-card: calc(var(--radius) * 3);
   --app-bg: var(--surface-app);
   --workspace: var(--surface-app);
   --panel: var(--surface-panel);
   --chrome: var(--surface-inverse);
   --text: var(--text-primary);
-  --muted: var(--text-secondary);
   --muted-light: var(--text-tertiary);
-  --border: var(--border-subtle);
-
-  font-family: var(--font-sans);
-  font-size: 16px;
-  color-scheme: light;
 }
 
 * {
@@ -249,8 +213,8 @@ body {
 }
 
 .icon-button:hover {
-  background: rgb(0 0 0 / 5%);
-  color: black;
+  background: var(--surface-hover);
+  color: var(--text-primary);
 }
 
 .icon-button:disabled {
@@ -344,8 +308,8 @@ body {
 }
 
 .text-action:hover {
-  background: rgb(0 0 0 / 5%);
-  color: black;
+  background: var(--surface-hover);
+  color: var(--text-primary);
 }
 
 .section-heading {

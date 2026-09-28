@@ -51,7 +51,7 @@ export function AcceptInvitationPage() {
               {error ? <StatusMessage tone="error" title="无法接受邀请">{error.code === "INVITATION_ACCOUNT_AUTHENTICATION_REQUIRED" ? "该邮箱已有账号，请先登录对应账号。" : error.message}</StatusMessage> : null}
               <Button type="submit" variant="primary" className="mt-2 w-full" disabled={!invitationToken || accept.isPending}>确认加入</Button>
             </form>
-            <div className="mt-5 text-center text-xs text-[var(--muted)]"><Link className="font-semibold text-black" to="/login">返回登录</Link></div>
+            <div className="mt-5 text-center text-xs text-[var(--muted)]"><Link className="font-semibold text-[var(--text-primary)]" to="/login">返回登录</Link></div>
           </>
         )}
       </section>

@@ -172,7 +172,7 @@ export function CollectionsPage() {
           {!groupsQuery.isLoading && !notebooks.length ? (
             <div className="empty-panel">
               <BookOpen aria-hidden="true" className="mx-auto mb-3" size={24} />
-              <div className="font-semibold text-black">还没有笔记本</div>
+              <div className="font-semibold text-[var(--text-primary)]">还没有笔记本</div>
               <p className="mt-1">先在默认分组下创建一个笔记本。</p>
               {canEdit && groups[0] ? (
                 <Button

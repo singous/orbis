@@ -12,9 +12,7 @@ export function TextInput({ label, className, ...props }: TextInputProps) {
   const input = (
     <HeroInput
       className={cn(
-        "h-9 w-full rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface-content)] px-3 text-sm text-[var(--text-primary)]",
-        "placeholder:text-[var(--text-tertiary)]",
-        "disabled:pointer-events-none disabled:opacity-50",
+        "h-9 w-full",
         className,
       )}
       {...props}
