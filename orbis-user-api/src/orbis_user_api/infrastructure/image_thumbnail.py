@@ -46,4 +46,3 @@ def normalize_thumbnail(contents: bytes, *, square: bool = False) -> bytes:
         Image.DecompressionBombError,
     ) as exc:
         raise InvalidThumbnail from exc
-
