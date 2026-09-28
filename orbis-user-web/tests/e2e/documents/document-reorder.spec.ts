@@ -101,8 +101,12 @@ test("notebook directories fold, keep compact actions, and preserve sibling drag
   await expect.poll(async () => (await readTree()).map((note) => note.id)).toEqual([third, first, second]);
   expect((await readTree())[1].children.map((note) => note.id)).toEqual([child, secondChild]);
 
+  // The backend order is visible before the browser finishes its save response.
+  await expect(handle).toBeEnabled();
   await handle.press("Alt+ArrowDown");
   await expect.poll(async () => (await readTree()).map((note) => note.id)).toEqual([first, third, second]);
+  await expect(handle).toBeFocused();
+  await expect(handle).toBeEnabled();
   await expect(handle).toBeFocused();
   await page.keyboard.press("Alt+ArrowDown");
   await expect.poll(async () => (await readTree()).map((note) => note.id)).toEqual([first, second, third]);
@@ -115,6 +119,7 @@ test("notebook directories fold, keep compact actions, and preserve sibling drag
     await route.continue();
   });
   const reorderRequest = page.waitForRequest((request) => request.url().endsWith(`/api/notebooks/${notebookId}/notes/order`));
+  await expect(handle).toBeEnabled();
   await handle.press("Alt+ArrowUp");
   await reorderRequest;
   const search = page.getByRole("searchbox", { name: "全局搜索", exact: true });
