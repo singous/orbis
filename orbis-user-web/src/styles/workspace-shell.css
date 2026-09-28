@@ -1,3 +1,15 @@
+/* Workspace layout colors are independent of HeroUI control tokens. */
+:root, .light, .default, [data-theme="light"], [data-theme="default"] {
+  --workspace-canvas-start: #f0f4fa;
+  --workspace-canvas-end: #f5f2f8;
+  --workspace-panel-background: #fcfcfd;
+}
+.dark, [data-theme="dark"] {
+  --workspace-canvas-start: var(--background);
+  --workspace-canvas-end: color-mix(in oklab, var(--background) 80%, var(--surface));
+  --workspace-panel-background: var(--surface);
+}
+
 /* Desktop workspace: persistent icon rail, collapsible navigation, separate canvas. */
 .workspace-shell {
   --rail-width: 58px;
@@ -7,7 +19,8 @@
   height: 100dvh;
   min-width: 0;
   overflow: hidden;
-  background: var(--surface-app);
+  background: linear-gradient(135deg, var(--workspace-canvas-start), var(--workspace-canvas-end));
+  background-attachment: fixed;
   color: var(--text-primary);
 }
 .workspace-topbar { height: var(--topbar-height); display: flex; align-items: center; gap: 20px; padding: 0 18px; position: relative; z-index: 35; }
@@ -18,9 +31,9 @@
 .workspace-global-search { display: flex; height: 31px; flex: 1; min-width: 0; }
 .workspace-search-group { height: 100%; min-width: 0; }
 .workspace-global-search kbd { flex: none; font: 10px var(--font-sans); color: var(--text-tertiary); }
-.workspace-shell-grid { display: grid; grid-template-columns: calc(var(--rail-width) + var(--sidebar-width)) minmax(0, 1fr); gap: var(--shell-gutter); height: calc(100dvh - var(--topbar-height)); min-height: 0; padding: 0 var(--shell-gutter) var(--shell-gutter); }
+.workspace-shell-grid { background: linear-gradient(135deg, var(--workspace-canvas-start), var(--workspace-canvas-end)); background-attachment: fixed; display: grid; grid-template-columns: calc(var(--rail-width) + var(--sidebar-width)) minmax(0, 1fr); gap: var(--shell-gutter); height: calc(100dvh - var(--topbar-height)); min-height: 0; padding: 0 var(--shell-gutter) var(--shell-gutter); }
 .workspace-shell.sidebar-collapsed .workspace-shell-grid { grid-template-columns: var(--rail-width) minmax(0, 1fr); }
-.workspace-main-navigation { display: flex; min-height: 0; min-width: 0; border: 1px solid var(--border-subtle); border-radius: 11px; background: var(--surface-sidebar); box-shadow: 0 1px 2px #18182305; }
+.workspace-main-navigation { display: flex; min-height: 0; min-width: 0; border: 1px solid var(--border-subtle); border-radius: 11px; background: var(--workspace-panel-background); box-shadow: 0 1px 2px #18182305; }
 .workspace-business-rail { width: var(--rail-width); flex: none; min-height: 0; display: flex; flex-direction: column; align-items: center; padding: 16px 7px 10px; border-right: 1px solid var(--border-subtle); }
 .sidebar-collapsed .workspace-business-rail { border: 0; }
 .rail-brand { width: 38px; height: 38px; display: grid; place-items: center; color: var(--brand-mark); margin-bottom: 36px; }
@@ -60,9 +73,10 @@
 .notebook-menu-title:hover { color: var(--accent-strong); }
 .notebook-home-link { margin-top: 3px; }
 .workspace-function-menu > .document-tree-panel { padding: 0; }
-.workspace-main-area { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; min-height: 0; overflow: hidden; border: 1px solid var(--border-subtle); border-radius: 11px; background: var(--surface-panel); box-shadow: 0 1px 2px #18182305; }
+.workspace-main-area { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; min-height: 0; overflow: hidden; border: 1px solid var(--border-subtle); border-radius: 11px; background: var(--workspace-panel-background); box-shadow: 0 1px 2px #18182305; }
 .workspace-main-area.has-context { grid-template-columns: minmax(0, 1fr) 270px; }
-.workspace-content { min-width: 0; min-height: 0; overflow: auto; overscroll-behavior: contain; }
+.workspace-content { background: var(--workspace-panel-background); min-width: 0; min-height: 0; overflow: auto; overscroll-behavior: contain; }
+.workspace-content > .page-container { background: inherit; }
 .workspace-toolbar { display: flex; align-items: center; gap: 12px; min-height: 55px; padding: 10px 25px; border-bottom: 1px solid var(--border-subtle); position: sticky; top: 0; z-index: 10; background: var(--surface-panel); }
 .workspace-toolbar-title { font-size: 12px; color: var(--text-tertiary); flex: 1; }
 .workspace-toolbar-spacer { flex: 1; }
