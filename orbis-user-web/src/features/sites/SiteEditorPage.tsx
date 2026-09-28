@@ -1,3 +1,4 @@
+import { LoadingState } from "../../shared/ui/LoadingState";
 import { Tag } from "../../shared/ui/Tag";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { ActionButton } from "../../shared/ui/ActionButton";
@@ -153,7 +154,7 @@ function SiteEditor({ site }: { site: Site }) {
       <div className="site-save-row"><span className="mvp-muted">{!sourceReady ? "请添加来源或切换到手动选择" : dirty ? "有尚未保存的设置" : "设置已与服务器同步"}</span>{canEdit ? <ActionButton variant="primary" className="mvp-button primary" type="submit" disabled={busy || !sourceReady}>{busy ? "处理中…" : "保存设置"}</ActionButton> : null}</div>
     </form>
     <section className="site-releases"><div className="site-section-heading"><div><h2><History size={18} />发布历史</h2><p>切换版本只改变公开站点，草稿仍可继续编辑。</p></div>{canPublish && site.published_release_id ? <ActionButton variant="secondary" className="mvp-button danger-text" type="button" disabled={busy} onClick={() => setPendingAction({ type: "unpublish" })}>撤回站点</ActionButton> : null}</div>
-      {releases.isPending ? <p className="mvp-muted">正在加载发布记录…</p> : releases.isError ? <p role="alert">无法加载发布记录。<ActionButton onClick={() => void releases.refetch()} type="button">重试</ActionButton></p> : releases.data.items.length ? <>
+      {releases.isPending ? <LoadingState label="正在加载发布记录…" compact /> : releases.isError ? <p role="alert">无法加载发布记录。<ActionButton onClick={() => void releases.refetch()} type="button">重试</ActionButton></p> : releases.data.items.length ? <>
         {releases.data.items.map((release) => <div className="site-release-row" key={release.id}><span className="site-release-number">v{release.release_number}</span><span>{new Date(release.published_at_ms).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })}</span>{release.is_active ? <Tag tone="success">当前公开版本</Tag> : canPublish ? <ActionButton variant="secondary" className="mvp-button" type="button" disabled={busy} onClick={() => setPendingAction({ type: "activate", releaseId: release.id, number: release.release_number })}><RotateCcw size={14} />切换到此版本</ActionButton> : null}</div>)}
         <div className="mvp-pagination"><ActionButton type="button" disabled={!releases.data.pagination.has_previous} onClick={() => setReleasePage(releasePage - 1)}>上一页</ActionButton><span>第 {releasePage} 页</span><ActionButton type="button" disabled={!releases.data.pagination.has_next} onClick={() => setReleasePage(releasePage + 1)}>下一页</ActionButton></div>
       </> : <p className="site-empty-history">第一次发布后，版本会保存在这里。</p>}
@@ -168,6 +169,7 @@ function SiteEditor({ site }: { site: Site }) {
 export function SiteEditorPage() {
   const { siteId = "" } = useParams();
   const query = useSite(siteId);
+  if (query.isPending) return <WorkspaceShell><PageContainer title="站点设置"><LoadingState label="正在打开站点…" variant="editor" /></PageContainer></WorkspaceShell>;
   if (!query.data) return <WorkspaceShell><div className="mvp-page"><h1>{query.isPending ? "正在打开站点…" : "无法打开站点"}</h1>{query.error ? <p role="alert">{query.error.message}</p> : null}<Link to="/sites">返回所有站点</Link></div></WorkspaceShell>;
   return <SiteEditor key={siteId} site={query.data} />;
 }

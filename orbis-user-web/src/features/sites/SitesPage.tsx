@@ -1,3 +1,4 @@
+import { LoadingState } from "../../shared/ui/LoadingState";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { ArrowUpRight, ChevronRight, Globe, Plus } from "../../shared/ui/icons";
@@ -66,7 +67,7 @@ export function SitesPage() {
       <PageContainer title="你的文档站点" description="管理站点、组织目录并发布文档。" actions={canEdit ? <Button variant="primary" icon={<Plus aria-hidden="true" size={16} />} onClick={openCreate}>创建站点</Button> : null}>
         <section className="workbench-section" aria-label="文档站点">
           <header className="workbench-section-heading"><h2>全部站点</h2>{sites.data ? <span className="workbench-section-count">{sites.data.pagination.total} 个站点</span> : null}</header>
-          {sites.isPending ? <div className="empty-panel">正在加载站点…</div> : sites.isError ? (
+          {sites.isPending ? <LoadingState label="正在加载站点…" variant="cards" /> : sites.isError ? (
             <StatusMessage role="alert" tone="error" title="无法加载站点"><ActionButton type="button" onClick={() => void sites.refetch()}>重新加载</ActionButton></StatusMessage>
           ) : sites.data.items.length ? <>
             <div className="workbench-resource-grid">
@@ -84,7 +85,7 @@ export function SitesPage() {
           )}
         </section>
       </PageContainer>
-      <Dialog open={open} onOpenChange={setOpen}><DialogContent className="site-create-dialog" title="创建文档站点" description="先确定站点信息与内容来源，提交前不会创建站点。"><form className="site-create-form" onSubmit={submit}><SiteSettingsForm autoFocusName value={config} onChange={setConfig} disabled={create.isPending} /><SiteSourceEditor value={config.source} onChange={(source) => setConfig({ ...config, source })} disabled={create.isPending} /><div className="site-create-actions"><ActionButton variant="secondary" className="mvp-button" type="button" disabled={create.isPending} onClick={() => setOpen(false)}>取消</ActionButton><ActionButton variant="primary" className="mvp-button primary" type="submit" disabled={create.isPending || config.source?.kind === "notebooks" && !config.source.notebooks.length}>{create.isPending ? "创建中…" : "创建站点"}</ActionButton></div></form></DialogContent></Dialog>
+      <Dialog open={open} onOpenChange={setOpen}><DialogContent className="site-create-dialog" title="创建文档站点" description="先确定站点信息与内容来源，提交前不会创建站点。"><form className="site-create-form" onSubmit={submit}><SiteSettingsForm autoFocusName value={config} onChange={setConfig} disabled={create.isPending} /><SiteSourceEditor value={config.source} onChange={(source) => setConfig({ ...config, source })} disabled={create.isPending} /><div className="site-create-actions"><ActionButton variant="secondary" className="mvp-button" type="button" disabled={create.isPending} onClick={() => setOpen(false)}>取消</ActionButton><ActionButton isPending={create.isPending} variant="primary" className="mvp-button primary" type="submit" disabled={create.isPending || config.source?.kind === "notebooks" && !config.source.notebooks.length}>{create.isPending ? "创建中…" : "创建站点"}</ActionButton></div></form></DialogContent></Dialog>
     </WorkspaceShell>
   );
 }

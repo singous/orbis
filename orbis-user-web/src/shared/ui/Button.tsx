@@ -1,4 +1,5 @@
 import { cva, type VariantProps } from "class-variance-authority";
+import { Spinner } from "@heroui/react/spinner";
 import { Button as HeroButton } from "@heroui/react/button";
 import type { ComponentProps, ReactNode } from "react";
 
@@ -26,18 +27,20 @@ export type ButtonProps = Omit<ComponentProps<typeof HeroButton>, "variant" | "s
     title?: string;
   };
 
-export function Button({ variant, size, icon, className, children, disabled, isDisabled, title, type = "button", ...props }: ButtonProps) {
+export function Button({ variant, size, icon, className, children, disabled, isDisabled, isPending = false, title, type = "button", ...props }: ButtonProps) {
   return (
     <HeroButton
       className={cn(buttonVariants({ variant, size }), className)}
       variant={variant ?? "secondary"}
       size={size ?? "md"}
-      isDisabled={disabled ?? isDisabled}
+      isDisabled={isPending ? true : disabled ?? isDisabled}
+      isPending={isPending}
+      aria-busy={isPending || undefined}
       type={type}
-      render={(domProps) => <button {...domProps} title={title} />}
+      render={(domProps) => <button {...domProps} aria-busy={isPending || undefined} title={title} />}
       {...props}
     >
-      {icon}
+      {isPending ? <Spinner size="sm" color="current" aria-hidden="true" /> : icon}
       {children}
     </HeroButton>
   );

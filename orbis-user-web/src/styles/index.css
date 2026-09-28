@@ -4,6 +4,7 @@
 @import "./heroui-theme.css";
 @import "./scrollbars.css";
 @import "./icons.css";
+@import "./loading.css";
 
 @layer components {
   /* Feature controls keep their native layout while HeroUI owns interaction states. */

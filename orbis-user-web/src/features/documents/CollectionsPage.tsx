@@ -1,3 +1,4 @@
+import { LoadingState } from "../../shared/ui/LoadingState";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import {
   Archive,
@@ -167,7 +168,7 @@ export function CollectionsPage() {
         ) : null}
         <section className="workbench-section" aria-label="笔记本">
           {groupsQuery.isLoading || notebooksQuery.isLoading ? (
-            <div className="empty-panel">正在加载笔记本…</div>
+            <LoadingState label="正在加载笔记本…" variant="cards" />
           ) : null}
           {!groupsQuery.isLoading && !notebooks.length ? (
             <div className="empty-panel">

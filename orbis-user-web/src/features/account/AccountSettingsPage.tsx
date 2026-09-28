@@ -79,7 +79,7 @@ export function AccountSettingsPage() {
         <form className="profile-edit-form" onSubmit={save}>
           <TextInput label="名称" value={name} maxLength={120} disabled={pending} onChange={event => { edited.current = true; setName(event.target.value); }} />
           <div className="profile-field"><label htmlFor={bioId}>个人简介</label><TextArea id={bioId} value={bio} maxLength={500} disabled={pending} onChange={event => { edited.current = true; setBio(event.target.value); }} placeholder="介绍一下自己，或写下你正在关注的事情。" /></div>
-          <div className="profile-form-actions"><Button type="submit" variant="primary" disabled={pending}>{pending ? "保存中…" : "保存资料"}</Button></div>
+          <div className="profile-form-actions"><Button type="submit" variant="primary" isPending={pending} disabled={pending}>{pending ? "保存中…" : "保存资料"}</Button></div>
         </form>
         <dl className="workbench-settings-list profile-workspace-info">
           <div><dt>工作空间</dt><dd>{workspace?.name || "私人工作空间"}</dd></div>

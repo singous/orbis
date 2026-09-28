@@ -1,3 +1,4 @@
+import { LoadingState } from "../../shared/ui/LoadingState";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import {
   ArchiveRestore,
@@ -166,7 +167,7 @@ export function ArchivePage() {
         notebooksQuery.isLoading ||
         activeNotebooksQuery.isLoading ||
         notesQuery.isLoading ? (
-          <div className="empty-panel">正在加载归档…</div>
+          <LoadingState label="正在加载归档…" />
         ) : null}
         <ArchiveSection
           title="分组"

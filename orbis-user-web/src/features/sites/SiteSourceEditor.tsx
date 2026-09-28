@@ -1,3 +1,4 @@
+import { LoadingState } from "../../shared/ui/LoadingState";
 import { Input as HeroInput } from "@heroui/react/input";
 import { Radio } from "@heroui/react/radio";
 import { RadioGroup } from "@heroui/react/radio-group";
@@ -52,7 +53,7 @@ function SourceBinding({
       <SelectField label="内容范围" aria-label={`内容范围 ${index + 1}`} disabled={disabled || tree.isPending} value={binding.root_note_id ?? ""} onChange={(rootId) => onChange({ ...binding, root_note_id: rootId || null })} options={[{ value: "", label: "整个笔记本" }, ...flatTree.map((item) => ({ value: item.id, label: item.title }))]} />
       <label>栏目名称<HeroInput aria-label={`栏目名称 ${index + 1}`} disabled={disabled} value={binding.label ?? ""} placeholder={notebook?.title ?? "默认使用笔记本名称"} onChange={(event) => onChange({ ...binding, label: event.target.value || null })} /></label>
     </div>
-    {tree.isPending ? <p className="mvp-muted">正在加载真实文档树…</p> : tree.isError ? <p role="alert" className="site-source-inline-error">文档树加载失败。<ActionButton type="button" onClick={() => void tree.refetch()}>重试</ActionButton></p> : <SiteSourceTree items={tree.data.items} rootNoteId={binding.root_note_id} source={source} resolved={saved ? sources : undefined} disabled={disabled} onChange={onSourceChange} />}
+    {tree.isPending ? <LoadingState label="正在加载真实文档树…" compact /> : tree.isError ? <p role="alert" className="site-source-inline-error">文档树加载失败。<ActionButton type="button" onClick={() => void tree.refetch()}>重试</ActionButton></p> : <SiteSourceTree items={tree.data.items} rootNoteId={binding.root_note_id} source={source} resolved={saved ? sources : undefined} disabled={disabled} onChange={onSourceChange} />}
   </article>;
 }
 
@@ -98,7 +99,7 @@ export function SiteSourceEditor({
       <Radio value="manual"><Radio.Content><Radio.Control><Radio.Indicator /></Radio.Control>手动选择</Radio.Content></Radio>
     </RadioGroup>
     {source.kind === "manual" ? <div className="site-source-manual-note"><strong>手动选择目录</strong><p>继续使用下方站点目录。切换到笔记本来源不会删除这些手选项，切回后仍可继续编辑。</p></div> : <>
-      {notebooks.isPending ? <p className="mvp-muted">正在加载笔记本…</p> : notebooks.isError ? <p role="alert" className="site-source-inline-error">无法加载笔记本。<ActionButton type="button" onClick={() => void notebooks.refetch()}>重试</ActionButton></p> : null}
+      {notebooks.isPending ? <LoadingState label="正在加载笔记本…" compact /> : notebooks.isError ? <p role="alert" className="site-source-inline-error">无法加载笔记本。<ActionButton type="button" onClick={() => void notebooks.refetch()}>重试</ActionButton></p> : null}
       {source.notebooks.map((binding, index) => <SourceBinding
         key={`${binding.notebook_id}-${index}`}
         binding={binding}

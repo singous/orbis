@@ -1,3 +1,4 @@
+import { LoadingState } from "../../shared/ui/LoadingState";
 import { Input as HeroInput } from "@heroui/react/input";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { FilePlus2, Search, X } from "../../shared/ui/icons";
@@ -75,7 +76,7 @@ export function DocumentSearchPage() {
           </ActionButton>
         ) : null}
         {trimmedQuery && notesQuery.isLoading ? (
-          <div className="empty-panel">正在搜索…</div>
+          <LoadingState label="正在搜索…" />
         ) : null}
         {trimmedQuery && !notesQuery.isLoading && !notes.length ? (
           <div className="empty-panel">没有匹配的文档。试试更短的关键词。</div>

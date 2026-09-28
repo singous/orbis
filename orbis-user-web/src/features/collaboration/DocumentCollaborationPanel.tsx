@@ -1,3 +1,4 @@
+import { LoadingState } from "../../shared/ui/LoadingState";
 import { Tag } from "../../shared/ui/Tag";
 import { Tabs } from "@heroui/react/tabs";
 import { TextArea as HeroTextArea } from "@heroui/react/textarea";
@@ -75,12 +76,12 @@ function Comments({ noteId, canManage, currentUserId }: Pick<Props, "noteId" | "
   return <section aria-label="文档评论" className="collaboration-section">
     <p className="collaboration-hint">在这里讨论整篇文档，所有空间成员都可参与。</p>
     <CommentForm label="新评论" submitLabel="发表评论" onSubmit={async (body) => { rememberComment(await create.mutateAsync({ body })); }} />
-    {query.isPending ? <p role="status">正在加载评论…</p> : null}
+    {query.isPending ? <LoadingState label="正在加载评论…" compact /> : null}
     <ErrorNotice error={query.error} />
     {query.isError ? <ActionButton variant="secondary" type="button" className="mvp-button secondary" onClick={() => void query.refetch()}>重试加载评论</ActionButton> : null}
     {!query.isPending && !query.isError && comments.length === 0 ? <p className="collaboration-empty">暂无评论，写下第一条想法。</p> : null}
     <div className="collaboration-comments">{comments.map((comment) => <CommentItem key={comment.id} comment={comment} parent={comment.parent_id ? byId.get(comment.parent_id) : undefined} canManage={canManage} currentUserId={currentUserId} onChanged={rememberComment} />)}</div>
-    {query.hasNextPage ? <ActionButton variant="secondary" type="button" className="mvp-button secondary" disabled={query.isFetchingNextPage} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? "正在加载…" : "加载更多评论"}</ActionButton> : null}
+    {query.hasNextPage ? <ActionButton variant="secondary" type="button" className="mvp-button secondary" isPending={query.isFetchingNextPage} disabled={query.isFetchingNextPage} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? "正在加载…" : "加载更多评论"}</ActionButton> : null}
   </section>;
 }
 
@@ -107,14 +108,14 @@ function Revisions({ noteId, canManage, onRestore, onBusyChange }: Pick<Props, "
   return <section aria-label="文档历史版本" className="collaboration-section">
     <p className="collaboration-hint">每次正文保存保留一个版本，恢复前的正文也会留在历史中。</p>
     {!canManage ? <p className="collaboration-hint">只读成员可以查看历史，恢复需要编辑权限。</p> : null}
-    {query.isPending ? <p role="status">正在加载历史…</p> : null}
+    {query.isPending ? <LoadingState label="正在加载历史…" compact /> : null}
     <ErrorNotice error={query.error} />
     {query.isError ? <ActionButton variant="secondary" type="button" className="mvp-button secondary" onClick={() => void query.refetch()}>重试加载历史</ActionButton> : null}
     {query.data?.pages[0].items.length === 0 ? <p className="collaboration-empty">暂无历史版本，首次保存正文后会在这里显示。</p> : null}
     <div className="collaboration-revisions">{query.data?.pages.flatMap((page) => page.items).map((revision) => <ActionButton type="button" className="collaboration-revision" key={revision.id} aria-label={`查看版本 ${revision.content_version}`} aria-pressed={selectedId === revision.id} disabled={pending} onClick={() => { setSelectedId(revision.id); setError(null); }}><span>版本 {revision.content_version}</span><small>{revision.author_name} · {timestamp.format(revision.created_at_ms)}</small></ActionButton>)}</div>
-    {query.hasNextPage ? <ActionButton variant="secondary" type="button" className="mvp-button secondary" disabled={query.isFetchingNextPage || pending} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? "正在加载…" : "加载更多版本"}</ActionButton> : null}
+    {query.hasNextPage ? <ActionButton variant="secondary" type="button" className="mvp-button secondary" isPending={query.isFetchingNextPage} disabled={query.isFetchingNextPage || pending} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? "正在加载…" : "加载更多版本"}</ActionButton> : null}
     {selectedId ? <div className="collaboration-preview">
-      {detail.isPending ? <p role="status">正在加载版本正文…</p> : null}
+      {detail.isPending ? <LoadingState label="正在加载版本正文…" variant="editor" /> : null}
       <ErrorNotice error={detail.error} />
       {detail.isError ? <ActionButton variant="secondary" type="button" className="mvp-button secondary" onClick={() => void detail.refetch()}>重试加载正文</ActionButton> : null}
       {detail.data ? <><h3>版本 {detail.data.content_version} 预览</h3><AuthenticatedFileContent><ContentRenderer blocks={detail.data.blocks} /></AuthenticatedFileContent>{canManage ? <div className="collaboration-restore"><p className="collaboration-hint">恢复会先保存当前草稿，再将此正文保存为新版本。文档标题保持当前值。</p><ActionButton variant="primary" className="mvp-button primary" type="button" onClick={restoreSelected} disabled={pending}>{pending ? "正在保存草稿并恢复…" : "恢复此版本"}</ActionButton></div> : null}</> : null}

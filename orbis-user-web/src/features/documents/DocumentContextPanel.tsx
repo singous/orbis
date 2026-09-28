@@ -1,3 +1,4 @@
+import { LoadingState } from "../../shared/ui/LoadingState";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Dropdown } from "@heroui/react/dropdown";
 import { Label } from "@heroui/react/label";
@@ -309,7 +310,7 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
         </div>
       )}
       {treeQuery.isError ? <StatusMessage tone="error" title="目录加载失败"><Button className="mt-3" variant="secondary" onClick={() => void treeQuery.refetch()}>重试加载目录</Button></StatusMessage> : null}
-      {treeQuery.isLoading ? <div className={main ? "empty-panel" : "px-3 py-5 text-xs text-[var(--muted)]"}>正在加载文档目录…</div> : null}
+      {treeQuery.isLoading ? <LoadingState label="正在加载文档目录…" compact={!main} /> : null}
       {!treeQuery.isLoading && !treeQuery.isError && !treeItems.length ? (
         main ? (
           <div className="empty-panel py-14">

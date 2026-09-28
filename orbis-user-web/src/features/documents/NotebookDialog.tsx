@@ -60,7 +60,7 @@ export function NotebookDialog({ open, title = "新建笔记本", initialValue =
         }} />
         <DialogFooter>
           <Button variant="ghost" disabled={pending || submitting} onClick={onClose}>取消</Button>
-          <Button type="submit" variant="primary" disabled={!value.trim() || busy}>{uploading ? "上传中…" : pending || submitting ? "处理中…" : submitLabel}</Button>
+          <Button type="submit" variant="primary" isPending={busy} disabled={!value.trim() || busy}>{uploading ? "上传中…" : pending || submitting ? "处理中…" : submitLabel}</Button>
         </DialogFooter>
       </form>
     </DialogContent>

@@ -1,3 +1,4 @@
+import { LoadingState } from "../../shared/ui/LoadingState";
 import { buttonVariants } from "../../shared/ui/Button";
 import { BookOpen, ChevronRight, FilePlus2, Plus } from "../../shared/ui/icons";
 import { Link } from "react-router-dom";
@@ -37,7 +38,7 @@ export function DocumentOverviewPage() {
 
         <section className="workbench-section" aria-label="我的笔记本">
           <header className="workbench-section-heading"><h2>我的笔记本</h2><Link className="workbench-more" to="/documents/collections">管理笔记本<ChevronRight aria-hidden="true" size={14} /></Link></header>
-          {notebooksQuery.isLoading ? <div className="empty-panel">正在加载笔记本…</div> : null}
+          {notebooksQuery.isLoading ? <LoadingState label="正在加载笔记本…" variant="cards" /> : null}
           {notebooks.length ? <div className="workbench-resource-grid">
             {notebooks.slice(0, 6).map((notebook) => <Link key={notebook.id} to={`/collections/${notebook.id}`} className="workbench-resource-card">
               <NotebookIcon icon={notebook.icon} />
@@ -49,7 +50,7 @@ export function DocumentOverviewPage() {
 
         <section className="workbench-section" aria-label="最近更新">
           <header className="workbench-section-heading"><h2>最近更新</h2><Link className="workbench-more" to="/documents/recent">查看全部<ChevronRight aria-hidden="true" size={14} /></Link></header>
-          {notesQuery.isLoading ? <div className="empty-panel">正在加载文档…</div> : null}
+          {notesQuery.isLoading ? <LoadingState label="正在加载文档…" /> : null}
           {!notesQuery.isLoading && !recentNotes.length ? <div className="workbench-empty-section"><FilePlus2 aria-hidden="true" size={28} /><h3>还没有文档</h3><p>先创建笔记本，再开始第一篇文档。</p><Link className="workbench-more" to="/documents/collections">管理笔记本<ChevronRight aria-hidden="true" size={14} /></Link></div> : null}
           {recentNotes.length ? <ul className="workbench-document-list">
             {recentNotes.map((note) => <li key={note.id}><Link to={`/documents/${note.id}`} className="workbench-document-row">

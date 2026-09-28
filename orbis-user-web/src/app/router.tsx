@@ -1,6 +1,8 @@
 import { Navigate, createBrowserRouter } from "react-router-dom";
 import { lazy, Suspense } from "react";
 
+import { LoadingState } from "../shared/ui/LoadingState";
+import { WorkspaceLoadingPage } from "../features/workspace/WorkspaceLoadingPage";
 import { AccountSettingsPage } from "../features/account/AccountSettingsPage";
 import { HomePage } from "../features/home/HomePage";
 import { DEFAULT_WORKSPACE_PATH } from "../features/workspace/workspace-areas";
@@ -22,12 +24,13 @@ const SitesPage = lazy(() => import("../features/sites/SitesPage").then((module)
 const SiteEditorPage = lazy(() => import("../features/sites/SiteEditorPage").then((module) => ({ default: module.SiteEditorPage })));
 const PublicSitePage = lazy(() => import("../features/sites/PublicSitePage").then((module) => ({ default: module.PublicSitePage })));
 const SitePreviewPage = lazy(() => import("../features/sites/PublicSitePage").then((module) => ({ default: module.SitePreviewPage })));
-const siteFallback = <div className="site-reader-status" role="status">正在打开站点…</div>;
+const siteFallback = <div className="site-reader-status"><LoadingState label="正在打开站点…" variant="editor" /></div>;
+const workspaceFallback = <WorkspaceLoadingPage />;
 
 export const router = createBrowserRouter([
   { path: "/s/:slug/*", element: <Suspense fallback={siteFallback}><PublicSitePage /></Suspense> },
-  { path: "/sites", element: <RequireAuth><Suspense fallback={siteFallback}><SitesPage /></Suspense></RequireAuth> },
-  { path: "/sites/:siteId", element: <RequireAuth><Suspense fallback={siteFallback}><SiteEditorPage /></Suspense></RequireAuth> },
+  { path: "/sites", element: <RequireAuth><Suspense fallback={workspaceFallback}><SitesPage /></Suspense></RequireAuth> },
+  { path: "/sites/:siteId", element: <RequireAuth><Suspense fallback={workspaceFallback}><SiteEditorPage /></Suspense></RequireAuth> },
   { path: "/sites/:siteId/preview/*", element: <RequireAuth><Suspense fallback={siteFallback}><SitePreviewPage /></Suspense></RequireAuth> },
   {
     path: "/",

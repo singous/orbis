@@ -58,7 +58,7 @@ export function ResourceDialog({
             <DialogClose asChild>
               <Button variant="ghost">取消</Button>
             </DialogClose>
-            <Button type="submit" variant="primary" disabled={!value.trim() || pending}>
+            <Button type="submit" variant="primary" isPending={pending} disabled={!value.trim() || pending}>
               {pending ? "处理中…" : submitLabel}
             </Button>
           </DialogFooter>

@@ -1,3 +1,4 @@
+import { LoadingState } from "../../shared/ui/LoadingState";
 import { FilePlus2 } from "../../shared/ui/icons";
 import { Link } from "react-router-dom";
 
@@ -23,7 +24,7 @@ export function RecentDocumentsPage() {
           </StatusMessage>
         ) : null}
         {notesQuery.isLoading ? (
-          <div className="empty-panel">正在加载文档…</div>
+          <LoadingState label="正在加载文档…" />
         ) : null}
         {!notesQuery.isLoading && !notes.length ? (
           <div className="empty-panel">

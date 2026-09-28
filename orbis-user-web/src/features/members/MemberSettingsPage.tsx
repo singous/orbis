@@ -1,3 +1,4 @@
+import { LoadingState } from "../../shared/ui/LoadingState";
 import { Avatar } from "@heroui/react/avatar";
 import { Tag } from "../../shared/ui/Tag";
 import { ActionButton } from "../../shared/ui/ActionButton";
@@ -108,7 +109,7 @@ export function MemberSettingsPage() {
 
         <section className="mb-10">
           <div className="section-heading"><div><h2>工作空间成员</h2><p>{membersQuery.data?.items.length ?? 0} 位活跃成员</p></div></div>
-          {membersQuery.isLoading ? <div className="empty-panel">正在加载成员…</div> : null}
+          {membersQuery.isLoading ? <LoadingState label="正在加载成员…" /> : null}
           <div className="workbench-member-list">
             {membersQuery.data?.items.map((member) => {
               const actorCanChange = canManage && (workspace?.role === "owner" || member.role !== "admin");

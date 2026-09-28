@@ -1,3 +1,4 @@
+import { LoadingState } from "../../shared/ui/LoadingState";
 import { buttonVariants } from "../../shared/ui/Button";
 import { InputGroup } from "@heroui/react/input-group";
 import { ActionButton } from "../../shared/ui/ActionButton";
@@ -110,7 +111,7 @@ export function HomePage() {
         <section className="workbench-section" aria-label="最近编辑">
           <header className="workbench-section-heading"><h2>最近编辑</h2><Link className="workbench-more" to="/documents/recent">查看全部<ChevronRight aria-hidden="true" size={14} /></Link></header>
           {notesQuery.isError ? <StatusMessage tone="error" title="最近文档加载失败">请稍后重试。</StatusMessage> : null}
-          {notesQuery.isLoading ? <div className="empty-panel">正在加载最近文档…</div> : null}
+          {notesQuery.isLoading ? <LoadingState label="正在加载最近文档…" /> : null}
           {!notesQuery.isLoading && !notesQuery.isError && !recentNotes.length ? (
             <div className="empty-panel">还没有可继续的文档。<Link to="/documents/collections" className="mt-3 inline-flex text-sm font-semibold">前往我的笔记本</Link></div>
           ) : null}
