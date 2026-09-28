@@ -1,3 +1,4 @@
+import { EmptyState as HeroEmptyState } from "@heroui/react/empty-state";
 import type { ReactNode } from "react";
 
 import { cn } from "./cn";
@@ -16,7 +17,7 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <div
+    <HeroEmptyState
       className={cn(
         "flex flex-col items-center justify-center gap-3 px-6 py-16 text-center",
         className,
@@ -28,6 +29,6 @@ export function EmptyState({
         <p className="max-w-sm text-sm leading-6 text-[var(--text-secondary)]">{description}</p>
       ) : null}
       {action ? <div className="mt-2">{action}</div> : null}
-    </div>
+    </HeroEmptyState>
   );
 }

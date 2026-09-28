@@ -13,21 +13,11 @@
     height: auto;
     min-width: 0;
     padding: 0;
-    border-radius: 0;
     font: inherit;
-    color: inherit;
     text-align: inherit;
     white-space: normal;
     justify-content: normal;
     gap: normal;
-    --button-bg-hover: transparent;
-    --button-bg-pressed: transparent;
-  }
-
-  .orbis-action-button,
-  .orbis-action-button:active,
-  .orbis-action-button[data-pressed="true"] {
-    transform: none;
   }
 
   .orbis-action-button svg {
@@ -126,7 +116,7 @@
   --success-border: color-mix(in oklab, var(--success) 25%, var(--surface));
   --success-text: var(--success-soft-foreground);
   --shadow-pop: var(--overlay-shadow);
-  --radius-control: var(--radius);
+  --radius-control: var(--radius-3xl);
   --radius-container: calc(var(--radius) * 3);
   --radius-pop: calc(var(--radius) * 3);
   --radius-card: calc(var(--radius) * 3);
@@ -207,7 +197,6 @@ body {
   height: 32px;
   flex: none;
   place-items: center;
-  border-radius: 8px;
   color: var(--muted);
   transition: 140ms ease;
 }
@@ -241,9 +230,6 @@ body {
   min-height: var(--action-height);
   gap: var(--action-gap);
   padding: 0 var(--action-padding-x);
-  border-width: 1px;
-  border-style: solid;
-  border-radius: var(--radius-control);
   font-family: inherit;
   font-size: var(--action-font-size);
   font-weight: var(--action-font-weight);
@@ -273,11 +259,7 @@ body {
   max-width: none;
   max-height: calc(100dvh - 48px);
   overflow-y: auto;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-pop);
-  background: var(--surface-overlay);
   padding: 28px;
-  box-shadow: var(--shadow-pop);
 }
 
 .orbis-modal-header {
@@ -293,7 +275,6 @@ body {
   height: 28px;
   flex: none;
   place-items: center;
-  border-radius: var(--radius-control);
   color: var(--text-secondary);
 }
 
@@ -417,8 +398,7 @@ body {
 /* Mono for metadata: figures, dates, save state. */
 .stat-value,
 .page-container time,
-.document-main-item time,
-.save-indicator {
+.document-main-item time {
   font-family: var(--font-mono);
   letter-spacing: -0.02em;
 }
@@ -468,16 +448,6 @@ body {
   color: var(--text-oninverse);
 }
 
-.tag {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  background: var(--surface-hover);
-  padding: 3px 8px;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 600;
-}
 
 .empty-panel {
   border: 1px solid var(--border-subtle);
@@ -727,7 +697,6 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   flex: none;
   place-items: center;
   border: 1px solid var(--border);
-  border-radius: var(--radius-control);
   background: var(--surface-content);
   color: var(--muted);
   transition: color 120ms ease, background 120ms ease;
@@ -748,25 +717,7 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   display: block;
 }
 
-.save-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface-content);
-  padding: 5px 9px;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 650;
-}
 
-.save-indicator.state-error,
-.save-indicator.state-conflict {
-  border-color: var(--warning-border);
-  background: var(--warning-bg);
-  color: var(--warning-text);
-}
 
 
 .notebook-menu-back {
@@ -810,7 +761,6 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   height: 28px;
   place-items: center;
   border: 1px solid var(--border);
-  border-radius: var(--radius-control);
   background: var(--surface-content);
   color: var(--muted);
 }
@@ -836,7 +786,7 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   font-size: 12px;
   font-weight: 550;
 }
-.document-context-create { display: grid; width: 28px; height: 28px; min-width: 28px; min-height: 28px; place-items: center; padding: 0; border-radius: 6px; color: var(--text-secondary); }
+.document-context-create { display: grid; width: 28px; height: 28px; min-width: 28px; min-height: 28px; place-items: center; padding: 0; color: var(--text-secondary); }
 .document-context-create:hover { color: var(--text-primary); background: var(--surface-hover); }
 
 
@@ -904,7 +854,7 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 .document-tree-prefix { display: flex; flex: none; align-items: center; }
 .document-drag-placeholder { width: 20px; flex: none; }
 .document-disclosure-placeholder { width: 20px; flex: none; }
-.document-tree-disclosure { display: grid; width: 20px; min-width: 20px; height: 30px; min-height: 30px; place-items: center; padding: 0; border-radius: 5px; color: var(--text-tertiary); }
+.document-tree-disclosure { display: grid; width: 20px; min-width: 20px; height: 30px; min-height: 30px; place-items: center; padding: 0; color: var(--text-tertiary); }
 .document-tree-disclosure:hover { background: var(--surface-active); color: var(--text-primary); }
 .document-tree-disclosure svg { transition: transform 140ms ease; }
 .document-tree-disclosure[aria-expanded="false"] svg { transform: rotate(-90deg); }
@@ -943,7 +893,6 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
   min-height: 30px;
   place-items: center;
   padding: 0;
-  border-radius: 6px;
   color: var(--text-tertiary);
   background: transparent;
 }
@@ -1078,3 +1027,7 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 .orbis-color-popover { width: 260px; max-width: calc(100vw - 24px); display: grid; gap: 16px; padding: 16px; }
 .orbis-color-popover [data-slot="color-area"] { width: 100%; height: 160px; }
 .member-role-select { min-width: 120px; }
+
+/* Compact shell search dimensions keep the InputGroup theme intact. */
+.orbis-compact-search { min-height: 0; }
+.orbis-compact-search [data-slot="input-group-input"] { min-width: 0; height: 100%; padding-block: 0; }

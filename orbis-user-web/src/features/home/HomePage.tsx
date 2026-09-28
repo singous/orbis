@@ -1,4 +1,5 @@
-import { Input as HeroInput } from "@heroui/react/input";
+import { buttonVariants } from "../../shared/ui/Button";
+import { InputGroup } from "@heroui/react/input-group";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import {
   ArrowRight,
@@ -70,7 +71,7 @@ export function HomePage() {
         title="首页"
         description={workspace?.name || "我的工作空间"}
         actions={canMutateWorkspaceContent(workspace) ? (
-          <Link className="workbench-primary-action" to="/documents/collections">
+          <Link className={buttonVariants({ variant: "primary" })} to="/documents/collections">
             <Plus aria-hidden="true" size={16} />新建笔记本
           </Link>
         ) : null}
@@ -79,9 +80,9 @@ export function HomePage() {
           <header className="workbench-section-heading">
             <h2>工作空间</h2>
             <form className="workbench-inline-search" onSubmit={submitSearch} role="search">
-              <Search aria-hidden="true" size={15} />
-              <HeroInput className="orbis-embedded-input" type="search" aria-label="搜索文档" placeholder="搜索文档…" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
-              <ActionButton type="submit" aria-label="搜索"><ArrowRight aria-hidden="true" size={15} /></ActionButton>
+              <InputGroup fullWidth className="workbench-search-group orbis-compact-search"><InputGroup.Prefix><Search aria-hidden="true" size={15} /></InputGroup.Prefix>
+              <InputGroup.Input type="search" aria-label="搜索文档" placeholder="搜索文档…" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
+              <InputGroup.Suffix><ActionButton type="submit" aria-label="搜索"><ArrowRight aria-hidden="true" size={15} /></ActionButton></InputGroup.Suffix></InputGroup>
             </form>
           </header>
           <div className="workbench-resource-grid">

@@ -1,3 +1,4 @@
+import { Tag } from "../../shared/ui/Tag";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Crown, Mail, RefreshCw, Shield, Trash2, UserPlus, Users } from "lucide-react";
@@ -115,9 +116,9 @@ export function MemberSettingsPage() {
                   <div className="grid h-9 w-9 place-items-center rounded-full bg-[var(--surface-inverse)] text-xs font-semibold text-[var(--text-oninverse)]">{(member.display_name || member.email).slice(0, 1).toUpperCase()}</div>
                   <div className="min-w-[180px] flex-1"><div className="text-sm font-semibold">{member.display_name || member.email}</div><div className="mt-1 text-xs text-[var(--muted)]">{member.email}</div></div>
                   <div className="flex items-center gap-2">
-                    {member.role === "owner" ? <span className="tag"><Crown aria-hidden="true" className="mr-1" size={11} />所有者</span> : actorCanChange ? (
+                    {member.role === "owner" ? <Tag><Crown aria-hidden="true" className="mr-1" size={11} />所有者</Tag> : actorCanChange ? (
                       <SelectField aria-label={`调整 ${member.email} 的角色`} className="member-role-select" value={member.role} disabled={roleMutation.isPending} onChange={(nextRole) => roleMutation.mutate({ id: member.id, nextRole: nextRole as "admin" | "editor" | "normal" })} options={[...(workspace?.role === "owner" ? [{ value: "admin", label: "管理员" }] : []), { value: "editor", label: "编辑者" }, { value: "normal", label: "普通成员" }]} />
-                    ) : <span className="tag"><Shield aria-hidden="true" className="mr-1" size={11} />{member.role}</span>}
+                    ) : <Tag><Shield aria-hidden="true" className="mr-1" size={11} />{member.role}</Tag>}
                     {workspace?.role === "owner" && member.role === "admin" ? <Button variant="secondary" onClick={() => confirmTransfer(member.id)} disabled={!mailQuery.data?.available || transferMutation.isPending}>转让所有权</Button> : null}
                     {member.role !== "owner" && actorCanChange ? <ActionButton type="button" className="icon-button danger-hover" aria-label={`移除 ${member.email}`} onClick={() => confirmRemove(member.id, member.email)}><Trash2 aria-hidden="true" size={14} /></ActionButton> : null}
                   </div>

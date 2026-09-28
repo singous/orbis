@@ -94,8 +94,8 @@ export function SiteSourceEditor({
   return <section className="site-source-editor" aria-labelledby="site-source-title">
     <div className="site-section-heading"><div><h2 id="site-source-title">内容来源</h2><p>关联笔记本后，新文档与标题更新会在下次预览时自动出现。</p></div></div>
     <RadioGroup className="site-source-mode" aria-label="内容来源方式" name="site-source-kind" orientation="horizontal" isDisabled={disabled} value={source.kind} onChange={(kind) => { if (kind === "notebooks" || kind === "manual") setMode(kind); }}>
-      <Radio value="notebooks"><Radio.Content>关联笔记本</Radio.Content></Radio>
-      <Radio value="manual"><Radio.Content>手动选择</Radio.Content></Radio>
+      <Radio value="notebooks"><Radio.Content><Radio.Control><Radio.Indicator /></Radio.Control>关联笔记本</Radio.Content></Radio>
+      <Radio value="manual"><Radio.Content><Radio.Control><Radio.Indicator /></Radio.Control>手动选择</Radio.Content></Radio>
     </RadioGroup>
     {source.kind === "manual" ? <div className="site-source-manual-note"><strong>手动选择目录</strong><p>继续使用下方站点目录。切换到笔记本来源不会删除这些手选项，切回后仍可继续编辑。</p></div> : <>
       {notebooks.isPending ? <p className="mvp-muted">正在加载笔记本…</p> : notebooks.isError ? <p role="alert" className="site-source-inline-error">无法加载笔记本。<ActionButton type="button" onClick={() => void notebooks.refetch()}>重试</ActionButton></p> : null}

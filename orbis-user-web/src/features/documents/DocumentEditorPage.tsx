@@ -1,3 +1,4 @@
+import { Tag } from "../../shared/ui/Tag";
 import { Input as HeroInput } from "@heroui/react/input";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { AlertTriangle, Archive, ArrowLeft, Check, Cloud, Download, Eye, EyeOff, MessageSquare, RefreshCw, RotateCcw, Save, WifiOff } from "lucide-react";
@@ -287,7 +288,7 @@ export function DocumentEditorPage() {
   const toolbar = (
     <div className="flex items-center gap-2">
       <ActionButton ref={collaborationTriggerRef} type="button" className="icon-button" aria-label="评论与历史" aria-haspopup="dialog" aria-expanded={collaborationOpen} disabled={!draft || archiving} onClick={() => setCollaborationOpen(true)}><MessageSquare aria-hidden="true" size={16} /></ActionButton>
-      <span className={`save-indicator state-${saveState}`}><StateIcon aria-hidden="true" size={13} className={saveState === "saving" ? "animate-spin" : ""} />{stateCopy.label}</span>
+      <Tag tone={saveState === "error" ? "danger" : saveState === "conflict" ? "warning" : "neutral"}><StateIcon aria-hidden="true" size={13} className={saveState === "saving" ? "animate-spin" : ""} />{stateCopy.label}</Tag>
       {canEdit ? <ActionButton type="button" className="icon-button danger-hover" aria-label="归档文档" disabled={!draft || editorBusy} onClick={handleArchive}><Archive aria-hidden="true" size={15} /></ActionButton> : null}
     </div>
   );

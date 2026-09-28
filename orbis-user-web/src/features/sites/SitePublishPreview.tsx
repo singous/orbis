@@ -38,9 +38,9 @@ export function SitePublishPreview({
     </div> : <div className="site-preview-empty"><AlertTriangle size={18} /><div><strong>来源中没有可发布页面</strong><p>请返回来源配置，确认笔记本中有文档且没有全部排除。</p></div></div>}
     {error ? <div className="site-preview-error" role="alert"><AlertTriangle size={16} /><span>{error}</span></div> : null}
     <div className="site-dialog-actions">
-      {error ? <ActionButton className="mvp-button" type="button" disabled={busy} onClick={onRefresh}><RotateCw size={14} />重新预览</ActionButton> : null}
-      <ActionButton className="mvp-button" type="button" disabled={busy} onClick={onCancel}>取消</ActionButton>
-      <ActionButton className="mvp-button primary" type="button" disabled={busy || !preview.pages.length} onClick={onConfirm}>{busy ? "发布中…" : "确认发布"}</ActionButton>
+      {error ? <ActionButton variant="secondary" className="mvp-button" type="button" disabled={busy} onClick={onRefresh}><RotateCw size={14} />重新预览</ActionButton> : null}
+      <ActionButton variant="secondary" className="mvp-button" type="button" disabled={busy} onClick={onCancel}>取消</ActionButton>
+      <ActionButton variant="primary" className="mvp-button primary" type="button" disabled={busy || !preview.pages.length} onClick={onConfirm}>{busy ? "发布中…" : "确认发布"}</ActionButton>
     </div>
   </div>;
 }

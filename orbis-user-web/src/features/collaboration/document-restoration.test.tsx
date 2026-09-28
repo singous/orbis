@@ -31,7 +31,7 @@ function server(mutate: (url: URL, init: RequestInit) => Response | Promise<Resp
 }
 async function openHistory(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole("button", { name: "评论与历史" }));
-  await user.click(await screen.findByRole("button", { name: "历史版本" }));
+  await user.click(await screen.findByRole("tab", { name: "历史版本" }));
   await user.click(await screen.findByRole("button", { name: /查看版本 2/ }));
   await screen.findByText("历史正文");
 }
@@ -50,7 +50,7 @@ describe("restoring from the editor", () => {
     expect(requests.some((request) => request.method === "POST")).toBe(false);
     expect(editor).toHaveAttribute("readonly");
     expect(screen.getByRole("button", { name: "关闭评论与历史" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "评论" })).toBeDisabled();
+    expect(screen.getByRole("tab", { name: "评论" })).toHaveAttribute("aria-disabled", "true");
     await act(async () => { finishSave(response(content(5, "恢复前草稿"))); });
     await screen.findByText("历史版本已恢复");
     expect(requests.filter((request) => request.method === "PUT").map((request) => request.body)).toEqual([{ expected_version: 4, blocks: blocks("恢复前草稿") }]);

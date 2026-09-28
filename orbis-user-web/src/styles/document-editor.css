@@ -4,9 +4,7 @@
 .orbis-bn .doc-editor-controls { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 10px; font-family: inherit; }
 .orbis-bn .doc-editor-controls label { display: grid; gap: 3px; min-width: 125px; flex: 1; margin: 0; }
 .orbis-bn .doc-editor-controls label > span { color: var(--text-tertiary, #87928b); font-size: 10px; }
-.orbis-bn .doc-editor-controls input { min-width: 0; width: 100%; border: 1px solid var(--border-subtle, #e0e6e2); background: var(--surface, #fff); color: var(--text-primary, #22322a); border-radius: 5px; padding: 5px 8px; font: inherit; font-size: 13px; line-height: 1.6; }
-.orbis-bn .doc-editor-controls button:not([data-slot="select-trigger"]) { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--border-subtle, #e0e6e2); background: var(--surface, #fff); color: var(--text-secondary, #65736c); border-radius: 5px; padding: 5px 9px; cursor: pointer; font-size: 12px; line-height: 1.6; }
-.orbis-bn .doc-editor-controls button:not([data-slot="select-trigger"]):focus-visible { outline: 2px solid var(--accent, #0f766e); outline-offset: 2px; }
+.orbis-bn .doc-editor-controls input { min-width: 0; width: 100%; font-size: 13px; }
 .orbis-bn .doc-editor-inline { margin-top: 10px; min-height: 1.6em; line-height: 1.75; }
 .orbis-bn .doc-editor-title { display: block; font-size: 16px; }
 .orbis-bn .doc-editor-callout { border-left-color: #488cb6; }

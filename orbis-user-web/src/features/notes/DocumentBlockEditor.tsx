@@ -63,7 +63,7 @@ function ComponentEditor({ kind, props, contentRef, updateProps, addChild }: {
           placeholder={name === "href" ? "https://… 或内部文档链接" : "输入标题"}
           onChange={(event) => updateProps({ [name]: event.target.value })} /></label>;
       })}
-      {GROUP_CHILD[kind] ? <ActionButton type="button" onClick={addChild}><Plus size={13} aria-hidden="true" />添加{kind === "codeGroup" ? "代码示例" : DOCUMENT_BLOCKS[GROUP_CHILD[kind] as DocumentBlockKind].label}</ActionButton> : null}
+      {GROUP_CHILD[kind] ? <ActionButton variant="secondary" type="button" onClick={addChild}><Plus size={13} aria-hidden="true" />添加{kind === "codeGroup" ? "代码示例" : DOCUMENT_BLOCKS[GROUP_CHILD[kind] as DocumentBlockKind].label}</ActionButton> : null}
     </div>}
     {definition.content === "inline" ? <div ref={contentRef} className="doc-editor-inline" /> : null}
   </div>;

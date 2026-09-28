@@ -35,11 +35,13 @@ test("embedded search fields fit their container and group headings stay left al
     const metrics = await page.getByRole("searchbox", { name: "全局搜索", exact: true }).evaluate((input) => {
       const outer = input.closest("form")!.getBoundingClientRect();
       const inner = input.getBoundingClientRect();
-      return { top: inner.top - outer.top, bottom: outer.bottom - inner.bottom, shadow: getComputedStyle(input).boxShadow };
+      const shadow = getComputedStyle(input).boxShadow;
+      const hasInnerShadow = shadow !== "none" && !shadow.split(/,\s*(?=rgba)/).every((part) => part === "rgba(0, 0, 0, 0) 0px 0px 0px 0px");
+      return { top: inner.top - outer.top, bottom: outer.bottom - inner.bottom, hasInnerShadow };
     });
     expect(metrics.top).toBeGreaterThanOrEqual(0);
     expect(metrics.bottom).toBeGreaterThanOrEqual(0);
-    expect(metrics.shadow).toBe("none");
+    expect(metrics.hasInnerShadow).toBe(false);
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/documents/collections");

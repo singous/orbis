@@ -1,4 +1,4 @@
-import { Input as HeroInput } from "@heroui/react/input";
+import { InputGroup } from "@heroui/react/input-group";
 import { Modal } from "@heroui/react/modal";
 import { FileText, Search, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -62,12 +62,12 @@ export function SearchDialog({ pages, basePath, close, loadPages }: { pages: Pub
       if (event.nativeEvent.isComposing) return;
       if (event.key === "Escape") { event.preventDefault(); close(); }
     }}>
-      <div className="site-reader-search-field"><Search aria-hidden="true" size={18} /><HeroInput autoFocus className="orbis-embedded-input" ref={inputRef} role="combobox" aria-label="搜索文档" aria-controls="site-reader-search-results" aria-expanded="true" aria-activedescendant={results[activeIndex] ? `site-search-${activeIndex}` : undefined} placeholder="搜索标题与正文…" value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => {
+      <InputGroup fullWidth className="site-reader-search-field"><InputGroup.Prefix><Search aria-hidden="true" size={18} /></InputGroup.Prefix><InputGroup.Input autoFocus ref={inputRef} role="combobox" aria-label="搜索文档" aria-controls="site-reader-search-results" aria-expanded="true" aria-activedescendant={results[activeIndex] ? `site-search-${activeIndex}` : undefined} placeholder="搜索标题与正文…" value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => {
         if (event.nativeEvent.isComposing) return;
         if (event.key === "ArrowDown") { event.preventDefault(); event.stopPropagation(); setActiveIndex((index) => results.length ? (index + 1) % results.length : 0); }
         else if (event.key === "ArrowUp") { event.preventDefault(); event.stopPropagation(); setActiveIndex((index) => results.length ? (index - 1 + results.length) % results.length : 0); }
         else if (event.key === "Enter") { event.preventDefault(); event.stopPropagation(); choose(activeIndex); }
-      }} /><ActionButton type="button" aria-label="关闭搜索" onClick={close}><X aria-hidden="true" size={18} /></ActionButton></div>
+      }} /><InputGroup.Suffix><ActionButton type="button" aria-label="关闭搜索" onClick={close}><X aria-hidden="true" size={18} /></ActionButton></InputGroup.Suffix></InputGroup>
       <div id="site-reader-search-results" className="site-reader-search-results" role="listbox">
         {/* Search options retain active-descendant focus on the combobox input. */}
         {loading ? <div className="site-reader-search-hint" role="status"><p>正在加载搜索索引…</p></div> : current?.error ? <div className="site-reader-search-empty" role="alert"><p>{current.error}</p><ActionButton type="button" onClick={() => setAttempt((value) => value + 1)}>重新加载搜索</ActionButton></div> : !query.trim() ? <div className="site-reader-search-hint"><Search aria-hidden="true" size={20} /><p>输入关键词搜索当前发布版本</p><span>仅显示读者可见的文档</span></div> : results.length ? results.map((result, index) => <button id={`site-search-${index}`} key={result.page.slug} type="button" role="option" aria-label={`${result.page.title} ${result.path} ${result.excerpt}`} aria-selected={activeIndex === index} className={activeIndex === index ? "is-active" : ""} onMouseMove={() => setActiveIndex(index)} onClick={() => choose(index)}>

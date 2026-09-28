@@ -4,33 +4,18 @@ import type { ComponentProps, ReactNode } from "react";
 
 import { cn } from "./cn";
 
-export const buttonVariants = cva(
-  [
-    "ui-button border border-transparent",
-    "transition-colors duration-100",
-    "disabled:pointer-events-none disabled:opacity-50",
-  ],
-  {
-    variants: {
-      variant: {
-        primary:
-          "bg-[var(--surface-inverse)] text-[var(--text-oninverse)] hover:bg-[var(--surface-inverse-hover)]",
-        secondary:
-          "border border-[var(--border-subtle)] bg-[var(--surface-content)] text-[var(--text-primary)] hover:bg-[var(--surface-hover)]",
-        ghost: "text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]",
-        danger: "bg-[var(--danger)] text-[var(--text-oncolor)] hover:bg-[var(--danger-strong)]",
-      },
-      size: {
-        sm: "ui-button--sm",
-        md: "ui-button--md",
-      },
+export const buttonVariants = cva("button ui-button", {
+  variants: {
+    variant: {
+      primary: "button--primary",
+      secondary: "button--secondary",
+      ghost: "button--ghost",
+      danger: "button--danger",
     },
-    defaultVariants: {
-      variant: "secondary",
-      size: "md",
-    },
+    size: { sm: "button--sm ui-button--sm", md: "button--md ui-button--md" },
   },
-);
+  defaultVariants: { variant: "secondary", size: "md" },
+});
 
 export type ButtonProps = Omit<ComponentProps<typeof HeroButton>, "variant" | "size" | "className" | "children" | "render"> &
   VariantProps<typeof buttonVariants> & {

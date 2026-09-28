@@ -1,3 +1,4 @@
+import { Avatar } from "@heroui/react/avatar";
 import { Popover } from "@heroui/react/popover";
 import { Boxes, Check, ChevronDown } from "lucide-react";
 import { useStore } from "zustand";
@@ -24,7 +25,7 @@ export function WorkspaceSwitcher() {
           <Popover.Dialog className="workspace-switcher-dialog" aria-label="工作空间详情">
             <div className="workspace-switcher-group">个人</div>
             <div className="workspace-switcher-item">
-              <span className="workspace-switcher-avatar">{userName.slice(0, 1).toUpperCase()}</span>
+              <Avatar size="sm" className="workspace-switcher-avatar"><Avatar.Fallback>{userName.slice(0, 1).toUpperCase()}</Avatar.Fallback></Avatar>
               <span className="min-w-0 flex-1">
                 <span className="workspace-switcher-name truncate">{userName}</span>
                 <span className="workspace-switcher-sub">我自己</span>

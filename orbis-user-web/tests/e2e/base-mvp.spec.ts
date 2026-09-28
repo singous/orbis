@@ -77,7 +77,7 @@ test("personal writing, team discussion and a versioned documentation site work 
   await expect(touchDialog).toBeVisible();
   await touchContext.close();
 
-  await page.getByRole("button", { name: "历史版本", exact: true }).click();
+  await page.getByRole("tab", { name: "历史版本", exact: true }).click();
   await page.getByRole("button", { name: "查看版本 1", exact: true }).click();
   await expect(page.getByRole("heading", { name: "版本 1 预览" })).toBeVisible();
   await page.getByRole("button", { name: "关闭评论与历史" }).click();
@@ -177,14 +177,14 @@ test("personal writing, team discussion and a versioned documentation site work 
   await member.getByLabel("新评论", { exact: true }).fill("我已经检查，可以继续完善内容。");
   await member.getByRole("button", { name: "发表评论", exact: true }).click();
   await expect(member.getByText("我已经检查，可以继续完善内容。", { exact: true })).toBeVisible();
-  await member.getByRole("button", { name: "历史版本", exact: true }).click();
+  await member.getByRole("tab", { name: "历史版本", exact: true }).click();
   await member.getByRole("button", { name: "查看版本 1", exact: true }).click();
   await expect(member.getByRole("button", { name: "恢复此版本" })).toHaveCount(0);
   await memberContext.close();
 
   await page.goto(`/documents/${noteId}`);
   await page.getByRole("button", { name: "评论与历史", exact: true }).click();
-  await page.getByRole("button", { name: "历史版本", exact: true }).click();
+  await page.getByRole("tab", { name: "历史版本", exact: true }).click();
   await page.getByRole("button", { name: "查看版本 2", exact: true }).click();
   await page.getByRole("button", { name: "恢复此版本", exact: true }).click();
   await expect(page.getByRole("alertdialog", { name: "历史版本已恢复" })).toContainText("原正文可在历史中找回。");

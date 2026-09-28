@@ -1,3 +1,4 @@
+import { buttonVariants } from "../../shared/ui/Button";
 import { BookOpen, ChevronRight, FilePlus2, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useStore } from "zustand";
@@ -30,7 +31,7 @@ export function DocumentOverviewPage() {
       <PageContainer
         title="文档概览"
         description={`${notebooks.length} 个笔记本 · ${notes.length} 篇文档`}
-        actions={canEdit ? <Link to="/documents/collections" className="workbench-primary-action"><Plus aria-hidden="true" size={16} />新建笔记本</Link> : null}
+        actions={canEdit ? <Link to="/documents/collections" className={buttonVariants({ variant: "primary" })}><Plus aria-hidden="true" size={16} />新建笔记本</Link> : null}
       >
         {groupsQuery.isError || notebooksQuery.isError || notesQuery.isError ? <StatusMessage tone="error" title="文档空间加载失败">请检查 API 服务后重试。</StatusMessage> : null}
 

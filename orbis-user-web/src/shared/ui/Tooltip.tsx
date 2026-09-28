@@ -27,10 +27,7 @@ export function Tooltip({
       <HeroTooltip.Content
         placement={placement}
         offset={6}
-        className={cn(
-          "z-50 rounded-[var(--radius-control)] border border-[var(--border-inverse)] bg-[var(--surface-inverse)] px-2 py-1",
-          "text-xs text-[var(--text-oninverse)] shadow-[var(--shadow-pop)]",
-        )}
+        className="z-50"
       >
         {label}
       </HeroTooltip.Content>

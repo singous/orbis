@@ -55,3 +55,6 @@ Object.defineProperty(globalThis, "localStorage", {
   configurable: true,
   value: memoryStorage,
 });
+
+// jsdom does not implement the Web Animations API used by HeroUI tab indicators.
+Object.defineProperty(Element.prototype, "getAnimations", { configurable: true, value: () => [] });
