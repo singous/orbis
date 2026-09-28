@@ -1,6 +1,6 @@
 import { ActionButton } from "../../shared/ui/ActionButton";
 import type { ReactNode } from "react";
-import { ChevronsLeft, Menu, PanelRightOpen, X } from "lucide-react";
+import { ChevronsLeft, Menu, PanelRightOpen, X } from "../../shared/ui/icons";
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useStore } from "zustand";

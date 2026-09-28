@@ -1,7 +1,7 @@
 import { Avatar } from "@heroui/react/avatar";
 import { Dropdown } from "@heroui/react/dropdown";
 import { Label } from "@heroui/react/label";
-import { LogOut, Settings, Users } from "lucide-react";
+import { LogOut, Settings, Users } from "../../shared/ui/icons";
 import { Link } from "react-router-dom";
 
 import type { User, Workspace } from "../../shared/api/schemas";

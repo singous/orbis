@@ -1,6 +1,6 @@
 import { Avatar } from "@heroui/react/avatar";
 import { Popover } from "@heroui/react/popover";
-import { Boxes, Check, ChevronDown } from "lucide-react";
+import { Boxes, Check, ChevronDown } from "../../shared/ui/icons";
 import { useStore } from "zustand";
 
 import { authStore } from "../../shared/auth/auth-store";
@@ -30,17 +30,17 @@ export function WorkspaceSwitcher() {
                 <span className="workspace-switcher-name truncate">{userName}</span>
                 <span className="workspace-switcher-sub">我自己</span>
               </span>
-              {currentIsPrivate ? <Check aria-hidden="true" size={15} className="workspace-switcher-check" /> : null}
+              {currentIsPrivate ? <Check aria-hidden="true" size={16} className="workspace-switcher-check" /> : null}
             </div>
             <div className="workspace-switcher-group">空间</div>
             {workspace && !currentIsPrivate ? (
               <div className="workspace-switcher-item">
-                <span className="workspace-switcher-space-icon"><Boxes aria-hidden="true" size={15} /></span>
+                <span className="workspace-switcher-space-icon"><Boxes aria-hidden="true" size={16} /></span>
                 <span className="min-w-0 flex-1">
                   <span className="workspace-switcher-name truncate">{workspace.name}</span>
                   <span className="workspace-switcher-sub">团队空间</span>
                 </span>
-                <Check aria-hidden="true" size={15} className="workspace-switcher-check" />
+                <Check aria-hidden="true" size={16} className="workspace-switcher-check" />
               </div>
             ) : <div className="workspace-switcher-empty">暂无团队空间</div>}
           </Popover.Dialog>

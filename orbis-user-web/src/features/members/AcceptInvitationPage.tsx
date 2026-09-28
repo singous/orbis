@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { Check, UserPlus } from "lucide-react";
+import { Check, UserPlus } from "../../shared/ui/icons";
 import { type FormEvent, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 

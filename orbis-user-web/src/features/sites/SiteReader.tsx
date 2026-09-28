@@ -1,5 +1,5 @@
 import { ActionButton } from "../../shared/ui/ActionButton";
-import { ArrowLeft, ArrowRight, BookOpen, Check, Copy, Link2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, Check, Copy, Link2 } from "../../shared/ui/icons";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { showToast } from "../../shared/ui/Toast";
@@ -192,16 +192,16 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false, load
             <div><h1>{current.title}</h1>{current.description ? <p>{current.description}</p> : null}</div>
             <div className="site-reader-copy-area">
               <div className="site-reader-copy-actions">
-                <ActionButton type="button" aria-label={copyFeedback?.action === "link" && copyFeedback.status === "success" ? "链接已复制" : "复制链接"} onClick={() => void copyLink()}>{copyFeedback?.action === "link" && copyFeedback.status === "success" ? <Check aria-hidden="true" size={15} /> : <Link2 aria-hidden="true" size={15} />}<span>{copyFeedback?.action === "link" && copyFeedback.status === "success" ? "已复制" : "复制链接"}</span></ActionButton>
-                <ActionButton type="button" disabled={contentState?.loading || Boolean(contentState?.error)} aria-label={copyFeedback?.action === "page" && copyFeedback.status === "success" ? "页面 Markdown 已复制" : "复制页面"} onClick={() => void copyPage()}>{copyFeedback?.action === "page" && copyFeedback.status === "success" ? <Check aria-hidden="true" size={15} /> : <Copy aria-hidden="true" size={15} />}<span>{copyFeedback?.action === "page" && copyFeedback.status === "success" ? "已复制" : "复制页面"}</span></ActionButton>
+                <ActionButton type="button" aria-label={copyFeedback?.action === "link" && copyFeedback.status === "success" ? "链接已复制" : "复制链接"} onClick={() => void copyLink()}>{copyFeedback?.action === "link" && copyFeedback.status === "success" ? <Check aria-hidden="true" size={16} /> : <Link2 aria-hidden="true" size={16} />}<span>{copyFeedback?.action === "link" && copyFeedback.status === "success" ? "已复制" : "复制链接"}</span></ActionButton>
+                <ActionButton type="button" disabled={contentState?.loading || Boolean(contentState?.error)} aria-label={copyFeedback?.action === "page" && copyFeedback.status === "success" ? "页面 Markdown 已复制" : "复制页面"} onClick={() => void copyPage()}>{copyFeedback?.action === "page" && copyFeedback.status === "success" ? <Check aria-hidden="true" size={16} /> : <Copy aria-hidden="true" size={16} />}<span>{copyFeedback?.action === "page" && copyFeedback.status === "success" ? "已复制" : "复制页面"}</span></ActionButton>
               </div>
             </div>
           </div>
           {compactOutline ? <Outline items={outline} mobile /> : null}
           {contentState?.loading ? <p role="status" className="site-reader-body-status">正在加载正文…</p> : contentState?.error ? <div role="alert" className="site-reader-body-status"><p>{contentState.error}</p><ActionButton type="button" onClick={contentState.retry}>重新加载正文</ActionButton></div> : <ContentRenderer blocks={current.blocks} pageTitle={current.title} />}
           <nav className="site-reader-pagination" aria-label="相邻文档">
-            {currentIndex > 0 ? <Link to={pageHref(basePath, snapshot.pages[currentIndex - 1].slug)}><ArrowLeft aria-hidden="true" size={17} /><span><small>上一篇</small>{snapshot.pages[currentIndex - 1].title}</span></Link> : <span />}
-            {currentIndex < snapshot.pages.length - 1 ? <Link to={pageHref(basePath, snapshot.pages[currentIndex + 1].slug)}><span><small>下一篇</small>{snapshot.pages[currentIndex + 1].title}</span><ArrowRight aria-hidden="true" size={17} /></Link> : null}
+            {currentIndex > 0 ? <Link to={pageHref(basePath, snapshot.pages[currentIndex - 1].slug)}><ArrowLeft aria-hidden="true" size={18} /><span><small>上一篇</small>{snapshot.pages[currentIndex - 1].title}</span></Link> : <span />}
+            {currentIndex < snapshot.pages.length - 1 ? <Link to={pageHref(basePath, snapshot.pages[currentIndex + 1].slug)}><span><small>下一篇</small>{snapshot.pages[currentIndex + 1].title}</span><ArrowRight aria-hidden="true" size={18} /></Link> : null}
           </nav>
           {updatedAt ? <footer className="site-reader-page-footer">最后更新于 {formatDate(updatedAt)}</footer> : null}
         </> : <div className="site-reader-empty"><BookOpen aria-hidden="true" size={30} /><h1>{snapshot.pages.length ? "页面不存在" : "还没有文档"}</h1><p>{snapshot.pages.length ? "这个地址可能已经变更，请从目录查找文档。" : "选择一些文档，开始建立你的站点。"}</p><Link to={basePath}>返回文档首页</Link></div>}

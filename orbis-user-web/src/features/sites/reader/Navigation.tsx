@@ -1,5 +1,5 @@
 import { ActionButton } from "../../../shared/ui/ActionButton";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight } from "../../../shared/ui/icons";
 import { useEffect, useRef, type RefObject } from "react";
 import { Link } from "react-router-dom";
 

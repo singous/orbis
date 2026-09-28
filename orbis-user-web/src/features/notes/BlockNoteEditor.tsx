@@ -2,7 +2,7 @@ import { zh } from "@blocknote/core/locales";
 import { BlockNoteView } from "@blocknote/mantine";
 import { getDefaultReactSlashMenuItems, SuggestionMenuController, useCreateBlockNote } from "@blocknote/react";
 import { filterSuggestionItems, insertOrUpdateBlockForSlashMenu } from "@blocknote/core/extensions";
-import { BookOpen } from "lucide-react";
+import { BookOpen } from "../../shared/ui/icons";
 // @blocknote/react 0.53 ships no default UI components by itself (its
 // ComponentsContext defaults to undefined), so a bare BlockNoteViewRaw renders
 // no slash menu / formatting toolbar / side menu at all. The mantine adapter
@@ -89,7 +89,7 @@ export function BlockNoteEditor({
         title: documentBlockDefinition(kind)!.label,
         group: "文档组件",
         aliases: [kind, kind.toLowerCase()],
-        icon: <BookOpen size={17} />,
+        icon: <BookOpen size={18} />,
         onItemClick: () => insertOrUpdateBlockForSlashMenu(editor, createDocumentBlock(kind) as typeof documentEditorSchema.PartialBlock),
       })),
     ], query)} /></BlockNoteView></DocumentEditorReadOnly.Provider>

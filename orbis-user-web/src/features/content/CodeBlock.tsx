@@ -1,5 +1,5 @@
 import { ActionButton } from "../../shared/ui/ActionButton";
-import { Check, Copy } from "lucide-react";
+import { Check, Copy } from "../../shared/ui/icons";
 import { useEffect, useState } from "react";
 import { showToast } from "../../shared/ui/Toast";
 

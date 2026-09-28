@@ -3,6 +3,7 @@
 @import "@fontsource-variable/inter";
 @import "./heroui-theme.css";
 @import "./scrollbars.css";
+@import "./icons.css";
 
 @layer components {
   /* Feature controls keep their native layout while HeroUI owns interaction states. */
@@ -900,7 +901,7 @@ body .orbis-bn .bn-mt-suggestion-menu-item-section {
 .document-context-actions .danger-hover:hover { color: var(--danger); }
 .document-actions-popover { width: 180px; padding: 5px; }
 .document-actions-popover [role="menuitem"] { min-height: 36px; font-size: 13px; }
-.document-actions-popover [role="menuitem"] svg { width: 15px; height: 15px; flex: none; }
+.document-actions-popover [role="menuitem"] svg { width: 16px; height: 16px; flex: none; }
 .document-actions-popover .document-archive-action { color: var(--danger-text); }
 
 @media (hover: hover) and (pointer: fine) {

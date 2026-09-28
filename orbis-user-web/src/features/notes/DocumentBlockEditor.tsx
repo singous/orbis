@@ -3,7 +3,7 @@ import { SelectField } from "../../shared/ui/SelectField";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { BlockNoteSchema, createCodeBlockSpec, defaultBlockSpecs, type PropSchema } from "@blocknote/core";
 import { createReactBlockSpec } from "@blocknote/react";
-import { BookOpen, Code2, Info, Layers, ListOrdered, Plus } from "lucide-react";
+import { BookOpen, Code2, Info, Layers, ListOrdered, Plus } from "../../shared/ui/icons";
 import { createContext, useContext } from "react";
 
 import { CODE_LANGUAGES } from "../content/CodeBlock";
@@ -54,7 +54,7 @@ function ComponentEditor({ kind, props, contentRef, updateProps, addChild }: {
   const title = documentBlockTitle({ type: kind, props });
   const Icon = kind === "callout" ? Info : kind === "steps" || kind === "step" ? ListOrdered : kind === "codeGroup" ? Code2 : kind === "tabs" || kind === "tab" ? Layers : BookOpen;
   return <div className={"doc-editor-block doc-editor-" + kind}>
-    <div className="doc-editor-heading" contentEditable={false}><Icon size={15} aria-hidden="true" /><span>{definition.label}</span></div>
+    <div className="doc-editor-heading" contentEditable={false}><Icon size={16} aria-hidden="true" /><span>{definition.label}</span></div>
     {readOnly ? (title ? <strong contentEditable={false} className="doc-editor-title">{title}</strong> : null) : <div className="doc-editor-controls" contentEditable={false} onKeyDown={(event) => event.stopPropagation()}>
       {Object.entries(definition.props).map(([name, rule]) => {
         const label = name === "title" ? definition.label + "标题" : PROP_LABELS[name] || name;
@@ -63,7 +63,7 @@ function ComponentEditor({ kind, props, contentRef, updateProps, addChild }: {
           placeholder={name === "href" ? "https://… 或内部文档链接" : "输入标题"}
           onChange={(event) => updateProps({ [name]: event.target.value })} /></label>;
       })}
-      {GROUP_CHILD[kind] ? <ActionButton variant="secondary" type="button" onClick={addChild}><Plus size={13} aria-hidden="true" />添加{kind === "codeGroup" ? "代码示例" : DOCUMENT_BLOCKS[GROUP_CHILD[kind] as DocumentBlockKind].label}</ActionButton> : null}
+      {GROUP_CHILD[kind] ? <ActionButton variant="secondary" type="button" onClick={addChild}><Plus size={14} aria-hidden="true" />添加{kind === "codeGroup" ? "代码示例" : DOCUMENT_BLOCKS[GROUP_CHILD[kind] as DocumentBlockKind].label}</ActionButton> : null}
     </div>}
     {definition.content === "inline" ? <div ref={contentRef} className="doc-editor-inline" /> : null}
   </div>;

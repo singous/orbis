@@ -1,6 +1,6 @@
 import { InputGroup } from "@heroui/react/input-group";
 import { ActionButton } from "../../shared/ui/ActionButton";
-import { ArrowLeft, ArrowRight, Search } from "lucide-react";
+import { ArrowLeft, ArrowRight, Search } from "../../shared/ui/icons";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
@@ -42,8 +42,8 @@ export function WorkspaceTopbar({ disabled = false }: { disabled?: boolean }) {
       <WorkspaceSwitcher />
       <div className="workspace-topbar-center">
         <div className="workspace-history">
-          <ActionButton type="button" aria-label="返回上一页" onClick={() => navigate(-1)}><ArrowLeft size={17} /></ActionButton>
-          <ActionButton type="button" aria-label="前往下一页" onClick={() => navigate(1)}><ArrowRight size={17} /></ActionButton>
+          <ActionButton type="button" aria-label="返回上一页" onClick={() => navigate(-1)}><ArrowLeft size={18} /></ActionButton>
+          <ActionButton type="button" aria-label="前往下一页" onClick={() => navigate(1)}><ArrowRight size={18} /></ActionButton>
         </div>
         <form className="workspace-global-search" role="search" aria-label="全局搜索" onSubmit={search}>
           <InputGroup fullWidth className="workspace-search-group orbis-compact-search"><InputGroup.Prefix><Search size={16} aria-hidden="true" /></InputGroup.Prefix>

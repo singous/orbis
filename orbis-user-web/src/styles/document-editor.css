@@ -1,6 +1,5 @@
 .orbis-bn .doc-editor-block { width: 100%; min-width: 0; padding: 10px 13px; border-left: 2px solid var(--border-strong, #d5ddd9); background: var(--surface-hover, #f7f9f8); border-radius: 5px; }
 .orbis-bn .doc-editor-heading { display: flex; align-items: center; gap: 7px; color: var(--text-secondary, #65736c); font-size: 11px; line-height: 1.6; margin-bottom: 7px; }
-.orbis-bn .doc-editor-heading svg { color: var(--accent, #0f766e); }
 .orbis-bn .doc-editor-controls { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 10px; font-family: inherit; }
 .orbis-bn .doc-editor-controls label { display: grid; gap: 3px; min-width: 125px; flex: 1; margin: 0; }
 .orbis-bn .doc-editor-controls label > span { color: var(--text-tertiary, #87928b); font-size: 10px; }

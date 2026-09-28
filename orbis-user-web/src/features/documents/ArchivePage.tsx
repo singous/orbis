@@ -4,7 +4,7 @@ import {
   BookOpen,
   FilePlus2,
   FolderKanban,
-} from "lucide-react";
+} from "../../shared/ui/icons";
 import type { ReactNode } from "react";
 import { useStore } from "zustand";
 

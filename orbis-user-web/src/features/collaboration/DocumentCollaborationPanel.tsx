@@ -3,7 +3,7 @@ import { Tabs } from "@heroui/react/tabs";
 import { TextArea as HeroTextArea } from "@heroui/react/textarea";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Drawer } from "@heroui/react/drawer";
-import { History, MessageSquare, X } from "lucide-react";
+import { History, MessageSquare, X } from "../../shared/ui/icons";
 import { useState, type FormEvent } from "react";
 import { ApiError } from "../../shared/api/api-client";
 import { showToast } from "../../shared/ui/Toast";
@@ -131,8 +131,8 @@ export function DocumentCollaborationPanel(props: Props) {
       <header className="collaboration-panel-header"><div><Drawer.Heading>评论与历史</Drawer.Heading><p id="collaboration-description">讨论文档，查看和恢复已保存的正文。</p></div><ActionButton className="icon-button" type="button" aria-label="关闭评论与历史" disabled={busy} onClick={props.onClose}><X size={18} aria-hidden="true" /></ActionButton></header>
       <Tabs className="collaboration-tabs-root" selectedKey={tab} onSelectionChange={(key) => { if (key === "comments" || key === "revisions") setTab(key); }}>
         <Tabs.ListContainer className="collaboration-tabs"><Tabs.List aria-label="协作面板内容">
-          <Tabs.Tab id="comments" isDisabled={busy}><MessageSquare size={15} aria-hidden="true" />评论<Tabs.Indicator /></Tabs.Tab>
-          <Tabs.Tab id="revisions" isDisabled={busy}><History size={15} aria-hidden="true" />历史版本<Tabs.Indicator /></Tabs.Tab>
+          <Tabs.Tab id="comments" isDisabled={busy}><MessageSquare size={16} aria-hidden="true" />评论<Tabs.Indicator /></Tabs.Tab>
+          <Tabs.Tab id="revisions" isDisabled={busy}><History size={16} aria-hidden="true" />历史版本<Tabs.Indicator /></Tabs.Tab>
         </Tabs.List></Tabs.ListContainer>
         <Drawer.Body className="collaboration-panel-scroll"><Tabs.Panel id="comments" shouldForceMount><Comments {...props} /></Tabs.Panel><Tabs.Panel id="revisions">{tab === "revisions" ? <Revisions {...props} onBusyChange={setBusy} /> : null}</Tabs.Panel></Drawer.Body>
       </Tabs>

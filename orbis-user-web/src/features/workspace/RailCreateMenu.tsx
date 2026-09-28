@@ -1,7 +1,7 @@
 import { Dropdown } from "@heroui/react/dropdown";
 import { Header } from "@heroui/react/header";
 import { Label } from "@heroui/react/label";
-import { BookOpen, FilePlus2, Plus } from "lucide-react";
+import { BookOpen, FilePlus2, Plus } from "../../shared/ui/icons";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ActionButton } from "../../shared/ui/ActionButton";

@@ -4,7 +4,7 @@ import { InputGroup } from "@heroui/react/input-group";
 import { SelectField } from "../../shared/ui/SelectField";
 import { ColorField } from "../../shared/ui/ColorField";
 import { ActionButton } from "../../shared/ui/ActionButton";
-import { Plus, X } from "lucide-react";
+import { Plus, X } from "../../shared/ui/icons";
 import { SITE_KINDS, type SiteBranding, type SiteConfig, type SiteKind } from "./schemas";
 
 const DEFAULT_BRANDING: SiteBranding = { logo_url: null, links: [], footer_links: [], cta: null, theme: "system" };
@@ -17,7 +17,7 @@ function LinkList({ label, value, onChange }: { label: string; value: SiteBrandi
       <HeroInput aria-label={`${label} ${index + 1} 地址`} required type="url" value={link.url} placeholder="https://example.com" onChange={(event) => onChange(value.map((item, position) => position === index ? { ...item, url: event.target.value } : item))} />
       <ActionButton type="button" aria-label={`移除${label} ${index + 1}`} onClick={() => onChange(value.filter((_, position) => position !== index))}><X size={14} /></ActionButton>
     </div>)}
-    <ActionButton className="site-branding-add-link" type="button" onClick={() => onChange([...value, { label: "", url: "" }])}><Plus size={13} />添加链接</ActionButton>
+    <ActionButton className="site-branding-add-link" type="button" onClick={() => onChange([...value, { label: "", url: "" }])}><Plus size={14} />添加链接</ActionButton>
   </div>;
 }
 

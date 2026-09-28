@@ -12,7 +12,7 @@ import {
   Notebook,
   Plus,
   Search,
-} from "lucide-react";
+} from "../../shared/ui/icons";
 import { type FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
@@ -80,17 +80,17 @@ export function HomePage() {
           <header className="workbench-section-heading">
             <h2>工作空间</h2>
             <form className="workbench-inline-search" onSubmit={submitSearch} role="search">
-              <InputGroup fullWidth className="workbench-search-group orbis-compact-search"><InputGroup.Prefix><Search aria-hidden="true" size={15} /></InputGroup.Prefix>
+              <InputGroup fullWidth className="workbench-search-group orbis-compact-search"><InputGroup.Prefix><Search aria-hidden="true" size={16} /></InputGroup.Prefix>
               <InputGroup.Input type="search" aria-label="搜索文档" placeholder="搜索文档…" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
-              <InputGroup.Suffix><ActionButton type="submit" aria-label="搜索"><ArrowRight aria-hidden="true" size={15} /></ActionButton></InputGroup.Suffix></InputGroup>
+              <InputGroup.Suffix><ActionButton type="submit" aria-label="搜索"><ArrowRight aria-hidden="true" size={16} /></ActionButton></InputGroup.Suffix></InputGroup>
             </form>
           </header>
           <div className="workbench-resource-grid">
             {areas.map(({ title, description, to, icon: Icon, soon }) => (
               <Link key={title} to={to} className="workbench-resource-card">
-                <span className="workbench-resource-icon"><Icon aria-hidden="true" size={23} /></span>
+                <span className="workbench-resource-icon"><Icon aria-hidden="true" size={24} /></span>
                 <span className="workbench-resource-copy"><strong>{title}</strong><span>{description}</span></span>
-                {soon ? <span className="workbench-availability">即将推出</span> : <ChevronRight className="workbench-resource-chevron" aria-hidden="true" size={17} />}
+                {soon ? <span className="workbench-availability">即将推出</span> : <ChevronRight className="workbench-resource-chevron" aria-hidden="true" size={18} />}
               </Link>
             ))}
           </div>
@@ -121,7 +121,7 @@ export function HomePage() {
                   <FileText aria-hidden="true" size={18} />
                   <span className="workbench-resource-copy"><strong>{note.title}</strong><span>{note.plain_text || "空白文档"}</span></span>
                   <time>{formatDate(note.updated_at_ms)}</time>
-                  <ChevronRight className="workbench-resource-chevron" aria-hidden="true" size={15} />
+                  <ChevronRight className="workbench-resource-chevron" aria-hidden="true" size={16} />
                 </Link></li>
               ))}
             </ul>

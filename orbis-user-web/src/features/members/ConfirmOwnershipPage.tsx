@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { Check, Crown } from "lucide-react";
+import { Check, Crown } from "../../shared/ui/icons";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 
 import { ApiError } from "../../shared/api/api-client";

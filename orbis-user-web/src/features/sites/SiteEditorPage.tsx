@@ -1,7 +1,7 @@
 import { Tag } from "../../shared/ui/Tag";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { ActionButton } from "../../shared/ui/ActionButton";
-import { ArrowLeft, ExternalLink, Eye, Globe, History, Rocket, RotateCcw } from "lucide-react";
+import { ArrowLeft, ExternalLink, Eye, Globe, History, Rocket, RotateCcw } from "../../shared/ui/icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -138,8 +138,8 @@ function SiteEditor({ site }: { site: Site }) {
   const canPreparePublish = draftSource.kind === "notebooks" ? draftSource.notebooks.length > 0 : draft.navigation.length > 0;
 
   return <WorkspaceShell><PageContainer title={site.name} description="管理站点设置、内容来源与公开版本。" actions={<Tag tone={site.published_release_id ? "success" : "neutral"}>{site.published_release_id ? "已发布" : "尚未发布"}</Tag>}><div className="workbench-site-editor site-management">
-    <Link className="workbench-back" to="/sites"><ArrowLeft aria-hidden="true" size={15} />所有站点</Link>
-    <div className="site-publishing-bar"><span><Globe size={17} />{site.published_slug ? <Link to={`/s/${site.published_slug}`} target="_blank" rel="noopener noreferrer">查看公开站点<ExternalLink size={14} /></Link> : "站点将在发布后对外开放"}</span><div><ActionButton variant="secondary" type="button" className="mvp-button" disabled={busy} onClick={() => void openReaderPreview()}><Eye size={16} />预览</ActionButton>{canPublish ? <ActionButton variant="primary" type="button" className="mvp-button primary" disabled={busy || !canPreparePublish} onClick={() => void preparePublishPreview()}><Rocket size={16} />发布站点</ActionButton> : <span className="mvp-muted">由所有者或管理员发布</span>}</div></div>
+    <Link className="workbench-back" to="/sites"><ArrowLeft aria-hidden="true" size={16} />所有站点</Link>
+    <div className="site-publishing-bar"><span><Globe size={18} />{site.published_slug ? <Link to={`/s/${site.published_slug}`} target="_blank" rel="noopener noreferrer">查看公开站点<ExternalLink size={14} /></Link> : "站点将在发布后对外开放"}</span><div><ActionButton variant="secondary" type="button" className="mvp-button" disabled={busy} onClick={() => void openReaderPreview()}><Eye size={16} />预览</ActionButton>{canPublish ? <ActionButton variant="primary" type="button" className="mvp-button primary" disabled={busy || !canPreparePublish} onClick={() => void preparePublishPreview()}><Rocket size={16} />发布站点</ActionButton> : <span className="mvp-muted">由所有者或管理员发布</span>}</div></div>
     {error ? <StatusMessage role="alert" tone="error" title="站点操作未完成">{error}</StatusMessage> : null}
     <form onSubmit={submit}>
       <div className="site-editor-layout">

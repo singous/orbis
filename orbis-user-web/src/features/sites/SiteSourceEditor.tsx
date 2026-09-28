@@ -3,7 +3,7 @@ import { Radio } from "@heroui/react/radio";
 import { RadioGroup } from "@heroui/react/radio-group";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { SelectField } from "../../shared/ui/SelectField";
-import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Plus, Trash2 } from "../../shared/ui/icons";
 
 import { useNoteTree, useNotebooks } from "../documents/queries";
 import type { NotebookSource, SiteSource, SiteSources } from "./schemas";

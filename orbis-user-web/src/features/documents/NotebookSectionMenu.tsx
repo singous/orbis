@@ -1,4 +1,4 @@
-import { ArrowLeft, Home } from "lucide-react";
+import { ArrowLeft, Home } from "../../shared/ui/icons";
 import { Link, NavLink } from "react-router-dom";
 
 import { NotebookIcon } from "./NotebookIcon";
@@ -23,7 +23,7 @@ export function NotebookSectionMenu({ notebookId, activeNoteId }: NotebookSectio
     <nav className="workspace-function-menu" aria-label="笔记本目录">
       <div className="workspace-function-heading">
         <Link to="/documents" className="notebook-menu-back">
-          <ArrowLeft aria-hidden="true" size={13} />
+          <ArrowLeft aria-hidden="true" size={14} />
           文档中心
         </Link>
         <Link to={`/collections/${notebookId}`} className="notebook-menu-title flex items-center gap-2" title={notebook?.title}>

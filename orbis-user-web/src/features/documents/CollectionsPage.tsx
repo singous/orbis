@@ -7,7 +7,7 @@ import {
   MoreHorizontal,
   Pin,
   Plus,
-} from "lucide-react";
+} from "../../shared/ui/icons";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
@@ -140,14 +140,14 @@ export function CollectionsPage() {
             <>
               <Button
                 variant="secondary"
-                icon={<FolderPlus aria-hidden="true" size={15} />}
+                icon={<FolderPlus aria-hidden="true" size={16} />}
                 onClick={() => setDialog({ kind: "group" })}
               >
                 新建分组
               </Button>
               <Button
                 variant="primary"
-                icon={<Plus aria-hidden="true" size={15} />}
+                icon={<Plus aria-hidden="true" size={16} />}
                 onClick={() =>
                   groups[0] &&
                   setDialog({ kind: "notebook", groupId: groups[0].id })
@@ -227,7 +227,7 @@ export function CollectionsPage() {
                             setDialog({ kind: "rename-group", resource: group })
                           }
                         >
-                          <MoreHorizontal aria-hidden="true" size={15} />
+                          <MoreHorizontal aria-hidden="true" size={16} />
                         </ActionButton>
                         {!group.is_default ? (
                           <ActionButton
@@ -271,7 +271,7 @@ export function CollectionsPage() {
                             </ActionButton>
                             {canEdit ? <>
                               <ActionButton type="button" className="icon-button" aria-label={`编辑笔记本 ${notebook.title}`} title="编辑名称和图标" onClick={() => setDialog({ kind: "edit-notebook", resource: notebook })}>
-                                <MoreHorizontal aria-hidden="true" size={15} />
+                                <MoreHorizontal aria-hidden="true" size={16} />
                               </ActionButton>
                               <ActionButton type="button" className="icon-button danger-hover" aria-label={`归档 ${notebook.title}`} onClick={() => archiveNotebook.mutate({ id: notebook.id, archived: true })}>
                                 <Archive aria-hidden="true" size={14} />

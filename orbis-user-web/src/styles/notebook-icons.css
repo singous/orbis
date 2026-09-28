@@ -1,6 +1,6 @@
 .notebook-icon {
-  --notebook-icon-bg: #e9f0ff;
-  --notebook-icon-fg: #4b76cf;
+  --notebook-icon-fg: var(--orbis-icon-blue);
+  --notebook-icon-bg: color-mix(in oklab, var(--notebook-icon-fg) 13%, var(--surface));
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
@@ -12,18 +12,18 @@
   background: var(--notebook-icon-bg);
   color: var(--notebook-icon-fg);
 }
-.notebook-icon > svg { width: 21px; height: 21px; }
-.notebook-icon--blue { --notebook-icon-bg: #e9f0ff; --notebook-icon-fg: #4b76cf; }
-.notebook-icon--mint { --notebook-icon-bg: #e0f3eb; --notebook-icon-fg: #298568; }
-.notebook-icon--violet { --notebook-icon-bg: #eee8fc; --notebook-icon-fg: #8560bb; }
-.notebook-icon--amber { --notebook-icon-bg: #fcf0d6; --notebook-icon-fg: #b48125; }
-.notebook-icon--rose { --notebook-icon-bg: #fbe6ec; --notebook-icon-fg: #c46680; }
-.notebook-icon--cyan { --notebook-icon-bg: #e0f2f5; --notebook-icon-fg: #368ca0; }
-.notebook-icon--slate { --notebook-icon-bg: #e9ecf1; --notebook-icon-fg: #6b778d; }
+.notebook-icon > svg { width: 22px; height: 22px; }
+.notebook-icon--blue { --notebook-icon-fg: var(--orbis-icon-blue); --notebook-icon-bg: color-mix(in oklab, var(--notebook-icon-fg) 13%, var(--surface)); }
+.notebook-icon--mint { --notebook-icon-fg: var(--orbis-icon-mint); --notebook-icon-bg: color-mix(in oklab, var(--notebook-icon-fg) 13%, var(--surface)); }
+.notebook-icon--violet { --notebook-icon-fg: var(--orbis-icon-violet); --notebook-icon-bg: color-mix(in oklab, var(--notebook-icon-fg) 13%, var(--surface)); }
+.notebook-icon--amber { --notebook-icon-fg: var(--orbis-icon-amber); --notebook-icon-bg: color-mix(in oklab, var(--notebook-icon-fg) 13%, var(--surface)); }
+.notebook-icon--rose { --notebook-icon-fg: var(--orbis-icon-rose); --notebook-icon-bg: color-mix(in oklab, var(--notebook-icon-fg) 13%, var(--surface)); }
+.notebook-icon--cyan { --notebook-icon-fg: var(--orbis-icon-cyan); --notebook-icon-bg: color-mix(in oklab, var(--notebook-icon-fg) 13%, var(--surface)); }
+.notebook-icon--slate { --notebook-icon-fg: var(--orbis-icon-slate); --notebook-icon-bg: color-mix(in oklab, var(--notebook-icon-fg) 13%, var(--surface)); }
 .notebook-icon--sm { width: 18px; height: 18px; border-radius: 5px; }
-.notebook-icon--sm > svg { width: 13px; height: 13px; }
+.notebook-icon--sm > svg { width: 14px; height: 14px; }
 .notebook-icon--lg { width: 52px; height: 52px; border-radius: 14px; }
-.notebook-icon--lg > svg { width: 27px; height: 27px; }
+.notebook-icon--lg > svg { width: 28px; height: 28px; }
 .notebook-icon--image { background: var(--surface-hover); }
 .notebook-icon > img { width: 100%; height: 100%; object-fit: cover; }
 .notebook-dialog { max-width: 476px; }
@@ -37,11 +37,11 @@
 .notebook-icon-picker-grid .radio { min-width: 0; margin: 0; }
 .notebook-icon-choice { display: flex; width: 100%; align-items: center; justify-content: center; padding: 3px; border: 1px solid transparent; border-radius: 10px; cursor: pointer; }
 .notebook-icon-picker-grid .notebook-icon { width: 35px; height: 35px; border-radius: 8px; }
-.notebook-icon-picker-grid .notebook-icon > svg { width: 19px; height: 19px; }
+.notebook-icon-picker-grid .notebook-icon > svg { width: 20px; height: 20px; }
 .notebook-icon-picker-grid .radio[data-selected] .notebook-icon-choice { border-color: var(--text-secondary); background: var(--surface-content); }
 .notebook-icon-choice:hover { background: var(--surface-hover); }
 .notebook-icon-choice[data-focus-visible],
-.notebook-icon-swatch[data-focus-visible],
+.notebook-icon-swatch[data-focus-visible] { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
 .notebook-icon-picker-colors { display: flex; flex-direction: row; justify-content: center; gap: 15px; margin: 19px 0 24px; }
 .notebook-icon-swatch { display: inline-flex; align-items: center; justify-content: center; width: 23px; height: 23px; border-radius: 50%; background: var(--notebook-icon-fg); color: white; cursor: pointer; }
 .notebook-icon-picker-colors .radio[data-selected] .notebook-icon-swatch { box-shadow: 0 0 0 3px var(--surface-content), 0 0 0 4px var(--notebook-icon-fg); }

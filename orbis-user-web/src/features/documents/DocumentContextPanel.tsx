@@ -4,7 +4,7 @@ import { Label } from "@heroui/react/label";
 import { DragDropProvider } from "@dnd-kit/react";
 import { isSortable, useSortable } from "@dnd-kit/react/sortable";
 import { useIsMutating } from "@tanstack/react-query";
-import { Archive, ChevronDown, FilePlus2, FileText, GripVertical, MoreHorizontal, Pencil, Plus } from "lucide-react";
+import { Archive, ChevronDown, FilePlus2, FileText, GripVertical, MoreHorizontal, Pencil, Plus } from "../../shared/ui/icons";
 import { type KeyboardEvent, type ReactNode, createContext, useCallback, useContext, useEffect, useId, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
@@ -129,7 +129,7 @@ function SortableDocumentItem(props: DocumentItemProps) {
 function DocumentRowActions({ note, reordering, onCreateChild, onRename, onArchive }: Pick<DocumentItemProps, "note" | "reordering" | "onCreateChild" | "onRename" | "onArchive">) {
   const [open, setOpen] = useState(false);
   return <div className="document-context-actions" data-menu-open={open}>
-    <ActionButton type="button" className="icon-button document-create-child" aria-label={`新建子文档 ${note.title}`} title="新建子文档" disabled={reordering} onClick={() => onCreateChild(note.id)}><Plus aria-hidden="true" size={15} /></ActionButton>
+    <ActionButton type="button" className="icon-button document-create-child" aria-label={`新建子文档 ${note.title}`} title="新建子文档" disabled={reordering} onClick={() => onCreateChild(note.id)}><Plus aria-hidden="true" size={16} /></ActionButton>
     <Dropdown onOpenChange={setOpen}>
       <ActionButton type="button" className="icon-button" aria-label={`文档操作 ${note.title}`} title="更多操作" disabled={reordering}><MoreHorizontal aria-hidden="true" size={16} /></ActionButton>
       <Dropdown.Popover placement="bottom end" offset={4} className="document-actions-popover">
@@ -159,7 +159,7 @@ function DocumentItem({ note, depth, parentId, activeNoteId, canEdit, reordering
   }
 
   // The drag sensor owns pointer and keyboard activation on this handle.
-  const dragHandle = sortable ? <button ref={sortable.handleRef} type="button" className="document-drag-handle" aria-label={`拖动排序 ${note.title}`} aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown" title="拖动排序；Alt+方向键移动" disabled={reordering} onKeyDown={handleSortKey}><GripVertical aria-hidden="true" size={15} /></button> : null;
+  const dragHandle = sortable ? <button ref={sortable.handleRef} type="button" className="document-drag-handle" aria-label={`拖动排序 ${note.title}`} aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown" title="拖动排序；Alt+方向键移动" disabled={reordering} onKeyDown={handleSortKey}><GripVertical aria-hidden="true" size={16} /></button> : null;
   const prefix = <div className="document-tree-prefix">
     {dragHandle ?? (canEdit ? <span className="document-drag-placeholder" aria-hidden="true" /> : null)}
     {note.children.length ? <ActionButton type="button" className="document-tree-disclosure" aria-label={`${expanded ? "收起" : "展开"}子目录 ${note.title}`} aria-expanded={expanded} aria-controls={childrenId} disabled={reordering} onClick={() => onToggle(note.id)}><ChevronDown aria-hidden="true" size={14} /></ActionButton> : <span className="document-disclosure-placeholder" aria-hidden="true" />}
@@ -184,7 +184,7 @@ function DocumentItem({ note, depth, parentId, activeNoteId, canEdit, reordering
     <div ref={sortable?.targetRef} className={`document-context-row${sortable ? " has-drag-handle" : ""}${note.id === activeNoteId ? " is-active" : ""}`}>
       {prefix}
       <Link to={`/documents/${note.id}`} aria-current={note.id === activeNoteId ? "page" : undefined} className={`document-context-link ${note.id === activeNoteId ? "is-active" : ""}`} title={note.title} onClick={onNavigate}>
-        <FileText aria-hidden="true" size={13} />
+        <FileText aria-hidden="true" size={14} />
         <span>{note.title}</span>
       </Link>
       {actions}
@@ -305,7 +305,7 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
       {main ? null : (
         <div className="document-context-header">
           <h2>目录</h2>
-          {canEdit ? <ActionButton type="button" className="document-context-create" aria-label="新建文档" title="新建文档" onClick={() => setCreateParent(null)}><Plus aria-hidden="true" size={17} /></ActionButton> : null}
+          {canEdit ? <ActionButton type="button" className="document-context-create" aria-label="新建文档" title="新建文档" onClick={() => setCreateParent(null)}><Plus aria-hidden="true" size={18} /></ActionButton> : null}
         </div>
       )}
       {treeQuery.isError ? <StatusMessage tone="error" title="目录加载失败"><Button className="mt-3" variant="secondary" onClick={() => void treeQuery.refetch()}>重试加载目录</Button></StatusMessage> : null}

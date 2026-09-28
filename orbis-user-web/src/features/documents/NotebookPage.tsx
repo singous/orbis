@@ -1,7 +1,7 @@
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Dropdown } from "@heroui/react/dropdown";
 import { Label } from "@heroui/react/label";
-import { ArrowLeft, Download, Globe2, Import, MoreHorizontal, Plus, Settings2 } from "lucide-react";
+import { ArrowLeft, Download, Globe2, Import, MoreHorizontal, Plus, Settings2 } from "../../shared/ui/icons";
 import { type ChangeEvent, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useStore } from "zustand";

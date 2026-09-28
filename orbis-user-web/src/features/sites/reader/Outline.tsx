@@ -1,4 +1,4 @@
-import { List } from "lucide-react";
+import { List } from "../../../shared/ui/icons";
 import { useEffect, useState } from "react";
 
 import type { ContentOutlineItem } from "../../content/ContentRenderer";
@@ -23,6 +23,6 @@ export function Outline({ items, mobile = false }: { items: ContentOutlineItem[]
   if (!items.length) return null;
   const links = <nav aria-label="本页目录">{items.map((item) => <a key={item.id} href={`#${item.id}`} aria-current={activeId === item.id ? "location" : undefined} style={{ "--outline-depth": Math.max(0, item.level - 2) } as React.CSSProperties}>{item.text}</a>)}</nav>;
   return mobile
-    ? <details className="site-reader-mobile-outline"><summary><List aria-hidden="true" size={15} />本页目录</summary>{links}</details>
+    ? <details className="site-reader-mobile-outline"><summary><List aria-hidden="true" size={16} />本页目录</summary>{links}</details>
     : <aside className="site-reader-outline"><span><List aria-hidden="true" size={14} />本页目录</span>{links}</aside>;
 }

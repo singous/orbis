@@ -1,5 +1,5 @@
 import { Modal } from "@heroui/react/modal";
-import { X } from "lucide-react";
+import { X } from "./icons";
 import { cloneElement, createContext, isValidElement, useContext, useId, type ReactElement, type ReactNode } from "react";
 
 import { cn } from "./cn";

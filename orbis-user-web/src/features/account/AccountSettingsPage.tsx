@@ -1,5 +1,5 @@
 import { Avatar } from "@heroui/react/avatar";
-import { UserRound } from "lucide-react";
+import { UserRound } from "../../shared/ui/icons";
 import { useStore } from "zustand";
 
 import { authStore } from "../../shared/auth/auth-store";

@@ -1,6 +1,6 @@
 import { InputGroup } from "@heroui/react/input-group";
 import { Modal } from "@heroui/react/modal";
-import { FileText, Search, X } from "lucide-react";
+import { FileText, Search, X } from "../../../shared/ui/icons";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -71,9 +71,9 @@ export function SearchDialog({ pages, basePath, close, loadPages }: { pages: Pub
       <div id="site-reader-search-results" className="site-reader-search-results" role="listbox">
         {/* Search options retain active-descendant focus on the combobox input. */}
         {loading ? <div className="site-reader-search-hint" role="status"><p>正在加载搜索索引…</p></div> : current?.error ? <div className="site-reader-search-empty" role="alert"><p>{current.error}</p><ActionButton type="button" onClick={() => setAttempt((value) => value + 1)}>重新加载搜索</ActionButton></div> : !query.trim() ? <div className="site-reader-search-hint"><Search aria-hidden="true" size={20} /><p>输入关键词搜索当前发布版本</p><span>仅显示读者可见的文档</span></div> : results.length ? results.map((result, index) => <button id={`site-search-${index}`} key={result.page.slug} type="button" role="option" aria-label={`${result.page.title} ${result.path} ${result.excerpt}`} aria-selected={activeIndex === index} className={activeIndex === index ? "is-active" : ""} onMouseMove={() => setActiveIndex(index)} onClick={() => choose(index)}>
-          <FileText aria-hidden="true" size={17} />
+          <FileText aria-hidden="true" size={18} />
           <span><strong><Highlight text={result.page.title} query={query} /></strong><small>{result.path}</small><span><Highlight text={result.excerpt} query={query} /></span></span>
-        </button>) : <div className="site-reader-search-empty"><Search aria-hidden="true" size={21} /><strong>没有找到相关内容</strong><p>请尝试更短的关键词或浏览左侧目录。</p></div>}
+        </button>) : <div className="site-reader-search-empty"><Search aria-hidden="true" size={22} /><strong>没有找到相关内容</strong><p>请尝试更短的关键词或浏览左侧目录。</p></div>}
       </div>
       <footer><span><kbd>↑</kbd><kbd>↓</kbd> 选择</span><span><kbd>↵</kbd> 打开</span><span><kbd>esc</kbd> 关闭</span></footer>
     </div></Modal.Dialog></Modal.Container>

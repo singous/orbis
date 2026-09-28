@@ -2,7 +2,7 @@ import { Input as HeroInput } from "@heroui/react/input";
 import { Checkbox } from "@heroui/react/checkbox";
 import { TextArea as HeroTextArea } from "@heroui/react/textarea";
 import { ActionButton } from "../../shared/ui/ActionButton";
-import { ChevronDown, ChevronRight, FileText, PencilLine } from "lucide-react";
+import { ChevronDown, ChevronRight, FileText, PencilLine } from "../../shared/ui/icons";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -59,7 +59,7 @@ export function SiteSourceTree({ items, rootNoteId, source, resolved, disabled, 
           >
             <Checkbox.Content><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control></Checkbox.Content>
           </Checkbox>
-          <FileText aria-hidden="true" size={15} />
+          <FileText aria-hidden="true" size={16} />
           <div className="site-source-node-copy">
             <Link to={`/documents/${node.id}`}>{node.title}</Link>
             <span>{affectedByParent ? "受上级排除影响" : explicitlyExcluded ? "已排除此子树" : resolvedPage ? `/${resolvedPage.slug}` : "保存来源后生成公开路径"}</span>
@@ -72,7 +72,7 @@ export function SiteSourceTree({ items, rootNoteId, source, resolved, disabled, 
             onClick={() => toggleExpanded(node.id)}
           >
             <PencilLine aria-hidden="true" size={14} />
-            {isExpanded ? <ChevronDown aria-hidden="true" size={13} /> : <ChevronRight aria-hidden="true" size={13} />}
+            {isExpanded ? <ChevronDown aria-hidden="true" size={14} /> : <ChevronRight aria-hidden="true" size={14} />}
           </ActionButton>
         </div>
         {isExpanded ? <div className="site-source-overrides">

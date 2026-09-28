@@ -1,6 +1,6 @@
 import { Input as HeroInput } from "@heroui/react/input";
 import { ActionButton } from "../../shared/ui/ActionButton";
-import { FilePlus2, Search, X } from "lucide-react";
+import { FilePlus2, Search, X } from "../../shared/ui/icons";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { PageContainer } from "../../shared/ui/PageContainer";
@@ -36,7 +36,7 @@ export function DocumentSearchPage() {
           <label className="relative block max-w-2xl">
             <Search
               aria-hidden="true"
-              size={17}
+              size={18}
               className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--muted-light)]"
             />
             <HeroInput
@@ -88,7 +88,7 @@ export function DocumentSearchPage() {
                 to={`/documents/${note.id}`}
                 className="workbench-document-row workbench-search-result"
               >
-                <FilePlus2 aria-hidden="true" size={19} />
+                <FilePlus2 aria-hidden="true" size={20} />
                 <div className="workbench-resource-copy">
                   <h2>{note.title}</h2>
                   <span>{note.plain_text || "空白文档"}</span>

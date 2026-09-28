@@ -1,5 +1,5 @@
 import { ActionButton } from "../../shared/ui/ActionButton";
-import { AlertTriangle, RotateCw } from "lucide-react";
+import { AlertTriangle, RotateCw } from "../../shared/ui/icons";
 import { useState } from "react";
 
 import { ContentRenderer } from "../content/ContentRenderer";

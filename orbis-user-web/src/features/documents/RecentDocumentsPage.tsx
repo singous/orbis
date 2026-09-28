@@ -1,4 +1,4 @@
-import { FilePlus2 } from "lucide-react";
+import { FilePlus2 } from "../../shared/ui/icons";
 import { Link } from "react-router-dom";
 
 import { formatDate } from "../../shared/format/date";
@@ -45,7 +45,7 @@ export function RecentDocumentsPage() {
                 className="workbench-document-row"
               >
                 <div className="workbench-list-icon">
-                  <FilePlus2 aria-hidden="true" size={15} />
+                  <FilePlus2 aria-hidden="true" size={16} />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-semibold">

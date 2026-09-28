@@ -1,6 +1,6 @@
 import { Radio } from "@heroui/react/radio";
 import { RadioGroup } from "@heroui/react/radio-group";
-import { ImagePlus, RotateCcw, Check, LoaderCircle } from "lucide-react";
+import { ImagePlus, RotateCcw, Check, LoaderCircle } from "../../shared/ui/icons";
 import { type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
 
 import { Button } from "../../shared/ui/Button";
@@ -104,7 +104,7 @@ export function NotebookIconPicker({ value, onChange, uploadFile, onPendingChang
     </RadioGroup>
     <div className="notebook-icon-upload">
       <Button variant="secondary" disabled={blocked} onPress={() => fileInputRef.current?.click()}>
-        {pending ? <LoaderCircle size={15} className="animate-spin" aria-hidden="true" /> : <ImagePlus size={15} aria-hidden="true" />}
+        {pending ? <LoaderCircle size={16} className="animate-spin" aria-hidden="true" /> : <ImagePlus size={16} aria-hidden="true" />}
         <span>{pending ? "正在上传图片…" : "上传自定义图标"}</span>
       </Button>
       <input hidden ref={fileInputRef} id={uploadId} type="file" accept={NOTEBOOK_ICON_MIME_TYPES.join(",")} disabled={blocked} aria-label="上传自定义图标" onChange={(event) => { void handleFile(event.target.files?.[0]); event.target.value = ""; }} />

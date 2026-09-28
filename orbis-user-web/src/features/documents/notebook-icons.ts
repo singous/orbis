@@ -2,7 +2,7 @@ import {
   BookOpen, Notebook, Folder, FileText, Lightbulb, Code2, Palette, Rocket,
   FlaskConical, Globe2, GraduationCap, Heart, BriefcaseBusiness, Target, Coffee, Music,
   type LucideIcon,
-} from "lucide-react";
+} from "../../shared/ui/icons";
 
 import type { NotebookIconColor, NotebookIconName, NotebookIconValue } from "../../shared/api/schemas";
 

@@ -50,7 +50,6 @@
 .rail-action { width: 38px; height: 38px; display: grid; place-items: center; flex: none; color: var(--text-secondary); transition: background 140ms, color 140ms; }
 .rail-action:hover { background: var(--surface-hover); color: var(--text-primary); }
 .rail-action.is-active { background: var(--surface-active); color: var(--text-primary); }
-.rail-action.is-active svg { stroke-width: 2; }
 .rail-expand { margin: -5px 0 5px; height: 27px; }
 .rail-bottom { display: flex; flex-direction: column; gap: 10px; margin-top: auto; padding-top: 30px; }
 .workspace-sidebar { flex: 1; display: flex; min-width: 0; min-height: 0; flex-direction: column; }
@@ -63,7 +62,7 @@
 .workspace-function-menu { display: flex; flex-direction: column; flex: 1; overflow-y: auto; overscroll-behavior: contain; min-height: 0; min-width: 0; padding: 0 9px 10px; }
 .workspace-function-nav { display: flex; flex-direction: column; gap: 3px; }
 .workspace-function-link { display: flex; align-items: center; min-width: 0; gap: 9px; min-height: 34px; padding: 7px 10px; border-radius: 7px; color: var(--gray-700); font-size: 13px; line-height: 20px; }
-.workspace-function-link svg { flex: none; stroke-width: 1.65; }
+.workspace-function-link svg { flex: none; }
 .workspace-function-link:hover { color: var(--text-primary); background: var(--surface-active); }
 .workspace-function-link.is-active { color: var(--text-primary); background: var(--surface-active); font-weight: 550; }
 .workspace-nav-label { padding: 0 10px; margin: 23px 0 7px; font-size: 12px; color: var(--text-tertiary); }
@@ -97,7 +96,7 @@
 /* Menus share the same opaque, softly elevated surface. */
 .workspace-switcher { position: relative; min-width: 0; }
 .workspace-brand { display: flex; align-items: center; gap: 8px; min-width: 0; max-width: 250px; color: var(--text-primary); font-size: 13px; font-weight: 550; }
-.workspace-brand-mark { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; color: var(--text-oninverse); background: var(--surface-inverse); flex: none; }
+.workspace-brand-mark { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; color: var(--text-oninverse); background: linear-gradient(145deg, color-mix(in oklab, var(--brand-mark) 85%, white), var(--brand-mark)); flex: none; }
 .workspace-brand-word { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .workspace-brand > svg { flex: none; color: var(--text-secondary); }
 .workspace-switcher-popover, .workspace-user-popover { position: absolute; z-index: 60; top: calc(100% + 12px); width: 268px; padding: 8px; }
@@ -121,12 +120,12 @@
 .workspace-user-space { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
 .workspace-user-actions-label { padding: 3px 10px 6px; font-size: 11px; color: var(--text-tertiary); }
 .workspace-user-menu-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px; font-size: 13px; text-align: left; }
-.workspace-user-menu-item svg { width: 17px; height: 17px; color: var(--text-tertiary); }
+.workspace-user-menu-item svg { width: 16px; height: 16px; }
 .rail-create-trigger { display: grid; place-items: center; width: var(--compact-control-height); height: var(--compact-control-height); color: var(--text-oninverse); background: var(--surface-inverse); border: 1px solid var(--gray-700); box-shadow: 0 1px 2px #0002; }
 .rail-create-trigger:hover { background: var(--surface-inverse-hover); }
 .rail-create-popover { width: 235px; padding: 8px; }
 .rail-create-popover [role="menuitem"] { min-height: 42px; padding: 9px 11px; }
-.rail-create-popover [role="menuitem"] svg { width: 19px; height: 19px; }
+.rail-create-popover [role="menuitem"] svg { width: 20px; height: 20px; }
 .rail-create-soon { margin-left: auto; color: var(--text-tertiary); font-size: 11px; }
 @media (max-width: 1199px) {
   .workspace-shell { --sidebar-default-width: 210px; }
