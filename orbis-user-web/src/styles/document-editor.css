@@ -7,8 +7,6 @@
 .orbis-tiptap .doc-editor-controls { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 10px; margin: 9px 0; padding: 9px 0; border-top: 1px solid var(--reading-border); font-family: inherit; }
 .orbis-tiptap .doc-editor-controls label { display: grid; gap: 3px; min-width: 125px; flex: 1; margin: 0; }
 .orbis-tiptap .doc-editor-controls label > span { color: var(--text-tertiary); font-size: 10px; }
-.orbis-tiptap .doc-editor-controls input, .orbis-tiptap .doc-editor-controls select { min-width: 0; width: 100%; border: 1px solid var(--reading-border); background: var(--reading-bg); color: var(--reading-text); border-radius: 5px; padding: 5px 8px; font: inherit; font-size: 13px; line-height: 1.6; }
-.orbis-tiptap .doc-editor-controls input:focus, .orbis-tiptap .doc-editor-controls select:focus { outline: 2px solid color-mix(in srgb, var(--reading-accent) 25%, transparent); outline-offset: 1px; border-color: var(--reading-accent); }
 .orbis-tiptap .doc-editor-controls button { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--reading-border); background: var(--reading-bg); color: var(--reading-muted); border-radius: 5px; padding: 5px 9px; cursor: pointer; font-size: 12px; line-height: 1.6; }
 .orbis-tiptap .doc-editor-controls button:focus-visible { outline: 2px solid var(--reading-accent); outline-offset: 2px; }
 .orbis-tiptap .doc-editor-callout { padding: 17px 20px; border: 1px solid #cae1ee; border-radius: 10px; background: #eff8fd; font-size: 14px; line-height: 1.85; }
@@ -54,3 +52,5 @@
 
 .orbis-tiptap .doc-editor-callout > .doc-editor-heading { align-self: start; }
 .orbis-tiptap .doc-editor-callout > .doc-editor-title { margin-bottom: 4px; font-weight: 700; }
+
+.orbis-tiptap .doc-editor-controls > .orbis-select-field { min-width: 125px; flex: 1; }

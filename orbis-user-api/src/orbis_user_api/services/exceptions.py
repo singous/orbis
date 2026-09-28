@@ -111,3 +111,7 @@ class NoteContentInvalid(ServiceError):
 
 class NoteParentInvalid(ServiceError):
     pass
+
+
+class NoteOrderConflict(ServiceError):
+    pass

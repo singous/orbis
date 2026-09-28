@@ -1,10 +1,11 @@
-import { BookOpen, ChevronsRight, Globe, Home, LibraryBig, Orbit, Search, Settings, Sparkles } from "lucide-react";
+import { ActionButton } from "../../shared/ui/ActionButton";
+import { BookOpen, ChevronsRight, Globe, Home, LibraryBig, Orbit, Search, Settings, Sparkles, X } from "../../shared/ui/icons";
 import { Link, useLocation } from "react-router-dom";
 
 import { Tooltip } from "../../shared/ui/Tooltip";
-import { resolveWorkspaceArea, WORKSPACE_AREAS, type WorkspaceAreaId } from "./workspace-areas";
+import { DEFAULT_WORKSPACE_PATH, resolveWorkspaceArea, WORKSPACE_AREAS, type WorkspaceAreaId } from "./workspace-areas";
 
-type BusinessRailProps = { collapsed: boolean; onExpand: () => void };
+type BusinessRailProps = { collapsed: boolean; onExpand: () => void; onClose?: () => void };
 
 const areaIcons = {
   home: Home,
@@ -14,29 +15,31 @@ const areaIcons = {
   memory: Sparkles,
   settings: Settings,
 } satisfies Record<WorkspaceAreaId, typeof Home>;
-const areas = WORKSPACE_AREAS.filter((area) => area.id !== "settings");
+const areas = WORKSPACE_AREAS.filter((area) => area.visibleInRail);
 
-export function BusinessRail({ collapsed, onExpand }: BusinessRailProps) {
+export function BusinessRail({ collapsed, onExpand, onClose }: BusinessRailProps) {
   const { pathname } = useLocation();
   const activeArea = resolveWorkspaceArea(pathname);
+  const searchActive = pathname === "/documents/search";
   return (
     <aside className="workspace-business-rail" aria-label="应用导航">
-      {collapsed ? <Tooltip label="展开侧栏" side="right"><button className="rail-action rail-expand" type="button" aria-label="展开侧栏" onClick={onExpand}><ChevronsRight size={19} /></button></Tooltip> : null}
-      <Link to="/home" className="rail-brand" aria-label="Orbis 首页"><Orbit size={26} strokeWidth={1.8} /></Link>
+      {onClose ? <ActionButton className="rail-action rail-mobile-close" type="button" aria-label="关闭侧栏" onClick={onClose}><X size={20} /></ActionButton> : null}
+      {collapsed ? <Tooltip label="展开侧栏" side="right"><ActionButton className="rail-action rail-expand" type="button" aria-label="展开侧栏" onClick={onExpand}><ChevronsRight size={20} /></ActionButton></Tooltip> : null}
+      <Link to={DEFAULT_WORKSPACE_PATH} className="rail-brand" aria-label="Orbis 首页"><Orbit size={28} strokeWidth={1.8} /></Link>
       <nav className="workspace-business-nav" aria-label="业务板块">
         {areas.map(({ id, label, href }) => {
           const Icon = areaIcons[id];
           const active = activeArea.id === id;
           return (
           <Tooltip key={id} label={label} side="right">
-            <Link to={href} aria-label={label} aria-current={active ? "page" : undefined} className={`rail-action${active ? " is-active" : ""}`}><Icon aria-hidden="true" size={21} strokeWidth={1.7} /></Link>
+            <Link to={href} aria-label={label} aria-current={active ? "page" : undefined} className={`rail-action${active ? " is-active" : ""}`}><Icon aria-hidden="true" size={22} /></Link>
           </Tooltip>
           );
         })}
       </nav>
       <div className="rail-bottom">
-        <Tooltip label="搜索" side="right"><Link to="/documents/search" aria-label="搜索" className="rail-action"><Search size={20} strokeWidth={1.7} /></Link></Tooltip>
-        <Tooltip label="账号设置" side="right"><Link to="/settings/account" aria-label="账号设置" aria-current={activeArea.id === "settings" ? "page" : undefined} className={`rail-action${activeArea.id === "settings" ? " is-active" : ""}`}><Settings size={20} strokeWidth={1.7} /></Link></Tooltip>
+        <Tooltip label="搜索" side="right"><Link to="/documents/search" aria-label="搜索" aria-current={searchActive ? "page" : undefined} className={`rail-action${searchActive ? " is-active" : ""}`}><Search size={20} /></Link></Tooltip>
+        <Tooltip label="账号设置" side="right"><Link to="/settings/account" aria-label="账号设置" aria-current={activeArea.id === "settings" ? "page" : undefined} className={`rail-action${activeArea.id === "settings" ? " is-active" : ""}`}><Settings size={20} /></Link></Tooltip>
       </div>
     </aside>
   );

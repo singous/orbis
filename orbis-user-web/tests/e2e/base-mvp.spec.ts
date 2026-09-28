@@ -37,7 +37,47 @@ test("personal writing, team discussion and a versioned documentation site work 
   await page.getByLabel("新评论", { exact: true }).fill("这一版欢迎页可以进入发布预览。");
   await page.getByRole("button", { name: "发表评论", exact: true }).click();
   await expect(page.getByText("这一版欢迎页可以进入发布预览。", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "历史版本", exact: true }).click();
+  const comment = page.getByText("这一版欢迎页可以进入发布预览。", { exact: true });
+  await comment.hover();
+  await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).userSelect)).not.toBe("none");
+  const commentBounds = (await comment.boundingBox())!;
+  await page.mouse.move(commentBounds.x + 3, commentBounds.y + commentBounds.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(commentBounds.x + 230, commentBounds.y + commentBounds.height / 2, { steps: 12 });
+  await page.mouse.up();
+  await expect(page.getByRole("dialog", { name: "评论与历史", exact: true })).toBeVisible();
+  expect(await page.evaluate(() => window.getSelection()?.toString())).toContain("欢迎页");
+
+  const longComment = await request.post(`${apiOrigin}/notes/${noteId}/comments`, {
+    headers, data: { body: "在手机上滚动阅读较长的讨论内容，评论面板应保持打开。\n".repeat(24) },
+  });
+  expect(longComment.status()).toBe(201);
+  const touchContext = await browser.newContext({
+    viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true,
+    storageState: await page.context().storageState(),
+  });
+  const touchPage = await touchContext.newPage();
+  await touchPage.goto(`${webOrigin}/documents/${noteId}`);
+  await touchPage.getByRole("button", { name: "评论与历史", exact: true }).click();
+  const touchDialog = touchPage.getByRole("dialog", { name: "评论与历史", exact: true });
+  const scrollBody = touchDialog.locator(".collaboration-panel-scroll");
+  await expect.poll(() => scrollBody.evaluate((body) => body.scrollHeight - body.clientHeight)).toBeGreaterThan(100);
+  await expect.poll(async () => Math.round((await touchDialog.boundingBox())!.x)).toBe(0);
+  const scrollBounds = (await scrollBody.boundingBox())!;
+  const touchSession = await touchContext.newCDPSession(touchPage);
+  const touchX = scrollBounds.x + scrollBounds.width / 2;
+  const touchStartY = scrollBounds.y + scrollBounds.height - 48;
+  await touchSession.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: touchX, y: touchStartY }] });
+  for (let step = 1; step <= 10; step += 1) {
+    await touchSession.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: touchX, y: touchStartY - step * 30 }] });
+    await touchPage.waitForTimeout(16); // Model consecutive touch frames for a real scroll gesture.
+  }
+  await touchSession.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  await expect.poll(() => scrollBody.evaluate((body) => body.scrollTop)).toBeGreaterThan(100);
+  await expect(touchDialog).toBeVisible();
+  await touchContext.close();
+
+  await page.getByRole("tab", { name: "历史版本", exact: true }).click();
   await page.getByRole("button", { name: "查看版本 1", exact: true }).click();
   await expect(page.getByRole("heading", { name: "版本 1 预览" })).toBeVisible();
   await page.getByRole("button", { name: "关闭评论与历史" }).click();
@@ -50,7 +90,8 @@ test("personal writing, team discussion and a versioned documentation site work 
   await page.getByLabel("站点名称", { exact: true }).fill("Orbis 知识指南");
   await page.getByLabel("站点路径", { exact: false }).fill("orbis-guide");
   await page.getByLabel("站点简介", { exact: true }).fill("记录、协作与发布，让团队知识持续生长。");
-  await page.getByLabel("站点场景", { exact: false }).selectOption("handbook");
+  await page.getByRole("button", { name: /站点场景/ }).click();
+  await page.getByRole("option", { name: "产品手册", exact: true }).click();
   await page.getByRole("dialog", { name: "创建文档站点" }).getByRole("button", { name: "创建站点", exact: true }).click();
   await expect(page).toHaveURL(/\/sites\/[0-9a-f-]+$/);
   const siteId = page.url().split("/").pop()!;
@@ -69,7 +110,7 @@ test("personal writing, team discussion and a versioned documentation site work 
   await page.getByRole("link", { name: "← 返回发布管理" }).click();
   await page.getByRole("button", { name: "发布站点", exact: true }).click();
   await page.getByRole("button", { name: "确认发布", exact: true }).click();
-  await expect(page.getByText("站点已发布，读者现在可以访问新版本。", { exact: true })).toBeVisible();
+  await expect(page.getByRole("alertdialog", { name: "站点已发布" })).toContainText("读者现在可以访问新版本。");
 
   const guest = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
   const reader = await guest.newPage();
@@ -102,18 +143,19 @@ test("personal writing, team discussion and a versioned documentation site work 
   await page.goto(`/sites/${siteId}`);
   await page.getByRole("button", { name: "发布站点", exact: true }).click();
   await page.getByRole("button", { name: "确认发布", exact: true }).click();
-  await expect(page.getByText("站点已发布，读者现在可以访问新版本。", { exact: true })).toBeVisible();
+  await expect(page.getByRole("alertdialog", { name: "站点已发布" })).toContainText("读者现在可以访问新版本。");
   await reader.reload();
   await expect(reader.getByText("未发布的新内容，等待团队确认。", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "切换到此版本", exact: true }).click();
   await page.getByRole("button", { name: "确认操作", exact: true }).click();
-  await expect(page.getByText("已切换公开版本，内部文档保持当前内容。", { exact: true })).toBeVisible();
+  await expect(page.getByRole("alertdialog", { name: "公开版本已切换" })).toContainText("内部文档保持当前内容。");
   await reader.reload();
   await expect(reader.getByText("让知识被找到，让协作更轻松。", { exact: true })).toBeVisible();
 
   await page.goto("/settings/members");
   await page.getByLabel("邮箱", { exact: true }).fill("reader@example.com");
-  await page.getByRole("combobox").first().selectOption("normal");
+  await page.getByRole("button", { name: /角色/ }).click();
+  await page.getByRole("option", { name: "普通成员", exact: true }).click();
   await page.getByRole("button", { name: "发送邀请", exact: true }).click();
   await expect(page.getByText("reader@example.com", { exact: true })).toBeVisible();
   const outbox = join(process.env.ORBIS_E2E_DIR!, "outbox");
@@ -135,17 +177,17 @@ test("personal writing, team discussion and a versioned documentation site work 
   await member.getByLabel("新评论", { exact: true }).fill("我已经检查，可以继续完善内容。");
   await member.getByRole("button", { name: "发表评论", exact: true }).click();
   await expect(member.getByText("我已经检查，可以继续完善内容。", { exact: true })).toBeVisible();
-  await member.getByRole("button", { name: "历史版本", exact: true }).click();
+  await member.getByRole("tab", { name: "历史版本", exact: true }).click();
   await member.getByRole("button", { name: "查看版本 1", exact: true }).click();
   await expect(member.getByRole("button", { name: "恢复此版本" })).toHaveCount(0);
   await memberContext.close();
 
   await page.goto(`/documents/${noteId}`);
   await page.getByRole("button", { name: "评论与历史", exact: true }).click();
-  await page.getByRole("button", { name: "历史版本", exact: true }).click();
+  await page.getByRole("tab", { name: "历史版本", exact: true }).click();
   await page.getByRole("button", { name: "查看版本 2", exact: true }).click();
   await page.getByRole("button", { name: "恢复此版本", exact: true }).click();
-  await expect(page.getByRole("status", { name: "恢复结果" })).toContainText("已恢复为新版本");
+  await expect(page.getByRole("alertdialog", { name: "历史版本已恢复" })).toContainText("原正文可在历史中找回。");
   await page.getByRole("button", { name: "关闭评论与历史" }).click();
   await expect(page.locator('[contenteditable="true"]').first()).toContainText("让知识被找到，让协作更轻松。");
   const history = await (await request.get(`${apiOrigin}/notes/${noteId}/revisions`, { headers })).json();
@@ -178,7 +220,8 @@ test("personal writing, team discussion and a versioned documentation site work 
   await expect(page).toHaveURL(/\/collections\//);
   const exchangeNotebook = page.url();
   const chooserPromise = page.waitForEvent("filechooser");
-  await page.getByRole("button", { name: "导入 Markdown", exact: true }).click();
+  await page.getByRole("button", { name: "笔记本操作", exact: true }).click();
+  await page.getByRole("menuitem", { name: "导入 Markdown", exact: true }).click();
   const chooser = await chooserPromise;
   await chooser.setFiles({ name: "交换格式.md", mimeType: "text/markdown", buffer: Buffer.from("# 交换格式\n\nMarkdown 往返保留正文。\n\n- 第一项\n- 第二项\n") });
   await expect(page).toHaveURL(/\/documents\/[0-9a-f-]+$/);
@@ -186,7 +229,8 @@ test("personal writing, team discussion and a versioned documentation site work 
   await expect(page.locator('[contenteditable="true"]').first()).toContainText("Markdown 往返保留正文。");
   await page.goto(exchangeNotebook);
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "导出全部", exact: true }).click();
+  await page.getByRole("button", { name: "笔记本操作", exact: true }).click();
+  await page.getByRole("menuitem", { name: "导出全部", exact: true }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toBe("交换格式.md");
   expect(readFileSync((await download.path())!, "utf8")).toContain("Markdown 往返保留正文。");
@@ -206,7 +250,7 @@ test("personal writing, team discussion and a versioned documentation site work 
   await page.goto(`/sites/${siteId}`);
   await page.getByRole("button", { name: "撤回站点", exact: true }).click();
   await page.getByRole("button", { name: "确认操作", exact: true }).click();
-  await expect(page.getByText("站点已撤回，公开入口现已关闭。", { exact: true })).toBeVisible();
+  await expect(page.getByRole("alertdialog", { name: "站点已撤回" })).toContainText("公开入口现已关闭。");
   await reader.reload();
   await expect(reader.getByRole("heading", { name: "站点尚未发布或已撤回" })).toBeVisible();
   await guest.close();

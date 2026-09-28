@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import type { NotebookIconValue } from "../../shared/api/schemas";
+import type { NotebookIconValue, NoteTreeItem } from "../../shared/api/schemas";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import {
   createDocumentGroup,
   createNote,
+  reorderNotebookNotes,
   createNotebook,
   exportMarkdown,
   getNote,
@@ -23,6 +24,7 @@ import {
   updateNotebook,
   type AuthRequestOptions,
   type CreateNotePayload,
+  type NoteOrderPayload,
   type ResourceStatus,
 } from "./api";
 
@@ -53,6 +55,39 @@ export function useNoteTree(notebookId?: string) {
     queryKey: ["note-tree", notebookId],
     enabled: Boolean(notebookId),
     queryFn: () => getNoteTree(notebookId as string, auth),
+  });
+}
+
+function reorderTreeLevel(items: NoteTreeItem[], parentId: string | null, noteIds: string[]): NoteTreeItem[] {
+  if (parentId === null) {
+    const byId = new Map(items.map((note) => [note.id, note]));
+    return noteIds.map((id, index) => ({ ...byId.get(id)!, sort_order: index }));
+  }
+  return items.map((note) => note.id === parentId
+    ? { ...note, children: reorderTreeLevel(note.children, null, noteIds) }
+    : { ...note, children: reorderTreeLevel(note.children, parentId, noteIds) });
+}
+
+export function useReorderNotes(notebookId: string) {
+  const auth = useDocumentAuth();
+  const queryClient = useQueryClient();
+  const queryKey = ["note-tree", notebookId];
+  return useMutation({
+    mutationKey: ["note-reorder", notebookId],
+    mutationFn: (payload: NoteOrderPayload) => reorderNotebookNotes(notebookId, payload, auth),
+    onMutate: async (payload) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<{ items: NoteTreeItem[] }>(queryKey);
+      queryClient.setQueryData<{ items: NoteTreeItem[] }>(queryKey, (tree) => tree
+        ? { items: reorderTreeLevel(tree.items, payload.parent_id, payload.note_ids) }
+        : tree);
+      return { previous };
+    },
+    onSuccess: (tree) => queryClient.setQueryData(queryKey, tree),
+    onError: async (_error, _payload, context) => {
+      queryClient.setQueryData(queryKey, context?.previous);
+      await queryClient.invalidateQueries({ queryKey });
+    },
   });
 }
 

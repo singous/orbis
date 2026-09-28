@@ -1,4 +1,4 @@
-import { FilePlus2, FileWarning, RefreshCcw } from "lucide-react";
+import { FilePlus2, FileWarning, RefreshCcw } from "../../shared/ui/icons";
 import { Link } from "react-router-dom";
 
 import type { SiteChangePage, SiteSources } from "./schemas";
@@ -6,7 +6,7 @@ import type { SiteChangePage, SiteSources } from "./schemas";
 function ChangeGroup({ label, items, tone }: { label: string; items: SiteChangePage[]; tone: "added" | "modified" | "removed" }) {
   const Icon = tone === "added" ? FilePlus2 : tone === "modified" ? RefreshCcw : FileWarning;
   return <section className={`site-change-group ${tone}`}>
-    <header><Icon aria-hidden="true" size={15} /><strong>{label} {items.length}</strong></header>
+    <header><Icon aria-hidden="true" size={16} /><strong>{label} {items.length}</strong></header>
     {items.length ? <ul>{items.map((item, index) => <li key={`${item.note_id ?? item.slug}-${index}`}>
       {item.note_id ? <Link to={`/documents/${item.note_id}`}>{item.title}</Link> : <span>{item.title}</span>}
       <code>/{item.slug}</code>

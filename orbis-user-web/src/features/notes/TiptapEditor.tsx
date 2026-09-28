@@ -1,6 +1,8 @@
+import { ActionButton } from "../../shared/ui/ActionButton";
+import { Input as HeroInput } from "@heroui/react/input";
 import { EditorContent, useEditor } from "@tiptap/react";
 import type { Editor, JSONContent } from "@tiptap/core";
-import { Bold, Code, Heading1, Heading2, Heading3, Image, Italic, Link2, List, ListChecks, ListOrdered, Minus, Paperclip, Plus, Quote, Redo2, Strikethrough, Table2, Underline, Undo2 } from "lucide-react";
+import { Bold, Code, Heading1, Heading2, Heading3, Image, Italic, Link2, List, ListChecks, ListOrdered, Minus, Paperclip, Plus, Quote, Redo2, Strikethrough, Table2, Underline, Undo2 } from "../../shared/ui/icons";
 import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 
 import { safeContentUrl } from "../content/ContentRenderer";
@@ -37,7 +39,7 @@ const COMMANDS: Command[] = [
 ];
 
 function Tool({ title, active, onClick, children }: { title: string; active?: boolean; onClick: () => void; children: ReactNode }) {
-  return <button type="button" title={title} aria-label={title} aria-pressed={active} onMouseDown={(event) => event.preventDefault()} onClick={onClick}>{children}</button>;
+  return <ActionButton type="button" title={title} aria-label={title} aria-pressed={active} onMouseDown={(event) => event.preventDefault()} onClick={onClick}>{children}</ActionButton>;
 }
 
 function inlineLink(editor: Editor) {
@@ -178,12 +180,12 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false }: {
       <Tool title="任务清单" active={editor.isActive("taskList")} onClick={() => editor.chain().focus().toggleTaskList().run()}><ListChecks size={16} /></Tool>
       <Tool title="表格" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}><Table2 size={16} /></Tool>
       <Tool title="上传媒体或附件" onClick={() => inputRef.current?.click()}><Image size={16} /><Paperclip size={13} /></Tool>
-      <button type="button" className="orbis-tiptap-insert" aria-label="插入内容" aria-expanded={menuOpen} onClick={() => { setActiveCommand(0); setMenuOpen((value) => !value); }}><Plus size={15} />插入</button>
+      <ActionButton type="button" className="orbis-tiptap-insert" aria-label="插入内容" aria-expanded={menuOpen} onClick={() => { setActiveCommand(0); setMenuOpen((value) => !value); }}><Plus size={15} />插入</ActionButton>
       <input ref={inputRef} type="file" aria-label="选择上传文件" hidden onChange={(event) => void upload(event)} />
     </div> : null}
     {uploadError ? <p role="alert" className="orbis-tiptap-error">{uploadError}</p> : null}
-    {contentError ? <div role="alert" className="orbis-tiptap-error"><p>{contentError}</p><button type="button" disabled={readOnly} onClick={() => editor && emitChange(editor)}>重试保存正文</button></div> : null}
-    {!readOnly && editor && (slash || menuOpen) ? <div className="orbis-tiptap-menu" role="listbox" aria-label="插入内容">{visible.length ? visible.map((item, index) => <button type="button" role="option" aria-selected={index === activeCommand % visible.length} key={item.label} onMouseDown={(event) => event.preventDefault()} onClick={() => run(item)}>{item.icon}{item.label}</button>) : <p>没有匹配的内容块</p>}</div> : null}
+    {contentError ? <div role="alert" className="orbis-tiptap-error"><p>{contentError}</p><ActionButton type="button" disabled={readOnly} onClick={() => editor && emitChange(editor)}>重试保存正文</ActionButton></div> : null}
+    {!readOnly && editor && (slash || menuOpen) ? <div className="orbis-tiptap-menu" role="listbox" aria-label="插入内容">{visible.length ? visible.map((item, index) => <ActionButton type="button" role="option" aria-selected={index === activeCommand % visible.length} key={item.label} onMouseDown={(event) => event.preventDefault()} onClick={() => run(item)}>{item.icon}{item.label}</ActionButton>) : <p>没有匹配的内容块</p>}</div> : null}
     <EditorContent editor={editor} aria-label="文档正文" />
   </div></FileContentContext.Provider></EditorReadOnlyContext.Provider>;
 }

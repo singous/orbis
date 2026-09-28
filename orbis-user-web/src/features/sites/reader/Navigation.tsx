@@ -1,4 +1,5 @@
-import { ChevronRight } from "lucide-react";
+import { ActionButton } from "../../../shared/ui/ActionButton";
+import { ChevronRight } from "../../../shared/ui/icons";
 import { useEffect, useRef, type RefObject } from "react";
 import { Link } from "react-router-dom";
 
@@ -57,7 +58,7 @@ export function Navigation({ sections, currentSlug, basePath, open, close, descr
   }, [modal, open, returnFocusRef]);
 
   return <>
-    {open ? <button type="button" className="site-reader-navigation-scrim" aria-label="收起站点导航" onClick={close} /> : null}
+    {open ? <ActionButton type="button" className="site-reader-navigation-scrim" aria-label="收起站点导航" onClick={close} /> : null}
     <aside ref={drawerRef} id="site-navigation" className={`site-reader-navigation${open ? " is-open" : ""}`} role={modal && open ? "dialog" : undefined} aria-modal={modal && open ? "true" : undefined} aria-label={modal && open ? "站点导航抽屉" : undefined} onKeyDown={(event) => {
       if (!modal || !open) return;
       if (event.key === "Escape") {

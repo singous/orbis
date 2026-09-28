@@ -30,7 +30,8 @@ test('an existing BlockNote code block survives opening and a language change', 
   const code = page.locator('.orbis-code code');
   await expect(code).toBeVisible();
   const displayed = await code.innerText();
-  await page.getByRole('combobox', { name: '代码语言' }).selectOption('javascript');
+  await page.getByRole('button', { name: /代码语言/ }).click();
+  await page.getByRole('option', { name: 'JavaScript', exact: true }).click();
   await expect.poll(async () => (await read()).content_version).toBeGreaterThan(2);
   const persisted = await read();
   const evidence = { displayed, persistedCode: persisted.blocks.blocks[0].content, version: persisted.content_version };

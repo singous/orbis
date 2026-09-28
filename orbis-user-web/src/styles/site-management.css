@@ -62,33 +62,7 @@
   grid-template-columns: minmax(90px, .65fr) minmax(140px, 1.35fr);
 }
 
-.site-branding-link-list input,
-.site-branding-cta input,
-.site-source-binding-fields input,
-.site-source-binding-fields select,
-.site-source-overrides input,
-.site-source-overrides textarea {
-  width: 100%;
-  min-width: 0;
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
-  outline: none;
-  background: var(--surface-content);
-  padding: 8px 9px;
-  color: var(--text-primary);
-  font: inherit;
-  font-size: 12px;
-}
-
-.site-branding-link-list input:focus,
-.site-branding-cta input:focus,
-.site-source-binding-fields input:focus,
-.site-source-binding-fields select:focus,
-.site-source-overrides input:focus,
-.site-source-overrides textarea:focus {
-  border-color: var(--border-strong);
-  box-shadow: 0 0 0 2px var(--surface-active);
-}
+.site-branding-link-list input, .site-branding-cta input, .site-source-binding-fields input, .site-source-overrides input, .site-source-overrides textarea { width: 100%; min-width: 0; font-size: 12px; }
 
 .site-branding-link-list button,
 .site-source-order-actions button,
@@ -96,7 +70,6 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 7px;
   color: var(--text-tertiary);
 }
 
@@ -118,35 +91,7 @@
   min-width: 0;
 }
 
-.site-source-mode {
-  display: inline-flex;
-  gap: 4px;
-  border: 0;
-  border-radius: 10px;
-  margin: 0 0 20px;
-  padding: 4px;
-  background: var(--surface-hover);
-}
-
-.site-source-mode label {
-  position: relative;
-  border-radius: 7px;
-  padding: 7px 12px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.site-source-mode label:has(input:checked) {
-  background: var(--surface-content);
-  box-shadow: 0 1px 3px rgb(29 30 34 / 9%);
-  color: var(--text-primary);
-}
-
-.site-source-mode input {
-  position: absolute;
-  opacity: 0;
-}
+.site-source-mode { display: flex; flex-direction: row; flex-wrap: wrap; gap: 20px; margin: 0 0 20px; }
 
 .site-source-manual-note,
 .site-source-status,
@@ -300,10 +245,10 @@
   place-items: center;
 }
 
-.site-source-check input {
-  width: 14px;
-  height: 14px;
-  accent-color: var(--surface-inverse);
+
+.site-source-check .checkbox__indicator svg {
+  width: 10px;
+  height: 10px;
 }
 
 .site-source-node-row > svg {
@@ -492,7 +437,6 @@
   display: grid;
   width: 100%;
   gap: 2px;
-  border-radius: 7px;
   padding: 8px 9px;
   color: var(--text-secondary);
   text-align: left;

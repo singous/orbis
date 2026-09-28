@@ -1,6 +1,9 @@
-import { ArrowLeft, ArrowRight, BookOpen, Check, Copy, Link2 } from "lucide-react";
+import { LoadingState } from "../../shared/ui/LoadingState";
+import { ActionButton } from "../../shared/ui/ActionButton";
+import { ArrowLeft, ArrowRight, BookOpen, Check, Copy, Link2 } from "../../shared/ui/icons";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Link, Navigate } from "react-router-dom";
+import { showToast } from "../../shared/ui/Toast";
 
 import { ContentRenderer, contentOutline, safeContentUrl } from "../content/ContentRenderer";
 import { parseFileReference } from "../files/managed-files";
@@ -16,7 +19,7 @@ import "../../styles/site-reader.css";
 
 const THEME_STORAGE_KEY = "orbis-reader-theme";
 const DEFAULT_BRANDING: SiteBranding = { logo_url: null, links: [], footer_links: [], cta: null, theme: "light" };
-type CopyFeedback = { action: "link" | "page"; status: "success" | "error"; message: string };
+type CopyFeedback = { action: "link" | "page"; status: "success" | "error" };
 
 function storedTheme(fallback: ReaderThemeMode): ReaderThemeMode {
   try {
@@ -140,14 +143,17 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false, load
 
   async function writeClipboard(action: CopyFeedback["action"], value: string) {
     if (!navigator.clipboard?.writeText) {
-      setCopyFeedback({ action, status: "error", message: action === "link" ? "浏览器不支持自动复制，请从地址栏手动复制。" : "浏览器不支持自动复制，请手动选择页面正文。" });
+      setCopyFeedback({ action, status: "error" });
+      showToast({ title: "无法复制", description: action === "link" ? "请从地址栏手动复制。" : "请手动选择页面正文。", tone: "danger" });
       return;
     }
     try {
       await navigator.clipboard.writeText(value);
-      setCopyFeedback({ action, status: "success", message: action === "link" ? "链接已复制" : "页面 Markdown 已复制" });
+      setCopyFeedback({ action, status: "success" });
+      showToast({ title: action === "link" ? "链接已复制" : "页面 Markdown 已复制", tone: "success" });
     } catch {
-      setCopyFeedback({ action, status: "error", message: "复制失败，请检查浏览器权限后重试。" });
+      setCopyFeedback({ action, status: "error" });
+      showToast({ title: "复制失败", description: "请检查浏览器权限后重试。", tone: "danger" });
     }
   }
 
@@ -162,7 +168,8 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false, load
     try {
       await writeClipboard("page", loadMarkdown ? await loadMarkdown(current.slug) : await pageMarkdown(current));
     } catch {
-      setCopyFeedback({ action: "page", status: "error", message: "无法生成页面 Markdown，请稍后重试。" });
+      setCopyFeedback({ action: "page", status: "error" });
+      showToast({ title: "无法生成页面 Markdown", description: "请稍后重试。", tone: "danger" });
     }
   }
 
@@ -186,17 +193,16 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false, load
             <div><h1>{current.title}</h1>{current.description ? <p>{current.description}</p> : null}</div>
             <div className="site-reader-copy-area">
               <div className="site-reader-copy-actions">
-                <button type="button" aria-label={copyFeedback?.action === "link" && copyFeedback.status === "success" ? "链接已复制" : "复制链接"} onClick={() => void copyLink()}>{copyFeedback?.action === "link" && copyFeedback.status === "success" ? <Check aria-hidden="true" size={15} /> : <Link2 aria-hidden="true" size={15} />}<span>{copyFeedback?.action === "link" && copyFeedback.status === "success" ? "已复制" : "复制链接"}</span></button>
-                <button type="button" disabled={contentState?.loading || Boolean(contentState?.error)} aria-label={copyFeedback?.action === "page" && copyFeedback.status === "success" ? "页面 Markdown 已复制" : "复制页面"} onClick={() => void copyPage()}>{copyFeedback?.action === "page" && copyFeedback.status === "success" ? <Check aria-hidden="true" size={15} /> : <Copy aria-hidden="true" size={15} />}<span>{copyFeedback?.action === "page" && copyFeedback.status === "success" ? "已复制" : "复制页面"}</span></button>
+                <ActionButton type="button" aria-label={copyFeedback?.action === "link" && copyFeedback.status === "success" ? "链接已复制" : "复制链接"} onClick={() => void copyLink()}>{copyFeedback?.action === "link" && copyFeedback.status === "success" ? <Check aria-hidden="true" size={16} /> : <Link2 aria-hidden="true" size={16} />}<span>{copyFeedback?.action === "link" && copyFeedback.status === "success" ? "已复制" : "复制链接"}</span></ActionButton>
+                <ActionButton type="button" disabled={contentState?.loading || Boolean(contentState?.error)} aria-label={copyFeedback?.action === "page" && copyFeedback.status === "success" ? "页面 Markdown 已复制" : "复制页面"} onClick={() => void copyPage()}>{copyFeedback?.action === "page" && copyFeedback.status === "success" ? <Check aria-hidden="true" size={16} /> : <Copy aria-hidden="true" size={16} />}<span>{copyFeedback?.action === "page" && copyFeedback.status === "success" ? "已复制" : "复制页面"}</span></ActionButton>
               </div>
-              {copyFeedback ? <p className={`site-reader-copy-feedback is-${copyFeedback.status}`} role="status">{copyFeedback.message}</p> : null}
             </div>
           </div>
           {compactOutline ? <Outline items={outline} mobile /> : null}
-          {contentState?.loading ? <p role="status" className="site-reader-body-status">正在加载正文…</p> : contentState?.error ? <div role="alert" className="site-reader-body-status"><p>{contentState.error}</p><button type="button" onClick={contentState.retry}>重新加载正文</button></div> : <ContentRenderer blocks={current.blocks} pageTitle={current.title} />}
+          {contentState?.loading ? <LoadingState label="正在加载正文…" variant="editor" /> : contentState?.error ? <div role="alert" className="site-reader-body-status"><p>{contentState.error}</p><ActionButton type="button" onClick={contentState.retry}>重新加载正文</ActionButton></div> : <ContentRenderer blocks={current.blocks} pageTitle={current.title} />}
           <nav className="site-reader-pagination" aria-label="相邻文档">
-            {currentIndex > 0 ? <Link to={pageHref(basePath, snapshot.pages[currentIndex - 1].slug)}><ArrowLeft aria-hidden="true" size={17} /><span><small>上一篇</small>{snapshot.pages[currentIndex - 1].title}</span></Link> : <span />}
-            {currentIndex < snapshot.pages.length - 1 ? <Link to={pageHref(basePath, snapshot.pages[currentIndex + 1].slug)}><span><small>下一篇</small>{snapshot.pages[currentIndex + 1].title}</span><ArrowRight aria-hidden="true" size={17} /></Link> : null}
+            {currentIndex > 0 ? <Link to={pageHref(basePath, snapshot.pages[currentIndex - 1].slug)}><ArrowLeft aria-hidden="true" size={18} /><span><small>上一篇</small>{snapshot.pages[currentIndex - 1].title}</span></Link> : <span />}
+            {currentIndex < snapshot.pages.length - 1 ? <Link to={pageHref(basePath, snapshot.pages[currentIndex + 1].slug)}><span><small>下一篇</small>{snapshot.pages[currentIndex + 1].title}</span><ArrowRight aria-hidden="true" size={18} /></Link> : null}
           </nav>
           {updatedAt ? <footer className="site-reader-page-footer">最后更新于 {formatDate(updatedAt)}</footer> : null}
         </> : <div className="site-reader-empty"><BookOpen aria-hidden="true" size={30} /><h1>{snapshot.pages.length ? "页面不存在" : "还没有文档"}</h1><p>{snapshot.pages.length ? "这个地址可能已经变更，请从目录查找文档。" : "选择一些文档，开始建立你的站点。"}</p><Link to={basePath}>返回文档首页</Link></div>}

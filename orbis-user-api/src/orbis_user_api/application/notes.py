@@ -25,6 +25,7 @@ from orbis_user_api.schemas.note import (
     NoteContentUpdateRequest,
     NoteCreateRequest,
     NoteMetadataUpdateRequest,
+    NoteOrderRequest,
     ResourceStatus,
 )
 from orbis_user_api.services.exceptions import (
@@ -32,6 +33,7 @@ from orbis_user_api.services.exceptions import (
     NotebookNotFound,
     NoteContentInvalid,
     NoteNotFound,
+    NoteOrderConflict,
     NoteParentInvalid,
     NoteVersionConflict,
 )
@@ -252,6 +254,54 @@ async def get_note_tree(
         ]
 
     return build(None)
+
+
+async def reorder_notes(
+    notebook_id: UUID,
+    payload: NoteOrderRequest,
+    user: User,
+    session: AsyncSession,
+) -> list[dict[str, Any]]:
+    workspace, _ = await get_current_workspace(user, session)
+    await _get_active_notebook(notebook_id, workspace.id, session)
+    await _validate_parent(payload.parent_id, notebook_id, workspace.id, session)
+    result = await session.execute(
+        select(Note)
+        .where(
+            Note.workspace_id == workspace.id,
+            Note.notebook_id == notebook_id,
+            Note.parent_id == payload.parent_id,
+            Note.status == "active",
+        )
+        .order_by(Note.id)
+        .with_for_update()
+    )
+    siblings = list(result.scalars())
+    current_ids = [
+        note.id
+        for note in sorted(
+            siblings,
+            key=lambda note: (note.sort_order, note.created_at_ms, note.id),
+        )
+    ]
+    if (
+        current_ids != payload.expected_note_ids
+        or len(current_ids) != len(payload.note_ids)
+        or set(current_ids) != set(payload.note_ids)
+    ):
+        raise NoteOrderConflict
+
+    by_id = {note.id: note for note in siblings}
+    for index, note_id in enumerate(payload.note_ids):
+        by_id[note_id].sort_order = index
+    await session.commit()
+    logger.info(
+        "Reordered sibling documents: notebook_id=%s parent_id=%s count=%s",
+        notebook_id,
+        payload.parent_id,
+        len(siblings),
+    )
+    return await get_note_tree(notebook_id, user, session)
 
 
 async def get_note_content(

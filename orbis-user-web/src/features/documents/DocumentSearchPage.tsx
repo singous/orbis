@@ -1,4 +1,7 @@
-import { FilePlus2, Search, X } from "lucide-react";
+import { LoadingState } from "../../shared/ui/LoadingState";
+import { Input as HeroInput } from "@heroui/react/input";
+import { ActionButton } from "../../shared/ui/ActionButton";
+import { FilePlus2, Search, X } from "../../shared/ui/icons";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { PageContainer } from "../../shared/ui/PageContainer";
@@ -34,10 +37,10 @@ export function DocumentSearchPage() {
           <label className="relative block max-w-2xl">
             <Search
               aria-hidden="true"
-              size={17}
+              size={18}
               className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--muted-light)]"
             />
-            <input
+            <HeroInput
               type="search"
               role="searchbox"
               aria-label="搜索文档"
@@ -63,17 +66,17 @@ export function DocumentSearchPage() {
           </p>
         )}
         {trimmedQuery ? (
-          <button
+          <ActionButton
             type="button"
-            className="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-[var(--muted)] hover:text-black"
+            className="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-[var(--muted)] hover:text-[var(--text-primary)]"
             onClick={() => setQuery("")}
           >
             <X aria-hidden="true" size={14} />
             清空搜索
-          </button>
+          </ActionButton>
         ) : null}
         {trimmedQuery && notesQuery.isLoading ? (
-          <div className="empty-panel">正在搜索…</div>
+          <LoadingState label="正在搜索…" />
         ) : null}
         {trimmedQuery && !notesQuery.isLoading && !notes.length ? (
           <div className="empty-panel">没有匹配的文档。试试更短的关键词。</div>
@@ -86,7 +89,7 @@ export function DocumentSearchPage() {
                 to={`/documents/${note.id}`}
                 className="workbench-document-row workbench-search-result"
               >
-                <FilePlus2 aria-hidden="true" size={19} />
+                <FilePlus2 aria-hidden="true" size={20} />
                 <div className="workbench-resource-copy">
                   <h2>{note.title}</h2>
                   <span>{note.plain_text || "空白文档"}</span>

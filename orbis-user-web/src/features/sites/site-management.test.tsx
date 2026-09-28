@@ -1,10 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { toast as heroToast } from "@heroui/react/toast";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { authStore } from "../../shared/auth/auth-store";
+import { Toaster } from "../../shared/ui/Toast";
 import { SiteEditorPage } from "./SiteEditorPage";
 
 const id = "018ff7c4-a5b6-7000-8000-000000000001";
@@ -26,11 +28,11 @@ beforeEach(() => {
     return response(page([]));
   }));
 });
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); authStore.getState().clearSession(); });
+afterEach(() => { act(() => heroToast.clear()); cleanup(); vi.unstubAllGlobals(); authStore.getState().clearSession(); });
 
 function renderEditor() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
-  return render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[`/sites/${id}`]}><Routes><Route path="/sites/:siteId" element={<SiteEditorPage />} /><Route path="/sites/:siteId/preview" element={<h1>站点预览</h1>} /></Routes></MemoryRouter></QueryClientProvider>);
+  return render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[`/sites/${id}`]}><Routes><Route path="/sites/:siteId" element={<SiteEditorPage />} /><Route path="/sites/:siteId/preview" element={<h1>站点预览</h1>} /></Routes></MemoryRouter><Toaster /></QueryClientProvider>);
 }
 
 describe("site editing", () => {
@@ -72,6 +74,7 @@ describe("site editing", () => {
     await waitFor(() => expect(requests.find((item) => item.method === "PUT")?.body).toMatchObject({ name: "团队使用手册", expected_version: 2 }));
     expect(requests.some((item) => item.path.endsWith("/publish"))).toBe(false);
     expect(await screen.findByText("设置已保存")).toBeInTheDocument();
+    expect(input.closest("form")).not.toHaveTextContent("设置已保存");
   });
 
   it("preserves the form and shows a save conflict rather than overwriting the newer version", async () => {

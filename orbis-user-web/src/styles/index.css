@@ -1,78 +1,50 @@
 @import "tailwindcss";
+@import "@heroui/styles";
+@import "@fontsource-variable/inter";
+@import "./heroui-theme.css";
+@import "./scrollbars.css";
+@import "./icons.css";
+@import "./loading.css";
 
-/* Opaque, neutral workbench surfaces. Layout owners consume these tokens. */
+@layer components {
+  /* Feature controls keep their native layout while HeroUI owns interaction states. */
+  .orbis-action-button {
+    position: static;
+    isolation: auto;
+    display: inline-block;
+    width: auto;
+    height: auto;
+    min-width: 0;
+    padding: 0;
+    font: inherit;
+    text-align: inherit;
+    white-space: normal;
+    justify-content: normal;
+    gap: normal;
+  }
+
+  .orbis-action-button svg {
+    width: auto;
+    height: auto;
+    margin: 0;
+    align-self: auto;
+  }
+
+  .orbis-action-button[data-focus-visible="true"] {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    box-shadow: none;
+  }
+}
+
+/* Shared dimensions and font assets do not override the HeroUI theme. */
 :root {
-  --gray-0: #ffffff;
-  --gray-25: #fbfbfd;
-  --gray-50: #f8f8fa;
-  --gray-75: #f4f4f7;
-  --gray-100: #efeff3;
-  --gray-150: #e9e9ee;
-  --gray-200: #dedee6;
-  --gray-300: #cdced7;
-  --gray-400: #a9aab6;
-  --gray-500: #81828f;
-  --gray-600: #686974;
-  --gray-700: #4d4e56;
-  --gray-800: #34353b;
-  --gray-900: #24252a;
-  --gray-950: #1d1e22;
-
+  --layer-dialog: 80;
+  --font-inter: "Inter Variable", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
   --brand-mark: #23ad83;
   --avatar-background: #daf3f5;
   --avatar-foreground: #238d9d;
-
-  --surface-app: #f1f1f7;
-  --surface-sidebar: #fbfbfd;
-  --surface-panel: #fbfbfd;
-  --surface-content: #ffffff;
-  --surface-hover: #f4f4f7;
-  --surface-active: #ededf2;
-  --surface-overlay: #ffffff;
-  --surface-inverse: #1d1e22;
-  --surface-inverse-hover: #34353b;
-
-  --text-primary: #24252a;
-  --text-secondary: #777884;
-  --text-tertiary: #999aa6;
-  --text-oncolor: #ffffff;
-  --text-oninverse: #ffffff;
-  --border-subtle: #ebebf0;
-  --border-strong: #d7d8e0;
-  --border-inverse: rgb(255 255 255 / 14%);
-
-  --rail-bg: var(--surface-sidebar);
-  --rail-border: var(--border-subtle);
-  --rail-text: var(--text-secondary);
-  --rail-text-strong: var(--text-primary);
-  --rail-dim: var(--text-tertiary);
-  --rail-hover: var(--surface-hover);
-  --rail-active: var(--surface-active);
-  --rail-chip-bg: var(--surface-inverse);
-  --rail-chip-text: var(--text-oninverse);
-
-  --accent: #24252a;
-  --accent-strong: #1d1e22;
-  --accent-deep: #111215;
-  --accent-soft: #ededf2;
-  --accent-softer: #f5f5f8;
-  --accent-border: #d7d8e0;
-  --accent-text: #34353b;
-  --focus-ring: #767787;
-
-  --danger: #c5484e;
-  --danger-strong: #a33137;
-  --danger-bg: #fff2f2;
-  --danger-border: #f4d4d7;
-  --danger-text: #a33137;
-  --warning-bg: #fff9ed;
-  --warning-border: #f1dfb5;
-  --warning-text: #86631f;
-  --success-bg: #ecf8f0;
-  --success-border: #c8ead4;
-  --success-text: #29834c;
-
-  --shadow-pop: 0 4px 12px rgb(30 31 38 / 5%), 0 16px 42px rgb(30 31 38 / 12%);
   --action-height: 36px;
   --action-font-size: 14px;
   --action-line-height: 20px;
@@ -82,27 +54,81 @@
   --action-icon-size: 16px;
   --compact-control-height: 32px;
   --form-control-height: 42px;
-  --radius-control: 8px;
-  --radius-container: 12px;
-  --radius-pop: 14px;
-  --radius-card: 12px;
   --radius-pill: 999px;
-  --font-sans: "SF Pro Text", "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--font-sans);
+  font-size: 16px;
+}
 
-  /* Existing business components share the same semantic palette. */
+/* Resolve aliases in each theme scope, including nested reader themes. */
+:root, .light, .default, [data-theme="light"], [data-theme="default"], .dark, [data-theme="dark"] {
+  --gray-0: var(--surface);
+  --gray-25: var(--surface);
+  --gray-50: var(--background);
+  --gray-75: var(--surface-secondary);
+  --gray-100: var(--default);
+  --gray-150: var(--separator);
+  --gray-200: var(--border);
+  --gray-300: color-mix(in oklab, var(--foreground) 30%, var(--background));
+  --gray-400: color-mix(in oklab, var(--foreground) 45%, var(--background));
+  --gray-500: var(--muted);
+  --gray-600: color-mix(in oklab, var(--foreground) 75%, var(--background));
+  --gray-700: var(--foreground);
+  --gray-800: var(--foreground);
+  --gray-900: var(--foreground);
+  --gray-950: var(--foreground);
+  --surface-app: var(--background);
+  --surface-sidebar: var(--surface);
+  --surface-panel: var(--surface);
+  --surface-content: var(--surface);
+  --surface-hover: var(--surface-secondary);
+  --surface-active: var(--default);
+  --surface-overlay: var(--overlay);
+  --surface-inverse: var(--accent);
+  --surface-inverse-hover: color-mix(in oklab, var(--accent) 85%, var(--background));
+  --text-primary: var(--foreground);
+  --text-secondary: var(--muted);
+  --text-tertiary: var(--muted);
+  --text-oncolor: var(--accent-foreground);
+  --text-oninverse: var(--accent-foreground);
+  --border-subtle: var(--border);
+  --border-strong: var(--border);
+  --border-inverse: color-mix(in oklab, var(--accent-foreground) 20%, transparent);
+  --rail-bg: var(--surface-sidebar);
+  --rail-border: var(--border-subtle);
+  --rail-text: var(--text-secondary);
+  --rail-text-strong: var(--text-primary);
+  --rail-dim: var(--text-tertiary);
+  --rail-hover: var(--surface-hover);
+  --rail-active: var(--surface-active);
+  --rail-chip-bg: var(--surface-inverse);
+  --rail-chip-text: var(--text-oninverse);
+  --accent-strong: var(--accent);
+  --accent-deep: var(--accent);
+  --accent-softer: var(--accent-soft);
+  --accent-border: var(--border);
+  --accent-text: var(--accent);
+  --focus-ring: var(--focus);
+  --danger-strong: var(--danger);
+  --danger-bg: var(--danger-soft);
+  --danger-border: color-mix(in oklab, var(--danger) 25%, var(--surface));
+  --danger-text: var(--danger);
+  --warning-bg: var(--warning-soft);
+  --warning-border: color-mix(in oklab, var(--warning) 25%, var(--surface));
+  --warning-text: var(--warning-soft-foreground);
+  --success-bg: var(--success-soft);
+  --success-border: color-mix(in oklab, var(--success) 25%, var(--surface));
+  --success-text: var(--success-soft-foreground);
+  --shadow-pop: var(--overlay-shadow);
+  --radius-control: var(--radius-3xl);
+  --radius-container: calc(var(--radius) * 3);
+  --radius-pop: calc(var(--radius) * 3);
+  --radius-card: calc(var(--radius) * 3);
   --app-bg: var(--surface-app);
   --workspace: var(--surface-app);
   --panel: var(--surface-panel);
   --chrome: var(--surface-inverse);
   --text: var(--text-primary);
-  --muted: var(--text-secondary);
   --muted-light: var(--text-tertiary);
-  --border: var(--border-subtle);
-
-  font-family: var(--font-sans);
-  font-size: 16px;
-  color-scheme: light;
 }
 
 * {
@@ -117,6 +143,15 @@ body {
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
   line-height: 1.5;
+}
+
+/* Composite controls draw their own border and focus treatment around the input. */
+.orbis-embedded-input {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 
@@ -165,14 +200,13 @@ body {
   height: 32px;
   flex: none;
   place-items: center;
-  border-radius: 8px;
   color: var(--muted);
   transition: 140ms ease;
 }
 
 .icon-button:hover {
-  background: rgb(0 0 0 / 5%);
-  color: black;
+  background: var(--surface-hover);
+  color: var(--text-primary);
 }
 
 .icon-button:disabled {
@@ -189,8 +223,7 @@ body {
 .ui-button,
 .mvp-button,
 .workbench-primary-action,
-.text-action,
-.notebook-icon-upload-label {
+.text-action {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
@@ -199,9 +232,6 @@ body {
   min-height: var(--action-height);
   gap: var(--action-gap);
   padding: 0 var(--action-padding-x);
-  border-width: 1px;
-  border-style: solid;
-  border-radius: var(--radius-control);
   font-family: inherit;
   font-size: var(--action-font-size);
   font-weight: var(--action-font-weight);
@@ -209,7 +239,7 @@ body {
   white-space: nowrap;
 }
 
-:is(.ui-button, .mvp-button, .workbench-primary-action, .text-action, .notebook-icon-upload-label) > svg {
+:is(.ui-button, .mvp-button, .workbench-primary-action, .text-action) > svg {
   width: var(--action-icon-size);
   height: var(--action-icon-size);
   flex: none;
@@ -221,14 +251,48 @@ body {
   padding-inline: 10px;
 }
 
+.orbis-modal-backdrop {
+  z-index: var(--layer-dialog);
+  background: var(--backdrop);
+}
+
+.orbis-modal-dialog {
+  width: min(448px, calc(100vw - 32px));
+  max-width: none;
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  padding: 28px;
+}
+
+.orbis-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.orbis-modal-close {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  place-items: center;
+  color: var(--text-secondary);
+}
+
+.orbis-modal-close:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
 .text-action {
   border-color: transparent;
   color: var(--muted);
 }
 
 .text-action:hover {
-  background: rgb(0 0 0 / 5%);
-  color: black;
+  background: var(--surface-hover);
+  color: var(--text-primary);
 }
 
 .section-heading {
@@ -336,8 +400,7 @@ body {
 /* Mono for metadata: figures, dates, save state. */
 .stat-value,
 .page-container time,
-.document-main-item time,
-.save-indicator {
+.document-main-item time {
   font-family: var(--font-mono);
   letter-spacing: -0.02em;
 }
@@ -350,7 +413,7 @@ body {
   border-radius: var(--radius-card);
   background: var(--surface-content);
   padding: 18px;
-  transition: 180ms ease;
+  transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
 }
 
 .collection-card {
@@ -360,7 +423,9 @@ body {
 
 .document-card:hover,
 .collection-card:hover {
-  border-color: var(--border-strong);
+  border-color: transparent;
+  background: color-mix(in oklab, var(--surface-hover) 70%, var(--surface-content));
+  box-shadow: none;
 }
 
 .document-icon {
@@ -387,16 +452,6 @@ body {
   color: var(--text-oninverse);
 }
 
-.tag {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  background: var(--surface-hover);
-  padding: 3px 8px;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 600;
-}
 
 .empty-panel {
   border: 1px solid var(--border-subtle);
@@ -414,36 +469,6 @@ body {
   gap: 24px;
   border-bottom: 1px solid var(--border);
   padding-bottom: 36px;
-}
-
-/* Toast stays dark in both themes — floating inverse surface. */
-.toast {
-  position: fixed;
-  right: 24px;
-  bottom: 24px;
-  z-index: 60;
-  display: flex;
-  min-width: 280px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  border: 1px solid var(--border-inverse);
-  border-radius: var(--radius-pop);
-  background: var(--surface-inverse);
-  padding: 14px 16px;
-  color: var(--text-oninverse);
-  box-shadow: var(--shadow-pop);
-}
-
-.toast-action {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border-radius: 7px;
-  background: rgb(255 255 255 / 10%);
-  padding: 7px 9px;
-  font-size: 12px;
-  font-weight: 650;
 }
 
 /* The editor retains a continuous reading canvas inside the workbench. */
@@ -515,7 +540,6 @@ body {
   flex: none;
   place-items: center;
   border: 1px solid var(--border);
-  border-radius: var(--radius-control);
   background: var(--surface-content);
   color: var(--muted);
   transition: color 120ms ease, background 120ms ease;
@@ -536,25 +560,7 @@ body {
   display: block;
 }
 
-.save-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface-content);
-  padding: 5px 9px;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 650;
-}
 
-.save-indicator.state-error,
-.save-indicator.state-conflict {
-  border-color: var(--warning-border);
-  background: var(--warning-bg);
-  color: var(--warning-text);
-}
 
 
 .notebook-menu-back {
@@ -598,36 +604,38 @@ body {
   height: 28px;
   place-items: center;
   border: 1px solid var(--border);
-  border-radius: var(--radius-control);
   background: var(--surface-content);
   color: var(--muted);
 }
 
 .document-context {
-  padding: 14px 8px;
+  padding: 16px 0 8px;
 }
 
 .document-context-header {
   display: flex;
-  min-height: 34px;
+  min-height: 30px;
   align-items: center;
   flex-wrap: wrap;
   justify-content: space-between;
   gap: 8px;
-  padding: 0 4px 12px;
+  padding: 0 6px 8px;
 }
 
 .document-context-header h2 {
   margin: 0;
   white-space: nowrap;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 550;
 }
+.document-context-create { display: grid; width: 28px; height: 28px; min-width: 28px; min-height: 28px; place-items: center; padding: 0; color: var(--text-secondary); }
+.document-context-create:hover { color: var(--text-primary); background: var(--surface-hover); }
 
 
 .document-context-tree {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1px;
 }
 
@@ -640,13 +648,16 @@ body {
   min-width: 0;
   flex: 1;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   border-radius: 7px;
-  padding: 7px 6px;
+  padding: 6px 2px;
   color: var(--muted);
   font-size: 12px;
   font-weight: 550;
 }
+
+.document-context-link > svg { flex: none; }
+.document-context-link > span { min-width: 0; }
 
 .document-context-link:hover {
   background: var(--surface-hover);
@@ -654,48 +665,139 @@ body {
 }
 
 .document-context-link.is-active {
-  background: var(--accent-soft);
   color: var(--accent-strong);
 }
 
-.document-context-item > div,
-.document-main-item > div {
-  position: relative;
+.document-context-row,
+.document-main-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 2px;
+  border-radius: 8px;
+  transition: background 140ms ease;
 }
 
-/* Row actions float as a hover toolbar chip instead of taking flow space,
-   so document titles keep their full width. */
+.document-context-row:hover,
+.document-main-row:hover,
+.document-context-row.is-active { background: var(--surface-hover); }
+.document-context-row.is-active { background: var(--accent-soft); }
+
+.document-context-row {
+  min-height: 34px;
+  padding: 1px 3px;
+}
+.document-context-link > span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.document-context-children { padding-left: 12px; }
+.document-tree-prefix { display: flex; flex: none; align-items: center; }
+.document-drag-placeholder { width: 20px; flex: none; }
+.document-disclosure-placeholder { width: 20px; flex: none; }
+.document-tree-disclosure { display: grid; width: 20px; min-width: 20px; height: 30px; min-height: 30px; place-items: center; padding: 0; color: var(--text-tertiary); }
+.document-tree-disclosure:hover { background: var(--surface-active); color: var(--text-primary); }
+.document-tree-disclosure svg { transition: transform 140ms ease; }
+.document-tree-disclosure[aria-expanded="false"] svg { transform: rotate(-90deg); }
+
+.document-drag-handle {
+  display: grid;
+  flex: none;
+  width: 20px;
+  height: 30px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.document-drag-handle:hover { color: var(--text-primary); background: var(--surface-hover); }
+.document-drag-handle:active { cursor: grabbing; }
+.document-drag-handle:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
 .document-context-actions {
-  position: absolute;
-  top: 50%;
-  right: 6px;
   display: flex;
   flex: none;
-  gap: 1px;
-  transform: translateY(-50%);
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: var(--surface-content);
-  box-shadow: var(--shadow-pop);
-  padding: 2px;
-  opacity: 0;
+  align-items: center;
+  gap: 0;
+}
+.document-context-actions .icon-button {
+  display: grid;
+  flex: none;
+  width: 26px;
+  height: 30px;
+  min-width: 26px;
+  min-height: 30px;
+  place-items: center;
+  padding: 0;
+  color: var(--text-tertiary);
+  background: transparent;
+}
+.document-context-actions .icon-button:hover { color: var(--text-primary); background: var(--surface-active); }
+.document-context-actions .danger-hover:hover { color: var(--danger); }
+.document-actions-popover { width: 180px; padding: 5px; }
+.document-actions-popover [role="menuitem"] { min-height: 36px; font-size: 13px; }
+.document-actions-popover [role="menuitem"] svg { width: 16px; height: 16px; flex: none; }
+.document-actions-popover .document-archive-action { color: var(--danger-text); }
+
+@media (hover: hover) and (pointer: fine) {
+  .document-context-actions { opacity: 0; pointer-events: none; transition: opacity 100ms ease; }
+  .document-context-row .document-create-child { display: none; }
+  .document-context-row:hover .document-create-child,
+  .document-context-row:focus-within .document-create-child,
+  .document-context-row .document-context-actions[data-menu-open="true"] .document-create-child { display: grid; }
+  .document-context-row:hover > .document-context-actions,
+  .document-main-row:hover > .document-context-actions,
+  .document-context-row:focus-within > .document-context-actions,
+  .document-main-row:focus-within > .document-context-actions,
+  .document-context-actions[data-menu-open="true"] { opacity: 1; pointer-events: auto; }
 }
 
-.document-context-item:hover > div > .document-context-actions,
-.document-main-item:hover .document-context-actions,
-.document-context-actions:focus-within {
-  opacity: 1;
-}
+.document-context-item[data-dragging="true"],
+.document-main-item[data-dragging="true"] { position: relative; z-index: 2; opacity: .65; }
+.document-context-item[data-drop-target="true"] > .document-context-row,
+.document-main-item[data-drop-target="true"] > .document-main-row { outline: 2px solid var(--accent); outline-offset: -2px; }
 
-/* Fade long titles under the floating action chip. */
-.document-context-item:hover .document-context-link,
-.document-main-item:hover > div > a {
-  mask-image: linear-gradient(to right, black 52%, transparent 96%);
+.document-main-row { min-height: 44px; padding: 3px 6px; }
+.document-main-link {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  gap: 11px;
+  padding: 6px 3px;
+  color: var(--text-primary);
+}
+.document-main-link > svg { flex: none; color: var(--text-tertiary); }
+.document-main-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 450; }
+.document-main-leader { flex: 1; min-width: 16px; border-bottom: 1px dashed var(--border-subtle); }
+.document-main-link[aria-current="page"] .document-main-title { font-weight: 650; }
+.document-main-link time { flex: none; white-space: nowrap; font-size: 12px; color: var(--text-tertiary); }
+.document-main-item, .document-main-children { min-width: 0; }
+.document-main-children { padding-left: 20px; }
+
+@media (max-width: 600px) {
+  .document-main-row { min-height: 44px; padding: 2px 0; }
+  .document-main-link { gap: 8px; }
+  .document-main-leader, .document-main-link time { display: none; }
+  .document-main-title { flex: 1; }
+  .document-create-child { display: none !important; }
+  .document-context-actions { opacity: 1; pointer-events: auto; }
+  .document-context-actions .icon-button { width: 32px; min-width: 32px; height: 32px; min-height: 32px; }
+  .document-tree-disclosure, .document-disclosure-placeholder { width: 24px; min-width: 24px; }
+  .document-drag-handle { height: 32px; }
 }
 
 /* Notebook page main-column document list (DocumentContextPanel variant="main"). */
 .document-main-list {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
 }
 
@@ -753,9 +855,24 @@ body {
   .notebook-hero { flex-direction: column; }
   .editor-canvas { padding: 24px 0 52px; }
   .editor-layout { padding-right: 0; padding-left: 0; }
-  .toast { right: 12px; bottom: 12px; left: 12px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
 }
+
+/* HeroUI owns field focus rings; these rules only arrange controls and copy. */
+.orbis-select-field { min-width: 0; gap: 8px; }
+.orbis-select-field [data-slot="select-trigger"] { width: 100%; min-width: 0; font-weight: 400; }
+.orbis-select-popover { max-width: calc(100vw - 24px); }
+.orbis-field-description { color: var(--text-secondary); font-size: 12px; line-height: 1.7; font-weight: 400; }
+.orbis-field-label, .site-settings-fields .orbis-select-field > label { font-size: 12px; font-weight: 550; }
+.orbis-color-field { display: grid; align-content: start; min-width: 0; gap: 8px; }
+.orbis-color-field [data-slot="color-picker-trigger"] { display: flex; gap: 10px; align-items: center; min-height: 36px; font-size: 13px; }
+.orbis-color-popover { width: 260px; max-width: calc(100vw - 24px); display: grid; gap: 16px; padding: 16px; }
+.orbis-color-popover [data-slot="color-area"] { width: 100%; height: 160px; }
+.member-role-select { min-width: 120px; }
+
+/* Compact shell search dimensions keep the InputGroup theme intact. */
+.orbis-compact-search { min-height: 0; }
+.orbis-compact-search [data-slot="input-group-input"] { min-width: 0; height: 100%; padding-block: 0; }

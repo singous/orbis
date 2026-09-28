@@ -112,6 +112,12 @@ test("a notebook publishes its complete tree and editable documentation componen
   await page.getByRole("button", { name: "编辑提示块属性", exact: true }).nth(1).click();
   await expect(page.getByRole("textbox", { name: "提示块标题", exact: true })).toHaveCount(2);
   await page.locator('.doc-editor-callout input[value=""]').fill("编辑器插入的提示");
+  await page.locator('.doc-editor-callout:has(input[value="编辑器插入的提示"])').getByRole("button", { name: /提示类型/ }).click();
+  await page.getByRole("option", { name: "注意", exact: true }).click();
+  await expect.poll(async () => {
+    const content = (await (await request.get(`${apiOrigin}/notes/${ids[0]}/content`, { headers })).json()).data;
+    return content.blocks.blocks.find((item: { type: string; props?: { title?: string; tone?: string } }) => item.type === "callout" && item.props?.title === "编辑器插入的提示")?.props.tone;
+  }).toBe("warning");
   await expect.poll(async () => (await (await request.get(`${apiOrigin}/notes/${ids[0]}/content`, { headers })).json()).data.plain_text).toContain("编辑器插入的提示");
   const edited = (await (await request.get(`${apiOrigin}/notes/${ids[0]}/content`, { headers })).json()).data.blocks;
   const allowedChildren: Record<string, string> = { cardGroup: "card", steps: "step", tabs: "tab", codeGroup: "codeBlock" };
@@ -141,10 +147,11 @@ test("a notebook publishes its complete tree and editable documentation componen
   await page.setViewportSize({ width: 1440, height: 1000 });
 
   await page.goto(`/collections/${notebook.id}`);
-  await page.getByRole("link", { name: "创建文档站点", exact: true }).click();
+  await page.getByRole("button", { name: "笔记本操作", exact: true }).click();
+  await page.getByRole("menuitem", { name: "创建文档站点", exact: true }).click();
   const create = page.getByRole("dialog", { name: "创建文档站点" });
   await expect(create.getByRole("radio", { name: "关联笔记本" })).toBeChecked();
-  await expect(create.getByLabel("来源笔记本 1")).toHaveValue(notebook.id);
+  await expect(create.getByRole("button", { name: /来源笔记本 1/ })).toContainText("开发者文档");
   await create.getByLabel("站点名称", { exact: true }).fill("Orbis 开发者文档");
   await create.getByLabel("站点路径", { exact: false }).fill("notebook-docs");
   await create.getByLabel("站点简介", { exact: true }).fill("从笔记本持续发布产品知识。");
@@ -165,7 +172,7 @@ test("a notebook publishes its complete tree and editable documentation componen
   await preview.getByRole("navigation", { name: "预览页面" }).getByRole("button", { name: /快速开始/ }).click();
   await expect(preview.getByRole("link", { name: "阅读入门指南" })).toBeVisible();
   await preview.getByRole("button", { name: "确认发布", exact: true }).click();
-  await expect(page.getByText("站点已发布，读者现在可以访问新版本。", { exact: true })).toBeVisible();
+  await expect(page.getByRole("alertdialog", { name: "站点已发布" })).toContainText("读者现在可以访问新版本。");
   const snapshot = (await (await request.get(`${apiOrigin}/public/sites/notebook-docs`)).json()).data;
   expect(snapshot.pages).toHaveLength(25);
   expect(snapshot.pages[2].parent_slug).toBe(snapshot.pages[1].slug);
@@ -235,18 +242,18 @@ test("a notebook publishes its complete tree and editable documentation componen
   const revisedPreview = page.getByRole("dialog", { name: "确认发布站点" });
   await expect(revisedPreview.getByRole("link", { name: "更新后的入门指南" })).toBeVisible();
   await revisedPreview.getByRole("button", { name: "确认发布", exact: true }).click();
-  await expect(page.getByText("站点已发布，读者现在可以访问新版本。", { exact: true })).toBeVisible();
+  await expect(page.getByRole("alertdialog", { name: "站点已发布" })).toContainText("读者现在可以访问新版本。");
   await reader.reload();
   await expect(reader.getByRole("link", { name: "更新后的入门指南" })).toBeVisible();
   await page.getByRole("button", { name: "切换到此版本", exact: true }).click();
   await page.getByRole("button", { name: "确认操作", exact: true }).click();
-  await expect(page.getByText("已切换公开版本，内部文档保持当前内容。", { exact: true })).toBeVisible();
+  await expect(page.getByRole("alertdialog", { name: "公开版本已切换" })).toContainText("内部文档保持当前内容。");
   await reader.reload();
   await expect(reader.getByRole("link", { name: "阅读入门指南" })).toBeVisible();
   expect((await request.get(`${webOrigin}${assetUrl}`)).status()).toBe(200);
   await page.getByRole("button", { name: "撤回站点", exact: true }).click();
   await page.getByRole("button", { name: "确认操作", exact: true }).click();
-  await expect(page.getByText("站点已撤回，公开入口现已关闭。", { exact: true })).toBeVisible();
+  await expect(page.getByRole("alertdialog", { name: "站点已撤回" })).toContainText("公开入口现已关闭。");
   await reader.reload();
   await expect(reader.getByRole("heading", { name: "站点尚未发布或已撤回" })).toBeVisible();
   expect((await request.get(`${webOrigin}${assetUrl}`)).status()).toBe(404);

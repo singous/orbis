@@ -1,4 +1,4 @@
-import { LibraryBig, Sparkles, type LucideIcon } from "lucide-react";
+import { LibraryBig, Sparkles, type LucideIcon } from "../../shared/ui/icons";
 
 import { EmptyState } from "../../shared/ui/EmptyState";
 import { Tag } from "../../shared/ui/Tag";

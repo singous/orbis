@@ -11,7 +11,7 @@ export type PageContainerProps = {
 };
 
 /**
- * Shared workbench column with a quiet title row and a separating hairline.
+ * Shared workbench column with a spacious, quiet title row.
  */
 export function PageContainer({ eyebrow, title, description, actions, children }: PageContainerProps) {
   return (

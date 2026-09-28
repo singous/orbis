@@ -1,3 +1,7 @@
+import { LoadingState } from "../../shared/ui/LoadingState";
+import { buttonVariants } from "../../shared/ui/Button";
+import { InputGroup } from "@heroui/react/input-group";
+import { ActionButton } from "../../shared/ui/ActionButton";
 import {
   ArrowRight,
   BookOpen,
@@ -9,7 +13,7 @@ import {
   Notebook,
   Plus,
   Search,
-} from "lucide-react";
+} from "../../shared/ui/icons";
 import { type FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
@@ -68,7 +72,7 @@ export function HomePage() {
         title="首页"
         description={workspace?.name || "我的工作空间"}
         actions={canMutateWorkspaceContent(workspace) ? (
-          <Link className="workbench-primary-action" to="/documents/collections">
+          <Link className={buttonVariants({ variant: "primary" })} to="/documents/collections">
             <Plus aria-hidden="true" size={16} />新建笔记本
           </Link>
         ) : null}
@@ -77,17 +81,17 @@ export function HomePage() {
           <header className="workbench-section-heading">
             <h2>工作空间</h2>
             <form className="workbench-inline-search" onSubmit={submitSearch} role="search">
-              <Search aria-hidden="true" size={15} />
-              <input type="search" aria-label="搜索文档" placeholder="搜索文档…" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
-              <button type="submit" aria-label="搜索"><ArrowRight aria-hidden="true" size={15} /></button>
+              <InputGroup fullWidth className="workbench-search-group orbis-compact-search"><InputGroup.Prefix><Search aria-hidden="true" size={16} /></InputGroup.Prefix>
+              <InputGroup.Input type="search" aria-label="搜索文档" placeholder="搜索文档…" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
+              <InputGroup.Suffix><ActionButton type="submit" aria-label="搜索"><ArrowRight aria-hidden="true" size={16} /></ActionButton></InputGroup.Suffix></InputGroup>
             </form>
           </header>
           <div className="workbench-resource-grid">
             {areas.map(({ title, description, to, icon: Icon, soon }) => (
               <Link key={title} to={to} className="workbench-resource-card">
-                <span className="workbench-resource-icon"><Icon aria-hidden="true" size={23} /></span>
+                <span className="workbench-resource-icon icon-accent"><Icon aria-hidden="true" size={24} /></span>
                 <span className="workbench-resource-copy"><strong>{title}</strong><span>{description}</span></span>
-                {soon ? <span className="workbench-availability">即将推出</span> : <ChevronRight className="workbench-resource-chevron" aria-hidden="true" size={17} />}
+                {soon ? <span className="workbench-availability">即将推出</span> : <ChevronRight className="workbench-resource-chevron" aria-hidden="true" size={18} />}
               </Link>
             ))}
           </div>
@@ -107,7 +111,7 @@ export function HomePage() {
         <section className="workbench-section" aria-label="最近编辑">
           <header className="workbench-section-heading"><h2>最近编辑</h2><Link className="workbench-more" to="/documents/recent">查看全部<ChevronRight aria-hidden="true" size={14} /></Link></header>
           {notesQuery.isError ? <StatusMessage tone="error" title="最近文档加载失败">请稍后重试。</StatusMessage> : null}
-          {notesQuery.isLoading ? <div className="empty-panel">正在加载最近文档…</div> : null}
+          {notesQuery.isLoading ? <LoadingState label="正在加载最近文档…" /> : null}
           {!notesQuery.isLoading && !notesQuery.isError && !recentNotes.length ? (
             <div className="empty-panel">还没有可继续的文档。<Link to="/documents/collections" className="mt-3 inline-flex text-sm font-semibold">前往我的笔记本</Link></div>
           ) : null}
@@ -118,7 +122,7 @@ export function HomePage() {
                   <FileText aria-hidden="true" size={18} />
                   <span className="workbench-resource-copy"><strong>{note.title}</strong><span>{note.plain_text || "空白文档"}</span></span>
                   <time>{formatDate(note.updated_at_ms)}</time>
-                  <ChevronRight className="workbench-resource-chevron" aria-hidden="true" size={15} />
+                  <ChevronRight className="workbench-resource-chevron" aria-hidden="true" size={16} />
                 </Link></li>
               ))}
             </ul>

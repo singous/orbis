@@ -1,4 +1,6 @@
-import { ArrowLeft, ArrowRight, Search } from "lucide-react";
+import { InputGroup } from "@heroui/react/input-group";
+import { ActionButton } from "../../shared/ui/ActionButton";
+import { ArrowLeft, ArrowRight, Search } from "../../shared/ui/icons";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
@@ -40,13 +42,13 @@ export function WorkspaceTopbar({ disabled = false }: { disabled?: boolean }) {
       <WorkspaceSwitcher />
       <div className="workspace-topbar-center">
         <div className="workspace-history">
-          <button type="button" aria-label="返回上一页" onClick={() => navigate(-1)}><ArrowLeft size={17} /></button>
-          <button type="button" aria-label="前往下一页" onClick={() => navigate(1)}><ArrowRight size={17} /></button>
+          <ActionButton type="button" aria-label="返回上一页" onClick={() => navigate(-1)}><ArrowLeft size={18} /></ActionButton>
+          <ActionButton type="button" aria-label="前往下一页" onClick={() => navigate(1)}><ArrowRight size={18} /></ActionButton>
         </div>
         <form className="workspace-global-search" role="search" aria-label="全局搜索" onSubmit={search}>
-          <Search size={16} aria-hidden="true" />
-          <input ref={inputRef} aria-label="全局搜索" type="search" placeholder="搜索文档…" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
-          <kbd>⌘ K</kbd>
+          <InputGroup fullWidth className="workspace-search-group orbis-compact-search"><InputGroup.Prefix><Search size={16} aria-hidden="true" /></InputGroup.Prefix>
+          <InputGroup.Input ref={inputRef} aria-label="全局搜索" type="search" placeholder="搜索文档…" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
+          <InputGroup.Suffix><kbd>⌘ K</kbd></InputGroup.Suffix></InputGroup>
         </form>
       </div>
       <UserMenu user={user} workspace={workspace} onLogout={logout} />

@@ -1,11 +1,19 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
+from unittest.mock import AsyncMock, MagicMock
+from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
+
+from orbis_user_api.application import notes as notes_application
+from orbis_user_api.schemas.note import NoteOrderRequest
+from orbis_user_api.services.exceptions import NoteOrderConflict
 
 PASSWORD = "correct horse battery staple"
 
@@ -143,6 +151,145 @@ def test_note_tree_supports_nested_notes_with_stable_sibling_order(
     tree = response.json()["data"]["items"]
     assert [item["title"] for item in tree] == ["First root", "Later root"]
     assert [item["title"] for item in tree[1]["children"]] == ["Child"]
+
+
+def test_reorder_notes_persists_complete_sibling_order_without_moving_children(
+    client: TestClient,
+) -> None:
+    owner = setup_owner(client)
+    token = owner["access_token"]
+    notebook = create_notebook(client, token)
+    roots = [
+        create_note(client, token, notebook["id"], title=title, parent_id=None, sort_order=index)
+        for index, title in enumerate(("First", "Second", "Third"))
+    ]
+    children = [
+        create_note(client, token, notebook["id"], title=title, parent_id=roots[0]["id"], sort_order=index)
+        for index, title in enumerate(("One", "Two"))
+    ]
+    tree_url = f"/notebooks/{notebook['id']}/notes/tree"
+    reorder_url = f"/notebooks/{notebook['id']}/notes/order"
+
+    reordered = client.put(
+        reorder_url,
+        headers=auth_header(token),
+        json={
+            "parent_id": None,
+            "expected_note_ids": [note["id"] for note in roots],
+            "note_ids": [roots[2]["id"], roots[0]["id"], roots[1]["id"]],
+        },
+    )
+    assert reordered.status_code == 200
+    assert [note["title"] for note in reordered.json()["data"]["items"]] == [
+        "Third", "First", "Second"
+    ]
+    saved = client.get(tree_url, headers=auth_header(token)).json()["data"]["items"]
+    assert [note["id"] for note in saved] == [roots[2]["id"], roots[0]["id"], roots[1]["id"]]
+    assert [note["sort_order"] for note in saved] == [0, 1, 2]
+    assert [note["id"] for note in saved[1]["children"]] == [
+        children[0]["id"], children[1]["id"]
+    ]
+
+    child_reorder = client.put(
+        reorder_url,
+        headers=auth_header(token),
+        json={
+            "parent_id": roots[0]["id"],
+            "expected_note_ids": [child["id"] for child in children],
+            "note_ids": [children[1]["id"], children[0]["id"]],
+        },
+    )
+    assert child_reorder.status_code == 200
+    assert [note["id"] for note in child_reorder.json()["data"]["items"][1]["children"]] == [
+        children[1]["id"], children[0]["id"]
+    ]
+
+
+def test_reorder_rejects_stale_or_cross_parent_lists_without_partial_write(
+    client: TestClient,
+) -> None:
+    owner = setup_owner(client)
+    token = owner["access_token"]
+    notebook = create_notebook(client, token)
+    first = create_note(client, token, notebook["id"], title="First", parent_id=None, sort_order=0)
+    second = create_note(client, token, notebook["id"], title="Second", parent_id=None, sort_order=1)
+    child = create_note(client, token, notebook["id"], title="Child", parent_id=first["id"], sort_order=0)
+    url = f"/notebooks/{notebook['id']}/notes/order"
+    initial = [first["id"], second["id"]]
+
+    for requested in (initial[:1], [first["id"], first["id"]], [second["id"], child["id"]]):
+        rejected = client.put(
+            url,
+            headers=auth_header(token),
+            json={"parent_id": None, "expected_note_ids": initial, "note_ids": requested},
+        )
+        assert rejected.status_code == 409
+
+    valid = client.put(
+        url,
+        headers=auth_header(token),
+        json={"parent_id": None, "expected_note_ids": initial, "note_ids": initial[::-1]},
+    )
+    assert valid.status_code == 200
+    stale = client.put(
+        url,
+        headers=auth_header(token),
+        json={"parent_id": None, "expected_note_ids": initial, "note_ids": initial},
+    )
+    assert stale.status_code == 409
+    assert stale.json()["code"] == "NOTE_ORDER_CONFLICT"
+
+    saved = client.get(
+        f"/notebooks/{notebook['id']}/notes/tree", headers=auth_header(token)
+    ).json()["data"]["items"]
+    assert [note["id"] for note in saved] == initial[::-1]
+    assert [note["id"] for note in saved[1]["children"]] == [child["id"]]
+
+    reader_token = invite_normal_member(client, token)
+    forbidden = client.put(
+        url,
+        headers=auth_header(reader_token),
+        json={"parent_id": None, "expected_note_ids": initial[::-1], "note_ids": initial},
+    )
+    assert forbidden.status_code == 403
+
+
+def test_reorder_rechecks_sort_values_after_waiting_for_row_locks(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    notebook_id = uuid4()
+    workspace_id = uuid4()
+    first_id, second_id = uuid4(), uuid4()
+    # The database can return rows in the order calculated before a lock wait,
+    # while the returned sort values already reflect the other transaction.
+    stale_query_order = [
+        SimpleNamespace(id=first_id, sort_order=1, created_at_ms=10),
+        SimpleNamespace(id=second_id, sort_order=0, created_at_ms=20),
+    ]
+    session = AsyncMock()
+    result = MagicMock()
+    result.scalars.return_value = iter(stale_query_order)
+    session.execute.return_value = result
+    monkeypatch.setattr(
+        notes_application,
+        "get_current_workspace",
+        AsyncMock(return_value=(SimpleNamespace(id=workspace_id), None)),
+    )
+    monkeypatch.setattr(notes_application, "_get_active_notebook", AsyncMock())
+    monkeypatch.setattr(notes_application, "get_note_tree", AsyncMock(return_value=[]))
+
+    with pytest.raises(NoteOrderConflict):
+        asyncio.run(notes_application.reorder_notes(
+            notebook_id,
+            NoteOrderRequest(
+                parent_id=None,
+                expected_note_ids=[first_id, second_id],
+                note_ids=[second_id, first_id],
+            ),
+            SimpleNamespace(),
+            session,
+        ))
+    session.commit.assert_not_awaited()
 
 
 def test_note_parent_must_belong_to_same_collection(client: TestClient) -> None:

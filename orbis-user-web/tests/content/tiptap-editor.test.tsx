@@ -86,8 +86,9 @@ it("updates documentation component properties without dropping its body", async
 it("retains an imported code language in read only mode", async () => {
   const code: NoteBlocksV2 = { schema_version: 2, editor: "blocknote", blocks: [{ id: "code", type: "codeBlock", props: { language: "rust" }, content: "fn main() {}", children: [] }] };
   render(<TiptapEditor blocks={code} readOnly onChange={() => { throw new Error("Read only document changed"); }} />);
-  expect(await screen.findByRole("combobox", { name: "代码语言" })).toHaveValue("rust");
-  expect(screen.getByRole("combobox", { name: "代码语言" })).toBeDisabled();
+  const language = await screen.findByRole("button", { name: /代码语言/ });
+  expect(language).toHaveTextContent("rust");
+  expect(language).toBeDisabled();
 });
 
 it("applies an externally restored revision while the editor is temporarily read only", async () => {

@@ -1,4 +1,4 @@
-import { BookOpen, CircleCheck, ExternalLink, Info, OctagonAlert, TriangleAlert } from "lucide-react";
+import { BookOpen, CircleCheck, ExternalLink, Info, OctagonAlert, TriangleAlert } from "../../shared/ui/icons";
 import type { CSSProperties, ReactNode } from "react";
 import { codeLanguageLabel } from "./CodeBlock";
 import { DocumentTabs } from "./DocumentTabs";
@@ -19,7 +19,7 @@ export function DocumentBlock({ kind, props, inline, children, childBlocks, path
   if (kind === "callout") {
     const tone = ["info", "success", "warning", "danger"].includes(String(props.tone)) ? String(props.tone) : "info";
     const Icon = { info: Info, success: CircleCheck, warning: TriangleAlert, danger: OctagonAlert }[tone] || Info;
-    return <aside role="note" aria-label={title || "提示"} className={"doc-callout doc-callout-" + tone}><Icon size={19} aria-hidden="true" /><div>{title ? <strong className="doc-callout-title">{title}</strong> : null}<div className="doc-callout-inline">{inline}</div>{children}</div></aside>;
+    return <aside role="note" aria-label={title || "提示"} className={"doc-callout doc-callout-" + tone}><Icon size={20} aria-hidden="true" /><div>{title ? <strong className="doc-callout-title">{title}</strong> : null}<div className="doc-callout-inline">{inline}</div>{children}</div></aside>;
   }
   if (kind === "card") {
     const href = props.href ? safeUrl(props.href) : null;

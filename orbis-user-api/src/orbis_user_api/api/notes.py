@@ -28,6 +28,7 @@ from orbis_user_api.application.notes import (
     get_note_content,
     get_note_tree,
     import_markdown_note,
+    reorder_notes,
     search_notes,
     set_note_archived,
     update_note_content,
@@ -42,6 +43,7 @@ from orbis_user_api.schemas.note import (
     NoteContentUpdateRequest,
     NoteCreateRequest,
     NoteMetadataUpdateRequest,
+    NoteOrderRequest,
     NoteOut,
     NoteSearchItem,
     NoteTreeResponse,
@@ -52,6 +54,7 @@ from orbis_user_api.services.exceptions import (
     NotebookNotFound,
     NoteContentInvalid,
     NoteNotFound,
+    NoteOrderConflict,
     NoteParentInvalid,
     NoteVersionConflict,
     UserWorkspaceMissing,
@@ -317,5 +320,38 @@ async def notebook_note_tree(
         return NoteTreeResponse(items=await get_note_tree(notebook_id, user, session))
     except NotebookNotFound:
         raise _not_found("NOTEBOOK_NOT_FOUND", "文集不存在") from None
+    except UserWorkspaceMissing:
+        raise _workspace_forbidden() from None
+
+
+@router.put(
+    "/notebooks/{notebook_id}/notes/order",
+    response_model=NoteTreeResponse,
+    dependencies=[Depends(require_resource_manager)],
+)
+async def reorder_notebook_notes(
+    notebook_id: UUID,
+    payload: NoteOrderRequest,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> NoteTreeResponse:
+    try:
+        return NoteTreeResponse(
+            items=await reorder_notes(notebook_id, payload, user, session)
+        )
+    except NotebookNotFound:
+        raise _not_found("NOTEBOOK_NOT_FOUND", "文集不存在") from None
+    except NoteParentInvalid:
+        raise ApiError(
+            status_code=status.HTTP_409_CONFLICT,
+            code="NOTE_PARENT_INVALID",
+            message="父文档无效",
+        ) from None
+    except NoteOrderConflict:
+        raise ApiError(
+            status_code=status.HTTP_409_CONFLICT,
+            code="NOTE_ORDER_CONFLICT",
+            message="文档目录已变化，请刷新后重试排序",
+        ) from None
     except UserWorkspaceMissing:
         raise _workspace_forbidden() from None

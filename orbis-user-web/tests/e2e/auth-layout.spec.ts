@@ -49,3 +49,23 @@ for (const route of ["login", "setup"]) {
     });
   }
 }
+
+test("login validation identifies the email in a floating toast without moving the form", async ({ page }) => {
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/login");
+    await page.getByLabel("邮箱", { exact: true }).fill("dev@orbis.local");
+    await page.getByLabel("密码", { exact: true }).fill("OrbisDev123!");
+    const submit = page.getByRole("button", { name: "登录 Orbis", exact: true });
+    const before = await submit.boundingBox();
+    await submit.click();
+    const toast = page.getByRole("alertdialog", { name: "登录失败" });
+    await expect(toast).toContainText("邮箱格式不正确，请检查后重试。");
+    await expect(page.locator(".auth-form")).not.toContainText("邮箱格式不正确");
+    expect((await submit.boundingBox())?.y).toBe(before?.y);
+    await expect.poll(async () => {
+      const box = await toast.boundingBox();
+      return Boolean(box && box.x >= 0 && box.x + box.width <= viewport.width && box.y >= 0 && box.y + box.height <= viewport.height);
+    }).toBe(true);
+  }
+});
