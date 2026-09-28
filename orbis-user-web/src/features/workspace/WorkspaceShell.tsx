@@ -6,6 +6,8 @@ import { useLocation } from "react-router-dom";
 import { useStore } from "zustand";
 
 import { authStore } from "../../shared/auth/auth-store";
+import { SidebarResizeHandle } from "./SidebarResizeHandle";
+import { useSidebarResize } from "./use-sidebar-resize";
 import { BusinessRail } from "./BusinessRail";
 import { RailCreateMenu } from "./RailCreateMenu";
 import { WorkspaceNavigation } from "./WorkspaceNavigation";
@@ -51,6 +53,7 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
   });
   const sidebarToggleRequested = useRef(false);
   const navigationRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
   const contextRef = useRef<HTMLElement>(null);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
   const contextTriggerRef = useRef<HTMLButtonElement>(null);
@@ -58,6 +61,8 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
   const documentContextExpanded = documentContextOpen && contextOpen;
   const drawerOpen = compact && (mainNavigationOpen || documentContextExpanded);
   const sidebarHidden = !compact && collapsed;
+  const sidebarResizeEnabled = !compact && !collapsed;
+  const sidebarResize = useSidebarResize(gridRef, sidebarResizeEnabled, Boolean(contextPanel && contextOpen));
   const showToolbar = compact || Boolean(sectionTitle) || Boolean(toolbar) || Boolean(contextPanel && onOpenContext);
 
   function changeCollapsed(next: boolean) {
@@ -106,9 +111,9 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
   }
 
   return (
-    <main className={`workspace-shell has-section-menu${sidebarHidden ? " sidebar-collapsed" : ""}${mainNavigationOpen ? " main-navigation-open" : ""}${documentContextExpanded ? " document-context-drawer-open" : ""}`}>
+    <main style={sidebarResize.style} className={`workspace-shell has-section-menu${sidebarHidden ? " sidebar-collapsed" : ""}${mainNavigationOpen ? " main-navigation-open" : ""}${documentContextExpanded ? " document-context-drawer-open" : ""}`}>
       <WorkspaceTopbar disabled={drawerOpen} />
-      <div className="workspace-shell-grid">
+      <div ref={gridRef} className="workspace-shell-grid">
         {drawerOpen ? <ActionButton type="button" className="workspace-drawer-backdrop" aria-label={mainNavigationOpen ? "关闭主导航" : "关闭文档目录"} onClick={() => { setMainNavigationOpen(false); setDocumentContextOpen(false); }} /> : null}
         <div ref={navigationRef} className="workspace-main-navigation" aria-hidden={compact && !mainNavigationOpen ? true : undefined} inert={compact && !mainNavigationOpen ? true : undefined} onClick={closeAfterLink}>
           <BusinessRail collapsed={sidebarHidden} onExpand={() => changeCollapsed(false)} />
@@ -122,6 +127,7 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
             {sectionMenu ?? (accessToken ? <WorkspaceNavigation /> : null)}
           </section>
         </div>
+        {sidebarResizeEnabled ? <SidebarResizeHandle {...sidebarResize} /> : null}
         <section className={`workspace-main-area${contextPanel && contextOpen ? " has-context" : ""}`} aria-label="主工作区">
           <section className="workspace-content" inert={drawerOpen ? true : undefined}>
             {showToolbar ? (

@@ -13,7 +13,8 @@
 /* Desktop workspace: persistent icon rail, collapsible navigation, separate canvas. */
 .workspace-shell {
   --rail-width: 58px;
-  --sidebar-width: 232px;
+  --sidebar-default-width: 232px;
+  --sidebar-width: var(--sidebar-default-width);
   --topbar-height: 46px;
   --shell-gutter: 10px;
   height: 100dvh;
@@ -31,7 +32,7 @@
 .workspace-global-search { display: flex; height: 31px; flex: 1; min-width: 0; }
 .workspace-search-group { height: 100%; min-width: 0; }
 .workspace-global-search kbd { flex: none; font: 10px var(--font-sans); color: var(--text-tertiary); }
-.workspace-shell-grid { background: linear-gradient(135deg, var(--workspace-canvas-start), var(--workspace-canvas-end)); background-attachment: fixed; display: grid; grid-template-columns: calc(var(--rail-width) + var(--sidebar-width)) minmax(0, 1fr); gap: var(--shell-gutter); height: calc(100dvh - var(--topbar-height)); min-height: 0; padding: 0 var(--shell-gutter) var(--shell-gutter); }
+.workspace-shell-grid { position: relative; background: linear-gradient(135deg, var(--workspace-canvas-start), var(--workspace-canvas-end)); background-attachment: fixed; display: grid; grid-template-columns: calc(var(--rail-width) + var(--sidebar-width)) minmax(0, 1fr); gap: var(--shell-gutter); height: calc(100dvh - var(--topbar-height)); min-height: 0; padding: 0 var(--shell-gutter) var(--shell-gutter); }
 .workspace-shell.sidebar-collapsed .workspace-shell-grid { grid-template-columns: var(--rail-width) minmax(0, 1fr); }
 .workspace-main-navigation { display: flex; min-height: 0; min-width: 0; border: 1px solid var(--border-subtle); border-radius: 11px; background: var(--workspace-panel-background); box-shadow: 0 1px 2px #18182305; }
 .workspace-business-rail { width: var(--rail-width); flex: none; min-height: 0; display: flex; flex-direction: column; align-items: center; padding: 16px 7px 10px; border-right: 1px solid var(--border-subtle); }
@@ -119,7 +120,7 @@
 .rail-create-popover [role="menuitem"] svg { width: 19px; height: 19px; }
 .rail-create-soon { margin-left: auto; color: var(--text-tertiary); font-size: 11px; }
 @media (max-width: 1199px) {
-  .workspace-shell { --sidebar-width: 210px; }
+  .workspace-shell { --sidebar-default-width: 210px; }
   .workspace-main-area.has-context { grid-template-columns: minmax(0, 1fr) 230px; }
   .workspace-brand { max-width: 220px; }
 }
@@ -148,3 +149,34 @@
 @media (prefers-reduced-motion: reduce) {
   .workspace-main-navigation, .rail-action { transition: none; }
 }
+
+/* The resize target occupies the gap without changing the panel grid. */
+.workspace-sidebar-resizer {
+  position: absolute;
+  z-index: 36;
+  inset-block: 0 var(--shell-gutter);
+  left: calc(var(--shell-gutter) + var(--rail-width) + var(--sidebar-width));
+  width: var(--shell-gutter);
+  cursor: col-resize;
+  touch-action: none;
+  outline: none;
+}
+.workspace-resize-line {
+  position: absolute;
+  inset-block: 12px;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  border-radius: var(--radius-pill);
+  background: var(--muted);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 100ms ease;
+}
+.workspace-sidebar-resizer:hover .workspace-resize-line,
+.workspace-sidebar-resizer:focus-visible:not([data-pointer-focus="true"]) .workspace-resize-line,
+.workspace-sidebar-resizer[data-resizing="true"] .workspace-resize-line { opacity: 1; }
+.workspace-sidebar-resizer[data-resizing="true"] .workspace-resize-line { background: var(--foreground); }
+html.workspace-resizing, html.workspace-resizing * { cursor: col-resize !important; user-select: none !important; }
+@media (max-width: 767px) { .workspace-sidebar-resizer { display: none; } }
+@media (prefers-reduced-motion: reduce) { .workspace-resize-line { transition: none; } }
