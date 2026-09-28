@@ -20,6 +20,7 @@ const areas = WORKSPACE_AREAS.filter((area) => area.id !== "settings");
 export function BusinessRail({ collapsed, onExpand }: BusinessRailProps) {
   const { pathname } = useLocation();
   const activeArea = resolveWorkspaceArea(pathname);
+  const searchActive = pathname === "/documents/search";
   return (
     <aside className="workspace-business-rail" aria-label="应用导航">
       {collapsed ? <Tooltip label="展开侧栏" side="right"><ActionButton className="rail-action rail-expand" type="button" aria-label="展开侧栏" onClick={onExpand}><ChevronsRight size={20} /></ActionButton></Tooltip> : null}
@@ -36,7 +37,7 @@ export function BusinessRail({ collapsed, onExpand }: BusinessRailProps) {
         })}
       </nav>
       <div className="rail-bottom">
-        <Tooltip label="搜索" side="right"><Link to="/documents/search" aria-label="搜索" className="rail-action"><Search size={20} /></Link></Tooltip>
+        <Tooltip label="搜索" side="right"><Link to="/documents/search" aria-label="搜索" aria-current={searchActive ? "page" : undefined} className={`rail-action${searchActive ? " is-active" : ""}`}><Search size={20} /></Link></Tooltip>
         <Tooltip label="账号设置" side="right"><Link to="/settings/account" aria-label="账号设置" aria-current={activeArea.id === "settings" ? "page" : undefined} className={`rail-action${activeArea.id === "settings" ? " is-active" : ""}`}><Settings size={20} /></Link></Tooltip>
       </div>
     </aside>

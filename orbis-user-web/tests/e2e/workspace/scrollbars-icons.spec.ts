@@ -57,6 +57,11 @@ test("destination accents stay colorful while navigation and controls stay neutr
   await expect(moduleIcons).toHaveCount(6);
   for (const theme of ["light", "dark"] as const) {
     await page.evaluate((mode) => { document.documentElement.dataset.theme = mode; }, theme);
+    const selectedGlyphs = page.locator(".rail-action.is-active > svg > .orbis-icon-solid, .workspace-function-link.is-active > svg > .orbis-icon-solid");
+    expect(await selectedGlyphs.count()).toBe(2);
+    expect(await selectedGlyphs.evaluateAll(glyphs => glyphs.every(glyph => getComputedStyle(glyph).display !== "none" && getComputedStyle(glyph).fillRule === "evenodd"))).toBe(true);
+    const inactiveGlyphs = page.locator(".rail-action:not(.is-active) > svg > .orbis-icon-solid");
+    expect(await inactiveGlyphs.evaluateAll(glyphs => glyphs.every(glyph => getComputedStyle(glyph).display === "none"))).toBe(true);
     const palette = await moduleIcons.evaluateAll((icons) => icons.map((icon) => ({
       color: getComputedStyle(icon).color,
       stroke: getComputedStyle(icon).strokeWidth,
@@ -77,7 +82,20 @@ test("destination accents stay colorful while navigation and controls stay neutr
     expect(navigation.every((icon) => icon.background === "none")).toBe(true);
     await page.screenshot({ path: testInfo.outputPath(`module-icons-${theme}.png`) });
   }
+  expect(await page.locator('.rail-action.is-active > svg').evaluate(element => getComputedStyle(element).animationName)).toBe("none");
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.getByRole("link", { name: "站点", exact: true }).click();
+  const selectedSiteIcon = page.locator('.rail-action[aria-label="站点"] > svg');
+  await expect(page.locator('.rail-action[aria-label="站点"]')).toHaveAttribute("aria-current", "page");
+  await expect.poll(() => selectedSiteIcon.evaluate(element => ({ name: getComputedStyle(element).animationName, duration: getComputedStyle(element).animationDuration }))).toEqual({ name: "navigation-icon-select", duration: "0.24s" });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect.poll(() => selectedSiteIcon.evaluate(element => getComputedStyle(element).animationName)).toBe("none");
+  await page.goto("/documents/search");
+  await expect(page.getByRole("link", { name: "搜索", exact: true })).toHaveAttribute("aria-current", "page");
+  await expect(page.locator('.rail-action[aria-label="搜索"] .orbis-icon-solid')).toBeVisible();
   await page.goto("/sites");
+  await expect(page.locator('.rail-action[aria-label="搜索"]')).not.toHaveAttribute("aria-current", "page");
+  await expect(page.locator('.rail-action[aria-label="搜索"] .orbis-icon-solid')).toBeHidden();
   await page.getByRole("button", { name: "创建站点", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "创建文档站点", exact: true });
   expect(await dialog.evaluate((element) => getComputedStyle(element, "::-webkit-scrollbar").width)).toBe("8px");

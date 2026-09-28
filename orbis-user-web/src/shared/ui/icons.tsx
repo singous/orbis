@@ -92,6 +92,7 @@ import {
   type LucideIcon, type LucideProps,
 } from "lucide-react";
 import { forwardRef } from "react";
+import { navigationIconPaths } from "./navigation-icon-paths";
 
 export type { LucideIcon, LucideProps } from "lucide-react";
 export type IconTone = "orange" | "cyan" | "blue" | "indigo" | "teal" | "violet" | "rose" | "amber" | "slate" | "success" | "danger" | "warning";
@@ -100,7 +101,10 @@ const DEFAULT_STROKE_WIDTH = 1.8;
 
 function appIcon(Icon: LucideIcon, name: string, tone?: IconTone): LucideIcon {
   const ThemedIcon = forwardRef<SVGSVGElement, LucideProps>(({ className, size = DEFAULT_ICON_SIZE, strokeWidth = DEFAULT_STROKE_WIDTH, ...props }, ref) =>
-    <Icon {...props} ref={ref} size={size} strokeWidth={strokeWidth} className={["orbis-icon", className].filter(Boolean).join(" ")} data-orbis-icon={name} data-icon-tone={tone} aria-hidden={props["aria-hidden"] ?? ((props["aria-label"] || props["aria-labelledby"] || props.role === "img") ? undefined : true)} focusable={props.focusable ?? false} />);
+    <Icon {...props} ref={ref} size={size} strokeWidth={strokeWidth} className={["orbis-icon", className].filter(Boolean).join(" ")} data-orbis-icon={name} data-icon-tone={tone} aria-hidden={props["aria-hidden"] ?? ((props["aria-label"] || props["aria-labelledby"] || props.role === "img") ? undefined : true)} focusable={props.focusable ?? false} >
+      {navigationIconPaths[name] ? <path className="orbis-icon-solid" d={navigationIconPaths[name]} fill="currentColor" fillRule="evenodd" stroke="none" /> : null}
+      {props.children}
+    </Icon>);
   ThemedIcon.displayName = `Orbis${name}`;
   return ThemedIcon;
 }
