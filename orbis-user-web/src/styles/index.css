@@ -2,6 +2,7 @@
 @import "@heroui/styles";
 @import "@fontsource-variable/inter";
 @import "./heroui-theme.css";
+@import "./scrollbars.css";
 
 @layer components {
   /* Feature controls keep their native layout while HeroUI owns interaction states. */

@@ -25,7 +25,7 @@
 .document-prose .doc-step > h3 { margin: 0 0 12px; padding-top: 1px; font-size: 17px; line-height: 1.6; }
 .document-prose .doc-step > :last-child { margin-bottom: 0; }
 .document-prose .doc-tabs { margin: 25px 0; min-width: 0; }
-.doc-tabs-list { display: flex; gap: 24px; border-bottom: 1px solid var(--reading-border, var(--border-subtle)); overflow-x: auto; scrollbar-width: thin; }
+.doc-tabs-list { display: flex; gap: 24px; border-bottom: 1px solid var(--reading-border, var(--border-subtle)); overflow-x: auto;  }
 .doc-tabs-list button { flex: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 1px 11px; background: transparent; color: var(--reading-muted, var(--text-secondary)); font-size: 13px; font-weight: 550; cursor: pointer; }
 .doc-tabs-list button[aria-selected="true"] { color: var(--reading-accent, var(--accent)); border-bottom-color: var(--reading-accent, var(--accent)); }
 .doc-tabs-list button:focus-visible { outline: 2px solid var(--reading-accent, var(--accent)); outline-offset: -3px; border-radius: 4px; }

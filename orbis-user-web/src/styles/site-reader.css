@@ -64,7 +64,7 @@
 .site-reader-sections a[aria-current="page"] { border-color: var(--reader-accent); color: var(--reader-text); font-weight: 650; }
 
 .site-reader-layout { width: min(100% - 48px, 1392px); margin: 0 auto; display: grid; grid-template-columns: 238px minmax(0, 1fr) 192px; gap: 42px; }
-.site-reader-navigation { position: sticky; top: var(--reader-header-height); align-self: start; height: calc(100dvh - var(--reader-header-height)); overflow: auto; display: flex; flex-direction: column; padding: 30px 8px 22px 0; scrollbar-width: thin; scrollbar-color: var(--reader-border) transparent; }
+.site-reader-navigation { position: sticky; top: var(--reader-header-height); align-self: start; height: calc(100dvh - var(--reader-header-height)); overflow: auto; display: flex; flex-direction: column; padding: 30px 8px 22px 0;   }
 .site-reader-navigation-intro { margin: 0 10px 28px; color: var(--reader-muted); font-size: 11px; line-height: 1.8; }
 .site-reader-navigation nav section { margin-bottom: 25px; }
 .site-reader-navigation h2 { margin: 0 10px 9px; color: var(--reader-text); font-size: 12px; font-weight: 680; letter-spacing: .01em; }
