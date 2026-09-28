@@ -49,6 +49,7 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
   const accessToken = useStore(authStore, (state) => state.accessToken);
   const [mainNavigationOpen, setMainNavigationOpen] = useState(false);
   const [documentContextOpen, setDocumentContextOpen] = useState(false);
+  const [sidebarAnimating, setSidebarAnimating] = useState(false);
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem(sidebarStorageKey) === "1"; } catch { return false; }
   });
@@ -68,9 +69,17 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
 
   function changeCollapsed(next: boolean) {
     sidebarToggleRequested.current = true;
+    setSidebarAnimating(true);
     setCollapsed(next);
     try { localStorage.setItem(sidebarStorageKey, next ? "1" : "0"); } catch { /* Navigation remains usable without storage. */ }
   }
+
+  useEffect(() => {
+    if (!sidebarAnimating) return;
+    // Cover reduced-motion mode and rapid toggles where transitionend may not fire.
+    const timer = window.setTimeout(() => setSidebarAnimating(false), 280);
+    return () => window.clearTimeout(timer);
+  }, [collapsed, sidebarAnimating]);
 
   useEffect(() => {
     if (!sidebarToggleRequested.current || compact) return;
@@ -112,13 +121,13 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
   }
 
   return (
-    <main style={sidebarResize.style} className={`workspace-shell${showFunctionSidebar ? " has-section-menu" : " sidebar-unavailable"}${sidebarHidden ? " sidebar-collapsed" : ""}${mainNavigationOpen ? " main-navigation-open" : ""}${documentContextExpanded ? " document-context-drawer-open" : ""}`}>
+    <main style={sidebarResize.style} className={`workspace-shell${showFunctionSidebar ? " has-section-menu" : " sidebar-unavailable"}${sidebarHidden ? " sidebar-collapsed" : ""}${sidebarAnimating ? " sidebar-animating" : ""}${mainNavigationOpen ? " main-navigation-open" : ""}${documentContextExpanded ? " document-context-drawer-open" : ""}`}>
       <WorkspaceTopbar disabled={drawerOpen} />
       <div ref={gridRef} className="workspace-shell-grid">
         {drawerOpen ? <ActionButton type="button" className="workspace-drawer-backdrop" aria-label={mainNavigationOpen ? "关闭主导航" : "关闭文档目录"} onClick={() => { setMainNavigationOpen(false); setDocumentContextOpen(false); }} /> : null}
         <div ref={navigationRef} className="workspace-main-navigation" aria-hidden={compact && !mainNavigationOpen ? true : undefined} inert={compact && !mainNavigationOpen ? true : undefined} onClick={closeAfterLink}>
           <BusinessRail collapsed={showFunctionSidebar && sidebarHidden} onExpand={() => changeCollapsed(false)} onClose={compact && !showFunctionSidebar ? () => setMainNavigationOpen(false) : undefined} />
-          {showFunctionSidebar ? <section id="workspace-sidebar" className="workspace-sidebar" hidden={sidebarHidden} aria-label="侧栏">
+          {showFunctionSidebar ? <section id="workspace-sidebar" className="workspace-sidebar" aria-hidden={sidebarHidden ? true : undefined} inert={sidebarHidden ? true : undefined} aria-label="侧栏">
             <header className="workspace-sidebar-header">
               <h2>{area.title}</h2>
               <ActionButton type="button" className="sidebar-collapse" aria-label="收起侧栏" aria-expanded="true" aria-controls="workspace-sidebar" onClick={() => changeCollapsed(true)}><ChevronsLeft size={18} /></ActionButton>
@@ -140,7 +149,7 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
                 {contextPanel && onOpenContext ? <ActionButton type="button" aria-label="打开上下文面板" className="icon-button workspace-context-open-control" onClick={onOpenContext}><PanelRightOpen aria-hidden="true" size={16} /></ActionButton> : null}
               </header>
             ) : null}
-            {children}
+            <div key={pathname} className="workspace-route-content">{children}</div>
           </section>
           {contextPanel ? <aside ref={contextRef} className="workspace-context-panel" aria-label="上下文面板" aria-hidden={compact && !documentContextExpanded ? true : undefined} inert={compact && !documentContextExpanded ? true : undefined} hidden={!contextOpen} onClick={closeAfterLink}>{contextPanel}</aside> : null}
         </section>
