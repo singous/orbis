@@ -21,6 +21,8 @@ class User(Base):
     )
     password_hash: Mapped[str] = mapped_column(Text, nullable=False)
     display_name: Mapped[str | None] = mapped_column(String(120))
+    bio: Mapped[str | None] = mapped_column(String(500))
+    avatar_file_id: Mapped[UUID | None] = mapped_column(GUID())
     current_workspace_id: Mapped[UUID | None] = mapped_column(GUID())
     status: Mapped[str] = mapped_column(
         String(32), default="active", server_default="active", nullable=False

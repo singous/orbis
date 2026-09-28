@@ -3,15 +3,21 @@ from __future__ import annotations
 import base64
 import io
 import logging
-import warnings
 from uuid import UUID
 
 from fastapi import UploadFile
-from PIL import Image, ImageOps, UnidentifiedImageError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
 from orbis_user_api.core.ids import new_uuidv7
+# Preserve the service exception contract while sharing thumbnail normalization.
+from orbis_user_api.infrastructure.image_thumbnail import (
+    InvalidThumbnail as NotebookIconInvalidImage,
+    MAX_IMAGE_PIXELS as MAX_ICON_IMAGE_PIXELS,
+    THUMBNAIL_SIZE as ICON_THUMBNAIL_SIZE,
+    ALLOWED_IMAGE_FORMATS as ALLOWED_ICON_FORMATS,
+    normalize_thumbnail as _normalize_image,
+)
 from orbis_user_api.models.file import FileAsset
 from orbis_user_api.models.user import User
 from orbis_user_api.schemas.notebook_icon import (
@@ -26,14 +32,7 @@ from orbis_user_api.services.workspace import get_current_workspace
 logger = logging.getLogger(__name__)
 
 MAX_ICON_UPLOAD_BYTES = 2 * 1024 * 1024
-MAX_ICON_IMAGE_PIXELS = 4096 * 4096
-ICON_THUMBNAIL_SIZE = (256, 256)
-ALLOWED_ICON_FORMATS = frozenset({"PNG", "JPEG", "WEBP"})
 ICON_MIME_TYPE = "image/webp"
-
-
-class NotebookIconInvalidImage(Exception):
-    pass
 
 
 class NotebookIconTooLarge(Exception):
@@ -46,37 +45,6 @@ class NotebookIconNotFound(Exception):
 
 def _storage_key(workspace_id: UUID, file_id: UUID) -> str:
     return f"{workspace_id}/notebook-icons/{file_id}/icon.webp"
-
-
-def _normalize_image(contents: bytes) -> bytes:
-    try:
-        with warnings.catch_warnings():
-            warnings.simplefilter("error", Image.DecompressionBombWarning)
-            with Image.open(io.BytesIO(contents)) as source:
-                if (
-                    source.format not in ALLOWED_ICON_FORMATS
-                    or source.width * source.height > MAX_ICON_IMAGE_PIXELS
-                    or getattr(source, "is_animated", False)
-                ):
-                    raise NotebookIconInvalidImage
-                source.verify()
-            with Image.open(io.BytesIO(contents)) as source:
-                source.load()
-                oriented = ImageOps.exif_transpose(source).convert("RGBA")
-                oriented.thumbnail(ICON_THUMBNAIL_SIZE, Image.Resampling.LANCZOS)
-                clean = Image.new("RGBA", oriented.size)
-                clean.paste(oriented)
-                output = io.BytesIO()
-                clean.save(output, format="WEBP", lossless=True)
-                return output.getvalue()
-    except (
-        UnidentifiedImageError,
-        OSError,
-        ValueError,
-        Image.DecompressionBombWarning,
-        Image.DecompressionBombError,
-    ) as exc:
-        raise NotebookIconInvalidImage from exc
 
 
 def _data_url(contents: bytes) -> str:

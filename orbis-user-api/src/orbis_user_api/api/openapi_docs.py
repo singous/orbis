@@ -56,6 +56,10 @@ OPERATION_DOCS: dict[tuple[str, str], tuple[str, str]] = {
     ("put", "/notebooks/{notebook_id}/notes/order"): ("调整同级文档顺序", "提交同一父文档下完整的文档 ID 顺序，并携带调整前顺序用于冲突校验；成功后原子更新排序并返回最新目录树。目录变化时返回 NOTE_ORDER_CONFLICT。"),
     ("post", "/auth/login"): ("账号登录", "使用邮箱和密码登录，返回访问令牌、刷新令牌、用户信息和当前工作空间。"),
     ("post", "/auth/refresh"): ("刷新访问令牌", "使用有效刷新令牌换取新的短期访问令牌；刷新令牌无效、过期或成员资格失效时拒绝刷新。"),
+    ("patch", "/users/me"): ("编辑当前用户资料", "仅修改当前登录用户的显示名称和个人简介。名称去除首尾空格后为 1 至 120 字，简介最多 500 字；未提交字段保持不变，显式 null 清空对应字段。邮箱、密码和权限不能通过本接口修改。"),
+    ("put", "/users/me/avatar"): ("上传当前用户头像", "使用 multipart/form-data 的 file 字段提交 PNG、JPEG 或 WebP 静态图片，最多 2 MiB 和 16,777,216 像素。服务端移除元数据并裁剪为 256×256 WebP 后保存，返回最新用户资料。失败时保留旧头像。"),
+    ("get", "/users/me/avatar"): ("读取当前用户头像", "仅允许登录用户读取自己的头像缩略图，data_url 为 WebP 的 Base64 数据地址。未设置头像或文件缺失时返回 AVATAR_NOT_FOUND。"),
+    ("delete", "/users/me/avatar"): ("移除当前用户头像", "清除当前用户的自定义头像并返回最新用户资料，avatar_file_id 为 null。重复调用仍成功。"),
     ("get", "/users/me"): ("查询当前用户", "根据 Bearer 访问令牌返回当前登录用户的基础资料和当前工作空间标识。"),
     ("get", "/document-groups"): ("分页查询文档分组", "分页查询当前工作空间的文档分组，可通过 status 在活跃和已归档资源之间切换。"),
     ("post", "/document-groups"): ("创建文档分组", "在当前工作空间创建文档分组，并设置显示名称和排序值。"),
@@ -110,6 +114,9 @@ PAGINATED_PATHS = {
 FIELD_DESCRIPTIONS = {
     "email": "登录或邀请使用的邮箱地址；服务端会去除首尾空格并转换为小写。",
     "password": "账号密码。初始化和新账号创建时长度至少为 8 位。",
+    "bio": "个人简介，最多 500 字；null 表示未设置。",
+    "avatar_file_id": "当前用户头像文件 UUIDv7；null 表示使用默认头像。",
+    "data_url": "经过服务端校验和转码的 WebP Base64 图片地址。",
     "display_name": "用户显示名称；允许为空的响应字段表示尚未设置。",
     "access_token": "Bearer 访问令牌，用于 Authorization 请求头。",
     "refresh_token": "刷新令牌，用于访问令牌过期后的续期。",
@@ -179,6 +186,10 @@ SCHEMA_EXAMPLES: dict[str, dict[str, Any]] = {
 
 
 def _success_data(path: str, method: str) -> Any:
+    if path in {"/users/me", "/users/me/avatar"}:
+        if path.endswith("/avatar") and method == "get":
+            return {"data_url": "data:image/webp;base64,UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAUAmJaQAA3AA/v89WAAAAA=="}
+        return {"id": "019fe1e0-1234-7abc-8def-012345678901", "tenant_id": None, "email": "owner@example.com", "display_name": "Orbis Owner", "bio": "记录知识与思考", "avatar_file_id": None, "current_workspace_id": None, "status": "active", "created_at_ms": 0, "updated_at_ms": 0}
     if method == "delete":
         return None
     if path in PAGINATED_PATHS and method == "get":
@@ -390,6 +401,9 @@ def _install_operation_docs(schema: dict[str, Any]) -> None:
 
     # Add route-specific business-code examples used by client branching.
     route_errors = [
+        ("put", "/users/me/avatar", 413, "AVATAR_TOO_LARGE", "头像图片不能超过 2 MiB"),
+        ("put", "/users/me/avatar", 422, "AVATAR_INVALID_IMAGE", "头像图片格式或像素范围无效"),
+        ("get", "/users/me/avatar", 404, "AVATAR_NOT_FOUND", "尚未设置自定义头像"),
         ("post", "/notebooks/icons", 413, "NOTEBOOK_ICON_TOO_LARGE", "图标图片不能超过 2 MiB"),
         ("post", "/notebooks/icons", 422, "NOTEBOOK_ICON_INVALID_IMAGE", "请选择有效的 PNG、JPEG 或 WebP 静态图片，且不超过 16,777,216 像素"),
         ("post", "/notebooks/icons", 403, "RESOURCE_MANAGEMENT_FORBIDDEN", "当前账号无资源管理权限"),
