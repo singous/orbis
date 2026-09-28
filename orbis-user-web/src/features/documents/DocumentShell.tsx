@@ -1,5 +1,6 @@
+import { ActionButton } from "../../shared/ui/ActionButton";
 import type { ReactNode } from "react";
-import { PanelRightClose } from "lucide-react";
+import { PanelRightClose } from "../../shared/ui/icons";
 import { useEffect, useState } from "react";
 import { useStore } from "zustand";
 
@@ -35,7 +36,7 @@ export function DocumentShell({ children, toolbar, contextPanel, contextOpen, on
     <WorkspaceShell
       sectionMenu={sectionMenu}
       toolbar={toolbar}
-      contextPanel={contextPanel ? <div className="document-context-shell">{contextPanel}{isContextOpen ? <button type="button" className="document-context-close" aria-label="收起上下文面板" onClick={() => setContextOpen(false)}><PanelRightClose aria-hidden="true" size={15} /></button> : null}</div> : undefined}
+      contextPanel={contextPanel ? <div className="document-context-shell">{contextPanel}{isContextOpen ? <ActionButton type="button" className="document-context-close" aria-label="收起上下文面板" onClick={() => setContextOpen(false)}><PanelRightClose aria-hidden="true" size={16} /></ActionButton> : null}</div> : undefined}
       contextOpen={isContextOpen}
       onOpenContext={isContextOpen ? undefined : () => { setContextOpen(true); onOpenContext?.(); }}
     >

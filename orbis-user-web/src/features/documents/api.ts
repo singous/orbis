@@ -107,9 +107,14 @@ export async function setNotebookArchived(notebookId: string, archived: boolean,
 }
 
 export type CreateNotePayload = { notebook_id: string; title: string; parent_id: string | null; sort_order: number };
+export type NoteOrderPayload = { parent_id: string | null; expected_note_ids: string[]; note_ids: string[] };
 
 export async function createNote(payload: CreateNotePayload, auth: AuthRequestOptions): Promise<Note> {
   return noteSchema.parse(await apiRequest("/notes", { method: "POST", body: payload, ...authOptions(auth) }));
+}
+
+export async function reorderNotebookNotes(notebookId: string, payload: NoteOrderPayload, auth: AuthRequestOptions): Promise<{ items: NoteTreeItem[] }> {
+  return noteTreeResponseSchema.parse(await apiRequest(`/notebooks/${notebookId}/notes/order`, { method: "PUT", body: payload, ...authOptions(auth) }));
 }
 
 export async function getNote(noteId: string, auth: AuthRequestOptions): Promise<Note> {

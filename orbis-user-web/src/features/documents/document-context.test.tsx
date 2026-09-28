@@ -1,4 +1,6 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { toast as heroToast } from "@heroui/react/toast";
+import { render as renderTestingLibrary, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { act } from "react";
@@ -6,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { authStore } from "../../shared/auth/auth-store";
 import { ApiError } from "../../shared/api/api-client";
+import { Toaster } from "../../shared/ui/Toast";
 import {
   DocumentContextPanel,
   DocumentContextSummaryProvider,
@@ -14,6 +17,7 @@ import {
 import { DocumentEditorPage } from "./DocumentEditorPage";
 import { DocumentShell } from "./DocumentShell";
 import { NotebookPage } from "./NotebookPage";
+import { NotebookSectionMenu } from "./NotebookSectionMenu";
 import {
   documentContextStorageKey,
   readDocumentContextOpen,
@@ -46,6 +50,10 @@ type PanelPropKeysAreExact =
 
 const panelPropKeysAreExact: PanelPropKeysAreExact = true;
 void panelPropKeysAreExact;
+
+function render(ui: React.ReactElement) {
+  return renderTestingLibrary(<QueryClientProvider client={new QueryClient()}>{ui}<Toaster /></QueryClientProvider>);
+}
 
 vi.mock("./queries", () => ({
   useNoteTree: () => treeState,
@@ -89,6 +97,7 @@ vi.mock("./queries", () => ({
   useCreateNote: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useCreateNotebook: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useUpdateNote: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useReorderNotes: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useArchiveNote: () => ({ mutateAsync: mocks.archiveNote, isPending: false }),
   useNote: () => noteState,
   useNoteContent: () => contentState,
@@ -203,6 +212,7 @@ describe("document context state", () => {
 
 describe("DocumentContextPanel", () => {
   beforeEach(() => {
+    window.localStorage.clear();
     mocks.refetchTree.mockReset();
     mocks.archiveNote.mockReset();
     mocks.archiveNote.mockResolvedValue({});
@@ -223,6 +233,7 @@ describe("DocumentContextPanel", () => {
   });
 
   afterEach(() => {
+    act(() => heroToast.clear());
     act(() => authStore.getState().clearSession());
   });
 
@@ -231,6 +242,66 @@ describe("DocumentContextPanel", () => {
 
     expect(screen.getByRole("link", { name: "产品计划" })).toHaveAttribute("href", "/documents/018ff7c4-a5b6-7000-8000-000000000003");
     expect(screen.getByRole("link", { name: "发布范围" })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("folds children independently of opening the parent and keeps the full summary", async () => {
+    const actor = userEvent.setup();
+    render(<MemoryRouter><DocumentContextSummaryProvider><DocumentContextPanel notebookId={rootNote.notebook_id} /><DocumentContextSummaryProbe /></DocumentContextSummaryProvider></MemoryRouter>);
+    const disclosure = screen.getByRole("button", { name: "收起子目录 产品计划" });
+    expect(disclosure).toHaveAttribute("aria-expanded", "true");
+    await actor.click(disclosure);
+    expect(screen.getByRole("button", { name: "展开子目录 产品计划" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("link", { name: "发布范围" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "产品计划" })).toHaveAttribute("href", `/documents/${rootNote.id}`);
+    expect(screen.getByRole("status", { name: "document context summary" })).toHaveTextContent(`${2}:${1}:`);
+  });
+
+  it("restores folded branches and isolates preferences by notebook", async () => {
+    const actor = userEvent.setup();
+    const first = renderPanel({ activeNoteId: undefined });
+    await actor.click(screen.getByRole("button", { name: "收起子目录 产品计划" }));
+    first.unmount();
+    const restored = renderPanel({ activeNoteId: undefined });
+    expect(screen.queryByRole("link", { name: "发布范围" })).not.toBeInTheDocument();
+    restored.unmount();
+    renderPanel({ notebookId: "another-notebook", activeNoteId: undefined });
+    expect(screen.getByRole("link", { name: "发布范围" })).toBeInTheDocument();
+  });
+
+  it("synchronizes folded branches between the main directory and sidebar", async () => {
+    const actor = userEvent.setup();
+    render(<MemoryRouter><DocumentContextPanel notebookId={rootNote.notebook_id} variant="main" /><DocumentContextPanel notebookId={rootNote.notebook_id} /></MemoryRouter>);
+    const main = screen.getByRole("navigation", { name: "文档列表" });
+    const side = screen.getByRole("navigation", { name: "笔记本文档" });
+    await actor.click(within(main).getByRole("button", { name: "收起子目录 产品计划" }));
+    expect(within(side).queryByRole("link", { name: "发布范围" })).not.toBeInTheDocument();
+    await actor.click(within(side).getByRole("button", { name: "展开子目录 产品计划" }));
+    expect(within(main).getByRole("link", { name: "发布范围" })).toBeInTheDocument();
+  });
+
+  it("reveals the active document path after opening a folded branch", async () => {
+    const actor = userEvent.setup();
+    const view = renderPanel({ activeNoteId: undefined });
+    await actor.click(screen.getByRole("button", { name: "收起子目录 产品计划" }));
+    view.unmount();
+    renderPanel({ activeNoteId: rootNote.children[0].id });
+    expect(await screen.findByRole("link", { name: "发布范围" })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("keeps secondary document actions in the row menu", async () => {
+    const actor = userEvent.setup();
+    renderPanel();
+    expect(screen.queryByRole("button", { name: "重命名 产品计划" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "归档 产品计划" })).not.toBeInTheDocument();
+    await actor.click(screen.getByRole("button", { name: "文档操作 产品计划" }));
+    expect(screen.getByRole("menuitem", { name: "重命名" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "归档" })).toBeInTheDocument();
+  });
+
+  it("provides an explicit notebook home link beside the document tree", () => {
+    render(<MemoryRouter initialEntries={[`/collections/${rootNote.notebook_id}`]}><NotebookSectionMenu notebookId={rootNote.notebook_id} /></MemoryRouter>);
+    expect(screen.getByRole("link", { name: "笔记本首页" })).toHaveAttribute("href", `/collections/${rootNote.notebook_id}`);
+    expect(screen.getByRole("link", { name: "笔记本首页" })).toHaveAttribute("aria-current", "page");
   });
 
   it("publishes the tree summary through React context using only the brief panel props", async () => {
@@ -249,6 +320,7 @@ describe("DocumentContextPanel", () => {
   });
 
   it("does not offer document mutations to a Normal workspace member", () => {
+    treeState.data = { items: [rootNote, { ...rootNote, id: "018ff7c4-a5b6-7000-8000-000000000006", title: "另一篇", sort_order: 1, children: [] }] };
     act(() => authStore.setState((state) => ({ ...state, workspace: state.workspace ? { ...state.workspace, role: "normal" } : null })));
 
     renderPanel();
@@ -256,6 +328,7 @@ describe("DocumentContextPanel", () => {
     expect(screen.queryByRole("button", { name: "新建文档" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "新建子文档 发布范围" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "归档 发布范围" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "拖动排序 产品计划" })).not.toBeInTheDocument();
   });
 
   it("does not offer document mutations without a current workspace", () => {
@@ -297,7 +370,8 @@ describe("DocumentContextPanel", () => {
       </MemoryRouter>,
     );
 
-    await actor.click(screen.getByRole("button", { name: "归档 发布范围" }));
+    await actor.click(screen.getByRole("button", { name: "文档操作 发布范围" }));
+    await actor.click(screen.getByRole("menuitem", { name: "归档" }));
 
     await waitFor(() => expect(screen.getByRole("status", { name: "current path" })).toHaveTextContent(`/collections/${rootNote.notebook_id}`));
     expect(mocks.archiveNote).toHaveBeenCalledWith({ id: rootNote.children[0].id, archived: true });
@@ -307,11 +381,13 @@ describe("DocumentContextPanel", () => {
     const actor = userEvent.setup();
     renderPanel({ activeNoteId: undefined });
 
-    await actor.click(screen.getByRole("button", { name: "归档 产品计划" }));
+    await actor.click(screen.getByRole("button", { name: "文档操作 产品计划" }));
+    await actor.click(screen.getByRole("menuitem", { name: "归档" }));
     await actor.click(await screen.findByRole("button", { name: "撤销" }));
 
     expect(mocks.archiveNote).toHaveBeenNthCalledWith(1, { id: rootNote.id, archived: true });
     expect(mocks.archiveNote).toHaveBeenNthCalledWith(2, { id: rootNote.id, archived: false });
+    await waitFor(() => expect(screen.queryByRole("button", { name: "撤销" })).not.toBeInTheDocument());
   });
 
   it("keeps the editor available when only its contextual tree fails", async () => {
@@ -363,6 +439,7 @@ describe("DocumentContextPanel", () => {
   });
 
   it("renders the notebook's document tree in the main column", async () => {
+    const actor = userEvent.setup();
     render(
       <MemoryRouter initialEntries={[`/collections/${rootNote.notebook_id}`]}>
         <Routes><Route path="/collections/:collectionId" element={<NotebookPage />} /></Routes>
@@ -370,7 +447,14 @@ describe("DocumentContextPanel", () => {
     );
 
     expect(await screen.findByText("2 篇文档")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "导出全部" })).toBeEnabled();
+    const main = screen.getByRole("region", { name: "主工作区" });
+    expect(within(main).getByRole("button", { name: "新建文档" })).toBeEnabled();
+    expect(within(main).queryByRole("button", { name: "导出全部" })).not.toBeInTheDocument();
+    await actor.click(within(main).getByRole("button", { name: "笔记本操作" }));
+    expect(screen.getByRole("menuitem", { name: "导出全部" })).toBeEnabled();
+    expect(screen.getByRole("menuitem", { name: "导入 Markdown" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "创建文档站点" })).toHaveAttribute("href", `/sites?notebook=${rootNote.notebook_id}`);
+    await actor.keyboard("{Escape}");
     // The notebook page owns its document list; no shell context panel aside.
     expect(screen.queryByRole("complementary", { name: "上下文面板" })).not.toBeInTheDocument();
     const tree = screen.getByRole("navigation", { name: "文档列表" });

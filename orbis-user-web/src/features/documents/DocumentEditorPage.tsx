@@ -1,4 +1,8 @@
-import { AlertTriangle, Archive, ArrowLeft, Check, Cloud, Download, Eye, EyeOff, MessageSquare, RefreshCw, RotateCcw, Save, WifiOff } from "lucide-react";
+import { LoadingState } from "../../shared/ui/LoadingState";
+import { Tag } from "../../shared/ui/Tag";
+import { Input as HeroInput } from "@heroui/react/input";
+import { ActionButton } from "../../shared/ui/ActionButton";
+import { AlertTriangle, Archive, ArrowLeft, Check, Cloud, Download, Eye, EyeOff, MessageSquare, RefreshCw, RotateCcw, Save, WifiOff } from "../../shared/ui/icons";
 import { Component, lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useStore } from "zustand";
@@ -284,21 +288,21 @@ export function DocumentEditorPage() {
 
   const toolbar = (
     <div className="flex items-center gap-2">
-      <button ref={collaborationTriggerRef} type="button" className="icon-button" aria-label="评论与历史" aria-haspopup="dialog" aria-expanded={collaborationOpen} disabled={!draft || archiving} onClick={() => setCollaborationOpen(true)}><MessageSquare aria-hidden="true" size={16} /></button>
-      <span className={`save-indicator state-${saveState}`}><StateIcon aria-hidden="true" size={13} className={saveState === "saving" ? "animate-spin" : ""} />{stateCopy.label}</span>
-      {canEdit ? <button type="button" className="icon-button danger-hover" aria-label="归档文档" disabled={!draft || editorBusy} onClick={handleArchive}><Archive aria-hidden="true" size={15} /></button> : null}
+      <ActionButton ref={collaborationTriggerRef} type="button" className="icon-button" aria-label="评论与历史" aria-haspopup="dialog" aria-expanded={collaborationOpen} disabled={!draft || archiving} onClick={() => setCollaborationOpen(true)}><MessageSquare aria-hidden="true" size={16} /></ActionButton>
+      <Tag tone={saveState === "error" ? "danger" : saveState === "conflict" ? "warning" : "neutral"}><StateIcon aria-hidden="true" size={14} className={saveState === "saving" ? "animate-spin" : ""} />{stateCopy.label}</Tag>
+      {canEdit ? <ActionButton type="button" className="icon-button danger-hover" aria-label="归档文档" disabled={!draft || editorBusy} onClick={handleArchive}><Archive aria-hidden="true" size={16} /></ActionButton> : null}
     </div>
   );
 
   return (
     <DocumentShell toolbar={toolbar} sectionMenu={noteQuery.data ? <NotebookSectionMenu notebookId={noteQuery.data.notebook_id} activeNoteId={noteId} /> : undefined}>
-      {!draft || !noteQuery.data ? <div className="grid min-h-[70vh] place-items-center text-sm text-[var(--muted)]">正在打开文档…</div> : (
+      {!draft || !noteQuery.data ? <div className="page-container"><LoadingState label="正在打开文档…" variant="editor" /></div> : (
         <div className={`editor-layout${outlineOpen ? " outline-open" : ""}`}>
           <article className="editor-canvas">
-            <Link to={`/collections/${noteQuery.data.notebook_id}`} className="mb-7 inline-flex items-center gap-2 text-xs font-medium text-[var(--muted)] hover:text-black"><ArrowLeft aria-hidden="true" size={14} />返回笔记本</Link>
-            <input
+            <Link to={`/collections/${noteQuery.data.notebook_id}`} className="mb-7 inline-flex items-center gap-2 text-xs font-medium text-[var(--muted)] hover:text-[var(--text-primary)]"><ArrowLeft aria-hidden="true" size={14} />返回笔记本</Link>
+            <HeroInput
               aria-label="文档标题"
-              className="editor-title"
+              className="orbis-embedded-input editor-title"
               placeholder="无标题"
               value={draft.title}
               readOnly={!canEdit || editorBusy}
@@ -313,7 +317,7 @@ export function DocumentEditorPage() {
             {saveState === "error" ? <div className="mb-5"><StatusMessage tone="error" title="自动保存失败">网络恢复后可手动重试，本地草稿不会丢失。<div className="mt-3"><Button variant="secondary" icon={<RefreshCw aria-hidden="true" size={14} />} onClick={() => coordinatorRef.current?.retry()}>重试保存</Button></div></StatusMessage></div> : null}
 
             <EditorErrorBoundary key={noteId}>
-              <Suspense fallback={<div className="grid min-h-[40vh] place-items-center text-sm text-[var(--muted)]">正在加载编辑器…</div>}>
+              <Suspense fallback={<LoadingState label="正在加载编辑器…" variant="editor" />}>
                 <BlockNoteEditor
                   blocks={draft.blocks}
                   readOnly={!canEdit || editorBusy}
@@ -328,7 +332,7 @@ export function DocumentEditorPage() {
             onMouseEnter={() => setOutlineHovered(true)}
             onMouseLeave={() => setOutlineHovered(false)}
           >
-            <button
+            <ActionButton
               type="button"
               className="editor-outline-pin"
               aria-label={outlinePinned ? "取消大纲常驻" : "大纲常驻"}
@@ -337,7 +341,7 @@ export function DocumentEditorPage() {
               onClick={() => setOutlinePinned((v) => !v)}
             >
               {outlinePinned ? <Eye aria-hidden="true" size={14} /> : <EyeOff aria-hidden="true" size={14} />}
-            </button>
+            </ActionButton>
             <div className="editor-outline-body">
               <div className="mb-4 text-xs font-semibold text-[var(--muted)]">大纲</div>
               {outline.length ? <nav className="space-y-1">{outline.map((item) => <div key={item.id} className="truncate rounded-md py-1.5 text-xs text-[var(--muted)]" style={{ paddingLeft: `${(item.level - 1) * 10}px` }}>{item.text}</div>)}</nav> : <p className="text-xs leading-5 text-[var(--muted-light)]">添加标题后，这里会自动生成大纲。</p>}
@@ -345,7 +349,7 @@ export function DocumentEditorPage() {
           </aside>
         </div>
       )}
-      {collaborationOpen ? <Suspense fallback={<p role="status">正在加载评论与历史…</p>}><DocumentCollaborationPanel key={noteId} noteId={noteId} currentUserId={currentUserId} canManage={canEdit} onClose={closeCollaboration} onRestore={restoreSavedRevision} /></Suspense> : null}
+      {collaborationOpen ? <Suspense fallback={<LoadingState label="正在加载评论与历史…" compact />}><DocumentCollaborationPanel key={noteId} noteId={noteId} currentUserId={currentUserId} canManage={canEdit} onClose={closeCollaboration} onRestore={restoreSavedRevision} /></Suspense> : null}
     </DocumentShell>
   );
 }

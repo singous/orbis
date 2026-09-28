@@ -5,6 +5,8 @@ export const userSchema = z.object({
   tenant_id: z.string().uuid().nullable(),
   email: z.string().email(),
   display_name: z.string().nullable().optional(),
+  bio: z.string().nullable().optional(),
+  avatar_file_id: z.string().uuid().nullable().optional(),
   current_workspace_id: z.string().uuid().nullable(),
   status: z.string(),
   created_at_ms: z.number(),

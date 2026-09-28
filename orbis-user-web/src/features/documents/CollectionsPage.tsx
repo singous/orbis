@@ -1,3 +1,5 @@
+import { LoadingState } from "../../shared/ui/LoadingState";
+import { ActionButton } from "../../shared/ui/ActionButton";
 import {
   Archive,
   BookOpen,
@@ -6,8 +8,8 @@ import {
   MoreHorizontal,
   Pin,
   Plus,
-} from "lucide-react";
-import { useMemo, useState } from "react";
+} from "../../shared/ui/icons";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
 
@@ -17,6 +19,7 @@ import { formatDate } from "../../shared/format/date";
 import { Button } from "../../shared/ui/Button";
 import { PageContainer } from "../../shared/ui/PageContainer";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
+import { showToast } from "../../shared/ui/Toast";
 import { DocumentShell } from "./DocumentShell";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { usePinnedNotebooks } from "./pinned-notebooks";
@@ -72,6 +75,13 @@ export function CollectionsPage() {
   const notes = notesQuery.data?.items ?? [];
   const resourceError = (location.state as CollectionLocationState | null)
     ?.resourceError;
+  const shownResourceError = useRef<string | null>(null);
+  useEffect(() => {
+    if (!resourceError || shownResourceError.current === resourceError) return;
+    shownResourceError.current = resourceError;
+    showToast({ title: "无法打开资源", description: resourceError, tone: "danger" });
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, navigate, resourceError]);
   const notebookCounts = useMemo(
     () =>
       notes.reduce(
@@ -131,14 +141,14 @@ export function CollectionsPage() {
             <>
               <Button
                 variant="secondary"
-                icon={<FolderPlus aria-hidden="true" size={15} />}
+                icon={<FolderPlus aria-hidden="true" size={16} />}
                 onClick={() => setDialog({ kind: "group" })}
               >
                 新建分组
               </Button>
               <Button
                 variant="primary"
-                icon={<Plus aria-hidden="true" size={15} />}
+                icon={<Plus aria-hidden="true" size={16} />}
                 onClick={() =>
                   groups[0] &&
                   setDialog({ kind: "notebook", groupId: groups[0].id })
@@ -151,25 +161,6 @@ export function CollectionsPage() {
           ) : null
         }
       >
-        {resourceError ? (
-          <div role="alert" className="mb-5">
-            <StatusMessage tone="error" title="无法打开资源">
-              <div className="flex items-center justify-between gap-3">
-                <span>{resourceError}</span>
-                <button
-                  type="button"
-                  className="shrink-0 font-semibold underline"
-                  aria-label="关闭提示"
-                  onClick={() =>
-                    navigate(location.pathname, { replace: true, state: null })
-                  }
-                >
-                  关闭
-                </button>
-              </div>
-            </StatusMessage>
-          </div>
-        ) : null}
         {groupsQuery.isError || notebooksQuery.isError || notesQuery.isError ? (
           <StatusMessage tone="error" title="笔记本加载失败">
             请检查 API 服务后重试。
@@ -177,12 +168,12 @@ export function CollectionsPage() {
         ) : null}
         <section className="workbench-section" aria-label="笔记本">
           {groupsQuery.isLoading || notebooksQuery.isLoading ? (
-            <div className="empty-panel">正在加载笔记本…</div>
+            <LoadingState label="正在加载笔记本…" variant="cards" />
           ) : null}
           {!groupsQuery.isLoading && !notebooks.length ? (
             <div className="empty-panel">
               <BookOpen aria-hidden="true" className="mx-auto mb-3" size={24} />
-              <div className="font-semibold text-black">还没有笔记本</div>
+              <div className="font-semibold text-[var(--text-primary)]">还没有笔记本</div>
               <p className="mt-1">先在默认分组下创建一个笔记本。</p>
               {canEdit && groups[0] ? (
                 <Button
@@ -207,7 +198,7 @@ export function CollectionsPage() {
               return (
                 <div key={group.id} className={`workbench-collection-group${collapsed ? " is-collapsed" : ""}`}>
                   <div className="workbench-section-heading">
-                    <h3 className="workbench-group-heading"><button type="button" className="workbench-group-toggle" aria-expanded={!collapsed} aria-controls={contentId} aria-label={`${collapsed ? "展开" : "收起"}分组 ${group.name}`} onClick={() => toggleGroup(group.id)}>
+                    <h3 className="workbench-group-heading"><ActionButton type="button" className="workbench-group-toggle" aria-expanded={!collapsed} aria-controls={contentId} aria-label={`${collapsed ? "展开" : "收起"}分组 ${group.name}`} onClick={() => toggleGroup(group.id)}>
                       <ChevronDown size={16} aria-hidden="true" className="workbench-group-chevron" />
                       <span className="workbench-group-name" title={group.name}>{group.name}</span>
                       {group.is_default ? (
@@ -216,10 +207,10 @@ export function CollectionsPage() {
                       <span className="text-xs text-[var(--muted-light)]">
                         {groupNotebooks.length}
                       </span>
-                    </button></h3>
+                    </ActionButton></h3>
                     {canEdit ? (
                       <div className="flex items-center gap-1">
-                        <button
+                        <ActionButton
                           className="text-action"
                           type="button"
                           aria-label="+ 笔记本"
@@ -228,8 +219,8 @@ export function CollectionsPage() {
                           }
                         >
                           <Plus aria-hidden="true" size={16} />笔记本
-                        </button>
-                        <button
+                        </ActionButton>
+                        <ActionButton
                           className="icon-button"
                           type="button"
                           aria-label={`重命名 ${group.name}`}
@@ -237,10 +228,10 @@ export function CollectionsPage() {
                             setDialog({ kind: "rename-group", resource: group })
                           }
                         >
-                          <MoreHorizontal aria-hidden="true" size={15} />
-                        </button>
+                          <MoreHorizontal aria-hidden="true" size={16} />
+                        </ActionButton>
                         {!group.is_default ? (
-                          <button
+                          <ActionButton
                             className="icon-button danger-hover"
                             type="button"
                             aria-label={`归档 ${group.name}`}
@@ -252,7 +243,7 @@ export function CollectionsPage() {
                             }
                           >
                             <Archive aria-hidden="true" size={14} />
-                          </button>
+                          </ActionButton>
                         ) : null}
                       </div>
                     ) : null}
@@ -270,7 +261,7 @@ export function CollectionsPage() {
                             </span>
                           </Link>
                           <div className="workbench-collection-actions">
-                            <button
+                            <ActionButton
                               type="button"
                               className={`icon-button${isPinned(notebook.id) ? " is-pinned" : ""}`}
                               aria-label={isPinned(notebook.id) ? `取消置顶 ${notebook.title}` : `置顶 ${notebook.title}`}
@@ -278,14 +269,14 @@ export function CollectionsPage() {
                               onClick={() => togglePin(notebook.id)}
                             >
                               <Pin aria-hidden="true" size={14} />
-                            </button>
+                            </ActionButton>
                             {canEdit ? <>
-                              <button type="button" className="icon-button" aria-label={`编辑笔记本 ${notebook.title}`} title="编辑名称和图标" onClick={() => setDialog({ kind: "edit-notebook", resource: notebook })}>
-                                <MoreHorizontal aria-hidden="true" size={15} />
-                              </button>
-                              <button type="button" className="icon-button danger-hover" aria-label={`归档 ${notebook.title}`} onClick={() => archiveNotebook.mutate({ id: notebook.id, archived: true })}>
+                              <ActionButton type="button" className="icon-button" aria-label={`编辑笔记本 ${notebook.title}`} title="编辑名称和图标" onClick={() => setDialog({ kind: "edit-notebook", resource: notebook })}>
+                                <MoreHorizontal aria-hidden="true" size={16} />
+                              </ActionButton>
+                              <ActionButton type="button" className="icon-button danger-hover" aria-label={`归档 ${notebook.title}`} onClick={() => archiveNotebook.mutate({ id: notebook.id, archived: true })}>
                                 <Archive aria-hidden="true" size={14} />
-                              </button>
+                              </ActionButton>
                             </> : null}
                           </div>
                           {canEdit && (notebookCounts.get(notebook.id) ?? 0) === 0 ? (
@@ -295,7 +286,7 @@ export function CollectionsPage() {
                       ))}
                     </div>
                   ) : (
-                    <button
+                    <ActionButton
                       type="button"
                       disabled={!canEdit}
                       onClick={() =>
@@ -304,7 +295,7 @@ export function CollectionsPage() {
                       className="workbench-empty-group"
                     >
                       此分组暂无笔记本{canEdit ? "，点击创建" : ""}
-                    </button>
+                    </ActionButton>
                   )}
                   </div>
                 </div>

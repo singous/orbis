@@ -1,0 +1,61 @@
+/* Semantic color and consistent glyph geometry for Orbis application icons. */
+:root, .light, .default, [data-theme="light"], [data-theme="default"] {
+  --orbis-icon-cyan: #0891b2;
+  --orbis-icon-mint: #059669;
+  --orbis-icon-orange: #ea580c;
+  --orbis-icon-blue: #2563eb;
+  --orbis-icon-indigo: #4f46e5;
+  --orbis-icon-teal: #0d9488;
+  --orbis-icon-violet: #7c3aed;
+  --orbis-icon-rose: #db2777;
+  --orbis-icon-amber: #b97705;
+  --orbis-icon-slate: #64748b;
+}
+.dark, [data-theme="dark"] {
+  --orbis-icon-cyan: #67e8f9;
+  --orbis-icon-mint: #6ee7b7;
+  --orbis-icon-orange: #fdba74;
+  --orbis-icon-blue: #93b4ff;
+  --orbis-icon-indigo: #b4b4ff;
+  --orbis-icon-teal: #5eead4;
+  --orbis-icon-violet: #c4b5fd;
+  --orbis-icon-rose: #f9a8d4;
+  --orbis-icon-amber: #fcd34d;
+  --orbis-icon-slate: #a8b7cc;
+}
+/* Color is opt-in for destination accents; controls inherit their container. */
+.orbis-icon { display: inline-block; flex-shrink: 0; vertical-align: middle; color: currentColor; pointer-events: none; }
+.icon-accent > .orbis-icon { color: var(--orbis-icon-ink, currentColor); }
+.icon-accent > .orbis-icon :is(rect, circle, polygon, path[d$="z" i]) { fill: currentColor; fill-opacity: .10; }
+
+.workbench-resource-icon { width: 40px; height: 40px; border-radius: var(--radius-3xl); }
+.workbench-resource-icon.icon-accent {
+  background: color-mix(in oklab, var(--orbis-icon-ink) 9%, var(--surface));
+}
+.icon-accent:has(> .orbis-icon[data-icon-tone="orange"]) { --orbis-icon-ink: var(--orbis-icon-orange); }
+.icon-accent:has(> .orbis-icon[data-icon-tone="blue"]) { --orbis-icon-ink: var(--orbis-icon-blue); }
+.icon-accent:has(> .orbis-icon[data-icon-tone="indigo"]) { --orbis-icon-ink: var(--orbis-icon-indigo); }
+.icon-accent:has(> .orbis-icon[data-icon-tone="teal"]) { --orbis-icon-ink: var(--orbis-icon-teal); }
+.icon-accent:has(> .orbis-icon[data-icon-tone="violet"]) { --orbis-icon-ink: var(--orbis-icon-violet); }
+.icon-accent:has(> .orbis-icon[data-icon-tone="rose"]) { --orbis-icon-ink: var(--orbis-icon-rose); }
+.icon-accent:has(> .orbis-icon[data-icon-tone="amber"]) { --orbis-icon-ink: var(--orbis-icon-amber); }
+.icon-accent:has(> .orbis-icon[data-icon-tone="slate"]) { --orbis-icon-ink: var(--orbis-icon-slate); }
+.icon-accent:has(> .orbis-icon[data-icon-tone="cyan"]) { --orbis-icon-ink: var(--orbis-icon-cyan); }
+
+/* Selected navigation swaps silhouettes; other icon contexts stay outlined. */
+.rail-action { border-radius: var(--radius-3xl); }
+.orbis-icon-solid { display: none; }
+:is(.rail-action, .workspace-function-link).is-active > .orbis-icon:has(> .orbis-icon-solid) > :not(.orbis-icon-solid) { display: none; }
+:is(.rail-action, .workspace-function-link).is-active > .orbis-icon > .orbis-icon-solid { display: block; }
+:is(.rail-action, .workspace-function-link) > .orbis-icon { transform-origin: center; }
+:is(.rail-action, .workspace-function-link):active > .orbis-icon { transform: scale(.9); }
+:is(.rail-action, .workspace-function-link).is-active > .orbis-icon { animation: navigation-icon-select 240ms cubic-bezier(.2, .8, .2, 1); }
+@keyframes navigation-icon-select {
+  0% { transform: scale(.86); }
+  65% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.rail-action, .workspace-function-link).is-active > .orbis-icon { animation: none; }
+  :is(.rail-action, .workspace-function-link):active > .orbis-icon { transform: none; }
+}

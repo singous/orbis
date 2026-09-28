@@ -1,5 +1,30 @@
 import "@testing-library/jest-dom/vitest";
 
+Object.defineProperty(window, "matchMedia", {
+  configurable: true,
+  value: (query: string): MediaQueryList => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  }),
+});
+
+class TestResizeObserver implements ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
+Object.defineProperty(globalThis, "ResizeObserver", {
+  configurable: true,
+  value: TestResizeObserver,
+});
+
 function createMemoryStorage(): Storage {
   const items = new Map<string, string>();
 
@@ -30,3 +55,6 @@ Object.defineProperty(globalThis, "localStorage", {
   configurable: true,
   value: memoryStorage,
 });
+
+// jsdom does not implement the Web Animations API used by HeroUI tab indicators.
+Object.defineProperty(Element.prototype, "getAnimations", { configurable: true, value: () => [] });

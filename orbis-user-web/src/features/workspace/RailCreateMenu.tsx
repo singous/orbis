@@ -1,8 +1,11 @@
-import { BookOpen, FilePlus2, Plus } from "lucide-react";
+import { Dropdown } from "@heroui/react/dropdown";
+import { Header } from "@heroui/react/header";
+import { Label } from "@heroui/react/label";
+import { BookOpen, FilePlus2, Plus } from "../../shared/ui/icons";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ActionButton } from "../../shared/ui/ActionButton";
 
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../../shared/ui/DropdownMenu";
 import { useToast } from "../../shared/ui/Toast";
 import { NotebookDialog } from "../documents/NotebookDialog";
 import type { NotebookIconValue } from "../documents/notebook-icons";
@@ -62,16 +65,21 @@ export function RailCreateMenu() {
 
   return (
     <>
-      <DropdownMenu onOpenChange={setArmed}>
-        <DropdownMenuTrigger asChild>
-          <button type="button" className="rail-create-trigger" aria-label="新建资产"><Plus size={18} aria-hidden="true" /></button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="rail-create-popover" align="start" sideOffset={10}>
-          <DropdownMenuLabel>在当前空间新建</DropdownMenuLabel>
-          <DropdownMenuItem onSelect={() => { void createDocument().catch(() => toast({ title: "文档创建失败，请重试", tone: "danger" })); }} disabled={createNote.isPending}><FilePlus2 />文档</DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => setNotebookDialogOpen(true)}><BookOpen />笔记本</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <Dropdown onOpenChange={setArmed}>
+        <ActionButton type="button" className="rail-create-trigger" aria-label="新建资产"><Plus size={18} aria-hidden="true" /></ActionButton>
+        <Dropdown.Popover className="rail-create-popover" placement="bottom start" offset={10}>
+          <Dropdown.Menu aria-label="在当前空间新建" onAction={(key) => {
+            if (key === "document") void createDocument().catch(() => toast({ title: "文档创建失败，请重试", tone: "danger" }));
+            if (key === "notebook") setNotebookDialogOpen(true);
+          }}>
+            <Dropdown.Section>
+              <Header>在当前空间新建</Header>
+              <Dropdown.Item id="document" textValue="文档" isDisabled={createNote.isPending}><FilePlus2 aria-hidden="true" /><Label>文档</Label></Dropdown.Item>
+              <Dropdown.Item id="notebook" textValue="笔记本"><BookOpen aria-hidden="true" /><Label>笔记本</Label></Dropdown.Item>
+            </Dropdown.Section>
+          </Dropdown.Menu>
+        </Dropdown.Popover>
+      </Dropdown>
       <NotebookDialog
         open={notebookDialogOpen}
         title="新建笔记本"

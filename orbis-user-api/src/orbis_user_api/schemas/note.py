@@ -24,6 +24,12 @@ class NoteMetadataUpdateRequest(BaseModel):
     sort_order: int | None = None
 
 
+class NoteOrderRequest(BaseModel):
+    parent_id: UUID | None = None
+    expected_note_ids: list[UUID] = Field(min_length=1)
+    note_ids: list[UUID] = Field(min_length=1)
+
+
 class NoteContentUpdateRequest(BaseModel):
     expected_version: int = Field(ge=1)
     blocks: dict[str, Any]

@@ -25,7 +25,7 @@
 .document-prose .doc-step > h3 { margin: 0 0 12px; padding-top: 1px; font-size: 17px; line-height: 1.6; }
 .document-prose .doc-step > :last-child { margin-bottom: 0; }
 .document-prose .doc-tabs { margin: 25px 0; min-width: 0; }
-.doc-tabs-list { display: flex; gap: 24px; border-bottom: 1px solid var(--reading-border, var(--border-subtle)); overflow-x: auto; scrollbar-width: thin; }
+.doc-tabs-list { display: flex; gap: 24px; border-bottom: 1px solid var(--reading-border, var(--border-subtle)); overflow-x: auto;  }
 .doc-tabs-list button { flex: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 1px 11px; background: transparent; color: var(--reading-muted, var(--text-secondary)); font-size: 13px; font-weight: 550; cursor: pointer; }
 .doc-tabs-list button[aria-selected="true"] { color: var(--reading-accent, var(--accent)); border-bottom-color: var(--reading-accent, var(--accent)); }
 .doc-tabs-list button:focus-visible { outline: 2px solid var(--reading-accent, var(--accent)); outline-offset: -3px; border-radius: 4px; }
@@ -35,8 +35,7 @@
 .document-prose .content-code-toolbar { display: flex; align-items: center; justify-content: space-between; min-height: 38px; padding: 7px 14px; color: var(--reading-muted, var(--text-secondary)); border-bottom: 1px solid var(--reading-border, var(--border-subtle)); font-size: 11px; }
 .content-code-toolbar button { display: inline-flex; gap: 6px; align-items: center; border: 0; background: transparent; padding: 3px; color: inherit; cursor: pointer; font-size: 11px; }
 .content-code-toolbar button:hover { color: var(--reading-text, var(--text-primary)); }
-.content-code-toolbar button:focus-visible { outline: 2px solid var(--reading-accent, var(--accent)); outline-offset: 3px; border-radius: 3px; }
-.document-prose .content-copy-feedback { font-size: 12px; margin: 0; padding: 0 16px 10px; color: var(--reading-muted, var(--text-secondary)); }
+.content-code-toolbar button:not([data-slot="button"]):focus-visible { outline: 2px solid var(--reading-accent, var(--accent)); outline-offset: 3px; }
 .document-prose .hljs-keyword, .document-prose .hljs-selector-tag, .document-prose .hljs-built_in { color: var(--doc-keyword); }
 .document-prose .hljs-string, .document-prose .hljs-attr, .document-prose .hljs-regexp { color: var(--doc-string); }
 .document-prose .hljs-number, .document-prose .hljs-literal, .document-prose .hljs-symbol { color: var(--doc-number); }
