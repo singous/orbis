@@ -27,6 +27,6 @@
 .orbis-block-target { outline: 2px solid color-mix(in srgb,var(--accent) 50%,transparent); outline-offset:4px; background:color-mix(in srgb,var(--accent) 8%,transparent); }
 /* Reserve the gutter on touch layouts; controls must never cover the first glyph. */
 @media(max-width:640px){
- .editor-canvas > .orbis-tiptap {margin-left:42px;}
+ .editor-canvas > :not(.editor-title) {margin-left:42px;}
  .editor-canvas > .editor-title {padding-left:42px;}
 }
