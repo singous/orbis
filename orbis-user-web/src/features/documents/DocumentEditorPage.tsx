@@ -301,7 +301,7 @@ export function DocumentEditorPage() {
 
   return (
     <DocumentShell toolbar={toolbar} sectionMenu={noteQuery.data ? <NotebookSectionMenu notebookId={noteQuery.data.notebook_id} activeNoteId={noteId} /> : undefined}>
-      {!draft || !noteQuery.data ? <div className="page-container"><LoadingState label="正在打开文档…" variant="editor" /></div> : (
+      {!draft || !noteQuery.data || hydratedNoteRef.current !== noteId ? <div className="page-container"><LoadingState label="正在打开文档…" variant="editor" /></div> : (
         <div className={`editor-layout${outlineOpen ? " outline-open" : ""}`}>
           <article className="editor-canvas">
             <Link to={`/collections/${noteQuery.data.notebook_id}`} className="mb-7 inline-flex items-center gap-2 text-xs font-medium text-[var(--muted)] hover:text-[var(--text-primary)]"><ArrowLeft aria-hidden="true" size={14} />返回笔记本</Link>

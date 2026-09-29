@@ -1,6 +1,6 @@
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Input as HeroInput } from "@heroui/react/input";
-import { EditorContent, useEditor } from "@tiptap/react";
+import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import type { Editor, JSONContent } from "@tiptap/core";
 import { Bold, Code, Heading1, Heading2, Heading3, Image, Italic, Link2, List, ListChecks, ListOrdered, Minus, Paperclip, Plus, Quote, Redo2, Strikethrough, Table2, Underline, Undo2 } from "../../shared/ui/icons";
 import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from "react";
@@ -71,23 +71,25 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false }: {
   const readOnlyRef = useRef(readOnly);
   const errorCallback = useRef(onError);
   errorCallback.current = onError;
-  const lastEmitted = useRef<string | null>(null);
-  const lastApplied = useRef(canonicalJSON(blocks));
+  const lastEmitted = useRef<NoteBlocksV2 | null>(null);
+  // useEditor consumes content only when creating the instance. Do not rebuild
+  // the whole document when selection, toolbar, or parent state changes.
+  const [initialContent] = useState(() => toTiptapDocument(blocks));
+  const lastApplied = useRef(blocks);
   const inputRef = useRef<HTMLInputElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeCommand, setActiveCommand] = useState(0);
   const [slash, setSlash] = useState<{ query: string; from: number; to: number } | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [contentError, setContentError] = useState<string | null>(null);
-  const [, rerender] = useState(0);
   onChangeRef.current = onChange;
   readOnlyRef.current = readOnly;
 
   function emitChange(current: Editor) {
     if (readOnlyRef.current) return;
     try {
-      const next = fromTiptapDocument(current.getJSON());
-      lastEmitted.current = canonicalJSON(next);
+      const next = fromTiptapDocument(current.state.doc);
+      lastEmitted.current = next;
       onChangeRef.current({ blocks: next, plainText: extractPlainTextV2(next.blocks) });
       setContentError(null);
       errorCallback.current?.(null);
@@ -100,25 +102,39 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false }: {
 
   const editor = useEditor({
     extensions: tiptapExtensions,
-    content: toTiptapDocument(blocks),
+    content: initialContent,
     editable: !readOnly,
     immediatelyRender: false,
+    shouldRerenderOnTransaction: false,
+    onCreate: ({ editor: current }) => {
+      // Warm immutable block conversions while opening, before the first key.
+      fromTiptapDocument(current.state.doc);
+    },
     onUpdate: ({ editor: current }) => {
       emitChange(current);
       setSlash(slashQuery(current));
-      rerender((value) => value + 1);
     },
-    onSelectionUpdate: ({ editor: current }) => { setSlash(slashQuery(current)); rerender((value) => value + 1); },
+    onSelectionUpdate: ({ editor: current }) => { setSlash(slashQuery(current)); },
   });
+
+  const active = useEditorState({ editor, selector: ({ editor: current }) => ({
+    bold: current?.isActive("bold"), italic: current?.isActive("italic"),
+    underline: current?.isActive("underline"), strike: current?.isActive("strike"),
+    link: current?.isActive("link"),
+    h1: current?.isActive("heading", { level: 1 }),
+    h2: current?.isActive("heading", { level: 2 }),
+    h3: current?.isActive("heading", { level: 3 }),
+    bulletList: current?.isActive("bulletList"), orderedList: current?.isActive("orderedList"),
+    taskList: current?.isActive("taskList"),
+  }) });
 
   useEffect(() => {
     if (!editor) return;
-    const incoming = canonicalJSON(blocks);
-    if (incoming === lastApplied.current) return;
-    lastApplied.current = incoming;
-    if (incoming === lastEmitted.current) return;
-    const current = fromTiptapDocument(editor.getJSON());
-    if (incoming === canonicalJSON(current)) return;
+    if (blocks === lastApplied.current) return;
+    lastApplied.current = blocks;
+    if (blocks === lastEmitted.current) return;
+    const current = fromTiptapDocument(editor.state.doc);
+    if (canonicalJSON(blocks) === canonicalJSON(current)) return;
     editor.commands.setContent(toTiptapDocument(blocks), false);
     lastEmitted.current = null;
   }, [blocks, editor]);
@@ -166,18 +182,18 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false }: {
       <Tool title="撤销" onClick={() => editor.chain().focus().undo().run()}><Undo2 size={16} /></Tool>
       <Tool title="重做" onClick={() => editor.chain().focus().redo().run()}><Redo2 size={16} /></Tool>
       <span className="orbis-tiptap-toolbar-divider" />
-      <Tool title="粗体" active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()}><Bold size={16} /></Tool>
-      <Tool title="斜体" active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()}><Italic size={16} /></Tool>
-      <Tool title="下划线" active={editor.isActive("underline")} onClick={() => editor.chain().focus().toggleUnderline().run()}><Underline size={16} /></Tool>
-      <Tool title="删除线" active={editor.isActive("strike")} onClick={() => editor.chain().focus().toggleStrike().run()}><Strikethrough size={16} /></Tool>
-      <Tool title="链接" active={editor.isActive("link")} onClick={() => inlineLink(editor)}><Link2 size={16} /></Tool>
+      <Tool title="粗体" active={active?.bold} onClick={() => editor.chain().focus().toggleBold().run()}><Bold size={16} /></Tool>
+      <Tool title="斜体" active={active?.italic} onClick={() => editor.chain().focus().toggleItalic().run()}><Italic size={16} /></Tool>
+      <Tool title="下划线" active={active?.underline} onClick={() => editor.chain().focus().toggleUnderline().run()}><Underline size={16} /></Tool>
+      <Tool title="删除线" active={active?.strike} onClick={() => editor.chain().focus().toggleStrike().run()}><Strikethrough size={16} /></Tool>
+      <Tool title="链接" active={active?.link} onClick={() => inlineLink(editor)}><Link2 size={16} /></Tool>
       <span className="orbis-tiptap-toolbar-divider" />
-      <Tool title="标题 1" active={editor.isActive("heading", { level: 1 })} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}><Heading1 size={16} /></Tool>
-      <Tool title="标题 2" active={editor.isActive("heading", { level: 2 })} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}><Heading2 size={16} /></Tool>
-      <Tool title="标题 3" active={editor.isActive("heading", { level: 3 })} onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}><Heading3 size={16} /></Tool>
-      <Tool title="无序列表" active={editor.isActive("bulletList")} onClick={() => editor.chain().focus().toggleBulletList().run()}><List size={16} /></Tool>
-      <Tool title="有序列表" active={editor.isActive("orderedList")} onClick={() => editor.chain().focus().toggleOrderedList().run()}><ListOrdered size={16} /></Tool>
-      <Tool title="任务清单" active={editor.isActive("taskList")} onClick={() => editor.chain().focus().toggleTaskList().run()}><ListChecks size={16} /></Tool>
+      <Tool title="标题 1" active={active?.h1} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}><Heading1 size={16} /></Tool>
+      <Tool title="标题 2" active={active?.h2} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}><Heading2 size={16} /></Tool>
+      <Tool title="标题 3" active={active?.h3} onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}><Heading3 size={16} /></Tool>
+      <Tool title="无序列表" active={active?.bulletList} onClick={() => editor.chain().focus().toggleBulletList().run()}><List size={16} /></Tool>
+      <Tool title="有序列表" active={active?.orderedList} onClick={() => editor.chain().focus().toggleOrderedList().run()}><ListOrdered size={16} /></Tool>
+      <Tool title="任务清单" active={active?.taskList} onClick={() => editor.chain().focus().toggleTaskList().run()}><ListChecks size={16} /></Tool>
       <Tool title="表格" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}><Table2 size={16} /></Tool>
       <Tool title="上传媒体或附件" onClick={() => inputRef.current?.click()}><Image size={16} /><Paperclip size={13} /></Tool>
       <ActionButton type="button" className="orbis-tiptap-insert" aria-label="插入内容" aria-expanded={menuOpen} onClick={() => { setActiveCommand(0); setMenuOpen((value) => !value); }}><Plus size={15} />插入</ActionButton>

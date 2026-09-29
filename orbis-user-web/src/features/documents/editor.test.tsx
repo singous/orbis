@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createEmptyNoteBlocks } from "../notes/note-contract";
@@ -8,6 +8,7 @@ import { DocumentEditorPage } from "./DocumentEditorPage";
 
 const updateNote = vi.fn();
 const saveContent = vi.fn();
+const editorInputs = vi.fn();
 
 // Mutable content fixture so tests can simulate the post-save setQueryData echo.
 const contentFixture = {
@@ -45,7 +46,7 @@ const ownerSession = {
 
 vi.mock("./DocumentShell", () => ({ DocumentShell: ({ children }: { children: React.ReactNode }) => <main>{children}</main> }));
 vi.mock("../notes/TiptapEditor", () => ({
-  TiptapEditor: ({ onChange, readOnly }: { onChange: (next: { blocks: { schema_version: 2; editor: "blocknote"; blocks: unknown[] }; plainText: string }) => void; readOnly: boolean }) => <button type="button" disabled={readOnly} onClick={() => onChange({ blocks: { schema_version: 2, editor: "blocknote", blocks: [{ id: "b1", type: "paragraph", props: {}, content: [{ type: "text", text: "已编辑" }], children: [] }] }, plainText: "已编辑" })}>模拟编辑</button>,
+  TiptapEditor: ({ blocks, onChange, readOnly }: { blocks: unknown; onChange: (next: { blocks: { schema_version: 2; editor: "blocknote"; blocks: unknown[] }; plainText: string }) => void; readOnly: boolean }) => { editorInputs(blocks); return <button type="button" disabled={readOnly} onClick={() => onChange({ blocks: { schema_version: 2, editor: "blocknote", blocks: [{ id: "b1", type: "paragraph", props: {}, content: [{ type: "text", text: "已编辑" }], children: [] }] }, plainText: "已编辑" })}>模拟编辑</button>; },
 }));
 vi.mock("./queries", () => ({
   useNote: () => ({ data: { id: "018ff7c4-a5b6-7000-8000-000000000001", notebook_id: "018ff7c4-a5b6-7000-8000-000000000004", title: "产品计划" }, isError: false }),
@@ -59,6 +60,7 @@ vi.mock("./queries", () => ({
 
 describe("DocumentEditorPage", () => {
   beforeEach(() => {
+    editorInputs.mockClear();
     updateNote.mockReset();
     updateNote.mockResolvedValue({});
     saveContent.mockReset();
@@ -162,4 +164,21 @@ describe("DocumentEditorPage", () => {
 
     expect((titleInput as HTMLInputElement).value).toBe("新版本草稿");
   });
+});
+
+
+it("opens a cached destination without first mounting the previous document", async () => {
+  act(() => authStore.setState(ownerSession));
+  render(<MemoryRouter initialEntries={["/documents/first"]}><Link to="/documents/second">Next document</Link><Routes><Route path="/documents/:noteId" element={<DocumentEditorPage />} /></Routes></MemoryRouter>);
+  await screen.findByRole("button", { name: "模拟编辑" });
+  editorInputs.mockClear();
+  contentFixture.current = {
+    ...contentFixture.current,
+    note_id: "second",
+    blocks: { schema_version: 1, editor: "tiptap", doc: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Destination body" }] }] } },
+  };
+  await act(async () => { fireEvent.click(screen.getByRole("link", { name: "Next document" })); });
+  expect(editorInputs.mock.calls.length).toBeGreaterThan(0);
+  for (const [blocks] of editorInputs.mock.calls) expect(blocks.blocks[0].content).toEqual([{ type: "text", text: "Destination body", styles: {} }]);
+  act(() => authStore.getState().clearSession());
 });

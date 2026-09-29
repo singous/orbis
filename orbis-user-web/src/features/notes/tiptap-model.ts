@@ -1,4 +1,5 @@
 import type { JSONContent } from "@tiptap/react";
+import { Node as ProseMirrorNode } from "@tiptap/pm/model";
 
 import { documentBlockDefinition } from "../content/document-components";
 import { canonicalJSON, newBlockId, type NoteBlocksV2, type OrbisBlock, type OrbisInline, type OrbisTableCell, type OrbisTableContent } from "./block-model";
@@ -318,7 +319,24 @@ export function toTiptapDocument(value: NoteBlocksV2): JSONContent {
   return { type: "doc", content: blocksToNodes(value.blocks) };
 }
 
-export function fromTiptapDocument(value: JSONContent): NoteBlocksV2 {
-  const blocks = nodesToBlocks(value.content ?? []);
+// ProseMirror nodes are immutable. Retain converted siblings across edits so
+// typing in one paragraph does not clone and compare every table/code block.
+// Weak keys release the cached values when the document/history releases them.
+const savedBlocks = new WeakMap<ProseMirrorNode, OrbisBlock[]>();
+
+export function fromTiptapDocument(value: JSONContent | ProseMirrorNode): NoteBlocksV2 {
+  const blocks: OrbisBlock[] = [];
+  if (value instanceof ProseMirrorNode) {
+    value.forEach((node) => {
+      let saved = savedBlocks.get(node);
+      if (!saved) {
+        saved = nodeToBlock(node.toJSON());
+        savedBlocks.set(node, saved);
+      }
+      blocks.push(...saved);
+    });
+  } else {
+    blocks.push(...nodesToBlocks(value.content ?? []));
+  }
   return { schema_version: 2, editor: "blocknote", blocks: blocks.length ? blocks : [block(undefined, "paragraph", {}, [])] };
 }
