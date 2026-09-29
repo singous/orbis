@@ -173,11 +173,11 @@ function writeEvent(event: ClipboardEvent, data: Serialized) {
   event.clipboardData.setData(BLOCK_CLIPBOARD_MIME,data.structured);
 }
 function finishCopy(editor:Editor,ids:string[],data:Serialized,cut:boolean,source:Editor['state']['doc']):BlockClipboardResult {
-  if(!cut)return {ok:true,selectedIds:ids};
+  if(!cut)return {ok:true,selectedIds:ids,message:"已复制块"};
   if(editor.isDestroyed||editor.state.doc!==source)return {ok:false,message:'内容已变化，已复制但未剪切'};
   const result=executeBlockCommand(editor,ids,{type:'delete'});
   if(result.ok)cutSessions.set(editor,{token:data.payload.cutToken!,blocks:JSON.stringify(data.payload.blocks)});
-  return result;
+  return result.ok ? {...result,message:"已剪切块"} : result;
 }
 export async function copyBlocks(editor: Editor, ids: string[], cut = false): Promise<BlockClipboardResult> {
   if(cut&&!editor.isEditable)return {ok:false,message:'只读文档不能剪切'};
@@ -223,7 +223,7 @@ function applyClipboardPayload(editor: Editor, ids: string[], payload: Payload):
   const incoming=[...indexBlocks(payload.blocks).keys()];
   const preserveIds=!!session&&session.token===payload.cutToken&&session.blocks===JSON.stringify(payload.blocks)&&incoming.every(id=>!existing.has(id));
   const result=executeBlockCommand(editor,targets,{type:'paste',blocks:payload.blocks,side:'after',preserveIds});
-  if(result.ok&&preserveIds)cutSessions.delete(editor);return result;
+  if(result.ok&&preserveIds)cutSessions.delete(editor);return result.ok ? {...result,message:"已粘贴块"} : result;
 }
 const PASTE_READ_FALLBACK = '当前浏览器无法读取系统剪贴板。请在正文中长按并选择“粘贴”，或聚焦正文后按 Ctrl+V / ⌘+V。';
 export async function pasteBlocks(editor: Editor, ids?: string[]): Promise<BlockClipboardResult> {
