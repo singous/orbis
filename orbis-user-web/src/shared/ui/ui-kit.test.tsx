@@ -175,3 +175,10 @@ describe("NavItem", () => {
     expect(screen.getByText("即将上线")).toBeInTheDocument();
   });
 });
+
+it('preserves selected state for controls with tab and option roles', () => {
+  const { rerender } = render(<ActionButton role="tab" aria-selected>Python</ActionButton>);
+  expect(screen.getByRole('tab', { name: 'Python' })).toHaveAttribute('aria-selected', 'true');
+  rerender(<ActionButton role="option" aria-selected={false}>Paragraph</ActionButton>);
+  expect(screen.getByRole('option', { name: 'Paragraph' })).toHaveAttribute('aria-selected', 'false');
+});

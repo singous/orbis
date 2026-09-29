@@ -74,13 +74,20 @@ function ComponentView({ node, editor, updateAttributes, getPos }: NodeViewProps
   const title = documentBlockTitle({ type: kind, props });
   const CalloutIcon = ({ info: Info, success: CircleCheck, warning: TriangleAlert, danger: OctagonAlert } as Record<string, typeof Info>)[String(props.tone)] || Info;
   const Icon = kind === "callout" ? CalloutIcon : kind === "steps" || kind === "step" ? ListOrdered : kind === "codeGroup" ? Code2 : kind === "tabs" || kind === "tab" ? Layers : BookOpen;
-  const [activePane, setActivePane] = useState(0);
+  const [selectedPaneId, setSelectedPaneId] = useState<string | null>(() => node.firstChild?.attrs.orbisId ?? null);
   const [editingProps, setEditingProps] = useState(false);
   const paneShell = useRef<HTMLDivElement>(null);
   const switchable = kind === "tabs" || kind === "codeGroup";
+  const paneKeys = switchable ? Array.from({ length: node.childCount }, (_, index) => String(node.child(index).attrs.orbisId ?? `pane-${index}`)) : [];
+  const activePane = Math.max(0, paneKeys.indexOf(selectedPaneId ?? ""));
+  const activePaneId = paneKeys[activePane] ?? null;
+  useEffect(() => {
+    if (switchable && selectedPaneId !== activePaneId) setSelectedPaneId(activePaneId);
+  }, [switchable, selectedPaneId, activePaneId]);
   const paneLabels = switchable ? Array.from({ length: node.childCount }, (_, index) => {
     const child = node.child(index);
-    return kind === "codeGroup" ? CODE_LANGUAGES[String(child.attrs.language ?? "text")] || String(child.attrs.language ?? "text") : String(child.attrs.orbisProps?.title ?? `标签 ${index + 1}`);
+    const code = child.type.name === "orbisContainer" ? child.firstChild ?? child : child;
+    return kind === "codeGroup" ? CODE_LANGUAGES[String(code.attrs.language ?? "text")] || String(code.attrs.language ?? "text") : String(child.attrs.orbisProps?.title ?? `标签 ${index + 1}`);
   }) : [];
   useEffect(() => {
     if (!switchable || !paneShell.current) return;
@@ -123,7 +130,7 @@ function ComponentView({ node, editor, updateAttributes, getPos }: NodeViewProps
       })}
       {GROUP_CHILD[kind] ? <ActionButton type="button" onClick={addChild}><Plus size={13} aria-hidden="true" />添加{kind === "codeGroup" ? "代码示例" : DOCUMENT_BLOCKS[GROUP_CHILD[kind] as DocumentBlockKind].label}</ActionButton> : null}
     </div> : null}
-    {switchable ? <div role="tablist" aria-label={kind === "tabs" ? "文档标签" : "代码语言"} className="doc-editor-panes" contentEditable={false}>{paneLabels.map((label, index) => <ActionButton key={index} role="tab" aria-selected={index === activePane} type="button" onClick={() => setActivePane(index)}>{label}</ActionButton>)}</div> : null}
+    {switchable ? <div role="tablist" aria-label={kind === "tabs" ? "文档标签" : "代码语言"} className="doc-editor-panes" contentEditable={false}>{paneLabels.map((label, index) => <ActionButton key={paneKeys[index]} role="tab" aria-selected={index === activePane} type="button" onClick={() => setSelectedPaneId(paneKeys[index])}>{label}</ActionButton>)}</div> : null}
     <div ref={paneShell} className="doc-editor-body"><NodeViewContent as="div" className="doc-editor-content" /></div>
   </NodeViewWrapper>;
 }

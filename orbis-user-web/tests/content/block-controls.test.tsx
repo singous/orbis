@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it } from 'vitest';
 import { TiptapEditor } from '../../src/features/notes/TiptapEditor';
 import type { NoteBlocksV2 } from '../../src/features/notes/block-model';
@@ -42,4 +42,18 @@ it('closes the block menu before a second Escape exits block selection',async()=
  expect(document.activeElement).toBe(editable);
  fireEvent.keyDown(editable,{key:'Escape'});
  expect(container.querySelector('[data-orbis-selected="true"]')).toBeNull();
+});
+
+it('does not delete an outer block when an embedded component button has focus', async () => {
+ const data:NoteBlocksV2={...blocks,blocks:[{id:'card',type:'card',props:{title:'Interactive card'},content:[],children:[blocks.blocks[0]]}]};
+ const {container}=render(<TiptapEditor blocks={data} onChange={()=>{}}/>);
+ await screen.findByText('First');
+ const editor=(container.querySelector('.ProseMirror') as HTMLElement & {editor:import('@tiptap/core').Editor}).editor;
+ const {selectBlock}=await import('../../src/features/notes/blocks/block-selection');
+ const original=editor.state.doc;
+ act(()=>selectBlock(editor,'card'));
+ const button=screen.getByRole('button',{name:'编辑卡片属性'});
+ act(()=>button.focus());fireEvent.keyDown(button,{key:'Delete'});
+ expect(editor.state.doc).toBe(original);
+ expect(screen.getByText('First')).toBeVisible();
 });

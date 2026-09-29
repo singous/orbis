@@ -1,4 +1,6 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { EditorContent } from "@tiptap/react";
+import { executeBlockCommand } from "../../src/features/notes/blocks/block-commands";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { Editor, getSchema } from "@tiptap/core";
 import { afterEach, expect, it } from "vitest";
 import { ContentRenderer } from "../../src/features/content/ContentRenderer";
@@ -66,4 +68,55 @@ it("round trips nested group structure through safe clipboard HTML", () => {
     expect(v2ToMarkdown(result.blocks)).toBe(v2ToMarkdown(value.blocks));
     expect(source.getHTML()).not.toContain("orbisOriginal");
   } finally { source.destroy(); pasted.destroy(); }
+});
+
+const nestedCode: NoteBlocksV2 = { schema_version: 2, editor: "blocknote", blocks: [block("codes", "codeGroup", [
+  { ...block("python", "codeBlock", [block("code-child", "paragraph", [], "Nested explanation")]), content: "print(1)", props: { language: "python" } },
+  { ...block("javascript", "codeBlock"), content: "console.log(2)", props: { language: "javascript" } },
+])] };
+
+it("labels a code group pane from the wrapped code head language", async () => {
+  render(<TiptapEditor blocks={nestedCode} onChange={() => {}} />);
+  expect(await screen.findByRole("tab", { name: "Python" })).toBeInTheDocument();
+  expect(screen.getByRole("tab", { name: "JavaScript" })).toBeInTheDocument();
+});
+
+it("ejects a natively converted wrapped code head from its constrained group without losing children", () => {
+  const editor = new Editor({ extensions: tiptapExtensions, content: toTiptapDocument(nestedCode) });
+  try {
+    let position = 0;
+    editor.state.doc.descendants((node, pos) => { if (node.type.name === "codeBlock" && node.attrs.language === "python") position = pos + 1; });
+    editor.commands.setTextSelection(position);
+    expect(editor.commands.setParagraph()).toBe(true);
+    const saved = fromTiptapDocument(editor.getJSON());
+    expect(saved.blocks.map((item) => item.type)).toEqual(["paragraph", "codeGroup"]);
+    expect(saved.blocks[0]).toMatchObject({ id: "python", children: [{ id: "code-child", type: "paragraph" }] });
+    expect(saved.blocks[1].children.map((item) => item.id)).toEqual(["javascript"]);
+    expect(extractPlainTextV2(saved.blocks)).toBe("print(1)\nNested explanation\nconsole.log(2)");
+    expect(fromTiptapDocument(toTiptapDocument(saved))).toEqual(saved);
+  } finally { editor.destroy(); }
+});
+
+
+it.each(["tabs", "codeGroup"])("keeps the selected %s pane by ID across deletion and reorder", async (kind) => {
+  const panes = ["First", "Second", "Third"].map((title, index) => kind === "tabs"
+    ? { ...block(`pane-${index}`, "tab", [block(`text-${index}`, "paragraph", [], `${title} body`)]), props: { title } }
+    : { ...block(`pane-${index}`, "codeBlock", [], `${title} body`), props: { language: ["python", "javascript", "bash"][index] } });
+  const document: NoteBlocksV2 = { schema_version: 2, editor: "blocknote", blocks: [block("panes", kind, panes)] };
+  const editor = new Editor({ extensions: tiptapExtensions, content: toTiptapDocument(document) });
+  render(<EditorContent editor={editor} />);
+  const labels = kind === "tabs" ? ["First", "Second", "Third"] : ["Python", "JavaScript", "Bash"];
+  try {
+    fireEvent.click(await screen.findByRole("tab", { name: labels[1] }));
+    expect(screen.getByRole("tab", { name: labels[1] })).toHaveAttribute("aria-selected", "true");
+    act(() => { expect(executeBlockCommand(editor, ["pane-0"], { type: "delete" }).ok).toBe(true); });
+    expect(screen.getByRole("tab", { name: labels[1] })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByText((_, element) => element?.tagName === (kind === "tabs" ? "P" : "CODE") && element.textContent === "Second body")).toBeVisible();
+    act(() => { expect(executeBlockCommand(editor, ["pane-1"], { type: "down" }).ok).toBe(true); });
+    expect(screen.getByRole("tab", { name: labels[1] })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByText((_, element) => element?.tagName === (kind === "tabs" ? "P" : "CODE") && element.textContent === "Second body")).toBeVisible();
+    act(() => { expect(executeBlockCommand(editor, ["pane-1"], { type: "delete" }).ok).toBe(true); });
+    expect(screen.getByRole("tab", { name: labels[2] })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByText((_, element) => element?.tagName === (kind === "tabs" ? "P" : "CODE") && element.textContent === "Third body")).toBeVisible();
+  } finally { cleanup(); editor.destroy(); }
 });

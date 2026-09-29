@@ -39,7 +39,7 @@ export function selectBlock(editor: Editor, id: string, options: { shift?: boole
 }
 
 export function isEmbeddedInput(target: EventTarget | null) {
-  return target instanceof Element && Boolean(target.closest('input,textarea,select,[data-orbis-embedded-editor]'));
+  return target instanceof Element && Boolean(target.closest('input,textarea,select,button,a[href],[role=combobox],[role=tab],[data-orbis-embedded-editor]'));
 }
 
 export const OrbisBlockSelection = Extension.create({
