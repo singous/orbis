@@ -190,3 +190,32 @@ def test_static_public_html_keeps_supported_inline_colors_and_alignment():
     assert '<span style="color: #aabbcc"><strong>强调</strong></span>' in html
     table = {"type": "table", "props": {}, "content": {"type": "tableContent", "headerRows": 1, "rows": [{"cells": [{"type": "tableCell", "props": {"backgroundColor": "#f1faf4", "textAlignment": "center"}, "content": "兼容性"}]}]}, "children": []}
     assert '<th style="background-color: #f1faf4; text-align: center">兼容性</th>' in renderer.block(table, False, (1,))
+
+
+def test_transparent_groups_preserve_nested_content_and_export_without_chrome():
+    first = block("paragraph", text="First")
+    first["id"] = "first"
+    heading = block("heading", props={"level": 2}, text="Heading")
+    heading["id"] = "heading"
+    last = block("paragraph", text="Last")
+    last["id"] = "last"
+    nested = block("group", children=[heading, last])
+    nested["id"] = "nested"
+    value = document(block("group", children=[first, nested]))
+    normalized = normalize_note_blocks(value)
+    assert normalized == value
+    assert normalize_note_blocks(normalized) == normalized
+    assert derive_plain_text(normalized) == "First\nHeading\nLast"
+    assert blocks_to_markdown(normalized) == blocks_to_markdown(document(first, heading, last))
+    public = public_note_blocks(normalized)
+    assert public["blocks"][0]["type"] == "group"
+    assert public["blocks"][0]["children"][1]["type"] == "group"
+    html = DocumentHtml("https://example.com", "Public").nodes(public["blocks"], False)
+    assert '<h2 id="heading-0-1-0"' in html
+    assert "<section" not in html and "<div" not in html
+    assert html.index("First") < html.index("Heading") < html.index("Last")
+
+
+def test_transparent_group_rejects_hidden_inline_content():
+    with pytest.raises(InvalidNoteContent):
+        normalize_note_blocks(document(block("group", text="Hidden")))

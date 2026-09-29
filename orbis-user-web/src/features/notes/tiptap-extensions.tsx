@@ -108,6 +108,7 @@ function ComponentView({ node, editor, updateAttributes, getPos }: NodeViewProps
     const content = toTiptapDocument({ schema_version: 2, editor: "blocknote", blocks: [child] }).content?.[0];
     if (content) editor.chain().focus().insertContentAt(position + node.nodeSize - 1, content).run();
   }
+  if (kind === "group") return <NodeViewWrapper as="section" className="doc-editor-group" data-document-component="group"><NodeViewContent as="div" /></NodeViewWrapper>;
   return <NodeViewWrapper as="section" className={`doc-editor-block doc-editor-${kind}`} data-document-component={kind} data-tone={kind === "callout" ? String(props.tone ?? "info") : undefined} data-columns={kind === "cardGroup" ? String(props.columns ?? 2) : undefined}>
     {!readOnly ? <ActionButton type="button" className="doc-editor-settings" contentEditable={false} aria-label={`编辑${definition.label}属性`} aria-expanded={editingProps} onClick={() => setEditingProps((value) => !value)}><Settings2 size={14} aria-hidden="true" /></ActionButton> : null}
     {kind === "card" || kind === "callout" ? <div className="doc-editor-heading" contentEditable={false}><Icon size={kind === "card" ? 22 : 19} aria-hidden="true" /></div> : null}

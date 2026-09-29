@@ -438,6 +438,8 @@ class DocumentHtml:
                 else ""
             )
             return f"<figure{style}>{media}<figcaption>{label}</figcaption></figure>" + suffix
+        if kind == "group":
+            return children
         title = escape(str(props.get("title") or ""))
         if kind == "card":
             return (

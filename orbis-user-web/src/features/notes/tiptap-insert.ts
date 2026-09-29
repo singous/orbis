@@ -20,7 +20,7 @@ export function createDocumentBlock(kind: DocumentBlockKind | "codeBlock"): Orbi
       value.children[0].props.language = "python";
       value.children[1].props.language = "javascript";
     } else value.children.forEach((child, index) => { child.props.title = DOCUMENT_BLOCKS[childKind as DocumentBlockKind].label + ` ${index + 1}`; });
-  } else if (definition.content === "none") value.children = [paragraph()];
+  } else if (definition.content === "none" && kind !== "group") value.children = [paragraph()];
   return value;
 }
 
