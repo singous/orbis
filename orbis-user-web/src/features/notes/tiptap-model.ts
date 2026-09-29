@@ -229,7 +229,7 @@ function singleNode(value: OrbisBlock): StoredNode {
   ] }, value);
   if (value.type === "table") return tableToNode(value);
   if (value.type === "quote") return own({ type: "blockquote", attrs: meta, content: [
-    ...(typeof value.content === "string" ? value.content : Array.isArray(value.content) ? value.content : []).length ? [{ type: "paragraph", attrs: { orbisOwn: true }, content: inlineToNodes(value.content) }] : [],
+    ...((typeof value.content === "string" ? value.content : Array.isArray(value.content) ? value.content : []).length || !value.children.length) ? [{ type: "paragraph", attrs: { orbisOwn: true }, content: inlineToNodes(value.content) }] : [],
     ...blocksToNodes(value.children),
   ] }, value);
   const codeText = inlineToNodes(value.content).map((node) => node.type === "hardBreak" ? "\n" : node.text ?? "").join("");
