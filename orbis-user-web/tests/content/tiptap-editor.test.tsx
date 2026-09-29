@@ -40,7 +40,8 @@ it("reports conversion failures and retries the retained live document", async (
   render(<TiptapEditor blocks={initial} onChange={changed} onError={failed} />);
   await screen.findByText("已有正文");
   vi.spyOn(model, "fromTiptapDocument").mockImplementationOnce(() => { throw new Error("Conversion failure"); });
-  await userEvent.click(screen.getByRole("button", { name: "标题 1" }));
+  await userEvent.click(screen.getByRole("button", { name: /段落类型/ }));
+  await userEvent.click(screen.getByRole("option", { name: "标题 1", exact: true }));
   expect(await screen.findByRole("alert")).toHaveTextContent("正文暂未保存");
   expect(changed).not.toHaveBeenCalled();
   expect(failed).toHaveBeenCalledWith(expect.stringContaining("正文暂未保存"));
@@ -54,7 +55,8 @@ it("formats a stored paragraph through the real Tiptap React surface", async () 
   let latest = initial;
   const { container } = render(<TiptapEditor blocks={initial} onChange={({ blocks }) => { latest = blocks; }} />);
   await waitFor(() => expect(container.querySelector(".ProseMirror")).toBeInTheDocument());
-  await user.click(screen.getByRole("button", { name: "标题 1" }));
+  await user.click(screen.getByRole("button", { name: /段落类型/ }));
+  await user.click(screen.getByRole("option", { name: "标题 1", exact: true }));
   await waitFor(() => expect(latest.blocks[0].type).toBe("heading"));
   expect(latest.blocks[0].id).toBe("paragraph");
 });
@@ -120,7 +122,8 @@ it('applies restore of the initially opened revision after editing and saving', 
   const changed = vi.fn(({blocks}: { blocks: NoteBlocksV2 }) => { latest = blocks; });
   const {container, rerender} = render(<TiptapEditor blocks={initial} onChange={changed} />);
   await screen.findByText("已有正文");
-  await userEvent.click(screen.getByRole('button', { name: '标题 1' }));
+  await userEvent.click(screen.getByRole("button", { name: /段落类型/ }));
+  await userEvent.click(screen.getByRole("option", { name: "标题 1", exact: true }));
   expect(latest.blocks[0].type).toBe('heading');
   rerender(<TiptapEditor blocks={latest} onChange={changed} />);
   rerender(<TiptapEditor blocks={latest} readOnly onChange={changed} />);

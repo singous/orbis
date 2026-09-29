@@ -5,12 +5,15 @@ import { useEffect, useState } from "react";
 import { useStore } from "zustand";
 
 import { authStore } from "../../shared/auth/auth-store";
+import { EditorToolbarFrame } from "./EditorToolbarHost";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
 import { readDocumentContextOpen, writeDocumentContextOpen } from "./document-context-state";
 
 type DocumentShellProps = {
   children: ReactNode;
   toolbar?: ReactNode;
+  breadcrumb?: ReactNode;
+  editorLayout?: boolean;
   contextPanel?: ReactNode;
   contextOpen?: boolean;
   onOpenContext?: () => void;
@@ -18,7 +21,7 @@ type DocumentShellProps = {
   sectionMenu?: ReactNode;
 };
 
-export function DocumentShell({ children, toolbar, contextPanel, contextOpen, onOpenContext, sectionMenu }: DocumentShellProps) {
+export function DocumentShell({ children, toolbar, breadcrumb, editorLayout = false, contextPanel, contextOpen, onOpenContext, sectionMenu }: DocumentShellProps) {
   const workspaceId = useStore(authStore, (state) => state.workspace?.id);
   const [storedContextOpen, setStoredContextOpen] = useState(() => workspaceId ? readDocumentContextOpen(workspaceId) : true);
   const isContextOpen = contextOpen ?? storedContextOpen;
@@ -36,11 +39,13 @@ export function DocumentShell({ children, toolbar, contextPanel, contextOpen, on
     <WorkspaceShell
       sectionMenu={sectionMenu}
       toolbar={toolbar}
+      sectionTitle={breadcrumb}
+      contentLayout={editorLayout ? "document" : "page"}
       contextPanel={contextPanel ? <div className="document-context-shell">{contextPanel}{isContextOpen ? <ActionButton type="button" className="document-context-close" aria-label="收起上下文面板" onClick={() => setContextOpen(false)}><PanelRightClose aria-hidden="true" size={16} /></ActionButton> : null}</div> : undefined}
       contextOpen={isContextOpen}
       onOpenContext={isContextOpen ? undefined : () => { setContextOpen(true); onOpenContext?.(); }}
     >
-      {children}
+      {editorLayout ? <EditorToolbarFrame>{children}</EditorToolbarFrame> : children}
     </WorkspaceShell>
   );
 }

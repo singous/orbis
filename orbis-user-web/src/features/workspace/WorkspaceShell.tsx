@@ -20,6 +20,7 @@ export type WorkspaceShellProps = {
   sectionTitle?: ReactNode;
   sectionMenu?: ReactNode;
   toolbar?: ReactNode;
+  contentLayout?: "page" | "document";
   contextPanel?: ReactNode;
   contextOpen?: boolean;
   onOpenContext?: () => void;
@@ -41,7 +42,7 @@ function useCompactNavigation(): boolean {
   return compact;
 }
 
-export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, contextPanel, contextOpen = true, onOpenContext }: WorkspaceShellProps) {
+export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, contentLayout = "page", contextPanel, contextOpen = true, onOpenContext }: WorkspaceShellProps) {
   const { pathname } = useLocation();
   const area = resolveWorkspaceArea(pathname);
   const showFunctionSidebar = area.showFunctionSidebar;
@@ -139,7 +140,7 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
         </div>
         {sidebarResizeEnabled ? <SidebarResizeHandle {...sidebarResize} /> : null}
         <section className={`workspace-main-area${contextPanel && contextOpen ? " has-context" : ""}`} aria-label="主工作区">
-          <section className="workspace-content" inert={drawerOpen ? true : undefined}>
+          <section className={`workspace-content${contentLayout === "document" ? " workspace-document-content" : ""}`} inert={drawerOpen ? true : undefined}>
             {showToolbar ? (
               <header className="workspace-toolbar">
                 <ActionButton ref={menuTriggerRef} type="button" aria-label="打开主导航" aria-expanded={mainNavigationOpen} className="workspace-mobile-drawer-control" onClick={() => { setMainNavigationOpen(true); setDocumentContextOpen(false); }}><Menu aria-hidden="true" size={18} /></ActionButton>

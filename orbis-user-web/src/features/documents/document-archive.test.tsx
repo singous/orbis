@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -40,6 +41,12 @@ function showEditor() {
       </MemoryRouter>
     </QueryClientProvider>,
   );
+}
+
+async function archiveFromMenu() {
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "更多文档操作" }));
+  await user.click(await screen.findByRole("menuitem", { name: "归档文档" }));
 }
 
 function deferred() {
@@ -88,7 +95,7 @@ describe("archiving from the editor", () => {
     const editor = await screen.findByLabelText("编辑正文");
     fireEvent.change(screen.getByLabelText("文档标题"), { target: { value: "归档前标题" } });
     fireEvent.change(editor, { target: { value: "归档前正文" } });
-    fireEvent.click(screen.getByRole("button", { name: "归档文档" }));
+    await archiveFromMenu();
 
     await screen.findByRole("heading", { name: "笔记本" });
     expect(stored.note).toMatchObject({ status: "archived", title: "归档前标题" });
@@ -102,8 +109,8 @@ describe("archiving from the editor", () => {
     showEditor();
     const editor = await screen.findByLabelText("编辑正文");
     fireEvent.change(editor, { target: { value: "保存中正文" } });
-    const archive = screen.getByRole("button", { name: "归档文档" });
-    fireEvent.click(archive);
+    const archive = screen.getByRole("button", { name: "更多文档操作" });
+    await archiveFromMenu();
     await waitFor(() => expect(requests.some((request) => request.method === "PUT")).toBe(true));
     expect(requests.some((request) => request.method === "POST")).toBe(false);
     expect(editor).toHaveAttribute("readonly");
@@ -112,6 +119,7 @@ describe("archiving from the editor", () => {
     expect(screen.getByRole("button", { name: "评论与历史" })).toBeDisabled();
     fireEvent.change(editor, { target: { value: "归档时不应接受的编辑" } });
     fireEvent.click(archive);
+    expect(screen.queryByRole("menuitem", { name: "归档文档" })).not.toBeInTheDocument();
     await act(async () => { save.resolve(); });
     await screen.findByRole("heading", { name: "笔记本" });
     expect(stored.content.plain_text).toBe("保存中正文");
@@ -123,12 +131,12 @@ describe("archiving from the editor", () => {
     showEditor();
     const editor = await screen.findByLabelText("编辑正文");
     fireEvent.change(editor, { target: { value: "需要保留的草稿" } });
-    fireEvent.click(screen.getByRole("button", { name: "归档文档" }));
+    await archiveFromMenu();
     await screen.findByText(saveStatus === 409 ? "检测到其他窗口的更新" : "自动保存失败");
     expect(stored.note.status).toBe("active");
     expect(screen.getByLabelText("编辑正文")).toHaveValue("需要保留的草稿");
     expect(screen.getByLabelText("编辑正文")).not.toHaveAttribute("readonly");
-    fireEvent.click(screen.getByRole("button", { name: "归档文档" }));
+    await archiveFromMenu();
     expect(requests.filter((request) => request.method === "PUT")).toHaveLength(1);
     expect(requests.some((request) => request.method === "POST")).toBe(false);
   });
@@ -141,7 +149,7 @@ describe("archiving from the editor", () => {
     fireEvent.change(editor, { target: { value: "第一版正文" } });
     await waitFor(() => expect(requests.some((request) => request.method === "PUT")).toBe(true));
     fireEvent.change(editor, { target: { value: "归档时的最新正文" } });
-    fireEvent.click(screen.getByRole("button", { name: "归档文档" }));
+    await archiveFromMenu();
     expect(requests.some((request) => request.method === "POST")).toBe(false);
     await act(async () => { save.resolve(); });
     await screen.findByRole("heading", { name: "笔记本" });
@@ -155,14 +163,14 @@ describe("archiving from the editor", () => {
     showEditor();
     const editor = await screen.findByLabelText("编辑正文");
     fireEvent.change(editor, { target: { value: "已保存但未归档" } });
-    fireEvent.click(screen.getByRole("button", { name: "归档文档" }));
+    await archiveFromMenu();
     expect(await screen.findByRole("alert")).toHaveTextContent("归档请求失败");
     expect(stored.note.status).toBe("active");
     expect(stored.content.plain_text).toBe("已保存但未归档");
     expect(editor).not.toHaveAttribute("readonly");
     options.archiveStatus = 0;
     fireEvent.change(editor, { target: { value: "重试归档前再编辑" } });
-    fireEvent.click(screen.getByRole("button", { name: "归档文档" }));
+    await archiveFromMenu();
     await screen.findByRole("heading", { name: "笔记本" });
     expect(stored.content.plain_text).toBe("重试归档前再编辑");
     expect(stored.note.status).toBe("archived");
@@ -175,7 +183,7 @@ describe("archiving from the editor", () => {
     showEditor();
     const editor = await screen.findByLabelText("编辑正文");
     fireEvent.change(editor, { target: { value: "离开前草稿" } });
-    fireEvent.click(screen.getByRole("button", { name: "归档文档" }));
+    await archiveFromMenu();
     await waitFor(() => expect(requests.some((request) => request.method === "PUT")).toBe(true));
     fireEvent.click(screen.getByRole("link", { name: "离开文档" }));
     await act(async () => { save.resolve(); });
@@ -190,7 +198,7 @@ describe("archiving from the editor", () => {
     const { stored, requests } = archiveServer({ archiveGate: archive.promise });
     showEditor();
     await screen.findByLabelText("编辑正文");
-    fireEvent.click(screen.getByRole("button", { name: "归档文档" }));
+    await archiveFromMenu();
     await waitFor(() => expect(requests.some((request) => request.method === "POST")).toBe(true));
     fireEvent.click(screen.getByRole("link", { name: "离开文档" }));
     await act(async () => { archive.resolve(); });

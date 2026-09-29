@@ -201,7 +201,8 @@ test("personal writing, team discussion and a versioned documentation site work 
   await archiveEditor.press("ControlOrMeta+End");
   await archiveEditor.press("Enter");
   await archiveEditor.pressSequentially("归档前的最后修改。");
-  await page.getByRole("button", { name: "归档文档", exact: true }).click();
+  await page.getByRole("button", { name: "更多文档操作", exact: true }).click();
+  await page.getByRole("menuitem", { name: "归档文档", exact: true }).click();
   await expect(page).toHaveURL(/\/collections\//);
   await page.goto("/documents/archive");
   await page.getByRole("button", { name: "恢复 欢迎使用 Orbis", exact: true }).click();
