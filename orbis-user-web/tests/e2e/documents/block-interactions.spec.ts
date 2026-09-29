@@ -77,3 +77,14 @@ test('block clipboard copies rich children across documents and block links loca
  await page.goto(`/documents/${note.id}#block-other`);
  await expect(page.locator('[data-orbis-target="true"]')).toHaveText('Another block');
 });
+
+test('legacy block links survive reload without rewriting the stored document',async({page,request})=>{
+ const {note,headers,read}=await prepare(page,request);
+ expect((await request.put(`${api}/notes/${note.id}/content`,{headers,data:{expected_version:2,blocks:{schema_version:1,editor:'tiptap',doc:{type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'Legacy block target'}]}]}}}})).ok()).toBeTruthy();
+ await page.reload();
+ const target=page.locator('.ProseMirror > p');await expect(target).toHaveText('Legacy block target');
+ const id=await target.getAttribute('data-orbis-block-id');expect(id).toMatch(/^legacy-/);
+ await page.goto(`/documents/${note.id}#block-${id}`);
+ await expect(page.locator('[data-orbis-target="true"]')).toHaveText('Legacy block target');
+ const stored=await read();expect(stored.blocks.schema_version).toBe(1);expect(stored.content_version).toBe(3);
+});

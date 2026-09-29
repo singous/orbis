@@ -12,10 +12,11 @@ import { ApiError } from "../../shared/api/api-client";
 import { authStore } from "../../shared/auth/auth-store";
 import { Button } from "../../shared/ui/Button";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
-import { extractPlainTextV2, toV2, v2ToMarkdown, type NoteBlocksV2 } from "../notes/block-model";
+import { extractPlainTextV2, v2ToMarkdown, type NoteBlocksV2 } from "../notes/block-model";
 import type { RestoreSavedRevision } from "../collaboration/DocumentCollaborationPanel";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { AutosaveCoordinator, type AutosaveState } from "./autosave";
+import { normalizeEditorBlocks } from "./editor-blocks";
 import { DocumentShell } from "./DocumentShell";
 import { NotebookSectionMenu } from "./NotebookSectionMenu";
 
@@ -132,7 +133,7 @@ export function DocumentEditorPage() {
       content.content_version <= saved.version;
     if (isOwnOrStaleEcho) return;
     hydratedNoteRef.current = noteId;
-    const initial = { title: note.title, blocks: toV2(content.blocks), version: content.content_version };
+    const initial = { title: note.title, blocks: normalizeEditorBlocks(noteId, content.blocks), version: content.content_version };
     setDraft(initial);
     coordinatorRef.current?.dispose(false);
     const coordinator = new AutosaveCoordinator<EditorDraft>({
@@ -216,7 +217,7 @@ export function DocumentEditorPage() {
     coordinator?.dispose(false);
     const [noteResult, contentResult] = await Promise.all([noteQuery.refetch(), contentQuery.refetch()]);
     if (coordinatorRef.current !== coordinator || !noteResult.data || !contentResult.data || noteResult.error || contentResult.error) return;
-    const next = { title: noteResult.data.title, blocks: toV2(contentResult.data.blocks), version: contentResult.data.content_version };
+    const next = { title: noteResult.data.title, blocks: normalizeEditorBlocks(noteId, contentResult.data.blocks), version: contentResult.data.content_version };
     coordinatorRef.current?.hydrate(next);
     setDraft(next);
     setRestorationConflict(false);
@@ -245,7 +246,7 @@ export function DocumentEditorPage() {
       const saved = await flushCurrentDraft(coordinator);
       const restored = await restore(saved.version);
       if (coordinatorRef.current !== coordinator) return;
-      const next = { ...saved, blocks: toV2(restored.blocks), version: restored.content_version };
+      const next = { ...saved, blocks: normalizeEditorBlocks(noteId, restored.blocks), version: restored.content_version };
       coordinator.hydrate(next);
       setDraft(next);
       setRestorationConflict(false);
