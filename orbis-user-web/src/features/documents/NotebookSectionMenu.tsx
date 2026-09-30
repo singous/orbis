@@ -16,8 +16,6 @@ export type NotebookSectionMenuProps = { notebookId: string; activeNoteId?: stri
 const NOTEBOOK_SIDEBAR_PREFERENCES = {
   widthKey: "orbis.notebookDirectoryWidth",
   collapsedKey: "orbis.notebookDirectoryCollapsed",
-  defaultWidth: 260,
-  maximumWidth: 420,
 };
 
 /** Notebook-specific slots contain no layout or collapse state. */

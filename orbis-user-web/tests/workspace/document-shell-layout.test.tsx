@@ -18,7 +18,7 @@ const notebook: WorkspaceSidebarConfig = {
   collapseLabel: "收起笔记本目录",
   expandLabel: "展开笔记本目录",
   resizeLabel: "调整笔记本目录宽度",
-  preferences: { widthKey: "orbis.notebookDirectoryWidth", collapsedKey: "orbis.notebookDirectoryCollapsed", defaultWidth: 260, maximumWidth: 420 },
+  preferences: { widthKey: "orbis.notebookDirectoryWidth", collapsedKey: "orbis.notebookDirectoryCollapsed" },
 };
 
 beforeEach(() => { localStorage.clear(); });
@@ -65,6 +65,8 @@ it("uses the same animation state and clears it after rapid toggles", () => {
   fireEvent.click(screen.getByRole("button", { name: "展开笔记本目录" }));
   expect(view.container.querySelector(".workspace-shell")).toHaveClass("sidebar-animating");
   act(() => { vi.advanceTimersByTime(300); });
+  expect(view.container.querySelector(".workspace-shell")).toHaveClass("sidebar-animating");
+  act(() => { vi.advanceTimersByTime(200); });
   expect(view.container.querySelector(".workspace-shell")).not.toHaveClass("sidebar-animating");
 });
 it("keeps global creation in the rail and traps then restores focus in the mobile drawer", () => {

@@ -22,15 +22,13 @@ function readPreferredWidth(key: string, maximum: number): number | null {
 
 export function useSidebarResize(gridRef: RefObject<HTMLDivElement | null>, enabled: boolean, hasContext: boolean, preferences: SidebarPreferences = DEFAULT_SIDEBAR_PREFERENCES) {
   const key = preferences.widthKey;
-  const maximumWidth = preferences.maximumWidth ?? SIDEBAR_MAX_WIDTH;
-  const defaultWidthOverride = preferences.defaultWidth;
-  const [stored, setStored] = useState(() => ({ key, width: readPreferredWidth(key, maximumWidth) }));
-  const preferredWidth = stored.key === key ? stored.width : readPreferredWidth(key, maximumWidth);
+  const [stored, setStored] = useState(() => ({ key, width: readPreferredWidth(key, SIDEBAR_MAX_WIDTH) }));
+  const preferredWidth = stored.key === key ? stored.width : readPreferredWidth(key, SIDEBAR_MAX_WIDTH);
   const setPreferredWidth = (width: number | null) => setStored({ key, width });
 
   useLayoutEffect(() => {
-    setStored(current => current.key === key ? current : { key, width: readPreferredWidth(key, maximumWidth) });
-  }, [key, maximumWidth]);
+    setStored(current => current.key === key ? current : { key, width: readPreferredWidth(key, SIDEBAR_MAX_WIDTH) });
+  }, [key]);
   const [bounds, setBounds] = useState({ defaultWidth: DEFAULT_SIDEBAR_WIDTH, maximum: SIDEBAR_MAX_WIDTH });
 
   useLayoutEffect(() => {
@@ -41,11 +39,11 @@ export function useSidebarResize(gridRef: RefObject<HTMLDivElement | null>, enab
       if (!grid || !grid.clientWidth) return;
       const styles = getComputedStyle(grid);
       const rail = parseFloat(styles.getPropertyValue("--rail-width")) || DEFAULT_RAIL_WIDTH;
-      const defaultWidth = defaultWidthOverride ?? (parseFloat(styles.getPropertyValue("--sidebar-default-width")) || DEFAULT_SIDEBAR_WIDTH);
+      const defaultWidth = parseFloat(styles.getPropertyValue("--sidebar-default-width")) || DEFAULT_SIDEBAR_WIDTH;
       const padding = parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight);
       const gap = parseFloat(styles.columnGap) || 0;
       const contextWidth = context?.getBoundingClientRect().width ?? 0;
-      const maximum = clampWidth(grid.clientWidth - padding - gap - rail - MAIN_MIN_WIDTH - contextWidth, maximumWidth);
+      const maximum = clampWidth(grid.clientWidth - padding - gap - rail - MAIN_MIN_WIDTH - contextWidth, SIDEBAR_MAX_WIDTH);
       setBounds((current) => current.defaultWidth === defaultWidth && current.maximum === maximum ? current : { defaultWidth, maximum });
     }
     measure();
@@ -54,10 +52,10 @@ export function useSidebarResize(gridRef: RefObject<HTMLDivElement | null>, enab
     if (context) observer.observe(context);
     window.addEventListener("resize", measure);
     return () => { observer.disconnect(); window.removeEventListener("resize", measure); };
-  }, [gridRef, enabled, hasContext, defaultWidthOverride, maximumWidth]);
+  }, [gridRef, enabled, hasContext]);
 
-  const maximum = Math.min(maximumWidth, bounds.maximum);
-  const width = clampWidth(preferredWidth ?? defaultWidthOverride ?? bounds.defaultWidth, maximum);
+  const maximum = bounds.maximum;
+  const width = clampWidth(preferredWidth ?? bounds.defaultWidth, maximum);
   const style: CSSProperties & { "--sidebar-width": string } = { "--sidebar-width": `${width}px` };
 
   function preview(next: number) { setPreferredWidth(clampWidth(next, maximum)); }

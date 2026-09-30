@@ -1,5 +1,5 @@
 import { ActionButton } from "../../shared/ui/ActionButton";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Menu, PanelRightOpen } from "../../shared/ui/icons";
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
@@ -10,7 +10,7 @@ import { SidebarResizeHandle } from "./SidebarResizeHandle";
 import { useSidebarResize } from "./use-sidebar-resize";
 import { WorkspaceSidebar } from "./WorkspaceSidebar";
 import { useWorkspaceSidebar } from "./use-workspace-sidebar";
-import { DEFAULT_SIDEBAR_PREFERENCES, type WorkspaceSidebarConfig } from "./workspace-sidebar-config";
+import { DEFAULT_SIDEBAR_PREFERENCES, SIDEBAR_MOTION_DURATION_MS, SIDEBAR_MOTION_EASING, type WorkspaceSidebarConfig } from "./workspace-sidebar-config";
 import { BusinessRail } from "./BusinessRail";
 import { RailCreateMenu } from "./RailCreateMenu";
 import { WorkspaceNavigation } from "./WorkspaceNavigation";
@@ -69,6 +69,11 @@ export function WorkspaceShell({ children, sectionTitle, sidebar, toolbar, conte
   const sidebarHidden = !showFunctionSidebar || (!compact && collapsed);
   const sidebarResizeEnabled = showFunctionSidebar && !compact && !collapsed;
   const sidebarResize = useSidebarResize(gridRef, sidebarResizeEnabled, Boolean(contextPanel && contextOpen), preferences);
+  const shellStyle: CSSProperties & { "--sidebar-transition-duration": string; "--sidebar-transition-easing": string } = {
+    ...sidebarResize.style,
+    "--sidebar-transition-duration": `${SIDEBAR_MOTION_DURATION_MS}ms`,
+    "--sidebar-transition-easing": SIDEBAR_MOTION_EASING,
+  };
   const showToolbar = compact || Boolean(sectionTitle) || Boolean(toolbar) || Boolean(contextPanel && onOpenContext);
 
   useEffect(() => {
@@ -104,7 +109,7 @@ export function WorkspaceShell({ children, sectionTitle, sidebar, toolbar, conte
   }
 
   return (
-    <main style={sidebarResize.style} className={`workspace-shell${showFunctionSidebar ? " has-section-menu" : " sidebar-unavailable"}${sidebarHidden ? " sidebar-collapsed" : ""}${animating ? " sidebar-animating" : ""}${mainNavigationOpen ? " main-navigation-open" : ""}${documentContextExpanded ? " document-context-drawer-open" : ""}`}>
+    <main style={shellStyle} className={`workspace-shell${showFunctionSidebar ? " has-section-menu" : " sidebar-unavailable"}${sidebarHidden ? " sidebar-collapsed" : ""}${animating ? " sidebar-animating" : ""}${mainNavigationOpen ? " main-navigation-open" : ""}${documentContextExpanded ? " document-context-drawer-open" : ""}`}>
       <WorkspaceTopbar disabled={drawerOpen} />
       <div ref={gridRef} className="workspace-shell-grid">
         {drawerOpen ? <ActionButton type="button" className="workspace-drawer-backdrop" aria-label={mainNavigationOpen ? "关闭主导航" : "关闭文档目录"} onClick={() => { setMainNavigationOpen(false); setDocumentContextOpen(false); }} /> : null}

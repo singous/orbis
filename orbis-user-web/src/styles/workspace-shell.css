@@ -50,7 +50,10 @@
 .rail-action { width: 38px; height: 38px; display: grid; place-items: center; flex: none; color: var(--text-secondary); transition: background 140ms, color 140ms; }
 .rail-action:hover { background: var(--surface-hover); color: var(--text-primary); }
 .rail-action.is-active { background: var(--surface-active); color: var(--text-primary); }
-.rail-expand { margin: -5px 0 5px; height: 27px; }
+/* A permanent slot lets the rail move with the sidebar instead of jumping. */
+.rail-expand-slot { width: 38px; height: 0; flex: none; overflow: hidden; opacity: 0; transition: height var(--sidebar-transition-duration) var(--sidebar-transition-easing), opacity var(--sidebar-transition-duration) ease; }
+.rail-expand-slot[data-visible="true"] { height: 27px; opacity: 1; }
+.rail-expand { margin: 0; height: 27px; }
 .rail-bottom { display: flex; flex-direction: column; gap: 10px; margin-top: auto; padding-top: 30px; }
 .workspace-sidebar { flex: 1; display: flex; min-width: 0; min-height: 0; flex-direction: column; }
 .workspace-sidebar[hidden] { display: none; }
@@ -198,12 +201,12 @@ html.workspace-resizing, html.workspace-resizing * { cursor: col-resize !importa
 
 /* Animate the layout track; keep sidebar text at its final width while clipping. */
 .workspace-shell { --navigation-frame-border-width: 1px; }
-.sidebar-animating .workspace-shell-grid { transition: grid-template-columns 240ms cubic-bezier(.2, .8, .2, 1); }
+.sidebar-animating .workspace-shell-grid { transition: grid-template-columns var(--sidebar-transition-duration) var(--sidebar-transition-easing); }
 .workspace-main-navigation { overflow: visible; }
-.workspace-sidebar { flex: 1; overflow: hidden; opacity: 1; visibility: visible; transition: opacity 160ms ease, visibility 0s; }
+.workspace-sidebar { flex: 1; overflow: hidden; opacity: 1; visibility: visible; transition: opacity var(--sidebar-transition-duration) ease, visibility 0s; }
 .workspace-sidebar-inner { display: flex; flex-direction: column; min-height: 0; height: 100%; width: calc(var(--sidebar-width) - 2 * var(--navigation-frame-border-width)); }
 .workspace-sidebar-body { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
-.sidebar-collapsed .workspace-sidebar { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 160ms ease, visibility 0s 240ms; }
+.sidebar-collapsed .workspace-sidebar { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity var(--sidebar-transition-duration) ease, visibility 0s var(--sidebar-transition-duration); }
 .workspace-resizing .sidebar-animating .workspace-shell-grid { transition: none; }
 .workspace-route-content { min-width: 0; background: inherit; animation: workspace-content-enter 180ms ease-out; }
 .workspace-route-content > .page-container { background: inherit; }
@@ -213,7 +216,7 @@ html.workspace-resizing, html.workspace-resizing * { cursor: col-resize !importa
   .workspace-sidebar-inner { width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .sidebar-animating .workspace-shell-grid, .workspace-sidebar, .sidebar-collapsed .workspace-sidebar { transition: none; }
+  .sidebar-animating .workspace-shell-grid, .workspace-sidebar, .sidebar-collapsed .workspace-sidebar, .rail-expand-slot { transition: none; }
   .workspace-route-content { animation: none; }
 }
 

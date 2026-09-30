@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
-import type { SidebarPreferences } from "./workspace-sidebar-config";
+import { SIDEBAR_MOTION_DURATION_MS, type SidebarPreferences } from "./workspace-sidebar-config";
 
-const SIDEBAR_TRANSITION_FALLBACK_MS = 280;
+const SIDEBAR_TRANSITION_SETTLE_BUFFER_MS = 40;
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
 function readCollapsed(key: string) {
@@ -38,7 +38,7 @@ export function useWorkspaceSidebar(preferences: SidebarPreferences, compact: bo
   useEffect(() => {
     if (!animating) return;
     // Also settle rapid reversals where transitionend is cancelled.
-    const timer = window.setTimeout(() => setAnimating(false), SIDEBAR_TRANSITION_FALLBACK_MS);
+    const timer = window.setTimeout(() => setAnimating(false), SIDEBAR_MOTION_DURATION_MS + SIDEBAR_TRANSITION_SETTLE_BUFFER_MS);
     return () => window.clearTimeout(timer);
   }, [collapsed, animating]);
 
