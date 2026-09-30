@@ -117,7 +117,7 @@ describe("WorkspaceShell", () => {
 
     const menu = screen.getByRole("navigation", { name: label });
     expect(within(menu).getAllByRole("link").map((link) => link.textContent)).toEqual(links);
-    expect(screen.queryByRole("button", { name: "新建资产" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "新建资产" })).toBeInTheDocument();
     expect(client.getQueryCache().getAll()).toHaveLength(0);
   });
 
@@ -164,12 +164,12 @@ describe("WorkspaceShell", () => {
     expect(screen.getByRole("region", { name: "主工作区" })).toHaveTextContent("文档内容");
   });
 
-  it("keeps document navigation alongside a supplied notebook directory", () => {
+  it("mounts the supplied notebook directory inside the navigation frame", () => {
     renderShell("/documents", undefined, <nav aria-label="测试功能"><Link to="/documents">文档概览</Link></nav>);
 
     expect(screen.getByRole("navigation", { name: "业务板块" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "测试功能" })).toBeInTheDocument();
-    expect(screen.getByRole("navigation", { name: "文档导航" })).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "文档导航" })).not.toBeInTheDocument();
     expect(screen.getByText("测试工作台")).toBeInTheDocument();
   });
 

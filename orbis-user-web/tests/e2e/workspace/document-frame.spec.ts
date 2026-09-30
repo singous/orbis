@@ -49,6 +49,21 @@ test('document overview shares the home frame and keeps real notebook content ne
     expect(cards[0].y).toBe(cards[1].y);
     expect(Math.abs(cards[1].right - (row!.x + row!.width))).toBeLessThan(2);
   }
+  for (const path of ['/home', '/documents', '/sites', '/knowledge', '/memory', '/settings/account']) {
+    await page.goto(path);
+    await expect(page.locator('.workspace-business-rail').getByRole('button', { name: '新建资产', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: '新建资产', exact: true })).toHaveCount(1);
+  }
+  await page.goto('/knowledge');
+  await page.locator('.workspace-business-rail').getByRole('button', { name: '新建资产', exact: true }).click();
+  await page.getByRole('menuitem', { name: '笔记本', exact: true }).click();
+  const notebookDialog = page.getByRole('dialog', { name: '新建笔记本', exact: true });
+  await expect(notebookDialog).toBeVisible();
+  await notebookDialog.getByLabel('笔记本名称', { exact: true }).fill('Global creation notebook');
+  await notebookDialog.getByRole('button', { name: '创建笔记本', exact: true }).click();
+  await expect(page).toHaveURL(/\/collections\/[^/]+$/);
+  await expect(page.locator('.notebook-home .page-title')).toHaveText('Global creation notebook');
+  await page.goto('/documents');
   const create = page.locator('.workspace-business-rail').getByRole('button', { name: '新建资产', exact: true });
   await expect(create).toBeVisible();
   await create.click();
@@ -58,6 +73,9 @@ test('document overview shares the home frame and keeps real notebook content ne
   await page.locator('.notebook-overview-card-link').first().click();
   const notebookHeader = page.locator('#notebook-directory .notebook-menu-header');
   await expect(notebookHeader.getByRole('button', { name: '新建文档', exact: true })).toBeEnabled();
+  await expect(page.locator('.workspace-main-navigation > #notebook-directory')).toBeVisible();
+  await expect(page.locator('.workspace-shell-grid > #notebook-directory')).toHaveCount(0);
+  expect(await page.locator('#notebook-directory').evaluate(element => getComputedStyle(element).boxShadow)).toBe('none');
   const columnBox = await page.locator('#notebook-directory').boundingBox();
   const titleBox = await notebookHeader.locator('.notebook-menu-title').boundingBox();
   expect(titleBox!.y - columnBox!.y).toBeLessThan(24);

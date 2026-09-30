@@ -51,6 +51,8 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
   const [directoryCollapsed, setDirectoryCollapsed] = useState(false);
   const workspace = useStore(authStore, (state) => state.workspace);
   const accessToken = useStore(authStore, (state) => state.accessToken);
+  const canCreate = Boolean(accessToken && canMutateWorkspaceContent(workspace));
+  const notebookNavigation = documentArea && Boolean(sectionMenu);
   const [mainNavigationOpen, setMainNavigationOpen] = useState(false);
   const [documentContextOpen, setDocumentContextOpen] = useState(false);
   const [sidebarAnimating, setSidebarAnimating] = useState(false);
@@ -58,6 +60,7 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
     try { return localStorage.getItem(sidebarStorageKey) === "1"; } catch { return false; }
   });
   const sidebarToggleRequested = useRef(false);
+  const directoryToggleRequested = useRef(false);
   const navigationRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const contextRef = useRef<HTMLElement>(null);
@@ -70,6 +73,18 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
   const sidebarResizeEnabled = showFunctionSidebar && !documentArea && !compact && !collapsed;
   const sidebarResize = useSidebarResize(gridRef, sidebarResizeEnabled, Boolean(contextPanel && contextOpen));
   const showToolbar = compact || Boolean(sectionTitle) || Boolean(toolbar) || Boolean(contextPanel && onOpenContext);
+
+  function changeDirectoryCollapsed(next: boolean) {
+    directoryToggleRequested.current = true;
+    setDirectoryCollapsed(next);
+  }
+
+  useEffect(() => {
+    if (!directoryToggleRequested.current || compact) return;
+    directoryToggleRequested.current = false;
+    const label = directoryCollapsed ? "展开笔记本目录" : "收起笔记本目录";
+    navigationRef.current?.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)?.focus();
+  }, [directoryCollapsed, compact]);
 
   function changeCollapsed(next: boolean) {
     sidebarToggleRequested.current = true;
@@ -130,19 +145,18 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
       <div ref={gridRef} className="workspace-shell-grid">
         {drawerOpen ? <ActionButton type="button" className="workspace-drawer-backdrop" aria-label={mainNavigationOpen ? "关闭主导航" : "关闭文档目录"} onClick={() => { setMainNavigationOpen(false); setDocumentContextOpen(false); }} /> : null}
         <div ref={navigationRef} className="workspace-main-navigation" aria-hidden={compact && !mainNavigationOpen ? true : undefined} inert={compact && !mainNavigationOpen ? true : undefined} onClick={closeAfterLink}>
-          <BusinessRail createMenu={documentArea && !compact && accessToken && canMutateWorkspaceContent(workspace) ? <RailCreateMenu /> : undefined} collapsed={showFunctionSidebar && sidebarHidden} onExpand={() => changeCollapsed(false)} onClose={compact && !showFunctionSidebar ? () => setMainNavigationOpen(false) : undefined} />
-          {showFunctionSidebar ? <section id="workspace-sidebar" className="workspace-sidebar" aria-hidden={sidebarHidden ? true : undefined} inert={sidebarHidden ? true : undefined} aria-label="侧栏">
+          <BusinessRail createMenu={canCreate && (!compact || !showFunctionSidebar) ? <RailCreateMenu /> : undefined} collapsed={notebookNavigation && !compact ? directoryCollapsed : showFunctionSidebar && sidebarHidden} expandLabel={notebookNavigation && !compact ? "展开笔记本目录" : "展开侧栏"} onExpand={() => notebookNavigation && !compact ? changeDirectoryCollapsed(false) : changeCollapsed(false)} onClose={compact && !showFunctionSidebar ? () => setMainNavigationOpen(false) : undefined} />
+          {notebookNavigation && !compact ? <NotebookDirectoryColumn collapsed={directoryCollapsed} onToggle={() => changeDirectoryCollapsed(!directoryCollapsed)}>{sectionMenu}</NotebookDirectoryColumn> : showFunctionSidebar ? <section id="workspace-sidebar" className="workspace-sidebar" aria-hidden={sidebarHidden ? true : undefined} inert={sidebarHidden ? true : undefined} aria-label="侧栏">
             <header className="workspace-sidebar-header">
               <h2>{area.title}</h2>
               <ActionButton type="button" className="sidebar-collapse" aria-label="收起侧栏" aria-expanded="true" aria-controls="workspace-sidebar" onClick={() => changeCollapsed(true)}><ChevronsLeft size={18} /></ActionButton>
-              {documentArea && compact && accessToken && canMutateWorkspaceContent(workspace) ? <RailCreateMenu /> : null}
+              {compact && canCreate ? <RailCreateMenu /> : null}
               <ActionButton type="button" className="sidebar-mobile-close" aria-label="关闭侧栏" onClick={() => setMainNavigationOpen(false)}><X size={18} /></ActionButton>
             </header>
             {documentArea ? <>{accessToken ? <WorkspaceNavigation /> : null}{compact && sectionMenu ? <div className="notebook-mobile-directory">{sectionMenu}</div> : null}</> : sectionMenu ?? (accessToken ? <WorkspaceNavigation /> : null)}
           </section> : null}
         </div>
         {sidebarResizeEnabled ? <SidebarResizeHandle {...sidebarResize} /> : null}
-        {documentArea && sectionMenu && !compact ? <NotebookDirectoryColumn collapsed={directoryCollapsed} onToggle={() => setDirectoryCollapsed(!directoryCollapsed)}>{sectionMenu}</NotebookDirectoryColumn> : null}
         <section className={`workspace-main-area${contextPanel && contextOpen ? " has-context" : ""}`} aria-label="主工作区">
           <section className={`workspace-content${contentLayout === "document" ? " workspace-document-content" : ""}`} inert={drawerOpen ? true : undefined}>
             {showToolbar ? (

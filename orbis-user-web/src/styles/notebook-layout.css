@@ -4,7 +4,7 @@
 .document-business-links { padding-bottom: 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border-subtle); }
 .document-workbench > .workspace-shell-grid > .workspace-sidebar-resizer { display: none; }
 .document-workbench .workspace-business-rail { border-right: 0; }
-.notebook-directory-column { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; border: 1px solid var(--border-subtle); border-radius: 11px; box-shadow: var(--workspace-panel-shadow); background: var(--workspace-panel-background); }
+.notebook-directory-column { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; border: 0; border-radius: 0; box-shadow: none; background: transparent; }
 .notebook-directory-body { min-height: 0; display: flex; flex: 1; overflow: hidden; }
 .notebook-directory-body[hidden] { display: none; }
 .notebook-directory-column .workspace-function-menu { padding: 12px 12px 20px; }
@@ -48,8 +48,9 @@
 /* Online documents retain the application rail and expose shortcuts in a popover. */
 @media (min-width: 768px) {
   .document-workbench .workspace-shell-grid, .document-workbench.sidebar-collapsed .workspace-shell-grid { grid-template-columns: var(--rail-width) minmax(0, 1fr); }
-  .document-workbench.has-notebook-directory .workspace-shell-grid, .document-workbench.sidebar-collapsed.has-notebook-directory .workspace-shell-grid { grid-template-columns: var(--rail-width) auto minmax(0, 1fr); }
-  .document-workbench .workspace-main-navigation > .workspace-sidebar, .document-workbench .rail-expand { display: none; }
+  .document-workbench.has-notebook-directory .workspace-shell-grid, .document-workbench.sidebar-collapsed.has-notebook-directory .workspace-shell-grid { grid-template-columns: max-content minmax(0, 1fr); }
+  .document-workbench .workspace-main-navigation > .workspace-sidebar { display: none; }
+  .document-workbench:not(.notebook-directory-collapsed) .rail-expand { display: none; }
   .document-workbench .workspace-main-navigation, .document-workbench .workspace-business-rail { overflow: visible; }
   .document-workbench:not(.sidebar-collapsed) .workspace-business-rail { display: flex; }
 }
@@ -67,7 +68,7 @@
 .workspace-main-navigation:has(.rail-notebook-popover) { overflow: visible; z-index: 50; }
 
 /* Creation stays in the visible rail, and notebook identity owns the first row. */
-.document-workbench .rail-brand { margin-bottom: 16px; }
+.workspace-business-rail:has(.rail-create-entry) .rail-brand { margin-bottom: 16px; }
 .rail-create-entry { margin-bottom: 20px; }
 .rail-create-entry .rail-create-trigger { width: 32px; height: 32px; border-radius: 8px; }
 .notebook-directory-column .notebook-menu-header { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 28px 10px 0; margin-bottom: 8px; }
@@ -76,3 +77,7 @@
 .notebook-menu-header .notebook-menu-create { display: grid; place-items: center; width: 28px; height: 28px; flex: none; border-radius: 7px; background: var(--surface-inverse); color: var(--text-oninverse); }
 .notebook-directory-collapsed .notebook-directory-toggle { top: 10px; right: 8px; }
 .notebook-mobile-directory .notebook-menu-header { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 0 10px; }
+
+/* The notebook tree uses the same navigation frame as other function sidebars. */
+.document-workbench.has-notebook-directory:not(.notebook-directory-collapsed) .workspace-business-rail { border-right: 1px solid var(--workspace-divider); }
+.notebook-directory-collapsed .notebook-directory-column { overflow: hidden; }

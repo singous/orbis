@@ -14,5 +14,5 @@ it("retains the tree while collapsed and supports keyboard resizing", () => {
   view.rerender(<NotebookDirectoryColumn collapsed onToggle={toggle}><nav aria-label="测试目录">当前文档</nav></NotebookDirectoryColumn>);
   expect(screen.queryByRole("navigation", { name: "测试目录" })).toBeNull();
   expect(screen.getByRole("navigation", { name: "测试目录", hidden: true })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "展开笔记本目录" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "展开笔记本目录" })).toBeNull();
 });
