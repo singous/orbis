@@ -1,66 +1,66 @@
-import { LoadingState } from "../../shared/ui/LoadingState";
-import { buttonVariants } from "../../shared/ui/Button";
-import { BookOpen, ChevronRight, FilePlus2, Plus } from "../../shared/ui/icons";
-import { Link } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
-
 import { authStore } from "../../shared/auth/auth-store";
 import { formatDate } from "../../shared/format/date";
+import { Button } from "../../shared/ui/Button";
+import { ActionButton } from "../../shared/ui/ActionButton";
+import { LoadingState } from "../../shared/ui/LoadingState";
 import { PageContainer } from "../../shared/ui/PageContainer";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
+import { Pin, Plus, BookOpen } from "../../shared/ui/icons";
+import type { Notebook } from "../../shared/api/schemas";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
-import { NotebookIcon } from "./NotebookIcon";
 import { DocumentShell } from "./DocumentShell";
-import { useDocumentGroups, useNotebooks, useNoteSearch } from "./queries";
+import { NotebookDialog } from "./NotebookDialog";
+import { NotebookIcon } from "./NotebookIcon";
+import { usePinnedNotebooks } from "./pinned-notebooks";
+import { useCollapsedGroups } from "./collapsed-groups";
+import { useCreateNotebook, useDocumentGroups, useNotebooks, useNoteSearch } from "./queries";
 
 export function DocumentOverviewPage() {
+  const navigate = useNavigate();
   const workspace = useStore(authStore, (state) => state.workspace);
   const canEdit = canMutateWorkspaceContent(workspace);
   const groupsQuery = useDocumentGroups();
   const notebooksQuery = useNotebooks();
-  const notesQuery = useNoteSearch("");
-  const groups = groupsQuery.data?.items ?? [];
+  const notesQuery = useNoteSearch("", "active", { allPages: true });
+  const createNotebook = useCreateNotebook();
+  const [creating, setCreating] = useState(false);
+  const { isPinned, togglePin } = usePinnedNotebooks(workspace?.id);
+  const { isCollapsed, toggleGroup } = useCollapsedGroups(workspace?.id);
   const notebooks = notebooksQuery.data?.items ?? [];
-  const notes = notesQuery.data?.items ?? [];
-  const recentNotes = [...notes]
-    .sort((left, right) => right.updated_at_ms - left.updated_at_ms)
-    .slice(0, 5);
-  const groupNames = new Map(groups.map((group) => [group.id, group.name]));
+  const groups = groupsQuery.data?.items ?? [];
+  const common = notebooks.filter((notebook) => isPinned(notebook.id));
+  const counts = useMemo(() => {
+    const result = new Map<string, number>();
+    for (const note of notesQuery.data?.items ?? []) result.set(note.notebook_id, (result.get(note.notebook_id) ?? 0) + 1);
+    return result;
+  }, [notesQuery.data]);
+  const grouped = groups.map((group) => ({ id: group.id, title: group.name, notebooks: notebooks.filter((notebook) => notebook.group_id === group.id) }));
+  const knownGroups = new Set(groups.map((group) => group.id));
+  const ungrouped = notebooks.filter((notebook) => !knownGroups.has(notebook.group_id));
+  if (ungrouped.length) grouped.push({ id: "ungrouped", title: "其他笔记本", notebooks: ungrouped });
 
-  return (
-    <DocumentShell>
-      <PageContainer
-        title="文档概览"
-        description={`${notebooks.length} 个笔记本 · ${notes.length} 篇文档`}
-        actions={canEdit ? <Link to="/documents/collections" className={buttonVariants({ variant: "primary" })}><Plus aria-hidden="true" size={16} />新建笔记本</Link> : null}
-      >
-        {groupsQuery.isError || notebooksQuery.isError || notesQuery.isError ? <StatusMessage tone="error" title="文档空间加载失败">请检查 API 服务后重试。</StatusMessage> : null}
-
-        <section className="workbench-section" aria-label="我的笔记本">
-          <header className="workbench-section-heading"><h2>我的笔记本</h2><Link className="workbench-more" to="/documents/collections">管理笔记本<ChevronRight aria-hidden="true" size={14} /></Link></header>
-          {notebooksQuery.isLoading ? <LoadingState label="正在加载笔记本…" variant="cards" /> : null}
-          {notebooks.length ? <div className="workbench-resource-grid">
-            {notebooks.slice(0, 6).map((notebook) => <Link key={notebook.id} to={`/collections/${notebook.id}`} className="workbench-resource-card">
-              <NotebookIcon icon={notebook.icon} />
-              <span className="workbench-resource-copy"><strong>{notebook.title}</strong><span>{groupNames.get(notebook.group_id) || "笔记本"} · 更新于 {formatDate(notebook.updated_at_ms)}</span></span>
-              <ChevronRight className="workbench-resource-chevron" aria-hidden="true" size={18} />
-            </Link>)}
-          </div> : !notebooksQuery.isLoading ? <div className="workbench-empty-section"><BookOpen aria-hidden="true" size={28} /><h3>还没有笔记本</h3><p>按工作主题创建笔记本，开始整理你的文档。</p><Link className="workbench-more" to="/documents/collections">前往我的笔记本<ChevronRight aria-hidden="true" size={14} /></Link></div> : null}
-        </section>
-
-        <section className="workbench-section" aria-label="最近更新">
-          <header className="workbench-section-heading"><h2>最近更新</h2><Link className="workbench-more" to="/documents/recent">查看全部<ChevronRight aria-hidden="true" size={14} /></Link></header>
-          {notesQuery.isLoading ? <LoadingState label="正在加载文档…" /> : null}
-          {!notesQuery.isLoading && !recentNotes.length ? <div className="workbench-empty-section"><FilePlus2 aria-hidden="true" size={28} /><h3>还没有文档</h3><p>先创建笔记本，再开始第一篇文档。</p><Link className="workbench-more" to="/documents/collections">管理笔记本<ChevronRight aria-hidden="true" size={14} /></Link></div> : null}
-          {recentNotes.length ? <ul className="workbench-document-list">
-            {recentNotes.map((note) => <li key={note.id}><Link to={`/documents/${note.id}`} className="workbench-document-row">
-              <FilePlus2 aria-hidden="true" size={18} />
-              <span className="workbench-resource-copy"><strong>{note.title}</strong><span>{note.plain_text || "空白文档"}</span></span>
-              <time>{formatDate(note.updated_at_ms)}</time><ChevronRight className="workbench-resource-chevron" aria-hidden="true" size={16} />
-            </Link></li>)}
-          </ul> : null}
-        </section>
+  function card(notebook: Notebook, compact = false) {
+    return <div key={notebook.id} className={`notebook-overview-card${compact ? " is-compact" : ""}`}>
+      <Link to={`/collections/${notebook.id}`} className="notebook-overview-card-link">
+        <NotebookIcon icon={notebook.icon} />
+        <span className="notebook-overview-card-copy"><strong>{notebook.title}</strong><span>更新于 {formatDate(notebook.updated_at_ms)}</span>{!compact && notesQuery.isSuccess ? <span className="notebook-overview-count">文档 {counts.get(notebook.id) ?? 0}</span> : null}</span>
+      </Link>
+      <ActionButton type="button" className={`notebook-overview-pin${isPinned(notebook.id) ? " is-pinned" : ""}`} aria-label={`${isPinned(notebook.id) ? "取消常用" : "设为常用"}：${notebook.title}`} aria-pressed={isPinned(notebook.id)} onClick={() => togglePin(notebook.id)}><Pin size={16} /></ActionButton>
+    </div>;
+  }
+  return <DocumentShell>
+    <div className="notebook-overview">
+      <PageContainer title="在线文档" description={`${notebooks.length} 个笔记本`} actions={<>{canEdit ? <Button variant="primary" icon={<Plus size={16} />} onClick={() => setCreating(true)}>新建笔记本</Button> : null}<Link to="/documents/collections" className="workbench-more">管理笔记本</Link></>}>
+        {notebooksQuery.isError || groupsQuery.isError ? <StatusMessage tone="error" title="笔记本加载失败">请刷新页面重试。</StatusMessage> : null}
+        {notebooksQuery.isLoading ? <LoadingState label="正在加载笔记本…" variant="cards" /> : null}
+        {common.length ? <section className="notebook-overview-common" aria-label="常用笔记本"><header className="workbench-section-heading"><h2>常用</h2><ActionButton type="button" aria-expanded={!isCollapsed("common")} onClick={() => toggleGroup("common")}>{isCollapsed("common") ? "展开" : "收起"}</ActionButton></header>{!isCollapsed("common") ? <div className="notebook-overview-grid">{common.map((notebook) => card(notebook, true))}</div> : null}</section> : null}
+        {grouped.map((group) => <section key={group.id} className="notebook-overview-group" aria-label={group.title}><header className="workbench-section-heading"><h2>{group.title}</h2></header><div className="notebook-overview-grid">{group.notebooks.map((notebook) => card(notebook))}</div>{!group.notebooks.length ? <p className="notebook-group-empty">此分组还没有笔记本。</p> : null}</section>)}
+        {!notebooksQuery.isLoading && !notebooksQuery.isError && !notebooks.length ? <div className="workbench-empty-section"><BookOpen size={28} /><h3>还没有笔记本</h3><p>创建笔记本，开始整理你的文档。</p>{canEdit ? <Button variant="secondary" onClick={() => setCreating(true)}>新建笔记本</Button> : null}</div> : null}
       </PageContainer>
-    </DocumentShell>
-  );
+    </div>
+    <NotebookDialog open={creating} pending={createNotebook.isPending} onClose={() => setCreating(false)} onSubmit={async ({ title, icon }) => { const notebook = await createNotebook.mutateAsync({ title, icon, sort_order: notebooks.length }); setCreating(false); navigate(`/collections/${notebook.id}`); }} />
+  </DocumentShell>;
 }

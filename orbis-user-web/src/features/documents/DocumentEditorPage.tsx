@@ -345,7 +345,7 @@ export function DocumentEditorPage() {
             {saveState === "error" && !editorError ? <div className="mb-5"><StatusMessage tone="error" title="自动保存失败">网络恢复后可手动重试，本地草稿不会丢失。<div className="mt-3"><Button variant="secondary" icon={<RefreshCw aria-hidden="true" size={14} />} onClick={() => coordinatorRef.current?.retry()}>重试保存</Button></div></StatusMessage></div> : null}
 
             <EditorErrorBoundary key={noteId}>
-              <Suspense fallback={<LoadingState label="正在加载编辑器…" variant="editor" />}>
+              <Suspense fallback={<LoadingState label="正在准备编辑…" variant="editor-body" delayMs={180} />}>
                 <TiptapEditor
                   noteId={noteId}
                   blocks={draft.blocks}

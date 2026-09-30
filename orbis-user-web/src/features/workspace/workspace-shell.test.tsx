@@ -129,7 +129,7 @@ describe("WorkspaceShell", () => {
 
     expect(within(rail).getByRole("link", { name: "在线文档" })).toHaveAttribute("aria-current", "page");
     expect(within(screen.getByRole("navigation", { name: "文档导航" })).getByRole("link", { name: "最近编辑" })).toHaveAttribute("aria-current", "page");
-    expect(within(screen.getByRole("navigation", { name: "文档导航" })).getByRole("link", { name: "文档概览" })).not.toHaveAttribute("aria-current");
+    expect(within(screen.getByRole("navigation", { name: "文档导航" })).getByRole("link", { name: "笔记本总览" })).not.toHaveAttribute("aria-current");
     await actor.click(within(rail).getByRole("link", { name: "站点" }));
 
     expect(within(rail).getByRole("link", { name: "站点" })).toHaveAttribute("aria-current", "page");
@@ -164,12 +164,12 @@ describe("WorkspaceShell", () => {
     expect(screen.getByRole("region", { name: "主工作区" })).toHaveTextContent("文档内容");
   });
 
-  it("uses a supplied section menu in place of the default secondary navigation", () => {
+  it("keeps document navigation alongside a supplied notebook directory", () => {
     renderShell("/documents", undefined, <nav aria-label="测试功能"><Link to="/documents">文档概览</Link></nav>);
 
     expect(screen.getByRole("navigation", { name: "业务板块" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "测试功能" })).toBeInTheDocument();
-    expect(screen.queryByRole("navigation", { name: "文档导航" })).not.toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "文档导航" })).toBeInTheDocument();
     expect(screen.getByText("测试工作台")).toBeInTheDocument();
   });
 
@@ -263,7 +263,7 @@ describe("WorkspaceShell", () => {
     expect(trigger).toHaveAttribute("aria-expanded", "false");
 
     await actor.click(trigger);
-    await actor.click(screen.getByRole("link", { name: "最近编辑" }));
+    await actor.click(within(screen.getByRole("navigation", { name: "测试功能" })).getByRole("link", { name: "最近编辑" }));
     expect(trigger).toHaveAttribute("aria-expanded", "false");
     expect(screen.getByRole("status", { name: "current path" })).toHaveTextContent("/documents/recent");
   });

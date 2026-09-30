@@ -8,6 +8,7 @@ import { useStore } from "zustand";
 import { authStore } from "../../shared/auth/auth-store";
 import { SidebarResizeHandle } from "./SidebarResizeHandle";
 import { useSidebarResize } from "./use-sidebar-resize";
+import { NotebookDirectoryColumn } from "../documents/NotebookDirectoryColumn";
 import { BusinessRail } from "./BusinessRail";
 import { RailCreateMenu } from "./RailCreateMenu";
 import { WorkspaceNavigation } from "./WorkspaceNavigation";
@@ -46,6 +47,8 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
   const { pathname } = useLocation();
   const area = resolveWorkspaceArea(pathname);
   const showFunctionSidebar = area.showFunctionSidebar;
+  const documentArea = area.id === "documents";
+  const [directoryCollapsed, setDirectoryCollapsed] = useState(false);
   const workspace = useStore(authStore, (state) => state.workspace);
   const accessToken = useStore(authStore, (state) => state.accessToken);
   const [mainNavigationOpen, setMainNavigationOpen] = useState(false);
@@ -64,7 +67,7 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
   const documentContextExpanded = documentContextOpen && contextOpen;
   const drawerOpen = compact && (mainNavigationOpen || documentContextExpanded);
   const sidebarHidden = !showFunctionSidebar || (!compact && collapsed);
-  const sidebarResizeEnabled = showFunctionSidebar && !compact && !collapsed;
+  const sidebarResizeEnabled = showFunctionSidebar && !documentArea && !compact && !collapsed;
   const sidebarResize = useSidebarResize(gridRef, sidebarResizeEnabled, Boolean(contextPanel && contextOpen));
   const showToolbar = compact || Boolean(sectionTitle) || Boolean(toolbar) || Boolean(contextPanel && onOpenContext);
 
@@ -122,7 +125,7 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
   }
 
   return (
-    <main style={sidebarResize.style} className={`workspace-shell${showFunctionSidebar ? " has-section-menu" : " sidebar-unavailable"}${sidebarHidden ? " sidebar-collapsed" : ""}${sidebarAnimating ? " sidebar-animating" : ""}${mainNavigationOpen ? " main-navigation-open" : ""}${documentContextExpanded ? " document-context-drawer-open" : ""}`}>
+    <main style={sidebarResize.style} className={`workspace-shell${documentArea ? " document-workbench" : ""}${documentArea && sectionMenu ? " has-notebook-directory" : ""}${directoryCollapsed ? " notebook-directory-collapsed" : ""}${showFunctionSidebar ? " has-section-menu" : " sidebar-unavailable"}${sidebarHidden ? " sidebar-collapsed" : ""}${sidebarAnimating ? " sidebar-animating" : ""}${mainNavigationOpen ? " main-navigation-open" : ""}${documentContextExpanded ? " document-context-drawer-open" : ""}`}>
       <WorkspaceTopbar disabled={drawerOpen} />
       <div ref={gridRef} className="workspace-shell-grid">
         {drawerOpen ? <ActionButton type="button" className="workspace-drawer-backdrop" aria-label={mainNavigationOpen ? "关闭主导航" : "关闭文档目录"} onClick={() => { setMainNavigationOpen(false); setDocumentContextOpen(false); }} /> : null}
@@ -135,10 +138,11 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
               {area.id === "documents" && accessToken && canMutateWorkspaceContent(workspace) ? <RailCreateMenu /> : null}
               <ActionButton type="button" className="sidebar-mobile-close" aria-label="关闭侧栏" onClick={() => setMainNavigationOpen(false)}><X size={18} /></ActionButton>
             </header>
-            {sectionMenu ?? (accessToken ? <WorkspaceNavigation /> : null)}
+            {documentArea ? <>{accessToken ? <WorkspaceNavigation /> : null}{compact && sectionMenu ? <div className="notebook-mobile-directory">{sectionMenu}</div> : null}</> : sectionMenu ?? (accessToken ? <WorkspaceNavigation /> : null)}
           </section> : null}
         </div>
         {sidebarResizeEnabled ? <SidebarResizeHandle {...sidebarResize} /> : null}
+        {documentArea && sectionMenu && !compact ? <NotebookDirectoryColumn collapsed={directoryCollapsed} onToggle={() => setDirectoryCollapsed(!directoryCollapsed)}>{sectionMenu}</NotebookDirectoryColumn> : null}
         <section className={`workspace-main-area${contextPanel && contextOpen ? " has-context" : ""}`} aria-label="主工作区">
           <section className={`workspace-content${contentLayout === "document" ? " workspace-document-content" : ""}`} inert={drawerOpen ? true : undefined}>
             {showToolbar ? (

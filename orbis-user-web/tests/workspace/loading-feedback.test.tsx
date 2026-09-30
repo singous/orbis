@@ -1,11 +1,11 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Button } from "../../src/shared/ui/Button";
 import { ActionButton } from "../../src/shared/ui/ActionButton";
 import userEvent from "@testing-library/user-event";
 import { LoadingState } from "../../src/shared/ui/LoadingState";
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.useRealTimers(); });
 describe("loading feedback", () => {
   it.each(["cards", "rows", "editor"] as const)("reserves a %s layout with one accessible loading announcement", variant => {
     const view = render(<LoadingState label="正在加载文档…" variant={variant} />);
@@ -14,6 +14,16 @@ describe("loading feedback", () => {
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
     expect(view.container.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
   });
+  it("delays the editor body placeholder and omits the document title placeholder", () => {
+    vi.useFakeTimers();
+    const view = render(<LoadingState label="正在准备编辑…" variant="editor-body" delayMs={180} />);
+    expect(screen.queryByRole("status")).toBeNull();
+    act(() => { vi.advanceTimersByTime(180); });
+    expect(screen.getByRole("status", { name: "正在准备编辑…" })).toHaveAttribute("aria-busy", "true");
+    expect(view.container.querySelectorAll('.skeleton')).toHaveLength(4);
+    expect(view.container.querySelector('.loading-layout--editor')).toBeNull();
+  });
+
 });
 
 describe("pending actions", () => {

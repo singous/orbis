@@ -411,13 +411,13 @@ describe("document function pages", () => {
   });
 
   it.each([
-    ["/documents", "文档概览", "heading"],
+    ["/documents", "在线文档", "heading"],
     ["/documents/recent", "最近文档", "heading"],
     ["/documents/collections", "我的笔记本", "heading"],
     ["/documents/archive", "归档", "heading"],
   ] as const)("renders %s as the %s page", async (path, name, role) => {
     await renderRoute(path);
-    expect(await screen.findByRole(role, { name })).toBeVisible();
+    expect(await screen.findByRole(role, { name, level: 1 })).toBeVisible();
   });
 
   it("renders the document search input", async () => {
@@ -512,10 +512,7 @@ describe("document function pages", () => {
   it("recommends notebook creation on the overview outside any notebook", async () => {
     await renderRoute("/documents");
 
-    expect(await screen.findByRole("link", { name: "新建笔记本" })).toHaveAttribute(
-      "href",
-      "/documents/collections",
-    );
+    expect(await screen.findByRole("button", { name: "新建笔记本" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "新建文档" })).not.toBeInTheDocument();
   });
 
