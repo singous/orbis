@@ -30,7 +30,6 @@ test('multi-block grouping, duplication, nesting and history survive saving and 
  await expect.poll(async()=>(await read()).blocks.blocks[0].type).toBe('group');
  let stored=(await read()).blocks.blocks;
  expect(stored).toHaveLength(1);expect(stored[0].children.map((block:{id:string})=>block.id)).toEqual(['a','b','c']);
- await page.screenshot({path:info.outputPath('grouped-document.png')});
  await page.reload();await expect(page.locator('[data-document-component="group"]')).toBeVisible();
  // Parent navigation makes transparent containers reachable without a tiny hit target.
  const group=page.locator('[data-document-component="group"]');await group.hover({position:{x:2,y:2}});

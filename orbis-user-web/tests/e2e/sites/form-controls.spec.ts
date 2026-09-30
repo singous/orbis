@@ -22,7 +22,6 @@ test("site form uses one focus treatment and HeroUI selection overlays", async (
     await expect(name).toBeFocused();
     expect(await name.evaluate((element) => getComputedStyle(element).outlineStyle)).toBe("none");
     expect(await name.evaluate((element) => getComputedStyle(element).boxShadow)).not.toBe("none");
-    await page.screenshot({ path: testInfo.outputPath(`site-form-focus-${width}.png`) });
     const slug = dialog.getByLabel("站点路径", { exact: false });
     await slug.focus();
     expect(await slug.evaluate((element) => getComputedStyle(element).outlineStyle)).toBe("none");
@@ -32,7 +31,6 @@ test("site form uses one focus treatment and HeroUI selection overlays", async (
     await kind.click();
     const option = page.getByRole("option", { name: "产品手册", exact: true });
     await expect(option).toBeVisible();
-    await page.screenshot({ path: testInfo.outputPath(`site-select-${width}.png`) });
     const bounds = (await page.getByRole("listbox", { name: "站点场景", exact: true }).boundingBox())!;
     expect(bounds.x).toBeGreaterThanOrEqual(0);
     expect(bounds.x + bounds.width).toBeLessThanOrEqual(width);

@@ -56,7 +56,6 @@ test("built documentation serves readable HTML, deep paths, versioned exports an
   await expect(plain.getByText("文档正文直接包含在 HTTP 响应中。", { exact: true })).toBeVisible();
   await plain.getByRole("navigation", { name: "站点导航", exact: true }).getByRole("link", { name: "安装指南", exact: true }).click();
   await expect(plain.getByText("这是独立按需读取的安装正文。", { exact: true })).toBeVisible();
-  await plain.screenshot({ path: testInfo.outputPath("reader-without-javascript.png"), fullPage: true });
   await plainContext.close();
 
   const interactive = await browser.newContext({ permissions: ["clipboard-read", "clipboard-write"] });
@@ -81,7 +80,6 @@ test("built documentation serves readable HTML, deep paths, versioned exports an
   await expect(page).toHaveURL(`${webOrigin}/s/production-docs/guides/install`);
   await expect(page.getByText("这是独立按需读取的安装正文。", { exact: true })).toBeVisible();
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", `${webOrigin}/s/production-docs/guides/install`);
-  await page.screenshot({ path: testInfo.outputPath("production-reader.png"), fullPage: true });
   expect(errors).toEqual([]);
   await interactive.close();
 

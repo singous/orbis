@@ -55,9 +55,9 @@ test("workspace actions share sizing and notebook headings retain breathing room
     await page.goto(`/collections/${notebookId}`);
     await expect(page.getByRole("heading", { name: notebookTitle, exact: true })).toBeVisible();
     const main = page.getByRole("region", { name: "主工作区", exact: true });
-    const sidebar = page.getByRole("region", { name: "侧栏", exact: true });
+    const sidebar = page.getByRole("region", { name: "笔记本目录栏", exact: true });
     const primary = await actionMetrics(main.getByRole("button", { name: "新建文档", exact: true }));
-    const secondary = await actionMetrics(sidebar.getByRole("button", { name: "新建文档", exact: true }));
+    const secondary = await actionMetrics(sidebar.locator(".workspace-sidebar-header").getByRole("button", { name: "新建文档", exact: true }));
     measurements[`create-${width}`] = { main: primary, sidebar: secondary };
     expect.soft(primary.height, `${width}px: the primary action uses standard sizing`).toBe(36);
     expect.soft(primary.fontSize, `${width}px: primary action typography`).toBe("14px");

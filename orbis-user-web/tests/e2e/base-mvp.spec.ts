@@ -15,10 +15,9 @@ test("personal writing, team discussion and a versioned documentation site work 
   await page.getByLabel("密码", { exact: true }).fill(password);
   await page.getByRole("button", { name: "创建并进入工作空间" }).click();
   await expect(page).toHaveURL(/\/documents$/);
-  await page.getByRole("link", { name: "新建笔记本", exact: true }).click();
-  await page.getByRole("button", { name: "新建笔记本", exact: true }).click();
+  await page.locator(".notebook-overview .page-actions").getByRole("button", { name: "新建笔记本", exact: true }).click();
   await page.getByLabel("笔记本名称").fill("产品指南");
-  await page.getByRole("button", { name: "创建笔记本", exact: true }).click();
+  await page.getByRole("button", { name: "创建", exact: true }).click();
   await expect(page).toHaveURL(/\/collections\//);
   const notebookId = page.url().split("/").pop()!;
   await page.getByRole("region", { name: "主工作区", exact: true }).getByRole("button", { name: "新建文档", exact: true }).click();
@@ -103,7 +102,6 @@ test("personal writing, team discussion and a versioned documentation site work 
   await page.getByLabel("第 2 篇分组").fill("开始使用");
   await page.getByRole("button", { name: "保存设置", exact: true }).click();
   await expect(page.getByText("设置已保存", { exact: true })).toBeVisible();
-  await page.screenshot({ path: testInfo.outputPath("site-management.png"), fullPage: true });
   await page.getByRole("button", { name: "预览", exact: true }).click();
   await expect(page.getByText(/发布预览 ·/)).toBeVisible();
   await expect(page.getByRole("heading", { name: "欢迎使用 Orbis", exact: true })).toBeVisible();
@@ -117,7 +115,6 @@ test("personal writing, team discussion and a versioned documentation site work 
   await reader.goto(`${webOrigin}/s/orbis-guide/quickstart`);
   await expect(reader.getByRole("heading", { name: "快速开始", level: 1 })).toBeVisible();
   await expect(reader.getByRole("table")).toContainText("产品手册");
-  await reader.screenshot({ path: testInfo.outputPath("public-desktop.png"), fullPage: true });
   await reader.getByRole("button", { name: "搜索文档" }).click();
   const readerSearch = reader.getByRole("dialog", { name: "搜索文档" });
   await readerSearch.getByRole("combobox", { name: "搜索文档" }).fill("欢迎");
@@ -126,13 +123,11 @@ test("personal writing, team discussion and a versioned documentation site work 
   await reader.getByRole("button", { name: "当前跟随系统主题，切换为浅色主题" }).click();
   await reader.getByRole("button", { name: "切换深色主题" }).click();
   await expect(reader.locator(".site-reader")).toHaveAttribute("data-theme", "dark");
-  await reader.screenshot({ path: testInfo.outputPath("public-dark.png"), fullPage: true });
   await reader.setViewportSize({ width: 390, height: 844 });
   await reader.getByRole("button", { name: "打开站点导航" }).click();
   await reader.getByRole("navigation", { name: "站点导航", exact: true }).getByRole("link", { name: "欢迎使用 Orbis", exact: true }).click();
   await expect(reader.getByRole("heading", { name: "欢迎使用 Orbis", level: 1 })).toBeVisible();
   expect(await reader.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  await reader.screenshot({ path: testInfo.outputPath("public-mobile.png"), fullPage: true });
 
   await page.goto(`/documents/${noteId}`);
   await page.locator('[contenteditable="true"]').first().fill("未发布的新内容，等待团队确认。");
@@ -194,7 +189,6 @@ test("personal writing, team discussion and a versioned documentation site work 
   const previousDraft = history.data.items.find((item: { content_version: number }) => item.content_version === 3);
   const retained = await (await request.get(`${apiOrigin}/notes/${noteId}/revisions/${previousDraft.id}`, { headers })).json();
   expect(retained.data.plain_text).toContain("未发布的新内容");
-  await page.screenshot({ path: testInfo.outputPath("workspace-editor.png"), fullPage: true });
 
   const archiveEditor = page.locator('[contenteditable="true"]').first();
   await archiveEditor.click();
@@ -245,7 +239,6 @@ test("personal writing, team discussion and a versioned documentation site work 
   await expect(page).toHaveURL(/\/sites$/);
   await expect(page.getByRole("button", { name: "打开主导航", exact: true })).toHaveAttribute("aria-expanded", "false");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  await page.screenshot({ path: testInfo.outputPath("workspace-mobile.png"), fullPage: true });
   await page.setViewportSize({ width: 1440, height: 1000 });
 
   await page.goto(`/sites/${siteId}`);
