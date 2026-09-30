@@ -139,15 +139,30 @@ describe("WorkspaceShell", () => {
     expect(screen.queryByRole("link", { name: "归档" })).not.toBeInTheDocument();
   });
 
-  it("switches areas with the sidebar collapsed and expands the destination menu", async () => {
+  it("resets collapse when switching areas and returning to a previous tab", async () => {
     const actor = userEvent.setup();
-    renderShell("/documents/recent");
+    renderShell("/knowledge");
+    const rail = screen.getByRole("navigation", { name: "业务板块" });
     await actor.click(screen.getByRole("button", { name: "收起侧栏" }));
-    await actor.click(within(screen.getByRole("navigation", { name: "业务板块" })).getByRole("link", { name: "站点" }));
-    expect(window.localStorage.getItem("orbis.sidebarCollapsed")).toBe("1");
-    await actor.click(screen.getByRole("button", { name: "展开侧栏" }));
+    expect(screen.getByRole("button", { name: "展开侧栏" })).toBeInTheDocument();
+    await actor.click(within(rail).getByRole("link", { name: "站点" }));
     expect(screen.getByRole("navigation", { name: "站点导航" })).toBeVisible();
-    expect(screen.queryByRole("navigation", { name: "文档导航" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "收起侧栏" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "展开侧栏" })).toBeNull();
+    await actor.click(screen.getByRole("button", { name: "收起侧栏" }));
+    await actor.click(within(rail).getByRole("link", { name: "知识库" }));
+    expect(screen.getByRole("navigation", { name: "知识库导航" })).toBeVisible();
+    expect(window.localStorage.getItem("orbis.sidebarCollapsed")).toBeNull();
+  });
+
+  it("resets collapse when entering another page within the same area", async () => {
+    const actor = userEvent.setup();
+    renderShell("/settings/members");
+    await actor.click(screen.getByRole("button", { name: "收起侧栏" }));
+    await actor.click(within(screen.getByRole("complementary", { name: "应用导航" })).getByRole("link", { name: "账号设置" }));
+    expect(screen.getByRole("status", { name: "current path" })).toHaveTextContent("/settings/account");
+    expect(screen.getByRole("navigation", { name: "设置导航" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "收起侧栏" })).toBeInTheDocument();
   });
 
   it.each(["/collections/notebook-id", "/documents/note-id", "/documents/search"])("keeps nested document routes in the document area on %s", (path) => {
@@ -179,7 +194,7 @@ describe("WorkspaceShell", () => {
 
     await actor.click(screen.getByRole("button", { name: "收起侧栏" }));
 
-    expect(window.localStorage.getItem("orbis.sidebarCollapsed")).toBe("1");
+    expect(window.localStorage.getItem("orbis.sidebarCollapsed")).toBeNull();
     expect(screen.queryByRole("navigation", { name: "文档导航" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "展开侧栏" })).toHaveFocus();
     const rail = screen.getByRole("navigation", { name: "业务板块" });
@@ -192,12 +207,12 @@ describe("WorkspaceShell", () => {
     expect(window.localStorage.getItem("orbis.sidebarCollapsed")).not.toBe("1");
   });
 
-  it("restores the persisted secondary-navigation preference", () => {
+  it("starts expanded even if legacy collapse storage says collapsed", () => {
     window.localStorage.setItem("orbis.sidebarCollapsed", "1");
     renderShell();
-
-    expect(screen.getByRole("button", { name: "展开侧栏" })).toBeInTheDocument();
-    expect(screen.queryByRole("navigation", { name: "文档导航" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "展开侧栏" })).toBeNull();
+    expect(screen.getByRole("navigation", { name: "文档导航" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "收起侧栏" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "打开用户菜单" })).toBeInTheDocument();
   });
 
@@ -232,7 +247,7 @@ describe("WorkspaceShell", () => {
     expect(screen.queryByRole("navigation", { name: "文档导航" })).not.toBeInTheDocument();
   });
 
-  it("opens mobile navigation even when the desktop sidebar preference is collapsed", async () => {
+  it("opens mobile navigation while ignoring legacy desktop collapse storage", async () => {
     window.localStorage.setItem("orbis.sidebarCollapsed", "1");
     setViewport(390);
     const actor = userEvent.setup();

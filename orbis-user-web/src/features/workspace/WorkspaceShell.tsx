@@ -65,7 +65,8 @@ export function WorkspaceShell({ children, sectionTitle, sidebar, toolbar, conte
   const sidebarConfig: WorkspaceSidebarConfig | false = sidebar ?? (area.showFunctionSidebar ? { title: <h2>{area.title}</h2>, content: accessToken ? <WorkspaceNavigation /> : null } : false);
   const showFunctionSidebar = Boolean(sidebarConfig && (compact || sidebarConfig.desktopVisible !== false));
   const preferences = sidebarConfig ? sidebarConfig.preferences ?? DEFAULT_SIDEBAR_PREFERENCES : DEFAULT_SIDEBAR_PREFERENCES;
-  const { collapsed, animating, changeCollapsed } = useWorkspaceSidebar(preferences, compact, navigationRef);
+  const sidebarScope = `${workspace?.id ?? ""}:${pathname}:${sidebarConfig ? sidebarConfig.id ?? "workspace-sidebar" : "rail"}`;
+  const { collapsed, animating, changeCollapsed } = useWorkspaceSidebar(sidebarScope, compact, navigationRef);
   const sidebarHidden = !showFunctionSidebar || (!compact && collapsed);
   const sidebarResizeEnabled = showFunctionSidebar && !compact && !collapsed;
   const sidebarResize = useSidebarResize(gridRef, sidebarResizeEnabled, Boolean(contextPanel && contextOpen), preferences);

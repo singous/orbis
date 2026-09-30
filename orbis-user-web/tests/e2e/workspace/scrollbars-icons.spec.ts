@@ -100,8 +100,8 @@ test("the restored home keeps its rail while hiding the function sidebar", async
   await page.getByRole("link", { name: "首页", exact: true }).click();
   await expect(page.getByRole("button", { name: "展开侧栏", exact: true })).toHaveCount(0);
   await page.getByRole("link", { name: "知识库", exact: true }).click();
-  await expect(page.getByRole("button", { name: "展开侧栏", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "展开侧栏", exact: true }).click();
+  await expect(page.getByRole("button", { name: "展开侧栏", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "收起侧栏", exact: true })).toBeVisible();
   await expect.poll(() => page.locator(".workspace-main-navigation").evaluate(element => element.getBoundingClientRect().width)).toBe(preferredWidth);
   await page.getByRole("link", { name: "首页", exact: true }).click();
   await page.setViewportSize({ width: 390, height: 844 });

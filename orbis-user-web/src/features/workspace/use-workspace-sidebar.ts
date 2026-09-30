@@ -1,32 +1,26 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
-import { SIDEBAR_MOTION_DURATION_MS, type SidebarPreferences } from "./workspace-sidebar-config";
+import { SIDEBAR_MOTION_DURATION_MS } from "./workspace-sidebar-config";
 
 const SIDEBAR_TRANSITION_SETTLE_BUFFER_MS = 40;
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
-function readCollapsed(key: string) {
-  try { return localStorage.getItem(key) === "1"; } catch { return false; }
-}
-
-/** Collapse persistence and focus follow the same lifecycle for every menu. */
-export function useWorkspaceSidebar(preferences: SidebarPreferences, compact: boolean, navigationRef: RefObject<HTMLDivElement | null>) {
-  const key = preferences.collapsedKey;
-  const [stored, setStored] = useState(() => ({ key, collapsed: readCollapsed(key) }));
+/** Collapse is local to the current navigation scope; each new page starts open. */
+export function useWorkspaceSidebar(scope: string, compact: boolean, navigationRef: RefObject<HTMLDivElement | null>) {
+  const [state, setState] = useState(() => ({ scope, collapsed: false }));
   const [animating, setAnimating] = useState(false);
   const toggleRequested = useRef(false);
-  const collapsed = stored.key === key ? stored.collapsed : readCollapsed(key);
+  const collapsed = state.scope === scope ? state.collapsed : false;
 
   useLayoutEffect(() => {
-    setStored(current => current.key === key ? current : { key, collapsed: readCollapsed(key) });
+    setState(current => current.scope === scope ? current : { scope, collapsed: false });
     setAnimating(false);
     toggleRequested.current = false;
-  }, [key]);
+  }, [scope]);
 
   function changeCollapsed(next: boolean) {
     toggleRequested.current = true;
     setAnimating(!compact && !window.matchMedia?.(REDUCED_MOTION_QUERY).matches);
-    setStored({ key, collapsed: next });
-    try { localStorage.setItem(key, next ? "1" : "0"); } catch { /* Keep navigation usable without persistent storage. */ }
+    setState({ scope, collapsed: next });
   }
 
   useLayoutEffect(() => {

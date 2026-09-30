@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 
 export type SidebarPreferences = {
-  collapsedKey: string;
   widthKey: string;
 };
 
@@ -9,7 +8,6 @@ export const SIDEBAR_MOTION_DURATION_MS = 420;
 export const SIDEBAR_MOTION_EASING = "cubic-bezier(.4, 0, .2, 1)";
 
 export const DEFAULT_SIDEBAR_PREFERENCES: SidebarPreferences = {
-  collapsedKey: "orbis.sidebarCollapsed",
   widthKey: "orbis.sidebarWidth",
 };
 

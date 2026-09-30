@@ -18,7 +18,7 @@ const notebook: WorkspaceSidebarConfig = {
   collapseLabel: "收起笔记本目录",
   expandLabel: "展开笔记本目录",
   resizeLabel: "调整笔记本目录宽度",
-  preferences: { widthKey: "orbis.notebookDirectoryWidth", collapsedKey: "orbis.notebookDirectoryCollapsed" },
+  preferences: { widthKey: "orbis.notebookDirectoryWidth" },
 };
 
 beforeEach(() => { localStorage.clear(); });
@@ -43,21 +43,22 @@ it("uses the public sidebar container and header slots inside the rail frame", (
   expect(screen.getByRole("button", { name: "收起笔记本目录" })).toHaveFocus();
   expect(screen.getByRole("navigation", { name: "笔记本目录" })).toBeInTheDocument();
 });
-it("restores legacy widths and separate collapse preferences across remounts", () => {
+it("restores widths but starts expanded across remounts despite legacy collapse values", () => {
   localStorage.setItem("orbis.sidebarWidth", "350");
   localStorage.setItem("orbis.sidebarCollapsed", "1");
   localStorage.setItem("orbis.notebookDirectoryWidth", "300");
+  localStorage.setItem("orbis.notebookDirectoryCollapsed", "1");
   const view = open();
   expect(screen.getByRole("separator", { name: "调整笔记本目录宽度" })).toHaveAttribute("aria-valuenow", "300");
   fireEvent.click(screen.getByRole("button", { name: "收起笔记本目录" }));
-  expect(localStorage.getItem("orbis.notebookDirectoryCollapsed")).toBe("1");
+  expect(screen.getByRole("button", { name: "展开笔记本目录" })).toBeInTheDocument();
   view.unmount();
   open();
-  expect(screen.getByRole("button", { name: "展开笔记本目录" })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "展开笔记本目录" }));
-  expect(localStorage.getItem("orbis.sidebarCollapsed")).toBe("1");
+  expect(screen.getByRole("button", { name: "收起笔记本目录" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "展开笔记本目录" })).toBeNull();
   expect(screen.getByRole("separator", { name: "调整笔记本目录宽度" })).toHaveAttribute("aria-valuenow", "300");
 });
+
 it("uses the same animation state and clears it after rapid toggles", () => {
   vi.useFakeTimers();
   const view = open();

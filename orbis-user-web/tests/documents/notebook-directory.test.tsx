@@ -51,8 +51,8 @@ it("switches preference profiles without leaking the previous menu's width or co
   const view = render(shell(createNotebookSidebar("notebook")));
   expect(screen.getByRole("separator")).toHaveAttribute("aria-valuenow", "300");
   view.rerender(shell({ title: "普通菜单", content: <nav>功能菜单</nav> }));
-  expect(screen.getByRole("button", { name: "展开侧栏" })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "展开侧栏" }));
+  expect(screen.getByRole("button", { name: "收起侧栏" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "展开侧栏" })).toBeNull();
   expect(screen.getByRole("separator")).toHaveAttribute("aria-valuenow", "350");
   view.rerender(shell(createNotebookSidebar("notebook")));
   expect(screen.getByRole("separator")).toHaveAttribute("aria-valuenow", "300");

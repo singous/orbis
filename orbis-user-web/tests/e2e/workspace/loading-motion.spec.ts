@@ -33,7 +33,7 @@ async function sampleToggle(page: Page, label: string) {
   }, label);
 }
 
-test("ordinary menus and notebook trees share collapse motion, focus, preferences and reduced motion", async ({ page, request }) => {
+test("ordinary menus and notebook trees share local collapse motion, focus and reduced motion", async ({ page, request }) => {
   const owner = { email: "owner@example.com", password: "Orbis-browser-test-2026!" };
   const setup = await request.post("/api/setup", { data: { ...owner, display_name: "侧栏一致性验收" } });
   expect([201, 409]).toContain(setup.status());
@@ -66,9 +66,7 @@ test("ordinary menus and notebook trees share collapse motion, focus, preference
     expect(collapse.endWidth).toBeCloseTo(58, 0);
     await expect(page.getByRole("button", { name: entry.expand, exact: true })).toBeFocused();
     await expect(page.locator(".workspace-main-navigation .workspace-sidebar")).toHaveAttribute("inert", "");
-    expect(await page.evaluate(key => localStorage.getItem(key), entry.key)).toBe("1");
-    await page.reload();
-    await expect(page.getByRole("button", { name: entry.expand, exact: true })).toBeVisible();
+    expect(await page.evaluate(key => localStorage.getItem(key), entry.key)).toBeNull();
     const expansion = await sampleToggle(page, entry.expand);
     expect(expansion.intermediateFrames).toBeGreaterThan(2);
     expect(expansion.railIntermediateFrames).toBeGreaterThan(2);
@@ -81,7 +79,9 @@ test("ordinary menus and notebook trees share collapse motion, focus, preference
     expect(reduced.railIntermediateFrames).toBe(0);
     expect(reduced.transitions).not.toContain("grid-template-columns:420");
     expect(reduced.transitions).not.toContain("height:420");
-    await page.getByRole("button", { name: entry.expand, exact: true }).click();
+    await page.reload();
+    await expect(page.getByRole("button", { name: entry.collapse, exact: true })).toBeVisible();
+    await expect(page.locator(".workspace-main-navigation .workspace-sidebar")).not.toHaveAttribute("inert", "");
     await page.emulateMedia({ reducedMotion: "no-preference" });
   }
 });
@@ -165,7 +165,59 @@ test("ordinary and notebook mobile drawers share navigation, nested menus and fo
     await trigger.click();
     await page.getByRole("button", { name: "关闭主导航", exact: true }).click({ position: { x: 380, y: 100 } });
     await expect(trigger).toBeFocused();
-    expect(await page.evaluate(key => localStorage.getItem(key), entry.key)).toBe("1");
+    expect(await page.evaluate(key => localStorage.getItem(key), entry.key)).toBeNull();
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
   }
+});
+
+
+test("tab changes, history and reload start expanded while saved widths remain intact", async ({ page, request }) => {
+  const owner = { email: "owner@example.com", password: "Orbis-browser-test-2026!" };
+  expect([201, 409]).toContain((await request.post("/api/setup", { data: { ...owner, display_name: "侧栏状态重置验收" } })).status());
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/login");
+  await page.getByLabel("邮箱", { exact: true }).fill(owner.email);
+  await page.getByLabel("密码", { exact: true }).fill(owner.password);
+  await page.getByRole("button", { name: "登录 Orbis", exact: true }).click();
+  await expect(page).toHaveURL(/\/documents$/);
+  const token = await page.evaluate(() => JSON.parse(localStorage.getItem("orbis.auth")!).accessToken as string);
+  const created = await request.post("/api/notebooks", { headers: { Authorization: `Bearer ${token}` }, data: { title: "切换状态验收", sort_order: 0 } });
+  expect(created.status()).toBe(201);
+  const notebookPath = `/collections/${(await created.json()).data.id}`;
+  await page.evaluate(() => {
+    localStorage.setItem("orbis.sidebarCollapsed", "1");
+    localStorage.setItem("orbis.notebookDirectoryCollapsed", "1");
+    localStorage.setItem("orbis.sidebarWidth", "300");
+    localStorage.setItem("orbis.notebookDirectoryWidth", "320");
+  });
+  const rail = page.getByRole("complementary", { name: "应用导航", exact: true });
+  const frame = page.locator(".workspace-main-navigation");
+  async function expectOpen(label: string, width: number) {
+    await expect(page.getByRole("button", { name: label, exact: true })).toBeVisible();
+    await expect(page.locator(".workspace-shell")).not.toHaveClass(/sidebar-collapsed/);
+    await expect(page.locator(".workspace-sidebar")).not.toHaveAttribute("inert", "");
+    await expect.poll(() => frame.evaluate(element => element.getBoundingClientRect().width)).toBeCloseTo(width, 0);
+  }
+  await page.goto("/knowledge");
+  await expectOpen("收起侧栏", 358);
+  await page.getByRole("button", { name: "收起侧栏", exact: true }).click();
+  await rail.getByRole("link", { name: "记忆", exact: true }).click();
+  await expect(page).toHaveURL(/\/memory$/);
+  await expectOpen("收起侧栏", 358);
+  await page.getByRole("button", { name: "收起侧栏", exact: true }).click();
+  await rail.getByRole("link", { name: "知识库", exact: true }).click();
+  await expectOpen("收起侧栏", 358);
+  await page.goBack();
+  await expectOpen("收起侧栏", 358);
+  await page.goto(notebookPath);
+  await expectOpen("收起笔记本目录", 378);
+  await page.getByRole("button", { name: "收起笔记本目录", exact: true }).click();
+  await rail.getByRole("link", { name: "知识库", exact: true }).click();
+  await expectOpen("收起侧栏", 358);
+  await page.goBack();
+  await expectOpen("收起笔记本目录", 378);
+  await page.getByRole("button", { name: "收起笔记本目录", exact: true }).click();
+  await page.reload();
+  await expectOpen("收起笔记本目录", 378);
+  expect(await page.evaluate(() => [localStorage.getItem("orbis.sidebarWidth"), localStorage.getItem("orbis.notebookDirectoryWidth")])).toEqual(["300", "320"]);
 });
