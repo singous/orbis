@@ -46,9 +46,9 @@ describe("notebook layout", () => {
     expect(within(screen.getByRole("region", { name: "工作" })).getAllByRole("link")).toHaveLength(4);
     expect(within(screen.getByRole("region", { name: "个人" })).getAllByRole("link")).toHaveLength(4);
     expect(screen.getByText("文档 2")).toBeInTheDocument();
-    expect(screen.queryByRole("region", { name: "常用笔记本" })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "设为常用：笔记本 0" }));
-    expect(screen.getByRole("region", { name: "常用笔记本" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "快捷访问" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "加入快捷访问：笔记本 0" }));
+    expect(screen.getByRole("region", { name: "快捷访问" })).toBeInTheDocument();
     expect(within(screen.getByRole("navigation", { name: "文档导航" })).getByRole("link", { name: "笔记本 0" })).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "最近更新" })).toBeNull();
   });

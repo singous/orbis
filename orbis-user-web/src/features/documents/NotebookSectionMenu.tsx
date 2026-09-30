@@ -43,7 +43,7 @@ export function NotebookSectionMenu({ notebookId, activeNoteId }: NotebookSectio
         </Link>
       </div>
       <div className="notebook-menu-actions">
-        <ActionButton type="button" aria-label={isPinned(notebookId) ? "取消常用笔记本" : "设为常用笔记本"} aria-pressed={isPinned(notebookId)} onClick={() => togglePin(notebookId)}><Pin size={15} />{isPinned(notebookId) ? "已设为常用" : "设为常用"}</ActionButton>
+        <ActionButton type="button" aria-label={isPinned(notebookId) ? "移出快捷访问" : "加入快捷访问"} aria-pressed={isPinned(notebookId)} onClick={() => togglePin(notebookId)}><Pin size={15} />{isPinned(notebookId) ? "已加入快捷访问" : "加入快捷访问"}</ActionButton>
         {canMutateWorkspaceContent(workspace) ? <ActionButton type="button" aria-label="新建文档" disabled={createNote.isPending || !tree.isSuccess} onClick={() => void createNote.mutateAsync({ notebook_id: notebookId, title: "未命名文档", parent_id: null, sort_order: tree.data?.items.length ?? 0 }).then((note) => navigate(`/documents/${note.id}`)).catch((error) => showToast({ title: "创建文档失败", description: error instanceof Error ? error.message : "请稍后重试。", tone: "danger" }))}><Plus size={18} /></ActionButton> : null}
       </div>
       <NavLink end to={`/collections/${notebookId}`} aria-label="笔记本首页" className={({ isActive }) => `workspace-function-link notebook-home-link${isActive ? " is-active" : ""}`}><Home aria-hidden="true" size={16} /><span>首页</span></NavLink>

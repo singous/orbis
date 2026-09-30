@@ -2,6 +2,7 @@ import { ActionButton } from "../../shared/ui/ActionButton";
 import { BookOpen, ChevronsRight, Globe, Home, LibraryBig, Orbit, Search, Settings, Sparkles, X } from "../../shared/ui/icons";
 import { Link, useLocation } from "react-router-dom";
 
+import { NotebookQuickAccess } from "./NotebookQuickAccess";
 import { Tooltip } from "../../shared/ui/Tooltip";
 import { DEFAULT_WORKSPACE_PATH, resolveWorkspaceArea, WORKSPACE_AREAS, type WorkspaceAreaId } from "./workspace-areas";
 
@@ -30,6 +31,7 @@ export function BusinessRail({ collapsed, onExpand, onClose }: BusinessRailProps
         {areas.map(({ id, label, href }) => {
           const Icon = areaIcons[id];
           const active = activeArea.id === id;
+          if (id === "documents") return <NotebookQuickAccess key={id} active={active} />;
           return (
           <Tooltip key={id} label={label} side="right">
             <Link to={href} aria-label={label} aria-current={active ? "page" : undefined} className={`rail-action${active ? " is-active" : ""}`}><Icon aria-hidden="true" size={22} /></Link>
