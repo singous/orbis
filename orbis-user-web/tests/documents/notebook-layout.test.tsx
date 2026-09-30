@@ -12,7 +12,7 @@ const fixtures = vi.hoisted(() => ({
 }));
 vi.mock("../../src/features/documents/queries", () => ({
   useNotebooks: () => ({ data: { items: fixtures.notebooks }, isSuccess: true }),
-  useDocumentGroups: () => ({ data: { items: [{ id: "work", name: "工作" }, { id: "personal", name: "个人" }] }, isSuccess: true }),
+  useDocumentGroups: () => ({ data: { items: [{ id: "work", name: "工作" }, { id: "personal", name: "个人" }, { id: "empty", name: "空的默认分组" }] }, isSuccess: true }),
   useNoteSearch: () => ({ data: { items: [{ id: "note-1", notebook_id: "notebook-0" }, { id: "note-2", notebook_id: "notebook-0" }] }, isSuccess: true }),
   useCreateNotebook: () => ({ mutateAsync: fixtures.create, isPending: false }),
 }));
@@ -46,6 +46,7 @@ describe("notebook layout", () => {
     expect(within(screen.getByRole("region", { name: "工作" })).getAllByRole("link")).toHaveLength(4);
     expect(within(screen.getByRole("region", { name: "个人" })).getAllByRole("link")).toHaveLength(4);
     expect(screen.getByText("文档 2")).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "空的默认分组" })).toBeNull();
     expect(screen.queryByRole("region", { name: "快捷访问" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "加入快捷访问：笔记本 0" }));
     expect(screen.getByRole("region", { name: "快捷访问" })).toBeInTheDocument();

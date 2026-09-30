@@ -37,18 +37,18 @@ export function DocumentOverviewPage() {
     for (const note of notesQuery.data?.items ?? []) result.set(note.notebook_id, (result.get(note.notebook_id) ?? 0) + 1);
     return result;
   }, [notesQuery.data]);
-  const grouped = groups.map((group) => ({ id: group.id, title: group.name, notebooks: notebooks.filter((notebook) => notebook.group_id === group.id) }));
+  const grouped = groups.map((group) => ({ id: group.id, title: group.name, notebooks: notebooks.filter((notebook) => notebook.group_id === group.id) })).filter((group) => group.notebooks.length > 0);
   const knownGroups = new Set(groups.map((group) => group.id));
   const ungrouped = notebooks.filter((notebook) => !knownGroups.has(notebook.group_id));
   if (ungrouped.length) grouped.push({ id: "ungrouped", title: "其他笔记本", notebooks: ungrouped });
 
   function card(notebook: Notebook, compact = false) {
     return <div key={notebook.id} className={`notebook-overview-card${compact ? " is-compact" : ""}`}>
-      <Link to={`/collections/${notebook.id}`} className="notebook-overview-card-link">
+      <Link to={`/collections/${notebook.id}`} title={notebook.title} className="notebook-overview-card-link">
         <NotebookIcon icon={notebook.icon} />
         <span className="notebook-overview-card-copy"><strong>{notebook.title}</strong><span>更新于 {formatDate(notebook.updated_at_ms)}</span>{!compact && notesQuery.isSuccess ? <span className="notebook-overview-count">文档 {counts.get(notebook.id) ?? 0}</span> : null}</span>
       </Link>
-      <ActionButton type="button" className={`notebook-overview-pin${isPinned(notebook.id) ? " is-pinned" : ""}`} aria-label={`${isPinned(notebook.id) ? "移出快捷访问" : "加入快捷访问"}：${notebook.title}`} aria-pressed={isPinned(notebook.id)} onClick={() => togglePin(notebook.id)}><Pin size={16} /></ActionButton>
+      <ActionButton type="button" className={`notebook-overview-pin${isPinned(notebook.id) ? " is-pinned" : ""}`} title={isPinned(notebook.id) ? "移出快捷访问" : "加入快捷访问"} aria-label={`${isPinned(notebook.id) ? "移出快捷访问" : "加入快捷访问"}：${notebook.title}`} aria-pressed={isPinned(notebook.id)} onClick={() => togglePin(notebook.id)}><Pin size={16} /></ActionButton>
     </div>;
   }
   return <DocumentShell>
@@ -57,7 +57,7 @@ export function DocumentOverviewPage() {
         {notebooksQuery.isError || groupsQuery.isError ? <StatusMessage tone="error" title="笔记本加载失败">请刷新页面重试。</StatusMessage> : null}
         {notebooksQuery.isLoading ? <LoadingState label="正在加载笔记本…" variant="cards" /> : null}
         {common.length ? <section className="notebook-overview-common" aria-label="快捷访问"><header className="workbench-section-heading"><h2>快捷访问</h2><ActionButton type="button" aria-expanded={!isCollapsed("common")} onClick={() => toggleGroup("common")}>{isCollapsed("common") ? "展开" : "收起"}</ActionButton></header>{!isCollapsed("common") ? <div className="notebook-overview-grid">{common.map((notebook) => card(notebook, true))}</div> : null}</section> : null}
-        {grouped.map((group) => <section key={group.id} className="notebook-overview-group" aria-label={group.title}><header className="workbench-section-heading"><h2>{group.title}</h2></header><div className="notebook-overview-grid">{group.notebooks.map((notebook) => card(notebook))}</div>{!group.notebooks.length ? <p className="notebook-group-empty">此分组还没有笔记本。</p> : null}</section>)}
+        {grouped.map((group) => <section key={group.id} className="notebook-overview-group" aria-label={group.title}><header className="workbench-section-heading"><h2>{group.title}</h2></header><div className="notebook-overview-grid">{group.notebooks.map((notebook) => card(notebook))}</div></section>)}
         {!notebooksQuery.isLoading && !notebooksQuery.isError && !notebooks.length ? <div className="workbench-empty-section"><BookOpen size={28} /><h3>还没有笔记本</h3><p>创建笔记本，开始整理你的文档。</p>{canEdit ? <Button variant="secondary" onClick={() => setCreating(true)}>新建笔记本</Button> : null}</div> : null}
       </PageContainer>
     </div>
