@@ -40,7 +40,7 @@ test('document overview shares the home frame and keeps real notebook content ne
     const section = page.getByRole('region', { name: 'Frame notebooks', exact: true });
     await expect(section).toBeVisible();
     await expect(page.getByRole('region', { name: 'Empty frame group', exact: true })).toHaveCount(0);
-    const heading = await section.locator('h2').boundingBox();
+    const heading = await page.locator('.notebook-overview-group h2').first().boundingBox();
     const header = await page.locator('.notebook-overview .page-header').boundingBox();
     expect(heading!.y - (header!.y + header!.height)).toBeLessThan(40);
     const cards = await section.locator('.notebook-overview-card').evaluateAll(elements => elements.map(element => { const box = element.getBoundingClientRect(); return { y: box.y, right: box.right }; }));
@@ -49,6 +49,20 @@ test('document overview shares the home frame and keeps real notebook content ne
     expect(cards[0].y).toBe(cards[1].y);
     expect(Math.abs(cards[1].right - (row!.x + row!.width))).toBeLessThan(2);
   }
+  const create = page.locator('.workspace-business-rail').getByRole('button', { name: '新建资产', exact: true });
+  await expect(create).toBeVisible();
+  await create.click();
+  await expect(page.getByRole('menuitem', { name: '文档', exact: true })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: '笔记本', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.locator('.notebook-overview-card-link').first().click();
+  const notebookHeader = page.locator('#notebook-directory .notebook-menu-header');
+  await expect(notebookHeader.getByRole('button', { name: '新建文档', exact: true })).toBeEnabled();
+  const columnBox = await page.locator('#notebook-directory').boundingBox();
+  const titleBox = await notebookHeader.locator('.notebook-menu-title').boundingBox();
+  expect(titleBox!.y - columnBox!.y).toBeLessThan(24);
+  await expect(create).toBeVisible();
+  await page.goto('/documents');
   await page.setViewportSize({ width: 390, height: 740 });
   await expect(page.locator('.notebook-overview-card').first()).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

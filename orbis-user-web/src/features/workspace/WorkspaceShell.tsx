@@ -130,12 +130,12 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
       <div ref={gridRef} className="workspace-shell-grid">
         {drawerOpen ? <ActionButton type="button" className="workspace-drawer-backdrop" aria-label={mainNavigationOpen ? "关闭主导航" : "关闭文档目录"} onClick={() => { setMainNavigationOpen(false); setDocumentContextOpen(false); }} /> : null}
         <div ref={navigationRef} className="workspace-main-navigation" aria-hidden={compact && !mainNavigationOpen ? true : undefined} inert={compact && !mainNavigationOpen ? true : undefined} onClick={closeAfterLink}>
-          <BusinessRail collapsed={showFunctionSidebar && sidebarHidden} onExpand={() => changeCollapsed(false)} onClose={compact && !showFunctionSidebar ? () => setMainNavigationOpen(false) : undefined} />
+          <BusinessRail createMenu={documentArea && !compact && accessToken && canMutateWorkspaceContent(workspace) ? <RailCreateMenu /> : undefined} collapsed={showFunctionSidebar && sidebarHidden} onExpand={() => changeCollapsed(false)} onClose={compact && !showFunctionSidebar ? () => setMainNavigationOpen(false) : undefined} />
           {showFunctionSidebar ? <section id="workspace-sidebar" className="workspace-sidebar" aria-hidden={sidebarHidden ? true : undefined} inert={sidebarHidden ? true : undefined} aria-label="侧栏">
             <header className="workspace-sidebar-header">
               <h2>{area.title}</h2>
               <ActionButton type="button" className="sidebar-collapse" aria-label="收起侧栏" aria-expanded="true" aria-controls="workspace-sidebar" onClick={() => changeCollapsed(true)}><ChevronsLeft size={18} /></ActionButton>
-              {area.id === "documents" && accessToken && canMutateWorkspaceContent(workspace) ? <RailCreateMenu /> : null}
+              {documentArea && compact && accessToken && canMutateWorkspaceContent(workspace) ? <RailCreateMenu /> : null}
               <ActionButton type="button" className="sidebar-mobile-close" aria-label="关闭侧栏" onClick={() => setMainNavigationOpen(false)}><X size={18} /></ActionButton>
             </header>
             {documentArea ? <>{accessToken ? <WorkspaceNavigation /> : null}{compact && sectionMenu ? <div className="notebook-mobile-directory">{sectionMenu}</div> : null}</> : sectionMenu ?? (accessToken ? <WorkspaceNavigation /> : null)}

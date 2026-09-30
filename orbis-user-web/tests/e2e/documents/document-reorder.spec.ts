@@ -1,5 +1,7 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 
+test.use({ screenshot: "off", trace: "off" });
+
 const owner = { email: "owner@example.com", password: "Orbis-browser-test-2026!" };
 
 async function signIn(page: Page, request: APIRequestContext) {
@@ -44,7 +46,7 @@ test("notebook directories fold, keep compact actions, and preserve sibling drag
   const sidebar = page.getByRole("navigation", { name: "笔记本文档" });
   await main.getByRole("button", { name: "收起子目录 第一篇", exact: true }).click();
   await expect(main.getByRole("link", { name: childTitle, exact: true })).toHaveCount(0);
-  await expect(sidebar.getByRole("link", { name: childTitle, exact: true })).toHaveCount(0);
+  await expect(sidebar.getByRole("link", { name: childTitle, exact: true })).toBeVisible();
   await expect(page.getByText("5 篇文档", { exact: true })).toBeVisible();
   await page.reload();
   await expect(main.getByRole("button", { name: "展开子目录 第一篇", exact: true })).toHaveAttribute("aria-expanded", "false");
@@ -82,9 +84,11 @@ test("notebook directories fold, keep compact actions, and preserve sibling drag
   }
 
   await page.setViewportSize({ width: 1440, height: 1000 });
+  await expect(page.locator("#notebook-directory")).toBeVisible();
   const handle = main.getByRole("button", { name: "拖动排序 第三篇", exact: true });
   const target = main.getByRole("button", { name: "拖动排序 第一篇", exact: true });
   await expect(handle).toHaveAttribute("aria-roledescription", "draggable");
+  await handle.hover();
   const start = (await handle.boundingBox())!;
   const end = (await target.boundingBox())!;
   await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);

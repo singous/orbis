@@ -6,8 +6,9 @@ const EMPTY_SNAPSHOT = "[]";
 const listeners = new Map<string, Set<() => void>>();
 const fallbackSnapshots = new Map<string, string>();
 
-export function documentTreeStorageKey(workspaceId: string | undefined, notebookId: string) {
-  return `orbis.document-tree.collapsed.${workspaceId ?? "anonymous"}.${notebookId}`;
+export function documentTreeStorageKey(workspaceId: string | undefined, notebookId: string, view: "side" | "main" = "side") {
+  const base = `orbis.document-tree.collapsed.${workspaceId ?? "anonymous"}.${notebookId}`;
+  return view === "main" ? `${base}.main` : base;
 }
 
 function readSnapshot(key: string): string {
@@ -57,9 +58,9 @@ function findAncestors(items: NoteTreeItem[], noteId: string): string[] | undefi
   return undefined;
 }
 
-/** Both notebook views share device preferences scoped to workspace and notebook. */
-export function useDocumentTreeExpansion(workspaceId: string | undefined, notebookId: string, items: NoteTreeItem[], activeNoteId?: string) {
-  const key = documentTreeStorageKey(workspaceId, notebookId);
+/** Each notebook view keeps independent device preferences; legacy sidebar keys remain valid. */
+export function useDocumentTreeExpansion(workspaceId: string | undefined, notebookId: string, items: NoteTreeItem[], activeNoteId?: string, view: "side" | "main" = "side") {
+  const key = documentTreeStorageKey(workspaceId, notebookId, view);
   const snapshot = useSyncExternalStore(
     useCallback((notify) => subscribe(key, notify), [key]),
     useCallback(() => readSnapshot(key), [key]),

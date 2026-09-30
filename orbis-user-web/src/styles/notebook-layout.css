@@ -8,7 +8,7 @@
 .notebook-directory-body { min-height: 0; display: flex; flex: 1; overflow: hidden; }
 .notebook-directory-body[hidden] { display: none; }
 .notebook-directory-column .workspace-function-menu { padding: 12px 12px 20px; }
-.notebook-directory-toggle { flex: none; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; margin: 10px 8px 0 auto; color: var(--muted); border-radius: 6px; }
+.notebook-directory-toggle { position: absolute; z-index: 2; top: 20px; right: 12px; display: flex; align-items: center; justify-content: center; width: 24px; height: 28px; margin: 0; color: var(--muted); border-radius: 6px; }
 .notebook-directory-toggle:hover { background: var(--surface-secondary); }
 .notebook-directory-column > .workspace-sidebar-resizer { inset-block: 0; left: auto; right: -4px; width: 8px; }
 .notebook-directory-column .notebook-menu-title { font-size: 16px; font-weight: 650; }
@@ -65,3 +65,14 @@
 .rail-notebook-tools { display: flex; flex-wrap: wrap; }
 .rail-notebook-tools a { font-size: 12px; padding: 8px; }
 .workspace-main-navigation:has(.rail-notebook-popover) { overflow: visible; z-index: 50; }
+
+/* Creation stays in the visible rail, and notebook identity owns the first row. */
+.document-workbench .rail-brand { margin-bottom: 16px; }
+.rail-create-entry { margin-bottom: 20px; }
+.rail-create-entry .rail-create-trigger { width: 32px; height: 32px; border-radius: 8px; }
+.notebook-directory-column .notebook-menu-header { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 28px 10px 0; margin-bottom: 8px; }
+.notebook-menu-header .notebook-menu-back { display: grid; place-items: center; width: 24px; height: 28px; flex: none; margin: 0; }
+.notebook-menu-header .notebook-menu-title { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; line-height: 24px; }
+.notebook-menu-header .notebook-menu-create { display: grid; place-items: center; width: 28px; height: 28px; flex: none; border-radius: 7px; background: var(--surface-inverse); color: var(--text-oninverse); }
+.notebook-directory-collapsed .notebook-directory-toggle { top: 10px; right: 8px; }
+.notebook-mobile-directory .notebook-menu-header { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 0 10px; }

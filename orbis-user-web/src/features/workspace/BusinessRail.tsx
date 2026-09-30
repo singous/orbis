@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { BookOpen, ChevronsRight, Globe, Home, LibraryBig, Orbit, Search, Settings, Sparkles, X } from "../../shared/ui/icons";
 import { Link, useLocation } from "react-router-dom";
@@ -6,7 +7,7 @@ import { NotebookQuickAccess } from "./NotebookQuickAccess";
 import { Tooltip } from "../../shared/ui/Tooltip";
 import { DEFAULT_WORKSPACE_PATH, resolveWorkspaceArea, WORKSPACE_AREAS, type WorkspaceAreaId } from "./workspace-areas";
 
-type BusinessRailProps = { collapsed: boolean; onExpand: () => void; onClose?: () => void };
+type BusinessRailProps = { collapsed: boolean; onExpand: () => void; onClose?: () => void; createMenu?: ReactNode };
 
 const areaIcons = {
   home: Home,
@@ -18,7 +19,7 @@ const areaIcons = {
 } satisfies Record<WorkspaceAreaId, typeof Home>;
 const areas = WORKSPACE_AREAS.filter((area) => area.visibleInRail);
 
-export function BusinessRail({ collapsed, onExpand, onClose }: BusinessRailProps) {
+export function BusinessRail({ collapsed, onExpand, onClose, createMenu }: BusinessRailProps) {
   const { pathname } = useLocation();
   const activeArea = resolveWorkspaceArea(pathname);
   const searchActive = pathname === "/documents/search";
@@ -27,6 +28,7 @@ export function BusinessRail({ collapsed, onExpand, onClose }: BusinessRailProps
       {onClose ? <ActionButton className="rail-action rail-mobile-close" type="button" aria-label="关闭侧栏" onClick={onClose}><X size={20} /></ActionButton> : null}
       {collapsed ? <Tooltip label="展开侧栏" side="right"><ActionButton className="rail-action rail-expand" type="button" aria-label="展开侧栏" onClick={onExpand}><ChevronsRight size={20} /></ActionButton></Tooltip> : null}
       <Link to={DEFAULT_WORKSPACE_PATH} className="rail-brand" aria-label="Orbis 首页"><Orbit size={28} strokeWidth={1.8} /></Link>
+      {createMenu ? <div className="rail-create-entry">{createMenu}</div> : null}
       <nav className="workspace-business-nav" aria-label="业务板块">
         {areas.map(({ id, label, href }) => {
           const Icon = areaIcons[id];
