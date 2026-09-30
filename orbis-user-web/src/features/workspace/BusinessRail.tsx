@@ -26,7 +26,7 @@ export function BusinessRail({ collapsed, onExpand, onClose, createMenu, expandL
   return (
     <aside className="workspace-business-rail" aria-label="应用导航">
       {onClose ? <ActionButton className="rail-action rail-mobile-close" type="button" aria-label="关闭侧栏" onClick={onClose}><X size={20} /></ActionButton> : null}
-      {collapsed ? <Tooltip label={expandLabel} side="right"><ActionButton className="rail-action rail-expand" type="button" aria-label={expandLabel} onClick={onExpand}><ChevronsRight size={20} /></ActionButton></Tooltip> : null}
+      {collapsed ? <Tooltip label={expandLabel} side="right"><ActionButton className="rail-action rail-expand" data-sidebar-toggle="expand" type="button" aria-label={expandLabel} onClick={onExpand}><ChevronsRight size={20} /></ActionButton></Tooltip> : null}
       <Link to={DEFAULT_WORKSPACE_PATH} className="rail-brand" aria-label="Orbis 首页"><Orbit size={28} strokeWidth={1.8} /></Link>
       {createMenu ? <div className="rail-create-entry">{createMenu}</div> : null}
       <nav className="workspace-business-nav" aria-label="业务板块">

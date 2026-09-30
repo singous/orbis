@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 const api = `http://127.0.0.1:${process.env.ORBIS_E2E_API_PORT || '9311'}`;
 const credentials = { email: 'owner@example.com', password: 'Orbis-browser-test-2026!' };
 
-test.use({ screenshot: 'off' });
+test.use({ screenshot: 'off', trace: 'off' });
 for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 740 }]) {
   test(`document chrome remains usable at the start, middle and end (${viewport.width}px)`, async ({ page, request }) => {
     await page.setViewportSize(viewport);
@@ -65,11 +65,9 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 740 
       if (controls && body) expect(controls.x + controls.width).toBeLessThanOrEqual(body.x);
     }
     await expect(toolbar).toBeInViewport();
-    await page.screenshot({ path: test.info().outputPath(`editor-bottom-${viewport.width}.png`) });
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.evaluate(() => { document.documentElement.dataset.theme = 'dark'; });
     await expect.poll(() => page.locator('.block-add').evaluate(element => getComputedStyle(element).backgroundColor)).toBe('oklch(0.2103 0 0)');
-    await page.screenshot({ path: test.info().outputPath(`editor-bottom-dark-${viewport.width}.png`) });
 
     await page.getByRole('button', { name: '更多文档操作' }).click();
     await expect(page.getByRole('menuitem', { name: '归档文档' })).toBeInViewport();

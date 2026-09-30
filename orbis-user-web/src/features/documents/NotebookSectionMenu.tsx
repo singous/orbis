@@ -1,3 +1,4 @@
+import type { WorkspaceSidebarConfig } from "../workspace/workspace-sidebar-config";
 import { useStore } from "zustand";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { authStore } from "../../shared/auth/auth-store";
@@ -12,15 +13,44 @@ import { useCreateNote, useNotebooks, useNoteTree } from "./queries";
 
 export type NotebookSectionMenuProps = { notebookId: string; activeNoteId?: string };
 
-/** Notebook identity and creation share one compact row above its independent tree. */
-export function NotebookSectionMenu({ notebookId, activeNoteId }: NotebookSectionMenuProps) {
-  const notebooksQuery = useNotebooks();
-  const workspace = useStore(authStore, (state) => state.workspace);
-  const { isPinned, togglePin } = usePinnedNotebooks(workspace?.id);
+const NOTEBOOK_SIDEBAR_PREFERENCES = {
+  widthKey: "orbis.notebookDirectoryWidth",
+  collapsedKey: "orbis.notebookDirectoryCollapsed",
+  defaultWidth: 260,
+  maximumWidth: 420,
+};
+
+/** Notebook-specific slots contain no layout or collapse state. */
+export function createNotebookSidebar(notebookId: string, activeNoteId?: string): WorkspaceSidebarConfig {
+  return {
+    id: "notebook-directory",
+    title: <NotebookSidebarTitle notebookId={notebookId} />,
+    actions: <NotebookCreateAction notebookId={notebookId} />,
+    content: <NotebookSectionMenu notebookId={notebookId} activeNoteId={activeNoteId} />,
+    label: "笔记本目录栏",
+    collapseLabel: "收起笔记本目录",
+    expandLabel: "展开笔记本目录",
+    resizeLabel: "调整笔记本目录宽度",
+    preferences: NOTEBOOK_SIDEBAR_PREFERENCES,
+  };
+}
+
+function NotebookSidebarTitle({ notebookId }: { notebookId: string }) {
+  const notebooks = useNotebooks();
+  const notebook = notebooks.data?.items.find(item => item.id === notebookId);
+  return <div className="notebook-menu-header">
+    <Link to="/documents" className="notebook-menu-back" aria-label="返回文档中心" title="返回文档中心"><ArrowLeft aria-hidden="true" size={16} /></Link>
+    <Link to={`/collections/${notebookId}`} className="notebook-menu-title" title={notebook?.title}>
+      <NotebookIcon icon={notebook?.icon} size="sm" /><span className="truncate">{notebook?.title ?? "正在加载…"}</span>
+    </Link>
+  </div>;
+}
+
+function NotebookCreateAction({ notebookId }: { notebookId: string }) {
+  const workspace = useStore(authStore, state => state.workspace);
   const createNote = useCreateNote();
   const tree = useNoteTree(notebookId);
   const navigate = useNavigate();
-  const notebook = notebooksQuery.data?.items.find((item) => item.id === notebookId);
 
   async function createDocument() {
     try {
@@ -31,14 +61,14 @@ export function NotebookSectionMenu({ notebookId, activeNoteId }: NotebookSectio
     }
   }
 
+  return canMutateWorkspaceContent(workspace) ? <ActionButton type="button" className="notebook-menu-create" aria-label="新建文档" title="新建文档" disabled={createNote.isPending || !tree.isSuccess} onClick={() => void createDocument()}><Plus aria-hidden="true" size={18} /></ActionButton> : null;
+}
+
+/** The side tree retains its own expansion preferences independently of the page. */
+export function NotebookSectionMenu({ notebookId, activeNoteId }: NotebookSectionMenuProps) {
+  const workspace = useStore(authStore, state => state.workspace);
+  const { isPinned, togglePin } = usePinnedNotebooks(workspace?.id);
   return <nav className="workspace-function-menu" aria-label="笔记本目录">
-    <div className="workspace-function-heading notebook-menu-header">
-      <Link to="/documents" className="notebook-menu-back" aria-label="返回文档中心" title="返回文档中心"><ArrowLeft aria-hidden="true" size={16} /></Link>
-      <Link to={`/collections/${notebookId}`} className="notebook-menu-title" title={notebook?.title}>
-        <NotebookIcon icon={notebook?.icon} size="sm" /><span className="truncate">{notebook?.title ?? "正在加载…"}</span>
-      </Link>
-      {canMutateWorkspaceContent(workspace) ? <ActionButton type="button" className="notebook-menu-create" aria-label="新建文档" title="新建文档" disabled={createNote.isPending || !tree.isSuccess} onClick={() => void createDocument()}><Plus aria-hidden="true" size={18} /></ActionButton> : null}
-    </div>
     <div className="notebook-menu-actions">
       <ActionButton type="button" aria-label={isPinned(notebookId) ? "移出快捷访问" : "加入快捷访问"} aria-pressed={isPinned(notebookId)} onClick={() => togglePin(notebookId)}><Pin size={15} />{isPinned(notebookId) ? "已加入快捷访问" : "加入快捷访问"}</ActionButton>
     </div>

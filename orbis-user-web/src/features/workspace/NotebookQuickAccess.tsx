@@ -18,12 +18,18 @@ export function NotebookQuickAccess({ active }: { active: boolean }) {
   useEffect(() => {
     if (!open) return;
     const outside = (event: PointerEvent) => { if (!root.current?.contains(event.target as Node)) setOpen(false); };
-    const escape = (event: KeyboardEvent) => { if (event.key === "Escape") { setOpen(false); trigger.current?.focus(); } };
+    const escape = (event: KeyboardEvent) => { if (event.key === "Escape" && !event.defaultPrevented) { setOpen(false); trigger.current?.focus(); } };
     document.addEventListener("pointerdown", outside);
     document.addEventListener("keydown", escape);
     return () => { document.removeEventListener("pointerdown", outside); document.removeEventListener("keydown", escape); };
   }, [open]);
-  return <div ref={root} className="rail-document-entry" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setOpen(false); }}>
+  return <div ref={root} className="rail-document-entry" onKeyDown={(event) => {
+    if (!open || event.key !== "Escape" || event.defaultPrevented) return;
+    // Consume the nested popover's Escape before the drawer's document listener.
+    event.preventDefault();
+    setOpen(false);
+    trigger.current?.focus();
+  }} onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setOpen(false); }}>
     <Link ref={trigger} to="/documents" aria-label="在线文档" aria-current={active ? "page" : undefined} aria-expanded={open} aria-controls="notebook-quick-access" className={`rail-action${active ? " is-active" : ""}`} onClick={() => setOpen(true)} onKeyDown={(event) => { if (event.key === "ArrowRight" || event.key === "ArrowDown") { event.preventDefault(); setOpen(true); window.setTimeout(() => root.current?.querySelector<HTMLAnchorElement>(".rail-notebook-popover a")?.focus(), 0); } }}><BookOpen aria-hidden="true" size={22} /></Link>
     {open && accessToken ? <nav id="notebook-quick-access" className="rail-notebook-popover" aria-label="笔记本快捷访问">
       <Link to="/documents" className="rail-notebook-popover-title" onClick={() => setOpen(false)}>在线文档<span aria-hidden="true">›</span></Link>

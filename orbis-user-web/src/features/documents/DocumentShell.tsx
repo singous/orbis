@@ -6,6 +6,8 @@ import { useStore } from "zustand";
 
 import { authStore } from "../../shared/auth/auth-store";
 import { EditorToolbarFrame } from "./EditorToolbarHost";
+import { createNotebookSidebar } from "./NotebookSectionMenu";
+import { WorkspaceNavigation } from "../workspace/WorkspaceNavigation";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
 import { readDocumentContextOpen, writeDocumentContextOpen } from "./document-context-state";
 
@@ -17,11 +19,11 @@ type DocumentShellProps = {
   contextPanel?: ReactNode;
   contextOpen?: boolean;
   onOpenContext?: () => void;
-  /** Left function column (e.g. the notebook tree) between rail and content. */
-  sectionMenu?: ReactNode;
+  notebookId?: string;
+  activeNoteId?: string;
 };
 
-export function DocumentShell({ children, toolbar, breadcrumb, editorLayout = false, contextPanel, contextOpen, onOpenContext, sectionMenu }: DocumentShellProps) {
+export function DocumentShell({ children, toolbar, breadcrumb, editorLayout = false, contextPanel, contextOpen, onOpenContext, notebookId, activeNoteId }: DocumentShellProps) {
   const workspaceId = useStore(authStore, (state) => state.workspace?.id);
   const [storedContextOpen, setStoredContextOpen] = useState(() => workspaceId ? readDocumentContextOpen(workspaceId) : true);
   const isContextOpen = contextOpen ?? storedContextOpen;
@@ -37,7 +39,7 @@ export function DocumentShell({ children, toolbar, breadcrumb, editorLayout = fa
 
   return (
     <WorkspaceShell
-      sectionMenu={sectionMenu}
+      sidebar={notebookId ? createNotebookSidebar(notebookId, activeNoteId) : { title: <h2>在线文档</h2>, content: <WorkspaceNavigation />, desktopVisible: false }}
       toolbar={toolbar}
       sectionTitle={breadcrumb}
       contentLayout={editorLayout ? "document" : "page"}

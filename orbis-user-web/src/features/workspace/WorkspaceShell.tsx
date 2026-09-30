@@ -1,6 +1,6 @@
 import { ActionButton } from "../../shared/ui/ActionButton";
 import type { ReactNode } from "react";
-import { ChevronsLeft, Menu, PanelRightOpen, X } from "../../shared/ui/icons";
+import { Menu, PanelRightOpen } from "../../shared/ui/icons";
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useStore } from "zustand";
@@ -8,7 +8,9 @@ import { useStore } from "zustand";
 import { authStore } from "../../shared/auth/auth-store";
 import { SidebarResizeHandle } from "./SidebarResizeHandle";
 import { useSidebarResize } from "./use-sidebar-resize";
-import { NotebookDirectoryColumn } from "../documents/NotebookDirectoryColumn";
+import { WorkspaceSidebar } from "./WorkspaceSidebar";
+import { useWorkspaceSidebar } from "./use-workspace-sidebar";
+import { DEFAULT_SIDEBAR_PREFERENCES, type WorkspaceSidebarConfig } from "./workspace-sidebar-config";
 import { BusinessRail } from "./BusinessRail";
 import { RailCreateMenu } from "./RailCreateMenu";
 import { WorkspaceNavigation } from "./WorkspaceNavigation";
@@ -16,10 +18,12 @@ import { resolveWorkspaceArea } from "./workspace-areas";
 import { WorkspaceTopbar } from "./WorkspaceTopbar";
 import { canMutateWorkspaceContent } from "./capabilities";
 
+export type { WorkspaceSidebarConfig } from "./workspace-sidebar-config";
+
 export type WorkspaceShellProps = {
   children: ReactNode;
   sectionTitle?: ReactNode;
-  sectionMenu?: ReactNode;
+  sidebar?: WorkspaceSidebarConfig | false;
   toolbar?: ReactNode;
   contentLayout?: "page" | "document";
   contextPanel?: ReactNode;
@@ -28,7 +32,6 @@ export type WorkspaceShellProps = {
 };
 
 const compactNavigationQuery = "(max-width: 767px)";
-const sidebarStorageKey = "orbis.sidebarCollapsed";
 
 function useCompactNavigation(): boolean {
   const [compact, setCompact] = useState(() => typeof window.matchMedia === "function" && window.matchMedia(compactNavigationQuery).matches);
@@ -43,24 +46,14 @@ function useCompactNavigation(): boolean {
   return compact;
 }
 
-export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, contentLayout = "page", contextPanel, contextOpen = true, onOpenContext }: WorkspaceShellProps) {
+export function WorkspaceShell({ children, sectionTitle, sidebar, toolbar, contentLayout = "page", contextPanel, contextOpen = true, onOpenContext }: WorkspaceShellProps) {
   const { pathname } = useLocation();
   const area = resolveWorkspaceArea(pathname);
-  const showFunctionSidebar = area.showFunctionSidebar;
-  const documentArea = area.id === "documents";
-  const [directoryCollapsed, setDirectoryCollapsed] = useState(false);
   const workspace = useStore(authStore, (state) => state.workspace);
   const accessToken = useStore(authStore, (state) => state.accessToken);
   const canCreate = Boolean(accessToken && canMutateWorkspaceContent(workspace));
-  const notebookNavigation = documentArea && Boolean(sectionMenu);
   const [mainNavigationOpen, setMainNavigationOpen] = useState(false);
   const [documentContextOpen, setDocumentContextOpen] = useState(false);
-  const [sidebarAnimating, setSidebarAnimating] = useState(false);
-  const [collapsed, setCollapsed] = useState(() => {
-    try { return localStorage.getItem(sidebarStorageKey) === "1"; } catch { return false; }
-  });
-  const sidebarToggleRequested = useRef(false);
-  const directoryToggleRequested = useRef(false);
   const navigationRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const contextRef = useRef<HTMLElement>(null);
@@ -69,49 +62,20 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
   const compact = useCompactNavigation();
   const documentContextExpanded = documentContextOpen && contextOpen;
   const drawerOpen = compact && (mainNavigationOpen || documentContextExpanded);
+  const sidebarConfig: WorkspaceSidebarConfig | false = sidebar ?? (area.showFunctionSidebar ? { title: <h2>{area.title}</h2>, content: accessToken ? <WorkspaceNavigation /> : null } : false);
+  const showFunctionSidebar = Boolean(sidebarConfig && (compact || sidebarConfig.desktopVisible !== false));
+  const preferences = sidebarConfig ? sidebarConfig.preferences ?? DEFAULT_SIDEBAR_PREFERENCES : DEFAULT_SIDEBAR_PREFERENCES;
+  const { collapsed, animating, changeCollapsed } = useWorkspaceSidebar(preferences, compact, navigationRef);
   const sidebarHidden = !showFunctionSidebar || (!compact && collapsed);
-  const sidebarResizeEnabled = showFunctionSidebar && !documentArea && !compact && !collapsed;
-  const sidebarResize = useSidebarResize(gridRef, sidebarResizeEnabled, Boolean(contextPanel && contextOpen));
+  const sidebarResizeEnabled = showFunctionSidebar && !compact && !collapsed;
+  const sidebarResize = useSidebarResize(gridRef, sidebarResizeEnabled, Boolean(contextPanel && contextOpen), preferences);
   const showToolbar = compact || Boolean(sectionTitle) || Boolean(toolbar) || Boolean(contextPanel && onOpenContext);
-
-  function changeDirectoryCollapsed(next: boolean) {
-    directoryToggleRequested.current = true;
-    setDirectoryCollapsed(next);
-  }
-
-  useEffect(() => {
-    if (!directoryToggleRequested.current || compact) return;
-    directoryToggleRequested.current = false;
-    const label = directoryCollapsed ? "展开笔记本目录" : "收起笔记本目录";
-    navigationRef.current?.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)?.focus();
-  }, [directoryCollapsed, compact]);
-
-  function changeCollapsed(next: boolean) {
-    sidebarToggleRequested.current = true;
-    setSidebarAnimating(true);
-    setCollapsed(next);
-    try { localStorage.setItem(sidebarStorageKey, next ? "1" : "0"); } catch { /* Navigation remains usable without storage. */ }
-  }
-
-  useEffect(() => {
-    if (!sidebarAnimating) return;
-    // Cover reduced-motion mode and rapid toggles where transitionend may not fire.
-    const timer = window.setTimeout(() => setSidebarAnimating(false), 280);
-    return () => window.clearTimeout(timer);
-  }, [collapsed, sidebarAnimating]);
-
-  useEffect(() => {
-    if (!sidebarToggleRequested.current || compact) return;
-    sidebarToggleRequested.current = false;
-    const label = collapsed ? "展开侧栏" : "收起侧栏";
-    navigationRef.current?.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)?.focus();
-  }, [collapsed, compact]);
 
   useEffect(() => {
     if (!drawerOpen) return;
     const region = mainNavigationOpen ? navigationRef.current : contextRef.current;
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const focusable = () => Array.from(region?.querySelectorAll<HTMLElement>('a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]') ?? []).filter((element) => !element.closest("[hidden], [inert]"));
+    const focusable = () => Array.from(region?.querySelectorAll<HTMLElement>('a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]') ?? []).filter((element) => !element.closest("[hidden], [inert]") && getComputedStyle(element).display !== "none" && getComputedStyle(element).visibility !== "hidden");
     focusable()[0]?.focus();
     function handleKey(event: KeyboardEvent) {
       if (event.defaultPrevented || (event.target instanceof Element && event.target.closest('[role="dialog"], [role="menu"]'))) return;
@@ -129,7 +93,7 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
       }
     }
     document.addEventListener("keydown", handleKey);
-    return () => { document.removeEventListener("keydown", handleKey); previousFocus?.focus(); };
+    return () => { document.removeEventListener("keydown", handleKey); if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true }); };
   }, [drawerOpen, mainNavigationOpen]);
 
   function closeAfterLink(event: React.MouseEvent<HTMLElement>) {
@@ -140,23 +104,15 @@ export function WorkspaceShell({ children, sectionTitle, sectionMenu, toolbar, c
   }
 
   return (
-    <main style={sidebarResize.style} className={`workspace-shell${documentArea ? " document-workbench" : ""}${documentArea && sectionMenu ? " has-notebook-directory" : ""}${directoryCollapsed ? " notebook-directory-collapsed" : ""}${showFunctionSidebar ? " has-section-menu" : " sidebar-unavailable"}${sidebarHidden ? " sidebar-collapsed" : ""}${sidebarAnimating ? " sidebar-animating" : ""}${mainNavigationOpen ? " main-navigation-open" : ""}${documentContextExpanded ? " document-context-drawer-open" : ""}`}>
+    <main style={sidebarResize.style} className={`workspace-shell${showFunctionSidebar ? " has-section-menu" : " sidebar-unavailable"}${sidebarHidden ? " sidebar-collapsed" : ""}${animating ? " sidebar-animating" : ""}${mainNavigationOpen ? " main-navigation-open" : ""}${documentContextExpanded ? " document-context-drawer-open" : ""}`}>
       <WorkspaceTopbar disabled={drawerOpen} />
       <div ref={gridRef} className="workspace-shell-grid">
         {drawerOpen ? <ActionButton type="button" className="workspace-drawer-backdrop" aria-label={mainNavigationOpen ? "关闭主导航" : "关闭文档目录"} onClick={() => { setMainNavigationOpen(false); setDocumentContextOpen(false); }} /> : null}
         <div ref={navigationRef} className="workspace-main-navigation" aria-hidden={compact && !mainNavigationOpen ? true : undefined} inert={compact && !mainNavigationOpen ? true : undefined} onClick={closeAfterLink}>
-          <BusinessRail createMenu={canCreate && (!compact || !showFunctionSidebar) ? <RailCreateMenu /> : undefined} collapsed={notebookNavigation && !compact ? directoryCollapsed : showFunctionSidebar && sidebarHidden} expandLabel={notebookNavigation && !compact ? "展开笔记本目录" : "展开侧栏"} onExpand={() => notebookNavigation && !compact ? changeDirectoryCollapsed(false) : changeCollapsed(false)} onClose={compact && !showFunctionSidebar ? () => setMainNavigationOpen(false) : undefined} />
-          {notebookNavigation && !compact ? <NotebookDirectoryColumn collapsed={directoryCollapsed} onToggle={() => changeDirectoryCollapsed(!directoryCollapsed)}>{sectionMenu}</NotebookDirectoryColumn> : showFunctionSidebar ? <section id="workspace-sidebar" className="workspace-sidebar" aria-hidden={sidebarHidden ? true : undefined} inert={sidebarHidden ? true : undefined} aria-label="侧栏">
-            <header className="workspace-sidebar-header">
-              <h2>{area.title}</h2>
-              <ActionButton type="button" className="sidebar-collapse" aria-label="收起侧栏" aria-expanded="true" aria-controls="workspace-sidebar" onClick={() => changeCollapsed(true)}><ChevronsLeft size={18} /></ActionButton>
-              {compact && canCreate ? <RailCreateMenu /> : null}
-              <ActionButton type="button" className="sidebar-mobile-close" aria-label="关闭侧栏" onClick={() => setMainNavigationOpen(false)}><X size={18} /></ActionButton>
-            </header>
-            {documentArea ? <>{accessToken ? <WorkspaceNavigation /> : null}{compact && sectionMenu ? <div className="notebook-mobile-directory">{sectionMenu}</div> : null}</> : sectionMenu ?? (accessToken ? <WorkspaceNavigation /> : null)}
-          </section> : null}
+          <BusinessRail createMenu={canCreate ? <RailCreateMenu /> : undefined} collapsed={showFunctionSidebar && sidebarHidden} expandLabel={sidebarConfig ? sidebarConfig.expandLabel : undefined} onExpand={() => changeCollapsed(false)} onClose={compact && !showFunctionSidebar ? () => setMainNavigationOpen(false) : undefined} />
+          {showFunctionSidebar && sidebarConfig ? <WorkspaceSidebar config={sidebarConfig} hidden={sidebarHidden} onCollapse={() => changeCollapsed(true)} onClose={() => setMainNavigationOpen(false)} /> : null}
         </div>
-        {sidebarResizeEnabled ? <SidebarResizeHandle {...sidebarResize} /> : null}
+        {sidebarResizeEnabled ? <SidebarResizeHandle {...sidebarResize} label={sidebarConfig ? sidebarConfig.resizeLabel : undefined} controls={sidebarConfig && sidebarConfig.id ? sidebarConfig.id : "workspace-sidebar"} /> : null}
         <section className={`workspace-main-area${contextPanel && contextOpen ? " has-context" : ""}`} aria-label="主工作区">
           <section className={`workspace-content${contentLayout === "document" ? " workspace-document-content" : ""}`} inert={drawerOpen ? true : undefined}>
             {showToolbar ? (

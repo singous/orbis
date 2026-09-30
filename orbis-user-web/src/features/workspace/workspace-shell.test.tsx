@@ -60,7 +60,7 @@ function renderShell(initialEntry = "/documents", contextPanel?: React.ReactNode
   return render(
     <Providers>
       <MemoryRouter initialEntries={[initialEntry]}>
-        <WorkspaceShell sectionTitle="测试工作台" sectionMenu={sectionMenu} contextPanel={contextPanel}>
+        <WorkspaceShell sectionTitle="测试工作台" sidebar={sectionMenu ? { title: "业务目录", content: sectionMenu } : undefined} contextPanel={contextPanel}>
           <div>文档内容</div>
         </WorkspaceShell>
         <CurrentPath />

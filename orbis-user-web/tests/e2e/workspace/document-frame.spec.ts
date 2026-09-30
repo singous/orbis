@@ -71,7 +71,7 @@ test('document overview shares the home frame and keeps real notebook content ne
   await expect(page.getByRole('menuitem', { name: '笔记本', exact: true })).toBeVisible();
   await page.keyboard.press('Escape');
   await page.locator('.notebook-overview-card-link').first().click();
-  const notebookHeader = page.locator('#notebook-directory .notebook-menu-header');
+  const notebookHeader = page.locator('#notebook-directory .workspace-sidebar-header');
   await expect(notebookHeader.getByRole('button', { name: '新建文档', exact: true })).toBeEnabled();
   await expect(page.locator('.workspace-main-navigation > #notebook-directory')).toBeVisible();
   await expect(page.locator('.workspace-shell-grid > #notebook-directory')).toHaveCount(0);

@@ -1,20 +1,7 @@
-/* Reuse the shared workspace frame; document routes only change column ownership. */
-.document-workbench .workspace-sidebar { width: 100%; flex: 1; }
-.document-workbench .workspace-main-navigation > .workspace-sidebar .workspace-function-menu { padding-inline: 12px; }
+/* Notebook content supplies business styling within the shared sidebar. */
 .document-business-links { padding-bottom: 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border-subtle); }
-.document-workbench > .workspace-shell-grid > .workspace-sidebar-resizer { display: none; }
-.document-workbench .workspace-business-rail { border-right: 0; }
-.notebook-directory-column { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; border: 0; border-radius: 0; box-shadow: none; background: transparent; }
-.notebook-directory-body { min-height: 0; display: flex; flex: 1; overflow: hidden; }
-.notebook-directory-body[hidden] { display: none; }
-.notebook-directory-column .workspace-function-menu { padding: 12px 12px 20px; }
-.notebook-directory-toggle { position: absolute; z-index: 2; top: 20px; right: 12px; display: flex; align-items: center; justify-content: center; width: 24px; height: 28px; margin: 0; color: var(--muted); border-radius: 6px; }
-.notebook-directory-toggle:hover { background: var(--surface-secondary); }
-.notebook-directory-column > .workspace-sidebar-resizer { inset-block: 0; left: auto; right: -4px; width: 8px; }
-.notebook-directory-column .notebook-menu-title { font-size: 16px; font-weight: 650; }
 .notebook-menu-actions { display: flex; align-items: center; justify-content: space-between; padding: 4px 8px 12px; gap: 8px; font-size: 12px; color: var(--muted); }
 .notebook-menu-actions button { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; }
-.notebook-mobile-directory { min-height: 240px; display: flex; flex-direction: column; border-top: 1px solid var(--border-subtle); }
 .notebook-overview .page-header { padding-bottom: 16px; margin-bottom: 24px; }
 .notebook-overview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, max(260px, calc((100% - 32px) / 3))), 1fr)); gap: 16px; }
 .notebook-overview-common { padding: 20px; background: var(--surface-secondary); border-radius: 10px; margin-bottom: 36px; }
@@ -37,23 +24,9 @@
 .loading-layout--editor-body { width: 100%; max-width: 760px; gap: 18px; min-height: 140px; align-content: start; }
 .loading-layout--editor-body .loading-line { height: 10px; }
 @media (max-width: 767px) {
-  .document-workbench .workspace-shell-grid, .document-workbench.has-notebook-directory .workspace-shell-grid, .document-workbench.sidebar-collapsed .workspace-shell-grid, .document-workbench.sidebar-collapsed.has-notebook-directory .workspace-shell-grid { grid-template-columns: minmax(0, 1fr); }
-  .document-workbench .workspace-main-navigation { width: min(310px, calc(100vw - 40px)); border: 1px solid var(--border-subtle); overflow-y: auto; }
-  .document-workbench .workspace-main-navigation .workspace-business-rail { display: none; }
-  .document-workbench .workspace-sidebar { overflow-y: auto; }
-  .document-workbench .workspace-sidebar > .workspace-function-menu { flex: none; overflow: visible; }
   .notebook-overview-grid, .loading-layout--cards { grid-template-columns: minmax(0, 1fr); }
 }
 
-/* Online documents retain the application rail and expose shortcuts in a popover. */
-@media (min-width: 768px) {
-  .document-workbench .workspace-shell-grid, .document-workbench.sidebar-collapsed .workspace-shell-grid { grid-template-columns: var(--rail-width) minmax(0, 1fr); }
-  .document-workbench.has-notebook-directory .workspace-shell-grid, .document-workbench.sidebar-collapsed.has-notebook-directory .workspace-shell-grid { grid-template-columns: max-content minmax(0, 1fr); }
-  .document-workbench .workspace-main-navigation > .workspace-sidebar { display: none; }
-  .document-workbench:not(.notebook-directory-collapsed) .rail-expand { display: none; }
-  .document-workbench .workspace-main-navigation, .document-workbench .workspace-business-rail { overflow: visible; }
-  .document-workbench:not(.sidebar-collapsed) .workspace-business-rail { display: flex; }
-}
 .rail-document-entry { position: relative; }
 .rail-notebook-popover { position: absolute; z-index: 60; left: calc(100% + 8px); top: 0; width: 270px; max-height: min(520px, calc(100dvh - 180px)); overflow-y: auto; padding: 8px; border: 1px solid var(--border-subtle); border-radius: 10px; background: var(--workspace-panel-background); box-shadow: 0 8px 28px #0002; }
 .rail-document-entry::after { content: ""; position: absolute; left: 100%; top: 0; width: 12px; height: 100%; }
@@ -65,19 +38,13 @@
 .rail-notebook-shortcuts p { margin: 8px 12px; font-size: 12px; line-height: 1.7; color: var(--muted); }
 .rail-notebook-tools { display: flex; flex-wrap: wrap; }
 .rail-notebook-tools a { font-size: 12px; padding: 8px; }
-.workspace-main-navigation:has(.rail-notebook-popover) { overflow: visible; z-index: 50; }
+.workspace-main-navigation:has(.rail-notebook-popover) { z-index: 50; }
 
 /* Creation stays in the visible rail, and notebook identity owns the first row. */
 .workspace-business-rail:has(.rail-create-entry) .rail-brand { margin-bottom: 16px; }
 .rail-create-entry { margin-bottom: 20px; }
 .rail-create-entry .rail-create-trigger { width: 32px; height: 32px; border-radius: 8px; }
-.notebook-directory-column .notebook-menu-header { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 28px 10px 0; margin-bottom: 8px; }
+.notebook-menu-header { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .notebook-menu-header .notebook-menu-back { display: grid; place-items: center; width: 24px; height: 28px; flex: none; margin: 0; }
-.notebook-menu-header .notebook-menu-title { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; line-height: 24px; }
-.notebook-menu-header .notebook-menu-create { display: grid; place-items: center; width: 28px; height: 28px; flex: none; border-radius: 7px; background: var(--surface-inverse); color: var(--text-oninverse); }
-.notebook-directory-collapsed .notebook-directory-toggle { top: 10px; right: 8px; }
-.notebook-mobile-directory .notebook-menu-header { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 0 10px; }
-
-/* The notebook tree uses the same navigation frame as other function sidebars. */
-.document-workbench.has-notebook-directory:not(.notebook-directory-collapsed) .workspace-business-rail { border-right: 1px solid var(--workspace-divider); }
-.notebook-directory-collapsed .notebook-directory-column { overflow: hidden; }
+.notebook-menu-header .notebook-menu-title { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; font-size: 16px; font-weight: 650; line-height: 24px; }
+.notebook-menu-create { display: grid; place-items: center; width: 28px; height: 28px; flex: none; border-radius: 7px; background: var(--surface-inverse); color: var(--text-oninverse); }

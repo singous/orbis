@@ -27,8 +27,8 @@ export default defineConfig({
     baseURL: webOrigin,
     channel: process.env.PLAYWRIGHT_CHANNEL,
     viewport: { width: 1440, height: 1000 },
-    screenshot: "only-on-failure",
-    trace: "retain-on-failure",
+    screenshot: "off",
+    trace: "off",
   },
   webServer: [
     { command: "../.venv/bin/python tests/e2e/run_api.py", url: `${apiOrigin}/healthz`, reuseExistingServer: false, env: { ORBIS_E2E_DIR: process.env.ORBIS_E2E_DIR, ORBIS_E2E_API_PORT: String(apiPort), ORBIS_E2E_WEB_PORT: String(webPort) }, timeout: 30_000 },

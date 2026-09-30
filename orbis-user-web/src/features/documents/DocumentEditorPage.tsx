@@ -18,7 +18,6 @@ import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { AutosaveCoordinator, type AutosaveState } from "./autosave";
 import { normalizeEditorBlocks } from "./editor-blocks";
 import { DocumentShell } from "./DocumentShell";
-import { NotebookSectionMenu } from "./NotebookSectionMenu";
 
 // Load the editor only on document pages; readers use the lightweight renderer.
 const TiptapEditor = lazy(() =>
@@ -324,7 +323,7 @@ export function DocumentEditorPage() {
   );
 
   return (
-    <DocumentShell editorLayout breadcrumb={breadcrumb} toolbar={toolbar} sectionMenu={noteQuery.data ? <NotebookSectionMenu notebookId={noteQuery.data.notebook_id} activeNoteId={noteId} /> : undefined}>
+    <DocumentShell editorLayout breadcrumb={breadcrumb} toolbar={toolbar} notebookId={noteQuery.data?.notebook_id} activeNoteId={noteId}>
       {!draft || !noteQuery.data || hydratedNoteRef.current !== noteId ? <div className="page-container"><LoadingState label="正在打开文档…" variant="editor" /></div> : (
         <div className={`editor-layout${outlineOpen ? " outline-open" : ""}`}>
           <article className="editor-canvas">
