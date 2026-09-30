@@ -6,9 +6,8 @@
   scrollbar-width: thin;
   scrollbar-color: var(--orbis-scrollbar-thumb) transparent;
 }
-:where(html, body, body *):is(:hover, :focus-within) {
-  --orbis-scrollbar-thumb: color-mix(in oklab, var(--orbis-scrollbar-ink) 28%, transparent);
-}
+/* Keep inherited tokens stable on focus/hover. The thumb itself provides the
+   hover/drag feedback below without invalidating a document's descendants. */
 
 /* Chromium/WebKit needs auto standard properties to honor pseudo-element styling. */
 @supports selector(::-webkit-scrollbar) {
