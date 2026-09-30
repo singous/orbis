@@ -9,6 +9,7 @@ import "./styles/base-mvp.css";
 import "./styles/collaboration.css";
 import "./styles/workbench-pages.css";
 import "./styles/notebook-icons.css";
+import "./styles/notebook-layout.css";
 
 async function start() {
   // Retain server-rendered reading content while the interactive reader loads.

@@ -1,3 +1,4 @@
+import { DEFAULT_SIDEBAR_PREFERENCES, type SidebarPreferences } from "./workspace-sidebar-config";
 import { useLayoutEffect, useState, type CSSProperties, type RefObject } from "react";
 
 export const SIDEBAR_MIN_WIDTH = 160;
@@ -5,23 +6,29 @@ const SIDEBAR_MAX_WIDTH = 480;
 const MAIN_MIN_WIDTH = 360;
 const DEFAULT_SIDEBAR_WIDTH = 232;
 const DEFAULT_RAIL_WIDTH = 58;
-const SIDEBAR_WIDTH_KEY = "orbis.sidebarWidth";
 
 function clampWidth(width: number, maximum: number) {
   return Math.round(Math.min(maximum, Math.max(SIDEBAR_MIN_WIDTH, width)));
 }
 
-function readPreferredWidth(): number | null {
+function readPreferredWidth(key: string, maximum: number): number | null {
   try {
-    const stored = localStorage.getItem(SIDEBAR_WIDTH_KEY);
+    const stored = localStorage.getItem(key);
     if (stored === null) return null;
     const width = Number(stored);
-    return Number.isFinite(width) && width >= SIDEBAR_MIN_WIDTH && width <= SIDEBAR_MAX_WIDTH ? width : null;
+    return Number.isFinite(width) && width >= SIDEBAR_MIN_WIDTH && width <= maximum ? width : null;
   } catch { return null; }
 }
 
-export function useSidebarResize(gridRef: RefObject<HTMLDivElement | null>, enabled: boolean, hasContext: boolean) {
-  const [preferredWidth, setPreferredWidth] = useState(readPreferredWidth);
+export function useSidebarResize(gridRef: RefObject<HTMLDivElement | null>, enabled: boolean, hasContext: boolean, preferences: SidebarPreferences = DEFAULT_SIDEBAR_PREFERENCES) {
+  const key = preferences.widthKey;
+  const [stored, setStored] = useState(() => ({ key, width: readPreferredWidth(key, SIDEBAR_MAX_WIDTH) }));
+  const preferredWidth = stored.key === key ? stored.width : readPreferredWidth(key, SIDEBAR_MAX_WIDTH);
+  const setPreferredWidth = (width: number | null) => setStored({ key, width });
+
+  useLayoutEffect(() => {
+    setStored(current => current.key === key ? current : { key, width: readPreferredWidth(key, SIDEBAR_MAX_WIDTH) });
+  }, [key]);
   const [bounds, setBounds] = useState({ defaultWidth: DEFAULT_SIDEBAR_WIDTH, maximum: SIDEBAR_MAX_WIDTH });
 
   useLayoutEffect(() => {
@@ -47,23 +54,24 @@ export function useSidebarResize(gridRef: RefObject<HTMLDivElement | null>, enab
     return () => { observer.disconnect(); window.removeEventListener("resize", measure); };
   }, [gridRef, enabled, hasContext]);
 
-  const width = clampWidth(preferredWidth ?? bounds.defaultWidth, bounds.maximum);
+  const maximum = bounds.maximum;
+  const width = clampWidth(preferredWidth ?? bounds.defaultWidth, maximum);
   const style: CSSProperties & { "--sidebar-width": string } = { "--sidebar-width": `${width}px` };
 
-  function preview(next: number) { setPreferredWidth(clampWidth(next, bounds.maximum)); }
+  function preview(next: number) { setPreferredWidth(clampWidth(next, maximum)); }
   function commit(next: number) {
-    const accepted = clampWidth(next, bounds.maximum);
+    const accepted = clampWidth(next, maximum);
     setPreferredWidth(accepted);
-    try { localStorage.setItem(SIDEBAR_WIDTH_KEY, String(accepted)); } catch { /* Resizing remains available without persistent storage. */ }
+    try { localStorage.setItem(key, String(accepted)); } catch { /* Resizing remains available without persistent storage. */ }
   }
   function reset() {
     setPreferredWidth(null);
-    try { localStorage.removeItem(SIDEBAR_WIDTH_KEY); } catch { /* The default width still applies for this session. */ }
+    try { localStorage.removeItem(key); } catch { /* The default width still applies for this session. */ }
   }
   function begin() {
     const previous = preferredWidth;
     return () => setPreferredWidth(previous);
   }
 
-  return { width, maximum: bounds.maximum, style, preview, commit, reset, begin };
+  return { width, maximum, style, preview, commit, reset, begin };
 }

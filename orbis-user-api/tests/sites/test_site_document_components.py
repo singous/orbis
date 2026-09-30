@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import json
 
+import pytest
 
+
+@pytest.mark.parametrize("grouped", [False, True])
 def test_authored_components_round_trip_through_save_preview_publish_and_markdown(
-    client, owner, document
+    client, owner, document, grouped
 ):
     def block(kind, text="", props=None, children=None):
         return {
@@ -68,6 +71,11 @@ def test_authored_components_round_trip_through_save_preview_publish_and_markdow
             ),
         ],
     }
+    if grouped:
+        original = blocks["blocks"]
+        nested = block("group", children=original[1:])
+        nested["id"] = "nested-group"
+        blocks["blocks"] = [block("group", children=[original[0], nested])]
     saved = client.put(
         f"/notes/{document['id']}/content",
         headers=owner,
@@ -76,6 +84,9 @@ def test_authored_components_round_trip_through_save_preview_publish_and_markdow
     assert saved.status_code == 200, saved.text
     read = client.get(f"/notes/{document['id']}/content", headers=owner).json()["data"]
     assert read["blocks"] == saved.json()["data"]["blocks"]
+    if grouped:
+        assert read["blocks"]["blocks"][0]["id"] == "internal-group-"
+        assert read["blocks"]["blocks"][0]["children"][1]["id"] == "nested-group"
     site = client.post(
         "/sites",
         headers=owner,

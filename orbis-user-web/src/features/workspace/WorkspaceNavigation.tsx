@@ -7,11 +7,11 @@ import { authStore } from "../../shared/auth/auth-store";
 import { NotebookIcon } from "../documents/NotebookIcon";
 import { useNotebooks } from "../documents/queries";
 import { canManageWorkspaceMembers } from "./capabilities";
+import { usePinnedNotebooks } from "../documents/pinned-notebooks";
 import { resolveWorkspaceArea } from "./workspace-areas";
 
-const RECENT_NOTEBOOK_LIMIT = 5;
 const documentLinks = [
-  { to: "/documents", label: "文档概览", icon: BookOpen },
+  { to: "/documents", label: "笔记本总览", icon: BookOpen },
   { to: "/documents/recent", label: "最近编辑", icon: Clock3 },
   { to: "/documents/collections", label: "我的笔记本", icon: Notebook },
   { to: "/documents/search", label: "全文搜索", icon: Search },
@@ -29,17 +29,23 @@ function MenuFrame({ label, children, footer }: { label: string; children: React
 function DocumentNavigation() {
   const workspace = useStore(authStore, (state) => state.workspace);
   const notebooks = useNotebooks();
-  const recentNotebooks = [...(notebooks.data?.items ?? [])]
-    .sort((a, b) => b.updated_at_ms - a.updated_at_ms)
-    .slice(0, RECENT_NOTEBOOK_LIMIT);
+  const { isPinned } = usePinnedNotebooks(workspace?.id);
+  const commonNotebooks = (notebooks.data?.items ?? []).filter((notebook) => isPinned(notebook.id));
 
   return <MenuFrame label="文档导航" footer={<NavLink to="/documents/archive" className={navClass}><Archive size={18} />归档</NavLink>}>
+    <div className="document-business-links">
+      <NavLink to="/home" className={navClass}><Home size={18} />首页</NavLink>
+      <NavLink to="/sites" className={navClass}><Globe size={18} />站点</NavLink>
+      <NavLink to="/knowledge" className={navClass}><LibraryBig size={18} />知识库</NavLink>
+      <NavLink to="/memory" className={navClass}><Sparkles size={18} />记忆</NavLink>
+    </div>
+    <span className="workspace-nav-label">在线文档</span>
     {documentLinks.map(({ to, label, icon: Icon }) => <NavLink key={to} to={to} end className={navClass}><Icon size={18} />{label}</NavLink>)}
-    <span className="workspace-nav-label">我的空间</span>
+    <span className="workspace-nav-label">快捷访问</span>
     <div className="workspace-nav-space"><Notebook size={18} aria-hidden="true" /><span>{workspace?.name ?? "私人工作空间"}</span></div>
     <div className="workspace-notebook-links">
-      {recentNotebooks.map((notebook) => <NavLink key={notebook.id} to={`/collections/${notebook.id}`} className={navClass}><NotebookIcon icon={notebook.icon} size="sm" /><span className="truncate">{notebook.title}</span></NavLink>)}
-      {!recentNotebooks.length ? <NavLink to="/documents/collections" className="workspace-function-link workspace-nav-muted"><Notebook size={16} />管理笔记本</NavLink> : null}
+      {commonNotebooks.map((notebook) => <NavLink key={notebook.id} to={`/collections/${notebook.id}`} className={navClass}><NotebookIcon icon={notebook.icon} size="sm" /><span className="truncate">{notebook.title}</span></NavLink>)}
+      {!commonNotebooks.length ? <NavLink to="/documents/collections" className="workspace-function-link workspace-nav-muted"><Notebook size={16} />设置快捷访问</NavLink> : null}
     </div>
   </MenuFrame>;
 }

@@ -1,5 +1,6 @@
 import { useCallback, useSyncExternalStore } from "react";
 
+const EMPTY_PINNED: string[] = [];
 const listeners = new Set<() => void>();
 const snapshotCache: Record<string, string[]> = {};
 
@@ -28,21 +29,30 @@ function getSnapshot(workspaceId: string): string[] {
 function writePinned(workspaceId: string, ids: string[]) {
   snapshotCache[workspaceId] = ids;
   if (typeof window !== "undefined") {
-    window.localStorage.setItem(storageKey(workspaceId), JSON.stringify(ids));
+    try { window.localStorage.setItem(storageKey(workspaceId), JSON.stringify(ids)); } catch { /* Retain the preference for this session when storage is unavailable. */ }
   }
   listeners.forEach((fn) => fn());
 }
 
+function syncStorage(event: StorageEvent) {
+  for (const workspaceId of Object.keys(snapshotCache)) {
+    if (event.key === null || event.key === storageKey(workspaceId)) delete snapshotCache[workspaceId];
+  }
+  listeners.forEach((listener) => listener());
+}
+
 function subscribe(callback: () => void): () => void {
+  if (!listeners.size) window.addEventListener("storage", syncStorage);
   listeners.add(callback);
   return () => {
     listeners.delete(callback);
+    if (!listeners.size) window.removeEventListener("storage", syncStorage);
   };
 }
 
 export function usePinnedNotebooks(workspaceId: string | undefined) {
   const key = workspaceId ?? "";
-  const pinned = useSyncExternalStore(subscribe, () => getSnapshot(key), () => []);
+  const pinned = useSyncExternalStore(subscribe, () => getSnapshot(key), () => EMPTY_PINNED);
 
   const isPinned = useCallback((notebookId: string) => pinned.includes(notebookId), [pinned]);
 

@@ -58,3 +58,8 @@ Object.defineProperty(globalThis, "localStorage", {
 
 // jsdom does not implement the Web Animations API used by HeroUI tab indicators.
 Object.defineProperty(Element.prototype, "getAnimations", { configurable: true, value: () => [] });
+
+// ProseMirror reads text Range geometry when focus/undo scrolls a selection.
+// jsdom has no layout; real geometry is covered by the browser editor suite.
+if (!Range.prototype.getClientRects) Object.defineProperty(Range.prototype, 'getClientRects', { configurable: true, value: () => [] });
+if (!Range.prototype.getBoundingClientRect) Object.defineProperty(Range.prototype, 'getBoundingClientRect', { configurable: true, value: () => new DOMRect() });

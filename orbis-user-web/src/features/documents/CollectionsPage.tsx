@@ -264,7 +264,7 @@ export function CollectionsPage() {
                             <ActionButton
                               type="button"
                               className={`icon-button${isPinned(notebook.id) ? " is-pinned" : ""}`}
-                              aria-label={isPinned(notebook.id) ? `取消置顶 ${notebook.title}` : `置顶 ${notebook.title}`}
+                              aria-label={isPinned(notebook.id) ? `移出快捷访问 ${notebook.title}` : `加入快捷访问 ${notebook.title}`}
                               aria-pressed={isPinned(notebook.id)}
                               onClick={() => togglePin(notebook.id)}
                             >

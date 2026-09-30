@@ -16,16 +16,16 @@ async function signIn(page: Page, request: APIRequestContext) {
   await page.goto("/home");
 }
 
-test("the global scrollbar skin preserves wheel and keyboard scrolling", async ({ page, request }, testInfo) => {
+test("the global scrollbar skin preserves wheel and keyboard scrolling", async ({ page, request }) => {
   await page.setViewportSize({ width: 1000, height: 600 });
   await signIn(page, request);
   const token = await page.evaluate(() => JSON.parse(localStorage.getItem("orbis.auth")!).accessToken as string);
   const headers = { Authorization: `Bearer ${token}` };
   const notebook = await request.post("/api/notebooks", { headers, data: { title: "滚动验收笔记本" } });
   expect(notebook.status()).toBe(201);
-  const notebookId = (await notebook.json()).data.id;
-  for (let index = 0; index < 5; index++) {
-    const created = await request.post("/api/notes", { headers, data: { notebook_id: notebookId, title: `滚动验收文档 ${index + 1}` } });
+  const SCROLL_NOTEBOOK_COUNT = 18;
+  for (let index = 1; index < SCROLL_NOTEBOOK_COUNT; index++) {
+    const created = await request.post("/api/notebooks", { headers, data: { title: `滚动验收笔记本 ${index + 1}`, sort_order: index } });
     expect(created.status()).toBe(201);
   }
   await page.goto("/documents");
@@ -45,11 +45,11 @@ test("the global scrollbar skin preserves wheel and keyboard scrolling", async (
   await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
   await page.mouse.wheel(0, 360);
   await expect.poll(() => scroller.evaluate((element) => element.scrollTop)).toBeGreaterThan(100);
-  await page.getByRole("link", { name: "新建笔记本", exact: true }).focus();
+  await page.getByRole("button", { name: "新建笔记本", exact: true }).focus();
   const before = await scroller.evaluate((element) => element.scrollTop);
   await page.keyboard.press("PageDown");
   await expect.poll(() => scroller.evaluate((element) => element.scrollTop)).toBeGreaterThan(before);
-  await page.getByRole("link", { name: "新建笔记本", exact: true }).focus();
+  await page.getByRole("button", { name: "新建笔记本", exact: true }).focus();
   await page.keyboard.press("Home");
   await expect.poll(() => scroller.evaluate((element) => element.scrollTop)).toBe(0);
   const thumbHeight = await scroller.evaluate((element) => Math.max(32, element.clientHeight * element.clientHeight / element.scrollHeight));
@@ -58,10 +58,9 @@ test("the global scrollbar skin preserves wheel and keyboard scrolling", async (
   await page.mouse.move(bounds.x + bounds.width - 4, bounds.y + thumbHeight / 2 + 100, { steps: 8 });
   await page.mouse.up();
   await expect.poll(() => scroller.evaluate((element) => element.scrollTop)).toBeGreaterThan(100);
-  await page.screenshot({ path: testInfo.outputPath("themed-scrollbar.png") });
 });
 
-test("the restored home keeps its rail while hiding the function sidebar", async ({ page, request }, testInfo) => {
+test("the restored home keeps its rail while hiding the function sidebar", async ({ page, request }) => {
   await signIn(page, request);
   await expect(page).toHaveURL(/\/home$/);
   await expect(page.getByRole("heading", { name: "首页", exact: true })).toBeVisible();
@@ -86,7 +85,6 @@ test("the restored home keeps its rail while hiding the function sidebar", async
     expect(navigation.every(icon => icon.stroke === "1.8px")).toBe(true);
     await expect.poll(() => page.locator(".rail-action .orbis-icon, .workspace-function-link .orbis-icon, .workspace-header .orbis-icon").evaluateAll((icons) => icons.filter((icon) => getComputedStyle(icon).color !== getComputedStyle(icon.parentElement!).color).length)).toBe(0);
     expect(navigation.every((icon) => icon.background === "none")).toBe(true);
-    await page.screenshot({ path: testInfo.outputPath(`home-rail-icons-${theme}.png`) });
   }
   expect(await page.locator('.rail-action.is-active > svg').evaluate(element => getComputedStyle(element).animationName)).toBe("none");
   await page.emulateMedia({ reducedMotion: "no-preference" });
@@ -96,14 +94,14 @@ test("the restored home keeps its rail while hiding the function sidebar", async
   await expect.poll(() => selectedSiteIcon.evaluate(element => ({ name: getComputedStyle(element).animationName, duration: getComputedStyle(element).animationDuration }))).toEqual({ name: "navigation-icon-select", duration: "0.24s" });
   await page.emulateMedia({ reducedMotion: "reduce" });
   await expect.poll(() => selectedSiteIcon.evaluate(element => getComputedStyle(element).animationName)).toBe("none");
-  await page.goto("/documents");
+  await page.goto("/knowledge");
   const preferredWidth = await page.locator(".workspace-main-navigation").evaluate(element => element.getBoundingClientRect().width);
   await page.getByRole("button", { name: "收起侧栏", exact: true }).click();
   await page.getByRole("link", { name: "首页", exact: true }).click();
   await expect(page.getByRole("button", { name: "展开侧栏", exact: true })).toHaveCount(0);
-  await page.getByRole("link", { name: "在线文档", exact: true }).click();
-  await expect(page.getByRole("button", { name: "展开侧栏", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "展开侧栏", exact: true }).click();
+  await page.getByRole("link", { name: "知识库", exact: true }).click();
+  await expect(page.getByRole("button", { name: "展开侧栏", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "收起侧栏", exact: true })).toBeVisible();
   await expect.poll(() => page.locator(".workspace-main-navigation").evaluate(element => element.getBoundingClientRect().width)).toBe(preferredWidth);
   await page.getByRole("link", { name: "首页", exact: true }).click();
   await page.setViewportSize({ width: 390, height: 844 });

@@ -6,7 +6,8 @@ import { documentBlockDefinition } from "../content/document-components";
 import { newBlockId } from "./block-model";
 
 function childKind(node: PMNode): string {
-  return node.type.name === "orbisComponent" ? String(node.attrs.kind) : node.type.name;
+  if (node.type.name === "orbisContainer" && node.firstChild) return childKind(node.firstChild);
+  return ["orbisComponent", "orbisContainer"].includes(node.type.name) ? String(node.attrs.kind) : node.type.name;
 }
 
 /** A constrained group must contain only its declared child kinds. Move

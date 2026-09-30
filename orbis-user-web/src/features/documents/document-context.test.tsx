@@ -268,15 +268,22 @@ describe("DocumentContextPanel", () => {
     expect(screen.getByRole("link", { name: "发布范围" })).toBeInTheDocument();
   });
 
-  it("synchronizes folded branches between the main directory and sidebar", async () => {
+  it("keeps main and sidebar branches independent and restores each preference", async () => {
     const actor = userEvent.setup();
-    render(<MemoryRouter><DocumentContextPanel notebookId={rootNote.notebook_id} variant="main" /><DocumentContextPanel notebookId={rootNote.notebook_id} /></MemoryRouter>);
+    const panels = <MemoryRouter><DocumentContextPanel notebookId={rootNote.notebook_id} variant="main" /><DocumentContextPanel notebookId={rootNote.notebook_id} /></MemoryRouter>;
+    const view = render(panels);
     const main = screen.getByRole("navigation", { name: "文档列表" });
     const side = screen.getByRole("navigation", { name: "笔记本文档" });
     await actor.click(within(main).getByRole("button", { name: "收起子目录 产品计划" }));
+    expect(within(main).queryByRole("link", { name: "发布范围" })).not.toBeInTheDocument();
+    expect(within(side).getByRole("link", { name: "发布范围" })).toBeInTheDocument();
+    await actor.click(within(side).getByRole("button", { name: "收起子目录 产品计划" }));
+    await actor.click(within(main).getByRole("button", { name: "展开子目录 产品计划" }));
     expect(within(side).queryByRole("link", { name: "发布范围" })).not.toBeInTheDocument();
-    await actor.click(within(side).getByRole("button", { name: "展开子目录 产品计划" }));
-    expect(within(main).getByRole("link", { name: "发布范围" })).toBeInTheDocument();
+    view.unmount();
+    render(panels);
+    expect(within(screen.getByRole("navigation", { name: "文档列表" })).getByRole("link", { name: "发布范围" })).toBeInTheDocument();
+    expect(within(screen.getByRole("navigation", { name: "笔记本文档" })).queryByRole("link", { name: "发布范围" })).not.toBeInTheDocument();
   });
 
   it("reveals the active document path after opening a folded branch", async () => {

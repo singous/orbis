@@ -1,8 +1,9 @@
 import { LoadingState } from "../../shared/ui/LoadingState";
-import { Tag } from "../../shared/ui/Tag";
+import { Dropdown } from "@heroui/react/dropdown";
+import { Label } from "@heroui/react/label";
 import { Input as HeroInput } from "@heroui/react/input";
 import { ActionButton } from "../../shared/ui/ActionButton";
-import { AlertTriangle, Archive, ArrowLeft, Check, Cloud, Download, Eye, EyeOff, MessageSquare, RefreshCw, RotateCcw, Save, WifiOff } from "../../shared/ui/icons";
+import { AlertTriangle, Archive, BookOpen, ChevronRight, MoreHorizontal, Check, Cloud, Download, Eye, EyeOff, MessageSquare, RefreshCw, RotateCcw, Save, WifiOff } from "../../shared/ui/icons";
 import { Component, lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useStore } from "zustand";
@@ -11,12 +12,12 @@ import { ApiError } from "../../shared/api/api-client";
 import { authStore } from "../../shared/auth/auth-store";
 import { Button } from "../../shared/ui/Button";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
-import { extractPlainTextV2, toV2, v2ToMarkdown, type NoteBlocksV2 } from "../notes/block-model";
+import { extractPlainTextV2, v2ToMarkdown, type NoteBlocksV2 } from "../notes/block-model";
 import type { RestoreSavedRevision } from "../collaboration/DocumentCollaborationPanel";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { AutosaveCoordinator, type AutosaveState } from "./autosave";
+import { normalizeEditorBlocks } from "./editor-blocks";
 import { DocumentShell } from "./DocumentShell";
-import { NotebookSectionMenu } from "./NotebookSectionMenu";
 
 // Load the editor only on document pages; readers use the lightweight renderer.
 const TiptapEditor = lazy(() =>
@@ -24,6 +25,7 @@ const TiptapEditor = lazy(() =>
 );
 import {
   useArchiveNote,
+  useNotebooks,
   useNote,
   useNoteContent,
   useSaveNoteContent,
@@ -84,6 +86,8 @@ export function DocumentEditorPage() {
   const canEdit = canMutateWorkspaceContent(workspace);
   const currentUserId = useStore(authStore, (state) => state.user?.id ?? "");
   const noteQuery = useNote(noteId);
+  const notebooksQuery = useNotebooks();
+  const notebook = notebooksQuery.data?.items.find((item) => item.id === noteQuery.data?.notebook_id);
   const contentQuery = useNoteContent(noteId);
   const updateNote = useUpdateNote();
   const saveContent = useSaveNoteContent();
@@ -128,7 +132,7 @@ export function DocumentEditorPage() {
       content.content_version <= saved.version;
     if (isOwnOrStaleEcho) return;
     hydratedNoteRef.current = noteId;
-    const initial = { title: note.title, blocks: toV2(content.blocks), version: content.content_version };
+    const initial = { title: note.title, blocks: normalizeEditorBlocks(noteId, content.blocks), version: content.content_version };
     setDraft(initial);
     coordinatorRef.current?.dispose(false);
     const coordinator = new AutosaveCoordinator<EditorDraft>({
@@ -212,7 +216,7 @@ export function DocumentEditorPage() {
     coordinator?.dispose(false);
     const [noteResult, contentResult] = await Promise.all([noteQuery.refetch(), contentQuery.refetch()]);
     if (coordinatorRef.current !== coordinator || !noteResult.data || !contentResult.data || noteResult.error || contentResult.error) return;
-    const next = { title: noteResult.data.title, blocks: toV2(contentResult.data.blocks), version: contentResult.data.content_version };
+    const next = { title: noteResult.data.title, blocks: normalizeEditorBlocks(noteId, contentResult.data.blocks), version: contentResult.data.content_version };
     coordinatorRef.current?.hydrate(next);
     setDraft(next);
     setRestorationConflict(false);
@@ -241,7 +245,7 @@ export function DocumentEditorPage() {
       const saved = await flushCurrentDraft(coordinator);
       const restored = await restore(saved.version);
       if (coordinatorRef.current !== coordinator) return;
-      const next = { ...saved, blocks: toV2(restored.blocks), version: restored.content_version };
+      const next = { ...saved, blocks: normalizeEditorBlocks(noteId, restored.blocks), version: restored.content_version };
       coordinator.hydrate(next);
       setDraft(next);
       setRestorationConflict(false);
@@ -291,20 +295,38 @@ export function DocumentEditorPage() {
     return <DocumentShell><div className="mx-auto max-w-3xl p-8"><StatusMessage tone="error" title="无法打开文档">文档可能已归档，或你没有访问权限。</StatusMessage><Link to="/documents" className="mt-4 inline-flex text-sm font-semibold">返回文档中心</Link></div></DocumentShell>;
   }
 
+  const breadcrumb = (
+    <nav className="document-breadcrumb" aria-label="文档位置">
+      <Link to={noteQuery.data ? `/collections/${noteQuery.data.notebook_id}` : "/documents"} title={notebook?.title ?? "笔记本"}>
+        <BookOpen aria-hidden="true" size={15} /><span>{notebook?.title ?? "笔记本"}</span>
+      </Link>
+      <ChevronRight aria-hidden="true" size={13} />
+      <span aria-current="page" title={draft?.title || "未命名文档"}>{draft?.title || "未命名文档"}</span>
+    </nav>
+  );
   const toolbar = (
-    <div className="flex items-center gap-2">
-      <ActionButton ref={collaborationTriggerRef} type="button" className="icon-button" aria-label="评论与历史" aria-haspopup="dialog" aria-expanded={collaborationOpen} disabled={!draft || archiving} onClick={() => setCollaborationOpen(true)}><MessageSquare aria-hidden="true" size={16} /></ActionButton>
-      <Tag tone={saveState === "error" ? "danger" : saveState === "conflict" ? "warning" : "neutral"}><StateIcon aria-hidden="true" size={14} className={saveState === "saving" ? "animate-spin" : ""} />{stateCopy.label}</Tag>
-      {canEdit ? <ActionButton type="button" className="icon-button danger-hover" aria-label="归档文档" disabled={!draft || editorBusy} onClick={handleArchive}><Archive aria-hidden="true" size={16} /></ActionButton> : null}
+    <div className="document-header-actions">
+      <span className={`document-save-state is-${saveState}`} role="status" aria-live="polite" aria-atomic="true">
+        <StateIcon aria-hidden="true" size={14} className={saveState === "saving" ? "document-save-spinner" : ""} /><span>{canEdit ? stateCopy.label : "只读"}</span>
+      </span>
+      <span className="document-header-divider" aria-hidden="true" />
+      <ActionButton ref={collaborationTriggerRef} type="button" className="document-comment-trigger" aria-label="评论与历史" aria-haspopup="dialog" aria-expanded={collaborationOpen} disabled={!draft || archiving} onClick={() => setCollaborationOpen(true)}><MessageSquare aria-hidden="true" size={16} /><span>评论</span></ActionButton>
+      {canEdit ? <Dropdown>
+        <ActionButton type="button" className="icon-button" aria-label="更多文档操作" disabled={!draft || editorBusy}><MoreHorizontal aria-hidden="true" size={18} /></ActionButton>
+        <Dropdown.Popover placement="bottom end" className="document-actions-popover" offset={6}>
+          <Dropdown.Menu aria-label="文档操作" onAction={(key) => { if (key === "archive") void handleArchive(); }}>
+            <Dropdown.Item id="archive" textValue="归档文档" isDisabled={!draft || editorBusy}><Archive aria-hidden="true" size={16} /><Label>归档文档</Label></Dropdown.Item>
+          </Dropdown.Menu>
+        </Dropdown.Popover>
+      </Dropdown> : null}
     </div>
   );
 
   return (
-    <DocumentShell toolbar={toolbar} sectionMenu={noteQuery.data ? <NotebookSectionMenu notebookId={noteQuery.data.notebook_id} activeNoteId={noteId} /> : undefined}>
+    <DocumentShell editorLayout breadcrumb={breadcrumb} toolbar={toolbar} notebookId={noteQuery.data?.notebook_id} activeNoteId={noteId}>
       {!draft || !noteQuery.data || hydratedNoteRef.current !== noteId ? <div className="page-container"><LoadingState label="正在打开文档…" variant="editor" /></div> : (
         <div className={`editor-layout${outlineOpen ? " outline-open" : ""}`}>
           <article className="editor-canvas">
-            <Link to={`/collections/${noteQuery.data.notebook_id}`} className="mb-7 inline-flex items-center gap-2 text-xs font-medium text-[var(--muted)] hover:text-[var(--text-primary)]"><ArrowLeft aria-hidden="true" size={14} />返回笔记本</Link>
             <HeroInput
               aria-label="文档标题"
               className="orbis-embedded-input editor-title"
@@ -322,8 +344,9 @@ export function DocumentEditorPage() {
             {saveState === "error" && !editorError ? <div className="mb-5"><StatusMessage tone="error" title="自动保存失败">网络恢复后可手动重试，本地草稿不会丢失。<div className="mt-3"><Button variant="secondary" icon={<RefreshCw aria-hidden="true" size={14} />} onClick={() => coordinatorRef.current?.retry()}>重试保存</Button></div></StatusMessage></div> : null}
 
             <EditorErrorBoundary key={noteId}>
-              <Suspense fallback={<LoadingState label="正在加载编辑器…" variant="editor" />}>
+              <Suspense fallback={<LoadingState label="正在准备编辑…" variant="editor-body" delayMs={180} />}>
                 <TiptapEditor
+                  noteId={noteId}
                   blocks={draft.blocks}
                   readOnly={!canEdit || editorBusy}
                   onError={(message) => { editorErrorRef.current = message; setEditorError(message); }}

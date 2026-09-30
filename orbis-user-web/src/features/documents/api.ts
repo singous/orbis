@@ -145,13 +145,21 @@ export async function saveNoteContent(payload: { noteId: string; expectedVersion
   }));
 }
 
-export async function searchNotes(query: string, auth: AuthRequestOptions, status: ResourceStatus = "active"): Promise<PageData<NoteSearchItem>> {
-  return noteSearchResponseSchema.parse(await apiRequest(queryPath("/notes", {
-    q: query.trim() || null,
-    status: status === "archived" ? status : null,
-    page: DEFAULT_PAGE,
-    page_size: DEFAULT_PAGE_SIZE,
-  }), authOptions(auth)));
+export async function searchNotes(query: string, auth: AuthRequestOptions, status: ResourceStatus = "active", options: { allPages?: boolean } = {}): Promise<PageData<NoteSearchItem>> {
+  const items: NoteSearchItem[] = [];
+  let page = Number(DEFAULT_PAGE);
+  let result: PageData<NoteSearchItem>;
+  do {
+    result = noteSearchResponseSchema.parse(await apiRequest(queryPath("/notes", {
+      q: query.trim() || null,
+      status: status === "archived" ? status : null,
+      page: String(page),
+      page_size: DEFAULT_PAGE_SIZE,
+    }), authOptions(auth)));
+    items.push(...result.items);
+    page += 1;
+  } while (options.allPages && result.pagination.has_next);
+  return options.allPages ? { items, pagination: { ...result.pagination, page: 1, has_next: false, has_previous: false } } : result;
 }
 
 export async function importMarkdown(payload: { notebook_id: string; title: string; markdown: string; parent_id: string | null; sort_order: number }, auth: AuthRequestOptions): Promise<Note> {

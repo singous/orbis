@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("the supplied theme reaches rendered fields in both color schemes", async ({ page }, testInfo) => {
+test("the supplied theme reaches rendered fields in both color schemes", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/login");
   const email = page.getByLabel("邮箱", { exact: true });
@@ -40,7 +40,6 @@ test("the supplied theme reaches rendered fields in both color schemes", async (
     expect(rendered.outline).toBe("none");
     expect(rendered.font).toContain("Inter Variable");
     expect(rendered.loadedInter).toBe(true);
-    await page.screenshot({ path: testInfo.outputPath(`theme-${mode}.png`) });
   }
 });
 
@@ -55,8 +54,8 @@ test("workbench action and field shapes follow HeroUI theme calculations", async
   await page.getByLabel("密码", { exact: true }).fill(owner.password);
   await page.getByRole("button", { name: "登录 Orbis", exact: true }).click();
   await expect(page).toHaveURL(/\/documents$/);
-  const createNotebook = page.getByRole("link", { name: "新建笔记本", exact: true });
-  await expect(createNotebook).toHaveAttribute("href", "/documents/collections");
+  const createNotebook = page.locator(".notebook-overview .page-actions").getByRole("button", { name: "新建笔记本", exact: true });
+  await expect(createNotebook).toBeVisible();
   expect(await createNotebook.evaluate((element) => getComputedStyle(element).borderRadius)).toBe("12px");
   // A theme edit must resize the rendered action, not just change a CSS token.
   await page.evaluate(() => document.documentElement.style.setProperty("--radius", "0.5rem"));

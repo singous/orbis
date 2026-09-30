@@ -20,7 +20,7 @@ function persistedNodes(doc: PMNode): Array<{ node: PMNode; pos: number }> {
     if (!OWNED_BLOCKS.has(node.type.name)) return;
     const containerHead = parent?.type.name === "orbisContainer" && index === 0;
     const ownContent = node.attrs.orbisOwn && index === 0 && OWN_CONTENT_PARENTS.has(parent?.type.name ?? "");
-    const syntheticParagraph = node.type.name === "paragraph" && (ownContent || SYNTHETIC_PARAGRAPH_PARENTS.has(parent?.type.name ?? ""));
+    const syntheticParagraph = node.type.name === "paragraph" && (ownContent || (SYNTHETIC_PARAGRAPH_PARENTS.has(parent?.type.name ?? "") && (index === 0 || ["tableCell", "tableHeader"].includes(parent?.type.name ?? ""))));
     if (!containerHead && !syntheticParagraph) result.push({ node, pos });
     // Table cell blocks are persisted as inline content, not independent blocks.
     if (node.type.name === "table") return false;

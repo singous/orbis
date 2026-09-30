@@ -12,7 +12,7 @@ export type PlaceholderPageProps = {
 
 export function PlaceholderPage({ title, description, icon: Icon }: PlaceholderPageProps) {
   return (
-    <WorkspaceShell sectionTitle={title}>
+    <WorkspaceShell>
       <div className="mx-auto max-w-[720px] px-5 py-16 lg:py-24">
         <EmptyState
           icon={<Icon aria-hidden="true" size={28} />}

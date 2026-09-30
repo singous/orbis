@@ -111,6 +111,7 @@ export function useNoteContent(noteId?: string) {
 
 type UseNoteSearchOptions = {
   enabled?: boolean;
+  allPages?: boolean;
 };
 
 export function useNoteSearch(
@@ -120,9 +121,9 @@ export function useNoteSearch(
 ) {
   const auth = useDocumentAuth();
   return useQuery({
-    queryKey: ["note-search", status, query.trim()],
+    queryKey: options.allPages ? ["note-search", status, query.trim(), "all"] : ["note-search", status, query.trim()],
     enabled: options.enabled ?? true,
-    queryFn: () => searchNotes(query, auth, status),
+    queryFn: () => searchNotes(query, auth, status, { allPages: options.allPages }),
   });
 }
 

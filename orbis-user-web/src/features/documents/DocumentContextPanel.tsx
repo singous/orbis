@@ -215,7 +215,7 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
   const [renameTarget, setRenameTarget] = useState<NoteTreeItem | null>(null);
   const noteIds = useMemo(() => collectNoteIds(treeQuery.data?.items ?? []), [treeQuery.data?.items]);
   const treeItems = treeQuery.data?.items ?? [];
-  const { isExpanded, toggle } = useDocumentTreeExpansion(workspace?.id, notebookId, treeItems, activeNoteId);
+  const { isExpanded, toggle } = useDocumentTreeExpansion(workspace?.id, notebookId, treeItems, activeNoteId, variant);
   const main = variant === "main";
 
   useEffect(() => {

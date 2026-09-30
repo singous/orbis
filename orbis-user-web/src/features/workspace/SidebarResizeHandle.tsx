@@ -4,6 +4,8 @@ import { SIDEBAR_MIN_WIDTH } from "./use-sidebar-resize";
 const KEYBOARD_RESIZE_STEP = 16;
 
 type Props = {
+  label?: string;
+  controls?: string;
   width: number;
   maximum: number;
   preview: (width: number) => void;
@@ -13,7 +15,7 @@ type Props = {
 };
 type DragSession = { pointerId: number; startX: number; startWidth: number; latestWidth: number; target: HTMLDivElement; restore: () => void };
 
-export function SidebarResizeHandle({ width, maximum, preview, commit, reset, begin }: Props) {
+export function SidebarResizeHandle({ width, maximum, preview, commit, reset, begin, label = "调整侧栏宽度", controls = "workspace-sidebar" }: Props) {
   const session = useRef<DragSession | null>(null);
   const [dragging, setDragging] = useState(false);
   const [pointerFocused, setPointerFocused] = useState(false);
@@ -70,7 +72,7 @@ export function SidebarResizeHandle({ width, maximum, preview, commit, reset, be
     if (next !== null) { event.preventDefault(); commit(next); }
   }
 
-  return <div role="separator" aria-label="调整侧栏宽度" aria-orientation="vertical" aria-controls="workspace-sidebar" aria-valuemin={SIDEBAR_MIN_WIDTH} aria-valuemax={maximum} aria-valuenow={width} aria-valuetext={`${width} 像素`} tabIndex={0} className="workspace-sidebar-resizer" data-resizing={dragging || undefined} data-pointer-focus={pointerFocused || undefined}
+  return <div role="separator" aria-label={label} aria-orientation="vertical" aria-controls={controls} aria-valuemin={SIDEBAR_MIN_WIDTH} aria-valuemax={maximum} aria-valuenow={width} aria-valuetext={`${width} 像素`} tabIndex={0} className="workspace-sidebar-resizer" data-resizing={dragging || undefined} data-pointer-focus={pointerFocused || undefined}
     title="拖动调整宽度；双击恢复默认" onPointerDown={start} onPointerMove={move} onPointerUp={(event) => end(event, true)} onPointerCancel={(event) => end(event, false)} onLostPointerCapture={(event) => end(event, false)} onDoubleClick={reset} onKeyDown={keyDown} onBlur={() => setPointerFocused(false)}>
     <span className="workspace-resize-line" aria-hidden="true" />
   </div>;

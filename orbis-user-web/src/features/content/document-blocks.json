@@ -1,6 +1,12 @@
 {
   "version": 1,
   "blocks": {
+    "group": {
+      "label": "组合",
+      "content": "none",
+      "children": "any",
+      "props": {}
+    },
     "callout": {
       "label": "提示块",
       "content": "inline",

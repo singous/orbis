@@ -54,3 +54,25 @@
 .orbis-tiptap .content-table-scroll { overflow-x: auto; max-width: 100%; margin: 24px 0; }
 .orbis-tiptap .ProseMirror blockquote > p { margin: 0; }
 .orbis-tiptap-menu button[aria-selected="true"] { background: var(--surface-hover); }
+
+/* The document shell owns the persistent toolbar; standalone editors stay inline. */
+.document-format-host .orbis-tiptap-toolbar { position: static; width: 100%; min-height: 43px; margin: 0; padding: 5px 18px; border: 0; border-radius: 0; box-shadow: none; background: var(--surface-panel); gap: 3px; }
+.orbis-tiptap-toolbar .editor-block-type { width: 104px; flex: none; font-size: 12px; }
+.orbis-tiptap-toolbar .editor-block-type button { min-height: 28px; font-size: 12px; }
+.orbis-tiptap-toolbar > button { flex: none; min-width: 28px; height: 28px; }
+.orbis-tiptap-toolbar .orbis-tiptap-insert { margin-left: auto; border-left: 1px solid var(--border-subtle); border-radius: 0; padding-left: 12px; }
+.orbis-tiptap-menu { position: fixed; z-index: 75; width: min(570px,calc(100vw - 24px)); max-height: min(250px,calc(100dvh - 32px)); margin: 0; }
+@media (max-width:700px) {
+ .document-format-host .orbis-tiptap-toolbar { padding: 4px 8px; flex-wrap: nowrap; overflow-x: auto; gap: 1px; }
+ .orbis-tiptap-toolbar .editor-block-type { width: 85px; }
+ .orbis-tiptap-toolbar > button { min-width: 27px; }
+ .orbis-tiptap-toolbar .orbis-tiptap-insert { margin-left: 2px; }
+}
+.orbis-tiptap-toolbar .editor-more-tools { display:none; }
+.editor-more-menu { position:fixed;z-index:75;display:grid;min-width:170px;padding:6px;border:1px solid var(--border-subtle);border-radius:8px;background:var(--surface-overlay);box-shadow:var(--shadow-pop); }
+.editor-more-menu button { justify-content:flex-start;min-height:34px;font-size:12px;border:0;background:transparent; }
+@media(max-width:700px){
+ .orbis-tiptap-toolbar .editor-secondary-tool {display:none;}
+ .orbis-tiptap-toolbar .editor-more-tools {display:inline-flex;}
+ .document-format-host .orbis-tiptap-toolbar {overflow:visible;}
+}

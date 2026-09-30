@@ -14,7 +14,6 @@ import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { DocumentShell } from "./DocumentShell";
 import { NotebookDialog } from "./NotebookDialog";
 import { NotebookIcon } from "./NotebookIcon";
-import { NotebookSectionMenu } from "./NotebookSectionMenu";
 import {
   useCreateNote,
   useExportMarkdown,
@@ -88,7 +87,7 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
   if (collectionUnavailable) return null;
 
   return (
-    <DocumentShell sectionMenu={<NotebookSectionMenu notebookId={collectionId} />}>
+    <DocumentShell notebookId={collectionId}>
       <div className="page-container notebook-home">
         <Link to="/documents" className="workbench-back"><ArrowLeft aria-hidden="true" size={14} />文档中心</Link>
         <header className="page-header notebook-page-header">

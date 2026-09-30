@@ -1,6 +1,7 @@
 {
   "version": 1,
   "blocks": {
+    "group": {"label": "组合", "content": "none", "children": "any", "props": {}},
     "callout": {"label": "提示块", "content": "inline", "children": "any", "props": {"title": {"default": "", "maxLength": 240}, "tone": {"default": "info", "values": ["info", "success", "warning", "danger"]}}},
     "card": {"label": "卡片", "content": "none", "children": "any", "props": {"title": {"default": "卡片标题", "maxLength": 240}, "href": {"default": "", "maxLength": 2048}}},
     "cardGroup": {"label": "卡片组", "content": "none", "children": ["card"], "props": {"columns": {"default": 2, "values": [2, 3]}}},

@@ -206,7 +206,6 @@ test("a notebook publishes its complete tree and editable documentation componen
   await javascriptPanel.getByRole("button", { name: "复制代码", exact: true }).click();
   expect(await reader.evaluate(() => navigator.clipboard.readText())).toBe("console.log('Hello Orbis')");
   await reader.evaluate(() => window.scrollTo(0, 0));
-  await reader.screenshot({ path: testInfo.outputPath("components-desktop.png"), fullPage: true });
   await reader.getByRole("button", { name: "搜索文档", exact: true }).click();
   const search = reader.getByRole("combobox", { name: "搜索文档", exact: true });
   await search.fill("使用指南 24");
@@ -220,11 +219,9 @@ test("a notebook publishes its complete tree and editable documentation componen
   }));
   expect(darkColors.callout).toBe(darkColors.prose);
   await reader.evaluate(() => window.scrollTo(0, 0));
-  await reader.screenshot({ path: testInfo.outputPath("components-dark.png"), fullPage: true });
   await reader.setViewportSize({ width: 390, height: 844 });
   await reader.evaluate(() => window.scrollTo(0, 0));
   expect(await reader.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  await reader.screenshot({ path: testInfo.outputPath("components-mobile.png"), fullPage: true });
   await reader.getByRole("button", { name: "打开站点导航" }).click();
   const navigation = reader.getByRole("navigation", { name: "站点导航", exact: true });
   await expect(navigation.getByRole("link", { name: "快速开始", exact: true })).toBeVisible();
