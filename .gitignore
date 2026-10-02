@@ -14,6 +14,12 @@ Thumbs.db
 !.env.example
 
 # Coding agents
+.codex/
+.claude/
+.cursor/
+.zcode/
+.worktreeinclude
+CLAUDE.md
 AGENTS.md
 agents.md
 Agents.md
@@ -32,7 +38,11 @@ CLAUDE.local.md
 .codex/*.local.*
 
 # Local planning and generated docs
-docs/
+docs/**
+!docs/intro/
+!docs/intro/**
+!docs/release/
+!docs/release/**
 
 # Local linked worktrees
 .worktrees/
