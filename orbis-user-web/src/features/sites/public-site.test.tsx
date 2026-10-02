@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 import { PublicSitePage, SitePreviewPage } from "./PublicSitePage";
@@ -30,7 +31,7 @@ const brandedSnapshot: SitePreview = {
     theme: "light",
   },
 };
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); authStore.getState().clearSession(); });
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.restoreAllMocks(); authStore.getState().clearSession(); });
 
 it("removes an old authenticated preview when current content fails publication validation", async () => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -95,13 +96,19 @@ it("resolves preview branding through the authenticated query and keeps note lin
   await waitFor(() => expect(view.container.querySelector(".site-reader-brand img")).toBeInTheDocument());
   const logo = view.container.querySelector<HTMLImageElement>(".site-reader-brand img");
   expect(logo).toHaveAttribute("src", "blob:image/png");
+  const download = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+  expect(fetchMock.mock.calls.map(([path]) => path).some(path => String(path).includes(headerReference.slice("orbis-file:".length)))).toBe(false);
+  await userEvent.click(screen.getByRole("button", { name: "顶栏附件" }));
   expect(await screen.findByRole("link", { name: "顶栏附件" })).toHaveAttribute("href", "blob:application/x-header");
   expect(screen.getByRole("link", { name: "顶栏附件" })).toHaveAttribute("download");
+  await userEvent.click(screen.getByRole("button", { name: "页脚附件" }));
   expect(await screen.findByRole("link", { name: "页脚附件" })).toHaveAttribute("href", "blob:application/x-footer");
   expect(screen.getByRole("link", { name: "阅读第二篇" })).toHaveAttribute("href", "/sites/site-id/preview/b");
+  await userEvent.click(screen.getByRole("button", { name: "行动附件" }));
   const cta = await screen.findByRole("link", { name: "行动附件" });
   expect(cta).toHaveAttribute("href", "blob:application/x-cta");
   expect(cta).toHaveAttribute("download");
+  expect(download).toHaveBeenCalledTimes(3);
   expect(fetchMock).toHaveBeenCalledWith("/api/sites/site-id/preview", expect.objectContaining({ headers: expect.objectContaining({ Authorization: "Bearer preview-branding-token" }) }));
   client.clear();
 });

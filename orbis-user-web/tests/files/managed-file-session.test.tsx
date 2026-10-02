@@ -1,5 +1,6 @@
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { StrictMode } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { useManagedFiles } from "../../src/features/files/use-managed-files";
 import { authStore, type AuthSession } from "../../src/shared/auth/auth-store";
@@ -42,4 +43,13 @@ it("stable editor callbacks switch to the new workspace and discard the old cach
   expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:workspace-a");
   act(() => authStore.getState().clearSession());
   await expect(editorCallback(ref)).rejects.toThrow("请先登录");
+});
+
+it("invalidates file search results after a successful upload in the same session", async () => {
+  const client = new QueryClient();
+  const invalidate = vi.spyOn(client, "invalidateQueries");
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ code: "OK", message: "ok", request_id: "test", data: { id: ref.slice("orbis-file:".length), upload_status: "completed" } }), { headers: { "Content-Type": "application/json" } })));
+  const { result } = renderHook(useManagedFiles, { wrapper: ({ children }) => <QueryClientProvider client={client}>{children}</QueryClientProvider> });
+  expect(await result.current.upload(new File(["content"], "upload.txt"))).toBe(ref);
+  expect(invalidate).toHaveBeenCalledWith({ queryKey: ["global-search"] });
 });

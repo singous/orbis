@@ -3,29 +3,47 @@ import { Dropdown } from "@heroui/react/dropdown";
 import { Label } from "@heroui/react/label";
 import { Input as HeroInput } from "@heroui/react/input";
 import { ActionButton } from "../../shared/ui/ActionButton";
-import { AlertTriangle, Archive, BookOpen, ChevronRight, MoreHorizontal, Check, Cloud, Download, Eye, EyeOff, MessageSquare, RefreshCw, RotateCcw, Save, WifiOff } from "../../shared/ui/icons";
+import { AlertTriangle, Archive, BookOpen, ChevronRight, MoreHorizontal, Check, Cloud, Download, MessageSquare, RefreshCw, RotateCcw, Save, WifiOff } from "../../shared/ui/icons";
 import { Component, lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useStore } from "zustand";
 
 import { ApiError } from "../../shared/api/api-client";
 import { authStore } from "../../shared/auth/auth-store";
 import { Button } from "../../shared/ui/Button";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
-import { extractPlainTextV2, v2ToMarkdown, type NoteBlocksV2 } from "../notes/block-model";
+import { v2ToMarkdown, type NoteBlocksV2 } from "../notes/block-model";
 import type { RestoreSavedRevision } from "../collaboration/DocumentCollaborationPanel";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { AutosaveCoordinator, type AutosaveState } from "./autosave";
 import { normalizeEditorBlocks } from "./editor-blocks";
+import { createEditorDraftFingerprint, type EditorDraft } from "./editor-draft";
+import { EditorLayout, EditorOutlineStore } from "./EditorLayout";
+import { loadDocumentEditor } from "./editor-module";
 import { DocumentShell } from "./DocumentShell";
 
 // Load the editor only on document pages; readers use the lightweight renderer.
-const TiptapEditor = lazy(() =>
-  import("../notes/TiptapEditor").then((m) => ({ default: m.TiptapEditor })),
-);
+const TiptapEditor = lazy(loadDocumentEditor);
+
+function LiveDocumentEditor({ blocks, onChange, ...props }: {
+  blocks: NoteBlocksV2;
+  onChange: (next: { blocks: NoteBlocksV2 }) => void;
+  onError: (message: string | null) => void;
+  readOnly: boolean;
+  noteId: string;
+}) {
+  const [local, setLocal] = useState({ source: blocks, value: blocks });
+  // A restored/server revision replaces local content before editability
+  // changes reach the editor. Ordinary keystrokes only rerender this boundary.
+  if (local.source !== blocks) setLocal({ source: blocks, value: blocks });
+  return <TiptapEditor {...props} blocks={local.source === blocks ? local.value : blocks} onChange={next => {
+    setLocal({ source: blocks, value: next.blocks });
+    onChange(next);
+  }} />;
+}
 import {
   useArchiveNote,
-  useNotebooks,
+  useNotebook,
   useNote,
   useNoteContent,
   useSaveNoteContent,
@@ -36,21 +54,6 @@ import { isUnavailableResourceError } from "./resource-errors";
 const DocumentCollaborationPanel = lazy(() =>
   import("../collaboration/DocumentCollaborationPanel").then((module) => ({ default: module.DocumentCollaborationPanel })),
 );
-
-type EditorDraft = { title: string; blocks: NoteBlocksV2; version: number };
-
-function draftFingerprint(draft: EditorDraft): string {
-  return JSON.stringify([draft.title.trim(), draft.blocks]);
-}
-
-function outlineFromBlocks(blocks: NoteBlocksV2) {
-  return blocks.blocks
-    .filter((block) => block.type === "heading")
-    .map((block, index) => {
-      const text = extractPlainTextV2([{ ...block, children: [] }]);
-      return { id: `${index}-${text}`, level: Number(block.props.level ?? 1), text: text || "未命名标题" };
-    });
-}
 
 const saveStateCopy: Record<AutosaveState, { label: string; icon: typeof Save }> = {
   saved: { label: "已保存", icon: Check },
@@ -82,12 +85,15 @@ class EditorErrorBoundary extends Component<{ children: ReactNode }, { hasError:
 export function DocumentEditorPage() {
   const { noteId = "" } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const commentId = searchParams.get("comment");
+  const outlineStore = useMemo(() => new EditorOutlineStore(), [noteId]);
+  useEffect(() => { void loadDocumentEditor().catch(() => { /* The editor boundary reports module load failures. */ }); }, []);
   const workspace = useStore(authStore, (state) => state.workspace);
   const canEdit = canMutateWorkspaceContent(workspace);
   const currentUserId = useStore(authStore, (state) => state.user?.id ?? "");
   const noteQuery = useNote(noteId);
-  const notebooksQuery = useNotebooks();
-  const notebook = notebooksQuery.data?.items.find((item) => item.id === noteQuery.data?.notebook_id);
+  const notebook = useNotebook(noteQuery.data?.notebook_id).data;
   const contentQuery = useNoteContent(noteId);
   const updateNote = useUpdateNote();
   const saveContent = useSaveNoteContent();
@@ -96,7 +102,8 @@ export function DocumentEditorPage() {
   const [editorError, setEditorError] = useState<string | null>(null);
   const editorErrorRef = useRef<string | null>(null);
   const [autosaveState, setSaveState] = useState<AutosaveState>("saved");
-  const [collaborationOpen, setCollaborationOpen] = useState(false);
+  const [collaborationOpen, setCollaborationOpen] = useState(Boolean(commentId));
+  useEffect(() => { setCollaborationOpen(Boolean(commentId)); }, [noteId, commentId]);
   const [restoring, setRestoring] = useState(false);
   const [archiving, setArchiving] = useState(false);
   const [archiveError, setArchiveError] = useState<string | null>(null);
@@ -105,11 +112,8 @@ export function DocumentEditorPage() {
   const archivingRef = useRef<AutosaveCoordinator<EditorDraft> | null>(null);
   const collaborationTriggerRef = useRef<HTMLButtonElement>(null);
   const saveState = editorError ? "error" : restorationConflict ? "conflict" : autosaveState;
-  const [outlinePinned, setOutlinePinned] = useState(false);
-  const [outlineHovered, setOutlineHovered] = useState(false);
   const coordinatorRef = useRef<AutosaveCoordinator<EditorDraft> | null>(null);
   const hydratedNoteRef = useRef<string | null>(null);
-  const outlineOpen = outlinePinned || outlineHovered;
   const editorBusy = restoring || archiving;
 
   useEffect(() => {
@@ -134,7 +138,9 @@ export function DocumentEditorPage() {
     hydratedNoteRef.current = noteId;
     const initial = { title: note.title, blocks: normalizeEditorBlocks(noteId, content.blocks), version: content.content_version };
     setDraft(initial);
+    outlineStore.update(initial.blocks);
     coordinatorRef.current?.dispose(false);
+    const fingerprint = createEditorDraftFingerprint();
     const coordinator = new AutosaveCoordinator<EditorDraft>({
       delayMs: 750,
       // Bursts separated by short pauses coalesce into at most one save per
@@ -142,14 +148,14 @@ export function DocumentEditorPage() {
       // cannot lose more than that window.
       minIntervalMs: 2_000,
       maxDelayMs: 15_000,
-      fingerprint: draftFingerprint,
+      fingerprint,
       onStateChange: setSaveState,
       save: async (current, saved) => {
         if (current.title.trim() !== saved.title.trim()) {
           await updateNote.mutateAsync({ id: noteId, title: current.title.trim() || "未命名文档" });
         }
         let version = saved.version;
-        if (JSON.stringify(current.blocks) !== JSON.stringify(saved.blocks)) {
+        if (fingerprint({ ...current, title: "" }) !== fingerprint({ ...saved, title: "" })) {
           const result = await saveContent.mutateAsync({ noteId, expectedVersion: saved.version, blocks: current.blocks });
           version = result.content_version;
         }
@@ -199,13 +205,15 @@ export function DocumentEditorPage() {
     });
   }, [navigate, resourceUnavailable]);
 
-  const outline = useMemo(() => draft ? outlineFromBlocks(draft.blocks) : [], [draft?.blocks]);
   const stateCopy = saveStateCopy[saveState];
   const StateIcon = stateCopy.icon;
 
   function changeDraft(next: EditorDraft) {
     if (!canEdit || restoringRef.current || archivingRef.current) return;
-    setDraft(next);
+    // The live body belongs to ProseMirror and the save coordinator. Only
+    // title changes need to refresh the workspace breadcrumb and outer shell.
+    if (next.title !== draft?.title) setDraft(next);
+    outlineStore.update(next.blocks);
     coordinatorRef.current?.change(next);
   }
 
@@ -219,6 +227,7 @@ export function DocumentEditorPage() {
     const next = { title: noteResult.data.title, blocks: normalizeEditorBlocks(noteId, contentResult.data.blocks), version: contentResult.data.content_version };
     coordinatorRef.current?.hydrate(next);
     setDraft(next);
+    outlineStore.update(next.blocks);
     setRestorationConflict(false);
   }
 
@@ -248,6 +257,7 @@ export function DocumentEditorPage() {
       const next = { ...saved, blocks: normalizeEditorBlocks(noteId, restored.blocks), version: restored.content_version };
       coordinator.hydrate(next);
       setDraft(next);
+      outlineStore.update(next.blocks);
       setRestorationConflict(false);
     } catch (error) {
       if (coordinatorRef.current === coordinator && error instanceof ApiError && error.isConflict) setRestorationConflict(true);
@@ -325,7 +335,7 @@ export function DocumentEditorPage() {
   return (
     <DocumentShell editorLayout breadcrumb={breadcrumb} toolbar={toolbar} notebookId={noteQuery.data?.notebook_id} activeNoteId={noteId}>
       {!draft || !noteQuery.data || hydratedNoteRef.current !== noteId ? <div className="page-container"><LoadingState label="正在打开文档…" variant="editor" /></div> : (
-        <div className={`editor-layout${outlineOpen ? " outline-open" : ""}`}>
+        <EditorLayout outlineStore={outlineStore}>
           <article className="editor-canvas">
             <HeroInput
               aria-label="文档标题"
@@ -333,50 +343,29 @@ export function DocumentEditorPage() {
               placeholder="无标题"
               value={draft.title}
               readOnly={!canEdit || editorBusy}
-              onChange={(event) => changeDraft({ ...draft, title: event.target.value })}
+              onChange={(event) => changeDraft({ ...(coordinatorRef.current?.current ?? draft), title: event.target.value })}
             />
-            <div className="mb-7 mt-2 flex items-center gap-2 text-[11px] text-[var(--muted-light)]"><span>版本 {coordinatorRef.current?.saved?.version ?? draft.version}</span><span>·</span><span>{canEdit ? "停手后自动保存" : "只读访问"}</span></div>
+            <div className="mb-7 mt-2 flex items-center gap-2 text-xs text-[var(--muted-light)]"><span>版本 {coordinatorRef.current?.saved?.version ?? draft.version}</span><span>·</span><span>{canEdit ? "停手后自动保存" : "只读访问"}</span></div>
 
             {archiveError ? <div role="alert" className="mb-5"><StatusMessage tone="error" title="未能归档文档">{archiveError}</StatusMessage></div> : null}
             {saveState === "conflict" ? <div className="mb-5"><StatusMessage tone="warning" title="检测到其他窗口的更新">本地草稿仍保留。建议先复制本地 Markdown，再载入服务端版本。
-              <div className="mt-3 flex flex-wrap gap-2"><Button variant="secondary" icon={<Download aria-hidden="true" size={14} />} onClick={() => navigator.clipboard?.writeText(v2ToMarkdown(draft.blocks.blocks))}>复制本地 Markdown</Button><Button variant="secondary" icon={<RotateCcw aria-hidden="true" size={14} />} onClick={reloadServer}>载入服务端版本</Button></div>
+              <div className="mt-3 flex flex-wrap gap-2"><Button variant="secondary" icon={<Download aria-hidden="true" size={14} />} onClick={() => navigator.clipboard?.writeText(v2ToMarkdown((coordinatorRef.current?.current ?? draft).blocks.blocks))}>复制本地 Markdown</Button><Button variant="secondary" icon={<RotateCcw aria-hidden="true" size={14} />} onClick={reloadServer}>载入服务端版本</Button></div>
             </StatusMessage></div> : null}
             {saveState === "error" && !editorError ? <div className="mb-5"><StatusMessage tone="error" title="自动保存失败">网络恢复后可手动重试，本地草稿不会丢失。<div className="mt-3"><Button variant="secondary" icon={<RefreshCw aria-hidden="true" size={14} />} onClick={() => coordinatorRef.current?.retry()}>重试保存</Button></div></StatusMessage></div> : null}
 
             <EditorErrorBoundary key={noteId}>
               <Suspense fallback={<LoadingState label="正在准备编辑…" variant="editor-body" delayMs={180} />}>
-                <TiptapEditor
+                <LiveDocumentEditor
                   noteId={noteId}
                   blocks={draft.blocks}
                   readOnly={!canEdit || editorBusy}
                   onError={(message) => { editorErrorRef.current = message; setEditorError(message); }}
-                  onChange={({ blocks }) => changeDraft({ ...draft, blocks })}
+                  onChange={({ blocks }) => changeDraft({ ...(coordinatorRef.current?.current ?? draft), blocks })}
                 />
               </Suspense>
             </EditorErrorBoundary>
           </article>
-          <aside
-            className="editor-outline"
-            aria-label="文档大纲"
-            onMouseEnter={() => setOutlineHovered(true)}
-            onMouseLeave={() => setOutlineHovered(false)}
-          >
-            <ActionButton
-              type="button"
-              className="editor-outline-pin"
-              aria-label={outlinePinned ? "取消大纲常驻" : "大纲常驻"}
-              aria-pressed={outlinePinned}
-              title={outlinePinned ? "取消常驻" : "常驻大纲"}
-              onClick={() => setOutlinePinned((v) => !v)}
-            >
-              {outlinePinned ? <Eye aria-hidden="true" size={14} /> : <EyeOff aria-hidden="true" size={14} />}
-            </ActionButton>
-            <div className="editor-outline-body">
-              <div className="mb-4 text-xs font-semibold text-[var(--muted)]">大纲</div>
-              {outline.length ? <nav className="space-y-1">{outline.map((item) => <div key={item.id} className="truncate rounded-md py-1.5 text-xs text-[var(--muted)]" style={{ paddingLeft: `${(item.level - 1) * 10}px` }}>{item.text}</div>)}</nav> : <p className="text-xs leading-5 text-[var(--muted-light)]">添加标题后，这里会自动生成大纲。</p>}
-            </div>
-          </aside>
-        </div>
+        </EditorLayout>
       )}
       {collaborationOpen ? <Suspense fallback={<LoadingState label="正在加载评论与历史…" compact />}><DocumentCollaborationPanel key={noteId} noteId={noteId} currentUserId={currentUserId} canManage={canEdit} onClose={closeCollaboration} onRestore={restoreSavedRevision} /></Suspense> : null}
     </DocumentShell>

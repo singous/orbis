@@ -7,7 +7,7 @@ import { isSortable, useSortable } from "@dnd-kit/react/sortable";
 import { useIsMutating } from "@tanstack/react-query";
 import { Archive, ChevronDown, FilePlus2, FileText, GripVertical, MoreHorizontal, Pencil, Plus } from "../../shared/ui/icons";
 import { type KeyboardEvent, type ReactNode, createContext, useCallback, useContext, useEffect, useId, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
 
 import type { NoteTreeItem } from "../../shared/api/schemas";
@@ -18,6 +18,7 @@ import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { dismissToast, showToast } from "../../shared/ui/Toast";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { ResourceDialog } from "./ResourceDialog";
+import { DocumentLink } from "./DocumentLink";
 import { useDocumentTreeExpansion } from "./document-tree-expansion";
 import { useArchiveNote, useCreateNote, useNoteTree, useReorderNotes, useUpdateNote } from "./queries";
 
@@ -171,11 +172,11 @@ function DocumentItem({ note, depth, parentId, activeNoteId, canEdit, reordering
   if (main) return <div ref={sortable?.ref} className="document-main-item" data-note-id={note.id} data-parent-id={group} data-dragging={sortable?.isDragSource} data-drop-target={sortable?.isDropTarget}>
     <div ref={sortable?.targetRef} className={`document-main-row${sortable ? " has-drag-handle" : ""}`}>
       {prefix}
-      <Link to={`/documents/${note.id}`} aria-label={note.title} aria-current={note.id === activeNoteId ? "page" : undefined} className="document-main-link" onClick={onNavigate}>
+      <DocumentLink noteId={note.id} to={`/documents/${note.id}`} aria-label={note.title} aria-current={note.id === activeNoteId ? "page" : undefined} className="document-main-link" onClick={onNavigate}>
         <span className="document-main-title" title={note.title}>{note.title}</span>
         <span className="document-main-leader" aria-hidden="true" />
         <time>{formatDate(note.updated_at_ms)}</time>
-      </Link>
+      </DocumentLink>
       {actions}
     </div>
     {note.children.length ? <div id={childrenId} className="document-main-children" hidden={!expanded}>{children}</div> : null}
@@ -184,10 +185,10 @@ function DocumentItem({ note, depth, parentId, activeNoteId, canEdit, reordering
   return <div ref={sortable?.ref} className="document-context-item" data-note-id={note.id} data-parent-id={group} data-dragging={sortable?.isDragSource} data-drop-target={sortable?.isDropTarget}>
     <div ref={sortable?.targetRef} className={`document-context-row${sortable ? " has-drag-handle" : ""}${note.id === activeNoteId ? " is-active" : ""}`}>
       {prefix}
-      <Link to={`/documents/${note.id}`} aria-current={note.id === activeNoteId ? "page" : undefined} className={`document-context-link ${note.id === activeNoteId ? "is-active" : ""}`} title={note.title} onClick={onNavigate}>
+      <DocumentLink noteId={note.id} to={`/documents/${note.id}`} aria-current={note.id === activeNoteId ? "page" : undefined} className={`document-context-link ${note.id === activeNoteId ? "is-active" : ""}`} title={note.title} onClick={onNavigate}>
         <FileText aria-hidden="true" size={14} />
         <span>{note.title}</span>
-      </Link>
+      </DocumentLink>
       {actions}
     </div>
     {note.children.length ? <div id={childrenId} className="document-context-children" hidden={!expanded}>{children}</div> : null}

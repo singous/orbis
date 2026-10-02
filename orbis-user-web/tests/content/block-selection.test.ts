@@ -2,7 +2,8 @@ import { Editor } from '@tiptap/core';
 import { afterEach, expect, it } from 'vitest';
 import { tiptapExtensions } from '../../src/features/notes/tiptap-extensions';
 import { toTiptapDocument } from '../../src/features/notes/tiptap-model';
-import { OrbisBlockSelection, blockSelectionKey, selectBlock, clearBlockSelection } from '../../src/features/notes/blocks/block-selection';
+import { OrbisBlockSelection, blockSelectionKey, selectBlock, clearBlockSelection, setBlockTarget } from '../../src/features/notes/blocks/block-selection';
+import { locateEditorBlocks, executeBlockCommand } from '../../src/features/notes/blocks/block-commands';
 
 let editor: Editor;
 afterEach(() => editor?.destroy());
@@ -40,4 +41,23 @@ it('shrinks a keyboard range back toward its anchor before extending the other w
  press('ArrowDown');expect(blockSelectionKey.getState(editor.state)?.ids).toEqual(['b','c']);
  press('ArrowUp');expect(blockSelectionKey.getState(editor.state)?.ids).toEqual(['b']);
  press('ArrowUp');expect(blockSelectionKey.getState(editor.state)?.ids).toEqual(['a','b']);
+});
+
+it('maps block decorations through typing, splitting, grouping and undo without losing identity',()=>{
+ setup();
+ const verify=()=>{
+  const ids=Array.from(editor.view.dom.querySelectorAll('[data-orbis-block-id]'),node=>node.getAttribute('data-orbis-block-id'));
+  expect(ids).toEqual(locateEditorBlocks(editor.state.doc).map(entry=>entry.id));
+  expect(new Set(ids).size).toBe(ids.length);
+ };
+ selectBlock(editor,'c');setBlockTarget(editor,'b');
+ editor.commands.insertContentAt(1,'Long prefix ');
+ verify();
+ expect(editor.view.dom.querySelector('[data-orbis-selected="true"]')?.textContent).toBe('c');
+ expect(editor.view.dom.querySelector('[data-orbis-target="true"]')?.textContent).toBe('b');
+ editor.commands.setTextSelection(5);editor.commands.splitBlock();verify();
+ expect(executeBlockCommand(editor,['b','c'],{type:'group'}).ok).toBe(true);verify();
+ editor.commands.undo();verify();
+ editor.commands.setContent({type:'doc',content:[{type:'paragraph',attrs:{orbisId:'fresh'},content:[{type:'text',text:'Fresh'}]}]},false);verify();
+ expect(editor.view.dom.querySelector('[data-orbis-selected="true"]')).toBeNull();
 });

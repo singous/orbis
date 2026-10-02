@@ -52,6 +52,7 @@ vi.mock("./queries", () => ({
   useNote: () => ({ data: { id: "018ff7c4-a5b6-7000-8000-000000000001", notebook_id: "018ff7c4-a5b6-7000-8000-000000000004", title: "产品计划" }, isError: false }),
   useNoteContent: () => ({ data: contentFixture.current, isError: false, refetch: vi.fn() }),
   useNotebooks: () => ({ data: { items: [] }, isLoading: false, isError: false }),
+  useNotebook: () => ({ data: undefined, isLoading: false, isError: false }),
   useUpdateNote: () => ({ mutateAsync: updateNote, isPending: false }),
   useSaveNoteContent: () => ({ mutateAsync: saveContent, isPending: false }),
   useArchiveNote: () => ({ mutateAsync: vi.fn(), isPending: false }),

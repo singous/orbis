@@ -94,3 +94,46 @@ test('native clipboard paste preserves image references and documentation proper
   await page.reload();
   await expect(page.getByText('Read the guide', { exact: true })).toBeVisible();
 });
+
+test('private resources wait for a visible tab, viewport or explicit download', async ({ page, request }) => {
+  const { headers, note } = await prepare(page, request, 'Deferred private resources');
+  const hiddenId = '0190a111-1111-7111-8111-111111111111';
+  const distantId = '0190a111-1111-7111-8111-111111111112';
+  const fileId = '0190a111-1111-7111-8111-111111111113';
+  const requests = new Map<string, number>();
+  await page.route('**/api/files/*/content', async route => {
+    const id = new URL(route.request().url()).pathname.split('/').at(-2)!;
+    expect(route.request().headers().authorization).toContain('Bearer ');
+    requests.set(id, (requests.get(id) ?? 0) + 1);
+    await route.fulfill({ contentType: id === fileId ? 'application/octet-stream' : 'image/svg+xml', body: id === fileId ? 'download fixture' : '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="150"><rect width="300" height="150" fill="#ddd"/></svg>' });
+  });
+  const paragraph = (id: string, text: string) => ({ id, type: 'paragraph', props: {}, content: [{ type: 'text', text }], children: [] });
+  const media = (id: string, file: string, name: string, type = 'image') => ({ id, type, props: { url: `orbis-file:${file}`, name }, content: [], children: [] });
+  const source = { schema_version: 2, editor: 'blocknote', blocks: [
+    paragraph('intro', 'Private media loading'),
+    { id: 'tabs', type: 'tabs', props: {}, content: [], children: [
+      { id: 'visible-tab', type: 'tab', props: { title: '文字标签' }, content: [], children: [paragraph('visible-body', 'Visible text')] },
+      { id: 'hidden-tab', type: 'tab', props: { title: '隐藏图片' }, content: [], children: [media('hidden-image', hiddenId, '隐私图')] },
+    ] },
+    media('download', fileId, 'attachment.txt', 'file'),
+    ...Array.from({ length: 80 }, (_, index) => paragraph(`filler-${index}`, `Long document paragraph ${index}`)),
+    media('distant-image', distantId, '远处图片'),
+  ] };
+  expect((await request.put(`${api}/notes/${note.id}/content`, { headers, data: { expected_version: 1, blocks: source } })).ok()).toBe(true);
+  await page.goto(`/documents/${note.id}`);
+  await expect(page.getByRole('tab', { name: '文字标签' })).toHaveAttribute('aria-selected', 'true');
+  await page.waitForTimeout(200);
+  expect([...requests.values()]).toEqual([]);
+  await page.getByRole('tab', { name: '隐藏图片' }).click();
+  await expect(page.getByRole('img', { name: '隐私图' })).toBeVisible();
+  expect(requests.get(hiddenId)).toBe(1);
+  expect(requests.has(distantId)).toBe(false);
+  expect(requests.has(fileId)).toBe(false);
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: '下载attachment.txt' }).click();
+  expect((await download).suggestedFilename()).toBe('attachment.txt');
+  expect(requests.get(fileId)).toBe(1);
+  await page.locator('[data-orbis-block-id="distant-image"]').scrollIntoViewIfNeeded();
+  await expect(page.getByRole('img', { name: '远处图片' })).toBeVisible();
+  expect(requests.get(distantId)).toBe(1);
+});
