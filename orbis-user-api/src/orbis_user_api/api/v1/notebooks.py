@@ -45,6 +45,7 @@ from orbis_user_api.services.exceptions import (
     UserWorkspaceMissing,
 )
 from orbis_user_api.services.notebook import create_notebook as create_notebook_service
+from orbis_user_api.services.notebook import get_notebook as get_notebook_service
 from orbis_user_api.services.notebook import list_notebooks as list_notebooks_service
 from orbis_user_api.services.notebook import set_notebook_archived
 from orbis_user_api.services.notebook import update_notebook as update_notebook_service
@@ -186,6 +187,21 @@ async def create_notebook(
             code="DOCUMENT_GROUP_NOT_FOUND",
             message="文档分组不存在",
         ) from None
+
+
+@router.get("/{notebook_id}", response_model=NotebookOut)
+async def get_notebook(
+    notebook_id: UUID,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> Notebook:
+    try:
+        return await get_notebook_service(notebook_id, user, session)
+    except NotebookNotFound:
+        raise ApiError(status_code=404, code="NOTEBOOK_NOT_FOUND", message="文集不存在") from None
+    except UserWorkspaceMissing:
+        raise ApiError(status_code=403, code="ACTIVE_WORKSPACE_MEMBERSHIP_REQUIRED",
+                       message="需要有效的工作空间成员身份") from None
 
 
 @router.patch(

@@ -21,12 +21,15 @@ TAG_DOCS: dict[str, tuple[str, str]] = {
     "notes": ("文档", "文档、内容、搜索与目录树"),
     "files": ("文件", "文件上传与查询"),
     "system": ("系统状态", "服务健康检查"),
+    "search": ("全局搜索", "按授权范围检索当前资源"),
     **base_mvp.TAG_DOCS,
 }
 
 
 # key: (HTTP method, route path); value: (Chinese summary, business description)
 OPERATION_DOCS: dict[tuple[str, str], tuple[str, str]] = {
+    ("get", "/search"): ("全局搜索可访问资源", "默认检索当前工作空间的活跃文档及可读评论、文集、文档分组、站点和已完成上传文件元数据。scope=all 显式扩展到全部可读空间；workspace_id 指定单个可读空间，二者不可同时使用。搜索不切换当前空间。空关键词仅返回可选空间；提供 resource_id 和具体 type 时可以用空关键词精确定位授权资源，ID 条件在计数和分页前生效。普通关键词不展开 SQL 通配符。评论去重合并到文档，摘要最多 240 字；按标题精确、前缀、包含、正文或元数据、评论优先级及更新时间和资源标识稳定排序，分页总数只统计授权匹配资源。"),
+    ("post", "/workspace/switch"): ("切换当前工作空间", "用户显式打开其他空间资源时，校验活跃空间、活跃成员身份与读取能力后更新账号的当前空间，返回用户与空间信息。相同空间重复调用不产生更新。该偏好属于账号，会影响其他会话的后续请求；客户端切换前必须处理未保存编辑内容。"),
     ("post", "/setup"): ("初始化 Orbis", "首次部署时创建唯一所有者账号、默认私人工作空间和默认文档分组。该接口只能成功调用一次。"),
     ("get", "/workspace/mail-status"): ("查询邮件服务状态", "查询当前部署是否可以发送邀请和所有权转让邮件，不会返回 SMTP 密钥等敏感配置。"),
     ("post", "/workspace/invitations"): ("创建成员邀请", "向指定邮箱创建工作空间邀请并发送邮件。所有者可邀请管理员、编辑者和普通成员，管理员不可邀请管理员。"),
@@ -67,6 +70,7 @@ OPERATION_DOCS: dict[tuple[str, str], tuple[str, str]] = {
     ("post", "/document-groups/{group_id}/archive"): ("归档文档分组", "归档指定文档分组。系统默认分组不可归档。"),
     ("post", "/document-groups/{group_id}/restore"): ("恢复文档分组", "恢复指定文档分组；恢复后其下级文集和文档仍需按依赖顺序分别恢复。"),
     ("get", "/notebooks"): ("分页查询文集", "分页查询当前工作空间的文集，可按文档分组、资源状态及父级状态过滤。"),
+    ("get", "/notebooks/{notebook_id}"): ("查询单个文集", "按 UUID 读取当前空间的活跃文集元数据，包含图标、所属分组与毫秒时间戳，不依赖文集列表分页。文集和所属分组必须同属当前空间且均处于活跃状态，否则返回 NOTEBOOK_NOT_FOUND。"),
     ("post", "/notebooks"): ("创建文集", "在指定文档分组中创建文集；未指定 group_id 时自动使用默认文档分组。可设置 icon 为内置图标及配色或当前空间上传的图标文件；省略或 null 使用默认图标。"),
     ("patch", "/notebooks/{notebook_id}"): ("修改文集", "修改文集标题、所属文档分组、排序值或 icon 图标。目标文档分组必须处于活跃状态。icon 省略时保持原值，显式 null 恢复默认图标；图片必须来自当前工作空间的笔记本图标上传接口。"),
     ("post", "/notebooks/icons"): ("上传笔记本图标", "以 multipart/form-data 的 file 字段上传 PNG、JPEG 或 WebP 静态图片，最大 2 MiB（2,097,152 字节）、16,777,216 像素。服务端验证实际图片内容，保留宽高比缩小至 256×256 以内并转换为 WebP，移除图片元数据。返回 file_id 和可预览的 data_url；保存笔记本时使用 type=image 及 file_id 绑定。要求当前工作空间资源管理权限。"),
@@ -102,6 +106,7 @@ BINARY_OPERATIONS = {
 }
 
 PAGINATED_PATHS = {
+    "/search",
     "/notes",
     "/document-groups",
     "/notebooks",
@@ -127,6 +132,8 @@ FIELD_DESCRIPTIONS = {
     "owner_id": "资源创建者或所有者 UUIDv7 标识。",
     "user_id": "用户 UUIDv7 标识。",
     "current_workspace_id": "用户当前选择的工作空间 UUIDv7 标识。",
+    "workspace_type": "工作空间类型，例如 private 表示私人空间。",
+    "is_current": "是否为该账号当前选择的工作空间。",
     "name": "资源显示名称。",
     "title": "文集或文档标题。",
     "role": "工作空间角色：owner、admin、editor 或 normal。",
@@ -186,6 +193,12 @@ SCHEMA_EXAMPLES: dict[str, dict[str, Any]] = {
 
 
 def _success_data(path: str, method: str) -> Any:
+    if path == "/notebooks/{notebook_id}" and method == "get":
+        return {"id": EXAMPLE_REQUEST_ID, "tenant_id": None, "workspace_id": EXAMPLE_REQUEST_ID, "group_id": EXAMPLE_REQUEST_ID, "owner_id": EXAMPLE_REQUEST_ID, "title": "项目资料", "icon": None, "sort_order": 0, "status": "active", "created_at_ms": 0, "updated_at_ms": 0}
+    if path == "/search":
+        return {"items": [], "pagination": {"page": 1, "page_size": 20, "total": 0, "total_pages": 0, "has_next": False, "has_previous": False}, "scope": {"workspace_ids": [EXAMPLE_REQUEST_ID], "current_workspace_id": EXAMPLE_REQUEST_ID}, "workspaces": [{"id": EXAMPLE_REQUEST_ID, "name": "私人空间", "is_current": True}]}
+    if path == "/workspace/switch":
+        return {"user": _success_data("/users/me", "get") | {"current_workspace_id": EXAMPLE_REQUEST_ID}, "workspace": {"id": EXAMPLE_REQUEST_ID, "name": "私人空间", "workspace_type": "private", "role": "owner", "is_current": True, "created_at_ms": 0, "updated_at_ms": 0}}
     if path in {"/users/me", "/users/me/avatar"}:
         if path.endswith("/avatar") and method == "get":
             return {"data_url": "data:image/webp;base64,UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAUAmJaQAA3AA/v89WAAAAA=="}
@@ -401,6 +414,12 @@ def _install_operation_docs(schema: dict[str, Any]) -> None:
 
     # Add route-specific business-code examples used by client branching.
     route_errors = [
+        ("get", "/notebooks/{notebook_id}", 403, "ACTIVE_WORKSPACE_MEMBERSHIP_REQUIRED", "需要有效的工作空间成员身份"),
+        ("get", "/notebooks/{notebook_id}", 404, "NOTEBOOK_NOT_FOUND", "文集不存在"),
+        ("get", "/search", 403, "SEARCH_WORKSPACE_FORBIDDEN", "需要所选工作空间的有效读取权限"),
+        ("get", "/search", 422, "SEARCH_SCOPE_INVALID", "全部空间范围不能同时指定单个工作空间"),
+        ("get", "/search", 422, "SEARCH_RESOURCE_TYPE_REQUIRED", "按资源 ID 定位时必须指定具体资源类型"),
+        ("post", "/workspace/switch", 403, "SEARCH_WORKSPACE_FORBIDDEN", "需要所选工作空间的有效读取权限"),
         ("put", "/users/me/avatar", 413, "AVATAR_TOO_LARGE", "头像图片不能超过 2 MiB"),
         ("put", "/users/me/avatar", 422, "AVATAR_INVALID_IMAGE", "头像图片格式或像素范围无效"),
         ("get", "/users/me/avatar", 404, "AVATAR_NOT_FOUND", "尚未设置自定义头像"),

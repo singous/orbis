@@ -7,6 +7,7 @@ from orbis_user_api.api import (
     members,
     notes,
     ownership,
+    search,
     setup,
     site_assets,
     site_exports,
@@ -24,6 +25,7 @@ api_router = APIRouter()
 api_router.include_router(setup.router)
 api_router.include_router(members.router)
 api_router.include_router(ownership.router)
+api_router.include_router(search.router)
 api_router.include_router(notes.router)
 api_router.include_router(collaboration.router)
 api_router.include_router(sites.router)

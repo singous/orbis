@@ -173,4 +173,7 @@ async def get_notebook(
         or notebook.status != "active"
     ):
         raise NotebookNotFound
+    group = await session.get(NoteGroup, notebook.group_id)
+    if group is None or group.workspace_id != workspace.id or group.status != "active":
+        raise NotebookNotFound
     return notebook
