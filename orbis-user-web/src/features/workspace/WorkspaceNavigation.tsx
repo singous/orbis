@@ -14,7 +14,7 @@ const documentLinks = [
   { to: "/documents", label: "笔记本总览", icon: BookOpen },
   { to: "/documents/recent", label: "最近编辑", icon: Clock3 },
   { to: "/documents/collections", label: "我的笔记本", icon: Notebook },
-  { to: "/documents/search", label: "全文搜索", icon: Search },
+  { to: "/search?type=document", label: "搜索文档", icon: Search },
 ];
 const navClass = ({ isActive }: { isActive: boolean }) => `workspace-function-link${isActive ? " is-active" : ""}`;
 
@@ -70,5 +70,6 @@ export function WorkspaceNavigation() {
     case "knowledge": return <MenuFrame label={area.navigationLabel}><NavLink to="/knowledge" className={navClass}><LibraryBig size={18} />知识中心</NavLink></MenuFrame>;
     case "memory": return <MenuFrame label={area.navigationLabel}><NavLink to="/memory" className={navClass}><Sparkles size={18} />长期记忆</NavLink></MenuFrame>;
     case "home": return <MenuFrame label={area.navigationLabel}><NavLink to="/home" end className={navClass}><Home size={18} />工作台</NavLink></MenuFrame>;
+    case "search": return null;
   }
 }

@@ -8,7 +8,7 @@ export function SectionLabel({ children, className }: { children: ReactNode; cla
   return (
     <div
       className={cn(
-        "px-3 pb-1 pt-4 text-[11px] font-medium uppercase tracking-wide text-[var(--text-tertiary)]",
+        "px-3 pb-1 pt-4 text-sm font-medium uppercase tracking-wide text-[var(--text-tertiary)]",
         className,
       )}
     >
@@ -41,7 +41,7 @@ export function NavItem({
       onClick={disabled ? (event) => event.preventDefault() : undefined}
       className={({ isActive }) =>
         cn(
-          "flex h-8 items-center gap-2 rounded-[var(--radius-control)] px-3 text-sm transition-colors duration-100",
+          "orbis-nav-item flex items-center gap-2 rounded-[var(--radius-control)] px-3 text-sm transition-colors duration-100",
           isActive
             ? "bg-[var(--surface-active)] font-medium text-[var(--text-primary)]"
             : "text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]",
@@ -77,7 +77,7 @@ export function NavIcon({
       aria-label={label}
       className={({ isActive }) =>
         cn(
-          "relative grid h-[42px] w-[42px] place-items-center rounded-[var(--radius-pop)] transition-colors duration-150",
+          "orbis-nav-icon relative grid place-items-center rounded-[var(--radius-pop)] transition-colors duration-150",
           isActive
             ? "bg-[var(--border-inverse)] text-[var(--text-oninverse)]"
             : "text-[var(--text-oninverse)] opacity-50 hover:bg-[var(--border-inverse)] hover:opacity-100",
@@ -86,7 +86,7 @@ export function NavIcon({
     >
       {icon}
       {hint ? (
-        <em className="absolute top-full mt-0.5 whitespace-nowrap text-[9px] not-italic text-[var(--text-oninverse)] opacity-50">
+        <em className="absolute top-full mt-0.5 whitespace-nowrap text-xs not-italic text-[var(--text-oninverse)] opacity-50">
           {hint}
         </em>
       ) : null}

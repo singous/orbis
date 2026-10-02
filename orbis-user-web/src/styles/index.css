@@ -2,6 +2,8 @@
 @import "@heroui/styles";
 @import "@fontsource-variable/inter";
 @import "./heroui-theme.css";
+@import "./design-tokens.css";
+@import "./ui-controls.css";
 @import "./scrollbars.css";
 @import "./icons.css";
 @import "./loading.css";
@@ -45,18 +47,18 @@
   --brand-mark: #23ad83;
   --avatar-background: #daf3f5;
   --avatar-foreground: #238d9d;
-  --action-height: 36px;
-  --action-font-size: 14px;
-  --action-line-height: 20px;
-  --action-font-weight: 500;
-  --action-padding-x: 12px;
-  --action-gap: 8px;
-  --action-icon-size: 16px;
-  --compact-control-height: 32px;
-  --form-control-height: 42px;
+  --action-height: var(--orbis-control-default-height);
+  --action-font-size: var(--orbis-text-ui-size);
+  --action-line-height: var(--orbis-text-ui-leading);
+  --action-font-weight: var(--orbis-weight-action);
+  --action-padding-x: var(--orbis-space-3);
+  --action-gap: var(--orbis-space-2);
+  --action-icon-size: var(--orbis-icon-default-size);
+  --compact-control-height: var(--orbis-control-compact-height);
+  --form-control-height: var(--orbis-control-form-height);
   --radius-pill: 999px;
   font-family: var(--font-sans);
-  font-size: 16px;
+  font-size: 100%;
 }
 
 /* Resolve aliases in each theme scope, including nested reader themes. */
@@ -140,9 +142,9 @@ body {
   min-width: 320px;
   background: var(--app-bg);
   color: var(--text);
-  font-size: 14px;
+  font-size: var(--orbis-text-ui-size);
   -webkit-font-smoothing: antialiased;
-  line-height: 1.5;
+  line-height: var(--orbis-text-ui-leading);
 }
 
 /* Composite controls draw their own border and focus treatment around the input. */
@@ -167,14 +169,14 @@ body {
   min-width: 0;
   border-radius: 8px;
   color: var(--muted);
-  font-size: 12px;
-  line-height: 1;
+  font-size: var(--orbis-text-ui-size);
+  line-height: var(--orbis-text-ui-leading);
   transition: 140ms ease;
 }
 
 .collection-link {
   padding: 9px 12px;
-  font-weight: 560;
+  font-weight: var(--orbis-weight-action);
 }
 
 .document-tree-link {
@@ -182,7 +184,8 @@ body {
   padding-top: 7px;
   padding-right: 10px;
   padding-bottom: 7px;
-  font-size: 12px;
+  font-size: var(--orbis-text-ui-size);
+  line-height: var(--orbis-text-ui-leading);
 }
 
 .collection-link:hover,
@@ -196,8 +199,8 @@ body {
 
 .icon-button {
   display: inline-grid;
-  width: 32px;
-  height: 32px;
+  width: var(--orbis-control-compact-height);
+  height: var(--orbis-control-compact-height);
   flex: none;
   place-items: center;
   color: var(--muted);
@@ -273,8 +276,8 @@ body {
 
 .orbis-modal-close {
   display: grid;
-  width: 28px;
-  height: 28px;
+  width: var(--orbis-control-compact-height);
+  height: var(--orbis-control-compact-height);
   flex: none;
   place-items: center;
   color: var(--text-secondary);
@@ -304,15 +307,17 @@ body {
 }
 
 .section-heading h2 {
-  font-size: 18px;
-  font-weight: 650;
+  font-size: var(--orbis-text-section-size);
+  font-weight: var(--orbis-weight-heading);
   letter-spacing: -0.025em;
+  line-height: var(--orbis-text-section-leading);
 }
 
 .section-heading p {
   margin-top: 4px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--orbis-text-caption-size);
+  line-height: var(--orbis-text-caption-leading);
 }
 
 /* Canonical page column + header (see shared/ui/PageContainer). */
@@ -337,24 +342,25 @@ body {
 .page-eyebrow {
   margin-bottom: 8px;
   color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--orbis-text-ui-size);
+  font-weight: var(--orbis-weight-action);
+  line-height: var(--orbis-text-ui-leading);
 }
 
 .page-title {
   color: var(--text-primary);
-  font-size: 22px;
-  font-weight: 650;
+  font-size: var(--orbis-text-page-title-size);
+  font-weight: var(--orbis-weight-heading);
   letter-spacing: -0.025em;
-  line-height: 1.4;
+  line-height: var(--orbis-text-page-title-leading);
 }
 
 .page-description {
   margin-top: 7px;
   max-width: 46rem;
   color: var(--text-secondary);
-  font-size: 14px;
-  line-height: 1.65;
+  font-size: var(--orbis-text-ui-size);
+  line-height: var(--orbis-text-ui-leading);
 }
 
 .page-actions {
@@ -387,14 +393,16 @@ body {
 
 .stat-value {
   color: var(--text-primary);
-  font-size: 17px;
-  font-weight: 650;
+  font-size: var(--orbis-text-section-size);
+  font-weight: var(--orbis-weight-heading);
   letter-spacing: -0.02em;
+  line-height: var(--orbis-text-section-leading);
 }
 
 .stat-label {
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: var(--orbis-text-caption-size);
+  line-height: var(--orbis-text-caption-leading);
 }
 
 /* Mono for metadata: figures, dates, save state. */
@@ -460,7 +468,8 @@ body {
   padding: 34px 30px;
   color: var(--muted);
   text-align: center;
-  font-size: 13px;
+  font-size: var(--orbis-text-ui-size);
+  line-height: var(--orbis-text-ui-leading);
 }
 
 .notebook-hero {
@@ -489,7 +498,7 @@ body {
 
 /* Content column, not a sheet of paper: no border, no shadow, transparent bg. */
 .editor-canvas {
-  --editor-content-gutter: 54px;
+  --editor-content-gutter: calc(2 * var(--orbis-control-compact-height) + var(--orbis-space-3));
   --editor-body-width: 760px;
   width: 100%;
   max-width: calc(var(--editor-body-width) + 2 * var(--editor-content-gutter));
@@ -503,13 +512,13 @@ body {
   border: 0;
   background: transparent;
   color: var(--text);
-  font-size: clamp(26px, 2.4vw, 34px);
-  font-weight: 700;
+  font-size: var(--orbis-prose-title-size);
+  font-weight: var(--orbis-weight-heading);
   letter-spacing: -0.03em;
   line-height: 1.15;
   outline: none;
   /* Align the title with the document body. */
-  padding-inline: 54px;
+  padding-inline: var(--editor-content-gutter);
 }
 
 .editor-title::placeholder {
@@ -517,7 +526,7 @@ body {
 }
 
 .editor-canvas > :not(.editor-title) {
-  margin-inline: 54px;
+  margin-inline: var(--editor-content-gutter);
 }
 
 .editor-outline {
@@ -535,8 +544,8 @@ body {
 
 .editor-outline-pin {
   display: grid;
-  width: 28px;
-  height: 28px;
+  width: var(--orbis-control-compact-height);
+  height: var(--orbis-control-compact-height);
   flex: none;
   place-items: center;
   border: 1px solid var(--border);
@@ -571,9 +580,10 @@ body {
   padding: 2px 4px;
   margin-left: -4px;
   color: var(--muted-light);
-  font-size: 12px;
-  font-weight: 560;
+  font-size: var(--orbis-text-caption-size);
+  font-weight: var(--orbis-weight-action);
   transition: 140ms ease;
+  line-height: var(--orbis-text-caption-leading);
 }
 
 .notebook-menu-back:hover {
@@ -584,9 +594,10 @@ body {
 .notebook-menu-title {
   margin-top: 6px;
   color: var(--text);
-  font-size: 13px;
-  font-weight: 650;
+  font-size: var(--orbis-text-section-size);
+  font-weight: var(--orbis-weight-heading);
   letter-spacing: -0.01em;
+  line-height: var(--orbis-text-section-leading);
 }
 
 
@@ -600,8 +611,8 @@ body {
   top: 14px;
   right: 12px;
   display: grid;
-  width: 28px;
-  height: 28px;
+  width: var(--orbis-control-compact-height);
+  height: var(--orbis-control-compact-height);
   place-items: center;
   border: 1px solid var(--border);
   background: var(--surface-content);
@@ -626,10 +637,11 @@ body {
   margin: 0;
   white-space: nowrap;
   color: var(--text-secondary);
-  font-size: 12px;
-  font-weight: 550;
+  font-size: var(--orbis-text-section-size);
+  font-weight: var(--orbis-weight-action);
+  line-height: var(--orbis-text-section-leading);
 }
-.document-context-create { display: grid; width: 28px; height: 28px; min-width: 28px; min-height: 28px; place-items: center; padding: 0; color: var(--text-secondary); }
+.document-context-create { display: grid; width: var(--orbis-control-compact-height); height: var(--orbis-control-compact-height); min-width: var(--orbis-control-compact-height); min-height: var(--orbis-control-compact-height); place-items: center; padding: 0; color: var(--text-secondary); }
 .document-context-create:hover { color: var(--text-primary); background: var(--surface-hover); }
 
 
@@ -652,8 +664,9 @@ body {
   border-radius: 7px;
   padding: 6px 2px;
   color: var(--muted);
-  font-size: 12px;
-  font-weight: 550;
+  font-size: var(--orbis-text-ui-size);
+  font-weight: var(--orbis-weight-action);
+  line-height: var(--orbis-text-ui-leading);
 }
 
 .document-context-link > svg { flex: none; }
@@ -697,7 +710,7 @@ body {
 .document-tree-prefix { display: flex; flex: none; align-items: center; }
 .document-drag-placeholder { width: 20px; flex: none; }
 .document-disclosure-placeholder { width: 20px; flex: none; }
-.document-tree-disclosure { display: grid; width: 20px; min-width: 20px; height: 30px; min-height: 30px; place-items: center; padding: 0; color: var(--text-tertiary); }
+.document-tree-disclosure { display: grid; width: var(--orbis-control-compact-height); min-width: var(--orbis-control-compact-height); height: var(--orbis-control-compact-height); min-height: var(--orbis-control-compact-height); place-items: center; padding: 0; color: var(--text-tertiary); }
 .document-tree-disclosure:hover { background: var(--surface-active); color: var(--text-primary); }
 .document-tree-disclosure svg { transition: transform 140ms ease; }
 .document-tree-disclosure[aria-expanded="false"] svg { transform: rotate(-90deg); }
@@ -705,8 +718,8 @@ body {
 .document-drag-handle {
   display: grid;
   flex: none;
-  width: 20px;
-  height: 30px;
+  width: var(--orbis-control-compact-height);
+  height: var(--orbis-control-compact-height);
   place-items: center;
   padding: 0;
   border: 0;
@@ -730,10 +743,10 @@ body {
 .document-context-actions .icon-button {
   display: grid;
   flex: none;
-  width: 26px;
-  height: 30px;
-  min-width: 26px;
-  min-height: 30px;
+  width: var(--orbis-control-compact-height);
+  height: var(--orbis-control-compact-height);
+  min-width: var(--orbis-control-compact-height);
+  min-height: var(--orbis-control-compact-height);
   place-items: center;
   padding: 0;
   color: var(--text-tertiary);
@@ -742,8 +755,8 @@ body {
 .document-context-actions .icon-button:hover { color: var(--text-primary); background: var(--surface-active); }
 .document-context-actions .danger-hover:hover { color: var(--danger); }
 .document-actions-popover { width: 180px; padding: 5px; }
-.document-actions-popover [role="menuitem"] { min-height: 36px; font-size: 13px; }
-.document-actions-popover [role="menuitem"] svg { width: 16px; height: 16px; flex: none; }
+.document-actions-popover [role="menuitem"] { min-height: var(--orbis-control-default-height); font-size: var(--orbis-text-ui-size); line-height: var(--orbis-text-ui-leading); }
+.document-actions-popover [role="menuitem"] svg { width: var(--orbis-icon-default-size); height: var(--orbis-icon-default-size); flex: none; }
 .document-actions-popover .document-archive-action { color: var(--danger-text); }
 
 @media (hover: hover) and (pointer: fine) {
@@ -775,10 +788,10 @@ body {
   color: var(--text-primary);
 }
 .document-main-link > svg { flex: none; color: var(--text-tertiary); }
-.document-main-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 450; }
+.document-main-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--orbis-text-ui-size); font-weight: var(--orbis-weight-body); line-height: var(--orbis-text-ui-leading); }
 .document-main-leader { flex: 1; min-width: 16px; border-bottom: 1px dashed var(--border-subtle); }
-.document-main-link[aria-current="page"] .document-main-title { font-weight: 650; }
-.document-main-link time { flex: none; white-space: nowrap; font-size: 12px; color: var(--text-tertiary); }
+.document-main-link[aria-current="page"] .document-main-title { font-weight: var(--orbis-weight-heading); }
+.document-main-link time { flex: none; white-space: nowrap; font-size: var(--orbis-text-caption-size); color: var(--text-tertiary); line-height: var(--orbis-text-caption-leading); }
 .document-main-item, .document-main-children { min-width: 0; }
 .document-main-children { padding-left: 20px; }
 
@@ -789,9 +802,9 @@ body {
   .document-main-title { flex: 1; }
   .document-create-child { display: none !important; }
   .document-context-actions { opacity: 1; pointer-events: auto; }
-  .document-context-actions .icon-button { width: 32px; min-width: 32px; height: 32px; min-height: 32px; }
-  .document-tree-disclosure, .document-disclosure-placeholder { width: 24px; min-width: 24px; }
-  .document-drag-handle { height: 32px; }
+  .document-context-actions .icon-button { width: var(--orbis-control-compact-height); min-width: var(--orbis-control-compact-height); height: var(--orbis-control-compact-height); min-height: var(--orbis-control-compact-height); }
+  .document-tree-disclosure, .document-disclosure-placeholder { width: var(--orbis-control-compact-height); min-width: var(--orbis-control-compact-height); }
+  .document-drag-handle { height: var(--orbis-control-compact-height); }
 }
 
 /* Notebook page main-column document list (DocumentContextPanel variant="main"). */
@@ -809,8 +822,8 @@ body {
   right: 8px;
   z-index: 5;
   display: grid;
-  width: 26px;
-  height: 26px;
+  width: var(--orbis-control-compact-height);
+  height: var(--orbis-control-compact-height);
   place-items: center;
   border: 1px solid var(--border);
   border-radius: 7px;
@@ -850,7 +863,7 @@ body {
   .editor-canvas > :not(.editor-title) { margin-inline: 20px; }
   .page-container { padding: 24px 20px 48px; }
   .page-header { align-items: flex-start; flex-wrap: wrap; gap: 18px; margin-bottom: 24px; padding-bottom: 22px; }
-  .page-title { font-size: 21px; }
+  .page-title { font-size: var(--orbis-text-page-title-size); line-height: var(--orbis-text-page-title-leading); }
   .page-actions { flex-wrap: wrap; }
   .notebook-hero { flex-direction: column; }
   .editor-canvas { padding: 24px 0 52px; }
@@ -863,12 +876,12 @@ body {
 
 /* HeroUI owns field focus rings; these rules only arrange controls and copy. */
 .orbis-select-field { min-width: 0; gap: 8px; }
-.orbis-select-field [data-slot="select-trigger"] { width: 100%; min-width: 0; font-weight: 400; }
+.orbis-select-field [data-slot="select-trigger"] { width: 100%; min-width: 0; font-weight: var(--orbis-weight-body); }
 .orbis-select-popover { max-width: calc(100vw - 24px); }
-.orbis-field-description { color: var(--text-secondary); font-size: 12px; line-height: 1.7; font-weight: 400; }
-.orbis-field-label, .site-settings-fields .orbis-select-field > label { font-size: 12px; font-weight: 550; }
+.orbis-field-description { color: var(--text-secondary); font-size: var(--orbis-text-caption-size); line-height: var(--orbis-text-caption-leading); font-weight: var(--orbis-weight-body); }
+.orbis-field-label, .site-settings-fields .orbis-select-field > label { font-size: var(--orbis-text-ui-size); font-weight: var(--orbis-weight-action); line-height: var(--orbis-text-ui-leading); }
 .orbis-color-field { display: grid; align-content: start; min-width: 0; gap: 8px; }
-.orbis-color-field [data-slot="color-picker-trigger"] { display: flex; gap: 10px; align-items: center; min-height: 36px; font-size: 13px; }
+.orbis-color-field [data-slot="color-picker-trigger"] { display: flex; gap: 10px; align-items: center; min-height: 36px; font-size: var(--orbis-text-ui-size); line-height: var(--orbis-text-ui-leading); }
 .orbis-color-popover { width: 260px; max-width: calc(100vw - 24px); display: grid; gap: 16px; padding: 16px; }
 .orbis-color-popover [data-slot="color-area"] { width: 100%; height: 160px; }
 .member-role-select { min-width: 120px; }

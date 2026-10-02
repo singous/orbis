@@ -15,14 +15,14 @@ import { DOCUMENT_BLOCKS, type DocumentBlockKind } from "../content/document-com
 import { FileContentContext } from "../files/FileContent";
 import { useManagedFiles } from "../files/use-managed-files";
 import { parseFileReference } from "../files/managed-files";
-import { canonicalJSON, extractPlainTextV2, newBlockId, type NoteBlocksV2, type OrbisBlock } from "./block-model";
+import { canonicalJSON, newBlockId, type NoteBlocksV2, type OrbisBlock } from "./block-model";
 import { createDocumentBlock, INSERTABLE_DOCUMENT_BLOCKS } from "./tiptap-insert";
 import { tiptapExtensions } from "./tiptap-extensions";
 import { EditorReadOnlyContext } from "./tiptap-editor-context";
 import { fromTiptapDocument, toTiptapDocument } from "./tiptap-model";
 import "../../styles/tiptap-editor.css";
 
-type EditorChange = { blocks: NoteBlocksV2; plainText: string };
+type EditorChange = { blocks: NoteBlocksV2 };
 type Command = { label: string; keywords: string; icon: ReactNode; run: (editor: Editor) => void };
 
 function insertBlock(editor: Editor, value: OrbisBlock) {
@@ -103,7 +103,7 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
     try {
       const next = fromTiptapDocument(current.state.doc);
       lastEmitted.current = next;
-      onChangeRef.current({ blocks: next, plainText: extractPlainTextV2(next.blocks) });
+      onChangeRef.current({ blocks: next });
       setContentError(null);
       errorCallback.current?.(null);
     } catch {
@@ -240,7 +240,7 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
   }
 
   const formatToolbar = !readOnly && editor ? <div className="orbis-tiptap-toolbar" role="toolbar" aria-label="文档格式">
-      <SelectField aria-label="段落类型" className="editor-block-type" value={active?.h1 ? "heading:1" : active?.h2 ? "heading:2" : active?.h3 ? "heading:3" : active?.bulletList ? "bulletListItem" : active?.orderedList ? "numberedListItem" : active?.taskList ? "checkListItem" : active?.quote ? "quote" : active?.codeBlock ? "codeBlock" : "paragraph"} options={[{value:"paragraph",label:"正文"},{value:"heading:1",label:"标题 1"},{value:"heading:2",label:"标题 2"},{value:"heading:3",label:"标题 3"},{value:"bulletListItem",label:"无序列表"},{value:"numberedListItem",label:"有序列表"},{value:"checkListItem",label:"任务清单"},{value:"quote",label:"引用"},{value:"codeBlock",label:"代码块"}]} onChange={setParagraphType} />
+      <SelectField density="compact" aria-label="段落类型" className="editor-block-type" value={active?.h1 ? "heading:1" : active?.h2 ? "heading:2" : active?.h3 ? "heading:3" : active?.bulletList ? "bulletListItem" : active?.orderedList ? "numberedListItem" : active?.taskList ? "checkListItem" : active?.quote ? "quote" : active?.codeBlock ? "codeBlock" : "paragraph"} options={[{value:"paragraph",label:"正文"},{value:"heading:1",label:"标题 1"},{value:"heading:2",label:"标题 2"},{value:"heading:3",label:"标题 3"},{value:"bulletListItem",label:"无序列表"},{value:"numberedListItem",label:"有序列表"},{value:"checkListItem",label:"任务清单"},{value:"quote",label:"引用"},{value:"codeBlock",label:"代码块"}]} onChange={setParagraphType} />
       <span className="orbis-tiptap-toolbar-divider" />
       <Tool title="撤销" onClick={() => editor.chain().focus().undo().run()}><Undo2 size={16} /></Tool>
       <Tool title="重做" onClick={() => editor.chain().focus().redo().run()}><Redo2 size={16} /></Tool>

@@ -4,7 +4,7 @@ const api = `http://127.0.0.1:${process.env.ORBIS_E2E_API_PORT || '9311'}`;
 const credentials = { email: 'owner@example.com', password: 'Orbis-browser-test-2026!' };
 test.use({ screenshot: 'off', trace: 'off' });
 
-test('document overview shares the home frame and keeps real notebook content near the header', async ({ page, request }) => {
+test('document overview shares the shell and exposes its function menu alongside notebook content', async ({ page, request }) => {
   let response = await request.post(`${api}/setup`, { data: { ...credentials, display_name: 'Document frame regression' } });
   if (response.status() === 409) response = await request.post(`${api}/auth/login`, { data: credentials });
   expect(response.ok()).toBe(true);
@@ -36,7 +36,10 @@ test('document overview shares the home frame and keeps real notebook content ne
   for (const width of [1440, 1920]) {
     await page.setViewportSize({ width, height: 900 });
     const home = await frame('/home');
-    expect(await frame('/documents')).toEqual(home);
+    const documents = await frame('/documents');
+    expect({ ...documents, railWidth: home.railWidth, titleX: home.titleX }).toEqual(home);
+    expect(documents.railWidth).toBeGreaterThan(home.railWidth);
+    await expect(page.getByRole('navigation', { name: '文档导航', exact: true })).toBeVisible();
     const section = page.getByRole('region', { name: 'Frame notebooks', exact: true });
     await expect(section).toBeVisible();
     await expect(page.getByRole('region', { name: 'Empty frame group', exact: true })).toHaveCount(0);
@@ -56,7 +59,7 @@ test('document overview shares the home frame and keeps real notebook content ne
   }
   await page.goto('/knowledge');
   await page.locator('.workspace-business-rail').getByRole('button', { name: '新建资产', exact: true }).click();
-  await page.getByRole('menuitem', { name: '笔记本', exact: true }).click();
+  await page.getByRole('button', { name: '笔记本', exact: true }).click();
   const notebookDialog = page.getByRole('dialog', { name: '新建笔记本', exact: true });
   await expect(notebookDialog).toBeVisible();
   await notebookDialog.getByLabel('笔记本名称', { exact: true }).fill('Global creation notebook');
@@ -67,8 +70,8 @@ test('document overview shares the home frame and keeps real notebook content ne
   const create = page.locator('.workspace-business-rail').getByRole('button', { name: '新建资产', exact: true });
   await expect(create).toBeVisible();
   await create.click();
-  await expect(page.getByRole('menuitem', { name: '文档', exact: true })).toBeVisible();
-  await expect(page.getByRole('menuitem', { name: '笔记本', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '文档', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '笔记本', exact: true })).toBeVisible();
   await page.keyboard.press('Escape');
   await page.locator('.notebook-overview-card-link').first().click();
   const notebookHeader = page.locator('#notebook-directory .workspace-sidebar-header');

@@ -1,0 +1,46 @@
+/* Shared semantics for HeroUI and custom controls, independent of page layout. */
+.orbis-icon-button {
+  --control-height: var(--orbis-control-default-height);
+  width: var(--control-height);
+  height: var(--control-height);
+  min-width: var(--control-height);
+  min-height: var(--control-height);
+  padding: 0;
+}
+.orbis-icon-button--compact { --control-height: var(--orbis-control-compact-height); }
+.orbis-icon-button > svg { width: var(--orbis-icon-default-size); height: var(--orbis-icon-default-size); }
+.orbis-icon-button--compact > svg { width: var(--orbis-icon-compact-size); height: var(--orbis-icon-compact-size); }
+.orbis-text-input, .orbis-select-field [data-slot="select-trigger"] {
+  height: auto;
+  min-height: var(--control-height, var(--orbis-control-form-height));
+  font-size: var(--orbis-text-ui-size);
+  line-height: var(--orbis-text-ui-leading);
+}
+.orbis-select-field--compact { --control-height: var(--orbis-control-compact-height); }
+.orbis-select-field--default { --control-height: var(--orbis-control-default-height); }
+.rail-action > svg { width: var(--orbis-icon-navigation-size); height: var(--orbis-icon-navigation-size); }
+.orbis-nav-item { min-height: var(--orbis-control-default-height); }
+.orbis-nav-icon { width: var(--orbis-control-touch-height); height: var(--orbis-control-touch-height); }
+
+:where([data-slot="dropdown-menu"], .orbis-select-popover) [role="menuitem"],
+.orbis-select-popover [role="option"] {
+  min-height: var(--orbis-control-default-height);
+  font-size: var(--orbis-text-ui-size);
+  line-height: var(--orbis-text-ui-leading);
+  padding-block: var(--orbis-space-2);
+}
+:where([data-slot="dropdown-menu"], .orbis-select-popover) :is([role="menuitem"], [role="option"]) > svg {
+  width: var(--orbis-icon-default-size);
+  height: var(--orbis-icon-default-size);
+}
+.orbis-nav-item:focus-visible, .orbis-nav-icon:focus-visible, .workspace-function-link:focus-visible, .rail-action:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+/* Native iOS fields need 16px text to avoid focus zoom; other UI keeps its role. */
+@media (pointer: coarse) {
+  :is(input, textarea, [data-slot="select-trigger"]):not(.editor-title) {
+    font-size: var(--orbis-text-section-size);
+  }
+}

@@ -4,10 +4,10 @@ import type { ComponentProps } from "react";
 
 import { cn } from "./cn";
 
-const iconButtonVariants = cva("shrink-0", {
+const iconButtonVariants = cva("orbis-icon-button shrink-0", {
   variants: {
     variant: { ghost: "", subtle: "", inverse: "" },
-    size: { sm: "h-7 w-7", md: "h-8 w-8" },
+    size: { sm: "orbis-icon-button--compact", md: "orbis-icon-button--default" },
   },
   defaultVariants: { variant: "ghost", size: "md" },
 });

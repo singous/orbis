@@ -51,7 +51,7 @@ describe("ActionButton", () => {
   it("keeps native button form submission for feature actions", async () => {
     const submit = vi.fn((event: FormEvent<HTMLFormElement>) => event.preventDefault());
     const user = userEvent.setup();
-    render(<form onSubmit={submit}><ActionButton>提交</ActionButton></form>);
+    render(<form onSubmit={submit}><ActionButton type="submit">提交</ActionButton></form>);
 
     await user.click(screen.getByRole("button", { name: "提交" }));
     expect(submit).toHaveBeenCalledOnce();

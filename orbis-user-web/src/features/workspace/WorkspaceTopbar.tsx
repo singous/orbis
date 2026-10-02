@@ -29,7 +29,7 @@ export function WorkspaceTopbar({ disabled = false }: { disabled?: boolean }) {
 
   function search(event: FormEvent) {
     event.preventDefault();
-    navigate(`/documents/search${keyword.trim() ? `?q=${encodeURIComponent(keyword.trim())}` : ""}`);
+    navigate(`/search${keyword.trim() ? `?q=${encodeURIComponent(keyword.trim())}` : ""}`);
   }
 
   function logout() {
@@ -47,7 +47,7 @@ export function WorkspaceTopbar({ disabled = false }: { disabled?: boolean }) {
         </div>
         <form className="workspace-global-search" role="search" aria-label="全局搜索" onSubmit={search}>
           <InputGroup fullWidth className="workspace-search-group orbis-compact-search"><InputGroup.Prefix><Search size={16} aria-hidden="true" /></InputGroup.Prefix>
-          <InputGroup.Input ref={inputRef} aria-label="全局搜索" type="search" placeholder="搜索文档…" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
+          <InputGroup.Input ref={inputRef} aria-label="全局搜索" type="search" placeholder="搜索当前空间…" value={keyword} onChange={(event) => setKeyword(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && event.nativeEvent.isComposing) event.preventDefault(); }} />
           <InputGroup.Suffix><kbd>⌘ K</kbd></InputGroup.Suffix></InputGroup>
         </form>
       </div>

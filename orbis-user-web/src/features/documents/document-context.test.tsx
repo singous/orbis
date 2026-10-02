@@ -76,6 +76,7 @@ vi.mock("./queries", () => ({
     isLoading: false,
     isError: false,
   }),
+  useNotebook: () => ({ data: { id: "018ff7c4-a5b6-7000-8000-000000000002", title: "产品手册" }, isLoading: false, isError: false }),
   useNotebooks: () => ({
     data: {
       items: [{

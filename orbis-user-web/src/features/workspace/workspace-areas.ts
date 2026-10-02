@@ -3,6 +3,7 @@ export const DEFAULT_WORKSPACE_PATH = "/home";
 
 /** Top-level ownership is shared by the rail, sidebar title and menu switch. */
 export const WORKSPACE_AREAS = [
+  { id: "search", label: "全局搜索", title: "全局搜索", href: "/search", roots: ["/search"], showFunctionSidebar: false, visibleInRail: false, navigationLabel: "搜索导航" },
   { id: "home", label: "首页", title: "首页", href: "/home", roots: ["/home"], showFunctionSidebar: false, visibleInRail: true, navigationLabel: "首页导航" },
   { id: "documents", label: "在线文档", title: "在线文档", href: "/documents", roots: ["/documents", "/collections"], showFunctionSidebar: true, visibleInRail: true, navigationLabel: "文档导航" },
   { id: "sites", label: "站点", title: "站点发布", href: "/sites", roots: ["/sites"], showFunctionSidebar: true, visibleInRail: true, navigationLabel: "站点导航" },

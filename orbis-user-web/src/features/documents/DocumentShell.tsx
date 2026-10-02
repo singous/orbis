@@ -39,7 +39,7 @@ export function DocumentShell({ children, toolbar, breadcrumb, editorLayout = fa
 
   return (
     <WorkspaceShell
-      sidebar={notebookId ? createNotebookSidebar(notebookId, activeNoteId) : { title: <h2>在线文档</h2>, content: <WorkspaceNavigation />, desktopVisible: false }}
+      sidebar={notebookId ? createNotebookSidebar(notebookId, activeNoteId) : { title: <h2>在线文档</h2>, content: <WorkspaceNavigation /> }}
       toolbar={toolbar}
       sectionTitle={breadcrumb}
       contentLayout={editorLayout ? "document" : "page"}

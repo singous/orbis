@@ -205,7 +205,7 @@ test("personal writing, team discussion and a versioned documentation site work 
   await reader.reload();
   await expect(reader.getByText("归档前的最后修改。", { exact: true })).toHaveCount(0);
   await page.goto("/documents/search");
-  await page.getByRole("searchbox", { name: "搜索文档" }).fill("让知识被找到");
+  await page.getByRole("searchbox", { name: "搜索内容" }).fill("让知识被找到");
   await expect(page.getByRole("link", { name: /欢迎使用 Orbis/ })).toBeVisible();
 
   await page.goto("/documents/collections");

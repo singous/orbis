@@ -38,7 +38,7 @@ export function useSidebarResize(gridRef: RefObject<HTMLDivElement | null>, enab
     function measure() {
       if (!grid || !grid.clientWidth) return;
       const styles = getComputedStyle(grid);
-      const rail = parseFloat(styles.getPropertyValue("--rail-width")) || DEFAULT_RAIL_WIDTH;
+      const rail = grid.querySelector<HTMLElement>(".workspace-business-rail")?.getBoundingClientRect().width || DEFAULT_RAIL_WIDTH;
       const defaultWidth = parseFloat(styles.getPropertyValue("--sidebar-default-width")) || DEFAULT_SIDEBAR_WIDTH;
       const padding = parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight);
       const gap = parseFloat(styles.columnGap) || 0;

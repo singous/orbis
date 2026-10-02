@@ -197,7 +197,7 @@ function CodeView({ node, editor, updateAttributes }: NodeViewProps) {
   const readOnly = useContext(EditorReadOnlyContext);
   const language = String(node.attrs.language ?? "text");
   return <NodeViewWrapper as="div" className="orbis-code">
-    <div className="orbis-code-toolbar" contentEditable={false}>{!readOnly ? <SelectField aria-label="代码语言" value={language} onChange={(value) => updateAttributes({ language: value })} options={Object.entries({ ...CODE_LANGUAGES, ...(Object.hasOwn(CODE_LANGUAGES, language) ? {} : { [language]: language }) }).map(([value, label]) => ({ value, label }))} /> : <SelectField aria-label="代码语言" value={language} disabled onChange={() => {}} options={[{ value: language, label: CODE_LANGUAGES[language] || language }]} />}</div>
+    <div className="orbis-code-toolbar" contentEditable={false}>{!readOnly ? <SelectField density="compact" aria-label="代码语言" value={language} onChange={(value) => updateAttributes({ language: value })} options={Object.entries({ ...CODE_LANGUAGES, ...(Object.hasOwn(CODE_LANGUAGES, language) ? {} : { [language]: language }) }).map(([value, label]) => ({ value, label }))} /> : <SelectField density="compact" aria-label="代码语言" value={language} disabled onChange={() => {}} options={[{ value: language, label: CODE_LANGUAGES[language] || language }]} />}</div>
     <pre><NodeViewContent as="code" style={{ whiteSpace: "pre" }} /></pre>
   </NodeViewWrapper>;
 }

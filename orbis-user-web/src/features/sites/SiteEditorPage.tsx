@@ -56,6 +56,7 @@ function SiteEditor({ site }: { site: Site }) {
     client.setQueryData(["site", site.id], next);
     await Promise.all([
       client.invalidateQueries({ queryKey: ["sites"] }),
+      client.invalidateQueries({ queryKey: ["global-search"] }),
       client.invalidateQueries({ queryKey: ["site-releases", site.id] }),
       client.invalidateQueries({ queryKey: ["site-preview", site.id] }),
       client.invalidateQueries({ queryKey: ["site-sources", site.id] }),
