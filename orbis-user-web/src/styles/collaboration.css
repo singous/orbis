@@ -28,7 +28,7 @@
 .collaboration-revision[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-softer); }
 .collaboration-preview { padding-top: 20px; border-top: 1px solid var(--border-subtle); min-width: 0; }
 .collaboration-preview h3 { font-size: var(--orbis-text-ui-size); font-weight: var(--orbis-weight-heading); margin: 0 0 18px; line-height: var(--orbis-text-ui-leading); }
-.collaboration-preview .document-prose { font-size: 14px; }
+.collaboration-preview .document-prose { font-size: var(--orbis-prose-body-size); }
 .collaboration-restore { display: grid; gap: 12px; padding-top: 22px; margin-top: 22px; border-top: 1px solid var(--border-subtle); }
 .collaboration-restore > button { justify-self: start; }
 .collaboration-error { padding: 11px 12px; border-radius: 8px; font-size: var(--orbis-text-caption-size); line-height: var(--orbis-text-caption-leading); margin: 10px 0 0; overflow-wrap: anywhere; }

@@ -1,6 +1,6 @@
 .document-prose { --doc-keyword: #7951a1; --doc-string: #247657; --doc-number: #a45320; --doc-comment: #7b8380; }
 .site-reader[data-theme="dark"] .document-prose { --doc-keyword: #c5a5ed; --doc-string: #88d5a8; --doc-number: #eeb878; --doc-comment: #94a49c; }
-.document-prose .doc-callout { display: flex; gap: 13px; margin: 24px 0; padding: 17px 20px; border: 1px solid var(--doc-callout-border, #cae1ee); border-radius: 10px; background: var(--doc-callout-background, #eff8fd); color: var(--reading-text, var(--text-primary)); font-size: 14px; line-height: 1.85; }
+.document-prose .doc-callout { display: flex; gap: 13px; margin: 24px 0; padding: 17px 20px; border: 1px solid var(--doc-callout-border, #cae1ee); border-radius: 10px; background: var(--doc-callout-background, #eff8fd); color: var(--reading-text, var(--text-primary)); font-size: var(--orbis-prose-body-size); line-height: 1.85; }
 .doc-callout > svg { flex: none; margin-top: 3px; color: var(--doc-callout-icon, #367caa); }
 .doc-callout > div { min-width: 0; }
 .doc-callout-title { display: block; margin-bottom: 4px; }
@@ -14,26 +14,26 @@
 .document-prose .doc-card { border: 1px solid var(--reading-border, var(--border-subtle)); border-radius: 12px; padding: 22px; min-width: 0; background: var(--reading-bg, var(--surface)); transition: border-color 140ms ease; }
 .doc-card:hover { border-color: color-mix(in srgb, var(--reading-accent, var(--accent)) 45%, var(--reading-border, var(--border-subtle))); }
 .doc-card > svg { color: var(--reading-accent, var(--accent)); margin-bottom: 12px; }
-.document-prose .doc-card h3 { margin: 0 0 8px; font-size: 16px; line-height: 1.5; letter-spacing: -.01em; }
+.document-prose .doc-card h3 { margin: 0 0 8px; font-size: var(--orbis-prose-h3-size); line-height: 1.5; letter-spacing: -.01em; }
 .doc-card h3 a { display: flex; align-items: center; justify-content: space-between; gap: 10px; text-decoration: none; color: inherit; }
 .doc-card h3 a svg { opacity: .5; flex: none; }
-.document-prose .doc-card p { margin: 6px 0; font-size: 14px; line-height: 1.8; color: var(--reading-muted, var(--text-secondary)); }
+.document-prose .doc-card p { margin: 6px 0; font-size: var(--orbis-prose-body-size); line-height: 1.8; color: var(--reading-muted, var(--text-secondary)); }
 .document-prose .doc-steps { list-style: none; padding: 0; margin: 28px 0; counter-reset: doc-step; }
 .document-prose .doc-steps > li { position: relative; counter-increment: doc-step; margin: 0; padding: 0 0 28px 46px; min-height: 48px; }
-.doc-steps > li::before { content: counter(doc-step); display: grid; place-items: center; position: absolute; top: 2px; left: 0; height: 28px; width: 28px; border-radius: 50%; font-size: 12px; font-weight: 600; color: var(--reading-muted, var(--text-secondary)); background: var(--reading-muted-bg, var(--surface-hover)); border: 1px solid var(--reading-border, var(--border-subtle)); }
+.doc-steps > li::before { content: counter(doc-step); display: grid; place-items: center; position: absolute; top: 2px; left: 0; height: 28px; width: 28px; border-radius: 50%; font-size: var(--orbis-prose-caption-size); font-weight: 600; color: var(--reading-muted, var(--text-secondary)); background: var(--reading-muted-bg, var(--surface-hover)); border: 1px solid var(--reading-border, var(--border-subtle)); }
 .doc-steps > li:not(:last-child)::after { content: ""; position: absolute; left: 14px; top: 38px; bottom: 9px; border-left: 1px solid var(--reading-border, var(--border-subtle)); }
-.document-prose .doc-step > h3 { margin: 0 0 12px; padding-top: 1px; font-size: 17px; line-height: 1.6; }
+.document-prose .doc-step > h3 { margin: 0 0 12px; padding-top: 1px; font-size: var(--orbis-prose-h3-size); line-height: 1.6; }
 .document-prose .doc-step > :last-child { margin-bottom: 0; }
 .document-prose .doc-tabs { margin: 25px 0; min-width: 0; }
 .doc-tabs-list { display: flex; gap: 24px; border-bottom: 1px solid var(--reading-border, var(--border-subtle)); overflow-x: auto;  }
-.doc-tabs-list button { flex: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 1px 11px; background: transparent; color: var(--reading-muted, var(--text-secondary)); font-size: 13px; font-weight: 550; cursor: pointer; }
+.doc-tabs-list button { flex: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 1px 11px; background: transparent; color: var(--reading-muted, var(--text-secondary)); font-size: var(--orbis-prose-body-size); font-weight: 550; cursor: pointer; }
 .doc-tabs-list button[aria-selected="true"] { color: var(--reading-accent, var(--accent)); border-bottom-color: var(--reading-accent, var(--accent)); }
 .doc-tabs-list button:focus-visible { outline: 2px solid var(--reading-accent, var(--accent)); outline-offset: -3px; border-radius: 4px; }
 .doc-tab-panel { padding-top: 16px; scroll-margin-top: 125px; }
 .doc-tab-panel[hidden] { display: none; }
 .document-prose .doc-tab-panel > :first-child { margin-top: 0; }
-.document-prose .content-code-toolbar { display: flex; align-items: center; justify-content: space-between; min-height: 38px; padding: 7px 14px; color: var(--reading-muted, var(--text-secondary)); border-bottom: 1px solid var(--reading-border, var(--border-subtle)); font-size: 11px; }
-.content-code-toolbar button { display: inline-flex; gap: 6px; align-items: center; border: 0; background: transparent; padding: 3px; color: inherit; cursor: pointer; font-size: 11px; }
+.document-prose .content-code-toolbar { display: flex; align-items: center; justify-content: space-between; min-height: 38px; padding: 7px 14px; color: var(--reading-muted, var(--text-secondary)); border-bottom: 1px solid var(--reading-border, var(--border-subtle)); font-size: var(--orbis-prose-caption-size); }
+.content-code-toolbar button { display: inline-flex; gap: 6px; align-items: center; border: 0; background: transparent; padding: 3px; color: inherit; cursor: pointer; font-size: var(--orbis-prose-caption-size); }
 .content-code-toolbar button:hover { color: var(--reading-text, var(--text-primary)); }
 .content-code-toolbar button:not([data-slot="button"]):focus-visible { outline: 2px solid var(--reading-accent, var(--accent)); outline-offset: 3px; }
 .document-prose .hljs-keyword, .document-prose .hljs-selector-tag, .document-prose .hljs-built_in { color: var(--doc-keyword); }

@@ -10,7 +10,7 @@
 .orbis-tiptap .orbis-code-toolbar { display: flex; align-items: center; min-height: 38px; padding: 7px 14px; border-bottom: 1px solid var(--reading-border); }
 .orbis-tiptap .orbis-code-toolbar .orbis-select-field { width: min(180px, 100%); font-size: var(--orbis-text-caption-size); line-height: var(--orbis-text-caption-leading); }
 .orbis-tiptap .orbis-code pre { margin: 0; padding: 18px; overflow-x: auto; white-space: pre; line-height: 1.8; }
-.orbis-tiptap .orbis-code code { padding: 0; border: 0; background: none; font-size: .85em; }
+.orbis-tiptap .orbis-code code { padding: 0; border: 0; background: none; font-size: var(--orbis-prose-caption-size); }
 .orbis-tiptap .ProseMirror table { border-collapse: collapse; width: 100%; margin: 0; font-size: var(--orbis-prose-table-size); }
 .orbis-tiptap .ProseMirror td, .orbis-tiptap .ProseMirror th { border: 1px solid var(--reading-border); text-align: left; padding: 10px 14px; min-width: 90px; vertical-align: top; }
 .orbis-tiptap .ProseMirror th { background: var(--reading-muted-bg); font-weight: 600; }

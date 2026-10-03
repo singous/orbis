@@ -494,9 +494,9 @@
 
 .site-preview-page > header h3 {
   margin: 6px 0 0;
-  font-size: var(--orbis-text-panel-title-size);
+  font-size: var(--orbis-prose-title-size);
   font-weight: var(--orbis-weight-heading);
-  line-height: var(--orbis-text-panel-title-leading);
+  line-height: 1.5;
 }
 
 .site-preview-page > header p {

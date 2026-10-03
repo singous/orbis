@@ -28,6 +28,32 @@ HTML_TABLE_SPAN_LIMITS = {
 NAMED_CONTENT_COLORS = frozenset({"black", "white", "gray", "red", "orange", "yellow", "green", "blue", "purple", "pink"})
 CONTENT_ALIGNMENTS = frozenset({"left", "center", "right", "justify"})
 
+# Standalone HTML needs the same default scale when no frontend bundle exists.
+# Zero-specificity defaults allow bundled tokens and custom themes to override them.
+READING_TOKEN_DEFAULTS = """
+:where(html){
+  --orbis-prose-body-size:.875rem;
+  --orbis-prose-body-leading:1.9;
+  --orbis-prose-h1-size:1.125rem;
+  --orbis-prose-h2-size:1rem;
+  --orbis-prose-h3-size:.875rem;
+  --orbis-prose-table-size:.875rem;
+  --orbis-prose-caption-size:.75rem;
+  --orbis-prose-title-size:1.125rem;
+}
+"""
+SSR_READING_TYPOGRAPHY = """
+:where(.site-reader-ssr h1,.site-reader-ssr h2,.site-reader-ssr h3,.site-reader-ssr h4,.site-reader-ssr h5,.site-reader-ssr h6){line-height:1.5;font-weight:680}
+:where(.site-reader-ssr h1){font-size:var(--orbis-prose-h1-size)}
+:where(.site-reader-ssr h2){font-size:var(--orbis-prose-h2-size)}
+:where(.site-reader-ssr h3,.site-reader-ssr h4,.site-reader-ssr h5,.site-reader-ssr h6){font-size:var(--orbis-prose-h3-size)}
+:where(.site-reader-ssr h4){font-weight:600}
+:where(.site-reader-ssr h5,.site-reader-ssr h6){font-weight:500}
+:where(.site-reader-ssr .site-reader-title-row h1){font-size:var(--orbis-prose-title-size)}
+:where(.site-reader-ssr table){font-size:var(--orbis-prose-table-size)}
+:where(.site-reader-ssr code,.site-reader-ssr figcaption,.site-reader-ssr .content-code-toolbar){font-size:var(--orbis-prose-caption-size)}
+"""
+
 
 def _content_color(value: Any) -> str | None:
     return value if isinstance(value, str) and (value in NAMED_CONTENT_COLORS or re.fullmatch(r"#[\da-fA-F]{3,8}", value)) else None
@@ -542,17 +568,17 @@ def render_site(
         else "#0f766e"
     )
     # This scoped fallback also makes small-screen navigation usable without JS.
-    fallback = "<style>.site-reader-ssr{font:16px/1.7 system-ui,sans-serif;color:var(--reading-text,#17202a);background:var(--reading-bg,#fff);min-height:100vh}.site-reader-ssr a{color:#0f766e}.site-reader-ssr .site-reader-header-inner{display:flex;gap:2rem;align-items:center;padding:1rem 2rem}.site-reader-ssr .site-reader-layout{display:grid;grid-template-columns:240px minmax(0,760px) 200px;gap:2rem;max-width:1320px;margin:auto;padding:2rem}.site-reader-ssr .site-reader-content{min-width:0}.site-reader-ssr pre{overflow:auto;background:#f5f7f8;padding:1rem}.site-reader-ssr img,.site-reader-ssr video{max-width:100%}.site-reader-ssr .site-reader-navigation,.site-reader-ssr .site-reader-outline{display:block;position:static;transform:none}.site-reader-ssr .site-reader-navigation ul{list-style:none;padding:0}.site-reader-ssr .content-table-scroll{max-width:100%;overflow-x:auto}.site-reader-ssr table{border-collapse:collapse}.site-reader-ssr td,.site-reader-ssr th{border:1px solid #dce3e8;padding:.5rem}.site-reader-ssr .site-reader-navigation-item a{display:block;padding:.3rem}.site-reader-ssr .doc-tab-panel{display:block}.site-reader-ssr .site-reader-navigation-footer{position:static}@media(max-width:800px){.site-reader-ssr .site-reader-layout{grid-template-columns:1fr;padding:1rem}.site-reader-ssr .site-reader-navigation{width:auto;max-height:none;visibility:visible}.site-reader-ssr .site-reader-header-inner{flex-wrap:wrap}}</style>"
+    fallback = "<style>" + READING_TOKEN_DEFAULTS + SSR_READING_TYPOGRAPHY + ":where(.site-reader-ssr){font:var(--orbis-prose-body-size)/var(--orbis-prose-body-leading) var(--font-sans,system-ui,sans-serif);color:var(--reading-text,#17202a);background:var(--reading-bg,#fff);min-height:100vh}.site-reader-ssr a{color:#0f766e}.site-reader-ssr .site-reader-header-inner{display:flex;gap:2rem;align-items:center;padding:1rem 2rem}.site-reader-ssr .site-reader-layout{display:grid;grid-template-columns:240px minmax(0,760px) 200px;gap:2rem;max-width:1320px;margin:auto;padding:2rem}.site-reader-ssr .site-reader-content{min-width:0}.site-reader-ssr pre{overflow:auto;background:#f5f7f8;padding:1rem}.site-reader-ssr img,.site-reader-ssr video{max-width:100%}.site-reader-ssr .site-reader-navigation,.site-reader-ssr .site-reader-outline{display:block;position:static;transform:none}.site-reader-ssr .site-reader-navigation ul{list-style:none;padding:0}.site-reader-ssr .content-table-scroll{max-width:100%;overflow-x:auto}.site-reader-ssr table{border-collapse:collapse}.site-reader-ssr td,.site-reader-ssr th{border:1px solid #dce3e8;padding:.5rem}.site-reader-ssr .site-reader-navigation-item a{display:block;padding:.3rem}.site-reader-ssr .doc-tab-panel{display:block}.site-reader-ssr .site-reader-navigation-footer{position:static}@media(max-width:800px){.site-reader-ssr .site-reader-layout{grid-template-columns:1fr;padding:1rem}.site-reader-ssr .site-reader-navigation{width:auto;max-height:none;visibility:visible}.site-reader-ssr .site-reader-header-inner{flex-wrap:wrap}}</style>"
     return f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{escape(title)}</title><meta name="description" content="{escape(description, quote=True)}"><link rel="canonical" href="{escape(canonical, quote=True)}"><meta property="og:title" content="{escape(title, quote=True)}"><meta property="og:description" content="{escape(description, quote=True)}"><meta property="og:url" content="{escape(canonical, quote=True)}"><meta property="og:type" content="article"><meta name="robots" content="index, follow"><link rel="sitemap" type="application/xml" href="{site_path(snapshot.slug)}/sitemap.xml"><link rel="alternate" type="text/markdown" href="{markdown}"><link rel="describedby" href="{site_path(snapshot.slug)}/llms.txt">{bundle}{fallback}</head><body><div id="root"><div class="site-reader site-reader-ssr" data-theme="{theme}" style="--site-accent:{accent}"><a class="site-reader-skip-link" href="#site-content">跳转到正文</a><header class="site-reader-header"><div class="site-reader-header-inner"><a class="site-reader-brand" href="{site_path(snapshot.slug)}">{logo_html}{escape(snapshot.name)}</a>{header_links}</div></header><div class="site-reader-layout"><aside class="site-reader-navigation"><p class="site-reader-navigation-intro">{escape(snapshot.description)}</p><nav aria-label="站点导航"><ul>{nav}</ul></nav><footer class="site-reader-navigation-footer">{footer_links}<span>由 Orbis 提供支持</span></footer></aside><main id="site-content" class="site-reader-content"><div class="site-reader-title-row"><div><h1>{escape(page.title)}</h1><p>{escape(page.description)}</p></div><a href="{markdown}">Markdown</a></div><article class="document-prose">{body}</article></main><aside class="site-reader-outline"><span>本页目录</span><nav aria-label="本页目录"><ul>{outline}</ul></nav></aside></div></div></div><script id="orbis-site-bootstrap" type="application/json">{bootstrap}</script></body></html>'''
 
 
 def error_html(code: str, message: str) -> str:
     title = "站点尚未发布或已撤回" if code == "SITE_NOT_FOUND" else "页面不存在"
-    styles = (
+    styles = READING_TOKEN_DEFAULTS + (
         "html{color-scheme:light dark}"
-        "body{margin:0;background:#fafcfb;color:#17202a;font:16px/1.7 system-ui,sans-serif}"
+        "body{margin:0;background:#fafcfb;color:#17202a;font:var(--orbis-prose-body-size)/var(--orbis-prose-body-leading) system-ui,sans-serif}"
         "main{box-sizing:border-box;max-width:720px;margin:12vh auto;padding:32px 24px}"
-        "h1{margin:0 0 16px;font-size:clamp(1.5rem,4vw,2rem);line-height:1.4;letter-spacing:-.02em}"
+        "h1{margin:0 0 16px;font-size:var(--orbis-prose-title-size);line-height:1.5;letter-spacing:-.02em}"
         "p{margin:0;color:#52605a;overflow-wrap:anywhere}"
         "@media(prefers-color-scheme:dark){body{background:#111816;color:#edf3ef}p{color:#a9b8af}}"
     )

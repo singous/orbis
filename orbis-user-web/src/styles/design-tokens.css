@@ -6,10 +6,10 @@
   --orbis-text-ui-leading: 1.25rem;
   --orbis-text-section-size: 1rem;
   --orbis-text-section-leading: 1.5rem;
-  --orbis-text-panel-title-size: 1.25rem;
-  --orbis-text-panel-title-leading: 1.75rem;
-  --orbis-text-page-title-size: 1.5rem;
-  --orbis-text-page-title-leading: 2rem;
+  --orbis-text-panel-title-size: 1rem;
+  --orbis-text-panel-title-leading: 1.5rem;
+  --orbis-text-page-title-size: 1.125rem;
+  --orbis-text-page-title-leading: 1.625rem;
   --orbis-weight-body: 400;
   --orbis-weight-action: 500;
   --orbis-weight-heading: 600;
@@ -28,15 +28,15 @@
   --orbis-space-8: 2rem;
   --orbis-space-12: 3rem;
   --orbis-tree-indent: 1.25rem;
-  /* Reading values preserve the existing published-content scale. */
-  --orbis-prose-body-size: .9375rem;
+  /* Default reading typography follows the shared scale; authored sizes remain content. */
+  --orbis-prose-body-size: var(--orbis-text-ui-size);
   --orbis-prose-body-leading: 1.9;
-  --orbis-prose-h1-size: 1.8125rem;
-  --orbis-prose-h2-size: 1.4375rem;
-  --orbis-prose-h3-size: 1.125rem;
-  --orbis-prose-table-size: .8125rem;
-  --orbis-prose-caption-size: .6875rem;
-  --orbis-prose-title-size: clamp(1.625rem, 2.4vw, 2.125rem);
+  --orbis-prose-h1-size: var(--orbis-text-page-title-size);
+  --orbis-prose-h2-size: var(--orbis-text-section-size);
+  --orbis-prose-h3-size: var(--orbis-text-ui-size);
+  --orbis-prose-table-size: var(--orbis-text-ui-size);
+  --orbis-prose-caption-size: var(--orbis-text-caption-size);
+  --orbis-prose-title-size: var(--orbis-text-page-title-size);
   font-size: 100%;
 }
 
