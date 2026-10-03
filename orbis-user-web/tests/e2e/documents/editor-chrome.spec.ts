@@ -67,7 +67,7 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 740 
     await expect(toolbar).toBeInViewport();
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.evaluate(() => { document.documentElement.dataset.theme = 'dark'; });
-    await expect.poll(() => page.locator('.block-add').evaluate(element => getComputedStyle(element).backgroundColor)).toBe('oklch(0.2103 0 0)');
+    await expect.poll(() => page.locator('.block-add').evaluate(element => getComputedStyle(element).backgroundColor)).toBe('oklch(0.2103 0.0248 273.85)');
 
     await page.getByRole('button', { name: '更多文档操作' }).click();
     await expect(page.getByRole('menuitem', { name: '归档文档' })).toBeInViewport();

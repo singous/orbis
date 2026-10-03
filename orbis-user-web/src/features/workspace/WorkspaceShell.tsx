@@ -7,6 +7,7 @@ import { useStore } from "zustand";
 
 import { authStore } from "../../shared/auth/auth-store";
 import { getAppSurface } from "../../shared/platform/app-surface";
+import { useCompactNavigation } from "../../shared/platform/use-compact-navigation";
 import { SearchPaletteProvider, useSearchPalette } from "../search/search-palette-context";
 import { SidebarResizeHandle } from "./SidebarResizeHandle";
 import { useSidebarResize } from "./use-sidebar-resize";
@@ -33,21 +34,6 @@ export type WorkspaceShellProps = {
   contextOpen?: boolean;
   onOpenContext?: () => void;
 };
-
-const compactNavigationQuery = "(max-width: 767px)";
-
-function useCompactNavigation(): boolean {
-  const [compact, setCompact] = useState(() => typeof window.matchMedia === "function" && window.matchMedia(compactNavigationQuery).matches);
-  useEffect(() => {
-    if (typeof window.matchMedia !== "function") return;
-    const media = window.matchMedia(compactNavigationQuery);
-    const updateCompact = () => setCompact(media.matches);
-    updateCompact();
-    media.addEventListener("change", updateCompact);
-    return () => media.removeEventListener("change", updateCompact);
-  }, []);
-  return compact;
-}
 
 export function WorkspaceShell(props: WorkspaceShellProps) {
   return <SearchPaletteProvider><WorkspaceShellContent {...props} /></SearchPaletteProvider>;
@@ -133,9 +119,14 @@ function WorkspaceShellContent({ children, sectionTitle, sidebar, toolbar, conte
         {drawerOpen ? <ActionButton type="button" className="workspace-drawer-backdrop" aria-label={mainNavigationOpen ? "关闭主导航" : "关闭文档目录"} onClick={() => { setMainNavigationOpen(false); setDocumentContextOpen(false); }} /> : null}
         <div ref={navigationRef} className="workspace-main-navigation" aria-hidden={compact && !mainNavigationOpen ? true : undefined} inert={compact && !mainNavigationOpen ? true : undefined} onClick={closeAfterLink}>
           <BusinessRail surface={surface} createMenu={canCreate ? <RailCreateMenu /> : undefined} collapsed={showFunctionSidebar && sidebarHidden} expandLabel={sidebarConfig ? sidebarConfig.expandLabel : undefined} onExpand={() => changeCollapsed(false)} onClose={compact && !showFunctionSidebar ? () => setMainNavigationOpen(false) : undefined} />
-          {showFunctionSidebar && sidebarConfig ? <WorkspaceSidebar config={sidebarConfig} hidden={sidebarHidden} onCollapse={() => changeCollapsed(true)} onClose={() => setMainNavigationOpen(false)} /> : null}
+          {showFunctionSidebar && sidebarConfig ? <WorkspaceSidebar
+            config={sidebarConfig}
+            hidden={sidebarHidden}
+            onCollapse={() => changeCollapsed(true)}
+            onClose={() => setMainNavigationOpen(false)}
+            resizeHandle={sidebarResizeEnabled ? <SidebarResizeHandle {...sidebarResize} label={sidebarConfig.resizeLabel} controls={sidebarConfig.id ?? "workspace-sidebar"} /> : undefined}
+          /> : null}
         </div>
-        {sidebarResizeEnabled ? <SidebarResizeHandle {...sidebarResize} label={sidebarConfig ? sidebarConfig.resizeLabel : undefined} controls={sidebarConfig && sidebarConfig.id ? sidebarConfig.id : "workspace-sidebar"} /> : null}
         <section className={`workspace-main-area${contextPanel && contextOpen ? " has-context" : ""}`} aria-label="主工作区">
           <section className={`workspace-content${contentLayout === "document" ? " workspace-document-content" : ""}`} inert={drawerOpen ? true : undefined}>
             {showToolbar ? (

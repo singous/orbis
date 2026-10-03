@@ -38,6 +38,32 @@
   outline-offset: -2px;
 }
 
+/* HeroUI and custom menu rows share pointer, keyboard and selected states. */
+:is(.menu-item, .list-box-item, .orbis-block-menu [role="menuitem"], .editor-more-menu button,
+  .orbis-tiptap-menu button, .orbis-tiptap-toolbar button, .icon-button, .orbis-icon-button:not(.button--primary),
+  .workspace-function-link, .workspace-switcher-option, .orbis-nav-item,
+  .rail-action:not(.rail-create-trigger), .document-context-row, .document-main-row,
+  .search-palette-result, .search-palette-category):not(:disabled, [aria-disabled="true"], [data-disabled="true"]):is(
+  :hover, :focus-visible, [data-hovered="true"], [data-focused="true"], .is-active,
+  [aria-current="page"], [aria-current="true"], [aria-selected="true"], [aria-checked="true"], [aria-pressed="true"], [data-selected="true"])
+{
+  background: var(--orbis-item-hover-bg);
+  color: var(--orbis-item-foreground);
+
+  & :is([data-slot="label"], .menu-item__indicator, .list-box-item__indicator,
+    .document-context-link, .document-tree-disclosure, .document-context-actions .icon-button,
+    .search-palette-category-icon, .workspace-switcher-name, .workspace-switcher-space-icon,
+    .workspace-switcher-check, svg) { color: inherit; }
+}
+.document-context-row:is(:focus-within, :has([data-menu-open="true"])) {
+  color: var(--orbis-item-foreground);
+  & :is(.document-context-link, .document-tree-disclosure) { color: inherit; }
+}
+/* Destructive actions retain their meaning while sharing the same surface. */
+.menu-item--danger, .list-box-item--danger, .document-archive-action, .block-action-danger, .danger-hover {
+  --orbis-item-foreground: var(--danger);
+}
+
 /* Native iOS fields need 16px text to avoid focus zoom; other UI keeps its role. */
 @media (pointer: coarse) {
   :is(input, textarea, [data-slot="select-trigger"]):not(.editor-title) {

@@ -26,15 +26,21 @@ for (const notebook of [false, true]) {
   const expandLabel = notebook ? "展开笔记本目录" : "展开侧栏";
   const name = notebook ? "notebook" : "ordinary";
 
-test(`${name}: the gap reveals a resize line and dragging preserves the width across reloads`, async ({ page, request }) => {
+test(`${name}: the menu edge resizes the function sidebar and preserves its width across reloads`, async ({ page, request }) => {
   await signIn(page, request, notebook);
   const handle = page.getByRole("separator", { name: resizeLabel, exact: true });
   const line = handle.locator(".workspace-resize-line");
   await expect(handle).toBeVisible();
   await expect(line).toHaveCSS("opacity", "0");
   const before = await width(page);
+  const menuBefore = (await page.locator(".workspace-sidebar").boundingBox())!.width;
+  const railBefore = (await page.locator(".workspace-business-rail").boundingBox())!.width;
   const mainBefore = (await page.getByRole("region", { name: "主工作区", exact: true }).boundingBox())!.width;
   const bounds = (await handle.boundingBox())!;
+  const navigation = (await page.locator(".workspace-main-navigation").boundingBox())!;
+  expect(await handle.evaluate(element => Boolean(element.closest(".workspace-sidebar")))).toBe(true);
+  await expect(page.locator(".workspace-shell-grid > .workspace-sidebar-resizer")).toHaveCount(0);
+  expect(bounds.x + bounds.width).toBeCloseTo(navigation.x + navigation.width - 1, 0);
   const x = bounds.x + bounds.width / 2;
   const y = bounds.y + bounds.height / 2;
   await page.mouse.move(x, y);
@@ -42,6 +48,8 @@ test(`${name}: the gap reveals a resize line and dragging preserves the width ac
   await page.mouse.down();
   await page.mouse.move(x + 100, y, { steps: 8 });
   await expect.poll(() => width(page)).toBeCloseTo(before + 100, 0);
+  expect((await page.locator(".workspace-sidebar").boundingBox())!.width).toBeCloseTo(menuBefore + 100, 0);
+  expect((await page.locator(".workspace-business-rail").boundingBox())!.width).toBeCloseTo(railBefore, 0);
   await expect(handle).toHaveAttribute("data-resizing", "true");
   expect(await page.locator("body").evaluate((element) => getComputedStyle(element).userSelect)).toBe("none");
   await page.mouse.up();

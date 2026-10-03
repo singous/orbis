@@ -1,12 +1,14 @@
 import { ActionButton } from "../../shared/ui/ActionButton";
+import type { ReactNode } from "react";
 import { ChevronsLeft, X } from "../../shared/ui/icons";
 import type { WorkspaceSidebarConfig } from "./workspace-sidebar-config";
 
-export function WorkspaceSidebar({ config, hidden, onCollapse, onClose }: {
+export function WorkspaceSidebar({ config, hidden, onCollapse, onClose, resizeHandle }: {
   config: WorkspaceSidebarConfig;
   hidden: boolean;
   onCollapse: () => void;
   onClose: () => void;
+  resizeHandle?: ReactNode;
 }) {
   const id = config.id ?? "workspace-sidebar";
   return <section id={id} className="workspace-sidebar" aria-label={config.label ?? "侧栏"} aria-hidden={hidden ? true : undefined} inert={hidden ? true : undefined}>
@@ -19,5 +21,6 @@ export function WorkspaceSidebar({ config, hidden, onCollapse, onClose }: {
       </header>
       <div className="workspace-sidebar-body">{config.content}</div>
     </div>
+    {resizeHandle}
   </section>;
 }

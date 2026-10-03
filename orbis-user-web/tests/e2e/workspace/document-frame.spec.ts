@@ -37,6 +37,7 @@ test('document overview shares the shell and exposes its function menu alongside
     await page.setViewportSize({ width, height: 900 });
     const home = await frame('/home');
     const documents = await frame('/documents');
+    expect({ radius: documents.radius, border: documents.border, shadow: documents.shadow }).toEqual({ radius: '0px', border: '0px', shadow: 'none' });
     expect({ ...documents, railWidth: home.railWidth, titleX: home.titleX }).toEqual(home);
     expect(documents.railWidth).toBeGreaterThan(home.railWidth);
     await expect(page.getByRole('navigation', { name: '文档导航', exact: true })).toBeVisible();

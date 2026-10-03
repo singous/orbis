@@ -3,6 +3,7 @@
 @import "@fontsource-variable/inter";
 @import "./heroui-theme.css";
 @import "./design-tokens.css";
+@import "./surface-theme.css";
 @import "./ui-controls.css";
 @import "./document-tree.css";
 @import "./scrollbars.css";
@@ -83,8 +84,8 @@
   --surface-sidebar: var(--surface);
   --surface-panel: var(--surface);
   --surface-content: var(--surface);
-  --surface-hover: var(--surface-secondary);
-  --surface-active: var(--default);
+  --surface-hover: var(--orbis-item-hover-bg);
+  --surface-active: var(--orbis-item-selected-bg);
   --surface-overlay: var(--overlay);
   --surface-inverse: var(--accent);
   --surface-inverse-hover: color-mix(in oklab, var(--accent) 85%, var(--background));
@@ -257,7 +258,7 @@ body {
 
 .orbis-modal-backdrop {
   z-index: var(--layer-dialog);
-  background: var(--backdrop);
+  background: var(--orbis-scrim);
 }
 
 .orbis-modal-dialog {
@@ -516,7 +517,7 @@ body {
   font-size: var(--orbis-prose-title-size);
   font-weight: var(--orbis-weight-heading);
   letter-spacing: -0.03em;
-  line-height: 1.15;
+  line-height: 1.5;
   outline: none;
   /* Align the title with the document body. */
   padding-inline: var(--editor-content-gutter);

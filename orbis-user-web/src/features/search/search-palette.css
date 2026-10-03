@@ -8,9 +8,9 @@
   min-height: 0;
   padding: 0;
   overflow: hidden;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--orbis-surface-edge);
   border-radius: 18px;
-  background: var(--surface-content);
+  background: var(--orbis-floating-bg);
   color: var(--text-primary);
 }
 
@@ -99,7 +99,7 @@
   text-align: left;
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
-  background: var(--surface-content);
+  background: var(--orbis-card-bg);
   cursor: pointer;
 }
 .search-palette-category[aria-selected="true"] { border-color: var(--accent); background: var(--surface-hover); }
@@ -111,7 +111,7 @@
   height: var(--orbis-control-form-height);
   border: 1px solid var(--border-subtle);
   border-radius: 10px;
-  background: var(--surface-content);
+  background: var(--orbis-card-bg);
   color: var(--text-secondary);
 }
 .search-palette-category[aria-selected="true"] .search-palette-category-icon { color: var(--accent); }
