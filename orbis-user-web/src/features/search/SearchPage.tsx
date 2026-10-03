@@ -13,6 +13,7 @@ import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { TextInput } from "../../shared/ui/TextInput";
 import { BookOpen, FileText, Folder, Globe, Paperclip } from "../../shared/ui/icons";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
+import { GLOBAL_SEARCH_INPUT_ID } from "../workspace/use-workspace-search";
 import { searchWorkspace, type SearchFilters } from "./api";
 import { readSearchFilters, resultHref, SEARCH_DEBOUNCE_MS, SEARCH_MAX_LENGTH, SEARCH_TYPE_LABELS, SEARCH_TYPE_OPTIONS, writeSearchFilters } from "./search-state";
 import "./search.css";
@@ -75,7 +76,7 @@ export function SearchPage() {
   return <WorkspaceShell><PageContainer title="全局搜索" description="搜索有权访问的文档、评论、笔记本、分组、站点与文件。">
     <form className="global-search-form" role="search" aria-label="内容搜索" onSubmit={(event) => { event.preventDefault(); if (!composing) updateFilters({ q: input }); }}>
       <div className="global-search-input-row">
-        <TextInput label="搜索内容" aria-label="搜索内容" type="search" autoFocus maxLength={SEARCH_MAX_LENGTH} placeholder="搜索标题、正文、评论或文件名…" value={input} onChange={(event) => { inputDirty.current = true; setInput(event.target.value); }} onCompositionStart={() => setComposing(true)} onCompositionEnd={(event) => { inputDirty.current = true; setInput(event.currentTarget.value); setComposing(false); }} />
+        <TextInput id={GLOBAL_SEARCH_INPUT_ID} label="搜索内容" aria-label="搜索内容" type="search" autoFocus maxLength={SEARCH_MAX_LENGTH} placeholder="搜索标题、正文、评论或文件名…" value={input} onChange={(event) => { inputDirty.current = true; setInput(event.target.value); }} onCompositionStart={() => setComposing(true)} onCompositionEnd={(event) => { inputDirty.current = true; setInput(event.currentTarget.value); setComposing(false); }} />
         <Button type="submit" variant="primary">搜索</Button>
         {input ? <Button variant="ghost" onClick={() => { setInput(""); setComposing(false); updateFilters({ q: "" }); }}>清空搜索</Button> : null}
       </div>

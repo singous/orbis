@@ -20,6 +20,8 @@ test("user menu stays in view and preserves account and logout actions", async (
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/documents");
+    const mobileMenu = page.getByRole("button", { name: "打开主导航", exact: true });
+    if (width < 768) await mobileMenu.click();
     const trigger = page.getByRole("button", { name: "打开用户菜单" });
     await trigger.click();
     const menu = page.getByRole("menu", { name: "打开用户菜单" });
@@ -27,14 +29,18 @@ test("user menu stays in view and preserves account and logout actions", async (
     const bounds = await menu.evaluate((element) => element.getBoundingClientRect().toJSON());
     expect(bounds.left).toBeGreaterThanOrEqual(0);
     expect(bounds.right).toBeLessThanOrEqual(width);
+    expect(bounds.top).toBeGreaterThanOrEqual(0);
+    expect(bounds.bottom).toBeLessThanOrEqual(900);
     await page.keyboard.press("Escape");
     await expect(menu).not.toBeVisible();
     await expect(trigger).toBeFocused();
+    if (width < 768) await expect(mobileMenu).toHaveAttribute("aria-expanded", "true");
   }
 
   await page.getByRole("button", { name: "打开用户菜单" }).click();
   await page.getByRole("menuitem", { name: "账号" }).click();
   await expect(page).toHaveURL(/\/settings\/account$/);
+  await page.getByRole("button", { name: "打开主导航", exact: true }).click();
   await page.getByRole("button", { name: "打开用户菜单" }).click();
   await page.getByRole("menuitem", { name: "退出登录" }).click();
   await expect(page).toHaveURL(/\/login$/);

@@ -28,7 +28,8 @@ test("mobile navigation covers its dismiss area and restores focus after an outs
   await expect(trigger).toBeFocused();
 });
 
-test("embedded search fields fit their container and group headings stay left aligned", async ({ page, request }) => {
+test("desktop embedded search fields fit their container and group headings stay left aligned", async ({ page, request }) => {
+  await page.addInitScript(() => Object.assign(window, { __ORBIS_HOST__: { surface: "desktop" } }));
   await signIn(page, request);
   for (const width of [1440, mobileViewport.width]) {
     await page.setViewportSize({ width, height: 1000 });

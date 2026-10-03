@@ -6,6 +6,7 @@ import { useLocation } from "react-router-dom";
 import { useStore } from "zustand";
 
 import { authStore } from "../../shared/auth/auth-store";
+import { getAppSurface } from "../../shared/platform/app-surface";
 import { SidebarResizeHandle } from "./SidebarResizeHandle";
 import { useSidebarResize } from "./use-sidebar-resize";
 import { WorkspaceSidebar } from "./WorkspaceSidebar";
@@ -17,6 +18,7 @@ import { WorkspaceNavigation } from "./WorkspaceNavigation";
 import { resolveWorkspaceArea } from "./workspace-areas";
 import { WorkspaceTopbar } from "./WorkspaceTopbar";
 import { canMutateWorkspaceContent } from "./capabilities";
+import { useWorkspaceSearch } from "./use-workspace-search";
 
 export type { WorkspaceSidebarConfig } from "./workspace-sidebar-config";
 
@@ -47,6 +49,7 @@ function useCompactNavigation(): boolean {
 }
 
 export function WorkspaceShell({ children, sectionTitle, sidebar, toolbar, contentLayout = "page", contextPanel, contextOpen = true, onOpenContext }: WorkspaceShellProps) {
+  const [surface] = useState(getAppSurface);
   const { pathname } = useLocation();
   const area = resolveWorkspaceArea(pathname);
   const workspace = useStore(authStore, (state) => state.workspace);
@@ -59,9 +62,11 @@ export function WorkspaceShell({ children, sectionTitle, sidebar, toolbar, conte
   const contextRef = useRef<HTMLElement>(null);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
   const contextTriggerRef = useRef<HTMLButtonElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const compact = useCompactNavigation();
   const documentContextExpanded = documentContextOpen && contextOpen;
   const drawerOpen = compact && (mainNavigationOpen || documentContextExpanded);
+  useWorkspaceSearch(surface, drawerOpen, searchInputRef);
   const sidebarConfig: WorkspaceSidebarConfig | false = sidebar ?? (area.showFunctionSidebar ? { title: <h2>{area.title}</h2>, content: accessToken ? <WorkspaceNavigation /> : null } : false);
   const showFunctionSidebar = Boolean(sidebarConfig && (compact || sidebarConfig.desktopVisible !== false));
   const preferences = sidebarConfig ? sidebarConfig.preferences ?? DEFAULT_SIDEBAR_PREFERENCES : DEFAULT_SIDEBAR_PREFERENCES;
@@ -110,12 +115,12 @@ export function WorkspaceShell({ children, sectionTitle, sidebar, toolbar, conte
   }
 
   return (
-    <main style={shellStyle} className={`workspace-shell${showFunctionSidebar ? " has-section-menu" : " sidebar-unavailable"}${sidebarHidden ? " sidebar-collapsed" : ""}${animating ? " sidebar-animating" : ""}${mainNavigationOpen ? " main-navigation-open" : ""}${documentContextExpanded ? " document-context-drawer-open" : ""}`}>
-      <WorkspaceTopbar disabled={drawerOpen} />
+    <main data-app-surface={surface} style={shellStyle} className={`workspace-shell${showFunctionSidebar ? " has-section-menu" : " sidebar-unavailable"}${sidebarHidden ? " sidebar-collapsed" : ""}${animating ? " sidebar-animating" : ""}${mainNavigationOpen ? " main-navigation-open" : ""}${documentContextExpanded ? " document-context-drawer-open" : ""}`}>
+      {surface === "desktop" ? <WorkspaceTopbar disabled={drawerOpen} searchInputRef={searchInputRef} /> : null}
       <div ref={gridRef} className="workspace-shell-grid">
         {drawerOpen ? <ActionButton type="button" className="workspace-drawer-backdrop" aria-label={mainNavigationOpen ? "关闭主导航" : "关闭文档目录"} onClick={() => { setMainNavigationOpen(false); setDocumentContextOpen(false); }} /> : null}
         <div ref={navigationRef} className="workspace-main-navigation" aria-hidden={compact && !mainNavigationOpen ? true : undefined} inert={compact && !mainNavigationOpen ? true : undefined} onClick={closeAfterLink}>
-          <BusinessRail createMenu={canCreate ? <RailCreateMenu /> : undefined} collapsed={showFunctionSidebar && sidebarHidden} expandLabel={sidebarConfig ? sidebarConfig.expandLabel : undefined} onExpand={() => changeCollapsed(false)} onClose={compact && !showFunctionSidebar ? () => setMainNavigationOpen(false) : undefined} />
+          <BusinessRail surface={surface} createMenu={canCreate ? <RailCreateMenu /> : undefined} collapsed={showFunctionSidebar && sidebarHidden} expandLabel={sidebarConfig ? sidebarConfig.expandLabel : undefined} onExpand={() => changeCollapsed(false)} onClose={compact && !showFunctionSidebar ? () => setMainNavigationOpen(false) : undefined} />
           {showFunctionSidebar && sidebarConfig ? <WorkspaceSidebar config={sidebarConfig} hidden={sidebarHidden} onCollapse={() => changeCollapsed(true)} onClose={() => setMainNavigationOpen(false)} /> : null}
         </div>
         {sidebarResizeEnabled ? <SidebarResizeHandle {...sidebarResize} label={sidebarConfig ? sidebarConfig.resizeLabel : undefined} controls={sidebarConfig && sidebarConfig.id ? sidebarConfig.id : "workspace-sidebar"} /> : null}

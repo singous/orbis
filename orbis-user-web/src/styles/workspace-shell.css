@@ -259,3 +259,22 @@ html.workspace-resizing, html.workspace-resizing * { cursor: col-resize !importa
   .document-save-spinner { animation: none; }
   .document-scroll-region .editor-layout { transition: none; }
 }
+
+/* Host chrome is independent of responsive navigation and business toolbars. */
+.workspace-shell[data-app-surface="web"] { --topbar-height: 0px; }
+.workspace-shell[data-app-surface="web"] .workspace-shell-grid { padding-top: max(var(--shell-gutter), env(safe-area-inset-top)); }
+.workspace-switcher--rail { flex: none; }
+.workspace-switcher-rail-trigger { background: transparent; padding: 0; border: 0; }
+.workspace-switcher-rail-trigger:hover,
+.workspace-switcher-rail-trigger[aria-expanded="true"] { background: var(--surface-hover); }
+.workspace-user-menu--rail { margin: 0; }
+.workspace-user-trigger--rail { width: var(--orbis-control-default-height); min-height: var(--orbis-control-default-height); padding: 0; }
+.workspace-user-trigger--rail:hover,
+.workspace-user-trigger--rail[aria-expanded="true"] { background: var(--surface-hover); }
+.workspace-user-trigger--rail .workspace-user-avatar { width: 30px; height: 30px; }
+/* The overlay engine positions portaled content; topbar offsets do not apply. */
+.workspace-switcher-popover--rail,
+.workspace-user-popover--rail { position: relative; inset: auto; width: min(268px, calc(100vw - 80px)); max-width: calc(100vw - 24px); }
+.workspace-user-popover--rail .workspace-user-profile > div { min-width: 0; overflow-wrap: anywhere; }
+.workspace-user-popover--rail .workspace-user-profile .workspace-user-avatar { flex: none; }
+.workspace-switcher-rail-trigger:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }

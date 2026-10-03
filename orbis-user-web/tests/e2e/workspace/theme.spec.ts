@@ -45,6 +45,8 @@ test("the supplied theme reaches rendered fields in both color schemes", async (
 
 
 test("workbench action and field shapes follow HeroUI theme calculations", async ({ page, request }) => {
+  // Desktop retains the global header search; web uses the rail entry.
+  await page.addInitScript(() => Object.assign(window, { __ORBIS_HOST__: { surface: "desktop" } }));
   await page.emulateMedia({ reducedMotion: "reduce" });
   const owner = { email: "owner@example.com", password: "Orbis-browser-test-2026!" };
   const setup = await request.post("/api/setup", { data: { ...owner, display_name: "主题验收" } });

@@ -126,11 +126,11 @@ test("notebook directories fold, keep compact actions, and preserve sibling drag
   await expect(handle).toBeEnabled();
   await handle.press("Alt+ArrowUp");
   await reorderRequest;
-  const search = page.getByRole("searchbox", { name: "全局搜索", exact: true });
-  await search.click();
+  const unrelatedLink = page.getByRole("link", { name: "返回文档中心", exact: true });
+  await unrelatedLink.focus();
   releasePending();
   await expect.poll(async () => (await readTree()).map((note) => note.id)).toEqual([first, third, second]);
-  await expect(search).toBeFocused();
+  await expect(unrelatedLink).toBeFocused();
   await page.unroute("**/api/notebooks/*/notes/order");
 
   await page.reload();

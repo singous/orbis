@@ -9,6 +9,7 @@ import { DocumentShell } from "../documents/DocumentShell";
 import { WorkspaceShell } from "./WorkspaceShell";
 
 const originalMatchMedia = window.matchMedia;
+const originalHost = window.__ORBIS_HOST__;
 
 function setViewport(width: number) {
   Object.defineProperty(window, "matchMedia", {
@@ -69,8 +70,9 @@ function renderShell(initialEntry = "/documents", contextPanel?: React.ReactNode
   );
 }
 
-describe("WorkspaceShell", () => {
+describe("WorkspaceShell (desktop surface)", () => {
   beforeEach(() => {
+    window.__ORBIS_HOST__ = { surface: "desktop" };
     window.localStorage.clear();
     setViewport(1440);
     act(() => {
@@ -82,6 +84,7 @@ describe("WorkspaceShell", () => {
     cleanup();
     act(() => authStore.getState().clearSession());
     Object.defineProperty(window, "matchMedia", { configurable: true, value: originalMatchMedia });
+    window.__ORBIS_HOST__ = originalHost;
   });
 
   it.each([["/documents", "文档导航"], ["/sites", "站点导航"]])("provides secondary navigation by default on %s", (path, navigationName) => {

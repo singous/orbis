@@ -1,4 +1,4 @@
-import { UserAvatar, identityColor } from "../../shared/ui/UserAvatar";
+import { UserAvatar } from "../../shared/ui/UserAvatar";
 import { Dropdown } from "@heroui/react/dropdown";
 import { Label } from "@heroui/react/label";
 import { LogOut, Settings, Users } from "../../shared/ui/icons";
@@ -12,22 +12,23 @@ export type UserMenuProps = {
   user: User | null;
   workspace: Workspace | null;
   onLogout: () => void;
+  variant?: "topbar" | "rail";
 };
 
-export function UserMenu({ user, workspace, onLogout }: UserMenuProps) {
+export function UserMenu({ user, workspace, onLogout, variant = "topbar" }: UserMenuProps) {
   const userName = user?.display_name || user?.email || "Orbis";
 
   return (
-    <div className="workspace-user-menu">
+    <div className={`workspace-user-menu${variant === "rail" ? " workspace-user-menu--rail" : ""}`}>
       <Dropdown>
-        <ActionButton type="button" className="workspace-user-trigger" aria-label="打开用户菜单">
+        <ActionButton type="button" className={`workspace-user-trigger${variant === "rail" ? " workspace-user-trigger--rail" : ""}`} aria-label="打开用户菜单">
           <UserAvatar user={user} className="workspace-user-avatar" />
-          <span className="workspace-user-trigger-copy">
+          {variant === "topbar" ? <span className="workspace-user-trigger-copy">
             <span className="truncate">{userName}</span>
             <span className="workspace-user-trigger-role">{workspaceRoleLabel(workspace?.role)}</span>
-          </span>
+          </span> : null}
         </ActionButton>
-        <Dropdown.Popover className="workspace-user-popover" placement="bottom end" offset={12}>
+        <Dropdown.Popover className={`workspace-user-popover${variant === "rail" ? " workspace-user-popover--rail" : ""}`} placement={variant === "rail" ? "right bottom" : "bottom end"} shouldFlip offset={12}>
           <div className="workspace-user-profile">
             <UserAvatar user={user} className="workspace-user-avatar" />
             <div>

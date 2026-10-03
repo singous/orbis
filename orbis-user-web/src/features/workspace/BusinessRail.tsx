@@ -4,9 +4,12 @@ import { BookOpen, ChevronsRight, Globe, Home, LibraryBig, Orbit, Search, Settin
 import { Link, useLocation } from "react-router-dom";
 
 import { Tooltip } from "../../shared/ui/Tooltip";
+import type { AppSurface } from "../../shared/platform/app-surface";
+import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
+import { WorkspaceAccountMenu } from "./WorkspaceAccountMenu";
 import { DEFAULT_WORKSPACE_PATH, resolveWorkspaceArea, WORKSPACE_AREAS, type WorkspaceAreaId } from "./workspace-areas";
 
-type BusinessRailProps = { collapsed: boolean; onExpand: () => void; onClose?: () => void; createMenu?: ReactNode; expandLabel?: string };
+type BusinessRailProps = { surface?: AppSurface; collapsed: boolean; onExpand: () => void; onClose?: () => void; createMenu?: ReactNode; expandLabel?: string };
 
 const areaIcons = {
   home: Home,
@@ -19,7 +22,7 @@ const areaIcons = {
 } satisfies Record<WorkspaceAreaId, typeof Home>;
 const areas = WORKSPACE_AREAS.filter((area) => area.visibleInRail);
 
-export function BusinessRail({ collapsed, onExpand, onClose, createMenu, expandLabel = "展开侧栏" }: BusinessRailProps) {
+export function BusinessRail({ surface = "web", collapsed, onExpand, onClose, createMenu, expandLabel = "展开侧栏" }: BusinessRailProps) {
   const { pathname } = useLocation();
   const activeArea = resolveWorkspaceArea(pathname);
   const searchActive = activeArea.id === "search";
@@ -29,7 +32,7 @@ export function BusinessRail({ collapsed, onExpand, onClose, createMenu, expandL
       <div className="rail-expand-slot" data-visible={collapsed} aria-hidden={!collapsed ? true : undefined} inert={!collapsed ? true : undefined}>
         <Tooltip label={expandLabel} side="right"><ActionButton className="rail-action rail-expand" data-sidebar-toggle="expand" type="button" aria-label={expandLabel} onClick={onExpand}><ChevronsRight size={20} /></ActionButton></Tooltip>
       </div>
-      <Link to={DEFAULT_WORKSPACE_PATH} className="rail-brand" aria-label="Orbis 首页"><Orbit size={28} strokeWidth={1.8} /></Link>
+      {surface === "web" ? <WorkspaceSwitcher variant="rail" /> : <Link to={DEFAULT_WORKSPACE_PATH} className="rail-brand" aria-label="Orbis 首页"><Orbit size={28} strokeWidth={1.8} /></Link>}
       {createMenu ? <div className="rail-create-entry">{createMenu}</div> : null}
       <Tooltip label="全局搜索" side="right"><Link to="/search" aria-label="搜索" aria-current={searchActive ? "page" : undefined} className={`rail-action${searchActive ? " is-active" : ""}`}><Search aria-hidden="true" size={20} /></Link></Tooltip>
       <nav className="workspace-business-nav" aria-label="业务板块">
@@ -49,7 +52,7 @@ export function BusinessRail({ collapsed, onExpand, onClose, createMenu, expandL
         })}
       </nav>
       <div className="rail-bottom">
-        <Tooltip label="账号设置" side="right"><Link to="/settings/account" aria-label="账号设置" aria-current={activeArea.id === "settings" ? "page" : undefined} className={`rail-action${activeArea.id === "settings" ? " is-active" : ""}`}><Settings size={20} /></Link></Tooltip>
+        {surface === "web" ? <WorkspaceAccountMenu variant="rail" /> : <Tooltip label="账号设置" side="right"><Link to="/settings/account" aria-label="账号设置" aria-current={activeArea.id === "settings" ? "page" : undefined} className={`rail-action${activeArea.id === "settings" ? " is-active" : ""}`}><Settings size={20} /></Link></Tooltip>}
       </div>
     </aside>
   );

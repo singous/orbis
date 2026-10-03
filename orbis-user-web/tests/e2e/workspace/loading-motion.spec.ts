@@ -104,7 +104,7 @@ test("slow document overview loading keeps the rail, global search and pinned sh
     await expect(placeholder.locator(".skeleton").first()).toBeVisible();
     await expect(page.getByRole("link", { name: "在线文档", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "新建资产", exact: true })).toBeVisible();
-    await expect(page.getByRole("searchbox", { name: "全局搜索", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "搜索", exact: true })).toBeVisible();
   } finally { release(); }
   await expect(placeholder).toHaveCount(0);
 });

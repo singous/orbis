@@ -442,7 +442,8 @@ describe("document function pages", () => {
     expect(window.location.pathname).toBe("/home");
     const rail = screen.getByRole("navigation", { name: "业务板块" });
     expect(within(rail).getByRole("link", { name: "首页" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("link", { name: "Orbis 首页" })).toHaveAttribute("href", "/home");
+    expect(within(rail).getByRole("link", { name: "首页" })).toHaveAttribute("href", "/home");
+    expect(screen.getByRole("button", { name: "切换工作空间" })).toBeInTheDocument();
   });
 
   it("keeps account settings on the workspace shell without document functions", async () => {
