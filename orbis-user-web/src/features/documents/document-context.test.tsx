@@ -245,6 +245,19 @@ describe("DocumentContextPanel", () => {
     expect(screen.getByRole("link", { name: "发布范围" })).toHaveAttribute("aria-current", "page");
   });
 
+  it("keeps the notebook homepage directory read-only even for its owner", async () => {
+    treeState.data = { items: [rootNote, { ...rootNote, id: "sibling", title: "另一篇", children: [] }] };
+    const actor = userEvent.setup();
+    const view = renderPanel({ variant: "main" });
+    expect(view.container.querySelector("[data-document-drag-row]")).toBeNull();
+    expect(view.container.querySelector(".document-context-actions")).toBeNull();
+    expect(screen.queryByRole("button", { name: /文档操作|预览文档|新建子文档|拖动排序/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "产品计划" })).not.toHaveAttribute("aria-keyshortcuts");
+    await actor.click(screen.getByRole("button", { name: "收起子目录 产品计划" }));
+    expect(screen.queryByRole("link", { name: "发布范围" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "产品计划" })).toHaveAttribute("href", `/documents/${rootNote.id}`);
+  });
+
   it("folds children independently of opening the parent and keeps the full summary", async () => {
     const actor = userEvent.setup();
     render(<MemoryRouter><DocumentContextSummaryProvider><DocumentContextPanel notebookId={rootNote.notebook_id} /><DocumentContextSummaryProbe /></DocumentContextSummaryProvider></MemoryRouter>);

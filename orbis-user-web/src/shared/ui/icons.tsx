@@ -49,6 +49,9 @@ import {
   Lightbulb as LucideLightbulb,
   Link2 as LucideLink2,
   List as LucideList,
+  ListTree as LucideListTree,
+  ListCollapse as LucideListCollapse,
+  LocateFixed as LucideLocateFixed,
   ListOrdered as LucideListOrdered,
   LoaderCircle as LucideLoaderCircle,
   LogOut as LucideLogOut,
@@ -58,6 +61,7 @@ import {
   Monitor as LucideMonitor,
   Moon as LucideMoon,
   MoreHorizontal as LucideMoreHorizontal,
+  MoreVertical as LucideMoreVertical,
   Music as LucideMusic,
   Notebook as LucideNotebook,
   OctagonAlert as LucideOctagonAlert,
@@ -175,6 +179,10 @@ export const LibraryBig = /* @__PURE__ */ appIcon(LucideLibraryBig, "LibraryBig"
 export const Lightbulb = /* @__PURE__ */ appIcon(LucideLightbulb, "Lightbulb", "amber");
 export const Link2 = /* @__PURE__ */ appIcon(LucideLink2, "Link2");
 export const List = /* @__PURE__ */ appIcon(LucideList, "List");
+export const ListTree = /* @__PURE__ */ appIcon(LucideListTree, "ListTree");
+export const ListCollapse = /* @__PURE__ */ appIcon(LucideListCollapse, "ListCollapse");
+export const LocateFixed = /* @__PURE__ */ appIcon(LucideLocateFixed, "LocateFixed");
+export const MoreVertical = /* @__PURE__ */ appIcon(LucideMoreVertical, "MoreVertical");
 export const ListOrdered = /* @__PURE__ */ appIcon(LucideListOrdered, "ListOrdered", "teal");
 export const LoaderCircle = /* @__PURE__ */ appIcon(LucideLoaderCircle, "LoaderCircle");
 export const LogOut = /* @__PURE__ */ appIcon(LucideLogOut, "LogOut", "slate");

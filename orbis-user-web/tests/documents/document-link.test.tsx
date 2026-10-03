@@ -45,3 +45,21 @@ it("keeps links usable without requesting private content when there is no sessi
   expect(mock.note).not.toHaveBeenCalled();
   expect(mock.module).not.toHaveBeenCalled();
 });
+
+it("does not refetch the active document from row hover or focus", async () => {
+  vi.useFakeTimers();
+  authStore.setState({ accessToken: "local", refreshToken: null });
+  const client = new QueryClient({ defaultOptions: { queries: { staleTime: 0 } } });
+  const saved = { note_id: "target", content_version: 1 };
+  client.setQueryData(["note-content", "target"], saved);
+  render(<QueryClientProvider client={client}><MemoryRouter initialEntries={["/documents/target?comment=example"]}>
+    <DocumentLink noteId="target" to="/documents/target">Current</DocumentLink>
+  </MemoryRouter></QueryClientProvider>);
+  const link = screen.getByRole("link", { name: "Current" });
+  fireEvent.pointerEnter(link);
+  await act(async () => { await vi.advanceTimersByTimeAsync(DOCUMENT_PREFETCH_DWELL_MS); });
+  fireEvent.focus(link);
+  expect(mock.note).not.toHaveBeenCalled();
+  expect(mock.content).not.toHaveBeenCalled();
+  expect(client.getQueryData(["note-content", "target"])).toBe(saved);
+});

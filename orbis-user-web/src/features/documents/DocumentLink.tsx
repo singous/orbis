@@ -1,5 +1,5 @@
 import { useContext, useEffect, useRef } from "react";
-import { Link, type LinkProps } from "react-router-dom";
+import { Link, useMatch, type LinkProps } from "react-router-dom";
 import { QueryClientContext } from "@tanstack/react-query";
 import { useOptionalAuthRequest } from "../../shared/auth/use-auth-request";
 import { getNote, getNoteContent } from "./api";
@@ -11,14 +11,16 @@ export const DOCUMENT_PREFETCH_DWELL_MS = 150;
 export function DocumentLink({ noteId, onPointerEnter, onPointerLeave, onFocus, ...props }: LinkProps & { noteId: string }) {
   const client = useContext(QueryClientContext);
   const auth = useOptionalAuthRequest();
+  const isCurrentDocument = useMatch("/documents/:noteId")?.params.noteId === noteId;
   const pending = useRef<ReturnType<typeof setTimeout> | null>(null);
   function cancelIntent() {
     if (pending.current !== null) clearTimeout(pending.current);
     pending.current = null;
   }
-  useEffect(() => cancelIntent, [noteId, client, auth]);
+  useEffect(() => cancelIntent, [noteId, client, auth, isCurrentDocument]);
   function prefetch() {
-    if (!client || !auth) return;
+    // Hovering the active row must not refetch (or fail) the editing session.
+    if (!client || !auth || isCurrentDocument) return;
     void loadDocumentEditor().catch(() => { /* Navigation owns loading feedback. */ });
     void client.prefetchQuery({ queryKey: ["note", noteId], queryFn: ({ signal }) => getNote(noteId, auth, signal) });
     void client.prefetchQuery({ queryKey: ["note-content", noteId], queryFn: ({ signal }) => getNoteContent(noteId, auth, signal) });

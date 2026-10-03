@@ -58,6 +58,10 @@ function findAncestors(items: NoteTreeItem[], noteId: string): string[] | undefi
   return undefined;
 }
 
+function collectBranchIds(items: NoteTreeItem[]): string[] {
+  return items.flatMap(note => note.children.length ? [note.id, ...collectBranchIds(note.children)] : []);
+}
+
 /** Each notebook view keeps independent device preferences; legacy sidebar keys remain valid. */
 export function useDocumentTreeExpansion(workspaceId: string | undefined, notebookId: string, items: NoteTreeItem[], activeNoteId?: string, view: "side" | "main" = "side") {
   const key = documentTreeStorageKey(workspaceId, notebookId, view);
@@ -67,6 +71,8 @@ export function useDocumentTreeExpansion(workspaceId: string | undefined, notebo
     () => EMPTY_SNAPSHOT,
   );
   const collapsed = useMemo(() => parseSnapshot(snapshot), [snapshot]);
+  const collapsedIds = useMemo(() => new Set(collapsed), [collapsed]);
+  const branchIds = useMemo(() => collectBranchIds(items), [items]);
   const ancestorPath = activeNoteId ? findAncestors(items, activeNoteId)?.join(",") ?? "" : "";
 
   useEffect(() => {
@@ -82,5 +88,22 @@ export function useDocumentTreeExpansion(workspaceId: string | undefined, notebo
     writeCollapsed(key, current.includes(noteId) ? current.filter((id) => id !== noteId) : [...current, noteId]);
   }, [key]);
 
-  return { isExpanded: (noteId: string) => !collapsed.includes(noteId), toggle };
+  const expandAll = useCallback(() => writeCollapsed(key, []), [key]);
+  const collapseAll = useCallback(() => writeCollapsed(key, branchIds), [key, branchIds]);
+  const reveal = useCallback((noteId: string) => {
+    const path = findAncestors(items, noteId);
+    if (!path) return false;
+    const ancestors = new Set(path);
+    const current = parseSnapshot(readSnapshot(key));
+    const next = current.filter(id => !ancestors.has(id));
+    if (next.length !== current.length) writeCollapsed(key, next);
+    return true;
+  }, [items, key]);
+
+  return {
+    isExpanded: (noteId: string) => !collapsedIds.has(noteId), toggle,
+    expandAll, collapseAll, reveal,
+    hasBranches: branchIds.length > 0,
+    allExpanded: branchIds.length > 0 && branchIds.every(id => !collapsedIds.has(id)),
+  };
 }

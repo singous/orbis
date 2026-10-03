@@ -14,7 +14,7 @@ async function signIn(page: Page, request: APIRequestContext) {
   await expect(page).toHaveURL(/\/documents$/);
 }
 
-test("notebook directories fold, keep compact actions, and preserve sibling drag order", async ({ page, request, browser }) => {
+test("notebook home stays read-only while side rows support native links and sibling drag ordering", async ({ page, request, browser, context }) => {
   await signIn(page, request);
   const token = await page.evaluate(() => JSON.parse(localStorage.getItem("orbis.auth")!).accessToken as string);
   const headers = { Authorization: `Bearer ${token}` };
@@ -54,87 +54,142 @@ test("notebook directories fold, keep compact actions, and preserve sibling drag
   await expect(sidebar.getByRole("link", { name: childTitle, exact: true })).toHaveAttribute("aria-current", "page");
   await page.getByRole("link", { name: "笔记本首页" }).click();
   await expect(page).toHaveURL(new RegExp(`/collections/${notebookId}$`));
+  const reorderRequests: string[] = [];
+  page.on("request", event => { if (event.method() === "PUT" && event.url().endsWith(`/notebooks/${notebookId}/notes/order`)) reorderRequests.push(event.url()); });
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 844 });
     if (width === 390) await expect(page.locator(".workspace-main-navigation")).toBeHidden();
     const row = main.locator('.document-main-item[data-parent-id="root"] > .document-main-row').first();
     await expect(row).toBeVisible();
-    if (width === 1440) await row.hover();
-    const bounds = await row.evaluate((element) => {
-      const line = element.getBoundingClientRect();
-      const link = element.querySelector("a")!.getBoundingClientRect();
-      const actions = element.querySelector(".document-context-actions")!.getBoundingClientRect();
+    await expect(main.locator(".document-context-actions")).toHaveCount(0);
+    await expect(main.locator("[data-document-drag-row]")).toHaveCount(0);
+    await expect(main.getByRole("button", { name: /拖动排序|文档操作|新建子文档/ })).toHaveCount(0);
+    await expect(page.locator(".document-drag-handle,.document-drag-placeholder")).toHaveCount(0);
+    const geometry = await row.evaluate(element => {
       const content = document.querySelector('.workspace-content')!;
-      return { overlap: link.left < actions.right && link.right > actions.left && link.top < actions.bottom && link.bottom > actions.top, outside: actions.top < line.top || actions.bottom > line.bottom, overflow: document.documentElement.scrollWidth - window.innerWidth, contentOverflow: content.scrollWidth - content.clientWidth };
+      return { rowWidth: element.getBoundingClientRect().width, overflow: document.documentElement.scrollWidth - innerWidth, contentOverflow: content.scrollWidth - content.clientWidth };
     });
-    expect(bounds.overlap).toBe(false);
-    expect(bounds.outside).toBe(false);
-    expect.soft(bounds.overflow).toBeLessThanOrEqual(1);
-    expect.soft(bounds.contentOverflow).toBeLessThanOrEqual(1);
-    expect((await row.boundingBox())!.height).toBeLessThanOrEqual(48);
-    if (width === 1440) await expect(row.getByRole("button", { name: "新建子文档 第一篇" })).toBeVisible();
-    const more = row.getByRole("button", { name: "文档操作 第一篇" });
-    await more.click();
-    await expect(page.getByRole("menuitem", { name: "新建子文档", exact: true })).toBeVisible();
-    await expect(page.getByRole("menuitem", { name: "重命名", exact: true })).toBeVisible();
-    await expect(page.getByRole("menuitem", { name: "归档", exact: true })).toBeVisible();
-    await page.keyboard.press("Escape");
-    await expect(more).toBeFocused();
-    await expect(row.getByRole("button", { name: /上移|下移/ })).toHaveCount(0);
+    expect(geometry.rowWidth).toBeGreaterThan(0);
+    expect(geometry.overflow).toBeLessThanOrEqual(1);
+    expect(geometry.contentOverflow).toBeLessThanOrEqual(1);
   }
 
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await expect(page.locator("#notebook-directory")).toBeVisible();
-  const handle = main.getByRole("button", { name: "拖动排序 第三篇", exact: true });
-  const target = main.getByRole("button", { name: "拖动排序 第一篇", exact: true });
-  await expect(handle).toHaveAttribute("aria-roledescription", "draggable");
-  await handle.hover();
-  const start = (await handle.boundingBox())!;
+  const mainThird = main.getByRole("link", { name: "第三篇", exact: true });
+  await mainThird.press("Alt+ArrowUp");
+  expect(reorderRequests).toHaveLength(0);
+  const readonlyFrom = (await mainThird.boundingBox())!;
+  const readonlyTo = (await main.getByRole("link", { name: "第一篇", exact: true }).boundingBox())!;
+  await page.mouse.move(readonlyFrom.x + 10, readonlyFrom.y + readonlyFrom.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(readonlyTo.x + 10, readonlyTo.y + 3, { steps: 12 });
+  await page.mouse.up();
+  expect(reorderRequests).toHaveLength(0);
+  expect((await readTree()).map(note => note.id)).toEqual([first, second, third]);
+  await page.goto(`/collections/${notebookId}`);
+
+  const title = sidebar.getByRole("link", { name: "第三篇", exact: true });
+  const target = sidebar.getByRole("link", { name: "第一篇", exact: true });
+  const sourceItem = sidebar.locator(`.document-context-item[data-note-id="${third}"]:not([data-dnd-placeholder])`);
+  await expect(title).toHaveAttribute("href", `/documents/${third}`);
+  await expect(title).not.toHaveAttribute("role", "button");
+  await expect(title).toHaveAttribute("draggable", "false");
+  // A short jitter remains a normal click, and Enter remains link navigation.
+  const clickBox = (await title.boundingBox())!;
+  await page.mouse.move(clickBox.x + 12, clickBox.y + clickBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(clickBox.x + 15, clickBox.y + clickBox.height / 2);
+  await page.mouse.up();
+  await expect(page).toHaveURL(new RegExp(`/documents/${third}$`));
+  expect(reorderRequests).toHaveLength(0);
+  await page.goto(`/collections/${notebookId}`);
+  await title.focus();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(new RegExp(`/documents/${third}$`));
+  await page.goto(`/collections/${notebookId}`);
+  const openedPage = context.waitForEvent("page");
+  await title.click({ modifiers: ["ControlOrMeta"] });
+  const opened = await openedPage;
+  await expect(opened).toHaveURL(new RegExp(`/documents/${third}$`));
+  await opened.close();
+  await expect(page).toHaveURL(new RegExp(`/collections/${notebookId}$`));
+  expect(reorderRequests).toHaveLength(0);
+
+  const more = sidebar.getByRole("button", { name: "文档操作 第三篇", exact: true });
+  await more.click();
+  await expect(page.getByRole("menuitem", { name: "重命名", exact: true })).toBeVisible();
+  await expect(sourceItem).not.toHaveAttribute("data-dragging", "true");
+  await page.keyboard.press("Escape");
+  await expect(more).toBeFocused();
+  expect(reorderRequests).toHaveLength(0);
+
+  await title.hover();
+  const start = (await title.boundingBox())!;
   const end = (await target.boundingBox())!;
   await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
-  await page.waitForTimeout(80); // Allow the hovered control to bind its drag sensor before pressing.
   await page.mouse.down();
   try {
-    await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2 - 9, { steps: 3 });
-    await expect(handle).toHaveAttribute("aria-grabbed", "true");
+    await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2 - 12, { steps: 3 });
+    await expect(sourceItem).toHaveAttribute("data-dragging", "true");
     await page.mouse.move(end.x + end.width / 2, end.y + 3, { steps: 16 });
-    await page.waitForTimeout(100); // Let the drag target settle before releasing the pointer.
-  } finally {
-    await page.mouse.up();
-  }
-  await expect.poll(async () => (await readTree()).map((note) => note.id)).toEqual([third, first, second]);
-  expect((await readTree())[1].children.map((note) => note.id)).toEqual([child, secondChild]);
+    await page.waitForTimeout(100); // Allow the collision update before release.
+  } finally { await page.mouse.up(); }
+  await expect.poll(async () => (await readTree()).map(note => note.id)).toEqual([third, first, second]);
+  await expect(page).toHaveURL(new RegExp(`/collections/${notebookId}$`));
+  expect((await readTree())[1].children.map(note => note.id)).toEqual([child, secondChild]);
 
-  // The backend order is visible before the browser finishes its save response.
-  await expect(handle).toBeEnabled();
-  await handle.press("Alt+ArrowDown");
-  await expect.poll(async () => (await readTree()).map((note) => note.id)).toEqual([first, third, second]);
-  await expect(handle).toBeFocused();
-  await expect(handle).toBeEnabled();
-  await expect(handle).toBeFocused();
+  await expect(title).toBeEnabled();
+  await title.focus();
+  await title.press("Alt+ArrowDown");
+  await expect.poll(async () => (await readTree()).map(note => note.id)).toEqual([first, third, second]);
+  await expect(title).toBeFocused();
+  await expect(title).toBeEnabled();
   await page.keyboard.press("Alt+ArrowDown");
-  await expect.poll(async () => (await readTree()).map((note) => note.id)).toEqual([first, second, third]);
-  await expect(handle).toBeFocused();
+  await expect.poll(async () => (await readTree()).map(note => note.id)).toEqual([first, second, third]);
+  await expect(title).toBeFocused();
 
   let releasePending!: () => void;
-  const pending = new Promise<void>((resolve) => { releasePending = resolve; });
-  await page.route("**/api/notebooks/*/notes/order", async (route) => {
-    await pending;
-    await route.continue();
-  });
-  const reorderRequest = page.waitForRequest((request) => request.url().endsWith(`/api/notebooks/${notebookId}/notes/order`));
-  await expect(handle).toBeEnabled();
-  await handle.press("Alt+ArrowUp");
+  const pending = new Promise<void>(resolve => { releasePending = resolve; });
+  await page.route("**/api/notebooks/*/notes/order", async route => { await pending; await route.continue(); });
+  const reorderRequest = page.waitForRequest(event => event.url().endsWith(`/api/notebooks/${notebookId}/notes/order`));
+  await expect(title).toBeEnabled();
+  await title.press("Alt+ArrowUp");
   await reorderRequest;
-  const unrelatedLink = page.getByRole("link", { name: "返回文档中心", exact: true });
-  await unrelatedLink.focus();
+  const unrelatedControl = page.getByRole("button", { name: "切换工作空间", exact: true });
+  await unrelatedControl.focus();
   releasePending();
-  await expect.poll(async () => (await readTree()).map((note) => note.id)).toEqual([first, third, second]);
-  await expect(unrelatedLink).toBeFocused();
+  await expect.poll(async () => (await readTree()).map(note => note.id)).toEqual([first, third, second]);
+  await expect(unrelatedControl).toBeFocused();
   await page.unroute("**/api/notebooks/*/notes/order");
-
   await page.reload();
   await expect(main.locator('.document-main-item[data-parent-id="root"] > .document-main-row a').first()).toContainText("第一篇");
+  await expect(main.locator("[data-document-drag-row],.document-context-actions")).toHaveCount(0);
+
+  // Narrow desktop panes retain every action in one compact menu.
+  await page.evaluate(() => localStorage.setItem("orbis.notebookDirectoryWidth", "180"));
+  await page.reload();
+  const narrowDirectory = page.locator("#notebook-directory .document-context");
+  await expect(narrowDirectory).toBeVisible();
+  expect((await narrowDirectory.boundingBox())!.width).toBeLessThanOrEqual(190);
+  const narrowRow = sidebar.locator(`.document-context-item[data-note-id="${child}"] > .document-context-row`);
+  await narrowRow.hover();
+  await expect(narrowRow.locator(".document-preview-action")).toBeHidden();
+  await expect(narrowRow.locator(".document-create-child")).toBeHidden();
+  const narrowMore = narrowRow.getByRole("button", { name: `文档操作 ${childTitle}`, exact: true });
+  await expect(narrowMore).toBeVisible();
+  const narrowGeometry = await narrowRow.evaluate(element => {
+    const row = element.getBoundingClientRect();
+    const link = element.querySelector("a")!.getBoundingClientRect();
+    const actions = element.querySelector(".document-context-actions")!.getBoundingClientRect();
+    return { linkWidth: link.width, overlap: link.right > actions.left, outside: actions.right > row.right };
+  });
+  expect(narrowGeometry.linkWidth).toBeGreaterThan(0);
+  expect(narrowGeometry.overlap).toBe(false);
+  expect(narrowGeometry.outside).toBe(false);
+  await narrowMore.click();
+  for (const action of ["预览文档", "新建子文档", "重命名", "归档"]) await expect(page.getByRole("menuitem", { name: action, exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(narrowMore).toBeFocused();
 
   const touchContext = await browser.newContext({
     viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true,
@@ -171,21 +226,22 @@ test("notebook directories fold, keep compact actions, and preserve sibling drag
     expect(layout.overlap).toBe(false);
     expect(layout.outside).toBe(false);
   }
-  const touchHandle = touchSidebar.getByRole("button", { name: "拖动排序 第一篇的另一篇子文档", exact: true });
-  const touchTarget = touchSidebar.getByRole("button", { name: `拖动排序 ${childTitle}`, exact: true });
+  const touchHandle = touchSidebar.getByRole("link", { name: "第一篇的另一篇子文档", exact: true });
+  const touchSourceItem = touchSidebar.locator(`.document-context-item[data-note-id="${secondChild}"]:not([data-dnd-placeholder])`);
+  const touchTarget = touchSidebar.getByRole("link", { name: childTitle, exact: true });
   await expect.poll(async () => Math.round((await touchPage.locator(".workspace-main-navigation").boundingBox())!.x)).toBe(6);
   await touchHandle.scrollIntoViewIfNeeded();
-  await expect(touchHandle).toHaveAttribute("aria-roledescription", "draggable");
+  await expect(touchHandle).toHaveAttribute("aria-keyshortcuts", "Alt+ArrowUp Alt+ArrowDown");
   const touchStart = (await touchHandle.boundingBox())!;
   const touchEnd = (await touchTarget.boundingBox())!;
   const touchX = touchStart.x + touchStart.width / 2;
   const touchY = touchStart.y + touchStart.height / 2;
   const targetY = touchEnd.y + 3;
-  await expect.poll(() => touchPage.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest("button")?.getAttribute("aria-label"), { x: touchX, y: touchY })).toBe("拖动排序 第一篇的另一篇子文档");
+  await expect.poll(() => touchPage.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest("a")?.getAttribute("href"), { x: touchX, y: touchY })).toBe(`/documents/${secondChild}`);
   const touchSession = await touchContext.newCDPSession(touchPage);
   await touchSession.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: touchX, y: touchY }] });
   await touchPage.waitForTimeout(300); // Hold long enough to activate the touch drag without scrolling.
-  await expect(touchHandle).toHaveAttribute("aria-grabbed", "true");
+  await expect(touchSourceItem).toHaveAttribute("data-dragging", "true");
   for (let step = 1; step <= 16; step += 1) {
     await touchSession.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: touchX, y: touchY + (targetY - touchY) * step / 16 }] });
     await touchPage.waitForTimeout(16);
@@ -193,5 +249,6 @@ test("notebook directories fold, keep compact actions, and preserve sibling drag
   await touchPage.waitForTimeout(100); // The collision update runs on the next animation frame.
   await touchSession.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
   await expect.poll(async () => (await readTree())[0].children.map((note) => note.id)).toEqual([secondChild, child]);
+  await expect(touchPage).toHaveURL(new RegExp(`/documents/${first}$`));
   await touchContext.close();
 });
