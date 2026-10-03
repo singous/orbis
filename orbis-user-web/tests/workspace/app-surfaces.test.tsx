@@ -1,10 +1,10 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, useLocation } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { WorkspaceShell } from "../../src/features/workspace/WorkspaceShell";
-import { GLOBAL_SEARCH_INPUT_ID } from "../../src/features/workspace/use-workspace-search";
+import { authStore } from "../../src/shared/auth/auth-store";
 import { resolveAppSurface } from "../../src/shared/platform/app-surface";
 
 const originalHost = window.__ORBIS_HOST__;
@@ -21,7 +21,14 @@ function mount(path = "/home", extra?: React.ReactNode) {
   </MemoryRouter></QueryClientProvider>);
 }
 
-afterEach(() => { cleanup(); window.__ORBIS_HOST__ = originalHost; vi.unstubAllEnvs(); });
+beforeEach(() => {
+  act(() => authStore.setState({
+    accessToken: "surface-token", refreshToken: "surface-refresh",
+    user: { id: "0190a111-1111-7111-8111-111111111111", tenant_id: null, email: "surface@example.com", display_name: "Surface", current_workspace_id: "0190a111-1111-7111-8111-222222222222", status: "active", created_at_ms: 1, updated_at_ms: 1 },
+    workspace: { id: "0190a111-1111-7111-8111-222222222222", name: "Surface", workspace_type: "private", role: "normal", is_current: true, created_at_ms: 1, updated_at_ms: 1 },
+  }));
+});
+afterEach(() => { cleanup(); act(() => authStore.getState().clearSession()); window.__ORBIS_HOST__ = originalHost; vi.unstubAllEnvs(); });
 
 describe("application surface resolution", () => {
   it.each([
@@ -45,7 +52,7 @@ describe("shared workspace chrome", () => {
     expect(within(rail).getByRole("button", { name: "打开用户菜单" })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "打开用户菜单" })).toHaveLength(1);
     expect(within(rail).getByRole("link", { name: "首页" })).toHaveAttribute("href", "/home");
-    expect(within(rail).getByRole("link", { name: "搜索" })).toHaveAttribute("href", "/search");
+    expect(within(rail).getByRole("button", { name: "搜索" })).toHaveAttribute("aria-haspopup", "dialog");
   });
 
   it("keeps the desktop topbar with the shared menu content and search shortcut", async () => {
@@ -57,7 +64,7 @@ describe("shared workspace chrome", () => {
     expect(within(rail).queryByRole("button", { name: "打开用户菜单" })).not.toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "打开用户菜单" })).toHaveLength(1);
     await userEvent.setup().keyboard("{Control>}k{/Control}");
-    expect(screen.getByRole("searchbox", { name: "全局搜索" })).toHaveFocus();
+    await waitFor(() => expect(screen.getByRole("combobox", { name: "搜索任何内容" })).toHaveFocus());
     expect(screen.getByLabelText("route")).toHaveTextContent("/home");
   });
 
@@ -65,14 +72,15 @@ describe("shared workspace chrome", () => {
     window.__ORBIS_HOST__ = { surface: "web" };
     mount();
     await userEvent.setup().keyboard(`{${modifier}>}k{/${modifier}}`);
-    expect(screen.getByLabelText("route")).toHaveTextContent("/search");
+    expect(await screen.findByRole("dialog", { name: "全局搜索" })).toBeInTheDocument();
+    expect(screen.getByLabelText("route")).toHaveTextContent("/home");
   });
 
-  it("focuses an existing search without discarding the query or selected scope", async () => {
+  it("opens the palette without changing a legacy search URL or its filters", async () => {
     window.__ORBIS_HOST__ = { surface: "web" };
-    mount("/search?q=文档&scope=all", <input id={GLOBAL_SEARCH_INPUT_ID} aria-label="搜索内容" />);
+    mount("/search?q=文档&scope=all");
     await userEvent.setup().keyboard("{Control>}k{/Control}");
-    expect(screen.getByRole("textbox", { name: "搜索内容" })).toHaveFocus();
+    await waitFor(() => expect(screen.getByRole("combobox", { name: "搜索任何内容" })).toHaveFocus());
     expect(screen.getByLabelText("route")).toHaveTextContent("/search?q=文档&scope=all");
   });
 

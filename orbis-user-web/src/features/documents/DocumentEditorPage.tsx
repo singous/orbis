@@ -10,6 +10,7 @@ import { useStore } from "zustand";
 
 import { ApiError } from "../../shared/api/api-client";
 import { authStore } from "../../shared/auth/auth-store";
+import { registerPendingNavigation } from "../../shared/navigation/pending-navigation";
 import { Button } from "../../shared/ui/Button";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { v2ToMarkdown, type NoteBlocksV2 } from "../notes/block-model";
@@ -115,6 +116,31 @@ export function DocumentEditorPage() {
   const coordinatorRef = useRef<AutosaveCoordinator<EditorDraft> | null>(null);
   const hydratedNoteRef = useRef<string | null>(null);
   const editorBusy = restoring || archiving;
+  const navigationStateRef = useRef({ noteId, canEdit, restorationConflict });
+  navigationStateRef.current = { noteId, canEdit, restorationConflict };
+
+  useEffect(() => registerPendingNavigation(async () => {
+    const coordinator = coordinatorRef.current;
+    function assertReady() {
+      const state = navigationStateRef.current;
+      if (state.noteId !== noteId || coordinatorRef.current !== coordinator) {
+        throw new DOMException("The current document changed", "AbortError");
+      }
+      if (editorErrorRef.current) throw new Error(editorErrorRef.current);
+      if (restoringRef.current || archivingRef.current) throw new Error("当前文档正在恢复或归档，请完成后再打开其他内容。");
+      if (state.restorationConflict || coordinator?.state === "conflict" || coordinator?.state === "error") {
+        throw new Error("当前草稿尚未成功保存。请先处理保存失败或版本冲突，本地草稿仍保留。");
+      }
+      if (!state.canEdit && coordinator && coordinator.state !== "saved") {
+        throw new Error("当前文档已变为只读，本地草稿尚未保存，请先处理后再打开其他内容。");
+      }
+    }
+    assertReady();
+    // A loading document has no editable local draft to flush.
+    if (!coordinator || hydratedNoteRef.current !== noteId || !navigationStateRef.current.canEdit) return;
+    await flushCurrentDraft(coordinator);
+    assertReady();
+  }), [noteId]);
 
   useEffect(() => {
     const note = noteQuery.data;

@@ -7,6 +7,7 @@ import { useStore } from "zustand";
 
 import { authStore } from "../../shared/auth/auth-store";
 import { getAppSurface } from "../../shared/platform/app-surface";
+import { SearchPaletteProvider, useSearchPalette } from "../search/search-palette-context";
 import { SidebarResizeHandle } from "./SidebarResizeHandle";
 import { useSidebarResize } from "./use-sidebar-resize";
 import { WorkspaceSidebar } from "./WorkspaceSidebar";
@@ -48,7 +49,14 @@ function useCompactNavigation(): boolean {
   return compact;
 }
 
-export function WorkspaceShell({ children, sectionTitle, sidebar, toolbar, contentLayout = "page", contextPanel, contextOpen = true, onOpenContext }: WorkspaceShellProps) {
+export function WorkspaceShell(props: WorkspaceShellProps) {
+  return <SearchPaletteProvider><WorkspaceShellContent {...props} /></SearchPaletteProvider>;
+}
+
+function WorkspaceShellContent({ children, sectionTitle, sidebar, toolbar, contentLayout = "page", contextPanel, contextOpen = true, onOpenContext }: WorkspaceShellProps) {
+  const { isOpen: searchOpen } = useSearchPalette();
+  const searchOpenRef = useRef(searchOpen);
+  searchOpenRef.current = searchOpen;
   const [surface] = useState(getAppSurface);
   const { pathname } = useLocation();
   const area = resolveWorkspaceArea(pathname);
@@ -62,11 +70,10 @@ export function WorkspaceShell({ children, sectionTitle, sidebar, toolbar, conte
   const contextRef = useRef<HTMLElement>(null);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
   const contextTriggerRef = useRef<HTMLButtonElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
   const compact = useCompactNavigation();
   const documentContextExpanded = documentContextOpen && contextOpen;
   const drawerOpen = compact && (mainNavigationOpen || documentContextExpanded);
-  useWorkspaceSearch(surface, drawerOpen, searchInputRef);
+  useWorkspaceSearch(drawerOpen);
   const sidebarConfig: WorkspaceSidebarConfig | false = sidebar ?? (area.showFunctionSidebar ? { title: <h2>{area.title}</h2>, content: accessToken ? <WorkspaceNavigation /> : null } : false);
   const showFunctionSidebar = Boolean(sidebarConfig && (compact || sidebarConfig.desktopVisible !== false));
   const preferences = sidebarConfig ? sidebarConfig.preferences ?? DEFAULT_SIDEBAR_PREFERENCES : DEFAULT_SIDEBAR_PREFERENCES;
@@ -88,13 +95,17 @@ export function WorkspaceShell({ children, sectionTitle, sidebar, toolbar, conte
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const focusable = () => Array.from(region?.querySelectorAll<HTMLElement>('a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]') ?? []).filter((element) => !element.closest("[hidden], [inert]") && getComputedStyle(element).display !== "none" && getComputedStyle(element).visibility !== "hidden");
     focusable()[0]?.focus();
+    const inNestedOverlay = (event: KeyboardEvent) => event.target instanceof Element && Boolean(event.target.closest('[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]'));
+    // Tooltip/focusable controls stop React keyboard propagation. Capture only
+    // drawer dismissal, yielding to functional overlays and input composition.
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key !== "Escape" || searchOpenRef.current || event.defaultPrevented || event.isComposing || inNestedOverlay(event)) return;
+      setMainNavigationOpen(false);
+      setDocumentContextOpen(false);
+      event.preventDefault();
+    }
     function handleKey(event: KeyboardEvent) {
-      if (event.defaultPrevented || (event.target instanceof Element && event.target.closest('[role="dialog"], [role="menu"]'))) return;
-      if (event.key === "Escape") {
-        setMainNavigationOpen(false);
-        setDocumentContextOpen(false);
-        event.preventDefault();
-      }
+      if (searchOpenRef.current || event.defaultPrevented || inNestedOverlay(event)) return;
       if (event.key === "Tab") {
         const items = focusable();
         const first = items[0];
@@ -103,8 +114,9 @@ export function WorkspaceShell({ children, sectionTitle, sidebar, toolbar, conte
         else if (!event.shiftKey && (document.activeElement === last || !region?.contains(document.activeElement))) { first?.focus(); event.preventDefault(); }
       }
     }
+    document.addEventListener("keydown", handleEscape, true);
     document.addEventListener("keydown", handleKey);
-    return () => { document.removeEventListener("keydown", handleKey); if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true }); };
+    return () => { document.removeEventListener("keydown", handleEscape, true); document.removeEventListener("keydown", handleKey); if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true }); };
   }, [drawerOpen, mainNavigationOpen]);
 
   function closeAfterLink(event: React.MouseEvent<HTMLElement>) {
@@ -116,7 +128,7 @@ export function WorkspaceShell({ children, sectionTitle, sidebar, toolbar, conte
 
   return (
     <main data-app-surface={surface} style={shellStyle} className={`workspace-shell${showFunctionSidebar ? " has-section-menu" : " sidebar-unavailable"}${sidebarHidden ? " sidebar-collapsed" : ""}${animating ? " sidebar-animating" : ""}${mainNavigationOpen ? " main-navigation-open" : ""}${documentContextExpanded ? " document-context-drawer-open" : ""}`}>
-      {surface === "desktop" ? <WorkspaceTopbar disabled={drawerOpen} searchInputRef={searchInputRef} /> : null}
+      {surface === "desktop" ? <WorkspaceTopbar disabled={drawerOpen} /> : null}
       <div ref={gridRef} className="workspace-shell-grid">
         {drawerOpen ? <ActionButton type="button" className="workspace-drawer-backdrop" aria-label={mainNavigationOpen ? "关闭主导航" : "关闭文档目录"} onClick={() => { setMainNavigationOpen(false); setDocumentContextOpen(false); }} /> : null}
         <div ref={navigationRef} className="workspace-main-navigation" aria-hidden={compact && !mainNavigationOpen ? true : undefined} inert={compact && !mainNavigationOpen ? true : undefined} onClick={closeAfterLink}>

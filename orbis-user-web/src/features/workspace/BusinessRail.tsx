@@ -7,6 +7,7 @@ import { Tooltip } from "../../shared/ui/Tooltip";
 import type { AppSurface } from "../../shared/platform/app-surface";
 import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 import { WorkspaceAccountMenu } from "./WorkspaceAccountMenu";
+import { useSearchPalette } from "../search/search-palette-context";
 import { DEFAULT_WORKSPACE_PATH, resolveWorkspaceArea, WORKSPACE_AREAS, type WorkspaceAreaId } from "./workspace-areas";
 
 type BusinessRailProps = { surface?: AppSurface; collapsed: boolean; onExpand: () => void; onClose?: () => void; createMenu?: ReactNode; expandLabel?: string };
@@ -24,6 +25,7 @@ const areas = WORKSPACE_AREAS.filter((area) => area.visibleInRail);
 
 export function BusinessRail({ surface = "web", collapsed, onExpand, onClose, createMenu, expandLabel = "展开侧栏" }: BusinessRailProps) {
   const { pathname } = useLocation();
+  const { isOpen, openSearch } = useSearchPalette();
   const activeArea = resolveWorkspaceArea(pathname);
   const searchActive = activeArea.id === "search";
   return (
@@ -34,7 +36,7 @@ export function BusinessRail({ surface = "web", collapsed, onExpand, onClose, cr
       </div>
       {surface === "web" ? <WorkspaceSwitcher variant="rail" /> : <Link to={DEFAULT_WORKSPACE_PATH} className="rail-brand" aria-label="Orbis 首页"><Orbit size={28} strokeWidth={1.8} /></Link>}
       {createMenu ? <div className="rail-create-entry">{createMenu}</div> : null}
-      <Tooltip label="全局搜索" side="right"><Link to="/search" aria-label="搜索" aria-current={searchActive ? "page" : undefined} className={`rail-action${searchActive ? " is-active" : ""}`}><Search aria-hidden="true" size={20} /></Link></Tooltip>
+      <Tooltip label="全局搜索" side="right"><ActionButton type="button" aria-label="搜索" aria-haspopup="dialog" aria-expanded={isOpen} aria-current={searchActive ? "page" : undefined} className={`rail-action${searchActive || isOpen ? " is-active" : ""}`} onClick={() => openSearch()}><Search aria-hidden="true" size={20} /></ActionButton></Tooltip>
       <nav className="workspace-business-nav" aria-label="业务板块">
         {areas.map(({ id, label, href }) => {
           const Icon = areaIcons[id];

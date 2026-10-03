@@ -4,6 +4,8 @@ import { NavLink, useLocation } from "react-router-dom";
 import { useStore } from "zustand";
 
 import { authStore } from "../../shared/auth/auth-store";
+import { ActionButton } from "../../shared/ui/ActionButton";
+import { useSearchPalette } from "../search/search-palette-context";
 import { NotebookIcon } from "../documents/NotebookIcon";
 import { useNotebooks } from "../documents/queries";
 import { canManageWorkspaceMembers } from "./capabilities";
@@ -14,7 +16,6 @@ const documentLinks = [
   { to: "/documents", label: "笔记本总览", icon: BookOpen },
   { to: "/documents/recent", label: "最近编辑", icon: Clock3 },
   { to: "/documents/collections", label: "我的笔记本", icon: Notebook },
-  { to: "/search?type=document", label: "搜索文档", icon: Search },
 ];
 const navClass = ({ isActive }: { isActive: boolean }) => `workspace-function-link${isActive ? " is-active" : ""}`;
 
@@ -27,6 +28,7 @@ function MenuFrame({ label, children, footer }: { label: string; children: React
 
 /** Mount document data hooks only while the document area owns this menu. */
 function DocumentNavigation() {
+  const { isOpen, openSearch } = useSearchPalette();
   const workspace = useStore(authStore, (state) => state.workspace);
   const notebooks = useNotebooks();
   const { isPinned } = usePinnedNotebooks(workspace?.id);
@@ -41,6 +43,7 @@ function DocumentNavigation() {
     </div>
     <span className="workspace-nav-label">在线文档</span>
     {documentLinks.map(({ to, label, icon: Icon }) => <NavLink key={to} to={to} end className={navClass}><Icon size={18} />{label}</NavLink>)}
+    <ActionButton type="button" className="workspace-function-link" aria-haspopup="dialog" aria-expanded={isOpen} onClick={() => openSearch({ type: "document" })}><Search size={18} aria-hidden="true" />搜索文档</ActionButton>
     <span className="workspace-nav-label">快捷访问</span>
     <div className="workspace-nav-space"><Notebook size={18} aria-hidden="true" /><span>{workspace?.name ?? "私人工作空间"}</span></div>
     <div className="workspace-notebook-links">

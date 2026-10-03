@@ -56,7 +56,7 @@ for (const surface of ["web", "desktop"] as const) {
         await expect(topbar).toBeVisible();
         await expect(topbar.getByRole("button", { name: "切换工作空间", exact: true })).toBeVisible();
         await expect(topbar.getByRole("button", { name: "打开用户菜单", exact: true })).toBeVisible();
-        await expect(topbar.getByRole("searchbox", { name: "全局搜索", exact: true })).toBeVisible();
+        await expect(topbar.getByRole("button", { name: "全局搜索", exact: true })).toBeVisible();
         if (width >= 768) {
           await expect(topbar.getByRole("button", { name: "返回上一页", exact: true })).toBeVisible();
           await expect(topbar.getByRole("button", { name: "前往下一页", exact: true })).toBeVisible();
@@ -103,24 +103,37 @@ for (const surface of ["web", "desktop"] as const) {
       }
 
       await page.keyboard.press("ControlOrMeta+k");
-      if (surface === "web") {
-        await expect(page).toHaveURL(/\/search$/);
-        await expect(page.getByRole("searchbox", { name: "搜索内容", exact: true })).toBeFocused();
-      } else {
-        const search = topbar.getByRole("searchbox", { name: "全局搜索", exact: true });
-        await expect(search).toBeFocused();
+      const palette = page.getByRole("dialog", { name: "全局搜索", exact: true });
+      await expect(palette).toBeVisible();
+      await expect(palette.getByRole("combobox", { name: "搜索任何内容", exact: true })).toBeFocused();
+      await expect(page).toHaveURL(/\/documents$/);
+      await page.keyboard.press("Escape");
+      await expect(palette).toHaveCount(0);
+      if (surface === "desktop") {
+        await topbar.getByRole("button", { name: "全局搜索", exact: true }).click();
+        await expect(palette).toBeVisible();
         await expect(page).toHaveURL(/\/documents$/);
-        await search.fill("desktop query");
-        await search.press("Enter");
-        await expect(page).toHaveURL(/\/search\?q=desktop/);
+        await page.keyboard.press("Escape");
       }
       expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
 
       await page.goto("/documents");
       if (width < 768) await drawer.click();
-      await page.getByRole("complementary", { name: "应用导航", exact: true }).getByRole("link", { name: "搜索", exact: true }).click();
-      await expect(page).toHaveURL(/\/search$/);
-      if (width < 768) await expect(drawer).toHaveAttribute("aria-expanded", "false");
+      const railSearch = page.getByRole("complementary", { name: "应用导航", exact: true }).getByRole("button", { name: "搜索", exact: true });
+      await railSearch.click();
+      await expect(palette).toBeVisible();
+      await expect(page).toHaveURL(/\/documents$/);
+      await page.keyboard.press("Tab");
+      expect(await palette.evaluate(element => element.contains(document.activeElement))).toBe(true);
+      await page.keyboard.press("Escape");
+      await expect(palette).toHaveCount(0);
+      await expect(railSearch).toBeFocused();
+      if (width < 768) {
+        await expect(drawer).toHaveAttribute("aria-expanded", "true");
+        await page.keyboard.press("Escape");
+        await expect(drawer).toHaveAttribute("aria-expanded", "false");
+        await expect(drawer).toBeFocused();
+      }
     }
   });
 

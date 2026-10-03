@@ -63,7 +63,7 @@ test("workbench action and field shapes follow HeroUI theme calculations", async
   await page.evaluate(() => document.documentElement.style.setProperty("--radius", "0.5rem"));
   expect(await createNotebook.evaluate((element) => getComputedStyle(element).borderRadius)).toBe("24px");
   await page.evaluate(() => document.documentElement.style.removeProperty("--radius"));
-  expect(await page.getByRole("searchbox", { name: "全局搜索", exact: true }).evaluate((element) => getComputedStyle(element.closest('[data-slot="input-group"]')!).borderRadius)).toBe("8px");
+  expect(await page.getByRole("button", { name: "全局搜索", exact: true }).evaluate((element) => getComputedStyle(element).borderRadius)).toBe("8px");
   await page.goto("/sites");
   await page.getByRole("button", { name: "创建站点", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "创建文档站点", exact: true });

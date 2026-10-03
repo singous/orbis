@@ -4,6 +4,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import { BusinessRail } from "../../src/features/workspace/BusinessRail";
 import { WorkspaceShell } from "../../src/features/workspace/WorkspaceShell";
 import { authStore } from "../../src/shared/auth/auth-store";
+import { SearchPaletteProvider } from "../../src/features/search/search-palette-context";
 
 const query = vi.hoisted(() => vi.fn(() => ({ data: { items: [{ id: "quick", title: "快捷笔记本" }, { id: "other", title: "普通笔记本" }] } })));
 vi.mock("../../src/features/documents/queries", () => ({ useNotebooks: query }));
@@ -13,7 +14,7 @@ vi.mock("../../src/features/documents/pinned-notebooks", () => ({ usePinnedNoteb
 afterEach(() => { cleanup(); query.mockClear(); authStore.getState().clearSession(); });
 
 it("never loads notebook shortcuts or opens a business menu from a rail hover", () => {
-  render(<MemoryRouter initialEntries={["/documents"]}><BusinessRail collapsed={false} onExpand={() => undefined} /></MemoryRouter>);
+  render(<MemoryRouter initialEntries={["/documents"]}><SearchPaletteProvider><BusinessRail collapsed={false} onExpand={() => undefined} /></SearchPaletteProvider></MemoryRouter>);
   fireEvent.mouseEnter(screen.getByRole("link", { name: "在线文档" }));
   expect(query).not.toHaveBeenCalled();
   expect(screen.queryByRole("navigation", { name: "笔记本快捷访问" })).not.toBeInTheDocument();
