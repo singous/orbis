@@ -6,8 +6,6 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from orbis_user_api.api.contract import PageData
-from orbis_user_api.schemas.user import UserOut
-from orbis_user_api.schemas.workspace import WorkspaceOut
 
 SearchType = Literal["document", "notebook", "group", "site", "file"]
 SearchTypeFilter = Literal["all", "document", "notebook", "group", "site", "file"]
@@ -19,13 +17,13 @@ SearchMatch = Literal["title", "body", "comment", "metadata"]
 class SearchWorkspace(BaseModel):
     id: UUID = Field(description="可读工作空间的 UUID")
     name: str = Field(description="工作空间名称")
-    is_current: bool = Field(description="是否为账号当前选择的工作空间")
+    is_current: bool = Field(description="是否为当前请求解析出的工作空间")
 
 
 class SearchResolvedScope(BaseModel):
     workspace_ids: list[UUID] = Field(description="本次实际授权并检索的工作空间 ID")
     current_workspace_id: UUID | None = Field(
-        description="账号当前空间，搜索不会更改；未设置时为 null"
+        description="本次请求解析出的工作空间，显式请求头不会更改账号默认值"
     )
 
 
@@ -62,16 +60,5 @@ class SearchItem(BaseModel):
 class SearchPage(PageData[SearchItem]):
     scope: SearchResolvedScope = Field(description="实际生效的搜索范围，不改变当前空间")
     workspaces: list[SearchWorkspace] = Field(
-        description="当前账号具有读取权限的活跃工作空间"
+        description="本次请求解析出的当前工作空间；完整可选空间通过 GET /workspaces 查询"
     )
-
-
-class WorkspaceSwitchRequest(BaseModel):
-    workspace_id: UUID = Field(
-        description="用户显式选择并准备打开资源的目标工作空间 UUID"
-    )
-
-
-class WorkspaceSwitchResponse(BaseModel):
-    user: UserOut = Field(description="切换后的完整当前用户资料")
-    workspace: WorkspaceOut = Field(description="切换后的工作空间及当前成员角色")

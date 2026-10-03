@@ -1,7 +1,7 @@
 .global-search-form { display: grid; gap: var(--orbis-space-4, 1rem); margin-bottom: var(--orbis-space-6, 1.5rem); }
 .global-search-input-row { display: flex; flex-wrap: wrap; align-items: end; gap: var(--orbis-space-3, .75rem); }
 .global-search-input-row > label { flex: 1 1 16rem; min-width: 0; }
-.global-search-filters { display: grid; grid-template-columns: minmax(0, 1.5fr) repeat(2, minmax(0, 1fr)); gap: var(--orbis-space-3, .75rem); }
+.global-search-filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--orbis-space-3, .75rem); }
 .global-search-help, .global-search-result-location, .global-search-result-heading > span { color: var(--text-secondary); font-size: var(--orbis-text-caption-size, .75rem); line-height: var(--orbis-text-caption-leading, 1.125rem); }
 .global-search-summary, .global-search-empty, .global-search-pagination { font-size: var(--orbis-text-ui-size, .875rem); line-height: var(--orbis-text-ui-leading, 1.25rem); }
 .global-search-empty { padding-block: var(--orbis-space-6, 1.5rem); color: var(--text-secondary); }

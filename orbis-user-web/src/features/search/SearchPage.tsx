@@ -27,7 +27,6 @@ export function SearchPage() {
   const [input, setInput] = useState(filters.q);
   const [composing, setComposing] = useState(false);
   const inputDirty = useRef(false);
-  const workspace = useStore(authStore, state => state.workspace);
   const sessionKey = useStore(authStore, getAuthSessionKey);
   const auth = useAuthRequest();
   const queryClient = useQueryClient();
@@ -42,19 +41,12 @@ export function SearchPage() {
       setParams(writeSearchFilters({ ...filters, q: input, page: 1 }), { replace: true });
     }, SEARCH_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
-  }, [input, composing, filters.q, filters.range, filters.type, filters.status, setParams]);
+  }, [input, composing, filters.q, filters.type, filters.status, setParams]);
 
   const results = useQuery({
     queryKey: ["global-search", sessionKey, filters],
     enabled: !pendingInput && Boolean(filters.q.trim()),
     queryFn: ({ signal }) => searchWorkspace(filters, auth, signal),
-    retry: false,
-  });
-  // Scope discovery uses no content query and remains available during typing/errors.
-  const scopes = useQuery({
-    queryKey: ["global-search-scopes", sessionKey],
-    queryFn: ({ signal }) => searchWorkspace({ q: "", range: "current", type: "all", status: "active", page: 1 }, auth, signal),
-    staleTime: 60_000,
     retry: false,
   });
 
@@ -63,13 +55,6 @@ export function SearchPage() {
     setParams(writeSearchFilters({ ...filters, q: input, ...patch, page: patch.page ?? 1 }));
   }
   const data = results.data;
-  const workspaces = scopes.data?.workspaces ?? data?.workspaces ?? [];
-  const scopeOptions = [
-    { value: "current", label: `当前空间 · ${workspace?.name ?? "工作空间"}` },
-    { value: "all", label: "所有可访问空间" },
-    ...workspaces.map(item => ({ value: item.id, label: item.name })),
-  ];
-  if (!scopeOptions.some(item => item.value === filters.range)) scopeOptions.push({ value: filters.range, label: "所选工作空间" });
   const loading = Boolean(filters.q.trim() && (pendingInput || results.isPending));
   const error = results.error;
 
@@ -81,25 +66,23 @@ export function SearchPage() {
         {input ? <Button variant="ghost" onClick={() => { setInput(""); setComposing(false); updateFilters({ q: "" }); }}>清空搜索</Button> : null}
       </div>
       <div className="global-search-filters">
-        <SelectField label="搜索范围" value={filters.range} options={scopeOptions} onChange={(range) => updateFilters({ range })} />
         <SelectField label="内容类型" value={filters.type} options={SEARCH_TYPE_OPTIONS} onChange={(type) => updateFilters({ type: type as SearchFilters["type"] })} />
         <SelectField label="内容状态" value={filters.status} options={statusOptions} onChange={(status) => updateFilters({ status: status as SearchFilters["status"] })} />
       </div>
-      <p className="global-search-help">搜索范围不会切换当前工作空间。打开其他空间的结果时才切换；文件仅搜索名称与已有元数据。</p>
+      <p className="global-search-help">文件与附件支持名称和已有元数据检索。</p>
     </form>
-    {scopes.isError ? <StatusMessage tone="error" title="工作空间列表加载失败"><Button onClick={() => void scopes.refetch()}>重新加载范围</Button></StatusMessage> : null}
-    {error && !pendingInput ? <StatusMessage tone="error" title={error instanceof ApiError && error.status === 403 ? "无权搜索该范围" : "搜索失败"}>{error instanceof Error ? error.message : "请稍后重试。"}<Button onClick={() => void results.refetch()}>重试</Button></StatusMessage> : null}
-    {!filters.q.trim() && !pendingInput ? <p className="global-search-empty">输入关键词，搜索所选范围内的内容。</p> : null}
+    {error && !pendingInput ? <StatusMessage tone="error" title={error instanceof ApiError && error.status === 403 ? "无权搜索内容" : "搜索失败"}>{error instanceof Error ? error.message : "请稍后重试。"}<Button onClick={() => void results.refetch()}>重试</Button></StatusMessage> : null}
+    {!filters.q.trim() && !pendingInput ? <p className="global-search-empty">输入关键词，查找文档、评论或文件。</p> : null}
     {loading ? <LoadingState label="正在搜索…" /> : null}
     {!loading && !pendingInput && !error && filters.q.trim() && data ? <>
       <p className="global-search-summary" role="status">找到 {data.pagination.total} 条结果</p>
-      {!data.items.length ? <p className="global-search-empty">没有匹配的内容。试试其他关键词或调整范围。</p> : <ul className="global-search-results">
+      {!data.items.length ? <p className="global-search-empty">没有匹配的内容。试试其他关键词。</p> : <ul className="global-search-results">
         {data.items.map(result => {
           const Icon = resultIcons[result.type];
-          return <li key={`${result.type}:${result.id}`}><Link className="global-search-result" to={resultHref(result, workspace?.id)}>
+          return <li key={`${result.type}:${result.id}`}><Link className="global-search-result" to={resultHref(result)}>
             <Icon aria-hidden="true" size={20} />
             <div className="global-search-result-copy"><div className="global-search-result-heading"><h2>{result.title || "未命名内容"}</h2><span>{SEARCH_TYPE_LABELS[result.type]}{result.status === "archived" ? " · 已归档" : ""}</span></div>
-              <p className="global-search-result-location">{result.workspace_name} · {result.location}</p>
+              <p className="global-search-result-location">{result.location}</p>
               <p className="global-search-result-snippet">{result.match === "comment" ? "评论：" : ""}{result.snippet || "无摘要"}</p>
             </div>
           </Link></li>;

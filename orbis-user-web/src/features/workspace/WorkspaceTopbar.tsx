@@ -18,7 +18,7 @@ export function WorkspaceTopbar({ disabled = false }: { disabled?: boolean }) {
           <ActionButton type="button" aria-label="前往下一页" onClick={() => navigate(1)}><ArrowRight size={18} /></ActionButton>
         </div>
         <ActionButton type="button" className="workspace-global-search workspace-search-launcher" aria-label="全局搜索" aria-haspopup="dialog" aria-expanded={isOpen} onClick={() => openSearch()}>
-          <Search size={16} aria-hidden="true" /><span>搜索当前空间…</span><kbd>⌘ K</kbd>
+          <Search size={16} aria-hidden="true" /><span>搜索内容…</span><kbd>⌘ K</kbd>
         </ActionButton>
       </div>
       <WorkspaceAccountMenu />

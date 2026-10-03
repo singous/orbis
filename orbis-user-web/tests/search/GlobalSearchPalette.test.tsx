@@ -16,7 +16,6 @@ vi.mock("../../src/features/search/use-palette-search", () => ({
     const items = filters.q ? mockedSearch.items : [];
     return {
       results: { data: { items, pagination: { page: 1, page_size: 20, total: items.length, total_pages: items.length ? 1 : 0, has_previous: false, has_next: false } }, isPending: false, isError: false, error: null, refetch: vi.fn() },
-      scopes: { data: { workspaces: [] }, isError: false, refetch: vi.fn() },
       pendingInput: mockedSearch.pending,
       searchedFilters: filters.q ? filters : null,
     };
@@ -26,12 +25,10 @@ vi.mock("../../src/features/search/use-palette-search", () => ({
 const WORKSPACE_ID = "018ff7c4-a5b6-7000-8000-000000000001";
 const OTHER_WORKSPACE_ID = "018ff7c4-a5b6-7000-8000-000000000002";
 const LOCAL_DOCUMENT_ID = "018ff7c4-a5b6-7000-8000-000000000003";
-const OTHER_DOCUMENT_ID = "018ff7c4-a5b6-7000-8000-000000000004";
 const editingRoute = "/documents/current-editing-document?mode=edit";
 const user = { id: LOCAL_DOCUMENT_ID, tenant_id: null, email: "owner@orbis.test", display_name: "Owner", current_workspace_id: WORKSPACE_ID, status: "active", created_at_ms: 1, updated_at_ms: 1 };
 const workspace = { id: WORKSPACE_ID, name: "当前空间", workspace_type: "team", role: "owner" as const, is_current: true, created_at_ms: 1, updated_at_ms: 1 };
 const localResult: SearchResult = { id: LOCAL_DOCUMENT_ID, type: "document", workspace_id: WORKSPACE_ID, workspace_name: "当前空间", title: "本空间文档", location: "产品笔记本", snippet: "检索到的保存内容", match: "body", matched_comment_id: null, status: "active", updated_at_ms: 1, notebook_id: null, group_id: null };
-const otherResult: SearchResult = { ...localResult, id: OTHER_DOCUMENT_ID, workspace_id: OTHER_WORKSPACE_ID, workspace_name: "另一个空间", title: "其他空间文档" };
 
 function Background({ initialFilters, prepare, captureNavigate }: { initialFilters: Partial<SearchFilters>; prepare?: () => Promise<void>; captureNavigate: (navigate: (path: string) => void) => void }) {
   const { openSearch } = useSearchPalette();
@@ -155,26 +152,14 @@ describe("global search palette", () => {
     expect(prepare).toHaveBeenCalledTimes(1);
   });
 
-  it("opens another workspace through a controlled same-tab button after navigation preparation", async () => {
-    mockedSearch.items = [otherResult];
-    let finish!: () => void;
-    const prepare = vi.fn(() => new Promise<void>(resolve => { finish = resolve; }));
-    const view = renderPalette({ prepare });
+  it("uses the global context without another workspace selector or repeated badges", async () => {
+    const view = renderPalette();
     await openPalette(view);
-    const action = screen.getByRole("option", { name: /其他空间文档/ });
-    expect(action.tagName).toBe("BUTTON");
-    expect(action).not.toHaveAttribute("href");
-    expect(action).toHaveTextContent("切换工作空间后打开");
-    fireEvent.click(action, { ctrlKey: true });
-    expect(prepare).toHaveBeenCalledTimes(1);
-    expect(view.route).toHaveTextContent(editingRoute);
-    expect(screen.getByText("正在准备打开…")).toHaveAttribute("role", "status");
-    await act(async () => { finish(); });
-    await waitFor(() => expect(view.route.textContent).toContain("/search/open?"));
-    const url = new URL(view.route.textContent!, "http://orbis.test");
-    expect(url.searchParams.get("workspace_id")).toBe(OTHER_WORKSPACE_ID);
-    expect(url.searchParams.get("id")).toBe(OTHER_DOCUMENT_ID);
-    expect(authStore.getState().workspace?.id).toBe(WORKSPACE_ID);
+    expect(screen.queryByRole("button", { name: /搜索范围/ })).not.toBeInTheDocument();
+    expect(screen.queryByText("所有可访问空间")).not.toBeInTheDocument();
+    expect(screen.queryByText(workspace.name)).not.toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /本空间文档/ })).toHaveTextContent("产品笔记本");
+    expect(screen.getByRole("option", { name: /本空间文档/ })).not.toHaveTextContent("切换工作空间");
   });
 
   it("keeps the palette and background draft after a save error and retries preparation before navigation", async () => {
@@ -226,7 +211,7 @@ describe("global search palette", () => {
     expect(view.route.textContent).not.toContain(LOCAL_DOCUMENT_ID);
   });
 
-  it.each(["keyword", "scope", "status"])("cancels a pending selection when the %s is refined and allows a new result selection", async (refinement) => {
+  it.each(["keyword", "status"])("cancels a pending selection when the %s is refined and allows a new result selection", async (refinement) => {
     let finish!: () => void;
     const prepare = vi.fn<() => Promise<void>>()
       .mockImplementationOnce(() => new Promise<void>(resolve => { finish = resolve; }))
@@ -237,8 +222,8 @@ describe("global search palette", () => {
     expect(prepare).toHaveBeenCalledTimes(1);
     if (refinement === "keyword") fireEvent.change(input, { target: { value: "新的关键词" } });
     else {
-      await userEvent.click(screen.getByRole("button", { name: refinement === "scope" ? /搜索范围/ : /内容状态/ }));
-      await userEvent.click(screen.getByRole("option", { name: refinement === "scope" ? "所有可访问空间" : "已归档" }));
+      await userEvent.click(screen.getByRole("button", { name: /内容状态/ }));
+      await userEvent.click(screen.getByRole("option", { name: "已归档" }));
     }
     await waitFor(() => expect(screen.queryByText("正在准备打开…")).not.toBeInTheDocument());
     await act(async () => { finish(); });

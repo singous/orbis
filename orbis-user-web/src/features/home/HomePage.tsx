@@ -78,7 +78,7 @@ export function HomePage() {
     { title: "在线文档", description: `${groups.length} 个分组 · ${notebooks.length} 个笔记本 · ${notes.length} 篇文档`, to: "/documents", icon: BookOpen },
     { title: "我的笔记本", description: "按主题整理文档，维护目录与层级。", to: "/documents/collections", icon: Notebook },
     { title: "最近编辑", description: "继续上次的写作。", to: "/documents/recent", icon: Clock3 },
-    { title: "全局搜索", description: "搜索工作空间中的全部可访问内容。", to: "/search", icon: Search },
+    { title: "全局搜索", description: "快速查找文档、笔记本、站点和文件。", to: "/search", icon: Search },
     { title: "知识库", description: "汇集文件与笔记，查找和使用知识。", to: "/knowledge", icon: LibraryBig, soon: true },
     { title: "记忆库", description: "保存长期上下文，连接每一次思考。", to: "/memory", icon: BrainCircuit, soon: true },
   ];
@@ -87,16 +87,15 @@ export function HomePage() {
     <WorkspaceShell>
       <PageContainer
         title="首页"
-        description={workspace?.name || "我的工作空间"}
         actions={canMutateWorkspaceContent(workspace) ? (
           <Link className={buttonVariants({ variant: "primary" })} to="/documents/collections">
             <Plus aria-hidden="true" size={16} />新建笔记本
           </Link>
         ) : null}
       >
-        <section className="workbench-section" aria-label="工作区板块">
+        <section className="workbench-section" aria-label="功能入口">
           <header className="workbench-section-heading">
-            <h2>工作空间</h2>
+            <h2>功能入口</h2>
             <HomeInlineSearch />
           </header>
           <div className="workbench-resource-grid">

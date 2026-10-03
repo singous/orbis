@@ -7,12 +7,9 @@ import { useOptionalAuthRequest } from "../../shared/auth/use-auth-request";
 import { searchWorkspace, type SearchFilters } from "./api";
 import { SEARCH_DEBOUNCE_MS } from "./search-state";
 
-const PALETTE_SCOPE_STALE_TIME_MS = 60_000;
-const discoveryFilters: SearchFilters = { q: "", range: "current", type: "all", status: "active", page: 1 };
-
 export type PaletteSearchOptions = { enabled: boolean; composing?: boolean };
 
-/** Keyword input is deferred; settled-keyword refinements use the new scope immediately. */
+/** Keyword input is deferred; settled-keyword refinements use the new filters immediately. */
 export function usePaletteSearch(filters: SearchFilters, { enabled, composing = false }: PaletteSearchOptions) {
   const auth = useOptionalAuthRequest();
   const sessionKey = useStore(authStore, getAuthSessionKey);
@@ -33,7 +30,7 @@ export function usePaletteSearch(filters: SearchFilters, { enabled, composing = 
     return () => window.clearTimeout(timer);
   }, [active, composing, q, sessionKey]);
 
-  // Raw filters own the observer even during debounce, so old-scope data cannot flash.
+  // Raw filters own the observer even during debounce, so old-filter data cannot flash.
   const results = useQuery({
     queryKey: ["global-search", sessionKey, "palette", normalizedFilters],
     queryFn: ({ signal }) => searchWorkspace(normalizedFilters, auth!, signal),
@@ -42,24 +39,13 @@ export function usePaletteSearch(filters: SearchFilters, { enabled, composing = 
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
-  const scopes = useQuery({
-    queryKey: ["global-search-scopes", sessionKey, "palette"],
-    queryFn: ({ signal }) => searchWorkspace(discoveryFilters, auth!, signal),
-    enabled: active,
-    staleTime: PALETTE_SCOPE_STALE_TIME_MS,
-    retry: false,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-  });
 
   useEffect(() => {
     if (!active || pendingInput) void queryClient.cancelQueries({ queryKey: ["global-search", sessionKey, "palette"] });
-    if (!active) void queryClient.cancelQueries({ queryKey: ["global-search-scopes", sessionKey, "palette"], exact: true });
   }, [active, pendingInput, queryClient, sessionKey]);
 
   return {
     results,
-    scopes,
     pendingInput,
     searchedFilters: active && !pendingInput && q ? normalizedFilters : null,
   };

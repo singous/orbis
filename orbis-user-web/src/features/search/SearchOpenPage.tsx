@@ -10,17 +10,17 @@ import { LoadingState } from "../../shared/ui/LoadingState";
 import { PageContainer } from "../../shared/ui/PageContainer";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
-import { searchTypeSchema, switchSearchWorkspace } from "./api";
+import { lookupSearchResource, searchTypeSchema } from "./api";
 import { resultDestination } from "./search-state";
 import "./search.css";
 
 const openTargetSchema = z.object({
-  id: z.string().uuid(), type: searchTypeSchema, workspace_id: z.string().uuid(),
+  id: z.string().uuid(), type: searchTypeSchema, workspace_id: z.string().uuid().nullable(),
   status: z.enum(["active", "archived"]).default("active"), comment: z.string().uuid().nullable(),
 });
 const DOWNLOAD_URL_LIFETIME_MS = 1_000;
 
-/** A real route preserves new-tab links and switches only after explicit opening. */
+/** Legacy result links resolve within the active request context and never switch it. */
 export function SearchOpenPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
@@ -38,7 +38,7 @@ export function SearchOpenPage() {
     const values = new URLSearchParams(targetKey);
     return openTargetSchema.safeParse({ id: values.get("id"), type: values.get("type"), workspace_id: values.get("workspace_id"), status: values.get("status") ?? "active", comment: values.get("comment") });
   }, [targetKey]);
-  const filename = (params.get("name") || "文件").slice(0, 512);
+  const [filename, setFilename] = useState((params.get("name") || "文件").slice(0, 512));
 
   useEffect(() => {
     if (!target.success) return;
@@ -51,16 +51,17 @@ export function SearchOpenPage() {
     const destination = target.data;
     const initialSession = getAuthSessionKey(authStore.getState());
     void (async () => {
-      if (authStore.getState().workspace?.id !== destination.workspace_id) {
-        const switched = await switchSearchWorkspace(destination.workspace_id, authRef.current, controller.signal);
-        const current = authStore.getState();
-        if (!active || getAuthSessionKey(current) !== initialSession || !current.accessToken || !current.refreshToken) return;
-        authStore.getState().setSession({ accessToken: current.accessToken, refreshToken: current.refreshToken, ...switched });
+      const currentWorkspaceId = authStore.getState().workspace?.id;
+      if (destination.workspace_id && destination.workspace_id !== currentWorkspaceId) {
+        throw new Error("该内容不在当前工作空间，请通过空间菜单切换后再打开。");
       }
-      if (active) {
-        if (destination.type === "file") setReady(true);
-        else navigate(resultDestination({ ...destination, matched_comment_id: destination.comment }), { replace: true });
-      }
+      const resource = await lookupSearchResource(destination.type, destination.id, destination.status, authRef.current, controller.signal);
+      if (!active || controller.signal.aborted || getAuthSessionKey(authStore.getState()) !== initialSession) return;
+      if (!resource) throw new Error("内容不存在或无权访问，请返回搜索重新查找。");
+      if (destination.type === "file") {
+        setFilename(resource.title || "文件");
+        setReady(true);
+      } else navigate(resultDestination({ ...resource, matched_comment_id: destination.comment ?? resource.matched_comment_id }), { replace: true });
     })().catch((cause: unknown) => { if (active && !controller.signal.aborted) setError(cause instanceof Error ? cause.message : "无法打开搜索结果，请返回重试。"); });
     return () => { active = false; controller.abort(); downloadRequest.current?.abort(); };
   }, [sessionKey, navigate, target]);
@@ -91,7 +92,7 @@ export function SearchOpenPage() {
     <div className="global-search-open">
       {!target.success ? <StatusMessage tone="error" title="搜索结果地址无效">请返回搜索页重新选择结果。</StatusMessage> : null}
       {error ? <StatusMessage tone="error" title="无法打开内容">{error}</StatusMessage> : null}
-      {target.success && !ready && !error ? <LoadingState label="正在校验工作空间并打开内容…" /> : null}
+      {target.success && !ready && !error ? <LoadingState label="正在打开内容…" /> : null}
       {ready ? <><p>文件内容仅在下载时读取。</p><Button variant="primary" isPending={downloading} onClick={() => void download()}>下载文件</Button>{downloaded ? <p role="status">已开始下载。</p> : null}</> : null}
       <Link to="/search">返回全局搜索</Link>
     </div>

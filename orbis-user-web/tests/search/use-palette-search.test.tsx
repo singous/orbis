@@ -12,7 +12,7 @@ const OTHER_WORKSPACE_ID = "018ff7c4-a5b6-7000-8000-000000000002";
 const RESOURCE_ID = "018ff7c4-a5b6-7000-8000-000000000003";
 const user = { id: RESOURCE_ID, tenant_id: null, email: "owner@orbis.test", display_name: "Owner", current_workspace_id: WORKSPACE_ID, status: "active", created_at_ms: 1, updated_at_ms: 1 };
 const workspace = { id: WORKSPACE_ID, name: "当前空间", workspace_type: "team", role: "owner" as const, is_current: true, created_at_ms: 1, updated_at_ms: 1 };
-const filters: SearchFilters = { q: "", range: "current", type: "all", status: "active", page: 1 };
+const filters: SearchFilters = { q: "", type: "all", status: "active", page: 1 };
 type Props = { filters: SearchFilters; enabled: boolean; composing: boolean };
 const clients = new Set<QueryClient>();
 
@@ -53,7 +53,7 @@ describe("palette search requests", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("discovers scopes without a blank content search and defers IME text until composition ends", async () => {
+  it("makes no empty-state request and defers IME text until composition ends", async () => {
     const requests: URL[] = [];
     vi.stubGlobal("fetch", vi.fn(async (input: string, options: RequestInit) => {
       const url = new URL(input, "http://orbis.test"); requests.push(url);
@@ -62,13 +62,11 @@ describe("palette search requests", () => {
       return response(url.searchParams.get("q") ?? "");
     }));
     const view = mount();
-    await waitFor(() => expect(view.result.current.scopes.isSuccess).toBe(true));
-    expect(requests).toHaveLength(1);
-    expect(requests[0].searchParams.get("q")).toBe("");
+    expect(requests).toHaveLength(0);
     expect(view.result.current.results.data).toBeUndefined();
     view.rerender({ filters: { ...filters, q: "设" }, enabled: true, composing: true });
     await act(() => new Promise(resolve => setTimeout(resolve, 300)));
-    expect(requests).toHaveLength(1);
+    expect(requests).toHaveLength(0);
     expect(view.result.current.pendingInput).toBe(true);
     view.rerender({ filters: { ...filters, q: "设计规范" }, enabled: true, composing: false });
     expect(view.result.current.searchedFilters).toBeNull();
@@ -106,36 +104,37 @@ describe("palette search requests", () => {
     expect(backgroundSignal.aborted).toBe(false);
   });
 
-  it("refines scope, type, status and page immediately after the keyword settles and discards old-scope completion", async () => {
+  it("refines type, status and page without introducing a separate workspace scope", async () => {
     const requests: URL[] = [];
     let staleSignal: AbortSignal | null | undefined;
     let finishStale!: (response: Response) => void;
     vi.stubGlobal("fetch", vi.fn((input: string, options: RequestInit) => {
       const url = new URL(input, "http://orbis.test"); requests.push(url);
-      if (url.searchParams.get("workspace_id") === OTHER_WORKSPACE_ID) {
+      expect(url.searchParams.has("scope")).toBe(false);
+      expect(url.searchParams.has("workspace_id")).toBe(false);
+      if (url.searchParams.get("type") === "file") {
         staleSignal = options.signal;
         return new Promise<Response>(resolve => { finishStale = resolve; });
       }
-      return Promise.resolve(response(url.searchParams.get("q") ? url.searchParams.get("scope") === "all" ? "全部空间结果" : "当前空间结果" : ""));
+      return Promise.resolve(response("文档结果"));
     }));
     const view = mount({ filters: { ...filters, q: "设计" } });
     await waitFor(() => expect(view.result.current.results.isSuccess).toBe(true));
-    const narrowed: SearchFilters = { q: "设计", range: OTHER_WORKSPACE_ID, type: "file", status: "archived", page: 2 };
+    const narrowed: SearchFilters = { q: "设计", type: "file", status: "archived", page: 2 };
     view.rerender({ filters: narrowed, enabled: true, composing: false });
     expect(view.result.current.pendingInput).toBe(false);
     expect(view.result.current.results.data).toBeUndefined();
-    const scopedRequest = requests.find(url => url.searchParams.get("workspace_id") === OTHER_WORKSPACE_ID);
-    expect(scopedRequest?.searchParams.get("type")).toBe("file");
-    expect(scopedRequest?.searchParams.get("status")).toBe("archived");
-    expect(scopedRequest?.searchParams.get("page")).toBe("2");
-    view.rerender({ filters: { ...filters, q: "设计", range: "all" }, enabled: true, composing: false });
-    await waitFor(() => expect(view.result.current.results.data?.items[0].title).toBe("全部空间结果"));
+    const request = requests.find(url => url.searchParams.get("type") === "file");
+    expect(request?.searchParams.get("status")).toBe("archived");
+    expect(request?.searchParams.get("page")).toBe("2");
+    view.rerender({ filters: { ...filters, q: "设计", type: "document" }, enabled: true, composing: false });
+    await waitFor(() => expect(view.result.current.results.data?.items[0].title).toBe("文档结果"));
     expect(staleSignal?.aborted).toBe(true);
-    await act(async () => { finishStale(response("过期范围结果", OTHER_WORKSPACE_ID)); });
-    expect(view.result.current.results.data?.items[0].title).toBe("全部空间结果");
+    await act(async () => { finishStale(response("过期文件结果")); });
+    expect(view.result.current.results.data?.items[0].title).toBe("文档结果");
   });
 
-  it("cancels result and discovery requests when closed, including composition on an unchanged keyword", async () => {
+  it("cancels results when composition resumes or the palette closes", async () => {
     const signals = new Map<string, AbortSignal>();
     vi.stubGlobal("fetch", vi.fn((input: string, options: RequestInit) => {
       signals.set(new URL(input, "http://orbis.test").searchParams.get("q") ?? "", options.signal as AbortSignal);
@@ -143,12 +142,11 @@ describe("palette search requests", () => {
     }));
     const currentFilters = { ...filters, q: "设计" };
     const view = mount({ filters: currentFilters });
-    await waitFor(() => expect(signals.size).toBe(2));
+    await waitFor(() => expect(signals.size).toBe(1));
     view.rerender({ filters: currentFilters, enabled: true, composing: true });
     await waitFor(() => expect(signals.get("设计")?.aborted).toBe(true));
-    expect(signals.get("")?.aborted).toBe(false);
     view.rerender({ filters: currentFilters, enabled: false, composing: true });
-    await waitFor(() => expect(signals.get("")?.aborted).toBe(true));
+    expect(signals.has("")).toBe(false);
     expect(view.result.current.searchedFilters).toBeNull();
   });
 
@@ -157,7 +155,7 @@ describe("palette search requests", () => {
     let finishOld!: (response: Response) => void;
     vi.stubGlobal("fetch", vi.fn((input: string, options: RequestInit) => {
       const q = new URL(input, "http://orbis.test").searchParams.get("q") ?? "";
-      const changed = new Headers(options.headers).get("Authorization") === "Bearer next-token";
+      const changed = new Headers(options.headers).get("X-Workspace-ID") === OTHER_WORKSPACE_ID;
       if (q && !changed) {
         oldSignal = options.signal;
         return new Promise<Response>(resolve => { finishOld = resolve; });
@@ -166,10 +164,10 @@ describe("palette search requests", () => {
     }));
     const view = mount({ filters: { ...filters, q: "设计" } });
     await waitFor(() => expect(oldSignal).toBeDefined());
-    act(() => authStore.getState().setSession({ accessToken: "next-token", refreshToken: "next-refresh", user: { ...user, current_workspace_id: OTHER_WORKSPACE_ID }, workspace: { ...workspace, id: OTHER_WORKSPACE_ID } }));
+    act(() => authStore.getState().setSession({ accessToken: "palette-token", refreshToken: "refresh", user: { ...user, current_workspace_id: OTHER_WORKSPACE_ID }, workspace: { ...workspace, id: OTHER_WORKSPACE_ID } }));
     expect(view.result.current.results.data).toBeUndefined();
     await waitFor(() => expect(view.result.current.results.data?.items[0].title).toBe("新会话结果"));
-    expect(view.result.current.results.data?.scope.current_workspace_id).toBe(OTHER_WORKSPACE_ID);
+    expect(view.result.current.results.data?.items[0].workspace_id).toBe(OTHER_WORKSPACE_ID);
     expect(oldSignal?.aborted).toBe(true);
     await act(async () => { finishOld(response("旧会话结果")); });
     expect(view.result.current.results.data?.items[0].title).toBe("新会话结果");

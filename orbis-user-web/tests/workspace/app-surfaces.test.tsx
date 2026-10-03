@@ -76,7 +76,7 @@ describe("shared workspace chrome", () => {
     expect(screen.getByLabelText("route")).toHaveTextContent("/home");
   });
 
-  it("opens the palette without changing a legacy search URL or its filters", async () => {
+  it("opens current-context search without navigating away from a legacy address", async () => {
     window.__ORBIS_HOST__ = { surface: "web" };
     mount("/search?q=文档&scope=all");
     await userEvent.setup().keyboard("{Control>}k{/Control}");

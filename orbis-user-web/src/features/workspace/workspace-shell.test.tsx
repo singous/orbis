@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Link, MemoryRouter, useLocation } from "react-router-dom";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { authStore } from "../../shared/auth/auth-store";
 import { DocumentShell } from "../documents/DocumentShell";
@@ -32,18 +32,18 @@ function Providers({ children, client }: { children: React.ReactNode; client?: Q
 }
 
 const user = {
-  id: "018ff7c4-a5b6-7000-000000000001",
+  id: "018ff7c4-a5b6-7000-8000-000000000001",
   tenant_id: null,
   email: "owner@orbis.test",
   display_name: "Orbis Owner",
-  current_workspace_id: "018ff7c4-a5b6-7000-000000000002",
+  current_workspace_id: "018ff7c4-a5b6-7000-8000-000000000002",
   status: "active",
   created_at_ms: 1,
   updated_at_ms: 1,
 };
 
 const workspace = {
-  id: "018ff7c4-a5b6-7000-000000000002",
+  id: "018ff7c4-a5b6-7000-8000-000000000002",
   name: "Orbis Workspace",
   workspace_type: "team",
   role: "owner" as const,
@@ -85,6 +85,7 @@ describe("WorkspaceShell (desktop surface)", () => {
     act(() => authStore.getState().clearSession());
     Object.defineProperty(window, "matchMedia", { configurable: true, value: originalMatchMedia });
     window.__ORBIS_HOST__ = originalHost;
+    vi.restoreAllMocks();
   });
 
   it.each([["/documents", "文档导航"], ["/sites", "站点导航"]])("provides secondary navigation by default on %s", (path, navigationName) => {
@@ -423,14 +424,16 @@ describe("WorkspaceShell (desktop surface)", () => {
     expect(screen.getByRole("status", { name: "current path" })).toHaveTextContent("/settings/account");
   });
 
-  it("opens workspace details as a popover and restores focus after Escape", async () => {
+  it("opens the workspace chooser and restores focus after Escape", async () => {
     const actor = userEvent.setup();
-    renderShell();
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response(JSON.stringify({ code: "OK", message: "成功", request_id: "workspace-list", data: { items: [workspace] } }), { headers: { "Content-Type": "application/json" } }));
+    renderShell("/home");
     const trigger = screen.getByRole("button", { name: "切换工作空间" });
     await actor.click(trigger);
-    expect(screen.getByRole("dialog", { name: "工作空间详情" })).toHaveTextContent("我自己");
+    expect(screen.getByRole("dialog", { name: "切换工作空间" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: `切换到 ${workspace.name}` })).toHaveAttribute("aria-current", "true");
     await actor.keyboard("{Escape}");
-    await waitFor(() => expect(screen.queryByRole("dialog", { name: "工作空间详情" })).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "切换工作空间" })).not.toBeInTheDocument());
     await waitFor(() => expect(trigger).toHaveFocus());
   });
 

@@ -46,11 +46,15 @@ async def login(
             message="邮箱或密码错误",
         )
     try:
-        workspace, membership = await get_current_workspace(user, session)
+        workspace, membership = await get_current_workspace(
+            user, session, use_request_context=False
+        )
     except UserWorkspaceMissing:
         current_workspace = None
     else:
-        current_workspace = workspace_payload(workspace, membership, user)
+        current_workspace = workspace_payload(
+            workspace, membership, user, current_workspace_id=workspace.id
+        )
     return AuthResponse(
         access_token=access_token,
         refresh_token=refresh_token,

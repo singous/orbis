@@ -1,4 +1,5 @@
 import { apiRequest } from "../../shared/api/api-client";
+import { authRequestOptions as authOptions, type AuthRequestOptions as SharedAuthRequestOptions } from "../../shared/auth/use-auth-request";
 import {
   documentGroupListResponseSchema,
   documentGroupSchema,
@@ -21,26 +22,12 @@ import {
   type PageData,
 } from "../../shared/api/schemas";
 
-export type AuthRequestOptions = {
-  accessToken: string;
-  refreshToken: string | null;
-  onTokenRefresh: (accessToken: string) => void;
-  onUnauthorized: () => void;
-};
+export type AuthRequestOptions = SharedAuthRequestOptions;
 
 export type ResourceStatus = "active" | "archived";
 
 const DEFAULT_PAGE = "1";
 const DEFAULT_PAGE_SIZE = "100";
-
-function authOptions(auth: AuthRequestOptions) {
-  return {
-    token: auth.accessToken,
-    refreshToken: auth.refreshToken,
-    onTokenRefresh: auth.onTokenRefresh,
-    onUnauthorized: auth.onUnauthorized,
-  };
-}
 
 function queryPath(path: string, values: Record<string, string | null | undefined>): string {
   const params = new URLSearchParams();

@@ -45,7 +45,6 @@ function DocumentNavigation() {
     {documentLinks.map(({ to, label, icon: Icon }) => <NavLink key={to} to={to} end className={navClass}><Icon size={18} />{label}</NavLink>)}
     <ActionButton type="button" className="workspace-function-link" aria-haspopup="dialog" aria-expanded={isOpen} onClick={() => openSearch({ type: "document" })}><Search size={18} aria-hidden="true" />搜索文档</ActionButton>
     <span className="workspace-nav-label">快捷访问</span>
-    <div className="workspace-nav-space"><Notebook size={18} aria-hidden="true" /><span>{workspace?.name ?? "私人工作空间"}</span></div>
     <div className="workspace-notebook-links">
       {commonNotebooks.map((notebook) => <NavLink key={notebook.id} to={`/collections/${notebook.id}`} className={navClass}><NotebookIcon icon={notebook.icon} size="sm" /><span className="truncate">{notebook.title}</span></NavLink>)}
       {!commonNotebooks.length ? <NavLink to="/documents/collections" className="workspace-function-link workspace-nav-muted"><Notebook size={16} />设置快捷访问</NavLink> : null}

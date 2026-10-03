@@ -171,7 +171,7 @@ def test_body_snippet_is_bounded_around_late_match_and_history_is_not_searched(
     assert search(client, actor, q="historical-only")["pagination"]["total"] == 0
 
 
-def test_scope_defaults_to_current_and_explicit_scopes_never_switch_current_workspace(
+def test_legacy_scope_queries_stay_in_current_context_and_listing_never_switches_default(
     client, actor
 ):
     second, _ = add_workspace(client, actor, "Second")
@@ -196,23 +196,19 @@ def test_scope_defaults_to_current_and_explicit_scopes_never_switch_current_work
     default = search(client, actor)
     assert {item["workspace_id"] for item in default["items"]} == {initial}
     expanded = search(client, actor, scope="all")
-    assert expanded["pagination"]["total"] == 4
-    assert {item["workspace_id"] for item in expanded["items"]} == {
-        initial,
-        str(second.id),
-    }
+    assert expanded["pagination"]["total"] == 2
+    assert {item["workspace_id"] for item in expanded["items"]} == {initial}
     selected = search(client, actor, workspace_id=str(second.id))
-    assert {item["workspace_id"] for item in selected["items"]} == {str(second.id)}
+    assert {item["workspace_id"] for item in selected["items"]} == {initial}
     assert (
         client.get("/users/me", headers=actor[1]).json()["data"]["current_workspace_id"]
         == initial
     )
     discovery = search(client, actor, q="   ")
     assert discovery["items"] == [] and discovery["pagination"]["total"] == 0
-    assert {workspace["id"] for workspace in discovery["workspaces"]} == {
-        initial,
-        str(second.id),
-    }
+    assert {workspace["id"] for workspace in discovery["workspaces"]} == {initial}
+    listing = client.get("/workspaces", headers=actor[1]).json()["data"]
+    assert {workspace["id"] for workspace in listing["items"]} == {initial, str(second.id)}
 
 
 @pytest.mark.parametrize("change", ["revoked", "role", "workspace"])
@@ -222,9 +218,8 @@ def test_permissions_revalidated_after_membership_or_workspace_changes(
     second, member = add_workspace(client, actor, "Second")
     group, notebook = resources(actor, workspace_id=second.id, name="needle")
     persist(client, group, notebook)
-    assert (
-        search(client, actor, workspace_id=str(second.id))["pagination"]["total"] == 2
-    )
+    scoped_headers = {**actor[1], "X-Workspace-ID": str(second.id)}
+    assert client.get("/search", headers=scoped_headers, params={"q": "needle"}).json()["data"]["pagination"]["total"] == 2
     if change == "revoked":
         mutate(client, WorkspaceMember, member.id, status="removed")
     elif change == "role":
@@ -233,23 +228,23 @@ def test_permissions_revalidated_after_membership_or_workspace_changes(
         mutate(client, Workspace, second.id, status="archived")
     response = client.get(
         "/search",
-        headers=actor[1],
+        headers=scoped_headers,
         params={"q": "needle", "workspace_id": str(second.id)},
     )
     assert (
         response.status_code == 403
-        and response.json()["code"] == "SEARCH_WORKSPACE_FORBIDDEN"
+        and response.json()["code"] == "WORKSPACE_CONTEXT_FORBIDDEN"
     )
     assert search(client, actor, scope="all")["pagination"]["total"] == 0
 
 
-def test_current_membership_failure_does_not_silently_choose_another_workspace(
+def test_explicit_context_failure_does_not_fallback_or_change_account_default(
     client, actor
 ):
     second, _ = add_workspace(client, actor, "Second")
     initial = UUID(actor[0]["workspace"]["id"])
     mutate(client, Workspace, initial, status="archived")
-    response = client.get("/search", headers=actor[1], params={"q": "needle"})
+    response = client.get("/search", headers={**actor[1], "X-Workspace-ID": str(initial)}, params={"q": "needle"})
     assert response.status_code == 403
     user = client.get("/users/me", headers=actor[1]).json()["data"]
     assert user["current_workspace_id"] == str(initial)
@@ -441,14 +436,13 @@ def test_request_validation_and_authentication(client, actor):
         {"status": "deleted"},
         {"page_size": 101},
         {"q": "x" * 241},
-        {"scope": "all", "workspace_id": actor[0]["workspace"]["id"]},
     ):
         assert client.get("/search", headers=actor[1], params=params).status_code == 422
     assert (
         client.get(
             "/search", headers=actor[1], params={"workspace_id": str(new_uuidv7())}
         ).status_code
-        == 403
+        == 200
     )
 
 
@@ -465,7 +459,9 @@ def test_search_openapi_documents_actual_contract_and_switch_session_scope(clien
         "status",
         "page",
         "page_size",
+        "X-Workspace-ID",
     } <= params
+    assert all(item.get("deprecated") for item in operation["parameters"] if item["name"] in {"scope", "workspace_id"})
     assert "SEARCH_WORKSPACE_FORBIDDEN" in str(operation["responses"]["403"])
     assert "其他会话" in schema["paths"]["/workspace/switch"]["post"]["description"]
 

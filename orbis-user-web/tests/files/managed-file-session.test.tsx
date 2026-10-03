@@ -36,10 +36,11 @@ it("stable editor callbacks switch to the new workspace and discard the old cach
   const { result } = renderHook(useManagedFiles);
   const editorCallback = result.current.resolve;
   expect(await editorCallback(ref)).toBe("blob:workspace-a");
+  expect(fetcher).toHaveBeenLastCalledWith(expect.any(String), expect.objectContaining({ headers: { Authorization: "Bearer account-a-access", "X-Workspace-ID": "workspace-a" } }));
   act(() => authStore.getState().setSession({ ...session, accessToken: "workspace-b-access", workspace: { ...session.workspace!, id: "workspace-b" } }));
   expect(result.current.resolve).toBe(editorCallback);
   expect(await editorCallback(ref)).toBe("blob:workspace-b");
-  expect(fetcher).toHaveBeenLastCalledWith(expect.any(String), expect.objectContaining({ headers: { Authorization: "Bearer workspace-b-access" } }));
+  expect(fetcher).toHaveBeenLastCalledWith(expect.any(String), expect.objectContaining({ headers: { Authorization: "Bearer workspace-b-access", "X-Workspace-ID": "workspace-b" } }));
   expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:workspace-a");
   act(() => authStore.getState().clearSession());
   await expect(editorCallback(ref)).rejects.toThrow("请先登录");

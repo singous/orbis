@@ -197,7 +197,8 @@ async def list_file_assets(
     offset: int = 0,
     limit: int = 20,
 ) -> tuple[list[FileAsset], int]:
-    conditions = (FileAsset.owner_id == user.id,)
+    workspace, _ = await get_current_workspace(user, session)
+    conditions = (FileAsset.owner_id == user.id, FileAsset.workspace_id == workspace.id)
     total = await session.scalar(select(func.count(FileAsset.id)).where(*conditions))
     result = await session.execute(
         select(FileAsset)

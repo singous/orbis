@@ -22,7 +22,7 @@ from orbis_user_api.schemas.search import (
 
 from . import assets, documents
 from .projection import snippet
-from .scope import accessible_workspaces, resolve_scope
+from orbis_user_api.services.authorization import AuthorizationService
 
 logger = logging.getLogger(__name__)
 
@@ -54,10 +54,10 @@ async def search(
             code="SEARCH_RESOURCE_TYPE_REQUIRED",
             message="按资源 ID 定位时必须指定具体资源类型",
         )
-    workspaces = await accessible_workspaces(user, session)
-    workspace_ids = resolve_scope(
-        workspaces, user.current_workspace_id, scope, workspace_id
-    )
+    # Legacy query parameters remain accepted but cannot override the app context.
+    workspace, membership = await AuthorizationService.actor(user, session)
+    workspaces = [(workspace, membership)]
+    workspace_ids = [workspace.id]
     names = {workspace.id: workspace.name for workspace, _ in workspaces}
     normalized = query.strip()
     items = []
@@ -115,13 +115,13 @@ async def search(
         items=page.items,
         pagination=page.pagination,
         scope=SearchResolvedScope(
-            workspace_ids=workspace_ids, current_workspace_id=user.current_workspace_id
+            workspace_ids=workspace_ids, current_workspace_id=workspace_ids[0]
         ),
         workspaces=[
             SearchWorkspace(
                 id=workspace.id,
                 name=workspace.name,
-                is_current=workspace.id == user.current_workspace_id,
+                is_current=True,
             )
             for workspace, _ in workspaces
         ],

@@ -13,8 +13,13 @@ from orbis_user_api.core.security import (
 from orbis_user_api.core.settings import Settings
 from orbis_user_api.core.time import now_ms
 from orbis_user_api.models.user import RefreshSession, User
-from orbis_user_api.models.workspace import WorkspaceInvitation, WorkspaceMember
+from orbis_user_api.models.workspace import (
+    Workspace,
+    WorkspaceInvitation,
+    WorkspaceMember,
+)
 from orbis_user_api.schemas.auth import LoginRequest, RefreshRequest
+from orbis_user_api.services.capabilities import READABLE_WORKSPACE_ROLES
 from orbis_user_api.services.exceptions import InvalidCredentials, InvalidRefreshToken
 
 
@@ -23,15 +28,18 @@ def normalize_email(email: str) -> str:
 
 
 async def has_active_community_membership(user: User, session: AsyncSession) -> bool:
-    if user.status != "active" or user.current_workspace_id is None:
+    if user.status != "active":
         return False
     result = await session.execute(
-        select(WorkspaceMember.id).where(
-            WorkspaceMember.workspace_id == user.current_workspace_id,
+        select(WorkspaceMember.id)
+        .join(Workspace, Workspace.id == WorkspaceMember.workspace_id)
+        .where(
             WorkspaceMember.user_id == user.id,
             WorkspaceMember.status == "active",
-            WorkspaceMember.role.in_(("owner", "admin", "editor", "normal")),
+            WorkspaceMember.role.in_(READABLE_WORKSPACE_ROLES),
+            Workspace.status == "active",
         )
+        .limit(1)
     )
     return result.scalar_one_or_none() is not None
 

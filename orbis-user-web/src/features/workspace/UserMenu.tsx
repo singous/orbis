@@ -33,7 +33,7 @@ export function UserMenu({ user, workspace, onLogout, variant = "topbar" }: User
             <UserAvatar user={user} className="workspace-user-avatar" />
             <div>
               <div className="workspace-user-name">{userName}</div>
-              <div className="workspace-user-space">{workspace?.name ?? "私人工作空间"}</div>
+              <div className="workspace-user-space">{user?.email}</div>
             </div>
           </div>
           <div className="workspace-user-actions-label">设置</div>

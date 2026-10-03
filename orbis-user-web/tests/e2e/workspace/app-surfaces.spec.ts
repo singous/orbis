@@ -74,7 +74,7 @@ for (const surface of ["web", "desktop"] as const) {
       const workspaceTrigger = page.getByRole("button", { name: "切换工作空间", exact: true });
       if (surface === "web") await expect(workspaceTrigger).toHaveClass(/workspace-switcher-rail-trigger/);
       await workspaceTrigger.click();
-      const details = page.getByRole("dialog", { name: "工作空间详情", exact: true });
+      const details = page.getByRole("dialog", { name: "切换工作空间", exact: true });
       await expectInsideViewport(page, details);
       await page.keyboard.press("Escape");
       await expect(details).toHaveCount(0);

@@ -26,7 +26,7 @@ beforeEach(() => { act(() => authStore.setState({ accessToken: "search-token", r
 afterEach(() => { cleanup(); act(() => authStore.getState().clearSession()); vi.unstubAllGlobals(); });
 
 describe("global search", () => {
-  it("discovers scopes without searching content before input and debounces Chinese composition", async () => {
+  it("makes no blank search request and debounces Chinese composition", async () => {
     const requests: URL[] = [];
     vi.stubGlobal("fetch", vi.fn(async (input: string, options: RequestInit) => {
       const url = new URL(input, "http://orbis.test"); requests.push(url);
@@ -34,7 +34,7 @@ describe("global search", () => {
       return response(data(url.searchParams.get("q") ? [result] : []));
     }));
     renderSearch();
-    await screen.findByText("输入关键词，搜索所选范围内的内容。");
+    await screen.findByText("输入关键词，查找文档、评论或文件。");
     const input = screen.getByRole("searchbox", { name: "搜索内容" });
     fireEvent.compositionStart(input);
     fireEvent.change(input, { target: { value: "设" } });
@@ -61,20 +61,20 @@ describe("global search", () => {
     expect(secondPage?.searchParams.get("status")).toBe("all");
   });
 
-  it("changes the explicit search range without mutating the active workspace", async () => {
+  it("ignores legacy scope URLs and sends only the application workspace header", async () => {
     const requests: URL[] = [];
     vi.stubGlobal("fetch", vi.fn(async (input: string, options: RequestInit) => {
       const url = new URL(input, "http://orbis.test"); requests.push(url);
       expect(options.method).toBe("GET");
-      return response(data(url.searchParams.get("q") ? [result] : []));
+      expect(new Headers(options.headers).get("X-Workspace-ID")).toBe(workspaceId);
+      return response(data([result]));
     }));
-    renderSearch("/search?q=设计");
+    renderSearch("/search?q=设计&scope=all&workspace_id=018ff7c4-a5b6-7000-8000-000000000009");
     await screen.findByRole("link", { name: /设计规范/ });
-    await userEvent.click(screen.getByRole("button", { name: /搜索范围/ }));
-    await userEvent.click(screen.getByRole("option", { name: "所有可访问空间" }));
-    await waitFor(() => expect(requests.some(url => url.searchParams.get("scope") === "all" && url.searchParams.get("q") === "设计")).toBe(true));
+    expect(screen.queryByRole("button", { name: /搜索范围/ })).not.toBeInTheDocument();
+    expect(screen.queryByText("当前空间")).not.toBeInTheDocument();
+    expect(requests.every(url => !url.searchParams.has("scope") && !url.searchParams.has("workspace_id"))).toBe(true);
     expect(authStore.getState().workspace?.id).toBe(workspaceId);
-    expect(screen.getByRole("status", { name: "当前地址" })).toHaveTextContent("scope=all");
   });
 
   it("cancels superseded requests and never displays their stale result", async () => {
@@ -98,11 +98,11 @@ describe("global search", () => {
   it("preserves legacy query/filter bookmarks and distinguishes permission failures from no matches", async () => {
     vi.stubGlobal("fetch", vi.fn(async (input: string) => new URL(input, "http://orbis.test").searchParams.get("q") ? response(null, 403) : response(data())));
     renderSearch("/documents/search?q=设计&status=archived");
-    expect(await screen.findByText("无权搜索该范围")).toBeVisible();
+    expect(await screen.findByText("无权搜索内容")).toBeVisible();
     expect(screen.getByRole("status", { name: "当前地址" })).toHaveTextContent("/search?q=%E8%AE%BE%E8%AE%A1&status=archived&type=document");
     expect(screen.queryByText(/没有匹配的内容/)).not.toBeInTheDocument();
   });
-  it("clears the query without resetting explicit search scope or fetching all content", async () => {
+  it("clears the query while preserving its content type and avoiding an empty request", async () => {
     const requests: URL[] = [];
     vi.stubGlobal("fetch", vi.fn(async (input: string) => {
       const url = new URL(input, "http://orbis.test"); requests.push(url);
@@ -112,8 +112,8 @@ describe("global search", () => {
     await screen.findByRole("link", { name: /设计规范/ });
     await userEvent.click(screen.getByRole("button", { name: "清空搜索" }));
     expect(screen.getByRole("searchbox", { name: "搜索内容" })).toHaveValue("");
-    expect(screen.getByRole("status", { name: "当前地址" })).toHaveTextContent("/search?type=document&scope=all");
-    expect(screen.getByText("输入关键词，搜索所选范围内的内容。")).toBeVisible();
-    expect(requests.filter(url => url.searchParams.get("q") === "")).toHaveLength(1);
+    expect(screen.getByRole("status", { name: "当前地址" })).toHaveTextContent("/search?type=document");
+    expect(screen.getByText("输入关键词，查找文档、评论或文件。")).toBeVisible();
+    expect(requests.filter(url => url.searchParams.get("q") === "")).toHaveLength(0);
   });
 });
