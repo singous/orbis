@@ -120,6 +120,14 @@ for (const surface of ["web", "desktop"] as const) {
       await page.goto("/documents");
       if (width < 768) await drawer.click();
       const railSearch = page.getByRole("complementary", { name: "应用导航", exact: true }).getByRole("button", { name: "搜索", exact: true });
+      const gaps = await page.locator(".workspace-business-nav").evaluate(element => {
+        const search = element.querySelector('[aria-label="搜索"]')!.getBoundingClientRect();
+        const home = element.querySelector('[aria-label="首页"]')!.getBoundingClientRect();
+        const documents = element.querySelector('[aria-label="在线文档"]')!.getBoundingClientRect();
+        return { searchHome: home.top - search.bottom, homeDocuments: documents.top - home.bottom };
+      });
+      expect(gaps.searchHome).toBeGreaterThan(0);
+      expect(gaps.searchHome).toBeCloseTo(gaps.homeDocuments, 1);
       await railSearch.click();
       await expect(palette).toBeVisible();
       await expect(page).toHaveURL(/\/documents$/);

@@ -36,8 +36,8 @@ export function BusinessRail({ surface = "web", collapsed, onExpand, onClose, cr
       </div>
       {surface === "web" ? <WorkspaceSwitcher variant="rail" /> : <Link to={DEFAULT_WORKSPACE_PATH} className="rail-brand" aria-label="Orbis 首页"><Orbit size={28} strokeWidth={1.8} /></Link>}
       {createMenu ? <div className="rail-create-entry">{createMenu}</div> : null}
-      <Tooltip label="全局搜索" side="right"><ActionButton type="button" aria-label="搜索" aria-haspopup="dialog" aria-expanded={isOpen} aria-current={searchActive ? "page" : undefined} className={`rail-action${searchActive || isOpen ? " is-active" : ""}`} onClick={() => openSearch()}><Search aria-hidden="true" size={20} /></ActionButton></Tooltip>
       <nav className="workspace-business-nav" aria-label="业务板块">
+        <Tooltip label="全局搜索" side="right"><ActionButton type="button" aria-label="搜索" aria-haspopup="dialog" aria-expanded={isOpen} aria-current={searchActive ? "page" : undefined} className={`rail-action${searchActive || isOpen ? " is-active" : ""}`} onClick={() => openSearch()}><Search aria-hidden="true" size={20} /></ActionButton></Tooltip>
         {areas.map(({ id, label, href }) => {
           const Icon = areaIcons[id];
           const active = activeArea.id === id;

@@ -41,7 +41,7 @@
 .workspace-business-rail { overflow-y: auto; overflow-x: hidden; width: var(--rail-width); flex: none; min-height: 0; display: flex; flex-direction: column; align-items: center; padding: 16px 7px 10px; border-right: 1px solid var(--workspace-divider); }
 .sidebar-collapsed .workspace-business-rail { border: 0; }
 .rail-brand { width: var(--orbis-control-default-height); height: var(--orbis-control-default-height); display: grid; place-items: center; color: var(--brand-mark); margin-bottom: 36px; }
-.workspace-business-nav { display: flex; flex-direction: column; align-items: center; gap: 15px; }
+.workspace-business-nav { display: flex; flex-direction: column; align-items: center; gap: var(--orbis-space-4); }
 .rail-action { width: var(--orbis-control-default-height); height: var(--orbis-control-default-height); display: grid; place-items: center; flex: none; color: var(--text-secondary); transition: background 140ms, color 140ms; }
 .rail-action:hover { background: var(--surface-hover); color: var(--text-primary); }
 .rail-action.is-active { background: var(--surface-active); color: var(--text-primary); }
