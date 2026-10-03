@@ -73,8 +73,6 @@
 .workspace-nav-label { padding: 0 10px; margin: 23px 0 7px; font-size: var(--orbis-text-ui-size); color: var(--text-tertiary); line-height: var(--orbis-text-ui-leading); }
 .workspace-nav-space { display: flex; gap: 9px; align-items: center; padding: 6px 10px; font-size: var(--orbis-text-ui-size); color: var(--gray-700); line-height: var(--orbis-text-ui-leading); }
 .workspace-nav-space span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.workspace-notebook-links { border-left: 1px solid var(--border-strong); margin: 5px 4px 1px 19px; padding-left: 7px; }
-.workspace-nav-muted { color: var(--text-tertiary); }
 .workspace-nav-soon { font-size: var(--orbis-text-caption-size); margin-left: auto; white-space: nowrap; color: var(--text-tertiary); line-height: var(--orbis-text-caption-leading); }
 .workspace-nav-footer { margin-top: auto; padding-top: 25px; }
 .workspace-edition { display: block; padding: 15px 10px 4px; margin-top: 9px; border-top: 1px solid var(--workspace-divider); font-size: var(--orbis-text-caption-size); color: var(--text-tertiary); letter-spacing: .015em; line-height: var(--orbis-text-caption-leading); }
