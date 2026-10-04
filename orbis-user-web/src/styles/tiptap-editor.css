@@ -100,3 +100,14 @@
     contain-intrinsic-size: auto 80px;
   }
 }
+
+/* Render the caret's sparse ancestor path before the browser mutates its DOM.
+   Skipped editing blocks can otherwise report an old caret on the first key. */
+@supports (content-visibility: auto) {
+  .orbis-tiptap .ProseMirror .orbis-editing-block {
+    content-visibility: visible;
+    contain-intrinsic-size: none;
+    /* Retain the containment supplied by auto while disabling only skipping. */
+    contain: layout style paint;
+  }
+}

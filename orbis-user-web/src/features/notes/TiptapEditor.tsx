@@ -25,6 +25,7 @@ import { Fragment } from "@tiptap/pm/model";
 import { OrbisContentLoading, contentLoadingKey } from "./content-loading";
 import type { BlockLoadState } from "../documents/content-window";
 import { canJoin } from "@tiptap/pm/transform";
+import { OrbisActiveBlock } from "./tiptap-active-block";
 import "../../styles/tiptap-editor.css";
 
 type EditorChange = { blocks: NoteBlocksV2 };
@@ -35,7 +36,7 @@ function insertBlock(editor: Editor, value: OrbisBlock) {
   if (node) editor.chain().focus().insertContent(node).run();
 }
 
-const editorExtensions = [...tiptapExtensions, OrbisBlockSelection];
+const editorExtensions = [...tiptapExtensions, OrbisBlockSelection, OrbisActiveBlock];
 const EMPTY_LOAD_STATES: ReadonlyMap<string, BlockLoadState> = new Map();
 
 const COMMANDS: Command[] = [
