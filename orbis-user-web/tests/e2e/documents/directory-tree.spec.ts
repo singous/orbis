@@ -135,7 +135,7 @@ test("directory rows share geometry while side actions and saved previews preser
   let previewFailure: 500 | 404 | null = null;
   const saveGate = new Promise<void>(resolve => { releaseSave = resolve; });
   await page.route(`**/api/notes/${active}/content`, async route => {
-    if (route.request().method() === "PUT") await saveGate;
+    if (["PUT", "PATCH"].includes(route.request().method())) await saveGate;
     else if (previewFailure === 500) {
       await route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ code: "PREVIEW_UNAVAILABLE", message: "预览正文暂不可用", request_id: "preview-read-failure", data: null }) });
       return;
