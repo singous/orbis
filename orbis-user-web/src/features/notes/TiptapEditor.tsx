@@ -26,6 +26,8 @@ import { OrbisContentLoading, contentLoadingKey } from "./content-loading";
 import type { BlockLoadState } from "../documents/content-window";
 import { canJoin } from "@tiptap/pm/transform";
 import { OrbisActiveBlock } from "./tiptap-active-block";
+import { registerBlockActionReader, selectedBlocksNeedRead } from "./blocks/block-action-read";
+import { copyBlocks } from "./blocks/block-clipboard";
 import "../../styles/tiptap-editor.css";
 
 type EditorChange = { blocks: NoteBlocksV2 };
@@ -74,7 +76,7 @@ function slashQuery(editor: Editor): { query: string; from: number; to: number }
   return match ? { query: match[1].toLocaleLowerCase(), from: $from.pos - before.length, to: $from.pos } : null;
 }
 
-export function TiptapEditor({ blocks, onChange, onError, readOnly = false, noteId, onContentReady, ensureComplete, hasMoreContent = false, loadStates = EMPTY_LOAD_STATES, onLoadBlock }: {
+export function TiptapEditor({ blocks, onChange, onError, readOnly = false, noteId, onContentReady, ensureComplete, ensureBlocks, hasMoreContent = false, loadStates = EMPTY_LOAD_STATES, onLoadBlock }: {
   blocks: NoteBlocksV2;
   onChange: (next: EditorChange) => void;
   onError?: (message: string | null) => void;
@@ -82,6 +84,7 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
   noteId?: string;
   onContentReady?: (handle: EditorContentHandle | null) => void;
   ensureComplete?: () => Promise<void>;
+  ensureBlocks?: (ids: string[]) => Promise<void>;
   hasMoreContent?: boolean;
   loadStates?: ReadonlyMap<string, BlockLoadState>;
   onLoadBlock?: (id: string) => Promise<void>;
@@ -104,9 +107,14 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
   const lastEmitted = useRef<NoteBlocksV2 | null>(null);
   const contentReadyRef = useRef(onContentReady);
   const completeRef = useRef(ensureComplete);
+  const blocksReaderRef = useRef(ensureBlocks);
+  blocksReaderRef.current = ensureBlocks;
   const moreContentRef = useRef(hasMoreContent);
   const fullActionRef = useRef(0);
   const pendingFullAction = useRef(false);
+  const pendingFullPromise = useRef<Promise<void> | null>(null);
+  const pendingSelection = useRef<"all" | "end" | null>(null);
+  const clipboardQueue = useRef<Promise<void>>(Promise.resolve());
   const currentEditorRef = useRef<Editor | null>(null);
   contentReadyRef.current = onContentReady;
   completeRef.current = ensureComplete;
@@ -121,6 +129,7 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
   const [slash, setSlash] = useState<{ query: string; from: number; to: number } | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [contentError, setContentError] = useState<string | null>(null);
+  const [clipboardNotice, setClipboardNotice] = useState<string | null>(null);
   onChangeRef.current = onChange;
   readOnlyRef.current = readOnly;
 
@@ -147,18 +156,43 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
     shouldRerenderOnTransaction: false,
     editorProps: {
       handleKeyDown: (_view, event) => {
-        if (!moreContentRef.current || !completeRef.current || !(event.ctrlKey || event.metaKey)) return false;
-        if (pendingFullAction.current && ["c", "x"].includes(event.key.toLowerCase())) { event.preventDefault(); return true; }
+        if (!(event.ctrlKey || event.metaKey)) return false;
+        if (pendingFullAction.current && ["c", "x"].includes(event.key.toLowerCase())) {
+          event.preventDefault();
+          const ready = pendingFullPromise.current;
+          const selectAll = pendingSelection.current === "all";
+          const action = fullActionRef.current;
+          const cut = event.key.toLowerCase() === "x";
+          setClipboardNotice("正在读取完整内容并" + (cut ? "剪切" : "复制") + "…");
+          clipboardQueue.current = clipboardQueue.current.catch(() => {}).then(async () => {
+            if (!ready) throw new Error("完整读取尚未准备好，请重试复制。");
+            await ready;
+            const current = currentEditorRef.current;
+            if (!current || current.isDestroyed || fullActionRef.current !== action) throw new Error("正文已变化或文档已切换，复制已取消，原内容已保留。");
+            if (!selectAll) throw new Error("当前没有完整选区，请重新选择后复制。");
+            const ids = locateEditorBlocks(current.state.doc).filter(entry => entry.parentId === null).map(entry => entry.id);
+            const result = await copyBlocks(current, ids, cut);
+            setClipboardNotice(result.message ?? (result.ok ? "已复制完整内容" : "复制失败，原内容已保留"));
+          }).catch(error => setClipboardNotice(error instanceof Error ? error.message : "复制失败，原内容已保留。"));
+          return true;
+        }
+        if (!moreContentRef.current || !completeRef.current) return false;
         if (event.key.toLowerCase() !== "a" && event.key !== "End") return false;
         event.preventDefault();
+        if (pendingFullAction.current) { pendingSelection.current = event.key.toLowerCase() === "a" ? "all" : "end"; return true; }
         const action = ++fullActionRef.current;
         pendingFullAction.current = true;
-        void completeRef.current().then(() => {
+        pendingSelection.current = event.key.toLowerCase() === "a" ? "all" : "end";
+        const ready = completeRef.current().then(() => {
           const editor = currentEditorRef.current;
-          if (fullActionRef.current !== action || !editor || editor.isDestroyed) return;
-          if (event.key.toLowerCase() === "a") editor.chain().focus().selectAll().run();
+          if (fullActionRef.current !== action || !editor || editor.isDestroyed) throw new Error("正文已变化或文档已切换，完整读取已取消。");
+          if (pendingSelection.current === "all") editor.chain().focus().selectAll().run();
           else editor.chain().focus().setTextSelection(editor.state.doc.content.size - 1).scrollIntoView().run();
-        }).catch(() => { /* The page reports a recoverable loading error. */ }).finally(() => { pendingFullAction.current = false; });
+        });
+        pendingFullPromise.current = ready;
+        void ready.catch(error => setClipboardNotice(error instanceof Error ? error.message : "完整读取失败，请重试。")).finally(() => {
+          if (pendingFullPromise.current === ready) { pendingFullAction.current = false; pendingFullPromise.current = null; pendingSelection.current = null; }
+        });
         return true;
       },
     },
@@ -175,6 +209,17 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
     onSelectionUpdate: ({ editor: current }) => { setSlash(slashQuery(current)); },
   });
   currentEditorRef.current = editor;
+
+  useEffect(() => {
+    if (!editor) return;
+    return registerBlockActionReader(editor, {
+      needsRead: ids => selectedBlocksNeedRead(editor, ids, loadingRef.current),
+      ensure: async ids => {
+        if (!blocksReaderRef.current) throw new Error("无法读取完整子内容，操作已取消，原内容已保留。");
+        await blocksReaderRef.current(ids);
+      },
+    });
+  }, [editor]);
 
   useEffect(() => {
     if (editor) editor.view.dispatch(editor.state.tr.setMeta(contentLoadingKey, true));
@@ -408,6 +453,7 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
     ].map(item=><ActionButton key={item.label} role="menuitem" onMouseDown={event=>event.preventDefault()} onClick={()=>{item.run();setMoreOpen(false);}}>{item.label}</ActionButton>)}</div>,document.body) : null}
     {uploadError ? <p role="alert" className="orbis-tiptap-error">{uploadError}</p> : null}
     {contentError ? <div role="alert" className="orbis-tiptap-error"><p>{contentError}</p><ActionButton type="button" disabled={readOnly} onClick={() => editor && emitChange(editor)}>重试保存正文</ActionButton></div> : null}
+    {clipboardNotice ? <div role="status" className="orbis-block-notice">{clipboardNotice}<button type="button" aria-label="关闭复制提示" onClick={() => setClipboardNotice(null)}>×</button></div> : null}
     {!readOnly && editor && (slash || menuOpen) ? createPortal(<div style={insertPosition} className="orbis-tiptap-menu" role="listbox" aria-label="插入内容">{visible.length ? visible.map((item, index) => <ActionButton type="button" role="option" aria-selected={index === activeCommand % visible.length} key={item.label} onMouseDown={(event) => event.preventDefault()} onClick={() => run(item)}>{item.icon}{item.label}</ActionButton>) : <p>没有匹配的内容块</p>}</div>, document.body) : null}
     {editor ? <BlockControls editor={editor} readOnly={readOnly} noteId={noteId} /> : null}
     <EditorContent editor={editor} aria-label="文档正文" />

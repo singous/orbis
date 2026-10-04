@@ -83,6 +83,9 @@ test('native clipboard paste preserves image references and documentation proper
   await page.locator('.ProseMirror > p').first().click();
   await page.keyboard.press('ControlOrMeta+A');
   await page.keyboard.press('ControlOrMeta+C');
+  // The commands remain immediate; wait for the real asynchronous clipboard
+  // write before a hard navigation can destroy the source page's fetches.
+  await expect.poll(async () => page.evaluate(() => navigator.clipboard.readText())).toContain('Retain the body');
   await page.goto(`/documents/${destination.id}`);
   await page.locator('.ProseMirror').click();
   await page.keyboard.press('ControlOrMeta+V');
@@ -121,10 +124,14 @@ test('private resources wait for a visible tab, viewport or explicit download', 
   ] };
   expect((await request.put(`${api}/notes/${note.id}/content`, { headers, data: { expected_version: 1, blocks: source } })).ok()).toBe(true);
   await page.goto(`/documents/${note.id}`);
+  await page.locator('[data-block-loader="tabs"] button').click();
   await expect(page.getByRole('tab', { name: '文字标签' })).toHaveAttribute('aria-selected', 'true');
+  await page.locator('[data-block-loader="visible-tab"] button').click();
+  await expect(page.getByText('Visible text', { exact: true })).toBeVisible();
   await page.waitForTimeout(200);
   expect([...requests.values()]).toEqual([]);
   await page.getByRole('tab', { name: '隐藏图片' }).click();
+  await page.locator('[data-block-loader="hidden-tab"] button').click();
   await expect(page.getByRole('img', { name: '隐私图' })).toBeVisible();
   expect(requests.get(hiddenId)).toBe(1);
   expect(requests.has(distantId)).toBe(false);

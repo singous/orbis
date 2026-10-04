@@ -12,6 +12,7 @@ import { blockActionAvailability, createBlockActionContext, BLOCK_GROUP_KINDS } 
 import { indexBlocks } from './block-tree';
 import { blockSelectionKey, clearBlockSelection, isEmbeddedInput, selectBlock, setBlockSelection, setBlockTarget } from './block-selection';
 import { copyBlocks, pasteBlocks, installBlockClipboard, type BlockClipboardResult } from './block-clipboard';
+import { blockActionNeedsRead, prepareBlockAction } from './block-action-read';
 import '../../../styles/block-controls.css';
 
 const LABELS:Record<string,string>={paragraph:'段落',heading:'标题',bulletListItem:'无序列表',numberedListItem:'有序列表',checkListItem:'任务清单',quote:'引用',codeBlock:'代码块',table:'表格',image:'图片',video:'视频',audio:'音频',file:'附件',divider:'分隔线',toggleListItem:'折叠块',...Object.fromEntries(Object.entries(DOCUMENT_BLOCKS).map(([kind,definition])=>[kind,definition.label]))};
@@ -59,9 +60,25 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
   }
   setNotice(result.message??(result.ok?'已复制块':''));
  }
+ function copySelected(cut=false) {
+  const chosen=[...idsRef.current];
+  if(blockActionNeedsRead(editor,chosen))setNotice('正在读取所选块的完整子内容…');
+  void copyBlocks(editor,chosen,cut).then(receive);
+  setOpen(false);
+ }
  function run(action:BlockAction) {
   if(readonlyRef.current)return;
-  const result=executeBlockCommand(editor,idsRef.current,action);
+  const chosen=[...idsRef.current];
+  if (['duplicate','ungroup'].includes(action.type) && blockActionNeedsRead(editor,chosen)) {
+   setOpen(false);setNotice('正在读取所选块的完整子内容…');
+   void prepareBlockAction(editor,chosen).then(()=>perform(action,chosen)).catch(error=>setNotice(error instanceof Error?error.message:'读取失败，操作已取消，原内容已保留。'));
+   return;
+  }
+  perform(action,chosen);
+ }
+ function perform(action:BlockAction,chosen:string[]) {
+  if(editor.isDestroyed||readonlyRef.current)return;
+  const result=executeBlockCommand(editor,chosen,action);
   setOpen(false);
   if(!result.ok){setNotice(result.message??'无法完成此操作');return;}
   setNotice('');
@@ -76,7 +93,11 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
   const element=entry?editor.view.nodeDOM(entry.pos):null;
   const root=editor.view.dom.closest('.orbis-tiptap');
   if(!(element instanceof HTMLElement)||!root){setPoint(null);return;}
-  const rect=element.getBoundingClientRect(), parent=root.getBoundingClientRect();
+  const ownRect=element.getBoundingClientRect();
+  // Empty transparent containers have no hit area until their children load.
+  // The sibling read control remains an explicit handle for that same block.
+  const loader=ownRect.height?null:[...editor.view.dom.querySelectorAll<HTMLElement>('[data-block-loader]')].find(node=>node.dataset.blockLoader===id);
+  const rect=loader?.getBoundingClientRect()??ownRect, parent=root.getBoundingClientRect();
   const controlsWidth=controlsRef.current?.getBoundingClientRect().width??0;
   const next={top:rect.top-parent.top+2,left:Math.max(HANDLE_CLEARANCE-parent.left,rect.left-parent.left-controlsWidth-HANDLE_CLEARANCE)};
   setPoint(previous=>previous?.top===next.top&&previous?.left===next.left?previous:next);
@@ -105,7 +126,10 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
   let expandTarget:Element|null=null;
   const blockAt=(target:EventTarget|null,x:number,y:number)=>{
    try {
-    const hit = (target instanceof Element ? target : target instanceof Node ? target.parentElement : null)?.closest<HTMLElement>('[data-orbis-block-id]');
+    const targetElement=target instanceof Element?target:target instanceof Node?target.parentElement:null;
+    const loader=targetElement?.closest<HTMLElement>('[data-block-loader]');
+    if(loader&&dom.contains(loader))return locateEditorBlocks(editor.state.doc).find(entry=>entry.id===loader.dataset.blockLoader);
+    const hit = targetElement?.closest<HTMLElement>('[data-orbis-block-id]');
     if (hit && dom.contains(hit)) return locateEditorBlocks(editor.state.doc).find(entry => entry.id === hit.dataset.orbisBlockId);
     if(target instanceof Node&&dom.contains(target))return ownedOrbisBlock(editor.state.doc,editor.view.posAtDOM(target,0));
     const bounds=dom.getBoundingClientRect();
@@ -269,18 +293,18 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
   {open&&current?createPortal(<div ref={menuRef} className="orbis-block-menu" role="menu" aria-label="块操作" style={{top:menuPoint.top,left:menuPoint.left}} onKeyDown={event=>{
    if ((event.ctrlKey||event.metaKey) && ['c','x','v'].includes(event.key.toLowerCase())) {
     const key=event.key.toLowerCase();setOpen(false);editor.view.focus();
-    if(key!=='v'){event.preventDefault();void copyBlocks(editor,idsRef.current,key==='x').then(receive);}return;
+    if(key!=='v'){event.preventDefault();copySelected(key==='x');}return;
    }
    if(event.key==='Escape'){event.preventDefault();event.stopPropagation();setOpen(false);editor.view.focus();}
    if(['ArrowDown','ArrowUp','Home','End'].includes(event.key)&&!(event.target instanceof Element&&event.target.closest('[role="listbox"]'))){const buttons=Array.from(menuRef.current?.querySelectorAll<HTMLButtonElement>('button[role="menuitem"]:not(:disabled)')??[]);if(!buttons.length)return;event.preventDefault();const current=buttons.indexOf(document.activeElement as HTMLButtonElement);const next=event.key==='Home'?0:event.key==='End'?buttons.length-1:(current+(event.key==='ArrowUp'?-1:1)+buttons.length)%buttons.length;buttons[next].focus();}
   }}>
    <div className="block-menu-heading">{ids.length>1?`已选择 ${ids.length} 个块`:LABELS[current.type]??current.type}<span>块操作</span></div>
    {parentBlock?<ActionButton role="menuitem" onClick={()=>{setBlockSelection(editor,[parentBlock.id]);setActiveId(parentBlock.id);}}><ArrowUp size={15}/><span>选择父块：{LABELS[parentBlock.type]??parentBlock.type}</span></ActionButton>:null}
-   <ActionButton role="menuitem" onClick={()=>{void copyBlocks(editor,ids).then(receive);setOpen(false);}}><Copy size={15}/><span>复制块</span><kbd aria-hidden="true">⌘ C</kbd></ActionButton>
+   <ActionButton role="menuitem" onClick={()=>copySelected()}><Copy size={15}/><span>复制块</span><kbd aria-hidden="true">⌘ C</kbd></ActionButton>
    {!readOnly?<ActionButton role="menuitem" onClick={()=>{editor.view.focus();void pasteBlocks(editor,ids).then(receive);setOpen(false);}}><Copy size={15}/><span>粘贴块</span><kbd aria-hidden="true">⌘ V</kbd></ActionButton>:null}
    <ActionButton role="menuitem" disabled={!noteId} onClick={()=>void copyLink()}><Link2 size={15}/><span>复制块链接</span></ActionButton>
    {!readOnly?<>
-    <ActionButton role="menuitem" onClick={()=>{void copyBlocks(editor,ids,true).then(receive);setOpen(false);}}><span className="block-menu-icon">✂</span><span>剪切块</span><kbd aria-hidden="true">⌘ X</kbd></ActionButton>
+    <ActionButton role="menuitem" onClick={()=>copySelected(true)}><span className="block-menu-icon">✂</span><span>剪切块</span><kbd aria-hidden="true">⌘ X</kbd></ActionButton>
     {actionItem('创建副本',{type:'duplicate'},<Copy size={15}/>)}
     <div className="block-menu-separator"/>
     {convertOptions.length?<SelectField aria-label="转换块类型" value={current.type==='heading'?`heading:${current.props.level??1}`:current.type} options={convertOptions} onChange={value=>{const [target,level]=value.split(':');run({type:'convert',target,level:level?Number(level):undefined});}}/>:null}

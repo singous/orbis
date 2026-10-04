@@ -42,6 +42,7 @@ function LiveDocumentEditor({ blocks, onChange, ...props }: {
   noteId: string;
   onContentReady?: (handle: EditorContentHandle | null) => void;
   ensureComplete?: () => Promise<void>;
+  ensureBlocks?: (ids: string[]) => Promise<void>;
   hasMoreContent?: boolean;
   loadStates?: ReadonlyMap<string, BlockLoadState>;
   onLoadBlock?: (id: string) => Promise<void>;
@@ -385,6 +386,41 @@ export function DocumentEditorPage() {
     }
   }
 
+  async function loadSelectedSubtrees(ids: string[]): Promise<void> {
+    const handle = contentHandle.current;
+    const coordinator = coordinatorRef.current;
+    const window = contentWindow.current;
+    const abort = contentAbort.current;
+    if (!handle || !coordinator || !window || !abort) throw new Error("正文尚未准备好，请稍后重试。");
+    const sameSession = () => !abort.signal.aborted && contentHandle.current === handle && coordinatorRef.current === coordinator && contentWindow.current === window;
+    while (sameSession()) {
+      const selected = new Set(ids);
+      const present = new Set<string>();
+      const retained = new Set<string>();
+      const visit = (items: import("../notes/block-model").OrbisBlock[], within = false) => {
+        for (const item of items) {
+          if (selected.has(item.id)) present.add(item.id);
+          const chosen = within || selected.has(item.id);
+          if (chosen) retained.add(item.id);
+          visit(item.children, chosen);
+        }
+      };
+      visit(handle.snapshot().blocks);
+      if (ids.some(id => !present.has(id))) throw new Error("目标块已不在当前文档中，操作已取消。");
+      const pending = [...retained].find(id => {
+        const state = loadStatesRef.current.get(id);
+        return state && (!state.payload_loaded || !state.children_loaded);
+      });
+      if (!pending) return;
+      const before = loadStatesRef.current.get(pending)!;
+      await loadNestedContent(pending);
+      if (!sameSession()) break;
+      const after = loadStatesRef.current.get(pending);
+      if (!after || after.offset === before.offset && after.payload_loaded === before.payload_loaded && after.children_loaded === before.children_loaded) throw new Error("子内容未能完整载入，请重试后再操作。");
+    }
+    throw new Error("文档已切换，读取已取消，原内容已保留。");
+  }
+
   const loadMoreRef = useRef(loadMoreContent);
   loadMoreRef.current = loadMoreContent;
   useEffect(() => {
@@ -621,6 +657,7 @@ export function DocumentEditorPage() {
                   hasMoreContent={hasMoreContent || hasPendingContent(loadStates)}
                   loadStates={loadStates}
                   onLoadBlock={loadNestedContent}
+                  ensureBlocks={loadSelectedSubtrees}
                   readOnly={!canEdit || editorBusy}
                   onError={(message) => { editorErrorRef.current = message; setEditorError(message); }}
                   onChange={({ blocks }) => changeDraft({ ...(coordinatorRef.current?.current ?? draft), blocks })}
