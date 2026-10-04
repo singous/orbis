@@ -163,7 +163,9 @@ test("a notebook publishes its complete tree and editable documentation componen
   await page.reload();
   await expandNestedContent(page);
   await expect(page.locator(".doc-editor-callout .doc-editor-title").filter({ hasText: "编辑器插入的提示" })).toBeVisible();
+  await page.locator(".orbis-tiptap .ProseMirror > p").last().click();
   await page.getByLabel("选择上传文件").setInputFiles({ name: "documentation.png", mimeType: "image/png", buffer: imagePng });
+  await page.getByRole("figure", { name: "documentation.png", exact: true }).scrollIntoViewIfNeeded();
   const image = page.locator('.orbis-media img[alt="documentation.png"]');
   await expect(image).toBeVisible();
   await expect.poll(async () => image.evaluate((element) => (element as HTMLImageElement).naturalWidth)).toBe(12);
@@ -196,6 +198,7 @@ test("a notebook publishes its complete tree and editable documentation componen
   await expect(preview.getByText("25 篇页面", { exact: true })).toBeVisible();
   await expect(preview.getByRole("navigation", { name: "预览页面" }).getByRole("button")).toHaveCount(25);
   await expect(preview.getByRole("link", { name: "阅读入门指南" })).toBeVisible();
+  await preview.getByRole("figure", { name: "documentation.png", exact: true }).scrollIntoViewIfNeeded();
   await expect.poll(async () => preview.getByRole("img", { name: "documentation.png" }).evaluate((element) => (element as HTMLImageElement).naturalWidth)).toBe(12);
   await expect.poll(() => preview.locator(".site-preview-page .document-prose").evaluate(contentShape)).toEqual(editorShape);
   await preview.getByRole("link", { name: "继续阅读安装指南" }).click();
@@ -216,6 +219,7 @@ test("a notebook publishes its complete tree and editable documentation componen
   await expect(reader.locator("#orbis-site-bootstrap")).toHaveCount(0);
   await expect(reader.getByRole("heading", { name: "快速开始", level: 1 })).toBeVisible();
   const publicImage = reader.getByRole("img", { name: "documentation.png" });
+  await reader.getByRole("figure", { name: "documentation.png", exact: true }).scrollIntoViewIfNeeded();
   await expect.poll(async () => publicImage.evaluate((element) => (element as HTMLImageElement).naturalWidth)).toBe(12);
   await expect.poll(() => reader.locator(".site-reader .document-prose").evaluate(contentShape)).toEqual(editorShape);
   const assetUrl = await publicImage.getAttribute("src");
