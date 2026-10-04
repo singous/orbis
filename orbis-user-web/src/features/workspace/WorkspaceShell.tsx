@@ -81,11 +81,14 @@ function WorkspaceShellContent({ children, sectionTitle, sidebar, toolbar, conte
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const focusable = () => Array.from(region?.querySelectorAll<HTMLElement>('a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]') ?? []).filter((element) => !element.closest("[hidden], [inert]") && getComputedStyle(element).display !== "none" && getComputedStyle(element).visibility !== "hidden");
     focusable()[0]?.focus();
-    const inNestedOverlay = (event: KeyboardEvent) => event.target instanceof Element && Boolean(event.target.closest('[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]'));
+    // A nested overlay may unmount earlier in the same keyboard dispatch.
+    // The composed path retains its ownership even after the target detaches.
+    const inNestedOverlay = (event: KeyboardEvent) => event.composedPath().some(node => node instanceof Element && node.matches('[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]'));
     // Tooltip/focusable controls stop React keyboard propagation. Capture only
     // drawer dismissal, yielding to functional overlays and input composition.
     function handleEscape(event: KeyboardEvent) {
       if (event.key !== "Escape" || searchOpenRef.current || event.defaultPrevented || event.isComposing || inNestedOverlay(event)) return;
+      if (event.target instanceof Node && event.target !== document.body && event.target !== document && !region?.contains(event.target)) return;
       setMainNavigationOpen(false);
       setDocumentContextOpen(false);
       event.preventDefault();

@@ -165,7 +165,8 @@
 .workspace-user-actions-label { padding: 3px 10px 6px; font-size: var(--orbis-text-caption-size); color: var(--text-tertiary); line-height: var(--orbis-text-caption-leading); }
 .workspace-user-menu-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: var(--orbis-space-2) var(--orbis-space-3); font-size: var(--orbis-text-ui-size); text-align: left; line-height: var(--orbis-text-ui-leading); min-height: var(--orbis-control-default-height); }
 .workspace-user-menu-item svg { width: var(--orbis-icon-default-size); height: var(--orbis-icon-default-size); }
-.workspace-appearance-popover { width: 168px; min-width: 0; max-width: calc(100vw - 24px); }
+.workspace-appearance-dialog { width: min(320px, calc(100vw - 32px)); }
+.workspace-appearance-dialog [data-slot="radio-content"] { min-height: var(--orbis-control-form-height); gap: var(--orbis-space-3); }
 .rail-create-trigger { display: grid; place-items: center; width: var(--compact-control-height); height: var(--compact-control-height); color: var(--text-oninverse); background: var(--surface-inverse); border: 1px solid var(--accent); box-shadow: 0 1px 2px #0002; }
 .rail-create-trigger:hover { background: var(--surface-inverse-hover); }
 .rail-create-soon { margin-left: auto; color: var(--text-tertiary); font-size: var(--orbis-text-caption-size); line-height: var(--orbis-text-caption-leading); }

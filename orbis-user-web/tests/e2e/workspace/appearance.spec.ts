@@ -17,14 +17,17 @@ async function chooseAppearance(page: Page, label: string) {
   if (page.viewportSize()!.width < 768 && await page.locator('.workspace-shell').getAttribute('data-app-surface') === 'web' && await drawer.getAttribute("aria-expanded") !== "true") await drawer.click();
   await page.getByRole("button", { name: "打开用户菜单", exact: true }).click();
   await page.getByRole("menuitem", { name: "外观", exact: true }).click();
-  const menu = page.getByRole("menu", { name: "外观", exact: true });
+  const menu = page.getByRole("dialog", { name: "外观", exact: true });
   await expect(menu).toBeVisible();
   const bounds = (await menu.boundingBox())!;
   expect(bounds.x).toBeGreaterThanOrEqual(0);
   expect(bounds.x + bounds.width).toBeLessThanOrEqual(page.viewportSize()!.width);
   expect(bounds.y + bounds.height).toBeLessThanOrEqual(page.viewportSize()!.height);
-  await menu.getByRole("menuitemradio", { name: label, exact: true }).click();
-  await expect(page.locator(".workspace-user-popover")).toBeHidden();
+  await menu.getByText(label, { exact: true }).click();
+  await expect(menu.getByRole("radio", { name: label, exact: true })).toBeChecked();
+  await page.keyboard.press("Escape");
+  await expect(menu).toBeHidden();
+  await expect(page.getByRole("button", { name: "打开用户菜单", exact: true })).toBeFocused();
 }
 
 for (const surface of ["web", "desktop"] as const) for (const width of [1440, 390]) {
@@ -87,20 +90,20 @@ test("appearance switching keeps the current editor and its content mounted", as
   expect(await page.evaluate(element => element === document.querySelector(".tiptap.ProseMirror"), original)).toBe(true);
 });
 
-test("the appearance submenu supports keyboard selection and restores avatar focus", async ({ page, request }) => {
+test("the appearance dialog supports keyboard selection and restores avatar focus", async ({ page, request }) => {
   await signIn(page, request);
   const trigger = page.getByRole("button", { name: "打开用户菜单", exact: true });
   await trigger.focus();
   await trigger.press("ArrowDown");
   const appearance = page.getByRole("menuitem", { name: "外观", exact: true });
   await appearance.focus();
-  await appearance.press("ArrowRight");
-  const menu = page.getByRole("menu", { name: "外观", exact: true });
+  await appearance.press("Enter");
+  const menu = page.getByRole("dialog", { name: "外观", exact: true });
   await expect(menu).toBeVisible();
-  await menu.getByRole("menuitemradio", { name: "白天", exact: true }).focus();
+  await menu.getByRole("radio", { name: "白天", exact: true }).focus();
   await page.keyboard.press("ArrowDown");
-  await expect(menu.getByRole("menuitemradio", { name: "夜间", exact: true })).toBeFocused();
-  await page.keyboard.press("Enter");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.keyboard.press("Escape");
+  await expect(menu).toBeHidden();
   await expect(trigger).toBeFocused();
 });
