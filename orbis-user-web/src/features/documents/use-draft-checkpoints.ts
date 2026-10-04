@@ -5,13 +5,21 @@ import { createOwnedDraftCheckpoints } from "./owned-draft-checkpoints";
 /** Account, workspace, document and browser lane each own an isolated draft. */
 export function useDraftCheckpoints(scopeKey: string) {
   const active = useRef<object | null>(null);
-  const [status, setStatus] = useState<CheckpointStatus>({ status: "cleared", sequence: 0 });
+  const latestStatus = useRef<CheckpointStatus>({ status: "cleared", sequence: 0 });
+  const [, setStatus] = useState<CheckpointStatus>(latestStatus.current);
   const [candidates, setCandidates] = useState<DraftCheckpoint[]>([]);
   const [recovery, setRecovery] = useState<DraftCheckpoint | null>(null);
   const session = useMemo(() => {
     const identity = { consumers: 0 };
     const controller = createOwnedDraftCheckpoints({ scopeKey,
-      onStatus: event => { if (active.current === identity) setStatus(event); },
+      onStatus: event => {
+        if (active.current !== identity) return;
+        const previous = latestStatus.current;
+        latestStatus.current = event;
+        // Sequence changes belong to the controller. Repeated pending events
+        // must not make React traverse the editing DOM on every key.
+        if (previous.status !== event.status || previous.error !== event.error) setStatus(event);
+      },
       onCandidates: records => { if (active.current === identity) setCandidates(records); },
     });
     return { identity, controller };
@@ -19,7 +27,8 @@ export function useDraftCheckpoints(scopeKey: string) {
   active.current = session.identity;
   useEffect(() => {
     session.identity.consumers += 1;
-    setStatus({ status: "cleared", sequence: 0 }); setCandidates([]); setRecovery(null);
+    latestStatus.current = { status: "cleared", sequence: 0 };
+    setStatus(latestStatus.current); setCandidates([]); setRecovery(null);
     return () => {
       session.identity.consumers -= 1;
       queueMicrotask(() => {
@@ -35,6 +44,6 @@ export function useDraftCheckpoints(scopeKey: string) {
     const owned = await session.controller.read();
     if (active.current === session.identity && owned) { setRecovery(owned); setCandidates([]); }
   }
-  return { controller: session.controller, status, candidates, recovery, chooseRecovery,
+  return { controller: session.controller, get status() { return latestStatus.current; }, candidates, recovery, chooseRecovery,
     consumeRecovery: () => setRecovery(null), dismissCandidates: () => setCandidates([]) };
 }

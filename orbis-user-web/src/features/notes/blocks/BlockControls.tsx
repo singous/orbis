@@ -1,4 +1,6 @@
 import type { Editor } from '@tiptap/core';
+import type { Transaction } from '@tiptap/pm/state';
+import { inlineTransactionsOnly } from '../tiptap-inline-change';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { GripVertical, Plus, Copy, Link2, ArrowUp, ArrowDown, Layers, Trash2, ChevronRight } from '../../../shared/ui/icons';
@@ -26,10 +28,16 @@ const MAX_SCROLL_STEP=16;
 const HANDLE_CLEARANCE=4;
 type DropTarget={id:string;placement:'before'|'after'|'inside';ok:boolean;message?:string;rect:{top:number;left:number;width:number;height:number}};
 
+/** Inline input preserves block identity and geometry above the active block. */
+function inlineOnly(transaction:Transaction):boolean {
+ return transaction.docChanged && inlineTransactionsOnly([transaction]);
+}
+
 export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:boolean;noteId?:string}) {
  const [doc,setDoc]=useState(editor.state.doc);
+ const liveDoc=useRef(editor.state.doc);
  const [selection,setSelection]=useState(blockSelectionKey.getState(editor.state));
- const [activeId,setActiveId]=useState<string|null>(null);
+ const [activeId,commitActiveId]=useState<string|null>(null);
  const [point,setPoint]=useState<{top:number;left:number}|null>(null);
  const [open,setOpen]=useState(false);
  const [menuPoint,setMenuPoint]=useState({top:0,left:0});
@@ -52,6 +60,12 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
  const idsRef=useRef(ids);idsRef.current=ids;
  const readonlyRef=useRef(readOnly);readonlyRef.current=readOnly;
  const menuOpenRef=useRef(open);menuOpenRef.current=open;
+
+ function setActiveId(id:string|null) {
+  if(activeRef.current===id)return;
+  activeRef.current=id;commitActiveId(id);
+  setDoc(editor.state.doc);
+ }
 
  function receive(result:BlockClipboardResult) {
   if(result.ok && result.selectedIds) {
@@ -105,11 +119,20 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
  useLayoutEffect(()=>{positionHandle(activeId);},[activeId,doc,Boolean(point),readOnly,selection?.ids.length]);
 
  useEffect(()=>{
-  const sync=()=>{
-   setDoc(editor.state.doc);setSelection(blockSelectionKey.getState(editor.state));
+  const sync=({transaction}:{transaction:Transaction})=>{
+   liveDoc.current=editor.state.doc;
+   const inline=inlineOnly(transaction);
+   if(transaction.docChanged&&(menuOpenRef.current||!inline))setDoc(liveDoc.current);
+   const next=blockSelectionKey.getState(editor.state);
+   setSelection(previous=>previous===next||previous&&next&&previous.anchorId===next.anchorId&&previous.focusId===next.focusId&&previous.targetId===next.targetId&&previous.ids.length===next.ids.length&&previous.ids.every((id,index)=>id===next.ids[index])?previous:next);
    if(!menuOpenRef.current&&!dragRef.current) {
-    const current=ownedOrbisBlock(editor.state.doc,editor.state.selection.from);
-    if(current&&editor.view.hasFocus())setActiveId(current.id);
+    if(!editor.view.hasFocus())return;
+    const mapped=editor.view.domAtPos(editor.state.selection.from).node;
+    const element=mapped instanceof Element?mapped:mapped.parentElement;
+    const caretId=element?.closest<HTMLElement>('[data-orbis-block-id]')?.dataset.orbisBlockId;
+    if(inline&&caretId&&caretId===activeRef.current)return;
+    const current=ownedOrbisBlock(liveDoc.current,editor.state.selection.from);
+    if(current)setActiveId(current.id);
    }
   };
   editor.on('transaction',sync);
@@ -215,7 +238,7 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
   const openRequested=()=>{
    const id=blockSelectionKey.getState(editor.state)?.ids[0]??ownedOrbisBlock(editor.state.doc,editor.state.selection.from)?.id;
    if(!id)return;
-   setActiveId(id);positionHandle(id);
+   setDoc(editor.state.doc);setActiveId(id);positionHandle(id);
    if(!blockSelectionKey.getState(editor.state)?.ids.length)selectBlock(editor,id);
    setOpen(true);
   };
@@ -276,11 +299,12 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
   const allowed=availability(action);
   return <ActionButton key={label} role="menuitem" className={action.type==='delete'?'block-action-danger':''} disabled={!allowed.ok} title={allowed.message} onClick={()=>run(action)}>{icon}<span>{label}</span></ActionButton>;
  };
- const convertOptions=CONVERSIONS.filter(option=>{const [target,level]=option.value.split(':');return availability({type:'convert',target,level:level?Number(level):undefined}).ok;});
+ const convertOptions=open?CONVERSIONS.filter(option=>{const [target,level]=option.value.split(':');return availability({type:'convert',target,level:level?Number(level):undefined}).ok;}):[];
  return <>
   {current&&point?<div ref={controlsRef} className="orbis-block-controls" contentEditable={false} style={point}>
    {!readOnly?<ActionButton className="block-add" aria-label="在块后插入" title="在下方插入" onMouseDown={e=>e.preventDefault()} onClick={()=>{setBlockSelection(editor,[current.id]);idsRef.current=[current.id];run({type:'insert',side:'after'});}}><Plus size={15}/></ActionButton>:null}
    <button type="button" ref={handleRef} className="block-grip" aria-label={`块操作：${LABELS[current.type]??current.type}`} aria-haspopup="menu" aria-expanded={open} title="点击打开块菜单 · 拖动移动块" draggable={!readOnly} onClick={event=>{
+    setDoc(editor.state.doc);
     if (event.shiftKey || event.metaKey || event.ctrlKey || !blockSelectionKey.getState(editor.state)?.ids.includes(current.id)) selectBlock(editor,current.id,{shift:event.shiftKey,toggle:event.metaKey||event.ctrlKey});
     if(event.shiftKey||event.ctrlKey||event.metaKey){setOpen(false);editor.view.focus();}else setOpen(value=>!value);
    }} onDragStart={event=>{

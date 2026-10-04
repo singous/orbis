@@ -47,12 +47,13 @@ function LiveDocumentEditor({ blocks, onChange, ...props }: {
   loadStates?: ReadonlyMap<string, BlockLoadState>;
   onLoadBlock?: (id: string) => Promise<void>;
 }) {
-  const [local, setLocal] = useState({ source: blocks, value: blocks });
+  const local = useRef({ source: blocks, value: blocks });
   // A restored/server revision replaces local content before editability
-  // changes reach the editor. Ordinary keystrokes only rerender this boundary.
-  if (local.source !== blocks) setLocal({ source: blocks, value: blocks });
-  return <TiptapEditor {...props} blocks={local.source === blocks ? local.value : blocks} onChange={next => {
-    setLocal({ source: blocks, value: next.blocks });
+  // changes reach the editor. ProseMirror owns ordinary input; keep its latest
+  // echo for a later parent render without committing React on each key.
+  if (local.current.source !== blocks) local.current = { source: blocks, value: blocks };
+  return <TiptapEditor {...props} blocks={local.current.value} onChange={next => {
+    local.current.value = next.blocks;
     onChange(next);
   }} />;
 }
