@@ -226,7 +226,11 @@ async def get_revision(
         or revision.workspace_id != note.workspace_id
     ):
         raise RevisionNotFound
-    return revision
+    from orbis_user_api.application.block_content import read_stored_content
+    content = await read_stored_content(note, session, revision.content_version)
+    return NoteRevision(id=revision.id, workspace_id=revision.workspace_id, note_id=revision.note_id,
+        author_id=revision.author_id, author_name=revision.author_name, content_version=revision.content_version,
+        blocks=content.blocks, plain_text=content.plain_text, created_at_ms=revision.created_at_ms)
 
 
 async def restore_revision(

@@ -17,7 +17,7 @@ function clone<T>(value: T): T { return structuredClone(value); }
 function signature(node: JSONContent): string {
   const attrs = node.attrs ?? {};
   const kept = Object.fromEntries(Object.entries(attrs).filter(([key, value]) =>
-    !["orbisOriginal", "orbisSignature"].includes(key) && value !== null && value !== undefined &&
+    !["orbisOriginal", "orbisSignature", "orbisOwn"].includes(key) && value !== null && value !== undefined &&
     !(key === "colspan" && value === 1) && !(key === "rowspan" && value === 1) &&
     !(key === "start" && value === 1) && !(["checked", "orbisOwn"].includes(key) && value === false),
   ));
@@ -243,7 +243,9 @@ function blockToNode(value: OrbisBlock): StoredNode {
   // Ordinary BlockNote blocks may also own nested blocks. A wrapper keeps the
   // visible children editable instead of dropping them during conversion.
   const head = { ...value, children: [] };
-  return own({ type: "orbisContainer", attrs: { ...metadata(value), kind: value.type }, content: [singleNode(head), ...blocksToNodes(value.children)] }, value);
+  const ownHead = singleNode(head);
+  ownHead.attrs = { ...ownHead.attrs, orbisOwn: true };
+  return own({ type: "orbisContainer", attrs: { ...metadata(value), kind: value.type }, content: [ownHead, ...blocksToNodes(value.children)] }, value);
 }
 
 function blocksToNodes(values: OrbisBlock[]): JSONContent[] {
@@ -324,16 +326,98 @@ export function toTiptapDocument(value: NoteBlocksV2): JSONContent {
 // Weak keys release the cached values when the document/history releases them.
 const savedBlocks = new WeakMap<ProseMirrorNode, OrbisBlock[]>();
 
+// Own-body comparisons never include descendants. The source object survives
+// content-only PM edits through attrs; compute its expected signature once.
+const ownSignatures = new WeakMap<OrbisBlock, Map<string, string>>();
+const savedListItems = new WeakMap<ProseMirrorNode, Map<string, OrbisBlock>>();
+
+function ownJSON(node: ProseMirrorNode, children: readonly ProseMirrorNode[]): JSONContent {
+  return { type: node.type.name, attrs: node.attrs, content: children.map((child) => child.toJSON()) };
+}
+
+function ownOriginal(node: ProseMirrorNode, target: string, children: readonly ProseMirrorNode[], listType?: ListBlockType): OrbisBlock | null {
+  const source = node.attrs.orbisOriginal as OrbisBlock | null | undefined;
+  if (!source || source.type !== target) return null;
+  const context = `${listType ?? node.type.name}:${children.length}`;
+  let signatures = ownSignatures.get(source);
+  if (!signatures) { signatures = new Map(); ownSignatures.set(source, signatures); }
+  let expected = signatures.get(context);
+  if (expected === undefined) {
+    const ownSource = { ...source, children: [] };
+    const ownNode = listType ? listItemNode(ownSource) : singleNode(ownSource);
+    // Empty quotes with descendants have no synthetic own paragraph.
+    if (node.type.name === "blockquote" && !children.length && !inlineToNodes(source.content).length) ownNode.content = [];
+    expected = signature(ownNode);
+    signatures.set(context, expected);
+  }
+  if (expected !== signature(ownJSON(node, children))) return null;
+  return { ...source, children: [] };
+}
+
+function pmChildren(node: ProseMirrorNode, from = 0): OrbisBlock[] {
+  const values: OrbisBlock[] = [];
+  node.forEach((child, _offset, index) => { if (index >= from) values.push(...pmBlocks(child)); });
+  return values;
+}
+
+function pmListItem(item: ProseMirrorNode, type: ListBlockType, start?: number): OrbisBlock {
+  const context = `${type}:${start ?? "implicit"}`;
+  let cache = savedListItems.get(item);
+  const cached = cache?.get(context);
+  if (cached) return cached;
+  const head = item.firstChild;
+  const own = ownOriginal(item, type, head ? [head] : [], type);
+  let result: OrbisBlock;
+  if (own && (type !== "numberedListItem" || start === undefined || Number(own.props.start ?? 1) === start)) {
+    result = { ...own, children: pmChildren(item, 1) };
+  } else {
+    const itemProps = clone((item.attrs.orbisProps ?? {}) as Record<string, unknown>);
+    if (type === "checkListItem") itemProps.checked = Boolean(item.attrs.checked);
+    if (type === "numberedListItem") {
+      if (start !== undefined && start !== 1) itemProps.start = start;
+      else delete itemProps.start;
+    }
+    result = block(item.attrs.orbisId, type, itemProps, nodesToInline(head?.toJSON().content), pmChildren(item, 1));
+  }
+  if (!cache) { cache = new Map(); savedListItems.set(item, cache); }
+  cache.set(context, result);
+  return result;
+}
+
+function pmBlocks(node: ProseMirrorNode): OrbisBlock[] {
+  const cached = savedBlocks.get(node);
+  if (cached) return cached;
+  const type = node.type.name;
+  let result: OrbisBlock[];
+  if (type === "bulletList" || type === "orderedList" || type === "taskList") {
+    const itemType: ListBlockType = type === "bulletList" ? "bulletListItem" : type === "orderedList" ? "numberedListItem" : "checkListItem";
+    result = [];
+    node.forEach((item, _offset, index) => result.push(pmListItem(item, itemType, type === "orderedList" && index === 0 ? Number(node.attrs.start ?? 1) : undefined)));
+  } else if (type === "orbisContainer") {
+    const head = node.firstChild;
+    const own = head ? pmBlocks(head)[0] : block(node.attrs.orbisId, String(node.attrs.kind), clone(node.attrs.orbisProps ?? {}), []);
+    result = [{ ...own, id: node.attrs.orbisId ?? own.id, props: { ...clone(node.attrs.orbisProps ?? {}), ...own.props }, children: pmChildren(node, 1) }];
+  } else if (type === "orbisComponent" || type === "orbisToggle" || type === "blockquote") {
+    const kind = type === "blockquote" ? "quote" : type === "orbisToggle" ? "toggleListItem" : String(node.attrs.kind);
+    const head = node.firstChild;
+    const ownFirst = head?.type.name === "orbisToggleSummary" || Boolean(head?.attrs.orbisOwn);
+    const originalBody = ownOriginal(node, kind, ownFirst && head ? [head] : []);
+    const own = originalBody ?? block(node.attrs.orbisId, kind, clone(node.attrs.orbisProps ?? {}), ownFirst ? nodesToInline(head?.toJSON().content) : []);
+    result = [{ ...own, children: pmChildren(node, ownFirst ? 1 : 0) }];
+  } else {
+    // Tables and ordinary leaf blocks own their complete body. Only a changed
+    // leaf reaches this conversion; containers never serialize their subtree.
+    result = nodeToBlock(node.toJSON());
+  }
+  savedBlocks.set(node, result);
+  return result;
+}
+
 export function fromTiptapDocument(value: JSONContent | ProseMirrorNode): NoteBlocksV2 {
   const blocks: OrbisBlock[] = [];
   if (value instanceof ProseMirrorNode) {
     value.forEach((node) => {
-      let saved = savedBlocks.get(node);
-      if (!saved) {
-        saved = nodeToBlock(node.toJSON());
-        savedBlocks.set(node, saved);
-      }
-      blocks.push(...saved);
+      blocks.push(...pmBlocks(node));
     });
   } else {
     blocks.push(...nodesToBlocks(value.content ?? []));

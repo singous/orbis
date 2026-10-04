@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from orbis_user_api.application.site_errors import SiteError, invalid_site_document
 from orbis_user_api.application.site_navigation import PagePaths, manual_page_registry
 from orbis_user_api.domain.site import MAX_NAVIGATION_PAGES
-from orbis_user_api.models.note import Note, Notebook, NoteContent, NoteGroup
+from orbis_user_api.models.note import Note, Notebook, NoteGroup
 from orbis_user_api.models.site import Site
 from orbis_user_api.schemas.site import SiteNavigationItem
 from orbis_user_api.schemas.site_source import SiteSource, SiteSourcePage
@@ -199,12 +199,8 @@ async def resolve_site_source(site: Site, session: AsyncSession) -> ResolvedSour
             selected.append((note, None, entry))
     else:
         selected, excluded_count = await _notebook_selection(source, site, session)
-    content_rows = await session.scalars(
-        select(NoteContent)
-        .where(NoteContent.note_id.in_([note.id for note, _, _ in selected]))
-        .execution_options(populate_existing=True)
-    )
-    contents = {content.note_id: content for content in content_rows}
+    from orbis_user_api.application.block_content import read_stored_content
+    contents = {note.id: await read_stored_content(note, session) for note, _, _ in selected}
     overrides = {item.note_id: item for item in source.page_overrides}
     registry = site.page_registry or {}
     if source.kind == "manual":

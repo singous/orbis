@@ -1,5 +1,6 @@
 import { Editor } from "@tiptap/core";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { EditorState } from "@tiptap/pm/state";
 
 import type { OrbisBlock } from "../../src/features/notes/block-model";
 import { tiptapExtensions } from "../../src/features/notes/tiptap-extensions";
@@ -17,6 +18,32 @@ function open(blocks: OrbisBlock[]) {
 function storedIds(blocks: OrbisBlock[]): string[] { return blocks.flatMap((block) => [block.id, ...storedIds(block.children)]); }
 
 describe("Tiptap persisted block identities", () => {
+  it("edits inline text in a validated document without walking old or new block trees", () => {
+    const editor = open([paragraph("original", "First"), paragraph("untouched", "Keep")]);
+    const before = editor.state;
+    const transaction = before.tr.insertText("typed ", 1);
+    const after = EditorState.create({ doc: transaction.doc, selection: transaction.selection });
+    const oldScan = vi.spyOn(before.doc, "descendants"), newScan = vi.spyOn(after.doc, "descendants");
+    const plugin = before.plugins.find(plugin => plugin.key.startsWith("orbisBlockIds"))!;
+    expect(plugin.spec.appendTransaction!.call(plugin, [transaction], before, after)).toBeNull();
+    expect(oldScan).not.toHaveBeenCalled();
+    expect(newScan).not.toHaveBeenCalled();
+    oldScan.mockRestore(); newScan.mockRestore();
+    editor.view.dispatch(transaction);
+    expect(fromTiptapDocument(editor.state.doc).blocks.map(block => block.id)).toEqual(["original", "untouched"]);
+  });
+
+  it("still repairs initial missing IDs on an inline edit", () => {
+    const content = toTiptapDocument({ schema_version: 2, editor: "blocknote", blocks: [paragraph("original", "First"), paragraph("other", "Keep")] });
+    content.content![1].attrs!.orbisId = null;
+    const editor = new Editor({ extensions: tiptapExtensions, content }); editors.push(editor);
+    editor.commands.insertContentAt(1, "typed ");
+    const ids = storedIds(fromTiptapDocument(editor.state.doc).blocks);
+    expect(ids[0]).toBe("original");
+    expect(ids[1]).toBeTruthy();
+    expect(new Set(ids).size).toBe(2);
+  });
+
   it("gives a split paragraph a new ID while retaining existing block identities", () => {
     const editor = open([paragraph("original", "FirstSecond"), paragraph("untouched", "Keep")]);
     editor.commands.setTextSelection(6);

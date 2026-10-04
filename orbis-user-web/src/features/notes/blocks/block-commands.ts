@@ -6,6 +6,7 @@ import { documentBlockDefinition } from "../../content/document-components";
 import { canonicalJSON, newBlockId, type OrbisBlock } from "../block-model";
 import { fromTiptapDocument, toTiptapDocument } from "../tiptap-model";
 import { blockActionAvailability } from "./block-capabilities";
+import { blockActionNeedsRead } from "./block-action-read";
 import { cloneBlockTree, editBlockChildren, emptyParagraph, indexBlocks, mapBlockTree, normalizeBlockSelection, type BlockAction } from "./block-tree";
 
 export type { BlockAction } from "./block-tree";
@@ -185,6 +186,7 @@ function duplicatePreservesStructure(editor: Editor, blocks: OrbisBlock[], ids: 
 
 export function executeBlockCommand(editor: Editor, ids: string[], action: BlockAction): BlockCommandResult {
   if (!editor.isEditable) return { ok: false, selectedIds: ids, message: "只读文档不能修改块" };
+  if (["duplicate", "ungroup"].includes(action.type) && blockActionNeedsRead(editor, ids)) return { ok: false, selectedIds: ids, message: "子内容尚未完整载入，原内容已保留。" };
   const current = fromTiptapDocument(editor.state.doc).blocks;
   const available = blockActionAvailability(current, ids, action);
   if (!available.ok) return { ...available, selectedIds: ids };

@@ -12,12 +12,16 @@ from orbis_user_api.api.contract import (
     PaginationParams,
     build_page_data,
 )
-from orbis_user_api.api.errors import ApiError
-
 from orbis_user_api.api.deps import (
     get_current_user,
     get_session,
     require_resource_manager,
+)
+from orbis_user_api.api.errors import ApiError
+from orbis_user_api.application.note_content_pages import (
+    get_note_content_outline,
+    get_note_content_page,
+    save_note_content_prefix,
 )
 from orbis_user_api.application.notes import (
     create_note as create_note_service,
@@ -35,22 +39,19 @@ from orbis_user_api.application.notes import (
     update_note_metadata,
 )
 from orbis_user_api.models.note import Note, NoteContent
-from orbis_user_api.application.note_content_pages import (
-    get_note_content_page,
-    get_note_content_outline,
-    save_note_content_prefix,
-)
-
-
 from orbis_user_api.models.user import User
 from orbis_user_api.schemas.note import (
     MarkdownExportResponse,
     MarkdownImportRequest,
+    NoteBlockChangesOut,
+    NoteBlockChangesRequest,
+    NoteBlockOut,
+    NoteChildrenPageOut,
     NoteContentOut,
-    NoteContentPageOut,
     NoteContentOutlineOut,
-    NoteContentPrefixRequest,
+    NoteContentPageOut,
     NoteContentPrefixOut,
+    NoteContentPrefixRequest,
     NoteContentUpdateRequest,
     NoteCreateRequest,
     NoteMetadataUpdateRequest,
@@ -440,3 +441,106 @@ async def read_note_outline(
         raise _not_found("NOTE_NOT_FOUND", "文档不存在") from None
     except UserWorkspaceMissing:
         raise _workspace_forbidden() from None
+
+
+@router.patch(
+    "/notes/{note_id}/blocks",
+    response_model=NoteBlockChangesOut,
+    dependencies=[Depends(require_resource_manager)],
+)
+async def save_note_block_changes(
+    note_id: UUID,
+    payload: NoteBlockChangesRequest,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    from orbis_user_api.application.block_content import BlockContentStore
+
+    try:
+        note = await get_note(note_id, user, session)
+        return await BlockContentStore(session, note).changes(
+            payload.expected_version,
+            payload.upserts,
+            [move.model_dump() for move in payload.moves],
+            payload.deletes,
+            user,
+        )
+    except NoteNotFound:
+        raise _not_found("NOTE_NOT_FOUND", "文档不存在") from None
+    except UserWorkspaceMissing:
+        raise _workspace_forbidden() from None
+    except NoteVersionConflict:
+        await session.rollback()
+        raise ApiError(
+            status_code=409,
+            code="NOTE_VERSION_CONFLICT",
+            message="文档内容版本冲突，本地草稿仍保留。",
+        ) from None
+    except NoteContentInvalid:
+        await session.rollback()
+        raise ApiError(
+            status_code=422,
+            code="NOTE_CONTENT_INVALID",
+            message="块变更、父级或排序关系无效",
+        ) from None
+
+
+@router.get("/notes/{note_id}/content/children", response_model=NoteChildrenPageOut)
+async def read_note_children(
+    note_id: UUID,
+    parent_id: str | None = Query(default=None, max_length=512),
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=32, ge=1, le=256),
+    expected_version: int | None = Query(default=None, ge=1),
+    max_bytes: int = Query(default=131072, ge=4096, le=1048576),
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    from orbis_user_api.application.block_content import BlockContentStore
+
+    try:
+        note = await get_note(note_id, user, session)
+        return await BlockContentStore(session, note).children(
+            parent_id, offset, limit, expected_version, max_bytes
+        )
+    except NoteNotFound:
+        raise _not_found("NOTE_NOT_FOUND", "文档不存在") from None
+    except UserWorkspaceMissing:
+        raise _workspace_forbidden() from None
+    except NoteVersionConflict:
+        raise ApiError(
+            status_code=409, code="NOTE_VERSION_CONFLICT", message="文档内容快照不可用"
+        ) from None
+    except NoteContentInvalid:
+        raise ApiError(
+            status_code=422, code="NOTE_CONTENT_INVALID", message="父块或内容无效"
+        ) from None
+
+
+@router.get("/notes/{note_id}/blocks/{block_id}", response_model=NoteBlockOut)
+async def read_note_block(
+    note_id: UUID,
+    block_id: str,
+    expected_version: int | None = Query(default=None, ge=1),
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    from orbis_user_api.application.block_content import BlockContentStore
+
+    try:
+        note = await get_note(note_id, user, session)
+        return await BlockContentStore(session, note).block(
+            block_id, expected_version, read_lock=True
+        )
+    except NoteNotFound:
+        raise _not_found("NOTE_NOT_FOUND", "文档或块不存在") from None
+    except UserWorkspaceMissing:
+        raise _workspace_forbidden() from None
+    except NoteVersionConflict:
+        raise ApiError(
+            status_code=409, code="NOTE_VERSION_CONFLICT", message="文档内容快照不可用"
+        ) from None
+    except NoteContentInvalid:
+        raise ApiError(
+            status_code=422, code="NOTE_CONTENT_INVALID", message="文档内容无效"
+        ) from None

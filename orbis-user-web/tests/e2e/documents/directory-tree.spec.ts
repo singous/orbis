@@ -134,7 +134,7 @@ test("directory rows share geometry while side actions and saved previews preser
   let releaseSave!: () => void;
   let previewFailure: 500 | 404 | null = null;
   const saveGate = new Promise<void>(resolve => { releaseSave = resolve; });
-  await page.route(`**/api/notes/${active}/content`, async route => {
+  await page.route(`**/api/notes/${active}/{content,blocks}`, async route => {
     if (["PUT", "PATCH"].includes(route.request().method())) await saveGate;
     else if (previewFailure === 500) {
       await route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ code: "PREVIEW_UNAVAILABLE", message: "预览正文暂不可用", request_id: "preview-read-failure", data: null }) });
@@ -185,7 +185,7 @@ test("directory rows share geometry while side actions and saved previews preser
     }
   } finally { releaseSave(); }
   await expect.poll(async () => (await (await request.get(`/api/notes/${active}/content`, { headers })).json()).data.plain_text).toContain(pendingDraft);
-  await page.unroute(`**/api/notes/${active}/content`);
+  await page.unroute(`**/api/notes/${active}/{content,blocks}`);
   await page.unroute(`**/api/notes/${active}`);
 
   await leafLink.hover();

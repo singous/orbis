@@ -60,6 +60,11 @@ export class AutosaveCoordinator<T> {
     return this.#saved;
   }
 
+  holdConflict(): void {
+    this.#clearTimer();
+    this.#setState("conflict");
+  }
+
   async settlePendingSave(): Promise<void> {
     if (this.#inFlight) await this.#inFlight;
   }

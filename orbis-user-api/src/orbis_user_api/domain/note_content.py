@@ -12,6 +12,12 @@ from orbis_user_api.domain.document_components import (
     component_title,
     validate_component,
 )
+from orbis_user_api.domain.markdown_inline import (
+    escape_text,
+    parse_inline,
+    render_legacy_inline,
+    render_normalized_inline,
+)
 from orbis_user_api.domain.markdown_urls import markdown_destination
 
 EMPTY_NOTE_BLOCKS: dict[str, Any] = {
@@ -354,26 +360,8 @@ def derive_plain_text(blocks: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-_LINK_RE = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
-
-
 def _inline_content(text: str) -> list[dict[str, Any]]:
-    content: list[dict[str, Any]] = []
-    cursor = 0
-    for match in _LINK_RE.finditer(text):
-        if match.start() > cursor:
-            content.append({"type": "text", "text": text[cursor : match.start()]})
-        content.append(
-            {
-                "type": "text",
-                "text": match.group(1),
-                "marks": [{"type": "link", "attrs": {"href": match.group(2)}}],
-            }
-        )
-        cursor = match.end()
-    if cursor < len(text):
-        content.append({"type": "text", "text": text[cursor:]})
-    return content
+    return parse_inline(text)
 
 
 def _paragraph(text: str) -> dict[str, Any]:
@@ -557,23 +545,7 @@ def markdown_to_blocks(markdown: str) -> dict[str, Any]:
 
 
 def _render_inline(nodes: list[dict[str, Any]]) -> str:
-    rendered: list[str] = []
-    for node in nodes:
-        value = node.get("text", "")
-        for mark in node.get("marks", []):
-            mark_type = mark["type"]
-            if mark_type == "link":
-                value = f"[{value}]({markdown_destination(mark['attrs']['href'])})"
-            elif mark_type == "bold":
-                value = f"**{value}**"
-            elif mark_type == "italic":
-                value = f"*{value}*"
-            elif mark_type == "strike":
-                value = f"~~{value}~~"
-            elif mark_type == "code":
-                value = f"`{value}`"
-        rendered.append(value)
-    return "".join(rendered)
+    return render_legacy_inline(nodes)
 
 
 def _list_start(value: object, fallback: int = 1) -> int:
@@ -666,25 +638,7 @@ def _render_blocks(nodes: list[dict[str, Any]]) -> str:
 
 
 def _render_v2_inline(inline: object) -> str:
-    if isinstance(inline, list):
-        return "".join(_render_v2_inline(item) for item in inline)
-    if not isinstance(inline, dict):
-        return ""
-    if inline.get("type") == "link":
-        content = inline.get("content", [])
-        text = content if isinstance(content, str) else _render_v2_inline(content)
-        return f"[{text}]({markdown_destination(inline.get('href', ''))})"
-    value = inline.get("text", "")
-    styles = inline.get("styles") or {}
-    if styles.get("code"):
-        value = f"`{value}`"
-    if styles.get("bold"):
-        value = f"**{value}**"
-    if styles.get("italic"):
-        value = f"*{value}*"
-    if styles.get("strike"):
-        value = f"~~{value}~~"
-    return value
+    return render_normalized_inline(inline)
 
 
 def _render_v2_blocks(block_list: list[dict[str, Any]], depth: int = 0) -> str:
@@ -764,10 +718,10 @@ def _render_v2_blocks(block_list: list[dict[str, Any]], depth: int = 0) -> str:
 def _render_v2_blocks_inline(block: dict[str, Any]) -> str:
     content = block.get("content", [])
     if isinstance(content, str):
-        return content
+        return escape_text(content)
     if isinstance(content, dict):
         return _v2_block_text(block)
-    return "".join(_render_v2_inline(item) for item in content)
+    return _render_v2_inline(content)
 
 
 def _render_v2_table(content: dict[str, Any]) -> str:

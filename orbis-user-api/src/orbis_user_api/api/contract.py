@@ -19,6 +19,7 @@ from starlette.exceptions import HTTPException
 
 from orbis_user_api.api.errors import ApiError
 from orbis_user_api.core.ids import new_uuidv7
+from orbis_user_api.core.logging import safe_request_path
 
 logger = logging.getLogger(__name__)
 
@@ -214,7 +215,7 @@ def install_api_contract(app: FastAPI) -> None:
                 extra={
                     "request_id": str(request_id),
                     "method": request.method,
-                    "path": request.url.path,
+                    "path": safe_request_path(request.url.path),
                     "status_code": response.status_code,
                     "duration_ms": round((perf_counter() - started_at) * 1000, 2),
                 },
@@ -265,7 +266,7 @@ def install_api_contract(app: FastAPI) -> None:
             extra={
                 "request_id": str(current_request_id()),
                 "method": request.method,
-                "path": request.url.path,
+                "path": safe_request_path(request.url.path),
             },
             exc_info=exc,
         )

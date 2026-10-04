@@ -6,6 +6,7 @@ import { type ChangeEvent, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useStore } from "zustand";
 
+import { ShareButton } from "../sharing/ShareButton";
 import { authStore } from "../../shared/auth/auth-store";
 import { Button } from "../../shared/ui/Button";
 import { showToast } from "../../shared/ui/Toast";
@@ -100,6 +101,7 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
             </div>
           </div>
           <div className="page-actions">
+            {canEdit && notebook ? <ShareButton notebookId={collectionId} title={notebook.title} /> : null}
             {canEdit ? <Button variant="primary" icon={<Plus aria-hidden="true" size={14} />} onClick={() => void createDocument().catch((error) => showToast({ title: "创建文档失败", description: error instanceof Error ? error.message : "请稍后重试。", tone: "danger" }))} disabled={createNote.isPending}>新建文档</Button> : null}
             <input ref={fileInputRef} className="hidden" type="file" accept=".md,text/markdown,text/plain" onChange={handleImport} />
             <Dropdown>

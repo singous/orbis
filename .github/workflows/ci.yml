@@ -28,10 +28,14 @@ jobs:
           enable-cache: true
           cache-dependency-glob: uv.lock
       - name: Install backend dependencies
-        run: uv sync --frozen --package orbis-user-api --group dev
+        run: uv sync --frozen --all-packages --group dev
       - name: Run backend tests
         working-directory: orbis-user-api
-        run: ../.venv/bin/python -m pytest -q
+        env:
+          PYTHONPATH: src:../orbis-cli/src
+        run: |
+          export PATH="$GITHUB_WORKSPACE/.venv/bin:$PATH"
+          ../.venv/bin/python -m pytest -q tests ../orbis-cli/tests
 
   frontend:
     name: Frontend checks
@@ -92,6 +96,8 @@ jobs:
         working-directory: orbis-user-web
         env:
           ORBIS_E2E_PRODUCTION: "1"
+          # Shared runners report latency; fixed reference devices enforce budgets.
+          ORBIS_E2E_PERFORMANCE_MODE: "report"
         run: npm run test:e2e
       - name: Upload browser failure evidence
         if: failure()

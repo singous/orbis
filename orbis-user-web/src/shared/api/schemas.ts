@@ -138,8 +138,23 @@ export const noteContentPageSchema = noteContentSchema.omit({ plain_text: true }
   next_offset: z.number().int().nonnegative(),
   total_blocks: z.number().int().nonnegative(),
   has_more: z.boolean(),
+  storage_format: z.enum(["blocks", "legacy"]).optional().default("legacy"),
 });
 export type NoteContentPage = z.infer<typeof noteContentPageSchema>;
+export const blockLoadDescriptorSchema = z.object({
+  id: z.string(), parent_id: z.string().nullable(), child_count: z.number().int().nonnegative(),
+  has_children: z.boolean(), children_loaded: z.boolean(),
+  payload_loaded: z.boolean().default(true), payload_bytes: z.number().int().nonnegative().default(0),
+});
+export const noteChildrenPageSchema = noteContentPageSchema.extend({
+  parent_id: z.string().nullable(), descriptors: z.array(blockLoadDescriptorSchema),
+  returned_bytes: z.number().int().nonnegative(), oversized_block: z.boolean().default(false),
+});
+export type NoteChildrenPage = z.infer<typeof noteChildrenPageSchema>;
+export const noteBlockReadSchema = z.object({
+  note_id: z.string().uuid(), content_version: z.number().int().positive(),
+  block: z.record(z.string(), z.unknown()), descriptor: blockLoadDescriptorSchema,
+});
 export const noteContentPrefixSchema = z.object({
   note_id: z.string().uuid(), content_version: z.number().int().positive(),
   loaded_block_ids: z.array(z.string()), total_blocks: z.number().int().nonnegative(), updated_at_ms: z.number(),

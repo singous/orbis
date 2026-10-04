@@ -6,8 +6,10 @@ from uuid import UUID
 from sqlalchemy import Integer, bindparam, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from orbis_user_api.application.notes import get_note, update_note_content
+from orbis_user_api.application.block_content import BlockContentStore
+from orbis_user_api.application.notes import get_note
 from orbis_user_api.db.types import GUID
+from orbis_user_api.domain.block_records import flatten_blocks
 from orbis_user_api.domain.legacy_note_blocks import editable_note_blocks
 from orbis_user_api.domain.note_content import (
     InvalidNoteContent,
@@ -21,7 +23,6 @@ from orbis_user_api.schemas.note import (
     NoteContentPageOut,
     NoteContentPrefixOut,
     NoteContentPrefixRequest,
-    NoteContentUpdateRequest,
 )
 from orbis_user_api.services.exceptions import (
     NoteContentInvalid,
@@ -62,6 +63,9 @@ async def get_note_content_page(
     version: int | None,
 ) -> NoteContentPageOut:
     note = await get_note(note_id, user, session)
+    store = BlockContentStore(session, note)
+    if await store.header() is not None:
+        return NoteContentPageOut(**await store.page(offset, limit, version))
     sql = (
         POSTGRES_PAGE
         if session.get_bind().dialect.name == "postgresql"
@@ -157,58 +161,51 @@ async def get_note_content_page(
 async def save_note_content_prefix(
     note_id: UUID, payload: NoteContentPrefixRequest, user: User, session: AsyncSession
 ) -> NoteContentPrefixOut:
-    await get_note(note_id, user, session)
-    content = await session.scalar(
-        select(NoteContent).where(NoteContent.note_id == note_id)
+    note = await get_note(note_id, user, session)
+    store = BlockContentStore(session, note)
+    header = await store.activate()
+    if header.content_version != payload.expected_version:
+        raise NoteVersionConflict
+    page = await store.page(0, len(payload.loaded_block_ids), header.content_version)
+    original = page["blocks"]
+    if [block["id"] for block in original["blocks"]] != payload.loaded_block_ids:
+        raise NoteVersionConflict
+    try:
+        if payload.blocks.get("schema_version") != 2:
+            raise InvalidNoteContent
+        current = normalize_note_blocks(payload.blocks)
+        before = flatten_blocks(original)
+        after = flatten_blocks(current)
+    except InvalidNoteContent:
+        raise NoteContentInvalid from None
+    manifest = await store._manifest([row["block_id"] for row in after])
+    old_ids, new_ids = (
+        {row["block_id"] for row in before},
+        {row["block_id"] for row in after},
     )
-    if content is None:
-        raise NoteNotFound
-    if content.content_version != payload.expected_version:
-        raise NoteVersionConflict
-    try:
-        canonical = editable_note_blocks(note_id, content.blocks)
-    except InvalidNoteContent:
-        raise NoteContentInvalid from None
-    old = canonical["blocks"]
-    count = len(payload.loaded_block_ids)
-    if (
-        count > len(old)
-        or [block["id"] for block in old[:count]] != payload.loaded_block_ids
-    ):
-        raise NoteVersionConflict
-    if payload.blocks.get("schema_version") != 2 or not isinstance(
-        payload.blocks.get("blocks"), list
-    ):
+    if new_ids.intersection(set(manifest) - old_ids):
         raise NoteContentInvalid
-    try:
-        prefix = normalize_note_blocks(payload.blocks)["blocks"]
-    except InvalidNoteContent:
-        raise NoteContentInvalid from None
-    incoming_ids = [block.get("id") for block in prefix]
-    if len(set(incoming_ids)) != len(incoming_ids) or set(incoming_ids).intersection(
-        block["id"] for block in old[count:]
-    ):
-        raise NoteContentInvalid
-    # Never replace an unloaded tail with the editor's current partial view.
-    merged = {
-        "schema_version": 2,
-        "editor": "blocknote",
-        "blocks": [*prefix, *old[count:]],
-    }
-    result = await update_note_content(
-        note_id,
-        NoteContentUpdateRequest(
-            expected_version=payload.expected_version, blocks=merged
-        ),
+    anchors = {}
+    moves = []
+    for row in after:
+        parent = row["parent_id"]
+        moves.append(
+            {
+                "id": row["block_id"],
+                "parent_id": parent,
+                "after_id": anchors.get(parent),
+            }
+        )
+        anchors[parent] = row["block_id"]
+    result = await store.changes(
+        payload.expected_version,
+        [row["payload"] for row in after],
+        moves,
+        list(old_ids - new_ids),
         user,
-        session,
     )
     return NoteContentPrefixOut(
-        note_id=note_id,
-        content_version=payload.expected_version + 1,
-        loaded_block_ids=incoming_ids,
-        total_blocks=len(merged["blocks"]),
-        updated_at_ms=result.updated_at_ms,
+        **result, loaded_block_ids=[block["id"] for block in current["blocks"]]
     )
 
 
@@ -216,6 +213,9 @@ async def get_note_content_outline(
     note_id: UUID, user: User, session: AsyncSession, version: int
 ) -> dict:
     note = await get_note(note_id, user, session)
+    store = BlockContentStore(session, note)
+    if await store.header() is not None:
+        return await store.outline(version)
     current = await session.scalar(
         select(NoteContent.content_version).where(NoteContent.note_id == note_id)
     )

@@ -5,6 +5,7 @@ import { fromTiptapDocument, toTiptapDocument } from '../../src/features/notes/t
 import { OrbisBlockSelection, setBlockSelection } from '../../src/features/notes/blocks/block-selection';
 import { BLOCK_CLIPBOARD_MIME, copyBlocks, installBlockClipboard, parseBlockClipboard, pasteBlocks, serializeBlockClipboard } from '../../src/features/notes/blocks/block-clipboard';
 import type { OrbisBlock } from '../../src/features/notes/block-model';
+import { registerBlockActionReader } from '../../src/features/notes/blocks/block-action-read';
 const editors: Editor[] = [];
 const p = (id: string, children: OrbisBlock[] = []): OrbisBlock => ({ id, type: 'paragraph', props: {}, content: id, children });
 function open(blocks = [p('a'), p('b')]) { const e = new Editor({ extensions: [...tiptapExtensions, OrbisBlockSelection], content: toTiptapDocument({schema_version:2,editor:'blocknote',blocks}) }); document.body.appendChild(e.view.dom); editors.push(e); return e; }
@@ -49,6 +50,26 @@ it('leaves ordinary text events intact and copies selected blocks natively',()=>
 it('never deletes when clipboard writing fails',async()=>{
  const e=open();Object.defineProperty(document,'execCommand',{configurable:true,value:vi.fn(()=>false)});
  const result=await copyBlocks(e,['a'],true);expect(result.ok).toBe(false);expect(fromTiptapDocument(e.state.doc).blocks.map(b=>b.id)).toEqual(['a','b']);
+});
+it.each(['destroy', 'switch', 'edit'] as const)('does not retry a rejected native clipboard write after the source %s',async(change)=>{
+ const e=open();
+ const unregister=registerBlockActionReader(e,{needsRead:()=>false,ensure:async()=>{}});
+ let reject!: (reason:Error)=>void;
+ const pendingWrite=new Promise<void>((_resolve,failed)=>{reject=failed;});
+ vi.stubGlobal('ClipboardItem',class { constructor(_data:unknown) {} });
+ vi.stubGlobal('navigator',{platform:'',userAgent:'',maxTouchPoints:0,clipboard:{write:vi.fn(()=>pendingWrite)}});
+ const fallback=vi.fn(()=>true);
+ Object.defineProperty(document,'execCommand',{configurable:true,value:fallback});
+ const pending=copyBlocks(e,['a']);
+ if(change==='destroy')e.destroy();
+ else if(change==='switch'){unregister();registerBlockActionReader(e,{needsRead:()=>false,ensure:async()=>{}});}
+ else e.commands.insertContent('New authored content');
+ reject(new Error('Native write rejected after the source changed'));
+ const result=await pending;
+ expect(result.ok).toBe(false);
+ expect(result.message).toContain('复制已取消');
+ expect(fallback).not.toHaveBeenCalled();
+ unregister();
 });
 it('preserves controlled cut IDs once, regenerates cross editor IDs and prevents undo collisions',()=>{
  const e=open([p('a',[p('child')]),p('b')]);installBlockClipboard(e,()=>{});setBlockSelection(e,['a']);const {data}=event(e,'cut');expect(fromTiptapDocument(e.state.doc).blocks.map(b=>b.id)).toEqual(['b']);

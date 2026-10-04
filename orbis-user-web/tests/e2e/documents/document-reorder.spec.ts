@@ -110,7 +110,11 @@ test("notebook home stays read-only while side rows support native links and sib
   const openedPage = context.waitForEvent("page");
   await title.click({ modifiers: ["ControlOrMeta"] });
   const opened = await openedPage;
-  await expect(opened).toHaveURL(new RegExp(`/documents/${third}$`));
+  // The exact URL matcher observes committed navigation. The regexp matcher
+  // also waits for the page load lifecycle, including unrelated resources in
+  // this background tab. Verify the application destination independently.
+  await expect(opened).toHaveURL(new URL(`/documents/${third}`, page.url()).href);
+  await expect(opened.getByRole("textbox", { name: "文档标题", exact: true })).toHaveValue("第三篇");
   await opened.close();
   await expect(page).toHaveURL(new RegExp(`/collections/${notebookId}$`));
   expect(reorderRequests).toHaveLength(0);

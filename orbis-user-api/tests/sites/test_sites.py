@@ -539,7 +539,11 @@ def test_unknown_persisted_content_never_implicitly_publishes(client, owner, doc
     from orbis_user_api.models.note import NoteContent
 
     async def replace_with_unknown_content():
+        from sqlalchemy import delete
+        from orbis_user_api.models.note_block import NoteBlockDocument, NoteBlockSnapshot, NoteBlockVersion
         async with client.app.state.session_factory() as session:
+            for model in [NoteBlockDocument, NoteBlockSnapshot, NoteBlockVersion]:
+                await session.execute(delete(model).where(model.note_id == UUID(document["id"])))
             note_content = await session.scalar(
                 select(NoteContent).where(NoteContent.note_id == UUID(document["id"]))
             )

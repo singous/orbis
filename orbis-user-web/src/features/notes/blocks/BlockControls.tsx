@@ -1,4 +1,6 @@
 import type { Editor } from '@tiptap/core';
+import type { Transaction } from '@tiptap/pm/state';
+import { inlineTransactionsOnly } from '../tiptap-inline-change';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { GripVertical, Plus, Copy, Link2, ArrowUp, ArrowDown, Layers, Trash2, ChevronRight } from '../../../shared/ui/icons';
@@ -8,10 +10,11 @@ import { DOCUMENT_BLOCKS } from '../../content/document-components';
 import { newBlockId } from '../block-model';
 import { fromTiptapDocument } from '../tiptap-model';
 import { executeBlockCommand, locateEditorBlocks, ownedOrbisBlock, type BlockAction } from './block-commands';
-import { blockActionAvailability, BLOCK_GROUP_KINDS } from './block-capabilities';
+import { blockActionAvailability, createBlockActionContext, BLOCK_GROUP_KINDS } from './block-capabilities';
 import { indexBlocks } from './block-tree';
 import { blockSelectionKey, clearBlockSelection, isEmbeddedInput, selectBlock, setBlockSelection, setBlockTarget } from './block-selection';
 import { copyBlocks, pasteBlocks, installBlockClipboard, type BlockClipboardResult } from './block-clipboard';
+import { blockActionNeedsRead, prepareBlockAction } from './block-action-read';
 import '../../../styles/block-controls.css';
 
 const LABELS:Record<string,string>={paragraph:'段落',heading:'标题',bulletListItem:'无序列表',numberedListItem:'有序列表',checkListItem:'任务清单',quote:'引用',codeBlock:'代码块',table:'表格',image:'图片',video:'视频',audio:'音频',file:'附件',divider:'分隔线',toggleListItem:'折叠块',...Object.fromEntries(Object.entries(DOCUMENT_BLOCKS).map(([kind,definition])=>[kind,definition.label]))};
@@ -25,10 +28,16 @@ const MAX_SCROLL_STEP=16;
 const HANDLE_CLEARANCE=4;
 type DropTarget={id:string;placement:'before'|'after'|'inside';ok:boolean;message?:string;rect:{top:number;left:number;width:number;height:number}};
 
+/** Inline input preserves block identity and geometry above the active block. */
+function inlineOnly(transaction:Transaction):boolean {
+ return transaction.docChanged && inlineTransactionsOnly([transaction]);
+}
+
 export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:boolean;noteId?:string}) {
  const [doc,setDoc]=useState(editor.state.doc);
+ const liveDoc=useRef(editor.state.doc);
  const [selection,setSelection]=useState(blockSelectionKey.getState(editor.state));
- const [activeId,setActiveId]=useState<string|null>(null);
+ const [activeId,commitActiveId]=useState<string|null>(null);
  const [point,setPoint]=useState<{top:number;left:number}|null>(null);
  const [open,setOpen]=useState(false);
  const [menuPoint,setMenuPoint]=useState({top:0,left:0});
@@ -47,9 +56,16 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
  const parentId=activeId?index.get(activeId)?.parentId:null;
  const parentBlock=parentId?index.get(parentId)?.block:undefined;
  const ids=selection?.ids.length?selection.ids:activeId?[activeId]:[];
+ const actionContext=useMemo(()=>createBlockActionContext(source,ids,index),[source,index,selection?.ids,activeId]);
  const idsRef=useRef(ids);idsRef.current=ids;
  const readonlyRef=useRef(readOnly);readonlyRef.current=readOnly;
  const menuOpenRef=useRef(open);menuOpenRef.current=open;
+
+ function setActiveId(id:string|null) {
+  if(activeRef.current===id)return;
+  activeRef.current=id;commitActiveId(id);
+  setDoc(editor.state.doc);
+ }
 
  function receive(result:BlockClipboardResult) {
   if(result.ok && result.selectedIds) {
@@ -58,9 +74,25 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
   }
   setNotice(result.message??(result.ok?'已复制块':''));
  }
+ function copySelected(cut=false) {
+  const chosen=[...idsRef.current];
+  if(blockActionNeedsRead(editor,chosen))setNotice('正在读取所选块的完整子内容…');
+  void copyBlocks(editor,chosen,cut).then(receive);
+  setOpen(false);
+ }
  function run(action:BlockAction) {
   if(readonlyRef.current)return;
-  const result=executeBlockCommand(editor,idsRef.current,action);
+  const chosen=[...idsRef.current];
+  if (['duplicate','ungroup'].includes(action.type) && blockActionNeedsRead(editor,chosen)) {
+   setOpen(false);setNotice('正在读取所选块的完整子内容…');
+   void prepareBlockAction(editor,chosen).then(()=>perform(action,chosen)).catch(error=>setNotice(error instanceof Error?error.message:'读取失败，操作已取消，原内容已保留。'));
+   return;
+  }
+  perform(action,chosen);
+ }
+ function perform(action:BlockAction,chosen:string[]) {
+  if(editor.isDestroyed||readonlyRef.current)return;
+  const result=executeBlockCommand(editor,chosen,action);
   setOpen(false);
   if(!result.ok){setNotice(result.message??'无法完成此操作');return;}
   setNotice('');
@@ -75,7 +107,11 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
   const element=entry?editor.view.nodeDOM(entry.pos):null;
   const root=editor.view.dom.closest('.orbis-tiptap');
   if(!(element instanceof HTMLElement)||!root){setPoint(null);return;}
-  const rect=element.getBoundingClientRect(), parent=root.getBoundingClientRect();
+  const ownRect=element.getBoundingClientRect();
+  // Empty transparent containers have no hit area until their children load.
+  // The sibling read control remains an explicit handle for that same block.
+  const loader=ownRect.height?null:[...editor.view.dom.querySelectorAll<HTMLElement>('[data-block-loader]')].find(node=>node.dataset.blockLoader===id);
+  const rect=loader?.getBoundingClientRect()??ownRect, parent=root.getBoundingClientRect();
   const controlsWidth=controlsRef.current?.getBoundingClientRect().width??0;
   const next={top:rect.top-parent.top+2,left:Math.max(HANDLE_CLEARANCE-parent.left,rect.left-parent.left-controlsWidth-HANDLE_CLEARANCE)};
   setPoint(previous=>previous?.top===next.top&&previous?.left===next.left?previous:next);
@@ -83,11 +119,20 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
  useLayoutEffect(()=>{positionHandle(activeId);},[activeId,doc,Boolean(point),readOnly,selection?.ids.length]);
 
  useEffect(()=>{
-  const sync=()=>{
-   setDoc(editor.state.doc);setSelection(blockSelectionKey.getState(editor.state));
+  const sync=({transaction}:{transaction:Transaction})=>{
+   liveDoc.current=editor.state.doc;
+   const inline=inlineOnly(transaction);
+   if(transaction.docChanged&&(menuOpenRef.current||!inline))setDoc(liveDoc.current);
+   const next=blockSelectionKey.getState(editor.state);
+   setSelection(previous=>previous===next||previous&&next&&previous.anchorId===next.anchorId&&previous.focusId===next.focusId&&previous.targetId===next.targetId&&previous.ids.length===next.ids.length&&previous.ids.every((id,index)=>id===next.ids[index])?previous:next);
    if(!menuOpenRef.current&&!dragRef.current) {
-    const current=ownedOrbisBlock(editor.state.doc,editor.state.selection.from);
-    if(current&&editor.view.hasFocus())setActiveId(current.id);
+    if(!editor.view.hasFocus())return;
+    const mapped=editor.view.domAtPos(editor.state.selection.from).node;
+    const element=mapped instanceof Element?mapped:mapped.parentElement;
+    const caretId=element?.closest<HTMLElement>('[data-orbis-block-id]')?.dataset.orbisBlockId;
+    if(inline&&caretId&&caretId===activeRef.current)return;
+    const current=ownedOrbisBlock(liveDoc.current,editor.state.selection.from);
+    if(current)setActiveId(current.id);
    }
   };
   editor.on('transaction',sync);
@@ -104,7 +149,10 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
   let expandTarget:Element|null=null;
   const blockAt=(target:EventTarget|null,x:number,y:number)=>{
    try {
-    const hit = (target instanceof Element ? target : target instanceof Node ? target.parentElement : null)?.closest<HTMLElement>('[data-orbis-block-id]');
+    const targetElement=target instanceof Element?target:target instanceof Node?target.parentElement:null;
+    const loader=targetElement?.closest<HTMLElement>('[data-block-loader]');
+    if(loader&&dom.contains(loader))return locateEditorBlocks(editor.state.doc).find(entry=>entry.id===loader.dataset.blockLoader);
+    const hit = targetElement?.closest<HTMLElement>('[data-orbis-block-id]');
     if (hit && dom.contains(hit)) return locateEditorBlocks(editor.state.doc).find(entry => entry.id === hit.dataset.orbisBlockId);
     if(target instanceof Node&&dom.contains(target))return ownedOrbisBlock(editor.state.doc,editor.view.posAtDOM(target,0));
     const bounds=dom.getBoundingClientRect();
@@ -190,7 +238,7 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
   const openRequested=()=>{
    const id=blockSelectionKey.getState(editor.state)?.ids[0]??ownedOrbisBlock(editor.state.doc,editor.state.selection.from)?.id;
    if(!id)return;
-   setActiveId(id);positionHandle(id);
+   setDoc(editor.state.doc);setActiveId(id);positionHandle(id);
    if(!blockSelectionKey.getState(editor.state)?.ids.length)selectBlock(editor,id);
    setOpen(true);
   };
@@ -246,16 +294,17 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
    try{if(!document.execCommand('copy'))throw Error('Copy failed');setNotice('块链接已复制');}catch{setNotice('无法写入剪贴板，请使用浏览器复制功能');}finally{input.remove();editor.view.focus();}
   }setOpen(false);
  }
- const availability=(action:BlockAction)=>blockActionAvailability(source,ids,action);
+ const availability=(action:BlockAction)=>blockActionAvailability(source,ids,action,actionContext);
  const actionItem=(label:string,action:BlockAction,icon?:React.ReactNode)=>{
   const allowed=availability(action);
   return <ActionButton key={label} role="menuitem" className={action.type==='delete'?'block-action-danger':''} disabled={!allowed.ok} title={allowed.message} onClick={()=>run(action)}>{icon}<span>{label}</span></ActionButton>;
  };
- const convertOptions=CONVERSIONS.filter(option=>{const [target,level]=option.value.split(':');return availability({type:'convert',target,level:level?Number(level):undefined}).ok;});
+ const convertOptions=open?CONVERSIONS.filter(option=>{const [target,level]=option.value.split(':');return availability({type:'convert',target,level:level?Number(level):undefined}).ok;}):[];
  return <>
   {current&&point?<div ref={controlsRef} className="orbis-block-controls" contentEditable={false} style={point}>
    {!readOnly?<ActionButton className="block-add" aria-label="在块后插入" title="在下方插入" onMouseDown={e=>e.preventDefault()} onClick={()=>{setBlockSelection(editor,[current.id]);idsRef.current=[current.id];run({type:'insert',side:'after'});}}><Plus size={15}/></ActionButton>:null}
    <button type="button" ref={handleRef} className="block-grip" aria-label={`块操作：${LABELS[current.type]??current.type}`} aria-haspopup="menu" aria-expanded={open} title="点击打开块菜单 · 拖动移动块" draggable={!readOnly} onClick={event=>{
+    setDoc(editor.state.doc);
     if (event.shiftKey || event.metaKey || event.ctrlKey || !blockSelectionKey.getState(editor.state)?.ids.includes(current.id)) selectBlock(editor,current.id,{shift:event.shiftKey,toggle:event.metaKey||event.ctrlKey});
     if(event.shiftKey||event.ctrlKey||event.metaKey){setOpen(false);editor.view.focus();}else setOpen(value=>!value);
    }} onDragStart={event=>{
@@ -268,18 +317,18 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
   {open&&current?createPortal(<div ref={menuRef} className="orbis-block-menu" role="menu" aria-label="块操作" style={{top:menuPoint.top,left:menuPoint.left}} onKeyDown={event=>{
    if ((event.ctrlKey||event.metaKey) && ['c','x','v'].includes(event.key.toLowerCase())) {
     const key=event.key.toLowerCase();setOpen(false);editor.view.focus();
-    if(key!=='v'){event.preventDefault();void copyBlocks(editor,idsRef.current,key==='x').then(receive);}return;
+    if(key!=='v'){event.preventDefault();copySelected(key==='x');}return;
    }
    if(event.key==='Escape'){event.preventDefault();event.stopPropagation();setOpen(false);editor.view.focus();}
    if(['ArrowDown','ArrowUp','Home','End'].includes(event.key)&&!(event.target instanceof Element&&event.target.closest('[role="listbox"]'))){const buttons=Array.from(menuRef.current?.querySelectorAll<HTMLButtonElement>('button[role="menuitem"]:not(:disabled)')??[]);if(!buttons.length)return;event.preventDefault();const current=buttons.indexOf(document.activeElement as HTMLButtonElement);const next=event.key==='Home'?0:event.key==='End'?buttons.length-1:(current+(event.key==='ArrowUp'?-1:1)+buttons.length)%buttons.length;buttons[next].focus();}
   }}>
    <div className="block-menu-heading">{ids.length>1?`已选择 ${ids.length} 个块`:LABELS[current.type]??current.type}<span>块操作</span></div>
    {parentBlock?<ActionButton role="menuitem" onClick={()=>{setBlockSelection(editor,[parentBlock.id]);setActiveId(parentBlock.id);}}><ArrowUp size={15}/><span>选择父块：{LABELS[parentBlock.type]??parentBlock.type}</span></ActionButton>:null}
-   <ActionButton role="menuitem" onClick={()=>{void copyBlocks(editor,ids).then(receive);setOpen(false);}}><Copy size={15}/><span>复制块</span><kbd aria-hidden="true">⌘ C</kbd></ActionButton>
+   <ActionButton role="menuitem" onClick={()=>copySelected()}><Copy size={15}/><span>复制块</span><kbd aria-hidden="true">⌘ C</kbd></ActionButton>
    {!readOnly?<ActionButton role="menuitem" onClick={()=>{editor.view.focus();void pasteBlocks(editor,ids).then(receive);setOpen(false);}}><Copy size={15}/><span>粘贴块</span><kbd aria-hidden="true">⌘ V</kbd></ActionButton>:null}
    <ActionButton role="menuitem" disabled={!noteId} onClick={()=>void copyLink()}><Link2 size={15}/><span>复制块链接</span></ActionButton>
    {!readOnly?<>
-    <ActionButton role="menuitem" onClick={()=>{void copyBlocks(editor,ids,true).then(receive);setOpen(false);}}><span className="block-menu-icon">✂</span><span>剪切块</span><kbd aria-hidden="true">⌘ X</kbd></ActionButton>
+    <ActionButton role="menuitem" onClick={()=>copySelected(true)}><span className="block-menu-icon">✂</span><span>剪切块</span><kbd aria-hidden="true">⌘ X</kbd></ActionButton>
     {actionItem('创建副本',{type:'duplicate'},<Copy size={15}/>)}
     <div className="block-menu-separator"/>
     {convertOptions.length?<SelectField aria-label="转换块类型" value={current.type==='heading'?`heading:${current.props.level??1}`:current.type} options={convertOptions} onChange={value=>{const [target,level]=value.split(':');run({type:'convert',target,level:level?Number(level):undefined});}}/>:null}

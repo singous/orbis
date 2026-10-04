@@ -498,16 +498,16 @@ def test_revision_write_failure_rolls_back_saved_content_and_all_history(
     client, monkeypatch
 ):
     owner, _, note = setup(client)
-    from orbis_user_api.application import notes
+    from orbis_user_api.application.block_content import BlockContentStore
 
-    original_record = notes.record_content_revisions
+    original_record = BlockContentStore._record_revisions
 
     async def fail_after_recording(*args, **kwargs):
         await original_record(*args, **kwargs)
-        await kwargs["session"].flush()
+        await args[0].session.flush()
         raise RuntimeError("Simulated revision storage failure")
 
-    monkeypatch.setattr(notes, "record_content_revisions", fail_after_recording)
+    monkeypatch.setattr(BlockContentStore, "_record_revisions", fail_after_recording)
     with pytest.raises(RuntimeError, match="Simulated revision storage failure"):
         save(client, owner, note["id"], 1, "Must roll back")
     current = client.get(f"/notes/{note['id']}/content", headers=owner).json()["data"]
@@ -546,9 +546,12 @@ def test_first_tracked_save_keeps_legacy_version_without_inventing_an_author(cli
     owner, _, note = setup(client)
 
     async def seed_legacy_content():
-        from sqlalchemy import select
+        from sqlalchemy import select, delete
+        from orbis_user_api.models.note_block import NoteBlockDocument, NoteBlockSnapshot, NoteBlockVersion
 
         async with client.app.state.session_factory() as session:
+            for model in [NoteBlockDocument, NoteBlockSnapshot, NoteBlockVersion]:
+                await session.execute(delete(model).where(model.note_id == UUID(note["id"])))
             legacy = await session.scalar(
                 select(NoteContent).where(NoteContent.note_id == UUID(note["id"]))
             )

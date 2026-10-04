@@ -6,11 +6,18 @@ from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 
 from orbis_user_api.api import openapi_base_mvp as base_mvp
+from orbis_user_api.api.openapi_document_platform import install_document_platform_docs
 from orbis_user_api.api.openapi_site_delivery import install_site_delivery_docs
 
 EXAMPLE_REQUEST_ID = "019fe1e0-1234-7abc-8def-0123456789ab"
 
 TAG_DOCS: dict[str, tuple[str, str]] = {
+    "integrations": ("智能体集成", "管理受限集成令牌与远程文档库访问权限。"),
+    "open-library-imports": ("开放大文档导入", "受限分片上传、持久进度和原子完成新的远程文档。"),
+    "open-library-files": ("开放文档附件", "受集成身份与文档范围约束的附件上传和读取。"),
+    "open-library-shares": ("开放实时分享", "供智能体创建、查询和撤销独立的实时目录分享链接。"),
+    "open-library": ("开放文档库", "供 CLI 与智能体使用的有界文档读写、幂等操作及附件接口。"),
+    "document-sharing": ("实时文档分享", "创建和撤销笔记本或目录分享，匿名读取当前范围的在线内容。"),
     "setup": ("系统初始化", "首次部署初始化"),
     "auth": ("身份认证", "登录与令牌续期"),
     "users": ("用户资料", "当前用户资料"),
@@ -55,6 +62,7 @@ OPERATION_DOCS: dict[tuple[str, str], tuple[str, str]] = {
     ("patch", "/notes/{note_id}/content"): ("保存已载入的文档片段", "使用 expected_version 和 loaded_block_ids 校验已载入前缀，更新该前缀并保留未载入尾部。版本或前缀身份不一致返回 NOTE_VERSION_CONFLICT，保存失败时保留客户端草稿。响应只包含确认版本、已载入标识和总块数，不返回全文。"),
     ("get", "/notes/{note_id}/content/outline"): ("查询文档标题索引", "按 version 投影顶层标题的标识、级别、文本与根块位置，供未载入正文的大纲使用；不传输其他正文块。继续校验当前工作空间与文档读取权限。"),
     ("put", "/notes/{note_id}/content"): ("保存文档内容", "使用 expected_version 执行乐观锁保存。版本不一致时返回 NOTE_VERSION_CONFLICT，客户端应刷新后处理冲突。"),
+    ("patch", "/notes/{note_id}/blocks"): ("保存文档块变更", "使用 expected_version 校验当前版本，按 upserts、moves、deletes 变更独立块记录。upserts 不包含 children，新增块通过 moves 指定父级与前一个兄弟。只为变化块追加版本记录，保留未读取正文与旧快照。"),
     ("get", "/notes/{note_id}/markdown"): ("导出 Markdown 文档", "将当前结构化文档内容转换为 Markdown，并返回建议文件名和文本内容。"),
     ("post", "/notes/{note_id}/archive"): ("归档文档", "归档指定文档；归档父文档后，其子树不会出现在活跃文档树中。"),
     ("post", "/notes/{note_id}/restore"): ("恢复文档", "恢复指定文档。文集、文档分组以及全部父文档必须已经恢复。"),
@@ -106,6 +114,8 @@ PUBLIC_OPERATIONS = {
 BINARY_OPERATIONS = {
     ("get", "/files/{file_id}/content"),
     ("get", "/public/sites/{slug}/assets/{key}"),
+    ("get", "/public/shares/{token}/notes/{note_id}/files/{file_id}"),
+    ("get", "/open/v1/notes/{note_id}/files/{file_id}/content"),
 }
 
 PAGINATED_PATHS = {
@@ -419,6 +429,8 @@ def _install_operation_docs(schema: dict[str, Any]) -> None:
 
     # Add route-specific business-code examples used by client branching.
     route_errors = [
+        ("patch", "/notes/{note_id}/blocks", 409, "NOTE_VERSION_CONFLICT", "文档内容版本冲突，本地草稿仍保留。"),
+        ("patch", "/notes/{note_id}/blocks", 422, "NOTE_CONTENT_INVALID", "块变更、父级或排序关系无效"),
         ("get", "/notebooks/{notebook_id}", 403, "ACTIVE_WORKSPACE_MEMBERSHIP_REQUIRED", "需要有效的工作空间成员身份"),
         ("get", "/notebooks/{notebook_id}", 404, "NOTEBOOK_NOT_FOUND", "文集不存在"),
         ("get", "/search", 403, "SEARCH_WORKSPACE_FORBIDDEN", "需要所选工作空间的有效读取权限"),
@@ -599,6 +611,7 @@ def install_chinese_openapi(app: FastAPI) -> None:
         _install_operation_docs(schema)
         _install_base_mvp_docs(schema)
         install_site_delivery_docs(schema, _add_error_example, _envelope)
+        install_document_platform_docs(schema, _operation_description, _error_response)
         _install_workspace_context_docs(schema)
         app.openapi_schema = schema
         return schema

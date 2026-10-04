@@ -7,6 +7,7 @@ import { canonicalJSON, extractPlainTextV2, newBlockId, type OrbisBlock, type Or
 import { clipboardProps } from '../tiptap-clipboard';
 import { fromTiptapDocument, toTiptapDocument } from '../tiptap-model';
 import { executeBlockCommand, locateEditorBlocks } from './block-commands';
+import { blockActionNeedsRead, captureBlockActionSession, prepareBlockAction } from './block-action-read';
 import { blockSelectionKey, isEmbeddedInput } from './block-selection';
 import { indexBlocks } from './block-tree';
 
@@ -182,12 +183,16 @@ function finishCopy(editor:Editor,ids:string[],data:Serialized,cut:boolean,sourc
 export async function copyBlocks(editor: Editor, ids: string[], cut = false): Promise<BlockClipboardResult> {
   if(cut&&!editor.isEditable)return {ok:false,message:'只读文档不能剪切'};
   try {
+    if (blockActionNeedsRead(editor, ids)) await prepareBlockAction(editor, ids);
+    if (editor.isDestroyed) return {ok:false,message:'文档已切换，复制已取消，原内容已保留'};
     const source=editor.state.doc;const data=serializeBlockClipboard(editor,ids,cut);
+    const sessionIsCurrent=captureBlockActionSession(editor);
     let written=false;
     if(typeof ClipboardItem!=='undefined' && navigator.clipboard?.write)try {
       await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([data.html],{type:'text/html'}),'text/plain':new Blob([data.text],{type:'text/plain'})})]);written=true;
     } catch { /* Native copy remains available on insecure LAN origins. */ }
     if(!written) {
+      if(!sessionIsCurrent() || editor.state.doc!==source)return {ok:false,message:'文档已变化或已切换，复制已取消，原内容已保留'};
       const document=editor.view.dom.ownerDocument;
       const handler=(event:ClipboardEvent)=>{try{writeEvent(event,data);event.preventDefault();event.stopImmediatePropagation();written=true;}catch{written=false;}};
       document.addEventListener('copy',handler,true);
@@ -256,6 +261,12 @@ export function installBlockClipboard(editor:Editor,onResult:(result:BlockClipbo
     if(event.type==='copy'||event.type==='cut') {
       if(!ids.length)return;
       if(event.type==='cut'&&!editor.isEditable){event.preventDefault();return;}
+      if(blockActionNeedsRead(editor,ids)) {
+        event.preventDefault();event.stopImmediatePropagation();
+        onResult({ok:false,message:'正在读取所选块的完整子内容…'});
+        void copyBlocks(editor,[...ids],event.type==='cut').then(onResult);
+        return;
+      }
       try { const source=editor.state.doc;const cut=event.type==='cut';const data=serializeBlockClipboard(editor,ids,cut);writeEvent(event,data);event.preventDefault();event.stopImmediatePropagation();onResult(finishCopy(editor,ids,data,cut,source)); }
       catch(error) {event.preventDefault();event.stopImmediatePropagation();onResult(copyFailure(error,'剪贴板写入失败，原内容已保留'));}return;
     }

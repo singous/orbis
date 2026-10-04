@@ -4,11 +4,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createEmptyNoteBlocks } from "../notes/note-contract";
 import { authStore } from "../../shared/auth/auth-store";
+import { ApiError } from "../../shared/api/api-client";
+import * as checkpointHooks from "./use-draft-checkpoints";
 import { DocumentEditorPage } from "./DocumentEditorPage";
 
 const updateNote = vi.fn();
 const saveContent = vi.fn();
 const editorInputs = vi.fn();
+const editorEdits = { sequence: 0 };
 
 // Mutable content fixture so tests can simulate the post-save setQueryData echo.
 const contentFixture = {
@@ -44,12 +47,17 @@ const ownerSession = {
   },
 };
 
-vi.mock("./DocumentShell", () => ({ DocumentShell: ({ children }: { children: React.ReactNode }) => <main>{children}</main> }));
+vi.mock("./DocumentShell", () => ({ DocumentShell: ({ children, toolbar }: { children: React.ReactNode; toolbar?: React.ReactNode }) => <main>{toolbar}{children}</main> }));
+vi.mock("../sharing/ShareButton", () => ({ ShareButton: () => null }));
 vi.mock("../notes/TiptapEditor", () => ({
-  TiptapEditor: ({ blocks, onChange, readOnly }: { blocks: unknown; onChange: (next: { blocks: { schema_version: 2; editor: "blocknote"; blocks: unknown[] }; plainText: string }) => void; readOnly: boolean }) => { editorInputs(blocks); return <button type="button" disabled={readOnly} onClick={() => onChange({ blocks: { schema_version: 2, editor: "blocknote", blocks: [{ id: "b1", type: "paragraph", props: {}, content: [{ type: "text", text: "已编辑" }], children: [] }] }, plainText: "已编辑" })}>模拟编辑</button>; },
+  TiptapEditor: ({ blocks, onChange, readOnly }: { blocks: unknown; onChange: (next: { blocks: { schema_version: 2; editor: "blocknote"; blocks: unknown[] }; plainText: string }) => void; readOnly: boolean }) => { editorInputs(blocks); return <button type="button" disabled={readOnly} onClick={() => {
+    editorEdits.sequence += 1;
+    const text = editorEdits.sequence === 1 ? "已编辑" : `已编辑 ${editorEdits.sequence}`;
+    onChange({ blocks: { schema_version: 2, editor: "blocknote", blocks: [{ id: "b1", type: "paragraph", props: {}, content: [{ type: "text", text }], children: [] }] }, plainText: text });
+  }}>模拟编辑</button>; },
 }));
 vi.mock("./queries", () => ({
-  useNote: () => ({ data: { id: "018ff7c4-a5b6-7000-8000-000000000001", notebook_id: "018ff7c4-a5b6-7000-8000-000000000004", title: "产品计划" }, isError: false }),
+  useNote: () => ({ data: { id: "018ff7c4-a5b6-7000-8000-000000000001", workspace_id: ownerSession.workspace.id, notebook_id: "018ff7c4-a5b6-7000-8000-000000000004", title: "产品计划" }, isError: false }),
   useNoteContent: () => ({ data: contentFixture.current, isError: false, refetch: vi.fn() }),
   useNotebooks: () => ({ data: { items: [] }, isLoading: false, isError: false }),
   useNotebook: () => ({ data: undefined, isLoading: false, isError: false }),
@@ -62,6 +70,7 @@ vi.mock("./queries", () => ({
 describe("DocumentEditorPage", () => {
   beforeEach(() => {
     editorInputs.mockClear();
+    editorEdits.sequence = 0;
     updateNote.mockReset();
     updateNote.mockResolvedValue({});
     saveContent.mockReset();
@@ -76,6 +85,7 @@ describe("DocumentEditorPage", () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.clearAllTimers();
     vi.useRealTimers();
     act(() => authStore.getState().clearSession());
@@ -97,6 +107,24 @@ describe("DocumentEditorPage", () => {
     expect(payload.blocks.schema_version).toBe(2);
     expect(payload.blocks.editor).toBe("blocknote");
     expect(screen.getByText(/版本 5/)).toBeInTheDocument();
+  });
+
+  it("keeps a server version conflict visible even when the local draft is persisted", async () => {
+    const originalHook = checkpointHooks.useDraftCheckpoints;
+    vi.spyOn(checkpointHooks, "useDraftCheckpoints").mockImplementation(scopeKey => ({
+      ...originalHook(scopeKey),
+      status: { status: "saved", sequence: 1 },
+    }));
+    saveContent.mockRejectedValue(new ApiError(409, "正文版本冲突", "NOTE_VERSION_CONFLICT"));
+    render(<MemoryRouter initialEntries={["/documents/018ff7c4-a5b6-7000-8000-000000000001"]}><Routes><Route path="/documents/:noteId" element={<DocumentEditorPage />} /></Routes></MemoryRouter>);
+    const editButton = await screen.findByRole("button", { name: "模拟编辑" });
+    vi.useFakeTimers();
+    fireEvent.click(editButton);
+    await act(async () => { await vi.advanceTimersByTimeAsync(750); });
+    expect(saveContent).toHaveBeenCalledTimes(1);
+    const status = document.querySelector(".document-save-state");
+    expect(status).toHaveTextContent("版本冲突");
+    expect(status).not.toHaveTextContent("等待同步");
   });
 
   it("keeps the live draft when the content-version bump is our own save echo", async () => {
@@ -130,6 +158,30 @@ describe("DocumentEditorPage", () => {
     });
 
     expect((titleInput as HTMLInputElement).value).toBe("新产品计划");
+  });
+
+  it("keeps typed echoes without per-key renders and replaces them with a newer server revision", async () => {
+    const show = () => <MemoryRouter initialEntries={["/documents/018ff7c4-a5b6-7000-000000000001"]}><Routes><Route path="/documents/:noteId" element={<DocumentEditorPage />} /></Routes></MemoryRouter>;
+    const view = render(show());
+    const edit = await screen.findByRole("button", { name: "模拟编辑" });
+    vi.useFakeTimers();
+    fireEvent.click(edit);
+    const afterTransition = editorInputs.mock.calls.length;
+    for (let index = 2; index <= 36; index += 1) fireEvent.click(edit);
+    expect(editorInputs.mock.calls.length).toBe(afterTransition);
+    // A later shell render must receive the latest body, rather than the
+    // initially supplied blocks or the first key's previous React props.
+    fireEvent.change(screen.getByLabelText("文档标题"), { target: { value: "Latest title" } });
+    expect(editorInputs.mock.calls.at(-1)![0].blocks[0].content[0].text).toBe("已编辑 36");
+    await act(async () => { await vi.advanceTimersByTimeAsync(750); });
+    expect(saveContent.mock.calls[0][0].blocks.blocks[0].content[0].text).toBe("已编辑 36");
+    vi.useRealTimers();
+    contentFixture.current = { ...contentFixture.current, content_version: 6,
+      blocks: { ...createEmptyNoteBlocks(), doc: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Restored body" }] }] } },
+    };
+    view.rerender(show());
+    await screen.findByRole("button", { name: "模拟编辑" });
+    expect(editorInputs.mock.calls.at(-1)![0].blocks[0].content[0].text).toBe("Restored body");
   });
 
   it("keeps the live draft when a late stale response regresses the cached version", async () => {
@@ -179,6 +231,9 @@ it("opens a cached destination without first mounting the previous document", as
     blocks: { schema_version: 1, editor: "tiptap", doc: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Destination body" }] }] } },
   };
   await act(async () => { fireEvent.click(screen.getByRole("link", { name: "Next document" })); });
+  // The destination acquires its own asynchronous draft lane before becoming
+  // editable. Every editor render must still contain only destination content.
+  await screen.findByRole("button", { name: "模拟编辑" });
   expect(editorInputs.mock.calls.length).toBeGreaterThan(0);
   for (const [blocks] of editorInputs.mock.calls) expect(blocks.blocks[0].content).toEqual([{ type: "text", text: "Destination body", styles: {} }]);
   act(() => authStore.getState().clearSession());

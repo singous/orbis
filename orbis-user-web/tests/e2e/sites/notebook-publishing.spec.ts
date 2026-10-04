@@ -28,6 +28,35 @@ function contentShape(root: Element) {
   };
 }
 
+async function expandNestedContent(page: import("@playwright/test").Page) {
+  const editor = page.locator(".orbis-tiptap .ProseMirror");
+  await expect(editor).toBeVisible();
+  async function loadVisibleChildren() {
+    for (let iteration = 0; iteration < 40; iteration += 1) {
+      const shell = editor.locator(".editor-content-loader:visible").first();
+      if (!(await shell.count())) return;
+      const id = await shell.getAttribute("data-block-loader");
+      expect(id).toBeTruthy();
+      const button = editor.locator(`[data-block-loader=${JSON.stringify(id)}] button`);
+      await expect(button).toBeEnabled();
+      const before = await button.textContent();
+      const read = page.waitForResponse(response => response.url().includes("/content/children") && new URL(response.url()).searchParams.get("parent_id") === id);
+      await button.click();
+      expect((await read).status()).toBe(200);
+      await expect.poll(() => button.evaluateAll((items, original) => items.length === 0 || items.every(item => !(item as HTMLButtonElement).disabled && item.textContent !== original), before)).toBe(true);
+    }
+    throw new Error("Representative nested components did not finish loading");
+  }
+  await loadVisibleChildren();
+  // Inactive tab panels deliberately hide their loaders. Visit each actual tab
+  // so the same public editor interaction hydrates every representative body.
+  for (const tab of await editor.getByRole("tab").all()) {
+    await tab.click();
+    await loadVisibleChildren();
+  }
+  await expect(editor.locator(".editor-content-loader")).toHaveCount(0);
+}
+
 test("a notebook publishes its complete tree and editable documentation components", async ({ page, browser, request }, testInfo) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -89,6 +118,7 @@ test("a notebook publishes its complete tree and editable documentation componen
   expect(saved.status()).toBe(200);
 
   await page.goto(`/documents/${ids[0]}`);
+  await expandNestedContent(page);
   await page.getByRole("button", { name: "编辑卡片属性", exact: true }).click();
   await page.getByRole("textbox", { name: "卡片标题", exact: true }).fill("阅读入门指南");
   await page.getByRole("button", { name: "编辑卡片组属性", exact: true }).click();
@@ -97,6 +127,7 @@ test("a notebook publishes its complete tree and editable documentation componen
   await page.getByRole("textbox", { name: "卡片标题", exact: true }).nth(1).fill("了解发布流程");
   await expect.poll(async () => (await (await request.get(`${apiOrigin}/notes/${ids[0]}/content`, { headers })).json()).data.plain_text).toContain("了解发布流程");
   await page.reload();
+  await expandNestedContent(page);
   await page.getByRole("button", { name: "编辑卡片属性", exact: true }).nth(0).click();
   await page.getByRole("button", { name: "编辑卡片属性", exact: true }).nth(1).click();
   await expect(page.getByRole("textbox", { name: "卡片标题", exact: true }).first()).toHaveValue("阅读入门指南");
@@ -130,8 +161,11 @@ test("a notebook publishes its complete tree and editable documentation componen
   }
   expectValidGroupChildren(edited.blocks);
   await page.reload();
+  await expandNestedContent(page);
   await expect(page.locator(".doc-editor-callout .doc-editor-title").filter({ hasText: "编辑器插入的提示" })).toBeVisible();
+  await page.locator(".orbis-tiptap .ProseMirror > p").last().click();
   await page.getByLabel("选择上传文件").setInputFiles({ name: "documentation.png", mimeType: "image/png", buffer: imagePng });
+  await page.getByRole("figure", { name: "documentation.png", exact: true }).scrollIntoViewIfNeeded();
   const image = page.locator('.orbis-media img[alt="documentation.png"]');
   await expect(image).toBeVisible();
   await expect.poll(async () => image.evaluate((element) => (element as HTMLImageElement).naturalWidth)).toBe(12);
@@ -164,6 +198,7 @@ test("a notebook publishes its complete tree and editable documentation componen
   await expect(preview.getByText("25 篇页面", { exact: true })).toBeVisible();
   await expect(preview.getByRole("navigation", { name: "预览页面" }).getByRole("button")).toHaveCount(25);
   await expect(preview.getByRole("link", { name: "阅读入门指南" })).toBeVisible();
+  await preview.getByRole("figure", { name: "documentation.png", exact: true }).scrollIntoViewIfNeeded();
   await expect.poll(async () => preview.getByRole("img", { name: "documentation.png" }).evaluate((element) => (element as HTMLImageElement).naturalWidth)).toBe(12);
   await expect.poll(() => preview.locator(".site-preview-page .document-prose").evaluate(contentShape)).toEqual(editorShape);
   await preview.getByRole("link", { name: "继续阅读安装指南" }).click();
@@ -184,6 +219,7 @@ test("a notebook publishes its complete tree and editable documentation componen
   await expect(reader.locator("#orbis-site-bootstrap")).toHaveCount(0);
   await expect(reader.getByRole("heading", { name: "快速开始", level: 1 })).toBeVisible();
   const publicImage = reader.getByRole("img", { name: "documentation.png" });
+  await reader.getByRole("figure", { name: "documentation.png", exact: true }).scrollIntoViewIfNeeded();
   await expect.poll(async () => publicImage.evaluate((element) => (element as HTMLImageElement).naturalWidth)).toBe(12);
   await expect.poll(() => reader.locator(".site-reader .document-prose").evaluate(contentShape)).toEqual(editorShape);
   const assetUrl = await publicImage.getAttribute("src");
@@ -228,6 +264,7 @@ test("a notebook publishes its complete tree and editable documentation componen
   await navigation.getByRole("link", { name: "快速开始", exact: true }).click();
   await expect(reader.getByRole("heading", { name: "快速开始", level: 1 })).toBeVisible();
   await page.goto(`/documents/${ids[0]}`);
+  await expandNestedContent(page);
   await page.getByRole("button", { name: "编辑卡片属性", exact: true }).first().click();
   await page.getByRole("textbox", { name: "卡片标题", exact: true }).first().fill("更新后的入门指南");
   await expect.poll(async () => (await (await request.get(`${apiOrigin}/notes/${ids[0]}/content`, { headers })).json()).data.plain_text).toContain("更新后的入门指南");

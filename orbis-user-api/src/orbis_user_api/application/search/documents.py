@@ -6,6 +6,7 @@ from sqlalchemy import and_, case, literal, or_, select
 from sqlalchemy.sql import Select
 from sqlalchemy.sql.selectable import CTE
 
+from orbis_user_api.application.block_search import ContentText
 from orbis_user_api.models.collaboration import NoteComment
 from orbis_user_api.models.note import Note, Notebook, NoteContent, NoteGroup
 from orbis_user_api.schemas.search import SearchStatus
@@ -73,7 +74,8 @@ def documents(query: str, workspace_ids: list[UUID], status: SearchStatus) -> Se
     visible = active_note_ids(workspace_ids)
     readable = Note.id.in_(select(visible.c.id))
     title_match = literal_match(Note.title, query)
-    body_match = literal_match(NoteContent.plain_text, query)
+    body_text = ContentText(Note.id, NoteContent.plain_text)
+    body_match = literal_match(body_text, query)
     comment_query = (
         select(NoteComment)
         .where(
@@ -108,7 +110,7 @@ def documents(query: str, workspace_ids: list[UUID], status: SearchStatus) -> Se
                 location=NoteGroup.name + literal(" / ") + Notebook.title,
                 snippet=case(
                     (title_match, Note.title),
-                    (body_match, NoteContent.plain_text),
+                    (body_match, body_text),
                     else_=comment_body,
                 ),
                 match=case(

@@ -61,6 +61,8 @@ function archiveServer(options: { saveStatus?: number; archiveStatus?: number; s
     content: content(),
   };
   const requests = http(async (url, init) => {
+    // Preserve this fixture's original PUT contract through the real fallback.
+    if (url.pathname.endsWith("/content/children")) return response(null, 404, "Endpoint unavailable on the older server");
     if (init.method === "PUT") {
       await options.saveGate;
       if (stored.note.status !== "active") return response(null, 404, "文档已归档");

@@ -7,7 +7,6 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from orbis_user_api.schemas.notebook_icon import NotebookIcon
 
-
 ResourceStatus: TypeAlias = Literal["active", "archived"]
 
 
@@ -58,6 +57,31 @@ class NoteContentPageOut(BaseModel):
     )
     total_blocks: int = Field(description="此内容快照包含的顶层根块总数")
     has_more: bool
+    storage_format: Literal["blocks", "legacy"] = "legacy"
+
+
+class NoteBlockDescriptor(BaseModel):
+    id: str
+    parent_id: str | None
+    child_count: int
+    has_children: bool
+    children_loaded: bool
+    payload_loaded: bool = True
+    payload_bytes: int = 0
+
+
+class NoteChildrenPageOut(NoteContentPageOut):
+    parent_id: str | None
+    descriptors: list[NoteBlockDescriptor]
+    returned_bytes: int
+    oversized_block: bool
+
+
+class NoteBlockOut(BaseModel):
+    note_id: UUID
+    content_version: int
+    block: dict[str, Any]
+    descriptor: NoteBlockDescriptor
 
 
 class NoteContentPrefixRequest(BaseModel):
@@ -88,6 +112,33 @@ class NoteOutlineItemOut(BaseModel):
 class NoteContentOutlineOut(BaseModel):
     content_version: int
     items: list[NoteOutlineItemOut]
+
+
+class NoteBlockMove(BaseModel):
+    id: str = Field(min_length=1, max_length=512)
+    parent_id: str | None = None
+    after_id: str | None = Field(
+        default=None, description="同一父块内的前一个兄弟块 ID；null 表示放到最前"
+    )
+
+
+class NoteBlockChangesRequest(BaseModel):
+    expected_version: int = Field(ge=1)
+    upserts: list[dict[str, Any]] = Field(
+        default_factory=list,
+        description="新增或修改块的浅层数据，不允许携带 children 子树",
+    )
+    moves: list[NoteBlockMove] = Field(default_factory=list)
+    deletes: list[str] = Field(
+        default_factory=list, description="删除块 ID；未被移出的后代随父块删除"
+    )
+
+
+class NoteBlockChangesOut(BaseModel):
+    note_id: UUID
+    content_version: int
+    total_blocks: int
+    updated_at_ms: int
 
 
 class NoteOut(BaseModel):

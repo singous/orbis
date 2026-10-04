@@ -22,7 +22,12 @@ import { EditorReadOnlyContext } from "./tiptap-editor-context";
 import { fromTiptapDocument, toTiptapDocument } from "./tiptap-model";
 import type { EditorContentHandle } from "../documents/editor-content-handle";
 import { Fragment } from "@tiptap/pm/model";
+import { OrbisContentLoading, contentLoadingKey } from "./content-loading";
+import type { BlockLoadState } from "../documents/content-window";
 import { canJoin } from "@tiptap/pm/transform";
+import { OrbisActiveBlock } from "./tiptap-active-block";
+import { registerBlockActionReader, selectedBlocksNeedRead } from "./blocks/block-action-read";
+import { copyBlocks } from "./blocks/block-clipboard";
 import "../../styles/tiptap-editor.css";
 
 type EditorChange = { blocks: NoteBlocksV2 };
@@ -33,7 +38,8 @@ function insertBlock(editor: Editor, value: OrbisBlock) {
   if (node) editor.chain().focus().insertContent(node).run();
 }
 
-const editorExtensions = [...tiptapExtensions, OrbisBlockSelection];
+const editorExtensions = [...tiptapExtensions, OrbisBlockSelection, OrbisActiveBlock];
+const EMPTY_LOAD_STATES: ReadonlyMap<string, BlockLoadState> = new Map();
 
 const COMMANDS: Command[] = [
   { label: "段落", keywords: "paragraph text", icon: <Plus size={16} />, run: (editor) => editor.chain().focus().setParagraph().run() },
@@ -70,7 +76,7 @@ function slashQuery(editor: Editor): { query: string; from: number; to: number }
   return match ? { query: match[1].toLocaleLowerCase(), from: $from.pos - before.length, to: $from.pos } : null;
 }
 
-export function TiptapEditor({ blocks, onChange, onError, readOnly = false, noteId, onContentReady, ensureComplete, hasMoreContent = false }: {
+export function TiptapEditor({ blocks, onChange, onError, readOnly = false, noteId, onContentReady, ensureComplete, ensureBlocks, hasMoreContent = false, loadStates = EMPTY_LOAD_STATES, onLoadBlock }: {
   blocks: NoteBlocksV2;
   onChange: (next: EditorChange) => void;
   onError?: (message: string | null) => void;
@@ -78,8 +84,16 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
   noteId?: string;
   onContentReady?: (handle: EditorContentHandle | null) => void;
   ensureComplete?: () => Promise<void>;
+  ensureBlocks?: (ids: string[]) => Promise<void>;
   hasMoreContent?: boolean;
+  loadStates?: ReadonlyMap<string, BlockLoadState>;
+  onLoadBlock?: (id: string) => Promise<void>;
 }) {
+  const loadingRef = useRef(loadStates);
+  const loadBlockRef = useRef(onLoadBlock);
+  loadingRef.current = loadStates;
+  loadBlockRef.current = onLoadBlock;
+  const [extensions] = useState(() => [...editorExtensions, OrbisContentLoading.configure({ states: () => loadingRef.current, load: async id => { await loadBlockRef.current?.(id); } })]);
   const files = useManagedFiles();
   const toolbarHost = useEditorToolbarHost();
   const insertButtonRef = useRef<HTMLButtonElement>(null);
@@ -93,9 +107,14 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
   const lastEmitted = useRef<NoteBlocksV2 | null>(null);
   const contentReadyRef = useRef(onContentReady);
   const completeRef = useRef(ensureComplete);
+  const blocksReaderRef = useRef(ensureBlocks);
+  blocksReaderRef.current = ensureBlocks;
   const moreContentRef = useRef(hasMoreContent);
   const fullActionRef = useRef(0);
   const pendingFullAction = useRef(false);
+  const pendingFullPromise = useRef<Promise<void> | null>(null);
+  const pendingSelection = useRef<"all" | "end" | null>(null);
+  const clipboardQueue = useRef<Promise<void>>(Promise.resolve());
   const currentEditorRef = useRef<Editor | null>(null);
   contentReadyRef.current = onContentReady;
   completeRef.current = ensureComplete;
@@ -110,6 +129,7 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
   const [slash, setSlash] = useState<{ query: string; from: number; to: number } | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [contentError, setContentError] = useState<string | null>(null);
+  const [clipboardNotice, setClipboardNotice] = useState<string | null>(null);
   onChangeRef.current = onChange;
   readOnlyRef.current = readOnly;
 
@@ -129,25 +149,50 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
   }
 
   const editor = useEditor({
-    extensions: editorExtensions,
+    extensions,
     content: initialContent,
     editable: !readOnly,
     immediatelyRender: false,
     shouldRerenderOnTransaction: false,
     editorProps: {
       handleKeyDown: (_view, event) => {
-        if (!moreContentRef.current || !completeRef.current || !(event.ctrlKey || event.metaKey)) return false;
-        if (pendingFullAction.current && ["c", "x"].includes(event.key.toLowerCase())) { event.preventDefault(); return true; }
+        if (!(event.ctrlKey || event.metaKey)) return false;
+        if (pendingFullAction.current && ["c", "x"].includes(event.key.toLowerCase())) {
+          event.preventDefault();
+          const ready = pendingFullPromise.current;
+          const selectAll = pendingSelection.current === "all";
+          const action = fullActionRef.current;
+          const cut = event.key.toLowerCase() === "x";
+          setClipboardNotice("正在读取完整内容并" + (cut ? "剪切" : "复制") + "…");
+          clipboardQueue.current = clipboardQueue.current.catch(() => {}).then(async () => {
+            if (!ready) throw new Error("完整读取尚未准备好，请重试复制。");
+            await ready;
+            const current = currentEditorRef.current;
+            if (!current || current.isDestroyed || fullActionRef.current !== action) throw new Error("正文已变化或文档已切换，复制已取消，原内容已保留。");
+            if (!selectAll) throw new Error("当前没有完整选区，请重新选择后复制。");
+            const ids = locateEditorBlocks(current.state.doc).filter(entry => entry.parentId === null).map(entry => entry.id);
+            const result = await copyBlocks(current, ids, cut);
+            setClipboardNotice(result.message ?? (result.ok ? "已复制完整内容" : "复制失败，原内容已保留"));
+          }).catch(error => setClipboardNotice(error instanceof Error ? error.message : "复制失败，原内容已保留。"));
+          return true;
+        }
+        if (!moreContentRef.current || !completeRef.current) return false;
         if (event.key.toLowerCase() !== "a" && event.key !== "End") return false;
         event.preventDefault();
+        if (pendingFullAction.current) { pendingSelection.current = event.key.toLowerCase() === "a" ? "all" : "end"; return true; }
         const action = ++fullActionRef.current;
         pendingFullAction.current = true;
-        void completeRef.current().then(() => {
+        pendingSelection.current = event.key.toLowerCase() === "a" ? "all" : "end";
+        const ready = completeRef.current().then(() => {
           const editor = currentEditorRef.current;
-          if (fullActionRef.current !== action || !editor || editor.isDestroyed) return;
-          if (event.key.toLowerCase() === "a") editor.chain().focus().selectAll().run();
+          if (fullActionRef.current !== action || !editor || editor.isDestroyed) throw new Error("正文已变化或文档已切换，完整读取已取消。");
+          if (pendingSelection.current === "all") editor.chain().focus().selectAll().run();
           else editor.chain().focus().setTextSelection(editor.state.doc.content.size - 1).scrollIntoView().run();
-        }).catch(() => { /* The page reports a recoverable loading error. */ }).finally(() => { pendingFullAction.current = false; });
+        });
+        pendingFullPromise.current = ready;
+        void ready.catch(error => setClipboardNotice(error instanceof Error ? error.message : "完整读取失败，请重试。")).finally(() => {
+          if (pendingFullPromise.current === ready) { pendingFullAction.current = false; pendingFullPromise.current = null; pendingSelection.current = null; }
+        });
         return true;
       },
     },
@@ -156,7 +201,7 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
       fromTiptapDocument(current.state.doc);
     },
     onUpdate: ({ editor: current, transaction }) => {
-      if (transaction.getMeta("orbis-content-page")) return;
+      if (transaction.getMeta("orbis-content-page") || transaction.getMeta("orbis-rejected-unloaded")) return;
       fullActionRef.current += 1;
       emitChange(current);
       setSlash(slashQuery(current));
@@ -167,8 +212,68 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
 
   useEffect(() => {
     if (!editor) return;
+    return registerBlockActionReader(editor, {
+      needsRead: ids => selectedBlocksNeedRead(editor, ids, loadingRef.current),
+      ensure: async ids => {
+        if (!blocksReaderRef.current) throw new Error("无法读取完整子内容，操作已取消，原内容已保留。");
+        await blocksReaderRef.current(ids);
+      },
+    });
+  }, [editor]);
+
+  useEffect(() => {
+    if (editor) editor.view.dispatch(editor.state.tr.setMeta(contentLoadingKey, true));
+  }, [editor, loadStates]);
+
+  useEffect(() => {
+    if (!editor) return;
+    function locate(id: string) {
+      let result: { node: import("@tiptap/pm/model").Node; position: number } | undefined;
+      editor!.state.doc.descendants((node, position) => {
+        if (result) return false;
+        if (node.attrs.orbisId === id) { result = { node, position }; return false; }
+      });
+      if (!result) throw new Error("目标内容已不在当前编辑器中。");
+      return result;
+    }
+    function findBlock(siblings: OrbisBlock[], id: string): OrbisBlock | undefined {
+      for (const item of siblings) { if (item.id === id) return item; const nested = findBlock(item.children, id); if (nested) return nested; }
+    }
+    function readTransaction(transaction: import("@tiptap/pm/state").Transaction) {
+      editor!.view.dispatch(transaction.setMeta("addToHistory", false).setMeta("orbis-content-page", true));
+      const result = fromTiptapDocument(editor!.state.doc);
+      lastEmitted.current = result;
+      return result;
+    }
     contentReadyRef.current?.({
       snapshot: () => fromTiptapDocument(editor.state.doc),
+      appendChildren: (parentId, incoming) => {
+        const target = locate(parentId);
+        const current = findBlock(fromTiptapDocument(editor.state.doc).blocks, parentId);
+        if (!current) throw new Error("目标内容尚未准备好。");
+        const present = new Set(current.children.map(block => block.id));
+        const addition = incoming.filter(block => !present.has(block.id));
+        if (!addition.length) return fromTiptapDocument(editor.state.doc);
+        const transaction = editor.state.tr;
+        if (["orbisComponent", "orbisContainer", "blockquote", "orbisToggle", "listItem", "taskItem"].includes(target.node.type.name)) {
+          const json = toTiptapDocument({ schema_version: 2, editor: "blocknote", blocks: addition });
+          const nodes = (json.content ?? []).map(node => editor.schema.nodeFromJSON(node));
+          transaction.insert(target.position + target.node.nodeSize - 1, Fragment.fromArray(nodes));
+        } else {
+          const json = toTiptapDocument({ schema_version: 2, editor: "blocknote", blocks: [{ ...current, children: [...current.children, ...addition] }] });
+          const nodes = (json.content ?? []).map(node => editor.schema.nodeFromJSON(node));
+          transaction.replaceWith(target.position, target.position + target.node.nodeSize, Fragment.fromArray(nodes));
+        }
+        return readTransaction(transaction);
+      },
+      hydratePayload: incoming => {
+        const target = locate(incoming.id);
+        const current = findBlock(fromTiptapDocument(editor.state.doc).blocks, incoming.id);
+        if (!current) throw new Error("目标内容尚未准备好。");
+        const json = toTiptapDocument({ schema_version: 2, editor: "blocknote", blocks: [{ ...incoming, children: current.children }] });
+        const nodes = (json.content ?? []).map(node => editor.schema.nodeFromJSON(node));
+        return readTransaction(editor.state.tr.replaceWith(target.position, target.position + target.node.nodeSize, Fragment.fromArray(nodes)));
+      },
       selectAll: () => { editor.chain().focus().selectAll().run(); },
       selectEnd: () => { editor.chain().focus().setTextSelection(editor.state.doc.content.size - 1).scrollIntoView().run(); },
       append: incoming => {
@@ -348,6 +453,7 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
     ].map(item=><ActionButton key={item.label} role="menuitem" onMouseDown={event=>event.preventDefault()} onClick={()=>{item.run();setMoreOpen(false);}}>{item.label}</ActionButton>)}</div>,document.body) : null}
     {uploadError ? <p role="alert" className="orbis-tiptap-error">{uploadError}</p> : null}
     {contentError ? <div role="alert" className="orbis-tiptap-error"><p>{contentError}</p><ActionButton type="button" disabled={readOnly} onClick={() => editor && emitChange(editor)}>重试保存正文</ActionButton></div> : null}
+    {clipboardNotice ? <div role="status" className="orbis-block-notice">{clipboardNotice}<button type="button" aria-label="关闭复制提示" onClick={() => setClipboardNotice(null)}>×</button></div> : null}
     {!readOnly && editor && (slash || menuOpen) ? createPortal(<div style={insertPosition} className="orbis-tiptap-menu" role="listbox" aria-label="插入内容">{visible.length ? visible.map((item, index) => <ActionButton type="button" role="option" aria-selected={index === activeCommand % visible.length} key={item.label} onMouseDown={(event) => event.preventDefault()} onClick={() => run(item)}>{item.icon}{item.label}</ActionButton>) : <p>没有匹配的内容块</p>}</div>, document.body) : null}
     {editor ? <BlockControls editor={editor} readOnly={readOnly} noteId={noteId} /> : null}
     <EditorContent editor={editor} aria-label="文档正文" />

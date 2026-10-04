@@ -5,6 +5,7 @@ from collections.abc import AsyncIterator
 import jwt
 from fastapi import Depends, Request, status
 from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from orbis_user_api.api.errors import ApiError
@@ -26,7 +27,13 @@ async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
     session_factory = request.app.state.session_factory
     async with session_factory() as session:
         session.info[REQUEST_WORKSPACE_ID] = request.headers.get("X-Workspace-ID")
-        yield session
+        try:
+            yield session
+        except SQLAlchemyError:
+            # A failed database operation may have invalidated only the logical
+            # transaction. Discard its physical connection before re-raising.
+            await session.invalidate()
+            raise
 
 
 async def get_current_user(

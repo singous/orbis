@@ -5,10 +5,12 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 
+from orbis_user_api.api import integrations, open_library, shares
 from orbis_user_api.api.contract import ApiResponse, api_success, install_api_contract
 from orbis_user_api.api.openapi_docs import install_chinese_openapi
 from orbis_user_api.api.v1.router import api_router
 from orbis_user_api.core.settings import Settings
+from orbis_user_api.core.logging import install_access_log_redaction
 from orbis_user_api.db.session import create_engine, create_session_factory, init_models
 from orbis_user_api.infrastructure.mail import create_mail_sender
 from orbis_user_api.services.storage import LocalFileStorage
@@ -34,14 +36,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await engine.dispose()
 
     app = FastAPI(title="Orbis User API", version="0.1.0", lifespan=lifespan)
+    install_access_log_redaction()
     install_api_contract(app)
     app.include_router(api_router)
+    app.include_router(integrations.router)
+    app.include_router(open_library.router)
+    app.include_router(shares.router)
+    app.include_router(shares.assets_router)
 
     @app.middleware("http")
     async def public_delivery_cache_policy(request: Request, call_next):
         response = await call_next(request)
         # Apply even to validation errors before a public route handler runs.
-        if request.url.path.startswith(("/s/", "/public/sites/")):
+        if request.url.path.startswith(("/s/", "/public/sites/", "/public/shares/")):
             response.headers["Cache-Control"] = "no-store"
         return response
 

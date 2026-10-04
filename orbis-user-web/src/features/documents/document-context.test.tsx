@@ -219,7 +219,7 @@ describe("DocumentContextPanel", () => {
     mocks.archiveNote.mockResolvedValue({});
     treeState = { data: { items: [rootNote] }, isLoading: false, isError: false, refetch: mocks.refetchTree };
     noteState = {
-      data: { id: rootNote.id, notebook_id: rootNote.notebook_id, title: rootNote.title },
+      data: { ...rootNote, workspace_id: workspace.id },
       isError: false,
       refetch: vi.fn(),
     };

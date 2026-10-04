@@ -8,6 +8,10 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from orbis_user_api.application.site_errors import SiteError
+from orbis_user_api.application.site_page_repository import (
+    ActiveRelease,
+    SitePageRepository,
+)
 from orbis_user_api.application.sites import read_public_site
 from orbis_user_api.domain.site import PAGE_SLUG_PATTERN, SLUG_PATTERN
 from orbis_user_api.schemas.site import SitePageOut, SiteSnapshotOut
@@ -35,6 +39,43 @@ async def active_snapshot(
             "SITE_RELEASE_CHANGED", "站点发布版本已更新，请刷新页面后重试", 409
         )
     return snapshot
+
+
+async def active_release(
+    slug: str, session: AsyncSession, expected_release_id: UUID | None = None
+) -> ActiveRelease:
+    if not re.fullmatch(SLUG_PATTERN, slug):
+        raise SiteError("SITE_NOT_FOUND", "站点不存在或尚未发布", 404)
+    return await SitePageRepository(session).active(slug, expected_release_id)
+
+
+async def active_metadata(
+    slug: str, session: AsyncSession, expected_release_id: UUID | None = None
+) -> SiteSnapshotOut:
+    release = await active_release(slug, session, expected_release_id)
+    return await SitePageRepository(session).metadata_snapshot(release)
+
+
+async def active_page(
+    slug: str,
+    page_slug: str | None,
+    session: AsyncSession,
+    expected_release_id: UUID | None = None,
+) -> SitePageDeliveryOut:
+    if page_slug is not None and not re.fullmatch(PAGE_SLUG_PATTERN, page_slug):
+        raise missing_page()
+    release = await active_release(slug, session, expected_release_id)
+    return SitePageDeliveryOut(
+        release_id=release.release_id,
+        page=await SitePageRepository(session).page(release, page_slug),
+    )
+
+
+async def active_search(
+    slug: str, session: AsyncSession, expected_release_id: UUID | None = None
+) -> SiteSearchOut:
+    release = await active_release(slug, session, expected_release_id)
+    return await SitePageRepository(session).search(release)
 
 
 def manifest(snapshot: SiteSnapshotOut, canonical_base_url: str) -> SiteManifestOut:

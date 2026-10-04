@@ -14,6 +14,11 @@ from orbis_user_api.application.site_errors import (
     site_version_conflict,
 )
 from orbis_user_api.application.site_navigation import PagePaths, manual_page_registry
+from orbis_user_api.application.site_page_repository import (
+    INDEXED_PAGE_FORMAT,
+    ActiveRelease,
+    SitePageRepository,
+)
 from orbis_user_api.application.site_references import (
     prepare_site_references,
     use_prepared_site_references,
@@ -24,6 +29,7 @@ from orbis_user_api.application.site_slugs import (
 )
 from orbis_user_api.application.site_snapshots import (
     build_snapshot,
+    page_render_fingerprint,
 )
 from orbis_user_api.application.site_sources import resolve_site_source
 from orbis_user_api.application.site_urls import PublicUrlPolicy
@@ -278,6 +284,10 @@ async def publish_site(
     )
     with use_prepared_site_references(prepared):
         snapshot = await build_snapshot(site, session, url_policy=url_policy)
+        render_fingerprints = {
+            page.metadata.slug: page_render_fingerprint(page, url_policy)
+            for page in before.pages
+        }
     after = await resolve_site_source(site, session)
     if before.fingerprint != after.fingerprint:
         raise SiteError(
@@ -332,12 +342,15 @@ async def publish_site(
             raise site_version_conflict()
         await reserve_site_slug(site.id, snapshot.slug, session)
         await release_unused_site_slugs(site.id, session)
+        indexed_snapshot = await SitePageRepository(session).persist(
+            site.id, snapshot, render_fingerprints
+        )
         session.add(
             SiteRelease(
                 id=release_id,
                 site_id=site.id,
                 release_number=number,
-                snapshot=snapshot.model_dump(mode="json"),
+                snapshot=indexed_snapshot,
                 source_manifest=after.manifest,
                 asset_manifest=verified.asset_manifest,
                 published_at_ms=timestamp,
@@ -391,7 +404,14 @@ async def activate_release(
     release = await session.get(SiteRelease, release_id)
     if release is None or release.site_id != site.id:
         raise SiteError("SITE_RELEASE_NOT_FOUND", "站点发布版本不存在", 404)
-    snapshot = SiteSnapshotOut.model_validate(release.snapshot)
+    handle = ActiveRelease(
+        site.id,
+        release.id,
+        release.release_number,
+        release.published_at_ms,
+        release.snapshot.get("storage_format") == INDEXED_PAGE_FORMAT,
+    )
+    snapshot = await SitePageRepository(session).metadata_snapshot(handle)
     await _require_available_slug(snapshot.slug, session, site.id)
     try:
         await session.execute(
@@ -441,15 +461,5 @@ async def unpublish_site(site_id: UUID, user: User, session: AsyncSession) -> Si
 
 
 async def read_public_site(slug: str, session: AsyncSession) -> SiteSnapshotOut:
-    snapshot = await session.scalar(
-        select(SiteRelease.snapshot)
-        .join(
-            Site,
-            (Site.published_release_id == SiteRelease.id)
-            & (Site.id == SiteRelease.site_id),
-        )
-        .where(Site.published_slug == slug)
-    )
-    if snapshot is None:
-        raise SiteError("SITE_NOT_FOUND", "站点不存在或尚未发布", 404)
-    return SiteSnapshotOut.model_validate(snapshot)
+    repository = SitePageRepository(session)
+    return await repository.snapshot(await repository.active(slug))

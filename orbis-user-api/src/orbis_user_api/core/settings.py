@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     database_schema: str | None = None
     storage_dir: Path = Path("./storage/files")
     auto_create_tables: bool = False
+    integration_import_max_bytes: int = Field(default=32 * 1024 * 1024, ge=1024 * 1024, le=256 * 1024 * 1024)
+    integration_import_chunk_bytes: int = Field(default=256 * 1024, ge=4096, le=1024 * 1024)
 
     access_token_secret: str = Field(default="change-me-access-secret", min_length=16)
     refresh_token_secret: str = Field(default="change-me-refresh-secret", min_length=16)

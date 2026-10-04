@@ -177,7 +177,7 @@ for (const outcome of ["saved", "conflict"] as const) {
     let switches = 0;
     const gate = new Promise<void>(resolve => { releaseSave = resolve; });
     page.on("request", outgoing => { if (new URL(outgoing.url()).pathname === "/api/workspace/switch") switches += 1; });
-    await page.route(`**/api/notes/${fixture.notes[0].id}/content`, async route => {
+    await page.route(`**/api/notes/${fixture.notes[0].id}/{content,blocks}`, async route => {
       if (!["PUT", "PATCH"].includes(route.request().method())) { await route.continue(); return; }
       expect(route.request().headers()["x-workspace-id"]).toBe(fixture.source.id);
       saveStarted = true;

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   createNote,
+  getNoteChildrenPage,
   listDocumentGroups,
   listNotebooks,
   saveNoteContent,
@@ -160,5 +161,20 @@ describe("document API", () => {
         body: JSON.stringify({ expected_version: 1, blocks: createEmptyNoteBlocks() }),
       }),
     );
+  });
+
+  it.each([
+    { status: 404, requested: 32, fallback: 32 },
+    { status: 405, requested: 256, fallback: 64 },
+  ])("preserves paging and version while capping a $requested completion page for an older server", async ({ status, requested, fallback }) => {
+    const id = "018ff7c4-a5b6-7000-8000-000000000001";
+    const signal = new AbortController().signal;
+    const content = { note_id: id, blocks: createEmptyNoteBlocks(), plain_text: "", content_version: 4, created_at_ms: 1, updated_at_ms: 1 };
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(null, status)).mockResolvedValueOnce(jsonResponse(content));
+    vi.stubGlobal("fetch", fetchMock);
+
+    expect(await getNoteChildrenPage(id, auth, { offset: 32, limit: requested, version: 4, signal })).toEqual(content);
+    expect(fetchMock).toHaveBeenNthCalledWith(1, `/api/notes/${id}/content/children?offset=32&limit=${requested}&expected_version=4`, expect.objectContaining({ signal }));
+    expect(fetchMock).toHaveBeenNthCalledWith(2, `/api/notes/${id}/content?offset=32&limit=${fallback}&expected_version=4`, expect.objectContaining({ signal }));
   });
 });

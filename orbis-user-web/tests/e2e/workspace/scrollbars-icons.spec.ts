@@ -45,12 +45,17 @@ test("the global scrollbar skin preserves wheel and keyboard scrolling", async (
   await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
   await page.mouse.wheel(0, 360);
   await expect.poll(() => scroller.evaluate((element) => element.scrollTop)).toBeGreaterThan(100);
-  await page.getByRole("button", { name: "新建笔记本", exact: true }).focus();
+  const createNotebook = page.getByRole("button", { name: "新建笔记本", exact: true });
+  await createNotebook.focus();
+  await expect(createNotebook).toBeFocused();
   const before = await scroller.evaluate((element) => element.scrollTop);
   await page.keyboard.press("PageDown");
   await expect.poll(() => scroller.evaluate((element) => element.scrollTop)).toBeGreaterThan(before);
-  await page.getByRole("button", { name: "新建笔记本", exact: true }).focus();
-  await page.keyboard.press("Home");
+  await createNotebook.focus();
+  await expect(createNotebook).toBeFocused();
+  // Playwright sends macOS' scrollToBeginningOfDocument command for Home;
+  // Chromium on Linux/Windows uses Control+Home for the document boundary.
+  await page.keyboard.press(process.platform === "darwin" ? "Home" : "Control+Home");
   await expect.poll(() => scroller.evaluate((element) => element.scrollTop)).toBe(0);
   const thumbHeight = await scroller.evaluate((element) => Math.max(32, element.clientHeight * element.clientHeight / element.scrollHeight));
   await page.mouse.move(bounds.x + bounds.width - 4, bounds.y + thumbHeight / 2);

@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 const root = dirname(fileURLToPath(import.meta.url));
 const web = resolve(root, "../../..");
 const frozenStyles = process.env.ORBIS_BENCH_STYLES;
+const conversionSource = process.env.ORBIS_BENCH_MODEL;
 export default defineConfig({
   root,
   plugins: [
@@ -16,6 +17,7 @@ export default defineConfig({
       enforce: "pre",
       resolveId(source, importer) {
         if (source === "benchmark:draft") return "\0benchmark:draft";
+        if (conversionSource && importer && source.endsWith("tiptap-model")) return conversionSource;
         if (frozenStyles && importer && source.endsWith(".css")) {
           const original = resolve(dirname(importer), source);
           const prefix = resolve(web, "src/styles") + "/";
