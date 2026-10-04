@@ -36,10 +36,20 @@ describe("persistent draft checkpoints", () => {
     controller.schedule(input("submitted again")); await controller.acknowledge(3); await controller.flush(); expect(adapter.records.has("scope")).toBe(false); await controller.dispose();
   });
   it("restores exact window and child descriptors then continues the sequence", async () => {
-    const adapter = memoryAdapter(), first = createDraftCheckpointController({ scopeKey: "scope", adapter }); first.schedule(input("unsaved")); await first.dispose();
+    const value = input("unsaved");
+    value.descriptors[0][1] = { ...value.descriptors[0][1], child_count: 10000, has_children: true, children_loaded: false, offset: 32 };
+    value.descriptors.push(["oversized", { id: "oversized", parent_id: null, child_count: 0, has_children: false, children_loaded: true, payload_loaded: false, payload_bytes: 300000, offset: 0 }]);
+    const adapter = memoryAdapter(), first = createDraftCheckpointController({ scopeKey: "scope", adapter }); first.schedule(value); await first.dispose();
     const reopened = createDraftCheckpointController({ scopeKey: "scope", adapter }), restored = await reopened.read();
-    expect(restored?.window).toEqual(input("unsaved").window); expect(restored?.descriptors).toEqual(input("unsaved").descriptors);
+    expect(restored?.window).toEqual(value.window); expect(restored?.descriptors).toEqual(value.descriptors);
     expect(restored?.saved.blocks.blocks[0].content).toEqual([{ type: "text", text: "baseline" }]); expect(reopened.schedule(input("after reopen"))).toBe(2); await reopened.dispose();
+  });
+  it("omits completed read metadata while retaining exact authored baselines", async () => {
+    const adapter = memoryAdapter(), controller = createDraftCheckpointController({ scopeKey: "scope", adapter });
+    const value = input("unsaved");
+    controller.schedule(value); await controller.flush();
+    expect(adapter.records.get("scope")).toMatchObject({ saved: value.saved, current: value.current, window: value.window, descriptors: [] });
+    await controller.dispose();
   });
   it("surfaces quota failures and retains the newest draft for retry", async () => {
     const adapter = memoryAdapter(), events: unknown[] = [], quota = new DOMException("Quota exceeded", "QuotaExceededError"), originalPut = adapter.put;

@@ -16,7 +16,8 @@ export type DraftCheckpointAdapter = {
   list?(baseScopeKey: string): Promise<DraftCheckpoint[]>;
 };
 export type CheckpointStatus = { status: "pending" | "saved" | "cleared" | "failed"; sequence: number; error?: unknown };
-const DATABASE_NAME = "orbis-document-drafts", STORE_NAME = "checkpoints", DATABASE_VERSION = 1;
+const DATABASE_NAME = "orbis-document-drafts", STORE_NAME = "checkpoints", DATABASE_VERSION = 2;
+const SEQUENCE_INDEX = "scope-sequence";
 export const DRAFT_CHECKPOINT_DELAY_MS = 250;
 
 export function draftScopeKey(scope: { origin: string; userId: string; workspaceId: string; noteId: string }): string {
@@ -38,7 +39,11 @@ export function createIndexedDbDraftAdapter(factory: IDBFactory | undefined = gl
     if (opening) return opening;
     opening = new Promise((resolve, reject) => {
       const request = factory.open(DATABASE_NAME, DATABASE_VERSION);
-      request.onupgradeneeded = () => { if (!request.result.objectStoreNames.contains(STORE_NAME)) request.result.createObjectStore(STORE_NAME, { keyPath: "scopeKey" }); };
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        const store = db.objectStoreNames.contains(STORE_NAME) ? request.transaction!.objectStore(STORE_NAME) : db.createObjectStore(STORE_NAME, { keyPath: "scopeKey" });
+        if (!store.indexNames.contains(SEQUENCE_INDEX)) store.createIndex(SEQUENCE_INDEX, ["scopeKey", "sequence"]);
+      };
       request.onsuccess = () => { const db = request.result; db.onversionchange = () => { db.close(); opening = null; }; resolve(db); };
       request.onerror = () => { opening = null; reject(request.error ?? new Error("无法打开本地草稿存储。")); };
       request.onblocked = () => { opening = null; reject(new Error("本地草稿存储升级被其他页面阻挡，请关闭旧页面后重试。")); };
@@ -57,6 +62,12 @@ export function createIndexedDbDraftAdapter(factory: IDBFactory | undefined = gl
       catch (error) { tx.abort(); reject(error); }
     });
   }
+  function storedSequence(store: IDBObjectStore, scopeKey: string, receive: (sequence: number | null) => void) {
+    // A key cursor reads only metadata. Reading the previous checkpoint value
+    // would structured-clone another full document before every put/delete.
+    const request = store.index(SEQUENCE_INDEX).openKeyCursor(IDBKeyRange.bound([scopeKey, 0], [scopeKey, Number.MAX_SAFE_INTEGER]));
+    request.onsuccess = () => receive(request.result ? Number((request.result.key as IDBValidKey[])[1]) : null);
+  }
   return {
     list(baseScopeKey) {
       return transaction<DraftCheckpoint[]>("readonly", (store, result) => {
@@ -71,8 +82,8 @@ export function createIndexedDbDraftAdapter(factory: IDBFactory | undefined = gl
       });
     },
     read(scopeKey) { return transaction<DraftCheckpoint | null>("readonly", (store, result) => { const request = store.get(scopeKey); request.onsuccess = () => result(validCheckpoint(request.result, scopeKey) ? request.result : null); }); },
-    put(checkpoint) { return transaction<void>("readwrite", (store, result) => { const request = store.get(checkpoint.scopeKey); request.onsuccess = () => { const previous = request.result as DraftCheckpoint | undefined; if (!previous || previous.sequence <= checkpoint.sequence) store.put(checkpoint); result(undefined); }; }); },
-    remove(scopeKey, throughSequence) { return transaction<void>("readwrite", (store, result) => { const request = store.get(scopeKey); request.onsuccess = () => { const previous = request.result as DraftCheckpoint | undefined; if (previous && previous.sequence <= throughSequence) store.delete(scopeKey); result(undefined); }; }); },
+    put(checkpoint) { return transaction<void>("readwrite", (store, result) => storedSequence(store, checkpoint.scopeKey, previous => { if (previous === null || previous <= checkpoint.sequence) store.put(checkpoint); result(undefined); })); },
+    remove(scopeKey, throughSequence) { return transaction<void>("readwrite", (store, result) => storedSequence(store, scopeKey, previous => { if (previous !== null && previous <= throughSequence) store.delete(scopeKey); result(undefined); })); },
   };
 }
 /** One controller belongs to one immutable account/workspace/document scope.
@@ -100,7 +111,7 @@ export function createDraftCheckpointController(options: { scopeKey: string; ada
       // descriptors are mutable session metadata and receive shallow copies.
       try {
       const value = typeof entry.source === "function" ? entry.source() : entry.source;
-      const checkpoint: DraftCheckpoint = { scopeKey, sequence: entry.sequence, saved: value.saved, current: value.current, window: value.window ? { ...value.window } : null, descriptors: value.descriptors.map(([id, state]) => [id, { ...state }]) };
+      const checkpoint: DraftCheckpoint = { scopeKey, sequence: entry.sequence, saved: value.saved, current: value.current, window: value.window ? { ...value.window } : null, descriptors: value.descriptors.filter(([, state]) => !state.payload_loaded || !state.children_loaded).map(([id, state]) => [id, { ...state }]) };
       await adapter.put(checkpoint); }
       catch (error) { if (!pending || pending.sequence < entry.sequence) pending = entry; throw error; }
     }, entry.sequence, "saved");

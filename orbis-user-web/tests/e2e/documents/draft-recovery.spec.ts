@@ -26,7 +26,7 @@ async function setup(page: import("@playwright/test").Page, request: import("@pl
 
 async function draftTexts(page: import("@playwright/test").Page) {
   return page.evaluate(async () => {
-    const db = await new Promise<IDBDatabase>((resolve, reject) => { const request = indexedDB.open("orbis-document-drafts", 1); request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); });
+    const db = await new Promise<IDBDatabase>((resolve, reject) => { const request = indexedDB.open("orbis-document-drafts"); request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); });
     try {
       return await new Promise<string[]>((resolve, reject) => { const request = db.transaction("checkpoints", "readonly").objectStore("checkpoints").getAll(); request.onsuccess = () => resolve(request.result.map(record => JSON.stringify(record.current.blocks))); request.onerror = () => reject(request.error); });
     } finally { db.close(); }
