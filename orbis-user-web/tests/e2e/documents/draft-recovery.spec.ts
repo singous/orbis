@@ -104,11 +104,22 @@ test("an initially shallow giant container loads children without saving and pre
 test("the real application opens and edits a fully loaded 10000-block note within the interaction budget", async ({ page, request }) => {
   const { note, headers, openingMs } = await setup(page, request, 10000);
   expect(openingMs).toBeLessThan(1500);
-  const saved = page.waitForResponse(response => response.url().endsWith(`/notes/${note.id}/blocks`) && response.request().method() === "PATCH");
   const editor = page.locator(".tiptap.ProseMirror[contenteditable=true]");
+  const completionLimits: number[] = [];
+  page.on("request", request => {
+    const url = new URL(request.url());
+    if (url.pathname.endsWith(`/notes/${note.id}/content/children`) && !url.searchParams.has("parent_id")) completionLimits.push(Number(url.searchParams.get("limit")));
+  });
   await editor.locator(':scope > p').first().click();
+  const beganCompleting = Date.now();
   await page.keyboard.press("ControlOrMeta+a");
   await expect(editor.locator(':scope > p')).toHaveCount(10000, { timeout: 60000 });
+  const completionMs = Date.now() - beganCompleting;
+  expect(completionLimits).toContain(256);
+  expect(completionLimits.every(limit => limit === 32 || limit === 256)).toBe(true);
+  // This small-payload fixture fits 256 items inside the server byte budget.
+  // One ordinary 32-item request may already be in flight before explicit load.
+  expect(completionLimits.length).toBeLessThanOrEqual(41);
   await page.evaluate(() => {
     const element = document.querySelector('.tiptap') as HTMLElement & { editor: { commands: { setTextSelection(position: number): void }; view: { focus(): void } } };
     element.editor.commands.setTextSelection(1); element.editor.view.focus();
@@ -116,13 +127,14 @@ test("the real application opens and edits a fully loaded 10000-block note withi
     Object.assign(window, { appInputSamples: samples });
     element.addEventListener('keydown', () => { const began = performance.now(); requestAnimationFrame(() => samples.push(performance.now() - began)); }, true);
   });
+  const saved = page.waitForResponse(response => response.url().endsWith(`/notes/${note.id}/blocks`) && response.request().method() === "PATCH");
   await page.keyboard.type("abcdefghijklmnopqrstuvwxyz0123456789", { delay: 40 });
   await expect.poll(async () => (await page.evaluate(() => (window as Window & { appInputSamples: number[] }).appInputSamples.length))).toBe(36);
   const timing = await page.evaluate(() => {
     const samples = (window as Window & { appInputSamples: number[] }).appInputSamples.toSorted((a, b) => a - b);
     return { p95: samples[Math.floor(samples.length * .95)], max: samples.at(-1) };
   });
-  console.log(JSON.stringify({ actualAppNoteId: note.id, blocks: 10000, openingMs, ...timing }));
+  console.log(JSON.stringify({ actualAppNoteId: note.id, blocks: 10000, openingMs, completionMs, completionRequests: completionLimits.length, ...timing }));
   expect(timing.p95).toBeLessThan(50);
   await expect(editor.locator(':scope > p').first()).toContainText("abcdefghijklmnopqrstuvwxyz0123456789");
   const acknowledgement = await saved;

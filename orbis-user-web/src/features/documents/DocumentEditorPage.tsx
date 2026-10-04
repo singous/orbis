@@ -29,7 +29,7 @@ import { loadDocumentEditor } from "./editor-module";
 import { DocumentShell } from "./DocumentShell";
 import { getNoteContentPage, getNoteContentOutline, getNoteChildrenPage, getNoteBlock, isBoundedContentPage } from "./api";
 import { appendChildBlocks, hydrateBlockPayload, mergeLoadDescriptors, hasPendingContent, type BlockLoadState } from "./content-window";
-import { CONTENT_PAGE_SIZE, type EditorContentHandle } from "./editor-content-handle";
+import { CONTENT_PAGE_SIZE, CONTENT_COMPLETION_PAGE_SIZE, type EditorContentHandle } from "./editor-content-handle";
 
 // Load the editor only on document pages; readers use the lightweight renderer.
 const TiptapEditor = lazy(loadDocumentEditor);
@@ -277,7 +277,7 @@ export function DocumentEditorPage() {
     };
   }, [noteId, draftKey]);
 
-  async function loadMoreContent(): Promise<void> {
+  async function loadMoreContent(pageSize = CONTENT_PAGE_SIZE): Promise<void> {
     if (loadingRequest.current) return loadingRequest.current;
     const window = contentWindow.current;
     const coordinator = coordinatorRef.current;
@@ -288,14 +288,14 @@ export function DocumentEditorPage() {
     setLoadingMore(true);
     setLoadMoreError(null);
     const task = (async () => {
-      const page = await (window.bounded ? getNoteChildrenPage : getNoteContentPage)(noteId, documentAuth, { offset: window.next, limit: CONTENT_PAGE_SIZE, version: window.version, signal: abort.signal });
+      const page = await (window.bounded ? getNoteChildrenPage : getNoteContentPage)(noteId, documentAuth, { offset: window.next, limit: pageSize, version: window.version, signal: abort.signal });
       if (!("next_offset" in page) || page.content_version !== window.version || page.offset !== window.next) throw new Error("后续正文的版本不一致，请重新载入文档。");
       await coordinator.settlePendingSave();
       if (abort.signal.aborted || coordinatorRef.current !== coordinator || contentWindow.current !== window || contentHandle.current !== handle) return;
       const addition = normalizeEditorBlocks(noteId, page.blocks).blocks;
       if (isBoundedContentPage(page)) updateLoadStates(mergeLoadDescriptors(loadStatesRef.current, page.descriptors));
       const wasSaved = coordinator.state === "saved";
-      coordinator.extend(value => ({ ...value, blocks: { ...value.blocks, blocks: [...value.blocks.blocks, ...addition] } }));
+      if (!wasSaved) coordinator.extend(value => ({ ...value, blocks: { ...value.blocks, blocks: [...value.blocks.blocks, ...addition] } }));
       const live = handle.append(addition);
       const current = coordinator.current!;
       if (wasSaved) coordinator.hydrate({ ...current, blocks: live });
@@ -318,7 +318,7 @@ export function DocumentEditorPage() {
     }
   }
 
-  async function loadNestedContent(id: string): Promise<void> {
+  async function loadNestedContent(id: string, pageSize = CONTENT_PAGE_SIZE): Promise<void> {
     const active = childRequests.current.get(id);
     if (active) return active;
     const descriptor = loadStatesRef.current.get(id);
@@ -341,18 +341,18 @@ export function DocumentEditorPage() {
         if (!stillCurrent()) return;
         const incoming = normalizeEditorBlocks(noteId, { schema_version: 2, editor: "blocknote", blocks: [result.block] }).blocks[0];
         const wasSaved = coordinator.state === "saved";
-        coordinator.extend(value => ({ ...value, blocks: hydrateBlockPayload(value.blocks, incoming) }));
+        if (!wasSaved) coordinator.extend(value => ({ ...value, blocks: hydrateBlockPayload(value.blocks, incoming) }));
         const live = handle.hydratePayload(incoming);
         if (wasSaved) coordinator.hydrate({ ...coordinator.current!, blocks: live });
         else coordinator.alignCurrentAfterRead({ ...coordinator.current!, blocks: live });
         mark({ payload_loaded: true });
       } else if (!descriptor.children_loaded) {
-        const page = await getNoteChildrenPage(noteId, documentAuth, { parentId: id, offset: descriptor.offset, limit: CONTENT_PAGE_SIZE, version: window.version, signal: abort.signal });
+        const page = await getNoteChildrenPage(noteId, documentAuth, { parentId: id, offset: descriptor.offset, limit: pageSize, version: window.version, signal: abort.signal });
         if (!(isBoundedContentPage(page)) || page.content_version !== window.version || page.offset !== descriptor.offset) throw new Error("子内容版本不一致，请重新载入文档。");
         if (!stillCurrent()) return;
         const incoming = normalizeEditorBlocks(noteId, page.blocks).blocks;
         const wasSaved = coordinator.state === "saved";
-        coordinator.extend(value => ({ ...value, blocks: appendChildBlocks(value.blocks, id, incoming) }));
+        if (!wasSaved) coordinator.extend(value => ({ ...value, blocks: appendChildBlocks(value.blocks, id, incoming) }));
         const live = handle.appendChildren(id, incoming);
         if (wasSaved) coordinator.hydrate({ ...coordinator.current!, blocks: live });
         else coordinator.alignCurrentAfterRead({ ...coordinator.current!, blocks: live });
@@ -374,7 +374,7 @@ export function DocumentEditorPage() {
 
   async function loadCompleteContent(): Promise<void> {
     if (!contentHandle.current) throw new Error("正文尚未准备好，请稍后重试。");
-    while (contentWindow.current?.noteId === noteId && contentWindow.current.hasMore) await loadMoreContent();
+    while (contentWindow.current?.noteId === noteId && contentWindow.current.hasMore) await loadMoreContent(contentWindow.current.bounded ? CONTENT_COMPLETION_PAGE_SIZE : CONTENT_PAGE_SIZE);
     const present = new Set<string>();
     const collect = (items: import("../notes/block-model").OrbisBlock[]) => { for (const item of items) { present.add(item.id); collect(item.children); } };
     if (coordinatorRef.current?.current) collect(coordinatorRef.current.current.blocks.blocks);
@@ -382,7 +382,7 @@ export function DocumentEditorPage() {
     updateLoadStates(retained);
     while (hasPendingContent(loadStatesRef.current)) {
       const pending = [...loadStatesRef.current.values()].find(item => !item.payload_loaded || !item.children_loaded);
-      if (pending) await loadNestedContent(pending.id);
+      if (pending) await loadNestedContent(pending.id, CONTENT_COMPLETION_PAGE_SIZE);
     }
   }
 

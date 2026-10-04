@@ -1,5 +1,6 @@
 import { ApiError, apiRequest } from "../../shared/api/api-client";
 import { authRequestOptions as authOptions, type AuthRequestOptions as SharedAuthRequestOptions } from "../../shared/auth/use-auth-request";
+import { LEGACY_CONTENT_PAGE_LIMIT } from "./editor-content-handle";
 import {
   documentGroupListResponseSchema,
   documentGroupSchema,
@@ -193,7 +194,7 @@ export async function getNoteChildrenPage(noteId: string, auth: AuthRequestOptio
     }), { ...authOptions(auth), signal: options.signal }));
   } catch (error) {
     if (!(error instanceof ApiError) || ![404, 405].includes(error.status) || options.parentId) throw error;
-    return getNoteContentPage(noteId, auth, options);
+    return getNoteContentPage(noteId, auth, { ...options, limit: Math.min(options.limit ?? 32, LEGACY_CONTENT_PAGE_LIMIT) });
   }
 }
 

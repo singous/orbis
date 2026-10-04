@@ -9,3 +9,7 @@ export type EditorContentHandle = {
   selectEnd: () => void;
 };
 export const CONTENT_PAGE_SIZE = 32;
+// Explicit whole-document actions can read larger pages. The server still
+// enforces its independent 128 KiB byte budget on every response.
+export const CONTENT_COMPLETION_PAGE_SIZE = 256;
+export const LEGACY_CONTENT_PAGE_LIMIT = 64;
