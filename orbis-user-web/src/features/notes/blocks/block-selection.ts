@@ -48,6 +48,7 @@ export const OrbisBlockSelection = Extension.create({
     const editor = this.editor;
     const decorated = new WeakMap<BlockSelectionState, DecorationSet>();
     function reconcile(doc: PMNode, selection: BlockSelectionState, previous = DecorationSet.empty): DecorationSet {
+      if (!selection.ids.length && !selection.targetId) return DecorationSet.empty;
       const selected = new Set(selection.ids);
       const existing = previous.find();
       const byId = new Map(existing.map(decoration => [decoration.spec.blockId as string, decoration]));
@@ -56,13 +57,13 @@ export const OrbisBlockSelection = Extension.create({
       for (const entry of locateEditorBlocks(doc)) {
         const isSelected = selected.has(entry.id);
         const isTarget = selection.targetId === entry.id;
+        if (!isSelected && !isTarget) continue;
         const old = byId.get(entry.id);
         if (old && old.from === entry.pos && old.to === entry.pos + entry.node.nodeSize && old.spec.selected === isSelected && old.spec.target === isTarget) {
           retained.add(old);
           continue;
         }
         additions.push(Decoration.node(entry.pos, entry.pos + entry.node.nodeSize, {
-          'data-orbis-block-id': entry.id,
           class: [isSelected ? 'orbis-block-selected' : '', isTarget ? 'orbis-block-target' : ''].filter(Boolean).join(' '),
           ...(isSelected ? {'data-orbis-selected':'true'} : {}),
           ...(isTarget ? {'data-orbis-target':'true'} : {}),

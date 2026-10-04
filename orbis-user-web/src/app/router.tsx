@@ -20,6 +20,8 @@ import { KnowledgePlaceholderPage, MemoryPlaceholderPage } from "../features/pla
 import { RequireAuth } from "../shared/auth/RequireAuth";
 import { LoginPage } from "./LoginPage";
 
+const PublicSharePage = lazy(() => import("../features/sharing/PublicSharePage").then(module => ({ default: module.PublicSharePage })));
+
 const loadSitesPage = () => import("../features/sites/SitesPage");
 
 const SearchPage = lazy(() => import("../features/search/SearchPage").then((module) => ({ default: module.SearchPage })));
@@ -31,6 +33,7 @@ const siteFallback = <div className="site-reader-status"><LoadingState label="�
 const workspaceFallback = <WorkspaceLoadingPage />;
 
 export const router = createBrowserRouter([
+  { path: "/share/:shareToken/:noteId?", element: <Suspense fallback={<LoadingState label="正在打开分享…" variant="editor" />}><PublicSharePage /></Suspense> },
   { path: "/search", element: <RequireAuth><Suspense fallback={workspaceFallback}><SearchPage /></Suspense></RequireAuth> },
   { path: "/search/open", element: <RequireAuth><Suspense fallback={workspaceFallback}><SearchOpenPage /></Suspense></RequireAuth> },
   { path: "/s/:slug/*", element: <Suspense fallback={siteFallback}><PublicSitePage /></Suspense> },

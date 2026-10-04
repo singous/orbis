@@ -12,12 +12,14 @@ import {
   getNotebook,
   getNoteContent,
   getNoteContentPage,
+  getNoteChildrenPage,
   getNoteTree,
   importMarkdown,
   listDocumentGroups,
   listNotebooks,
   saveNoteContent,
   saveNoteContentPrefix,
+  saveNoteBlockChanges,
   searchNotes,
   setDocumentGroupArchived,
   setNoteArchived,
@@ -122,7 +124,7 @@ export function useNoteContent(noteId?: string, options?: { pageSize: number }) 
   return useQuery({
     queryKey: [options ? "note-content-pages" : "note-content", noteId],
     enabled: Boolean(noteId),
-    queryFn: ({ signal }) => options ? getNoteContentPage(noteId as string, auth, { limit: options.pageSize, signal }) : getNoteContent(noteId as string, auth, signal),
+    queryFn: ({ signal }) => options ? getNoteChildrenPage(noteId as string, auth, { limit: options.pageSize, signal }) : getNoteContent(noteId as string, auth, signal),
   });
 }
 
@@ -240,7 +242,7 @@ export function useSaveNoteContent() {
   const auth = useDocumentAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { noteId: string; expectedVersion: number; blocks: Parameters<typeof saveNoteContent>[0]["blocks"]; loadedBlockIds?: string[] }) => payload.loadedBlockIds ? await saveNoteContentPrefix({ ...payload, loadedBlockIds: payload.loadedBlockIds }, auth) : await saveNoteContent(payload, auth),
+    mutationFn: async (payload: { noteId: string; expectedVersion: number; blocks: Parameters<typeof saveNoteContent>[0]["blocks"]; loadedBlockIds?: string[]; changes?: import("./block-changes").BlockChanges }) => payload.changes ? await saveNoteBlockChanges({ noteId: payload.noteId, expectedVersion: payload.expectedVersion, changes: payload.changes }, auth) : payload.loadedBlockIds ? await saveNoteContentPrefix({ ...payload, loadedBlockIds: payload.loadedBlockIds }, auth) : await saveNoteContent(payload, auth),
     onSuccess: (content) => {
       if ("blocks" in content) queryClient.setQueryData(["note-content", content.note_id], content);
       else void queryClient.invalidateQueries({ queryKey: ["note-content", content.note_id] });

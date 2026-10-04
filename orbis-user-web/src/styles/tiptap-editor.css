@@ -78,3 +78,25 @@
 }
 
 .document-load-more { padding: var(--orbis-space-6) 0; color: var(--text-secondary); font-size: var(--orbis-text-ui-size); line-height: var(--orbis-text-ui-leading); }
+
+.editor-content-loader { display: flex; align-items: center; gap: 12px; padding: 10px 0; user-select: none; }
+.editor-content-loader-button { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 7px 12px; color: var(--muted); font-size: 13px; cursor: pointer; }
+.editor-content-loader-button:disabled { opacity: .65; cursor: wait; }
+.editor-content-loader-error { color: var(--danger, #b42318); font-size: 12px; }
+
+/* Keep the complete editing DOM for selection and undo while skipping layout
+   and paint for offscreen blocks. The browser retains measured block sizes. */
+@supports (content-visibility: auto) {
+  .orbis-tiptap .ProseMirror > * {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 80px;
+  }
+}
+
+@supports (content-visibility: auto) {
+  .orbis-tiptap .doc-editor-content [data-orbis-block-id],
+  .orbis-tiptap .orbis-container [data-orbis-block-id] {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 80px;
+  }
+}

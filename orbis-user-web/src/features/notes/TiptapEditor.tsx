@@ -22,6 +22,8 @@ import { EditorReadOnlyContext } from "./tiptap-editor-context";
 import { fromTiptapDocument, toTiptapDocument } from "./tiptap-model";
 import type { EditorContentHandle } from "../documents/editor-content-handle";
 import { Fragment } from "@tiptap/pm/model";
+import { OrbisContentLoading, contentLoadingKey } from "./content-loading";
+import type { BlockLoadState } from "../documents/content-window";
 import { canJoin } from "@tiptap/pm/transform";
 import "../../styles/tiptap-editor.css";
 
@@ -34,6 +36,7 @@ function insertBlock(editor: Editor, value: OrbisBlock) {
 }
 
 const editorExtensions = [...tiptapExtensions, OrbisBlockSelection];
+const EMPTY_LOAD_STATES: ReadonlyMap<string, BlockLoadState> = new Map();
 
 const COMMANDS: Command[] = [
   { label: "段落", keywords: "paragraph text", icon: <Plus size={16} />, run: (editor) => editor.chain().focus().setParagraph().run() },
@@ -70,7 +73,7 @@ function slashQuery(editor: Editor): { query: string; from: number; to: number }
   return match ? { query: match[1].toLocaleLowerCase(), from: $from.pos - before.length, to: $from.pos } : null;
 }
 
-export function TiptapEditor({ blocks, onChange, onError, readOnly = false, noteId, onContentReady, ensureComplete, hasMoreContent = false }: {
+export function TiptapEditor({ blocks, onChange, onError, readOnly = false, noteId, onContentReady, ensureComplete, hasMoreContent = false, loadStates = EMPTY_LOAD_STATES, onLoadBlock }: {
   blocks: NoteBlocksV2;
   onChange: (next: EditorChange) => void;
   onError?: (message: string | null) => void;
@@ -79,7 +82,14 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
   onContentReady?: (handle: EditorContentHandle | null) => void;
   ensureComplete?: () => Promise<void>;
   hasMoreContent?: boolean;
+  loadStates?: ReadonlyMap<string, BlockLoadState>;
+  onLoadBlock?: (id: string) => Promise<void>;
 }) {
+  const loadingRef = useRef(loadStates);
+  const loadBlockRef = useRef(onLoadBlock);
+  loadingRef.current = loadStates;
+  loadBlockRef.current = onLoadBlock;
+  const [extensions] = useState(() => [...editorExtensions, OrbisContentLoading.configure({ states: () => loadingRef.current, load: async id => { await loadBlockRef.current?.(id); } })]);
   const files = useManagedFiles();
   const toolbarHost = useEditorToolbarHost();
   const insertButtonRef = useRef<HTMLButtonElement>(null);
@@ -129,7 +139,7 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
   }
 
   const editor = useEditor({
-    extensions: editorExtensions,
+    extensions,
     content: initialContent,
     editable: !readOnly,
     immediatelyRender: false,
@@ -156,7 +166,7 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
       fromTiptapDocument(current.state.doc);
     },
     onUpdate: ({ editor: current, transaction }) => {
-      if (transaction.getMeta("orbis-content-page")) return;
+      if (transaction.getMeta("orbis-content-page") || transaction.getMeta("orbis-rejected-unloaded")) return;
       fullActionRef.current += 1;
       emitChange(current);
       setSlash(slashQuery(current));
@@ -166,9 +176,58 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
   currentEditorRef.current = editor;
 
   useEffect(() => {
+    if (editor) editor.view.dispatch(editor.state.tr.setMeta(contentLoadingKey, true));
+  }, [editor, loadStates]);
+
+  useEffect(() => {
     if (!editor) return;
+    function locate(id: string) {
+      let result: { node: import("@tiptap/pm/model").Node; position: number } | undefined;
+      editor!.state.doc.descendants((node, position) => {
+        if (result) return false;
+        if (node.attrs.orbisId === id) { result = { node, position }; return false; }
+      });
+      if (!result) throw new Error("目标内容已不在当前编辑器中。");
+      return result;
+    }
+    function findBlock(siblings: OrbisBlock[], id: string): OrbisBlock | undefined {
+      for (const item of siblings) { if (item.id === id) return item; const nested = findBlock(item.children, id); if (nested) return nested; }
+    }
+    function readTransaction(transaction: import("@tiptap/pm/state").Transaction) {
+      editor!.view.dispatch(transaction.setMeta("addToHistory", false).setMeta("orbis-content-page", true));
+      const result = fromTiptapDocument(editor!.state.doc);
+      lastEmitted.current = result;
+      return result;
+    }
     contentReadyRef.current?.({
       snapshot: () => fromTiptapDocument(editor.state.doc),
+      appendChildren: (parentId, incoming) => {
+        const target = locate(parentId);
+        const current = findBlock(fromTiptapDocument(editor.state.doc).blocks, parentId);
+        if (!current) throw new Error("目标内容尚未准备好。");
+        const present = new Set(current.children.map(block => block.id));
+        const addition = incoming.filter(block => !present.has(block.id));
+        if (!addition.length) return fromTiptapDocument(editor.state.doc);
+        const transaction = editor.state.tr;
+        if (["orbisComponent", "orbisContainer", "blockquote", "orbisToggle", "listItem", "taskItem"].includes(target.node.type.name)) {
+          const json = toTiptapDocument({ schema_version: 2, editor: "blocknote", blocks: addition });
+          const nodes = (json.content ?? []).map(node => editor.schema.nodeFromJSON(node));
+          transaction.insert(target.position + target.node.nodeSize - 1, Fragment.fromArray(nodes));
+        } else {
+          const json = toTiptapDocument({ schema_version: 2, editor: "blocknote", blocks: [{ ...current, children: [...current.children, ...addition] }] });
+          const nodes = (json.content ?? []).map(node => editor.schema.nodeFromJSON(node));
+          transaction.replaceWith(target.position, target.position + target.node.nodeSize, Fragment.fromArray(nodes));
+        }
+        return readTransaction(transaction);
+      },
+      hydratePayload: incoming => {
+        const target = locate(incoming.id);
+        const current = findBlock(fromTiptapDocument(editor.state.doc).blocks, incoming.id);
+        if (!current) throw new Error("目标内容尚未准备好。");
+        const json = toTiptapDocument({ schema_version: 2, editor: "blocknote", blocks: [{ ...incoming, children: current.children }] });
+        const nodes = (json.content ?? []).map(node => editor.schema.nodeFromJSON(node));
+        return readTransaction(editor.state.tr.replaceWith(target.position, target.position + target.node.nodeSize, Fragment.fromArray(nodes)));
+      },
       selectAll: () => { editor.chain().focus().selectAll().run(); },
       selectEnd: () => { editor.chain().focus().setTextSelection(editor.state.doc.content.size - 1).scrollIntoView().run(); },
       append: incoming => {

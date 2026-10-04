@@ -32,6 +32,7 @@ import { toTiptapDocument } from "./tiptap-model";
 import "../../styles/document-editor.css";
 
 const hidden = { default: null, parseHTML: () => null, renderHTML: () => ({}) };
+const blockIdentity = { ...hidden, renderHTML: (attributes: Record<string, unknown>) => attributes.orbisId && !attributes.orbisOwn ? { "data-orbis-block-id": attributes.orbisId } : {} };
 
 /** Stored v2 metadata stays in editor JSON only. It is never copied into HTML. */
 const OrbisMetadata = Extension.create({
@@ -39,7 +40,7 @@ const OrbisMetadata = Extension.create({
   addGlobalAttributes() {
     return [{
       types: ["paragraph", "heading", "codeBlock", "horizontalRule", "blockquote", "listItem", "taskItem", "table", "tableCell", "tableHeader"],
-      attributes: { orbisId: hidden, orbisProps: { ...hidden, parseHTML: (element: HTMLElement) => parseClipboardProps(element), renderHTML: (attributes: Record<string, unknown>) => {
+      attributes: { orbisId: blockIdentity, orbisProps: { ...hidden, parseHTML: (element: HTMLElement) => parseClipboardProps(element), renderHTML: (attributes: Record<string, unknown>) => {
         const alignment = contentTextAlignment((attributes.orbisProps as Record<string, unknown> | undefined)?.textAlignment);
         return { ...clipboardPropsAttribute(attributes.orbisProps), ...(alignment ? { style: `text-align: ${alignment}` } : {}) };
       } }, orbisOriginal: hidden, orbisSignature: hidden, orbisOwn: { default: false, parseHTML: (element: HTMLElement) => element.hasAttribute("data-orbis-own"), renderHTML: (attributes: Record<string, unknown>) => attributes.orbisOwn ? { "data-orbis-own": "true" } : {} }, orbisCellOriginal: hidden, orbisCellProps: { ...hidden, parseHTML: (element: HTMLElement) => parseClipboardProps(element, "data-orbis-cell-props"), renderHTML: (attributes: Record<string, unknown>) => {
@@ -97,8 +98,14 @@ function ComponentView({ node, editor, updateAttributes, getPos }: NodeViewProps
       const contentRoot = content?.querySelector(":scope > [data-node-view-content-react]") as HTMLElement | null;
       if (contentRoot) contentRoot.style.display = "";
       const panes = contentRoot?.children ?? content?.children;
-      Array.from(panes ?? []).forEach((element, index) => {
-        (element as HTMLElement).style.display = index === activePane ? "" : "none";
+      let paneIndex = -1;
+      Array.from(panes ?? []).forEach(element => {
+        const child = element as HTMLElement;
+        // Reading widgets are siblings of the block they hydrate. Associate
+        // them by identity so they neither shift nor disappear from the pane.
+        const loaderId = child.dataset.blockLoader;
+        if (!loaderId) paneIndex += 1;
+        child.style.display = (loaderId ? loaderId === activePaneId : paneIndex === activePane) ? "" : "none";
       });
     };
     update();
@@ -115,8 +122,8 @@ function ComponentView({ node, editor, updateAttributes, getPos }: NodeViewProps
     const content = toTiptapDocument({ schema_version: 2, editor: "blocknote", blocks: [child] }).content?.[0];
     if (content) editor.chain().focus().insertContentAt(position + node.nodeSize - 1, content).run();
   }
-  if (kind === "group") return <NodeViewWrapper as="section" className="doc-editor-group" data-document-component="group"><NodeViewContent as="div" /></NodeViewWrapper>;
-  return <NodeViewWrapper as="section" className={`doc-editor-block doc-editor-${kind}`} data-document-component={kind} data-tone={kind === "callout" ? String(props.tone ?? "info") : undefined} data-columns={kind === "cardGroup" ? String(props.columns ?? 2) : undefined}>
+  if (kind === "group") return <NodeViewWrapper as="section" data-orbis-block-id={node.attrs.orbisId} className="doc-editor-group" data-document-component="group"><NodeViewContent as="div" /></NodeViewWrapper>;
+  return <NodeViewWrapper as="section" data-orbis-block-id={node.attrs.orbisId} className={`doc-editor-block doc-editor-${kind}`} data-document-component={kind} data-tone={kind === "callout" ? String(props.tone ?? "info") : undefined} data-columns={kind === "cardGroup" ? String(props.columns ?? 2) : undefined}>
     {!readOnly ? <ActionButton type="button" className="doc-editor-settings" contentEditable={false} aria-label={`编辑${definition.label}属性`} aria-expanded={editingProps} onClick={() => setEditingProps((value) => !value)}><Settings2 size={14} aria-hidden="true" /></ActionButton> : null}
     {kind === "card" || kind === "callout" ? <div className="doc-editor-heading" contentEditable={false}><Icon size={kind === "card" ? 22 : 19} aria-hidden="true" /></div> : null}
     {title && kind !== "tab" ? <strong contentEditable={false} className="doc-editor-title">{title}</strong> : null}
@@ -137,7 +144,7 @@ function ComponentView({ node, editor, updateAttributes, getPos }: NodeViewProps
 
 const OrbisComponent = Node.create({
   name: "orbisComponent", group: "block", content: "block*", defining: true,
-  addAttributes() { return { orbisId: hidden, orbisProps: { ...hidden, parseHTML: (element: HTMLElement) => parseClipboardProps(element), renderHTML: (attributes: Record<string, unknown>) => clipboardPropsAttribute(attributes.orbisProps) }, orbisOriginal: hidden, orbisSignature: hidden, kind: { default: "callout", parseHTML: () => null, rendered: false } }; },
+  addAttributes() { return { orbisId: blockIdentity, orbisProps: { ...hidden, parseHTML: (element: HTMLElement) => parseClipboardProps(element), renderHTML: (attributes: Record<string, unknown>) => clipboardPropsAttribute(attributes.orbisProps) }, orbisOriginal: hidden, orbisSignature: hidden, kind: { default: "callout", parseHTML: () => null, rendered: false } }; },
   parseHTML() { return [{ tag: "section[data-document-component]", getAttrs: (element) => { const kind = (element as HTMLElement).dataset.documentComponent; return kind && documentBlockDefinition(kind) ? { kind } : false; } }]; },
   renderHTML({ node, HTMLAttributes }) { return ["section", mergeAttributes(HTMLAttributes, { "data-document-component": node.attrs.kind }), 0]; },
   addNodeView() { return ReactNodeViewRenderer(ComponentView); },
@@ -150,7 +157,7 @@ function MediaView({ node, editor, updateAttributes }: NodeViewProps) {
   const caption = String(props.caption ?? props.name ?? "");
   const reference = String(node.attrs.url ?? "");
   const [editingCaption, setEditingCaption] = useState(false);
-  return <NodeViewWrapper className="orbis-media" contentEditable={false}>
+  return <NodeViewWrapper data-orbis-block-id={node.attrs.orbisId} className="orbis-media" contentEditable={false}>
     <ContentMedia kind={kind} reference={reference} fallback={safeContentUrl(reference, true)} name={caption || "附件"} caption={caption || undefined} previewWidth={props.previewWidth} />
     {!readOnly ? <ActionButton type="button" className="doc-editor-settings" aria-label="编辑媒体说明" aria-expanded={editingCaption} onClick={() => setEditingCaption((value) => !value)}><Settings2 size={14} /></ActionButton> : null}
     {!readOnly && editingCaption ? <label className="orbis-media-caption">说明<HeroInput aria-label="媒体说明" value={caption} onChange={(event) => updateAttributes({ orbisProps: { ...props, caption: event.target.value }, caption: event.target.value })} /></label> : null}
@@ -159,7 +166,7 @@ function MediaView({ node, editor, updateAttributes }: NodeViewProps) {
 
 const OrbisMedia = Node.create({
   name: "orbisMedia", group: "block", atom: true, selectable: true,
-  addAttributes() { return { orbisId: hidden, orbisProps: hidden, orbisOriginal: hidden, orbisSignature: hidden, kind: { default: "file", parseHTML: () => null }, url: { default: "", parseHTML: () => null }, caption: { default: "", parseHTML: () => null } }; },
+  addAttributes() { return { orbisId: blockIdentity, orbisProps: hidden, orbisOriginal: hidden, orbisSignature: hidden, kind: { default: "file", parseHTML: () => null }, url: { default: "", parseHTML: () => null }, caption: { default: "", parseHTML: () => null } }; },
   parseHTML() { return [{ tag: "figure[data-orbis-media]", getAttrs: (element) => {
     const figure = element as HTMLElement;
     const kind = figure.dataset.orbisMedia;
@@ -181,22 +188,22 @@ const OrbisToggleSummary = Node.create({
 });
 const OrbisToggle = Node.create({
   name: "orbisToggle", group: "block", content: "orbisToggleSummary block*", defining: true,
-  addAttributes() { return { orbisId: hidden, orbisProps: hidden, orbisOriginal: hidden, orbisSignature: hidden }; },
+  addAttributes() { return { orbisId: blockIdentity, orbisProps: hidden, orbisOriginal: hidden, orbisSignature: hidden }; },
   parseHTML() { return [{ tag: "details[data-orbis-toggle]" }]; },
-  renderHTML() { return ["details", { "data-orbis-toggle": "true", class: "orbis-toggle", open: "" }, 0]; },
+  renderHTML({ HTMLAttributes }) { return ["details", mergeAttributes(HTMLAttributes, { "data-orbis-toggle": "true", class: "orbis-toggle", open: "" }), 0]; },
 });
 
 const OrbisContainer = Node.create({
   name: "orbisContainer", group: "block", content: "block+", defining: true,
-  addAttributes() { return { orbisId: hidden, orbisProps: hidden, orbisOriginal: hidden, orbisSignature: hidden, kind: { default: "paragraph" } }; },
+  addAttributes() { return { orbisId: blockIdentity, orbisProps: hidden, orbisOriginal: hidden, orbisSignature: hidden, kind: { default: "paragraph" } }; },
   parseHTML() { return [{ tag: "div[data-orbis-container]" }]; },
-  renderHTML({ node }) { return ["div", { "data-orbis-container": node.attrs.kind }, 0]; },
+  renderHTML({ node, HTMLAttributes }) { return ["div", mergeAttributes(HTMLAttributes, { "data-orbis-container": node.attrs.kind }), 0]; },
 });
 
 function CodeView({ node, editor, updateAttributes }: NodeViewProps) {
   const readOnly = useContext(EditorReadOnlyContext);
   const language = String(node.attrs.language ?? "text");
-  return <NodeViewWrapper as="div" className="orbis-code">
+  return <NodeViewWrapper as="div" data-orbis-block-id={node.attrs.orbisOwn ? undefined : node.attrs.orbisId} className="orbis-code">
     <div className="orbis-code-toolbar" contentEditable={false}>{!readOnly ? <SelectField density="compact" aria-label="代码语言" value={language} onChange={(value) => updateAttributes({ language: value })} options={Object.entries({ ...CODE_LANGUAGES, ...(Object.hasOwn(CODE_LANGUAGES, language) ? {} : { [language]: language }) }).map(([value, label]) => ({ value, label }))} /> : <SelectField density="compact" aria-label="代码语言" value={language} disabled onChange={() => {}} options={[{ value: language, label: CODE_LANGUAGES[language] || language }]} />}</div>
     <pre><NodeViewContent as="code" style={{ whiteSpace: "pre" }} /></pre>
   </NodeViewWrapper>;

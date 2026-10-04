@@ -19,9 +19,16 @@ try {
     await page.goto(`${baseURL}/?blocks=${blocks}&variant=${variant}`);
     await page.locator(".ProseMirror[contenteditable=true]").waitFor({ timeout: 120_000 });
     const opened = await page.evaluate(() => performance.now());
-    await page.evaluate(() => {
+    await page.evaluate((variant) => {
       const editor = document.querySelector(".tiptap").editor;
-      editor.commands.setTextSelection(1);
+      let editPosition = 1;
+      if (variant === "giant-container") {
+        editor.state.doc.descendants((node, pos) => {
+          if (node.attrs.orbisId === "bench-child-0") { editPosition = pos + 1; return false; }
+          return editPosition === 1;
+        });
+      }
+      editor.commands.setTextSelection(editPosition);
       editor.view.focus();
       window.benchmark.latency = [];
       window.benchmark.transactions = [];
@@ -49,7 +56,7 @@ try {
       }, true);
       window.benchmark.metrics.fingerprintMs = [];
       window.benchmark.metrics.longTasks = [];
-    });
+    }, variant);
     await page.keyboard.type("abcdefghijklmnopqrstuvwxyz0123456789", { delay: 40 });
     await page.waitForTimeout(900);
     const result = await page.evaluate(() => {
@@ -58,8 +65,18 @@ try {
         return { samples: sorted.length, total: values.reduce((a, b) => a + b, 0), p50: sorted[Math.floor(sorted.length * .5)] || 0, p95: sorted[Math.floor(sorted.length * .95)] || 0, max: sorted.at(-1) || 0 };
       };
       const data = window.benchmark;
-      return { fixture: data.fixture, changes: data.metrics.changes, saveCount: data.metrics.saveCount, saveBytes: data.metrics.saveBytes, inputToFrame: summary(data.latency), transactions: summary(data.transactions), fingerprints: summary(data.metrics.fingerprintMs), plugins: Object.fromEntries(Object.entries(data.plugins).map(([key, samples]) => [key, summary(samples)])), longTasks: data.metrics.longTasks, heapBytes: performance.memory?.usedJSHeapSize };
+      let editedTarget = null;
+      const stack = [...(data.lastBlocks?.blocks || [])];
+      const targetId = data.fixture.variant === "giant-container" ? "bench-child-0" : "block-0";
+      while (stack.length) {
+        const block = stack.pop();
+        if (block.id === targetId) { editedTarget = block; break; }
+        stack.push(...block.children);
+      }
+      const editedText = editedTarget && (typeof editedTarget.content === "string" ? editedTarget.content : Array.isArray(editedTarget.content) ? editedTarget.content.map(part => part.text || "").join("") : "");
+      return { fixture: data.fixture, editedTargetId: editedTarget?.id, enteredTextSaved: Boolean(editedText?.startsWith("abcdefghijklmnopqrstuvwxyz0123456789")), changes: data.metrics.changes, saveCount: data.metrics.saveCount, saveBytes: data.metrics.saveBytes, inputToFrame: summary(data.latency), transactions: summary(data.transactions), fingerprints: summary(data.metrics.fingerprintMs), plugins: Object.fromEntries(Object.entries(data.plugins).map(([key, samples]) => [key, summary(samples)])), longTasks: data.metrics.longTasks, heapBytes: performance.memory?.usedJSHeapSize };
     });
+    if (!result.enteredTextSaved || result.changes < 36) throw new Error(`Input was not persisted into target block: ${variant}/${blocks}`);
     const initialMediaRequests = mediaRequests;
     if (variant === "media") {
       await page.locator(".orbis-media").first().scrollIntoViewIfNeeded();

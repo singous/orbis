@@ -1,3 +1,4 @@
+import { IntegrationTokensSettings } from "../integrations/IntegrationTokensSettings";
 import { TextArea } from "@heroui/react/textarea";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { useStore } from "zustand";
@@ -86,6 +87,7 @@ export function AccountSettingsPage() {
           <div><dt>角色</dt><dd>{workspaceRoleLabel(workspace?.role)}</dd></div>
         </dl>
       </section>
+      <IntegrationTokensSettings />
     </PageContainer>
   </WorkspaceShell>;
 }

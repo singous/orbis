@@ -1,4 +1,4 @@
-import { apiRequest } from "../../shared/api/api-client";
+import { ApiError, apiRequest } from "../../shared/api/api-client";
 import { authRequestOptions as authOptions, type AuthRequestOptions as SharedAuthRequestOptions } from "../../shared/auth/use-auth-request";
 import {
   documentGroupListResponseSchema,
@@ -8,6 +8,8 @@ import {
   notebookSchema,
   noteContentSchema,
   noteContentPageSchema,
+  noteChildrenPageSchema,
+  noteBlockReadSchema,
   noteContentPrefixSchema,
   noteSchema,
   noteSearchResponseSchema,
@@ -19,6 +21,7 @@ import {
   type Note,
   type NoteBlocks,
   type NoteContent,
+  type NoteChildrenPage,
   type NoteSearchItem,
   type NoteTreeItem,
   type PageData,
@@ -141,6 +144,10 @@ export async function saveNoteContentPrefix(payload: { noteId: string; expectedV
   return noteContentPrefixSchema.parse(await apiRequest(`/notes/${payload.noteId}/content`, { method: "PATCH", body: { expected_version: payload.expectedVersion, loaded_block_ids: payload.loadedBlockIds, blocks: payload.blocks }, ...authOptions(auth) }));
 }
 
+export async function saveNoteBlockChanges(payload: { noteId: string; expectedVersion: number; changes: import("./block-changes").BlockChanges }, auth: AuthRequestOptions) {
+  return noteContentPrefixSchema.omit({ loaded_block_ids: true }).parse(await apiRequest(`/notes/${payload.noteId}/blocks`, { method: "PATCH", body: { expected_version: payload.expectedVersion, ...payload.changes }, ...authOptions(auth) }));
+}
+
 export async function getNoteContentOutline(noteId: string, version: number, auth: AuthRequestOptions, signal?: AbortSignal) {
   return await apiRequest<{ content_version: number; items: Array<{ id: string; text: string; level: number; root_index: number }> }>(queryPath(`/notes/${noteId}/content/outline`, { version: String(version) }), { ...authOptions(auth), signal });
 }
@@ -176,4 +183,24 @@ export async function importMarkdown(payload: { notebook_id: string; title: stri
 
 export async function exportMarkdown(noteId: string, auth: AuthRequestOptions): Promise<MarkdownExport> {
   return markdownExportSchema.parse(await apiRequest(`/notes/${noteId}/markdown`, authOptions(auth)));
+}
+
+export async function getNoteChildrenPage(noteId: string, auth: AuthRequestOptions, options: { parentId?: string | null; offset?: number; limit?: number; version?: number; signal?: AbortSignal } = {}) {
+  try {
+    return noteChildrenPageSchema.parse(await apiRequest(queryPath(`/notes/${noteId}/content/children`, {
+      parent_id: options.parentId, offset: String(options.offset ?? 0), limit: String(options.limit ?? 32),
+      expected_version: options.version === undefined ? null : String(options.version),
+    }), { ...authOptions(auth), signal: options.signal }));
+  } catch (error) {
+    if (!(error instanceof ApiError) || ![404, 405].includes(error.status) || options.parentId) throw error;
+    return getNoteContentPage(noteId, auth, options);
+  }
+}
+
+export async function getNoteBlock(noteId: string, blockId: string, version: number, auth: AuthRequestOptions, signal?: AbortSignal) {
+  return noteBlockReadSchema.parse(await apiRequest(queryPath(`/notes/${noteId}/blocks/${encodeURIComponent(blockId)}`, { expected_version: String(version) }), { ...authOptions(auth), signal }));
+}
+
+export function isBoundedContentPage(value: unknown): value is NoteChildrenPage {
+  return Boolean(value && typeof value === "object" && "descriptors" in value && Array.isArray(value.descriptors));
 }

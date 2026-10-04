@@ -8,7 +8,7 @@ import { DOCUMENT_BLOCKS } from '../../content/document-components';
 import { newBlockId } from '../block-model';
 import { fromTiptapDocument } from '../tiptap-model';
 import { executeBlockCommand, locateEditorBlocks, ownedOrbisBlock, type BlockAction } from './block-commands';
-import { blockActionAvailability, BLOCK_GROUP_KINDS } from './block-capabilities';
+import { blockActionAvailability, createBlockActionContext, BLOCK_GROUP_KINDS } from './block-capabilities';
 import { indexBlocks } from './block-tree';
 import { blockSelectionKey, clearBlockSelection, isEmbeddedInput, selectBlock, setBlockSelection, setBlockTarget } from './block-selection';
 import { copyBlocks, pasteBlocks, installBlockClipboard, type BlockClipboardResult } from './block-clipboard';
@@ -47,6 +47,7 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
  const parentId=activeId?index.get(activeId)?.parentId:null;
  const parentBlock=parentId?index.get(parentId)?.block:undefined;
  const ids=selection?.ids.length?selection.ids:activeId?[activeId]:[];
+ const actionContext=useMemo(()=>createBlockActionContext(source,ids,index),[source,index,selection?.ids,activeId]);
  const idsRef=useRef(ids);idsRef.current=ids;
  const readonlyRef=useRef(readOnly);readonlyRef.current=readOnly;
  const menuOpenRef=useRef(open);menuOpenRef.current=open;
@@ -246,7 +247,7 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
    try{if(!document.execCommand('copy'))throw Error('Copy failed');setNotice('块链接已复制');}catch{setNotice('无法写入剪贴板，请使用浏览器复制功能');}finally{input.remove();editor.view.focus();}
   }setOpen(false);
  }
- const availability=(action:BlockAction)=>blockActionAvailability(source,ids,action);
+ const availability=(action:BlockAction)=>blockActionAvailability(source,ids,action,actionContext);
  const actionItem=(label:string,action:BlockAction,icon?:React.ReactNode)=>{
   const allowed=availability(action);
   return <ActionButton key={label} role="menuitem" className={action.type==='delete'?'block-action-danger':''} disabled={!allowed.ok} title={allowed.message} onClick={()=>run(action)}>{icon}<span>{label}</span></ActionButton>;

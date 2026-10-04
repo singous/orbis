@@ -43,7 +43,7 @@ test("opening and closing search preserves the active editor, unsaved content, U
   const { notes } = await prepare(page, request);
   let releaseSave!: () => void;
   const saveGate = new Promise<void>(resolve => { releaseSave = resolve; });
-  await page.route(`**/api/notes/${notes[0].id}/content`, async route => {
+  await page.route(`**/api/notes/${notes[0].id}/{content,blocks}`, async route => {
     if (["PUT", "PATCH"].includes(route.request().method())) await saveGate;
     await route.continue();
   });
@@ -142,7 +142,7 @@ for (const outcome of ["saved", "conflict"] as const) {
     let releaseSave!: () => void;
     let saveStarted = false;
     const saveGate = new Promise<void>(resolve => { releaseSave = resolve; });
-    await page.route(`**/api/notes/${notes[0].id}/content`, async route => {
+    await page.route(`**/api/notes/${notes[0].id}/{content,blocks}`, async route => {
       if (!["PUT", "PATCH"].includes(route.request().method())) { await route.continue(); return; }
       saveStarted = true;
       await saveGate;

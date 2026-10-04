@@ -48,6 +48,7 @@ function server(options: { status?: number; firstSave?: Promise<void> } = {}) {
     }
     if (init.method === "PATCH") { stored.note.title = JSON.parse(String(init.body)).title; return response(stored.note); }
     if (init.method === "POST" && url.pathname.endsWith("/archive")) { stored.note.status = "archived"; return response(stored.note); }
+    if (url.pathname.endsWith("/content/children")) return response(null, 404, "Older server has no bounded reader");
     if (url.pathname.endsWith("/content")) return response(stored.content);
     if (url.pathname.endsWith(NOTE_ID)) return response(stored.note);
     return response(page([]));

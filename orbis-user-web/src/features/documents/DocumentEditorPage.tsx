@@ -8,6 +8,7 @@ import { Component, lazy, Suspense, useEffect, useMemo, useRef, useState, type R
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useStore } from "zustand";
 
+import { ShareButton } from "../sharing/ShareButton";
 import { ApiError } from "../../shared/api/api-client";
 import { authStore } from "../../shared/auth/auth-store";
 import { useOptionalAuthRequest } from "../../shared/auth/use-auth-request";
@@ -17,13 +18,17 @@ import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { v2ToMarkdown, type NoteBlocksV2 } from "../notes/block-model";
 import type { RestoreSavedRevision } from "../collaboration/DocumentCollaborationPanel";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
+import { draftScopeKey } from "./draft-checkpoints";
+import { useDraftCheckpoints } from "./use-draft-checkpoints";
 import { AutosaveCoordinator, type AutosaveState } from "./autosave";
 import { normalizeEditorBlocks } from "./editor-blocks";
+import { createBlockChanges } from "./block-changes";
 import { createEditorDraftFingerprint, type EditorDraft } from "./editor-draft";
 import { EditorLayout, EditorOutlineStore } from "./EditorLayout";
 import { loadDocumentEditor } from "./editor-module";
 import { DocumentShell } from "./DocumentShell";
-import { getNoteContentPage, getNoteContentOutline } from "./api";
+import { getNoteContentPage, getNoteContentOutline, getNoteChildrenPage, getNoteBlock, isBoundedContentPage } from "./api";
+import { appendChildBlocks, hydrateBlockPayload, mergeLoadDescriptors, hasPendingContent, type BlockLoadState } from "./content-window";
 import { CONTENT_PAGE_SIZE, type EditorContentHandle } from "./editor-content-handle";
 
 // Load the editor only on document pages; readers use the lightweight renderer.
@@ -38,6 +43,8 @@ function LiveDocumentEditor({ blocks, onChange, ...props }: {
   onContentReady?: (handle: EditorContentHandle | null) => void;
   ensureComplete?: () => Promise<void>;
   hasMoreContent?: boolean;
+  loadStates?: ReadonlyMap<string, BlockLoadState>;
+  onLoadBlock?: (id: string) => Promise<void>;
 }) {
   const [local, setLocal] = useState({ source: blocks, value: blocks });
   // A restored/server revision replaces local content before editability
@@ -99,6 +106,9 @@ export function DocumentEditorPage() {
   const workspace = useStore(authStore, (state) => state.workspace);
   const canEdit = canMutateWorkspaceContent(workspace);
   const currentUserId = useStore(authStore, (state) => state.user?.id ?? "");
+  const draftKey = draftScopeKey({ origin: new URL(import.meta.env.VITE_API_BASE_URL || "/api", window.location.origin).href, userId: currentUserId, workspaceId: workspace?.id ?? "", noteId });
+  const checkpoints = useDraftCheckpoints(draftKey);
+
   const noteQuery = useNote(noteId);
   const notebook = useNotebook(noteQuery.data?.notebook_id).data;
   const contentQuery = useNoteContent(noteId, { pageSize: CONTENT_PAGE_SIZE });
@@ -121,26 +131,31 @@ export function DocumentEditorPage() {
   const collaborationTriggerRef = useRef<HTMLButtonElement>(null);
   const saveState = editorError ? "error" : restorationConflict ? "conflict" : autosaveState;
   const coordinatorRef = useRef<AutosaveCoordinator<EditorDraft> | null>(null);
-  const coordinatorMode = useRef<{ coordinator: AutosaveCoordinator<EditorDraft>; mode: { partial: boolean } } | null>(null);
+  const coordinatorMode = useRef<{ coordinator: AutosaveCoordinator<EditorDraft>; mode: { partial: boolean; blocks: boolean } } | null>(null);
   const hydratedNoteRef = useRef<string | null>(null);
   const editorBusy = restoring || archiving;
   const contentHandle = useRef<EditorContentHandle | null>(null);
-  const contentWindow = useRef<{ noteId: string; version: number; next: number; total: number; hasMore: boolean } | null>(null);
+  const contentWindow = useRef<{ noteId: string; version: number; next: number; total: number; hasMore: boolean; bounded?: boolean } | null>(null);
   const contentAbort = useRef<AbortController | null>(null);
   const loadingRequest = useRef<Promise<void> | null>(null);
   const [editorReady, setEditorReady] = useState(false);
   const [hasMoreContent, setHasMoreContent] = useState(false);
+  const [loadStates, setLoadStates] = useState<ReadonlyMap<string, BlockLoadState>>(new Map());
+  const loadStatesRef = useRef(loadStates);
+  const childRequests = useRef(new Map<string, Promise<void>>());
+  function updateLoadStates(next: ReadonlyMap<string, BlockLoadState>) { loadStatesRef.current = next; setLoadStates(next); }
+
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const loadMoreTarget = useRef<HTMLDivElement>(null);
-  const navigationStateRef = useRef({ noteId, canEdit, restorationConflict });
-  navigationStateRef.current = { noteId, canEdit, restorationConflict };
+  const navigationStateRef = useRef({ noteId, draftKey, canEdit, restorationConflict });
+  navigationStateRef.current = { noteId, draftKey, canEdit, restorationConflict };
 
   useEffect(() => registerPendingNavigation(async () => {
     const coordinator = coordinatorRef.current;
     function assertReady() {
       const state = navigationStateRef.current;
-      if (state.noteId !== noteId || coordinatorRef.current !== coordinator) {
+      if (state.noteId !== noteId || state.draftKey !== draftKey || coordinatorRef.current !== coordinator) {
         throw new DOMException("The current document changed", "AbortError");
       }
       if (editorErrorRef.current) throw new Error(editorErrorRef.current);
@@ -154,15 +169,19 @@ export function DocumentEditorPage() {
     }
     assertReady();
     // A loading document has no editable local draft to flush.
-    if (!coordinator || hydratedNoteRef.current !== noteId || !navigationStateRef.current.canEdit) return;
+    if (!coordinator || hydratedNoteRef.current !== draftKey || !navigationStateRef.current.canEdit) return;
     await flushCurrentDraft(coordinator);
     assertReady();
-  }), [noteId]);
+  }), [noteId, draftKey]);
 
   useEffect(() => {
     const note = noteQuery.data;
     const content = contentQuery.data;
-    if (!note || !content) return;
+    if (!note || !content || (workspace && note.workspace_id !== workspace.id)) return;
+    let disposed = false;
+    async function initialize(note: NonNullable<typeof noteQuery.data>, content: NonNullable<typeof contentQuery.data>) {
+    const recovered = checkpoints.recovery ?? (hydratedNoteRef.current !== draftKey ? await checkpoints.controller.read().catch(() => null) : null);
+    if (disposed) return;
     // The version can only move forward per note, so a cached version at or
     // below what we last saved is either our own echo (setQueryData after
     // flush) or a stale query response that arrived late. Rebuilding the
@@ -172,24 +191,34 @@ export function DocumentEditorPage() {
     const existing = coordinatorRef.current;
     const saved = existing?.saved;
     // A cache refresh must never replace unsaved work or an active operation.
-    if (hydratedNoteRef.current === noteId && existing && (restoringRef.current || archivingRef.current || existing.state !== "saved")) return;
+    if (hydratedNoteRef.current === draftKey && existing && (restoringRef.current || archivingRef.current || existing.state !== "saved")) return;
     const isOwnOrStaleEcho =
-      hydratedNoteRef.current === noteId &&
+      hydratedNoteRef.current === draftKey &&
       saved != null &&
-      content.content_version <= saved.version;
+      content.content_version <= saved.version && !checkpoints.recovery;
     if (isOwnOrStaleEcho) return;
-    hydratedNoteRef.current = noteId;
+    hydratedNoteRef.current = draftKey;
     const paged = "next_offset" in content;
-    contentWindow.current = paged ? { noteId, version: content.content_version, next: content.next_offset, total: content.total_blocks, hasMore: content.has_more } : null;
+    contentWindow.current = paged ? { noteId, version: content.content_version, next: content.next_offset, total: content.total_blocks, hasMore: content.has_more, bounded: isBoundedContentPage(content) } : null;
     outlineStore.setRemote([], paged ? content.next_offset : Infinity);
     setHasMoreContent(paged && content.has_more);
+    updateLoadStates(isBoundedContentPage(content) ? mergeLoadDescriptors(new Map(), content.descriptors) : new Map());
     setLoadMoreError(null);
-    const initial = { title: note.title, blocks: normalizeEditorBlocks(noteId, content.blocks), version: content.content_version };
+    const serverInitial = { title: note.title, blocks: normalizeEditorBlocks(noteId, content.blocks), version: content.content_version };
+    const fingerprint = createEditorDraftFingerprint();
+    const hasRecoveredChanges = Boolean(recovered && fingerprint(recovered.saved) !== fingerprint(recovered.current));
+    const initial = hasRecoveredChanges && recovered ? { ...recovered.current, version: recovered.saved.version } : serverInitial;
+    const savedInitial = hasRecoveredChanges && recovered ? recovered.saved : serverInitial;
+    if (hasRecoveredChanges && recovered) {
+      contentWindow.current = recovered.window;
+      updateLoadStates(new Map(recovered.descriptors));
+      setHasMoreContent(recovered.window?.hasMore ?? false);
+    } else if (recovered) { void checkpoints.controller.acknowledge(recovered.sequence).catch(() => {}); }
     setDraft(initial);
     outlineStore.update(initial.blocks);
     coordinatorRef.current?.dispose(false);
-    const fingerprint = createEditorDraftFingerprint();
-    const mode = { partial: paged };
+    const mode = { partial: paged, blocks: paged && (isBoundedContentPage(content) || content.storage_format === "blocks") };
+    const diffBlocks = createBlockChanges();
     const coordinator = new AutosaveCoordinator<EditorDraft>({
       delayMs: 750,
       // Bursts separated by short pauses coalesce into at most one save per
@@ -200,24 +229,35 @@ export function DocumentEditorPage() {
       fingerprint,
       onStateChange: setSaveState,
       save: async (current, saved) => {
+        const acknowledgedSequence = checkpoints.controller.sequence;
         if (current.title.trim() !== saved.title.trim()) {
           await updateNote.mutateAsync({ id: noteId, title: current.title.trim() || "未命名文档" });
         }
         let version = saved.version;
         if (fingerprint({ ...current, title: "" }) !== fingerprint({ ...saved, title: "" })) {
-          const result = await saveContent.mutateAsync({ noteId, expectedVersion: saved.version, blocks: current.blocks, ...(mode.partial ? { loadedBlockIds: saved.blocks.blocks.map(block => block.id) } : {}) });
+          const result = await saveContent.mutateAsync({ noteId, expectedVersion: saved.version, blocks: current.blocks, ...(mode.blocks ? { changes: diffBlocks(saved.blocks, current.blocks) } : mode.partial ? { loadedBlockIds: saved.blocks.blocks.map(block => block.id) } : {}) });
           version = result.content_version;
         }
+        void checkpoints.controller.acknowledge(acknowledgedSequence).catch(() => {});
         return { ...current, title: current.title.trim() || "未命名文档", version };
       },
     });
-    coordinator.hydrate(initial);
+    coordinator.hydrate(savedInitial);
+    if (hasRecoveredChanges) {
+      coordinator.change(initial);
+      if (savedInitial.version !== content.content_version || !canEdit) { coordinator.holdConflict(); setRestorationConflict(true); }
+    }
     coordinatorRef.current = coordinator;
     coordinatorMode.current = { coordinator, mode };
-  }, [contentQuery.data?.content_version, noteId, noteQuery.data?.title]);
+    if (checkpoints.recovery) checkpoints.consumeRecovery();
+    }
+    void initialize(note, content);
+    return () => { disposed = true; };
+  }, [contentQuery.data?.content_version, noteId, noteQuery.data?.title, draftKey, checkpoints.controller, checkpoints.recovery, restoring]);
 
   useEffect(() => {
     setEditorError(null);
+    setRestorationConflict(false);
     editorErrorRef.current = null;
     setArchiving(false);
     setArchiveError(null);
@@ -234,7 +274,7 @@ export function DocumentEditorPage() {
       hydratedNoteRef.current = null;
       archivingRef.current = null;
     };
-  }, [noteId]);
+  }, [noteId, draftKey]);
 
   async function loadMoreContent(): Promise<void> {
     if (loadingRequest.current) return loadingRequest.current;
@@ -247,11 +287,12 @@ export function DocumentEditorPage() {
     setLoadingMore(true);
     setLoadMoreError(null);
     const task = (async () => {
-      const page = await getNoteContentPage(noteId, documentAuth, { offset: window.next, limit: CONTENT_PAGE_SIZE, version: window.version, signal: abort.signal });
+      const page = await (window.bounded ? getNoteChildrenPage : getNoteContentPage)(noteId, documentAuth, { offset: window.next, limit: CONTENT_PAGE_SIZE, version: window.version, signal: abort.signal });
       if (!("next_offset" in page) || page.content_version !== window.version || page.offset !== window.next) throw new Error("后续正文的版本不一致，请重新载入文档。");
       await coordinator.settlePendingSave();
       if (abort.signal.aborted || coordinatorRef.current !== coordinator || contentWindow.current !== window || contentHandle.current !== handle) return;
       const addition = normalizeEditorBlocks(noteId, page.blocks).blocks;
+      if (isBoundedContentPage(page)) updateLoadStates(mergeLoadDescriptors(loadStatesRef.current, page.descriptors));
       const wasSaved = coordinator.state === "saved";
       coordinator.extend(value => ({ ...value, blocks: { ...value.blocks, blocks: [...value.blocks.blocks, ...addition] } }));
       const live = handle.append(addition);
@@ -263,6 +304,7 @@ export function DocumentEditorPage() {
       outlineStore.update(live);
       window.next = page.next_offset;
       window.hasMore = page.has_more;
+      if (coordinator.state !== "saved") checkpointDraft(coordinator);
       setHasMoreContent(page.has_more);
     })();
     loadingRequest.current = task;
@@ -275,9 +317,72 @@ export function DocumentEditorPage() {
     }
   }
 
+  async function loadNestedContent(id: string): Promise<void> {
+    const active = childRequests.current.get(id);
+    if (active) return active;
+    const descriptor = loadStatesRef.current.get(id);
+    const window = contentWindow.current;
+    const coordinator = coordinatorRef.current;
+    const handle = contentHandle.current;
+    const abort = contentAbort.current;
+    if (!descriptor || !window || !coordinator || !handle || !abort || !documentAuth) return;
+    const mark = (patch: Partial<BlockLoadState>) => {
+      const states = new Map(loadStatesRef.current);
+      const previous = states.get(id);
+      if (previous) { states.set(id, { ...previous, ...patch }); updateLoadStates(states); }
+    };
+    mark({ loading: true, error: null });
+    const task = (async () => {
+      await coordinator.settlePendingSave();
+      const stillCurrent = () => !abort.signal.aborted && coordinatorRef.current === coordinator && contentWindow.current === window && contentHandle.current === handle;
+      if (!descriptor.payload_loaded) {
+        const result = await getNoteBlock(noteId, id, window.version, documentAuth, abort.signal);
+        if (!stillCurrent()) return;
+        const incoming = normalizeEditorBlocks(noteId, { schema_version: 2, editor: "blocknote", blocks: [result.block] }).blocks[0];
+        const wasSaved = coordinator.state === "saved";
+        coordinator.extend(value => ({ ...value, blocks: hydrateBlockPayload(value.blocks, incoming) }));
+        const live = handle.hydratePayload(incoming);
+        if (wasSaved) coordinator.hydrate({ ...coordinator.current!, blocks: live });
+        else coordinator.alignCurrentAfterRead({ ...coordinator.current!, blocks: live });
+        mark({ payload_loaded: true });
+      } else if (!descriptor.children_loaded) {
+        const page = await getNoteChildrenPage(noteId, documentAuth, { parentId: id, offset: descriptor.offset, limit: CONTENT_PAGE_SIZE, version: window.version, signal: abort.signal });
+        if (!(isBoundedContentPage(page)) || page.content_version !== window.version || page.offset !== descriptor.offset) throw new Error("子内容版本不一致，请重新载入文档。");
+        if (!stillCurrent()) return;
+        const incoming = normalizeEditorBlocks(noteId, page.blocks).blocks;
+        const wasSaved = coordinator.state === "saved";
+        coordinator.extend(value => ({ ...value, blocks: appendChildBlocks(value.blocks, id, incoming) }));
+        const live = handle.appendChildren(id, incoming);
+        if (wasSaved) coordinator.hydrate({ ...coordinator.current!, blocks: live });
+        else coordinator.alignCurrentAfterRead({ ...coordinator.current!, blocks: live });
+        updateLoadStates(mergeLoadDescriptors(loadStatesRef.current, page.descriptors));
+        mark({ offset: page.next_offset, children_loaded: !page.has_more });
+      }
+      if (stillCurrent()) { setDraft(coordinator.current); outlineStore.update(coordinator.current!.blocks); if (coordinator.state !== "saved") checkpointDraft(coordinator); }
+    })();
+    childRequests.current.set(id, task);
+    try { await task; }
+    catch (error) {
+      if (!abort.signal.aborted && coordinatorRef.current === coordinator) mark({ error: error instanceof Error ? error.message : "子内容加载失败，请重试。" });
+      throw error;
+    } finally {
+      if (childRequests.current.get(id) === task) childRequests.current.delete(id);
+      if (!abort.signal.aborted && coordinatorRef.current === coordinator) mark({ loading: false });
+    }
+  }
+
   async function loadCompleteContent(): Promise<void> {
     if (!contentHandle.current) throw new Error("正文尚未准备好，请稍后重试。");
     while (contentWindow.current?.noteId === noteId && contentWindow.current.hasMore) await loadMoreContent();
+    const present = new Set<string>();
+    const collect = (items: import("../notes/block-model").OrbisBlock[]) => { for (const item of items) { present.add(item.id); collect(item.children); } };
+    if (coordinatorRef.current?.current) collect(coordinatorRef.current.current.blocks.blocks);
+    const retained = new Map([...loadStatesRef.current].filter(([id]) => present.has(id)));
+    updateLoadStates(retained);
+    while (hasPendingContent(loadStatesRef.current)) {
+      const pending = [...loadStatesRef.current.values()].find(item => !item.payload_loaded || !item.children_loaded);
+      if (pending) await loadNestedContent(pending.id);
+    }
   }
 
   const loadMoreRef = useRef(loadMoreContent);
@@ -327,8 +432,16 @@ export function DocumentEditorPage() {
     });
   }, [navigate, resourceUnavailable]);
 
+  const checkpointCopy = autosaveState !== "saved" && checkpoints.status.status === "saved" ? "已保存到本机，等待同步" : checkpoints.status.status === "pending" ? "正在保存到本机…" : null;
   const stateCopy = saveStateCopy[saveState];
   const StateIcon = stateCopy.icon;
+
+  function checkpointDraft(coordinator: AutosaveCoordinator<EditorDraft>) {
+    if (!coordinator.saved || !coordinator.current) return;
+    const window = contentWindow.current;
+    const descriptors = loadStatesRef.current;
+    checkpoints.controller.schedule(() => ({ saved: coordinator.saved!, current: coordinator.current!, window, descriptors: [...descriptors] }));
+  }
 
   function changeDraft(next: EditorDraft) {
     if (!canEdit || restoringRef.current || archivingRef.current) return;
@@ -336,7 +449,17 @@ export function DocumentEditorPage() {
     // title changes need to refresh the workspace breadcrumb and outer shell.
     if (next.title !== draft?.title) setDraft(next);
     outlineStore.update(next.blocks);
-    coordinatorRef.current?.change(next);
+    const coordinator = coordinatorRef.current;
+    coordinator?.change(next);
+    if (coordinator) checkpointDraft(coordinator);
+  }
+
+  async function recoverLocalDraft(record: import("./draft-checkpoints").DraftCheckpoint) {
+    if (!canEdit || coordinatorRef.current?.state !== "saved" || restoringRef.current || archivingRef.current) return;
+    restoringRef.current = true; setRestoring(true);
+    try { await checkpoints.chooseRecovery(record); }
+    catch (error) { setEditorError(error instanceof Error ? error.message : "本机草稿恢复失败，请重试。"); }
+    finally { restoringRef.current = false; setRestoring(false); }
   }
 
   async function reloadServer() {
@@ -347,11 +470,13 @@ export function DocumentEditorPage() {
     const [noteResult, contentResult] = await Promise.all([noteQuery.refetch(), contentQuery.refetch()]);
     if (coordinatorRef.current !== coordinator || !noteResult.data || !contentResult.data || noteResult.error || contentResult.error) return;
     const next = { title: noteResult.data.title, blocks: normalizeEditorBlocks(noteId, contentResult.data.blocks), version: contentResult.data.content_version };
-    if (coordinatorMode.current?.coordinator === coordinator) coordinatorMode.current.mode.partial = "next_offset" in contentResult.data;
+    if (coordinatorMode.current?.coordinator === coordinator) { coordinatorMode.current.mode.partial = "next_offset" in contentResult.data; coordinatorMode.current.mode.blocks = "next_offset" in contentResult.data && (isBoundedContentPage(contentResult.data) || contentResult.data.storage_format === "blocks"); }
     const content = contentResult.data;
-    contentWindow.current = "next_offset" in content ? { noteId, version: content.content_version, next: content.next_offset, total: content.total_blocks, hasMore: content.has_more } : null;
+    contentWindow.current = "next_offset" in content ? { noteId, version: content.content_version, next: content.next_offset, total: content.total_blocks, hasMore: content.has_more, bounded: isBoundedContentPage(content) } : null;
     setHasMoreContent(contentWindow.current?.hasMore ?? false);
+    updateLoadStates(isBoundedContentPage(content) ? mergeLoadDescriptors(new Map(), content.descriptors) : new Map());
     coordinatorRef.current?.hydrate(next);
+    void checkpoints.controller.acknowledge(checkpoints.controller.sequence).catch(() => {});
     setDraft(next);
     outlineStore.update(next.blocks);
     setRestorationConflict(false);
@@ -384,6 +509,7 @@ export function DocumentEditorPage() {
       contentWindow.current = { noteId, version: restored.content_version, next: next.blocks.blocks.length, total: next.blocks.blocks.length, hasMore: false };
       setHasMoreContent(false);
       coordinator.hydrate(next);
+      void checkpoints.controller.acknowledge(checkpoints.controller.sequence).catch(() => {});
       setDraft(next);
       outlineStore.update(next.blocks);
       setRestorationConflict(false);
@@ -445,9 +571,10 @@ export function DocumentEditorPage() {
   const toolbar = (
     <div className="document-header-actions">
       <span className={`document-save-state is-${saveState}`} role="status" aria-live="polite" aria-atomic="true">
-        <StateIcon aria-hidden="true" size={14} className={saveState === "saving" ? "document-save-spinner" : ""} /><span>{canEdit ? stateCopy.label : "只读"}</span>
+        <StateIcon aria-hidden="true" size={14} className={saveState === "saving" ? "document-save-spinner" : ""} /><span>{canEdit ? checkpointCopy ?? stateCopy.label : "只读"}</span>
       </span>
       <span className="document-header-divider" aria-hidden="true" />
+      {canEdit && noteQuery.data ? <ShareButton notebookId={noteQuery.data.notebook_id!} noteId={noteId} title={draft?.title || noteQuery.data.title} /> : null}
       <ActionButton ref={collaborationTriggerRef} type="button" className="document-comment-trigger" aria-label="评论与历史" aria-haspopup="dialog" aria-expanded={collaborationOpen} disabled={!draft || archiving} onClick={() => setCollaborationOpen(true)}><MessageSquare aria-hidden="true" size={16} /><span>评论</span></ActionButton>
       {canEdit ? <Dropdown>
         <ActionButton type="button" className="icon-button" aria-label="更多文档操作" disabled={!draft || editorBusy}><MoreHorizontal aria-hidden="true" size={18} /></ActionButton>
@@ -462,7 +589,7 @@ export function DocumentEditorPage() {
 
   return (
     <DocumentShell editorLayout breadcrumb={breadcrumb} toolbar={toolbar} notebookId={noteQuery.data?.notebook_id} activeNoteId={noteId}>
-      {!draft || !noteQuery.data || hydratedNoteRef.current !== noteId ? <div className="page-container"><LoadingState label="正在打开文档…" variant="editor" /></div> : (
+      {!draft || !noteQuery.data || hydratedNoteRef.current !== draftKey ? <div className="page-container"><LoadingState label="正在打开文档…" variant="editor" /></div> : (
         <EditorLayout outlineStore={outlineStore}>
           <article className="editor-canvas">
             <HeroInput
@@ -476,6 +603,8 @@ export function DocumentEditorPage() {
             <div className="mb-7 mt-2 flex items-center gap-2 text-xs text-[var(--muted-light)]"><span>版本 {coordinatorRef.current?.saved?.version ?? draft.version}</span><span>·</span><span>{canEdit ? "停手后自动保存" : "只读访问"}</span></div>
 
             {archiveError ? <div role="alert" className="mb-5"><StatusMessage tone="error" title="未能归档文档">{archiveError}</StatusMessage></div> : null}
+            {checkpoints.candidates.length ? <StatusMessage tone="warning" title="检测到其他会话保留的本机草稿">选择需要恢复的内容，原会话草稿会继续保留。<div className="mt-3 flex flex-wrap gap-2">{checkpoints.candidates.map(record => <Button key={record.scopeKey} size="sm" variant="secondary" disabled={autosaveState !== "saved"} onClick={() => void recoverLocalDraft(record)}>恢复“{record.current.title || "未命名文档"}”（基础版本 {record.saved.version}）</Button>)}<Button size="sm" variant="ghost" onClick={checkpoints.dismissCandidates}>稍后处理</Button></div></StatusMessage> : null}
+            {checkpoints.status.status === "failed" && autosaveState !== "saved" ? <StatusMessage tone="warning" title="本机草稿尚未持久保存">浏览器存储暂不可用，请保持页面打开并重试同步。<Button variant="ghost" onClick={() => void checkpoints.controller.flush().catch(() => {})}>重试保存到本机</Button></StatusMessage> : null}
             {saveState === "conflict" ? <div className="mb-5"><StatusMessage tone="warning" title="检测到其他窗口的更新">本地草稿仍保留。建议先复制本地 Markdown，再载入服务端版本。
               <div className="mt-3 flex flex-wrap gap-2"><Button variant="secondary" icon={<Download aria-hidden="true" size={14} />} onClick={() => void loadCompleteContent().then(() => navigator.clipboard?.writeText(v2ToMarkdown((coordinatorRef.current?.current ?? draft).blocks.blocks))).catch(() => {})}>复制本地 Markdown</Button><Button variant="secondary" icon={<RotateCcw aria-hidden="true" size={14} />} onClick={reloadServer}>载入服务端版本</Button></div>
             </StatusMessage></div> : null}
@@ -488,7 +617,9 @@ export function DocumentEditorPage() {
                   blocks={draft.blocks}
                   onContentReady={handle => { contentHandle.current = handle; setEditorReady(Boolean(handle)); }}
                   ensureComplete={loadCompleteContent}
-                  hasMoreContent={hasMoreContent}
+                  hasMoreContent={hasMoreContent || hasPendingContent(loadStates)}
+                  loadStates={loadStates}
+                  onLoadBlock={loadNestedContent}
                   readOnly={!canEdit || editorBusy}
                   onError={(message) => { editorErrorRef.current = message; setEditorError(message); }}
                   onChange={({ blocks }) => changeDraft({ ...(coordinatorRef.current?.current ?? draft), blocks })}

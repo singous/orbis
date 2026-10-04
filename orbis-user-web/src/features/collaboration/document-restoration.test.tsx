@@ -20,6 +20,9 @@ function showEditor() {
 }
 function server(mutate: (url: URL, init: RequestInit) => Response | Promise<Response>) {
   return http((url, init) => {
+    // This fixture deliberately exercises a rolling-upgrade server which only
+    // exposes the original complete-body endpoint.
+    if (url.pathname.endsWith("/content/children")) return response(null, 404, "Endpoint unavailable on the older server");
     if (init.method && init.method !== "GET") return mutate(url, init);
     if (url.pathname.endsWith("/content")) return response(content());
     if (url.pathname.endsWith("/comments")) return response(page([]));

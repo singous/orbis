@@ -49,7 +49,7 @@ vi.mock("../notes/TiptapEditor", () => ({
   TiptapEditor: ({ blocks, onChange, readOnly }: { blocks: unknown; onChange: (next: { blocks: { schema_version: 2; editor: "blocknote"; blocks: unknown[] }; plainText: string }) => void; readOnly: boolean }) => { editorInputs(blocks); return <button type="button" disabled={readOnly} onClick={() => onChange({ blocks: { schema_version: 2, editor: "blocknote", blocks: [{ id: "b1", type: "paragraph", props: {}, content: [{ type: "text", text: "已编辑" }], children: [] }] }, plainText: "已编辑" })}>模拟编辑</button>; },
 }));
 vi.mock("./queries", () => ({
-  useNote: () => ({ data: { id: "018ff7c4-a5b6-7000-8000-000000000001", notebook_id: "018ff7c4-a5b6-7000-8000-000000000004", title: "产品计划" }, isError: false }),
+  useNote: () => ({ data: { id: "018ff7c4-a5b6-7000-8000-000000000001", workspace_id: ownerSession.workspace.id, notebook_id: "018ff7c4-a5b6-7000-8000-000000000004", title: "产品计划" }, isError: false }),
   useNoteContent: () => ({ data: contentFixture.current, isError: false, refetch: vi.fn() }),
   useNotebooks: () => ({ data: { items: [] }, isLoading: false, isError: false }),
   useNotebook: () => ({ data: undefined, isLoading: false, isError: false }),
@@ -179,6 +179,9 @@ it("opens a cached destination without first mounting the previous document", as
     blocks: { schema_version: 1, editor: "tiptap", doc: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Destination body" }] }] } },
   };
   await act(async () => { fireEvent.click(screen.getByRole("link", { name: "Next document" })); });
+  // The destination acquires its own asynchronous draft lane before becoming
+  // editable. Every editor render must still contain only destination content.
+  await screen.findByRole("button", { name: "模拟编辑" });
   expect(editorInputs.mock.calls.length).toBeGreaterThan(0);
   for (const [blocks] of editorInputs.mock.calls) expect(blocks.blocks[0].content).toEqual([{ type: "text", text: "Destination body", styles: {} }]);
   act(() => authStore.getState().clearSession());

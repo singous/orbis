@@ -42,10 +42,26 @@ function conversionAvailability(block: OrbisBlock, target: string): BlockAvailab
   return ok;
 }
 
-export function blockActionAvailability(blocks: OrbisBlock[], ids: string[], action: BlockAction): BlockAvailability {
-  const index = indexBlocks(blocks);
+export type BlockActionContext = { index: ReadonlyMap<string, BlockAddress>; addresses: BlockAddress[] };
+
+/** A menu checks many actions against the same immutable selection once. */
+export function createBlockActionContext(blocks: OrbisBlock[], ids: string[], index: ReadonlyMap<string, BlockAddress> = indexBlocks(blocks)): BlockActionContext {
+  const selected = new Set(ids);
+  const addresses = [...new Set(ids)].map(id => index.get(id)).filter((address): address is BlockAddress => Boolean(address));
+  const outer = addresses.filter(address => {
+    let parentId = address.parentId;
+    while (parentId) { if (selected.has(parentId)) return false; parentId = index.get(parentId)?.parentId ?? null; }
+    return true;
+  });
+  outer.sort((a, b) => { for (let i = 0; i < Math.min(a.path.length, b.path.length); i++) { if (a.path[i] !== b.path[i]) return a.path[i] - b.path[i]; } return a.path.length - b.path.length; });
+  return { index, addresses: outer };
+}
+
+export function blockActionAvailability(blocks: OrbisBlock[], ids: string[], action: BlockAction, context?: BlockActionContext): BlockAvailability {
+  if (!ids.length) return no("请选择仍然存在的块");
+  const index = context?.index ?? indexBlocks(blocks);
   if (!ids.length || ids.some((id) => !index.has(id))) return no("请选择仍然存在的块");
-  const addresses = normalizeBlockSelection(blocks, ids).map((id) => index.get(id)!);
+  const addresses = context?.addresses ?? normalizeBlockSelection(blocks, ids).map((id) => index.get(id)!);
   const selected = new Set(addresses.map(({ id }) => id));
   const parent = (address: BlockAddress) => address.parentId ? index.get(address.parentId)!.block : null;
   const accepts = (destination: OrbisBlock | null, children = addresses.map(({ block }) => block)) => children.every((child) => acceptsBlock(destination, child));
