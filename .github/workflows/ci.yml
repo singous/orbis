@@ -96,6 +96,8 @@ jobs:
         working-directory: orbis-user-web
         env:
           ORBIS_E2E_PRODUCTION: "1"
+          # Shared runners report latency; fixed reference devices enforce budgets.
+          ORBIS_E2E_PERFORMANCE_MODE: "report"
         run: npm run test:e2e
       - name: Upload browser failure evidence
         if: failure()
