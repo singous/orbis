@@ -432,7 +432,8 @@ export function DocumentEditorPage() {
     });
   }, [navigate, resourceUnavailable]);
 
-  const checkpointCopy = autosaveState !== "saved" && checkpoints.status.status === "saved" ? "已保存到本机，等待同步" : checkpoints.status.status === "pending" ? "正在保存到本机…" : null;
+  const showLocalCheckpoint = saveState === "dirty" || saveState === "saving" || (saveState === "error" && !editorError);
+  const checkpointCopy = !showLocalCheckpoint ? null : checkpoints.status.status === "saved" ? "已保存到本机，等待同步" : checkpoints.status.status === "pending" ? "正在保存到本机…" : null;
   const stateCopy = saveStateCopy[saveState];
   const StateIcon = stateCopy.icon;
 

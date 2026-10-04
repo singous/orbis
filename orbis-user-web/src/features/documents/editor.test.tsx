@@ -4,6 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createEmptyNoteBlocks } from "../notes/note-contract";
 import { authStore } from "../../shared/auth/auth-store";
+import { ApiError } from "../../shared/api/api-client";
+import * as checkpointHooks from "./use-draft-checkpoints";
 import { DocumentEditorPage } from "./DocumentEditorPage";
 
 const updateNote = vi.fn();
@@ -44,7 +46,8 @@ const ownerSession = {
   },
 };
 
-vi.mock("./DocumentShell", () => ({ DocumentShell: ({ children }: { children: React.ReactNode }) => <main>{children}</main> }));
+vi.mock("./DocumentShell", () => ({ DocumentShell: ({ children, toolbar }: { children: React.ReactNode; toolbar?: React.ReactNode }) => <main>{toolbar}{children}</main> }));
+vi.mock("../sharing/ShareButton", () => ({ ShareButton: () => null }));
 vi.mock("../notes/TiptapEditor", () => ({
   TiptapEditor: ({ blocks, onChange, readOnly }: { blocks: unknown; onChange: (next: { blocks: { schema_version: 2; editor: "blocknote"; blocks: unknown[] }; plainText: string }) => void; readOnly: boolean }) => { editorInputs(blocks); return <button type="button" disabled={readOnly} onClick={() => onChange({ blocks: { schema_version: 2, editor: "blocknote", blocks: [{ id: "b1", type: "paragraph", props: {}, content: [{ type: "text", text: "已编辑" }], children: [] }] }, plainText: "已编辑" })}>模拟编辑</button>; },
 }));
@@ -76,6 +79,7 @@ describe("DocumentEditorPage", () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.clearAllTimers();
     vi.useRealTimers();
     act(() => authStore.getState().clearSession());
@@ -97,6 +101,24 @@ describe("DocumentEditorPage", () => {
     expect(payload.blocks.schema_version).toBe(2);
     expect(payload.blocks.editor).toBe("blocknote");
     expect(screen.getByText(/版本 5/)).toBeInTheDocument();
+  });
+
+  it("keeps a server version conflict visible even when the local draft is persisted", async () => {
+    const originalHook = checkpointHooks.useDraftCheckpoints;
+    vi.spyOn(checkpointHooks, "useDraftCheckpoints").mockImplementation(scopeKey => ({
+      ...originalHook(scopeKey),
+      status: { status: "saved", sequence: 1 },
+    }));
+    saveContent.mockRejectedValue(new ApiError(409, "正文版本冲突", "NOTE_VERSION_CONFLICT"));
+    render(<MemoryRouter initialEntries={["/documents/018ff7c4-a5b6-7000-8000-000000000001"]}><Routes><Route path="/documents/:noteId" element={<DocumentEditorPage />} /></Routes></MemoryRouter>);
+    const editButton = await screen.findByRole("button", { name: "模拟编辑" });
+    vi.useFakeTimers();
+    fireEvent.click(editButton);
+    await act(async () => { await vi.advanceTimersByTimeAsync(750); });
+    expect(saveContent).toHaveBeenCalledTimes(1);
+    const status = document.querySelector(".document-save-state");
+    expect(status).toHaveTextContent("版本冲突");
+    expect(status).not.toHaveTextContent("等待同步");
   });
 
   it("keeps the live draft when the content-version bump is our own save echo", async () => {
