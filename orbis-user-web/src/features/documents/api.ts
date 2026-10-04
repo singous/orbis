@@ -7,6 +7,8 @@ import {
   notebookListResponseSchema,
   notebookSchema,
   noteContentSchema,
+  noteContentPageSchema,
+  noteContentPrefixSchema,
   noteSchema,
   noteSearchResponseSchema,
   noteTreeResponseSchema,
@@ -126,6 +128,21 @@ export async function getNoteTree(notebookId: string, auth: AuthRequestOptions, 
 
 export async function getNoteContent(noteId: string, auth: AuthRequestOptions, signal?: AbortSignal): Promise<NoteContent> {
   return noteContentSchema.parse(await apiRequest(`/notes/${noteId}/content`, { ...authOptions(auth), signal }));
+}
+
+export async function getNoteContentPage(noteId: string, auth: AuthRequestOptions, options: { offset?: number; limit?: number; version?: number; signal?: AbortSignal } = {}) {
+  const data = await apiRequest(queryPath(`/notes/${noteId}/content`, { offset: String(options.offset ?? 0), limit: String(options.limit ?? 32), expected_version: options.version === undefined ? null : String(options.version) }), { ...authOptions(auth), signal: options.signal });
+  if (data && typeof data === "object" && "next_offset" in data) return noteContentPageSchema.parse(data);
+  // Older servers retain their full-read/write contract during rolling upgrades.
+  return noteContentSchema.parse(data);
+}
+
+export async function saveNoteContentPrefix(payload: { noteId: string; expectedVersion: number; loadedBlockIds: string[]; blocks: NoteBlocks }, auth: AuthRequestOptions) {
+  return noteContentPrefixSchema.parse(await apiRequest(`/notes/${payload.noteId}/content`, { method: "PATCH", body: { expected_version: payload.expectedVersion, loaded_block_ids: payload.loadedBlockIds, blocks: payload.blocks }, ...authOptions(auth) }));
+}
+
+export async function getNoteContentOutline(noteId: string, version: number, auth: AuthRequestOptions, signal?: AbortSignal) {
+  return await apiRequest<{ content_version: number; items: Array<{ id: string; text: string; level: number; root_index: number }> }>(queryPath(`/notes/${noteId}/content/outline`, { version: String(version) }), { ...authOptions(auth), signal });
 }
 
 export async function saveNoteContent(payload: { noteId: string; expectedVersion: number; blocks: NoteBlocks }, auth: AuthRequestOptions): Promise<NoteContent> {

@@ -10,6 +10,11 @@ export class EditorOutlineStore {
   #headings: Heading[] = [];
   #listeners = new Set<() => void>();
   #cache = new WeakMap<OrbisBlock, Heading>();
+  #remote: Array<Heading & { root_index: number }> = [];
+  #boundary = Infinity;
+  #loaded: Heading[] = [];
+  setRemote(headings: Array<Heading & { root_index: number }>, boundary: number) { this.#remote = headings; this.#boundary = boundary; this.#publish(); }
+  setBoundary(boundary: number) { this.#boundary = boundary; }
   subscribe = (listener: () => void) => { this.#listeners.add(listener); return () => this.#listeners.delete(listener); };
   snapshot = () => this.#headings;
   update(blocks: NoteBlocksV2) {
@@ -21,6 +26,11 @@ export class EditorOutlineStore {
       }
       return heading;
     });
+    this.#loaded = next;
+    this.#publish();
+  }
+  #publish() {
+    const next = [...this.#loaded, ...this.#remote.filter(heading => heading.root_index >= this.#boundary)];
     if (next.length === this.#headings.length && next.every((heading, index) => {
       const previous = this.#headings[index];
       return heading.id === previous.id && heading.level === previous.level && heading.text === previous.text;

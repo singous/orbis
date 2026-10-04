@@ -2,7 +2,7 @@ import { useContext, useEffect, useRef } from "react";
 import { Link, useMatch, type LinkProps } from "react-router-dom";
 import { QueryClientContext } from "@tanstack/react-query";
 import { useOptionalAuthRequest } from "../../shared/auth/use-auth-request";
-import { getNote, getNoteContent } from "./api";
+import { getNote, getNoteContentPage } from "./api";
 import { loadDocumentEditor } from "./editor-module";
 
 /** Pointer/focus intent warms one destination without changing link semantics. */
@@ -23,7 +23,7 @@ export function DocumentLink({ noteId, onPointerEnter, onPointerLeave, onFocus, 
     if (!client || !auth || isCurrentDocument) return;
     void loadDocumentEditor().catch(() => { /* Navigation owns loading feedback. */ });
     void client.prefetchQuery({ queryKey: ["note", noteId], queryFn: ({ signal }) => getNote(noteId, auth, signal) });
-    void client.prefetchQuery({ queryKey: ["note-content", noteId], queryFn: ({ signal }) => getNoteContent(noteId, auth, signal) });
+    void client.prefetchQuery({ queryKey: ["note-content-pages", noteId], queryFn: ({ signal }) => getNoteContentPage(noteId, auth, { signal }) });
   }
   return <Link {...props}
     onPointerEnter={event => {

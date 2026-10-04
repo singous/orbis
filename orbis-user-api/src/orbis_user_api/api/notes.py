@@ -35,11 +35,22 @@ from orbis_user_api.application.notes import (
     update_note_metadata,
 )
 from orbis_user_api.models.note import Note, NoteContent
+from orbis_user_api.application.note_content_pages import (
+    get_note_content_page,
+    get_note_content_outline,
+    save_note_content_prefix,
+)
+
+
 from orbis_user_api.models.user import User
 from orbis_user_api.schemas.note import (
     MarkdownExportResponse,
     MarkdownImportRequest,
     NoteContentOut,
+    NoteContentPageOut,
+    NoteContentOutlineOut,
+    NoteContentPrefixRequest,
+    NoteContentPrefixOut,
     NoteContentUpdateRequest,
     NoteCreateRequest,
     NoteMetadataUpdateRequest,
@@ -201,18 +212,67 @@ async def update_note(
         raise _workspace_forbidden() from None
 
 
-@router.get("/notes/{note_id}/content", response_model=NoteContentOut)
+@router.get(
+    "/notes/{note_id}/content", response_model=NoteContentOut | NoteContentPageOut
+)
 async def read_note_content(
     note_id: UUID,
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-) -> NoteContent:
+    offset: int = Query(default=0, ge=0),
+    limit: int | None = Query(default=None, ge=1, le=64),
+    expected_version: int | None = Query(default=None, ge=1),
+) -> NoteContent | NoteContentPageOut:
     try:
+        if limit is not None:
+            return await get_note_content_page(
+                note_id,
+                user,
+                session,
+                offset=offset,
+                limit=limit,
+                version=expected_version,
+            )
         return await get_note_content(note_id, user, session)
     except NoteNotFound:
         raise _not_found("NOTE_NOT_FOUND", "文档不存在") from None
     except UserWorkspaceMissing:
         raise _workspace_forbidden() from None
+    except NoteVersionConflict:
+        raise ApiError(
+            status_code=409,
+            code="NOTE_VERSION_CONFLICT",
+            message="文档已更新，请重新载入正文。",
+        ) from None
+
+
+@router.patch(
+    "/notes/{note_id}/content",
+    response_model=NoteContentPrefixOut,
+    dependencies=[Depends(require_resource_manager)],
+)
+async def save_loaded_note_content(
+    note_id: UUID,
+    payload: NoteContentPrefixRequest,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> NoteContentPrefixOut:
+    try:
+        return await save_note_content_prefix(note_id, payload, user, session)
+    except NoteNotFound:
+        raise _not_found("NOTE_NOT_FOUND", "文档不存在") from None
+    except UserWorkspaceMissing:
+        raise _workspace_forbidden() from None
+    except NoteContentInvalid:
+        raise ApiError(
+            status_code=422, code="NOTE_CONTENT_INVALID", message="文档内容无效"
+        ) from None
+    except NoteVersionConflict:
+        raise ApiError(
+            status_code=409,
+            code="NOTE_VERSION_CONFLICT",
+            message="文档内容版本冲突，本地草稿仍保留。",
+        ) from None
 
 
 @router.put(
@@ -353,5 +413,30 @@ async def reorder_notebook_notes(
             code="NOTE_ORDER_CONFLICT",
             message="文档目录已变化，请刷新后重试排序",
         ) from None
+    except UserWorkspaceMissing:
+        raise _workspace_forbidden() from None
+
+
+@router.get("/notes/{note_id}/content/outline", response_model=NoteContentOutlineOut)
+async def read_note_outline(
+    note_id: UUID,
+    version: int = Query(ge=1),
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    try:
+        return await get_note_content_outline(note_id, user, session, version)
+    except NoteVersionConflict:
+        raise ApiError(
+            status_code=409,
+            code="NOTE_VERSION_CONFLICT",
+            message="请求的文档内容快照已不可用",
+        ) from None
+    except NoteContentInvalid:
+        raise ApiError(
+            status_code=422, code="NOTE_CONTENT_INVALID", message="文档内容无效"
+        ) from None
+    except NoteNotFound:
+        raise _not_found("NOTE_NOT_FOUND", "文档不存在") from None
     except UserWorkspaceMissing:
         raise _workspace_forbidden() from None

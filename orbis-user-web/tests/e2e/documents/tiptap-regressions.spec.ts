@@ -133,6 +133,11 @@ test('private resources wait for a visible tab, viewport or explicit download', 
   await page.getByRole('button', { name: '下载attachment.txt' }).click();
   expect((await download).suggestedFilename()).toBe('attachment.txt');
   expect(requests.get(fileId)).toBe(1);
+  while (!await page.locator('[data-orbis-block-id="distant-image"]').count()) {
+    const before = await page.locator(".tiptap.ProseMirror [data-orbis-block-id]").count();
+    await page.locator(".document-scroll-region").evaluate(element => { element.scrollTop = element.scrollHeight; });
+    await expect.poll(() => page.locator(".tiptap.ProseMirror [data-orbis-block-id]").count()).toBeGreaterThan(before);
+  }
   await page.locator('[data-orbis-block-id="distant-image"]').scrollIntoViewIfNeeded();
   await expect(page.getByRole('img', { name: '远处图片' })).toBeVisible();
   expect(requests.get(distantId)).toBe(1);

@@ -11,11 +11,13 @@ import {
   getNote,
   getNotebook,
   getNoteContent,
+  getNoteContentPage,
   getNoteTree,
   importMarkdown,
   listDocumentGroups,
   listNotebooks,
   saveNoteContent,
+  saveNoteContentPrefix,
   searchNotes,
   setDocumentGroupArchived,
   setNoteArchived,
@@ -115,12 +117,12 @@ export function useNote(noteId?: string) {
   });
 }
 
-export function useNoteContent(noteId?: string) {
+export function useNoteContent(noteId?: string, options?: { pageSize: number }) {
   const auth = useDocumentAuth();
   return useQuery({
-    queryKey: ["note-content", noteId],
+    queryKey: [options ? "note-content-pages" : "note-content", noteId],
     enabled: Boolean(noteId),
-    queryFn: ({ signal }) => getNoteContent(noteId as string, auth, signal),
+    queryFn: ({ signal }) => options ? getNoteContentPage(noteId as string, auth, { limit: options.pageSize, signal }) : getNoteContent(noteId as string, auth, signal),
   });
 }
 
@@ -238,9 +240,10 @@ export function useSaveNoteContent() {
   const auth = useDocumentAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { noteId: string; expectedVersion: number; blocks: Parameters<typeof saveNoteContent>[0]["blocks"] }) => saveNoteContent(payload, auth),
+    mutationFn: async (payload: { noteId: string; expectedVersion: number; blocks: Parameters<typeof saveNoteContent>[0]["blocks"]; loadedBlockIds?: string[] }) => payload.loadedBlockIds ? await saveNoteContentPrefix({ ...payload, loadedBlockIds: payload.loadedBlockIds }, auth) : await saveNoteContent(payload, auth),
     onSuccess: (content) => {
-      queryClient.setQueryData(["note-content", content.note_id], content);
+      if ("blocks" in content) queryClient.setQueryData(["note-content", content.note_id], content);
+      else void queryClient.invalidateQueries({ queryKey: ["note-content", content.note_id] });
       void queryClient.invalidateQueries({ queryKey: ["collaboration", content.note_id, "revisions"] });
       void queryClient.invalidateQueries({ queryKey: ["note-search"] });
       void queryClient.invalidateQueries({ queryKey: ["global-search"] });

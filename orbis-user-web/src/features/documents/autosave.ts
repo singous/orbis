@@ -60,6 +60,38 @@ export class AutosaveCoordinator<T> {
     return this.#saved;
   }
 
+  async settlePendingSave(): Promise<void> {
+    if (this.#inFlight) await this.#inFlight;
+  }
+
+  /** Add server-read data to both baselines without treating loading as an edit. */
+  extend(transform: (value: T) => T): void {
+    if (this.#inFlight) throw new Error("Wait for the current save before extending its snapshot");
+    if (!this.#saved || !this.#current) return;
+    this.#saved = transform(this.#saved);
+    this.#current = transform(this.#current);
+    this.#savedFingerprint = this.#fingerprint(this.#saved);
+    this.#currentFingerprint = this.#fingerprint(this.#current);
+    if (this.#state === "error" || this.#state === "conflict") return;
+    if (this.#currentFingerprint === this.#savedFingerprint) {
+      this.#clearTimer(); this.#dirtySince = null; this.#setState("saved");
+    } else {
+      this.#setState("dirty"); this.#schedule();
+    }
+  }
+
+  alignCurrentAfterRead(value: T): void {
+    this.#current = value;
+    this.#currentFingerprint = this.#fingerprint(value);
+    // Reading another page is not permission to retry an unresolved save.
+    if (this.#state === "error" || this.#state === "conflict") return;
+    if (this.#currentFingerprint === this.#savedFingerprint) {
+      this.#clearTimer(); this.#dirtySince = null; this.#setState("saved");
+    } else {
+      this.#setState("dirty"); this.#schedule();
+    }
+  }
+
   hydrate(value: T): void {
     this.#clearTimer();
     this.#current = value;

@@ -20,6 +20,9 @@ import { createDocumentBlock, INSERTABLE_DOCUMENT_BLOCKS } from "./tiptap-insert
 import { tiptapExtensions } from "./tiptap-extensions";
 import { EditorReadOnlyContext } from "./tiptap-editor-context";
 import { fromTiptapDocument, toTiptapDocument } from "./tiptap-model";
+import type { EditorContentHandle } from "../documents/editor-content-handle";
+import { Fragment } from "@tiptap/pm/model";
+import { canJoin } from "@tiptap/pm/transform";
 import "../../styles/tiptap-editor.css";
 
 type EditorChange = { blocks: NoteBlocksV2 };
@@ -67,12 +70,15 @@ function slashQuery(editor: Editor): { query: string; from: number; to: number }
   return match ? { query: match[1].toLocaleLowerCase(), from: $from.pos - before.length, to: $from.pos } : null;
 }
 
-export function TiptapEditor({ blocks, onChange, onError, readOnly = false, noteId }: {
+export function TiptapEditor({ blocks, onChange, onError, readOnly = false, noteId, onContentReady, ensureComplete, hasMoreContent = false }: {
   blocks: NoteBlocksV2;
   onChange: (next: EditorChange) => void;
   onError?: (message: string | null) => void;
   readOnly?: boolean;
   noteId?: string;
+  onContentReady?: (handle: EditorContentHandle | null) => void;
+  ensureComplete?: () => Promise<void>;
+  hasMoreContent?: boolean;
 }) {
   const files = useManagedFiles();
   const toolbarHost = useEditorToolbarHost();
@@ -85,6 +91,15 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
   const errorCallback = useRef(onError);
   errorCallback.current = onError;
   const lastEmitted = useRef<NoteBlocksV2 | null>(null);
+  const contentReadyRef = useRef(onContentReady);
+  const completeRef = useRef(ensureComplete);
+  const moreContentRef = useRef(hasMoreContent);
+  const fullActionRef = useRef(0);
+  const pendingFullAction = useRef(false);
+  const currentEditorRef = useRef<Editor | null>(null);
+  contentReadyRef.current = onContentReady;
+  completeRef.current = ensureComplete;
+  moreContentRef.current = hasMoreContent;
   // useEditor consumes content only when creating the instance. Do not rebuild
   // the whole document when selection, toolbar, or parent state changes.
   const [initialContent] = useState(() => toTiptapDocument(blocks));
@@ -119,16 +134,65 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
     editable: !readOnly,
     immediatelyRender: false,
     shouldRerenderOnTransaction: false,
+    editorProps: {
+      handleKeyDown: (_view, event) => {
+        if (!moreContentRef.current || !completeRef.current || !(event.ctrlKey || event.metaKey)) return false;
+        if (pendingFullAction.current && ["c", "x"].includes(event.key.toLowerCase())) { event.preventDefault(); return true; }
+        if (event.key.toLowerCase() !== "a" && event.key !== "End") return false;
+        event.preventDefault();
+        const action = ++fullActionRef.current;
+        pendingFullAction.current = true;
+        void completeRef.current().then(() => {
+          const editor = currentEditorRef.current;
+          if (fullActionRef.current !== action || !editor || editor.isDestroyed) return;
+          if (event.key.toLowerCase() === "a") editor.chain().focus().selectAll().run();
+          else editor.chain().focus().setTextSelection(editor.state.doc.content.size - 1).scrollIntoView().run();
+        }).catch(() => { /* The page reports a recoverable loading error. */ }).finally(() => { pendingFullAction.current = false; });
+        return true;
+      },
+    },
     onCreate: ({ editor: current }) => {
       // Warm immutable block conversions while opening, before the first key.
       fromTiptapDocument(current.state.doc);
     },
-    onUpdate: ({ editor: current }) => {
+    onUpdate: ({ editor: current, transaction }) => {
+      if (transaction.getMeta("orbis-content-page")) return;
+      fullActionRef.current += 1;
       emitChange(current);
       setSlash(slashQuery(current));
     },
     onSelectionUpdate: ({ editor: current }) => { setSlash(slashQuery(current)); },
   });
+  currentEditorRef.current = editor;
+
+  useEffect(() => {
+    if (!editor) return;
+    contentReadyRef.current?.({
+      snapshot: () => fromTiptapDocument(editor.state.doc),
+      selectAll: () => { editor.chain().focus().selectAll().run(); },
+      selectEnd: () => { editor.chain().focus().setTextSelection(editor.state.doc.content.size - 1).scrollIntoView().run(); },
+      append: incoming => {
+        const current = fromTiptapDocument(editor.state.doc);
+        const present = new Set(current.blocks.map(block => block.id));
+        const addition = incoming.filter(block => !present.has(block.id));
+        if (addition.length) {
+          const json = toTiptapDocument({ schema_version: 2, editor: "blocknote", blocks: addition });
+          const nodes = (json.content ?? []).map(node => editor.schema.nodeFromJSON(node));
+          const boundary = editor.state.doc.content.size;
+          const transaction = editor.state.tr.insert(boundary, Fragment.fromArray(nodes));
+          // Adjacent list fragments continue the same list unless the next
+          // block explicitly requests a fresh numbered sequence.
+          const first = addition[0];
+          if (first && ["bulletListItem", "checkListItem", "numberedListItem"].includes(first.type) && !(first.type === "numberedListItem" && Number.isInteger(first.props.start)) && canJoin(transaction.doc, boundary)) transaction.join(boundary);
+          editor.view.dispatch(transaction.setMeta("addToHistory", false).setMeta("orbis-content-page", true));
+        }
+        const result = fromTiptapDocument(editor.state.doc);
+        lastEmitted.current = result;
+        return result;
+      },
+    });
+    return () => { contentReadyRef.current?.(null); fullActionRef.current += 1; };
+  }, [editor]);
 
   const active = useEditorState({ editor, selector: ({ editor: current }) => ({
     bold: current?.isActive("bold"), italic: current?.isActive("italic"),

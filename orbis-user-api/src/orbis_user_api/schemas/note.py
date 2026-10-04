@@ -46,6 +46,50 @@ class NoteContentOut(BaseModel):
     updated_at_ms: int
 
 
+class NoteContentPageOut(BaseModel):
+    note_id: UUID
+    blocks: dict[str, Any]
+    content_version: int
+    created_at_ms: int
+    updated_at_ms: int
+    offset: int
+    next_offset: int = Field(
+        description="同一 content_version 快照下继续读取的根块偏移量"
+    )
+    total_blocks: int = Field(description="此内容快照包含的顶层根块总数")
+    has_more: bool
+
+
+class NoteContentPrefixRequest(BaseModel):
+    expected_version: int = Field(ge=1)
+    loaded_block_ids: list[str] = Field(
+        description="读取时已载入前缀的原始根块 ID 顺序，删除或新增后的 ID 不应替换此基线"
+    )
+    blocks: dict[str, Any] = Field(
+        description="编辑后的已载入前缀，schema_version=2；服务端保留未载入尾部"
+    )
+
+
+class NoteContentPrefixOut(BaseModel):
+    note_id: UUID
+    content_version: int
+    loaded_block_ids: list[str]
+    total_blocks: int
+    updated_at_ms: int
+
+
+class NoteOutlineItemOut(BaseModel):
+    id: str
+    text: str
+    level: int
+    root_index: int = Field(description="标题在指定内容快照中的零基根块位置")
+
+
+class NoteContentOutlineOut(BaseModel):
+    content_version: int
+    items: list[NoteOutlineItemOut]
+
+
 class NoteOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

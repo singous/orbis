@@ -76,3 +76,5 @@
  .orbis-tiptap-toolbar .editor-more-tools {display:inline-flex;}
  .document-format-host .orbis-tiptap-toolbar {overflow-x:auto;}
 }
+
+.document-load-more { padding: var(--orbis-space-6) 0; color: var(--text-secondary); font-size: var(--orbis-text-ui-size); line-height: var(--orbis-text-ui-leading); }

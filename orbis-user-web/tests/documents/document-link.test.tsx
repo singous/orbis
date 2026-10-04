@@ -6,7 +6,7 @@ import { DocumentLink, DOCUMENT_PREFETCH_DWELL_MS } from "../../src/features/doc
 import { authStore } from "../../src/shared/auth/auth-store";
 
 const mock = vi.hoisted(() => ({ note: vi.fn(), content: vi.fn(), module: vi.fn() }));
-vi.mock("../../src/features/documents/api", () => ({ getNote: mock.note, getNoteContent: mock.content }));
+vi.mock("../../src/features/documents/api", () => ({ getNote: mock.note, getNoteContentPage: mock.content }));
 vi.mock("../../src/features/documents/editor-module", () => ({ loadDocumentEditor: mock.module }));
 afterEach(() => { cleanup(); vi.clearAllTimers(); vi.useRealTimers(); vi.clearAllMocks(); authStore.getState().clearSession(); });
 
@@ -30,7 +30,7 @@ it("prefetches only the intended document while retaining native link attributes
   expect(mock.note).not.toHaveBeenCalled();
   fireEvent.pointerEnter(link);
   await act(async () => { await vi.advanceTimersByTimeAsync(DOCUMENT_PREFETCH_DWELL_MS); });
-  expect(client.getQueryData(["note-content", "target"])).toEqual({ note_id: "target" });
+  expect(client.getQueryData(["note-content-pages", "target"])).toEqual({ note_id: "target" });
   fireEvent.focus(link);
   expect(mock.note).toHaveBeenCalledOnce();
   expect(mock.content).toHaveBeenCalledOnce();
@@ -51,7 +51,7 @@ it("does not refetch the active document from row hover or focus", async () => {
   authStore.setState({ accessToken: "local", refreshToken: null });
   const client = new QueryClient({ defaultOptions: { queries: { staleTime: 0 } } });
   const saved = { note_id: "target", content_version: 1 };
-  client.setQueryData(["note-content", "target"], saved);
+  client.setQueryData(["note-content-pages", "target"], saved);
   render(<QueryClientProvider client={client}><MemoryRouter initialEntries={["/documents/target?comment=example"]}>
     <DocumentLink noteId="target" to="/documents/target">Current</DocumentLink>
   </MemoryRouter></QueryClientProvider>);
@@ -61,5 +61,5 @@ it("does not refetch the active document from row hover or focus", async () => {
   fireEvent.focus(link);
   expect(mock.note).not.toHaveBeenCalled();
   expect(mock.content).not.toHaveBeenCalled();
-  expect(client.getQueryData(["note-content", "target"])).toBe(saved);
+  expect(client.getQueryData(["note-content-pages", "target"])).toBe(saved);
 });

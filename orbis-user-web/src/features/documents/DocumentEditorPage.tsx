@@ -10,6 +10,7 @@ import { useStore } from "zustand";
 
 import { ApiError } from "../../shared/api/api-client";
 import { authStore } from "../../shared/auth/auth-store";
+import { useOptionalAuthRequest } from "../../shared/auth/use-auth-request";
 import { registerPendingNavigation } from "../../shared/navigation/pending-navigation";
 import { Button } from "../../shared/ui/Button";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
@@ -22,6 +23,8 @@ import { createEditorDraftFingerprint, type EditorDraft } from "./editor-draft";
 import { EditorLayout, EditorOutlineStore } from "./EditorLayout";
 import { loadDocumentEditor } from "./editor-module";
 import { DocumentShell } from "./DocumentShell";
+import { getNoteContentPage, getNoteContentOutline } from "./api";
+import { CONTENT_PAGE_SIZE, type EditorContentHandle } from "./editor-content-handle";
 
 // Load the editor only on document pages; readers use the lightweight renderer.
 const TiptapEditor = lazy(loadDocumentEditor);
@@ -32,6 +35,9 @@ function LiveDocumentEditor({ blocks, onChange, ...props }: {
   onError: (message: string | null) => void;
   readOnly: boolean;
   noteId: string;
+  onContentReady?: (handle: EditorContentHandle | null) => void;
+  ensureComplete?: () => Promise<void>;
+  hasMoreContent?: boolean;
 }) {
   const [local, setLocal] = useState({ source: blocks, value: blocks });
   // A restored/server revision replaces local content before editability
@@ -95,7 +101,8 @@ export function DocumentEditorPage() {
   const currentUserId = useStore(authStore, (state) => state.user?.id ?? "");
   const noteQuery = useNote(noteId);
   const notebook = useNotebook(noteQuery.data?.notebook_id).data;
-  const contentQuery = useNoteContent(noteId);
+  const contentQuery = useNoteContent(noteId, { pageSize: CONTENT_PAGE_SIZE });
+  const documentAuth = useOptionalAuthRequest();
   const updateNote = useUpdateNote();
   const saveContent = useSaveNoteContent();
   const archiveNote = useArchiveNote();
@@ -114,8 +121,18 @@ export function DocumentEditorPage() {
   const collaborationTriggerRef = useRef<HTMLButtonElement>(null);
   const saveState = editorError ? "error" : restorationConflict ? "conflict" : autosaveState;
   const coordinatorRef = useRef<AutosaveCoordinator<EditorDraft> | null>(null);
+  const coordinatorMode = useRef<{ coordinator: AutosaveCoordinator<EditorDraft>; mode: { partial: boolean } } | null>(null);
   const hydratedNoteRef = useRef<string | null>(null);
   const editorBusy = restoring || archiving;
+  const contentHandle = useRef<EditorContentHandle | null>(null);
+  const contentWindow = useRef<{ noteId: string; version: number; next: number; total: number; hasMore: boolean } | null>(null);
+  const contentAbort = useRef<AbortController | null>(null);
+  const loadingRequest = useRef<Promise<void> | null>(null);
+  const [editorReady, setEditorReady] = useState(false);
+  const [hasMoreContent, setHasMoreContent] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
+  const loadMoreTarget = useRef<HTMLDivElement>(null);
   const navigationStateRef = useRef({ noteId, canEdit, restorationConflict });
   navigationStateRef.current = { noteId, canEdit, restorationConflict };
 
@@ -162,11 +179,17 @@ export function DocumentEditorPage() {
       content.content_version <= saved.version;
     if (isOwnOrStaleEcho) return;
     hydratedNoteRef.current = noteId;
+    const paged = "next_offset" in content;
+    contentWindow.current = paged ? { noteId, version: content.content_version, next: content.next_offset, total: content.total_blocks, hasMore: content.has_more } : null;
+    outlineStore.setRemote([], paged ? content.next_offset : Infinity);
+    setHasMoreContent(paged && content.has_more);
+    setLoadMoreError(null);
     const initial = { title: note.title, blocks: normalizeEditorBlocks(noteId, content.blocks), version: content.content_version };
     setDraft(initial);
     outlineStore.update(initial.blocks);
     coordinatorRef.current?.dispose(false);
     const fingerprint = createEditorDraftFingerprint();
+    const mode = { partial: paged };
     const coordinator = new AutosaveCoordinator<EditorDraft>({
       delayMs: 750,
       // Bursts separated by short pauses coalesce into at most one save per
@@ -182,7 +205,7 @@ export function DocumentEditorPage() {
         }
         let version = saved.version;
         if (fingerprint({ ...current, title: "" }) !== fingerprint({ ...saved, title: "" })) {
-          const result = await saveContent.mutateAsync({ noteId, expectedVersion: saved.version, blocks: current.blocks });
+          const result = await saveContent.mutateAsync({ noteId, expectedVersion: saved.version, blocks: current.blocks, ...(mode.partial ? { loadedBlockIds: saved.blocks.blocks.map(block => block.id) } : {}) });
           version = result.content_version;
         }
         return { ...current, title: current.title.trim() || "未命名文档", version };
@@ -190,6 +213,7 @@ export function DocumentEditorPage() {
     });
     coordinator.hydrate(initial);
     coordinatorRef.current = coordinator;
+    coordinatorMode.current = { coordinator, mode };
   }, [contentQuery.data?.content_version, noteId, noteQuery.data?.title]);
 
   useEffect(() => {
@@ -197,7 +221,13 @@ export function DocumentEditorPage() {
     editorErrorRef.current = null;
     setArchiving(false);
     setArchiveError(null);
+    const abort = new AbortController();
+    contentAbort.current = abort;
     return () => {
+      abort.abort();
+      contentHandle.current = null;
+      contentWindow.current = null;
+      loadingRequest.current = null;
       const coordinator = coordinatorRef.current;
       coordinator?.dispose(canEdit && (coordinator.state === "dirty" || coordinator.state === "saving"));
       coordinatorRef.current = null;
@@ -205,6 +235,72 @@ export function DocumentEditorPage() {
       archivingRef.current = null;
     };
   }, [noteId]);
+
+  async function loadMoreContent(): Promise<void> {
+    if (loadingRequest.current) return loadingRequest.current;
+    const window = contentWindow.current;
+    const coordinator = coordinatorRef.current;
+    const handle = contentHandle.current;
+    const abort = contentAbort.current;
+    if (!window?.hasMore || window.noteId !== noteId || !coordinator || !handle || !abort) return;
+    if (!documentAuth) throw new Error("请重新登录后继续读取文档。");
+    setLoadingMore(true);
+    setLoadMoreError(null);
+    const task = (async () => {
+      const page = await getNoteContentPage(noteId, documentAuth, { offset: window.next, limit: CONTENT_PAGE_SIZE, version: window.version, signal: abort.signal });
+      if (!("next_offset" in page) || page.content_version !== window.version || page.offset !== window.next) throw new Error("后续正文的版本不一致，请重新载入文档。");
+      await coordinator.settlePendingSave();
+      if (abort.signal.aborted || coordinatorRef.current !== coordinator || contentWindow.current !== window || contentHandle.current !== handle) return;
+      const addition = normalizeEditorBlocks(noteId, page.blocks).blocks;
+      const wasSaved = coordinator.state === "saved";
+      coordinator.extend(value => ({ ...value, blocks: { ...value.blocks, blocks: [...value.blocks.blocks, ...addition] } }));
+      const live = handle.append(addition);
+      const current = coordinator.current!;
+      if (wasSaved) coordinator.hydrate({ ...current, blocks: live });
+      else coordinator.alignCurrentAfterRead({ ...current, blocks: live });
+      setDraft(coordinator.current);
+      outlineStore.setBoundary(page.next_offset);
+      outlineStore.update(live);
+      window.next = page.next_offset;
+      window.hasMore = page.has_more;
+      setHasMoreContent(page.has_more);
+    })();
+    loadingRequest.current = task;
+    try { await task; }
+    catch (error) {
+      if (!abort.signal.aborted && contentWindow.current === window) setLoadMoreError(error instanceof Error ? error.message : "后续正文加载失败，请重试。");
+      throw error;
+    } finally {
+      if (loadingRequest.current === task) { loadingRequest.current = null; setLoadingMore(false); }
+    }
+  }
+
+  async function loadCompleteContent(): Promise<void> {
+    if (!contentHandle.current) throw new Error("正文尚未准备好，请稍后重试。");
+    while (contentWindow.current?.noteId === noteId && contentWindow.current.hasMore) await loadMoreContent();
+  }
+
+  const loadMoreRef = useRef(loadMoreContent);
+  loadMoreRef.current = loadMoreContent;
+  useEffect(() => {
+    const target = loadMoreTarget.current;
+    if (!editorReady || !hasMoreContent || loadingMore || loadMoreError || !target) return;
+    const observer = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) void loadMoreRef.current().catch(() => {});
+    }, { root: target.closest(".document-scroll-region"), rootMargin: "320px" });
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [editorReady, hasMoreContent, loadingMore, loadMoreError, noteId]);
+
+  useEffect(() => {
+    const window = contentWindow.current;
+    if (!editorReady || !window?.hasMore || window.noteId !== noteId || !documentAuth) return;
+    const abort = new AbortController();
+    void getNoteContentOutline(noteId, window.version, documentAuth, abort.signal).then(outline => {
+      if (!abort.signal.aborted && contentWindow.current === window) outlineStore.setRemote(outline.items, window.next);
+    }).catch(() => { /* Loaded headings remain available when the index is offline. */ });
+    return () => abort.abort();
+  }, [editorReady, noteId, contentQuery.data?.content_version]);
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -251,6 +347,10 @@ export function DocumentEditorPage() {
     const [noteResult, contentResult] = await Promise.all([noteQuery.refetch(), contentQuery.refetch()]);
     if (coordinatorRef.current !== coordinator || !noteResult.data || !contentResult.data || noteResult.error || contentResult.error) return;
     const next = { title: noteResult.data.title, blocks: normalizeEditorBlocks(noteId, contentResult.data.blocks), version: contentResult.data.content_version };
+    if (coordinatorMode.current?.coordinator === coordinator) coordinatorMode.current.mode.partial = "next_offset" in contentResult.data;
+    const content = contentResult.data;
+    contentWindow.current = "next_offset" in content ? { noteId, version: content.content_version, next: content.next_offset, total: content.total_blocks, hasMore: content.has_more } : null;
+    setHasMoreContent(contentWindow.current?.hasMore ?? false);
     coordinatorRef.current?.hydrate(next);
     setDraft(next);
     outlineStore.update(next.blocks);
@@ -281,6 +381,8 @@ export function DocumentEditorPage() {
       const restored = await restore(saved.version);
       if (coordinatorRef.current !== coordinator) return;
       const next = { ...saved, blocks: normalizeEditorBlocks(noteId, restored.blocks), version: restored.content_version };
+      contentWindow.current = { noteId, version: restored.content_version, next: next.blocks.blocks.length, total: next.blocks.blocks.length, hasMore: false };
+      setHasMoreContent(false);
       coordinator.hydrate(next);
       setDraft(next);
       outlineStore.update(next.blocks);
@@ -375,7 +477,7 @@ export function DocumentEditorPage() {
 
             {archiveError ? <div role="alert" className="mb-5"><StatusMessage tone="error" title="未能归档文档">{archiveError}</StatusMessage></div> : null}
             {saveState === "conflict" ? <div className="mb-5"><StatusMessage tone="warning" title="检测到其他窗口的更新">本地草稿仍保留。建议先复制本地 Markdown，再载入服务端版本。
-              <div className="mt-3 flex flex-wrap gap-2"><Button variant="secondary" icon={<Download aria-hidden="true" size={14} />} onClick={() => navigator.clipboard?.writeText(v2ToMarkdown((coordinatorRef.current?.current ?? draft).blocks.blocks))}>复制本地 Markdown</Button><Button variant="secondary" icon={<RotateCcw aria-hidden="true" size={14} />} onClick={reloadServer}>载入服务端版本</Button></div>
+              <div className="mt-3 flex flex-wrap gap-2"><Button variant="secondary" icon={<Download aria-hidden="true" size={14} />} onClick={() => void loadCompleteContent().then(() => navigator.clipboard?.writeText(v2ToMarkdown((coordinatorRef.current?.current ?? draft).blocks.blocks))).catch(() => {})}>复制本地 Markdown</Button><Button variant="secondary" icon={<RotateCcw aria-hidden="true" size={14} />} onClick={reloadServer}>载入服务端版本</Button></div>
             </StatusMessage></div> : null}
             {saveState === "error" && !editorError ? <div className="mb-5"><StatusMessage tone="error" title="自动保存失败">网络恢复后可手动重试，本地草稿不会丢失。<div className="mt-3"><Button variant="secondary" icon={<RefreshCw aria-hidden="true" size={14} />} onClick={() => coordinatorRef.current?.retry()}>重试保存</Button></div></StatusMessage></div> : null}
 
@@ -384,12 +486,20 @@ export function DocumentEditorPage() {
                 <LiveDocumentEditor
                   noteId={noteId}
                   blocks={draft.blocks}
+                  onContentReady={handle => { contentHandle.current = handle; setEditorReady(Boolean(handle)); }}
+                  ensureComplete={loadCompleteContent}
+                  hasMoreContent={hasMoreContent}
                   readOnly={!canEdit || editorBusy}
                   onError={(message) => { editorErrorRef.current = message; setEditorError(message); }}
                   onChange={({ blocks }) => changeDraft({ ...(coordinatorRef.current?.current ?? draft), blocks })}
                 />
               </Suspense>
             </EditorErrorBoundary>
+            {hasMoreContent ? <div ref={loadMoreTarget} className="document-load-more" aria-live="polite">
+              {loadingMore ? <LoadingState label="正在载入后续正文…" compact /> : null}
+              {loadMoreError ? <StatusMessage tone="error" title="后续正文未能载入">{loadMoreError}<Button variant="secondary" onClick={() => void loadMoreContent().catch(() => {})}>重试加载</Button></StatusMessage> : null}
+              {!loadingMore && !loadMoreError ? <Button variant="ghost" onClick={() => void loadMoreContent().catch(() => {})}>继续阅读</Button> : null}
+            </div> : null}
           </article>
         </EditorLayout>
       )}
