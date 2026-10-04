@@ -6,6 +6,9 @@ import { useLocation } from "react-router-dom";
 import { useStore } from "zustand";
 
 import { authStore } from "../../shared/auth/auth-store";
+import { getAppSurface } from "../../shared/platform/app-surface";
+import { useCompactNavigation } from "../../shared/platform/use-compact-navigation";
+import { SearchPaletteProvider, useSearchPalette } from "../search/search-palette-context";
 import { SidebarResizeHandle } from "./SidebarResizeHandle";
 import { useSidebarResize } from "./use-sidebar-resize";
 import { WorkspaceSidebar } from "./WorkspaceSidebar";
@@ -17,6 +20,7 @@ import { WorkspaceNavigation } from "./WorkspaceNavigation";
 import { resolveWorkspaceArea } from "./workspace-areas";
 import { WorkspaceTopbar } from "./WorkspaceTopbar";
 import { canMutateWorkspaceContent } from "./capabilities";
+import { useWorkspaceSearch } from "./use-workspace-search";
 
 export type { WorkspaceSidebarConfig } from "./workspace-sidebar-config";
 
@@ -31,22 +35,15 @@ export type WorkspaceShellProps = {
   onOpenContext?: () => void;
 };
 
-const compactNavigationQuery = "(max-width: 767px)";
-
-function useCompactNavigation(): boolean {
-  const [compact, setCompact] = useState(() => typeof window.matchMedia === "function" && window.matchMedia(compactNavigationQuery).matches);
-  useEffect(() => {
-    if (typeof window.matchMedia !== "function") return;
-    const media = window.matchMedia(compactNavigationQuery);
-    const updateCompact = () => setCompact(media.matches);
-    updateCompact();
-    media.addEventListener("change", updateCompact);
-    return () => media.removeEventListener("change", updateCompact);
-  }, []);
-  return compact;
+export function WorkspaceShell(props: WorkspaceShellProps) {
+  return <SearchPaletteProvider><WorkspaceShellContent {...props} /></SearchPaletteProvider>;
 }
 
-export function WorkspaceShell({ children, sectionTitle, sidebar, toolbar, contentLayout = "page", contextPanel, contextOpen = true, onOpenContext }: WorkspaceShellProps) {
+function WorkspaceShellContent({ children, sectionTitle, sidebar, toolbar, contentLayout = "page", contextPanel, contextOpen = true, onOpenContext }: WorkspaceShellProps) {
+  const { isOpen: searchOpen } = useSearchPalette();
+  const searchOpenRef = useRef(searchOpen);
+  searchOpenRef.current = searchOpen;
+  const [surface] = useState(getAppSurface);
   const { pathname } = useLocation();
   const area = resolveWorkspaceArea(pathname);
   const workspace = useStore(authStore, (state) => state.workspace);
@@ -62,6 +59,7 @@ export function WorkspaceShell({ children, sectionTitle, sidebar, toolbar, conte
   const compact = useCompactNavigation();
   const documentContextExpanded = documentContextOpen && contextOpen;
   const drawerOpen = compact && (mainNavigationOpen || documentContextExpanded);
+  useWorkspaceSearch(drawerOpen);
   const sidebarConfig: WorkspaceSidebarConfig | false = sidebar ?? (area.showFunctionSidebar ? { title: <h2>{area.title}</h2>, content: accessToken ? <WorkspaceNavigation /> : null } : false);
   const showFunctionSidebar = Boolean(sidebarConfig && (compact || sidebarConfig.desktopVisible !== false));
   const preferences = sidebarConfig ? sidebarConfig.preferences ?? DEFAULT_SIDEBAR_PREFERENCES : DEFAULT_SIDEBAR_PREFERENCES;
@@ -83,13 +81,20 @@ export function WorkspaceShell({ children, sectionTitle, sidebar, toolbar, conte
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const focusable = () => Array.from(region?.querySelectorAll<HTMLElement>('a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]') ?? []).filter((element) => !element.closest("[hidden], [inert]") && getComputedStyle(element).display !== "none" && getComputedStyle(element).visibility !== "hidden");
     focusable()[0]?.focus();
+    // A nested overlay may unmount earlier in the same keyboard dispatch.
+    // The composed path retains its ownership even after the target detaches.
+    const inNestedOverlay = (event: KeyboardEvent) => event.composedPath().some(node => node instanceof Element && node.matches('[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]'));
+    // Tooltip/focusable controls stop React keyboard propagation. Capture only
+    // drawer dismissal, yielding to functional overlays and input composition.
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key !== "Escape" || searchOpenRef.current || event.defaultPrevented || event.isComposing || inNestedOverlay(event)) return;
+      if (event.target instanceof Node && event.target !== document.body && event.target !== document && !region?.contains(event.target)) return;
+      setMainNavigationOpen(false);
+      setDocumentContextOpen(false);
+      event.preventDefault();
+    }
     function handleKey(event: KeyboardEvent) {
-      if (event.defaultPrevented || (event.target instanceof Element && event.target.closest('[role="dialog"], [role="menu"]'))) return;
-      if (event.key === "Escape") {
-        setMainNavigationOpen(false);
-        setDocumentContextOpen(false);
-        event.preventDefault();
-      }
+      if (searchOpenRef.current || event.defaultPrevented || inNestedOverlay(event)) return;
       if (event.key === "Tab") {
         const items = focusable();
         const first = items[0];
@@ -98,8 +103,9 @@ export function WorkspaceShell({ children, sectionTitle, sidebar, toolbar, conte
         else if (!event.shiftKey && (document.activeElement === last || !region?.contains(document.activeElement))) { first?.focus(); event.preventDefault(); }
       }
     }
+    document.addEventListener("keydown", handleEscape, true);
     document.addEventListener("keydown", handleKey);
-    return () => { document.removeEventListener("keydown", handleKey); if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true }); };
+    return () => { document.removeEventListener("keydown", handleEscape, true); document.removeEventListener("keydown", handleKey); if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true }); };
   }, [drawerOpen, mainNavigationOpen]);
 
   function closeAfterLink(event: React.MouseEvent<HTMLElement>) {
@@ -110,15 +116,20 @@ export function WorkspaceShell({ children, sectionTitle, sidebar, toolbar, conte
   }
 
   return (
-    <main style={shellStyle} className={`workspace-shell${showFunctionSidebar ? " has-section-menu" : " sidebar-unavailable"}${sidebarHidden ? " sidebar-collapsed" : ""}${animating ? " sidebar-animating" : ""}${mainNavigationOpen ? " main-navigation-open" : ""}${documentContextExpanded ? " document-context-drawer-open" : ""}`}>
-      <WorkspaceTopbar disabled={drawerOpen} />
+    <main data-app-surface={surface} style={shellStyle} className={`workspace-shell${showFunctionSidebar ? " has-section-menu" : " sidebar-unavailable"}${sidebarHidden ? " sidebar-collapsed" : ""}${animating ? " sidebar-animating" : ""}${mainNavigationOpen ? " main-navigation-open" : ""}${documentContextExpanded ? " document-context-drawer-open" : ""}`}>
+      {surface === "desktop" ? <WorkspaceTopbar disabled={drawerOpen} /> : null}
       <div ref={gridRef} className="workspace-shell-grid">
         {drawerOpen ? <ActionButton type="button" className="workspace-drawer-backdrop" aria-label={mainNavigationOpen ? "关闭主导航" : "关闭文档目录"} onClick={() => { setMainNavigationOpen(false); setDocumentContextOpen(false); }} /> : null}
         <div ref={navigationRef} className="workspace-main-navigation" aria-hidden={compact && !mainNavigationOpen ? true : undefined} inert={compact && !mainNavigationOpen ? true : undefined} onClick={closeAfterLink}>
-          <BusinessRail createMenu={canCreate ? <RailCreateMenu /> : undefined} collapsed={showFunctionSidebar && sidebarHidden} expandLabel={sidebarConfig ? sidebarConfig.expandLabel : undefined} onExpand={() => changeCollapsed(false)} onClose={compact && !showFunctionSidebar ? () => setMainNavigationOpen(false) : undefined} />
-          {showFunctionSidebar && sidebarConfig ? <WorkspaceSidebar config={sidebarConfig} hidden={sidebarHidden} onCollapse={() => changeCollapsed(true)} onClose={() => setMainNavigationOpen(false)} /> : null}
+          <BusinessRail surface={surface} createMenu={canCreate ? <RailCreateMenu /> : undefined} collapsed={showFunctionSidebar && sidebarHidden} expandLabel={sidebarConfig ? sidebarConfig.expandLabel : undefined} onExpand={() => changeCollapsed(false)} onClose={compact && !showFunctionSidebar ? () => setMainNavigationOpen(false) : undefined} />
+          {showFunctionSidebar && sidebarConfig ? <WorkspaceSidebar
+            config={sidebarConfig}
+            hidden={sidebarHidden}
+            onCollapse={() => changeCollapsed(true)}
+            onClose={() => setMainNavigationOpen(false)}
+            resizeHandle={sidebarResizeEnabled ? <SidebarResizeHandle {...sidebarResize} label={sidebarConfig.resizeLabel} controls={sidebarConfig.id ?? "workspace-sidebar"} /> : undefined}
+          /> : null}
         </div>
-        {sidebarResizeEnabled ? <SidebarResizeHandle {...sidebarResize} label={sidebarConfig ? sidebarConfig.resizeLabel : undefined} controls={sidebarConfig && sidebarConfig.id ? sidebarConfig.id : "workspace-sidebar"} /> : null}
         <section className={`workspace-main-area${contextPanel && contextOpen ? " has-context" : ""}`} aria-label="主工作区">
           <section className={`workspace-content${contentLayout === "document" ? " workspace-document-content" : ""}`} inert={drawerOpen ? true : undefined}>
             {showToolbar ? (

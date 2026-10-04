@@ -5,6 +5,7 @@ import { authStore } from "../../src/shared/auth/auth-store";
 import { usePinnedNotebooks } from "../../src/features/documents/pinned-notebooks";
 import { WorkspaceNavigation } from "../../src/features/workspace/WorkspaceNavigation";
 import { DocumentOverviewPage } from "../../src/features/documents/DocumentOverviewPage";
+import { SearchPaletteProvider } from "../../src/features/search/search-palette-context";
 
 const fixtures = vi.hoisted(() => ({
   notebooks: Array.from({ length: 8 }, (_, index) => ({ id: `notebook-${index}`, group_id: index < 4 ? "work" : "personal", title: `笔记本 ${index}`, sort_order: index, created_at_ms: 1, updated_at_ms: index + 1 })),
@@ -32,7 +33,7 @@ afterEach(() => { cleanup(); authStore.getState().clearSession(); });
 
 describe("notebook layout", () => {
   it("shows only explicitly common notebooks in navigation and updates immediately", () => {
-    render(<MemoryRouter initialEntries={["/documents"]}><WorkspaceNavigation /><PinControl /></MemoryRouter>);
+    render(<MemoryRouter initialEntries={["/documents"]}><SearchPaletteProvider><WorkspaceNavigation /><PinControl /></SearchPaletteProvider></MemoryRouter>);
     const navigation = screen.getByRole("navigation", { name: "文档导航" });
     expect(within(navigation).queryByRole("link", { name: "笔记本 0" })).toBeNull();
     expect(within(navigation).queryByRole("link", { name: "笔记本 7" })).toBeNull();
@@ -42,7 +43,7 @@ describe("notebook layout", () => {
     expect(within(navigation).queryByRole("link", { name: "笔记本 0" })).toBeNull();
   });
   it("shows all notebooks in their groups and shares common settings with navigation", () => {
-    render(<MemoryRouter initialEntries={["/documents"]}><WorkspaceNavigation /><DocumentOverviewPage /></MemoryRouter>);
+    render(<MemoryRouter initialEntries={["/documents"]}><SearchPaletteProvider><WorkspaceNavigation /><DocumentOverviewPage /></SearchPaletteProvider></MemoryRouter>);
     expect(within(screen.getByRole("region", { name: "工作" })).getAllByRole("link")).toHaveLength(4);
     expect(within(screen.getByRole("region", { name: "个人" })).getAllByRole("link")).toHaveLength(4);
     expect(screen.getByText("文档 2")).toBeInTheDocument();
@@ -60,7 +61,7 @@ describe("notebook layout", () => {
     expect(fixtures.create).toHaveBeenCalledWith({ title: "新本", icon: null, sort_order: 8 });
   });
   it("synchronizes common notebook changes from another browser tab", () => {
-    render(<MemoryRouter initialEntries={["/documents"]}><WorkspaceNavigation /></MemoryRouter>);
+    render(<MemoryRouter initialEntries={["/documents"]}><SearchPaletteProvider><WorkspaceNavigation /></SearchPaletteProvider></MemoryRouter>);
     const key = `orbis.pinnedNotebooks.${authStore.getState().workspace!.id}`;
     act(() => {
       localStorage.setItem(key, JSON.stringify(["notebook-1"]));

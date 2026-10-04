@@ -28,20 +28,21 @@ test("mobile navigation covers its dismiss area and restores focus after an outs
   await expect(trigger).toBeFocused();
 });
 
-test("embedded search fields fit their container and group headings stay left aligned", async ({ page, request }) => {
+test("desktop search launchers fit their container and group headings stay left aligned", async ({ page, request }) => {
+  await page.addInitScript(() => Object.assign(window, { __ORBIS_HOST__: { surface: "desktop" } }));
   await signIn(page, request);
   for (const width of [1440, mobileViewport.width]) {
     await page.setViewportSize({ width, height: 1000 });
-    const metrics = await page.getByRole("searchbox", { name: "全局搜索", exact: true }).evaluate((input) => {
-      const outer = input.closest("form")!.getBoundingClientRect();
-      const inner = input.getBoundingClientRect();
-      const shadow = getComputedStyle(input).boxShadow;
-      const hasInnerShadow = shadow !== "none" && !shadow.split(/,\s*(?=rgba)/).every((part) => part === "rgba(0, 0, 0, 0) 0px 0px 0px 0px");
-      return { top: inner.top - outer.top, bottom: outer.bottom - inner.bottom, hasInnerShadow };
+    const metrics = await page.getByRole("button", { name: "全局搜索", exact: true }).evaluate((button) => {
+      const outer = button.getBoundingClientRect();
+      const label = button.querySelector("span")!.getBoundingClientRect();
+      const container = button.closest(".workspace-topbar-center")!.getBoundingClientRect();
+      return { top: label.top - outer.top, bottom: outer.bottom - label.bottom, right: outer.right - container.right, labelRight: label.right - outer.right };
     });
     expect(metrics.top).toBeGreaterThanOrEqual(0);
     expect(metrics.bottom).toBeGreaterThanOrEqual(0);
-    expect(metrics.hasInnerShadow).toBe(false);
+    expect(metrics.right).toBeLessThanOrEqual(1);
+    expect(metrics.labelRight).toBeLessThanOrEqual(1);
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/documents/collections");

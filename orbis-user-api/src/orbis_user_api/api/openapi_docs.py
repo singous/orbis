@@ -21,12 +21,16 @@ TAG_DOCS: dict[str, tuple[str, str]] = {
     "notes": ("文档", "文档、内容、搜索与目录树"),
     "files": ("文件", "文件上传与查询"),
     "system": ("系统状态", "服务健康检查"),
+    "search": ("全局搜索", "按授权范围检索当前资源"),
     **base_mvp.TAG_DOCS,
 }
 
 
 # key: (HTTP method, route path); value: (Chinese summary, business description)
 OPERATION_DOCS: dict[tuple[str, str], tuple[str, str]] = {
+    ("get", "/search"): ("全局搜索当前空间资源", "仅检索 X-Workspace-ID 请求上下文中的活跃文档及可读评论、文集、文档分组、站点和已完成上传文件元数据。省略请求头时兼容账号默认空间；显式空间无权访问时返回错误，不回退。旧 scope 和 workspace_id 查询参数兼容接收但已停用，不扩展或改变范围。搜索不修改账号默认空间。空关键词仅返回当前空间信息；提供 resource_id 和具体 type 时可以用空关键词精确定位当前空间授权资源，ID 条件在计数和分页前生效。普通关键词不展开 SQL 通配符。评论去重合并到文档，摘要最多 240 字；分页总数只统计当前空间授权匹配资源。"),
+    ("get", "/workspaces"): ("查询可访问工作空间", "返回当前账号具有活跃成员身份与读取能力的活跃空间及角色，按创建时间和标识稳定排序，不修改账号默认空间。is_current 标记当前请求上下文，省略 X-Workspace-ID 时使用账号默认或可用回退空间。无成员空间时返回空 items。客户端可不携带空间请求头，以便从已失效的空间恢复选择。"),
+    ("post", "/workspace/switch"): ("切换当前工作空间", "在全局工作空间选择器中显式确认切换，校验目标活跃空间、活跃成员身份与读取能力后更新账号默认空间，返回用户与空间信息。相同空间重复调用不产生更新。该默认偏好影响其他会话省略空间请求头的后续请求；已携带 X-Workspace-ID 的业务请求仍固定在其捕获的上下文。客户端切换前必须处理未保存编辑内容。此控制接口可省略空间请求头，目标只由 body.workspace_id 决定。"),
     ("post", "/setup"): ("初始化 Orbis", "首次部署时创建唯一所有者账号、默认私人工作空间和默认文档分组。该接口只能成功调用一次。"),
     ("get", "/workspace/mail-status"): ("查询邮件服务状态", "查询当前部署是否可以发送邀请和所有权转让邮件，不会返回 SMTP 密钥等敏感配置。"),
     ("post", "/workspace/invitations"): ("创建成员邀请", "向指定邮箱创建工作空间邀请并发送邮件。所有者可邀请管理员、编辑者和普通成员，管理员不可邀请管理员。"),
@@ -47,7 +51,9 @@ OPERATION_DOCS: dict[tuple[str, str], tuple[str, str]] = {
     ("post", "/notes/import/markdown"): ("导入 Markdown 文档", "将 Markdown 转换为受支持的结构化块并创建文档；不支持的结构会返回内容校验错误。"),
     ("get", "/notes/{note_id}"): ("查询文档元数据", "读取指定文档的标题、层级、排序、归档状态和时间字段，不包含结构化正文。"),
     ("patch", "/notes/{note_id}"): ("修改文档元数据", "修改文档标题、父文档或同级排序值。父文档必须位于同一文集且不能形成循环。"),
-    ("get", "/notes/{note_id}/content"): ("查询文档内容", "读取文档的结构化块、派生纯文本和当前内容版本号。"),
+    ("get", "/notes/{note_id}/content"): ("查询文档内容", "不传 limit 时兼容读取全文、派生纯文本和当前版本；传入 limit 和 offset 时只投影该段顶层块，返回 next_offset、total_blocks 和 has_more，不返回整篇 plain_text。expected_version 固定首次读取的内容快照，保存后可继续读取同版本历史快照，避免拼接不同版本。"),
+    ("patch", "/notes/{note_id}/content"): ("保存已载入的文档片段", "使用 expected_version 和 loaded_block_ids 校验已载入前缀，更新该前缀并保留未载入尾部。版本或前缀身份不一致返回 NOTE_VERSION_CONFLICT，保存失败时保留客户端草稿。响应只包含确认版本、已载入标识和总块数，不返回全文。"),
+    ("get", "/notes/{note_id}/content/outline"): ("查询文档标题索引", "按 version 投影顶层标题的标识、级别、文本与根块位置，供未载入正文的大纲使用；不传输其他正文块。继续校验当前工作空间与文档读取权限。"),
     ("put", "/notes/{note_id}/content"): ("保存文档内容", "使用 expected_version 执行乐观锁保存。版本不一致时返回 NOTE_VERSION_CONFLICT，客户端应刷新后处理冲突。"),
     ("get", "/notes/{note_id}/markdown"): ("导出 Markdown 文档", "将当前结构化文档内容转换为 Markdown，并返回建议文件名和文本内容。"),
     ("post", "/notes/{note_id}/archive"): ("归档文档", "归档指定文档；归档父文档后，其子树不会出现在活跃文档树中。"),
@@ -60,13 +66,14 @@ OPERATION_DOCS: dict[tuple[str, str], tuple[str, str]] = {
     ("put", "/users/me/avatar"): ("上传当前用户头像", "使用 multipart/form-data 的 file 字段提交 PNG、JPEG 或 WebP 静态图片，最多 2 MiB 和 16,777,216 像素。服务端移除元数据并裁剪为 256×256 WebP 后保存，返回最新用户资料。失败时保留旧头像。"),
     ("get", "/users/me/avatar"): ("读取当前用户头像", "仅允许登录用户读取自己的头像缩略图，data_url 为 WebP 的 Base64 数据地址。未设置头像或文件缺失时返回 AVATAR_NOT_FOUND。"),
     ("delete", "/users/me/avatar"): ("移除当前用户头像", "清除当前用户的自定义头像并返回最新用户资料，avatar_file_id 为 null。重复调用仍成功。"),
-    ("get", "/users/me"): ("查询当前用户", "根据 Bearer 访问令牌返回当前登录用户的基础资料和当前工作空间标识。"),
+    ("get", "/users/me"): ("查询当前用户", "根据 Bearer 访问令牌返回当前登录用户的基础资料和账号默认工作空间标识。该全局资料不受 X-Workspace-ID 请求头影响。"),
     ("get", "/document-groups"): ("分页查询文档分组", "分页查询当前工作空间的文档分组，可通过 status 在活跃和已归档资源之间切换。"),
     ("post", "/document-groups"): ("创建文档分组", "在当前工作空间创建文档分组，并设置显示名称和排序值。"),
     ("patch", "/document-groups/{group_id}"): ("修改文档分组", "修改指定文档分组的名称或排序值。"),
     ("post", "/document-groups/{group_id}/archive"): ("归档文档分组", "归档指定文档分组。系统默认分组不可归档。"),
     ("post", "/document-groups/{group_id}/restore"): ("恢复文档分组", "恢复指定文档分组；恢复后其下级文集和文档仍需按依赖顺序分别恢复。"),
     ("get", "/notebooks"): ("分页查询文集", "分页查询当前工作空间的文集，可按文档分组、资源状态及父级状态过滤。"),
+    ("get", "/notebooks/{notebook_id}"): ("查询单个文集", "按 UUID 读取当前空间的活跃文集元数据，包含图标、所属分组与毫秒时间戳，不依赖文集列表分页。文集和所属分组必须同属当前空间且均处于活跃状态，否则返回 NOTEBOOK_NOT_FOUND。"),
     ("post", "/notebooks"): ("创建文集", "在指定文档分组中创建文集；未指定 group_id 时自动使用默认文档分组。可设置 icon 为内置图标及配色或当前空间上传的图标文件；省略或 null 使用默认图标。"),
     ("patch", "/notebooks/{notebook_id}"): ("修改文集", "修改文集标题、所属文档分组、排序值或 icon 图标。目标文档分组必须处于活跃状态。icon 省略时保持原值，显式 null 恢复默认图标；图片必须来自当前工作空间的笔记本图标上传接口。"),
     ("post", "/notebooks/icons"): ("上传笔记本图标", "以 multipart/form-data 的 file 字段上传 PNG、JPEG 或 WebP 静态图片，最大 2 MiB（2,097,152 字节）、16,777,216 像素。服务端验证实际图片内容，保留宽高比缩小至 256×256 以内并转换为 WebP，移除图片元数据。返回 file_id 和可预览的 data_url；保存笔记本时使用 type=image 及 file_id 绑定。要求当前工作空间资源管理权限。"),
@@ -74,7 +81,7 @@ OPERATION_DOCS: dict[tuple[str, str], tuple[str, str]] = {
     ("post", "/notebooks/{notebook_id}/archive"): ("归档文集", "归档指定文集，归档后其中的文档不会出现在活跃列表和目录树中。"),
     ("post", "/notebooks/{notebook_id}/restore"): ("恢复文集", "恢复指定文集；所属文档分组必须已经恢复。"),
     ("post", "/files"): ("上传文件", "以 multipart/form-data 上传文件，保存文件元数据、大小和 SHA-256 摘要，并返回已创建的文件记录。"),
-    ("get", "/files"): ("分页查询文件", "分页查询当前用户上传的文件，结果按创建时间倒序排列。"),
+    ("get", "/files"): ("分页查询文件", "分页查询当前请求工作空间内当前用户上传的文件，结果按创建时间倒序排列；跨空间文件不进入列表。"),
     ("get", "/files/{file_id}/content"): ("读取文件内容", "当前工作空间活跃成员鉴权读取已完成上传的文件二进制内容。跨空间、上传未完成、存储文件丢失或路径异常统一返回 FILE_NOT_FOUND。"),
     (
         "get",
@@ -102,6 +109,7 @@ BINARY_OPERATIONS = {
 }
 
 PAGINATED_PATHS = {
+    "/search",
     "/notes",
     "/document-groups",
     "/notebooks",
@@ -126,7 +134,9 @@ FIELD_DESCRIPTIONS = {
     "workspace_id": "资源所属工作空间 UUIDv7 标识。",
     "owner_id": "资源创建者或所有者 UUIDv7 标识。",
     "user_id": "用户 UUIDv7 标识。",
-    "current_workspace_id": "用户当前选择的工作空间 UUIDv7 标识。",
+    "current_workspace_id": "账号持久化的默认工作空间 UUIDv7 标识；普通请求的 X-Workspace-ID 不会修改此字段。",
+    "workspace_type": "工作空间类型，例如 private 表示私人空间。",
+    "is_current": "是否为该账号当前选择的工作空间。",
     "name": "资源显示名称。",
     "title": "文集或文档标题。",
     "role": "工作空间角色：owner、admin、editor 或 normal。",
@@ -186,6 +196,14 @@ SCHEMA_EXAMPLES: dict[str, dict[str, Any]] = {
 
 
 def _success_data(path: str, method: str) -> Any:
+    if path == "/notebooks/{notebook_id}" and method == "get":
+        return {"id": EXAMPLE_REQUEST_ID, "tenant_id": None, "workspace_id": EXAMPLE_REQUEST_ID, "group_id": EXAMPLE_REQUEST_ID, "owner_id": EXAMPLE_REQUEST_ID, "title": "项目资料", "icon": None, "sort_order": 0, "status": "active", "created_at_ms": 0, "updated_at_ms": 0}
+    if path == "/search":
+        return {"items": [], "pagination": {"page": 1, "page_size": 20, "total": 0, "total_pages": 0, "has_next": False, "has_previous": False}, "scope": {"workspace_ids": [EXAMPLE_REQUEST_ID], "current_workspace_id": EXAMPLE_REQUEST_ID}, "workspaces": [{"id": EXAMPLE_REQUEST_ID, "name": "私人空间", "is_current": True}]}
+    if path == "/workspaces":
+        return {"items": [{"id": EXAMPLE_REQUEST_ID, "name": "私人空间", "workspace_type": "private", "role": "owner", "is_current": True, "created_at_ms": 0, "updated_at_ms": 0}]}
+    if path == "/workspace/switch":
+        return {"user": _success_data("/users/me", "get") | {"current_workspace_id": EXAMPLE_REQUEST_ID}, "workspace": {"id": EXAMPLE_REQUEST_ID, "name": "私人空间", "workspace_type": "private", "role": "owner", "is_current": True, "created_at_ms": 0, "updated_at_ms": 0}}
     if path in {"/users/me", "/users/me/avatar"}:
         if path.endswith("/avatar") and method == "get":
             return {"data_url": "data:image/webp;base64,UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAUAmJaQAA3AA/v89WAAAAA=="}
@@ -373,7 +391,7 @@ def _install_operation_docs(schema: dict[str, Any]) -> None:
                 parameter["description"] = {
                     "slug": "当前公开站点路径。",
                     "key": "活动发布版本资源清单中的 SHA-256 资源键。",
-                }[parameter["name"]]
+                }.get(parameter["name"], parameter.get("description", "请求参数"))
 
         responses = operation["responses"]
         _add_error_example(operation, 500, "INTERNAL_ERROR", "服务内部错误")
@@ -401,6 +419,13 @@ def _install_operation_docs(schema: dict[str, Any]) -> None:
 
     # Add route-specific business-code examples used by client branching.
     route_errors = [
+        ("get", "/notebooks/{notebook_id}", 403, "ACTIVE_WORKSPACE_MEMBERSHIP_REQUIRED", "需要有效的工作空间成员身份"),
+        ("get", "/notebooks/{notebook_id}", 404, "NOTEBOOK_NOT_FOUND", "文集不存在"),
+        ("get", "/search", 403, "SEARCH_WORKSPACE_FORBIDDEN", "需要所选工作空间的有效读取权限"),
+        ("get", "/search", 403, "WORKSPACE_CONTEXT_FORBIDDEN", "请求工作空间不可用或无权访问"),
+        ("get", "/workspaces", 403, "WORKSPACE_CONTEXT_FORBIDDEN", "请求工作空间不可用或无权访问"),
+        ("get", "/search", 422, "SEARCH_RESOURCE_TYPE_REQUIRED", "按资源 ID 定位时必须指定具体资源类型"),
+        ("post", "/workspace/switch", 403, "WORKSPACE_SWITCH_FORBIDDEN", "无权切换到所选工作空间"),
         ("put", "/users/me/avatar", 413, "AVATAR_TOO_LARGE", "头像图片不能超过 2 MiB"),
         ("put", "/users/me/avatar", 422, "AVATAR_INVALID_IMAGE", "头像图片格式或像素范围无效"),
         ("get", "/users/me/avatar", 404, "AVATAR_NOT_FOUND", "尚未设置自定义头像"),
@@ -423,6 +448,10 @@ def _install_operation_docs(schema: dict[str, Any]) -> None:
         ("post", "/auth/refresh", 401, "INVALID_REFRESH_TOKEN", "刷新令牌无效或已过期"),
         ("put", "/notes/{note_id}/content", 409, "NOTE_VERSION_CONFLICT", "文档内容版本冲突，请刷新后重试"),
         ("put", "/notes/{note_id}/content", 422, "NOTE_CONTENT_INVALID", "文档内容无效"),
+        ("patch", "/notes/{note_id}/content", 409, "NOTE_VERSION_CONFLICT", "文档内容版本冲突，本地草稿仍保留。"),
+        ("patch", "/notes/{note_id}/content", 422, "NOTE_CONTENT_INVALID", "文档内容无效"),
+        ("get", "/notes/{note_id}/content", 409, "NOTE_VERSION_CONFLICT", "请求的文档内容快照已不可用"),
+        ("get", "/notes/{note_id}/content/outline", 409, "NOTE_VERSION_CONFLICT", "请求的文档内容快照已不可用"),
         ("post", "/workspace/invitations/accept", 401, "INVITATION_ACCOUNT_AUTHENTICATION_REQUIRED", "请先登录受邀账号再接受邀请"),
         ("post", "/workspace/invitations/accept", 403, "INVITATION_ACCEPTANCE_FORBIDDEN", "无权接受此邀请"),
         ("post", "/workspace/invitations/accept", 409, "INVITATION_EXPIRED", "邀请已过期"),
@@ -472,6 +501,29 @@ def _install_chinese_tags(schema: dict[str, Any]) -> None:
             ]
 
 
+def _install_workspace_context_docs(schema: dict[str, Any]) -> None:
+    global_workspace_operations = {
+        "/workspace/switch", "/workspace/invitations/accept",
+        "/workspace/ownership-transfers/confirm",
+    }
+    for path, path_item in schema["paths"].items():
+        scoped = path == "/workspaces" or path.startswith((
+            "/notes", "/notebooks", "/document-groups", "/sites", "/files", "/search",
+        )) or (path.startswith("/workspace/") and path not in global_workspace_operations)
+        if not scoped:
+            continue
+        for operation in path_item.values():
+            if not isinstance(operation, dict) or "responses" not in operation:
+                continue
+            operation.setdefault("parameters", []).append({
+                "name": "X-Workspace-ID", "in": "header", "required": False,
+                "description": "本次请求的工作空间 UUID。显式空间必须活跃且当前用户有读取权限，失败时不回退；不修改账号默认空间。省略时兼容账号默认或可用回退空间。",
+                "schema": {"type": "string", "format": "uuid"},
+            })
+            _add_error_example(operation, 422, "WORKSPACE_CONTEXT_INVALID", "X-Workspace-ID 必须是有效的工作空间 UUID")
+            _add_error_example(operation, 403, "WORKSPACE_CONTEXT_FORBIDDEN", "请求工作空间不可用或无权访问")
+
+
 def _install_base_mvp_docs(schema: dict[str, Any]) -> None:
     components = schema["components"]["schemas"]
     for name, fields in base_mvp.SCHEMA_FIELD_DESCRIPTIONS.items():
@@ -501,9 +553,9 @@ def _install_base_mvp_docs(schema: dict[str, Any]) -> None:
             }
         }
         for parameter in operation.get("parameters", []):
-            parameter["description"] = base_mvp.PARAMETER_DESCRIPTIONS[
-                parameter["name"]
-            ]
+            parameter["description"] = base_mvp.PARAMETER_DESCRIPTIONS.get(
+                parameter["name"], parameter.get("description", "请求参数")
+            )
         if "requestBody" in operation:
             media = operation["requestBody"]["content"]["application/json"]
             request_name = media["schema"]["$ref"].rsplit("/", 1)[-1]
@@ -547,6 +599,7 @@ def install_chinese_openapi(app: FastAPI) -> None:
         _install_operation_docs(schema)
         _install_base_mvp_docs(schema)
         install_site_delivery_docs(schema, _add_error_example, _envelope)
+        _install_workspace_context_docs(schema)
         app.openapi_schema = schema
         return schema
 

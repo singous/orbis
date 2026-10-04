@@ -1,0 +1,72 @@
+/* Shared semantics for HeroUI and custom controls, independent of page layout. */
+.orbis-icon-button {
+  --control-height: var(--orbis-control-default-height);
+  width: var(--control-height);
+  height: var(--control-height);
+  min-width: var(--control-height);
+  min-height: var(--control-height);
+  padding: 0;
+}
+.orbis-icon-button--compact { --control-height: var(--orbis-control-compact-height); }
+.orbis-icon-button > svg { width: var(--orbis-icon-default-size); height: var(--orbis-icon-default-size); }
+.orbis-icon-button--compact > svg { width: var(--orbis-icon-compact-size); height: var(--orbis-icon-compact-size); }
+.orbis-text-input, .orbis-select-field [data-slot="select-trigger"] {
+  height: auto;
+  min-height: var(--control-height, var(--orbis-control-form-height));
+  font-size: var(--orbis-text-ui-size);
+  line-height: var(--orbis-text-ui-leading);
+}
+.orbis-select-field--compact { --control-height: var(--orbis-control-compact-height); }
+.orbis-select-field--default { --control-height: var(--orbis-control-default-height); }
+.rail-action > svg { width: var(--orbis-icon-navigation-size); height: var(--orbis-icon-navigation-size); }
+.orbis-nav-item { min-height: var(--orbis-control-default-height); }
+.orbis-nav-icon { width: var(--orbis-control-touch-height); height: var(--orbis-control-touch-height); }
+
+:where([data-slot="dropdown-menu"], .orbis-select-popover) [role="menuitem"],
+.orbis-select-popover [role="option"] {
+  min-height: var(--orbis-control-default-height);
+  font-size: var(--orbis-text-ui-size);
+  line-height: var(--orbis-text-ui-leading);
+  padding-block: var(--orbis-space-2);
+}
+:where([data-slot="dropdown-menu"], .orbis-select-popover) :is([role="menuitem"], [role="option"]) > svg {
+  width: var(--orbis-icon-default-size);
+  height: var(--orbis-icon-default-size);
+}
+.orbis-nav-item:focus-visible, .orbis-nav-icon:focus-visible, .workspace-function-link:focus-visible, .rail-action:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+/* HeroUI and custom menu rows share pointer, keyboard and selected states. */
+:is(.menu-item, .list-box-item, .orbis-block-menu [role="menuitem"], .editor-more-menu button,
+  .orbis-tiptap-menu button, .orbis-tiptap-toolbar button, .icon-button, .orbis-icon-button:not(.button--primary),
+  .workspace-function-link, .workspace-switcher-option, .orbis-nav-item,
+  .rail-action:not(.rail-create-trigger), .document-context-row, .document-main-row,
+  .search-palette-result, .search-palette-category):not(:disabled, [aria-disabled="true"], [data-disabled="true"]):is(
+  :hover, :focus-visible, [data-hovered="true"], [data-focused="true"], .is-active,
+  [aria-current="page"], [aria-current="true"], [aria-selected="true"], [aria-checked="true"], [aria-pressed="true"], [data-selected="true"])
+{
+  background: var(--orbis-item-hover-bg);
+  color: var(--orbis-item-foreground);
+
+  & :is([data-slot="label"], .menu-item__indicator, .list-box-item__indicator,
+    .document-context-link, .document-tree-disclosure, .document-context-actions .icon-button,
+    .search-palette-category-icon, .workspace-switcher-name, .workspace-switcher-space-icon,
+    .workspace-switcher-check, svg) { color: inherit; }
+}
+.document-context-row:is(:focus-within, :has([data-menu-open="true"])) {
+  color: var(--orbis-item-foreground);
+  & :is(.document-context-link, .document-tree-disclosure) { color: inherit; }
+}
+/* Destructive actions retain their meaning while sharing the same surface. */
+.menu-item--danger, .list-box-item--danger, .document-archive-action, .block-action-danger, .danger-hover {
+  --orbis-item-foreground: var(--danger);
+}
+
+/* Native iOS fields need 16px text to avoid focus zoom; other UI keeps its role. */
+@media (pointer: coarse) {
+  :is(input, textarea, [data-slot="select-trigger"]):not(.editor-title) {
+    font-size: var(--orbis-text-section-size);
+  }
+}

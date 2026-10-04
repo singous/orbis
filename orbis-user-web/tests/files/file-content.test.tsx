@@ -5,7 +5,7 @@ import { ContentMedia, ManagedContentLink } from "../../src/features/content/Con
 import { FileContentContext } from "../../src/features/files/FileContent";
 
 const reference = "orbis-file:0190a111-1111-7111-8111-111111111111";
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 it("only resolves managed media within an authenticated content boundary", async () => {
   const view = render(<ContentMedia kind="image" reference={reference} fallback={null} name="diagram.png" />);
@@ -25,6 +25,9 @@ it("keeps external and published resources usable without any private fetch", ()
 it("reports load errors and resolves an attachment again after retry", async () => {
   const resolve = vi.fn().mockRejectedValueOnce(new Error("missing")).mockResolvedValue("blob:verified-file");
   render(<FileContentContext.Provider value={{ scope: "workspace-a", resolve }}><ContentMedia kind="file" reference={reference} fallback={null} name="guide.pdf" /></FileContentContext.Provider>);
+  expect(resolve).not.toHaveBeenCalled();
+  vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+  await userEvent.click(screen.getByRole("button", { name: "下载guide.pdf" }));
   await userEvent.click(await screen.findByRole("button", { name: "重新加载附件" }));
   const link = await screen.findByRole("link", { name: "guide.pdf" });
   expect(link).toHaveAttribute("href", "blob:verified-file");
@@ -41,6 +44,11 @@ it("does not render the previous workspace URL while a new scoped read is pendin
 });
 
 it("makes managed inline file links download verified bytes", async () => {
-  render(<FileContentContext.Provider value={{ scope: "a", resolve: async () => "blob:verified-file" }}><ManagedContentLink reference={reference} fallback={null}>附件下载</ManagedContentLink></FileContentContext.Provider>);
+  const resolve = vi.fn().mockResolvedValue("blob:verified-file");
+  const download = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+  render(<FileContentContext.Provider value={{ scope: "a", resolve }}><ManagedContentLink reference={reference} fallback={null}>附件下载</ManagedContentLink></FileContentContext.Provider>);
+  expect(resolve).not.toHaveBeenCalled();
+  await userEvent.click(screen.getByRole("button", { name: "附件下载" }));
   expect(await screen.findByRole("link", { name: "附件下载" })).toHaveAttribute("download");
+  expect(download).toHaveBeenCalledOnce();
 });

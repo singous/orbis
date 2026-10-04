@@ -2,13 +2,9 @@ import { z } from "zod";
 
 import { apiRequest } from "../../shared/api/api-client";
 import { pageDataSchema } from "../../shared/api/schemas";
+import { authRequestOptions as authOptions, type AuthRequestOptions } from "../../shared/auth/use-auth-request";
 
-export type MemberAuth = {
-  accessToken: string;
-  refreshToken: string | null;
-  onTokenRefresh: (accessToken: string) => void;
-  onUnauthorized: () => void;
-};
+export type MemberAuth = AuthRequestOptions;
 
 const memberSchema = z.object({
   id: z.string().uuid(), user_id: z.string().uuid(), email: z.string().email(), display_name: z.string().nullable(),
@@ -28,10 +24,6 @@ const mailStatusSchema = z.object({ available: z.boolean(), transport: z.enum(["
 export type Member = z.infer<typeof memberSchema>;
 export type Invitation = z.infer<typeof invitationSchema>;
 export type OwnershipTransfer = z.infer<typeof ownershipSchema>;
-
-function authOptions(auth: MemberAuth) {
-  return { token: auth.accessToken, refreshToken: auth.refreshToken, onTokenRefresh: auth.onTokenRefresh, onUnauthorized: auth.onUnauthorized };
-}
 
 export async function listMembers(auth: MemberAuth) {
   return pageDataSchema(memberSchema).parse(await apiRequest("/workspace/members?page=1&page_size=100", authOptions(auth)));

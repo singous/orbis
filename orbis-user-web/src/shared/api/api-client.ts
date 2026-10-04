@@ -4,6 +4,7 @@ export type ApiRequestOptions = {
   method?: string;
   token?: string | null;
   refreshToken?: string | null;
+  workspaceId?: string | null;
   body?: RequestBody;
   headers?: HeadersInit;
   signal?: AbortSignal;
@@ -81,7 +82,12 @@ function createRequestInit(options: ApiRequestOptions, token: string | null | un
   }
 
   if (token) {
+    delete headers.authorization;
     headers.Authorization = `Bearer ${token}`;
+  }
+  if (options.workspaceId !== undefined) {
+    delete headers["x-workspace-id"];
+    if (options.workspaceId) headers["X-Workspace-ID"] = options.workspaceId;
   }
 
   return {
@@ -160,22 +166,24 @@ async function handleError(response: Response, options: ApiRequestOptions): Prom
 }
 
 async function requestWithParser<T>(path: string, options: ApiRequestOptions, parse: (response: Response) => Promise<T>): Promise<T> {
-  const response = await fetch(`${apiBaseUrl()}${path}`, createRequestInit(options, options.token));
+  // A retry belongs to the request's original workspace, even after a global switch.
+  const requestOptions = { ...options, headers: toHeaderRecord(options.headers) };
+  const response = await fetch(`${apiBaseUrl()}${path}`, createRequestInit(requestOptions, requestOptions.token));
 
   if (!response.ok) {
-    if (response.status === 401 && options.refreshToken) {
-      const nextAccessToken = await refreshAccessToken(options.refreshToken, options.signal);
+    if (response.status === 401 && requestOptions.refreshToken) {
+      const nextAccessToken = await refreshAccessToken(requestOptions.refreshToken, requestOptions.signal);
       if (nextAccessToken) {
-        options.onTokenRefresh?.(nextAccessToken);
-        const retryResponse = await fetch(`${apiBaseUrl()}${path}`, createRequestInit(options, nextAccessToken));
+        requestOptions.onTokenRefresh?.(nextAccessToken);
+        const retryResponse = await fetch(`${apiBaseUrl()}${path}`, createRequestInit(requestOptions, nextAccessToken));
         if (retryResponse.ok) {
           return parse(retryResponse);
         }
-        return handleError(retryResponse, options);
+        return handleError(retryResponse, requestOptions);
       }
     }
 
-    return handleError(response, options);
+    return handleError(response, requestOptions);
   }
 
   return parse(response);

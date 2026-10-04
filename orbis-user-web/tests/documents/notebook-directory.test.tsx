@@ -9,6 +9,7 @@ vi.mock("../../src/features/workspace/WorkspaceTopbar", () => ({ WorkspaceTopbar
 vi.mock("../../src/features/workspace/RailCreateMenu", () => ({ RailCreateMenu: () => null }));
 vi.mock("../../src/features/documents/DocumentContextPanel", () => ({ DocumentContextPanel: () => <nav aria-label="测试目录">当前文档</nav> }));
 vi.mock("../../src/features/documents/queries", () => ({
+  useNotebook: () => ({ data: { id: "notebook", title: "当前笔记本" } }),
   useNotebooks: () => ({ data: { items: [{ id: "notebook", title: "当前笔记本" }] } }),
   useCreateNote: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useNoteTree: () => ({ data: { items: [] }, isSuccess: true }),

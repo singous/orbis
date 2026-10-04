@@ -104,7 +104,7 @@ def test_community_mode_hides_public_registration_and_workspace_management(
     assert client.post("/auth/email-codes", json={}).status_code == 404
     assert client.post("/auth/logout", json={}).status_code == 404
     assert client.get("/setup/status").status_code == 404
-    assert client.get("/workspaces").status_code == 404
+    assert client.get("/workspaces").status_code == 401
     assert client.get("/workspaces/current").status_code == 404
     assert client.put("/workspaces/current", json={}).status_code == 404
 

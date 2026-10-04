@@ -61,12 +61,19 @@ async def list_files(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> PageData[FileOut]:
-    items, total = await list_file_assets(
-        user,
-        session,
-        offset=pagination.offset,
-        limit=pagination.page_size,
-    )
+    try:
+        items, total = await list_file_assets(
+            user,
+            session,
+            offset=pagination.offset,
+            limit=pagination.page_size,
+        )
+    except UserWorkspaceMissing:
+        raise ApiError(
+            status_code=409,
+            code="USER_WORKSPACE_MISSING",
+            message="用户未绑定可用工作空间",
+        ) from None
     return build_page_data(
         items,
         page=pagination.page,

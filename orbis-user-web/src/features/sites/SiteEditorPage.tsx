@@ -4,12 +4,13 @@ import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { ArrowLeft, ExternalLink, Eye, Globe, History, Rocket, RotateCcw } from "../../shared/ui/icons";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useStore } from "zustand";
 import "../../styles/site-management.css";
 
 import { authStore } from "../../shared/auth/auth-store";
+import { registerPendingNavigation } from "../../shared/navigation/pending-navigation";
 import { ApiError } from "../../shared/api/api-client";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { Dialog, DialogContent } from "../../shared/ui/Dialog";
@@ -51,11 +52,18 @@ function SiteEditor({ site }: { site: Site }) {
   const client = useQueryClient();
   const navigate = useNavigate();
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
+  const navigationStateRef = useRef({ dirty, busy });
+  navigationStateRef.current = { dirty, busy };
+  useEffect(() => registerPendingNavigation(async () => {
+    if (navigationStateRef.current.dirty) throw new Error("请先保存站点设置，再打开其他内容。");
+    if (navigationStateRef.current.busy) throw new Error("站点操作尚未完成，请稍后再打开其他内容。");
+  }), [site.id]);
 
   async function updateCache(next: Site) {
     client.setQueryData(["site", site.id], next);
     await Promise.all([
       client.invalidateQueries({ queryKey: ["sites"] }),
+      client.invalidateQueries({ queryKey: ["global-search"] }),
       client.invalidateQueries({ queryKey: ["site-releases", site.id] }),
       client.invalidateQueries({ queryKey: ["site-preview", site.id] }),
       client.invalidateQueries({ queryKey: ["site-sources", site.id] }),

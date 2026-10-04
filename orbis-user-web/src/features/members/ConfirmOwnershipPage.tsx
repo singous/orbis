@@ -15,8 +15,8 @@ export function ConfirmOwnershipPage() {
   const error = confirm.error as ApiError | null;
 
   return (
-    <main className="grid min-h-screen place-items-center bg-[var(--surface-app)] p-5">
-      <section className="w-full max-w-md rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-content)] p-7 text-[var(--text-primary)] shadow-2xl">
+    <main className="orbis-auth-layout grid min-h-screen place-items-center bg-[var(--surface-app)] p-5">
+      <section className="orbis-auth-card w-full max-w-md rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-content)] p-7 text-[var(--text-primary)] shadow-2xl">
         <div className="mb-6 grid h-12 w-12 place-items-center rounded-2xl bg-[var(--surface-inverse)] text-[var(--text-oninverse)]">{confirm.isSuccess ? <Check aria-hidden="true" size={20} /> : <Crown aria-hidden="true" size={20} />}</div>
         {confirm.isSuccess ? (
           <>

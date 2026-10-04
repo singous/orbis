@@ -47,7 +47,7 @@ export function SitesPage() {
   const navigate = useNavigate();
   const create = useMutation({
     mutationFn: () => createSite(config, auth),
-    onSuccess: async (site) => { await client.invalidateQueries({ queryKey: ["sites"] }); navigate(`/sites/${site.id}`); },
+    onSuccess: async (site) => { await Promise.all([client.invalidateQueries({ queryKey: ["sites"] }), client.invalidateQueries({ queryKey: ["global-search"] })]); navigate(`/sites/${site.id}`); },
     onError: (error) => showToast({ title: "创建站点失败", description: error instanceof Error ? error.message : "请稍后重试。", tone: "danger" }),
   });
 

@@ -9,7 +9,7 @@ import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { usePinnedNotebooks } from "./pinned-notebooks";
 import { NotebookIcon } from "./NotebookIcon";
 import { DocumentContextPanel } from "./DocumentContextPanel";
-import { useCreateNote, useNotebooks, useNoteTree } from "./queries";
+import { useCreateNote, useNotebook, useNoteTree } from "./queries";
 
 export type NotebookSectionMenuProps = { notebookId: string; activeNoteId?: string };
 
@@ -33,8 +33,7 @@ export function createNotebookSidebar(notebookId: string, activeNoteId?: string)
 }
 
 function NotebookSidebarTitle({ notebookId }: { notebookId: string }) {
-  const notebooks = useNotebooks();
-  const notebook = notebooks.data?.items.find(item => item.id === notebookId);
+  const notebook = useNotebook(notebookId).data;
   return <div className="notebook-menu-header">
     <Link to="/documents" className="notebook-menu-back" aria-label="返回文档中心" title="返回文档中心"><ArrowLeft aria-hidden="true" size={16} /></Link>
     <Link to={`/collections/${notebookId}`} className="notebook-menu-title" title={notebook?.title}>

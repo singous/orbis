@@ -14,11 +14,12 @@ import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { DocumentShell } from "./DocumentShell";
 import { NotebookDialog } from "./NotebookDialog";
 import { NotebookIcon } from "./NotebookIcon";
+import { isUnavailableResourceError } from "./resource-errors";
 import {
   useCreateNote,
   useExportMarkdown,
   useImportMarkdown,
-  useNotebooks,
+  useNotebook,
   useUpdateNotebook,
 } from "./queries";
 
@@ -27,16 +28,16 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
   const workspace = useStore(authStore, (state) => state.workspace);
   const canEdit = canMutateWorkspaceContent(workspace);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const notebooksQuery = useNotebooks();
+  const notebookQuery = useNotebook(collectionId);
   const importMarkdown = useImportMarkdown();
   const exportMarkdown = useExportMarkdown();
   const createNote = useCreateNote();
   const updateNotebook = useUpdateNotebook();
   const [editing, setEditing] = useState(false);
   const treeSummary = useDocumentContextSummary();
-  const notebook = notebooksQuery.data?.items.find((item) => item.id === collectionId);
+  const notebook = notebookQuery.data;
   const collectionUnavailable =
-    !notebooksQuery.isLoading && !notebooksQuery.isError && !notebook;
+    isUnavailableResourceError(notebookQuery.error) || (!notebookQuery.isLoading && !notebookQuery.isError && !notebook);
 
   useEffect(() => {
     if (!collectionUnavailable) return;

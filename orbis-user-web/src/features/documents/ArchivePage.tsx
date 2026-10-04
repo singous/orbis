@@ -6,7 +6,9 @@ import {
   FilePlus2,
   FolderKanban,
 } from "../../shared/ui/icons";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
+import { useSearchParams } from "react-router-dom";
+import { z } from "zod";
 import { useStore } from "zustand";
 
 import { authStore } from "../../shared/auth/auth-store";
@@ -15,6 +17,8 @@ import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { showToast } from "../../shared/ui/Toast";
 import { DocumentShell } from "./DocumentShell";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
+import { useSearchResource } from "../search/use-search-resource";
+import { Button } from "../../shared/ui/Button";
 import {
   useArchiveDocumentGroup,
   useArchiveNotebook,
@@ -101,6 +105,9 @@ function ArchiveSection({
 }
 
 export function ArchivePage() {
+  const [params] = useSearchParams();
+  const parsedTarget = z.object({ id: z.string().uuid(), type: z.enum(["document", "notebook", "group"]) }).safeParse({ id: params.get("resource"), type: params.get("type") });
+  const target = parsedTarget.success ? parsedTarget.data : null;
   const workspace = useStore(authStore, (state) => state.workspace);
   const canRestore = canMutateWorkspaceContent(workspace);
   const groupsQuery = useDocumentGroups("archived");
@@ -158,6 +165,7 @@ export function ArchivePage() {
             : "已归档内容不会出现在在线文档中，只有工作空间管理者可以恢复内容。"
         }
       >
+        {target ? <ArchiveSearchTarget id={target.id} type={target.type} canRestore={canRestore} /> : null}
         {groupsQuery.isError || notebooksQuery.isError || activeNotebooksQuery.isError || notesQuery.isError ? (
           <StatusMessage tone="error" title="归档加载失败">
             请检查 API 服务后重试。
@@ -172,7 +180,7 @@ export function ArchivePage() {
         <ArchiveSection
           title="分组"
           icon={<FolderKanban aria-hidden="true" size={14} />}
-          resources={groups.map((group) => ({
+          resources={groups.filter(group => !(target?.type === "group" && target.id === group.id)).map((group) => ({
             id: group.id,
             label: group.name,
           }))}
@@ -183,7 +191,7 @@ export function ArchivePage() {
         <ArchiveSection
           title="笔记本"
           icon={<BookOpen aria-hidden="true" size={14} />}
-          resources={notebooks.map((notebook) => ({
+          resources={notebooks.filter(notebook => !(target?.type === "notebook" && target.id === notebook.id)).map((notebook) => ({
             id: notebook.id,
             label: notebook.title,
             parentLabel: archivedGroupsById.has(notebook.group_id)
@@ -200,7 +208,7 @@ export function ArchivePage() {
         <ArchiveSection
           title="文档"
           icon={<FilePlus2 aria-hidden="true" size={14} />}
-          resources={notes.map((note) => ({
+          resources={notes.filter(note => !(target?.type === "document" && target.id === note.id)).map((note) => ({
             id: note.id,
             label: note.title,
             parentLabel: notebooksById.has(note.notebook_id)
@@ -215,4 +223,33 @@ export function ArchivePage() {
       </PageContainer>
     </DocumentShell>
   );
+}
+
+function ArchiveSearchTarget({ id, type, canRestore }: { id: string; type: "document" | "notebook" | "group"; canRestore: boolean }) {
+  const query = useSearchResource(type, id, "archived");
+  const archiveGroup = useArchiveDocumentGroup();
+  const archiveNotebook = useArchiveNotebook();
+  const archiveNote = useArchiveNote();
+  const action = type === "group" ? archiveGroup : type === "notebook" ? archiveNotebook : archiveNote;
+  const target = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!query.data) return;
+    target.current?.focus({ preventScroll: true });
+    target.current?.scrollIntoView?.({ block: "nearest" });
+  }, [query.data?.id]);
+  async function restore() {
+    try {
+      await action.mutateAsync({ id, archived: false });
+      showToast({ title: "已恢复", tone: "success" });
+    } catch (error) {
+      showToast({ title: "恢复失败", description: error instanceof Error ? error.message : "请先检查上级资源是否已恢复。", tone: "danger" });
+    }
+  }
+  if (query.isPending) return <LoadingState label="正在定位归档内容…" />;
+  if (query.isError) return <StatusMessage tone="error" title="归档内容定位失败"><Button onClick={() => void query.refetch()}>重试</Button></StatusMessage>;
+  if (!query.data) return <StatusMessage tone="info" title="该内容已不在归档中">内容可能已恢复或当前已无权访问。</StatusMessage>;
+  const Icon = type === "group" ? FolderKanban : type === "notebook" ? BookOpen : FilePlus2;
+  return <div ref={target} tabIndex={-1} aria-label="搜索定位的归档内容">
+    <ArchiveSection title="搜索定位" icon={<Icon aria-hidden="true" size={18} />} resources={[{ id, label: query.data.title, parentLabel: query.data.location }]} canRestore={canRestore} onRestore={() => void restore()} pendingId={action.isPending ? id : undefined} />
+  </div>;
 }

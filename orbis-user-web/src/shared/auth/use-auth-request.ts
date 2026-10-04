@@ -6,12 +6,13 @@ import { authStore, getAuthSessionKey } from "./auth-store";
 export type AuthRequestOptions = {
   accessToken: string;
   refreshToken: string | null;
+  workspaceId?: string | null;
   onTokenRefresh: (accessToken: string) => void;
   onUnauthorized: () => void;
 };
 
 export function authRequestOptions(auth: AuthRequestOptions) {
-  return { token: auth.accessToken, refreshToken: auth.refreshToken, onTokenRefresh: auth.onTokenRefresh, onUnauthorized: auth.onUnauthorized };
+  return { token: auth.accessToken, refreshToken: auth.refreshToken, workspaceId: auth.workspaceId, onTokenRefresh: auth.onTokenRefresh, onUnauthorized: auth.onUnauthorized };
 }
 
 export function useOptionalAuthRequest(): AuthRequestOptions | null {
@@ -22,6 +23,7 @@ export function useOptionalAuthRequest(): AuthRequestOptions | null {
     return {
       accessToken: state.accessToken,
       refreshToken: state.refreshToken,
+      workspaceId: state.workspace?.id ?? state.user?.current_workspace_id ?? null,
       onTokenRefresh: (accessToken: string) => {
         if (getAuthSessionKey(authStore.getState()) === sessionKey) {
           state.setAccessToken(accessToken);

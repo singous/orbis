@@ -80,8 +80,10 @@ export function createAuthStore() {
     updateUser: (user, sessionKey) => {
       set((current) => {
         if (getAuthSessionKey(current) !== sessionKey || user.id !== current.user?.id || user.updated_at_ms < current.user.updated_at_ms || !current.accessToken || !current.refreshToken) return current;
-        writeSession({ accessToken: current.accessToken, refreshToken: current.refreshToken, user, workspace: current.workspace });
-        return { user };
+        // Global profile reads must not import another tab's persisted workspace choice.
+        const scopedUser = current.workspace ? { ...user, current_workspace_id: current.workspace.id } : user;
+        writeSession({ accessToken: current.accessToken, refreshToken: current.refreshToken, user: scopedUser, workspace: current.workspace });
+        return { user: scopedUser };
       });
     },
     setAccessToken: (accessToken) => {

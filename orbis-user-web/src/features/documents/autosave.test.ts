@@ -113,3 +113,20 @@ describe("AutosaveCoordinator", () => {
     expect(save.mock.calls[0][0].title).toBe("typing 5");
   });
 });
+
+it("adding a read page preserves local changes and an unresolved conflict", async () => {
+  const conflict = Object.assign(new Error("conflict"), { status: 409 });
+  const save = vi.fn().mockRejectedValue(conflict);
+  const coordinator = new AutosaveCoordinator<{ text: string }>({ delayMs: 750, fingerprint: value => value.text, save });
+  coordinator.hydrate({ text: "Original" });
+  coordinator.change({ text: "Local" });
+  await coordinator.flush();
+  expect(coordinator.state).toBe("conflict");
+  coordinator.extend(value => ({ text: value.text + " Tail" }));
+  coordinator.alignCurrentAfterRead({ text: "Local Tail" });
+  expect(coordinator.saved?.text).toBe("Original Tail");
+  expect(coordinator.current?.text).toBe("Local Tail");
+  expect(coordinator.state).toBe("conflict");
+  expect(save).toHaveBeenCalledOnce();
+  coordinator.dispose();
+});

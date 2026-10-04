@@ -10,7 +10,7 @@ import { ArchivePage } from "../features/documents/ArchivePage";
 import { CollectionsPage } from "../features/documents/CollectionsPage";
 import { DocumentEditorPage } from "../features/documents/DocumentEditorPage";
 import { DocumentOverviewPage } from "../features/documents/DocumentOverviewPage";
-import { DocumentSearchPage } from "../features/documents/DocumentSearchPage";
+import { LegacyDocumentSearchRedirect } from "../features/search/LegacyDocumentSearchRedirect";
 import { NotebookPage } from "../features/documents/NotebookPage";
 import { RecentDocumentsPage } from "../features/documents/RecentDocumentsPage";
 import { AcceptInvitationPage } from "../features/members/AcceptInvitationPage";
@@ -20,7 +20,10 @@ import { KnowledgePlaceholderPage, MemoryPlaceholderPage } from "../features/pla
 import { RequireAuth } from "../shared/auth/RequireAuth";
 import { LoginPage } from "./LoginPage";
 
-const SitesPage = lazy(() => import("../features/sites/SitesPage").then((module) => ({ default: module.SitesPage })));
+const loadSitesPage = () => import("../features/sites/SitesPage");
+
+const SearchPage = lazy(() => import("../features/search/SearchPage").then((module) => ({ default: module.SearchPage })));
+const SearchOpenPage = lazy(() => import("../features/search/SearchOpenPage").then((module) => ({ default: module.SearchOpenPage })));
 const SiteEditorPage = lazy(() => import("../features/sites/SiteEditorPage").then((module) => ({ default: module.SiteEditorPage })));
 const PublicSitePage = lazy(() => import("../features/sites/PublicSitePage").then((module) => ({ default: module.PublicSitePage })));
 const SitePreviewPage = lazy(() => import("../features/sites/PublicSitePage").then((module) => ({ default: module.SitePreviewPage })));
@@ -28,8 +31,14 @@ const siteFallback = <div className="site-reader-status"><LoadingState label="æ­
 const workspaceFallback = <WorkspaceLoadingPage />;
 
 export const router = createBrowserRouter([
+  { path: "/search", element: <RequireAuth><Suspense fallback={workspaceFallback}><SearchPage /></Suspense></RequireAuth> },
+  { path: "/search/open", element: <RequireAuth><Suspense fallback={workspaceFallback}><SearchOpenPage /></Suspense></RequireAuth> },
   { path: "/s/:slug/*", element: <Suspense fallback={siteFallback}><PublicSitePage /></Suspense> },
-  { path: "/sites", element: <RequireAuth><Suspense fallback={workspaceFallback}><SitesPage /></Suspense></RequireAuth> },
+  { path: "/sites", lazy: async () => {
+      const { SitesPage } = await loadSitesPage();
+      return { Component: () => <RequireAuth><SitesPage /></RequireAuth> };
+    },
+  },
   { path: "/sites/:siteId", element: <RequireAuth><Suspense fallback={workspaceFallback}><SiteEditorPage /></Suspense></RequireAuth> },
   { path: "/sites/:siteId/preview/*", element: <RequireAuth><Suspense fallback={siteFallback}><SitePreviewPage /></Suspense></RequireAuth> },
   {
@@ -80,7 +89,7 @@ export const router = createBrowserRouter([
     path: "/documents/search",
     element: (
       <RequireAuth>
-        <DocumentSearchPage />
+        <LegacyDocumentSearchRedirect />
       </RequireAuth>
     ),
   },

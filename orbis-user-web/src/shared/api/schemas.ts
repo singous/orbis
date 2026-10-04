@@ -133,6 +133,18 @@ export const noteContentSchema = z.object({
   updated_at_ms: z.number(),
 });
 
+export const noteContentPageSchema = noteContentSchema.omit({ plain_text: true }).extend({
+  offset: z.number().int().nonnegative(),
+  next_offset: z.number().int().nonnegative(),
+  total_blocks: z.number().int().nonnegative(),
+  has_more: z.boolean(),
+});
+export type NoteContentPage = z.infer<typeof noteContentPageSchema>;
+export const noteContentPrefixSchema = z.object({
+  note_id: z.string().uuid(), content_version: z.number().int().positive(),
+  loaded_block_ids: z.array(z.string()), total_blocks: z.number().int().nonnegative(), updated_at_ms: z.number(),
+});
+
 export const noteSearchItemSchema = noteSchema.extend({ plain_text: z.string() });
 
 const noteTreeBaseSchema = noteSchema.omit({ note_type: true });

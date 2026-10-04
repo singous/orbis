@@ -30,6 +30,13 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 740 
     const scroller = page.locator('.document-scroll-region');
     const paragraphs = page.locator('.ProseMirror > p');
     for (const index of [0, 45, 89]) {
+      // Long documents expose later paragraphs after a real scroll requests
+      // their range; verify the same tools once that range is visible.
+      while (await paragraphs.count() <= index) {
+        const loaded = await paragraphs.count();
+        await scroller.evaluate(element => { element.scrollTop = element.scrollHeight; });
+        await expect.poll(() => paragraphs.count()).toBeGreaterThan(loaded);
+      }
       const paragraph = paragraphs.nth(index);
       await paragraph.scrollIntoViewIfNeeded();
       await paragraph.click();
@@ -67,7 +74,7 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 740 
     await expect(toolbar).toBeInViewport();
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.evaluate(() => { document.documentElement.dataset.theme = 'dark'; });
-    await expect.poll(() => page.locator('.block-add').evaluate(element => getComputedStyle(element).backgroundColor)).toBe('oklch(0.2103 0 0)');
+    await expect.poll(() => page.locator('.block-add').evaluate(element => getComputedStyle(element).backgroundColor)).toBe('oklch(0.2103 0.0248 273.85)');
 
     await page.getByRole('button', { name: '更多文档操作' }).click();
     await expect(page.getByRole('menuitem', { name: '归档文档' })).toBeInViewport();

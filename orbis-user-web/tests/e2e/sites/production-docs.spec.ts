@@ -1,7 +1,23 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 const apiOrigin = `http://127.0.0.1:${process.env.ORBIS_E2E_API_PORT || "9311"}`;
 const webOrigin = `http://127.0.0.1:${process.env.ORBIS_E2E_WEB_PORT || "9310"}`;
+
+async function expectReadingScale(page: Page) {
+  const typography = await page.locator(".site-reader .document-prose").evaluate(element => ({
+    body: getComputedStyle(element).fontSize,
+    headings: Array.from(element.querySelectorAll("h1,h2,h3,h4,h5,h6"), heading => getComputedStyle(heading).fontSize),
+    code: getComputedStyle(element.querySelector("code")!).fontSize,
+    table: getComputedStyle(element.querySelector("table")!).fontSize,
+  }));
+  expect(typography).toEqual({ body: "14px", headings: ["18px", "16px", "14px", "14px", "14px", "14px"], code: "12px", table: "14px" });
+  expect(await page.locator(".site-reader-title-row h1").evaluate(element => getComputedStyle(element).fontSize)).toBe("18px");
+  // Default typography must remain overridable by authored inline formatting.
+  const heading = page.getByRole("heading", { name: "Default heading 1", exact: true });
+  await heading.evaluate(element => { element.style.fontSize = "24px"; });
+  expect(await heading.evaluate(element => getComputedStyle(element).fontSize)).toBe("24px");
+  await heading.evaluate(element => { element.style.removeProperty("font-size"); });
+}
 
 test("built documentation serves readable HTML, deep paths, versioned exports and progressive reading", async ({ browser, request }, testInfo) => {
   const credentials = { email: "owner@example.com", password: "Orbis-browser-test-2026!" };
@@ -19,7 +35,10 @@ test("built documentation serves readable HTML, deep paths, versioned exports an
   const second = await create("/notes", { notebook_id: notebook.id, title: "安装指南", sort_order: 1 });
   const paragraph = (id: string, text: string) => ({ id, type: "paragraph", props: {}, content: [{ type: "text", text }], children: [] });
   const code = '</script><img src=x onerror="window.__orbisInjected=true">';
-  const saved = await request.put(`${apiOrigin}/notes/${first.id}/content`, { headers, data: { expected_version: 1, blocks: { schema_version: 2, editor: "blocknote", blocks: [paragraph("body", "文档正文直接包含在 HTTP 响应中。"), { id: "sample", type: "codeBlock", props: { language: "html" }, content: code, children: [] }] } } });
+  const saved = await request.put(`${apiOrigin}/notes/${first.id}/content`, { headers, data: { expected_version: 1, blocks: { schema_version: 2, editor: "blocknote", blocks: [paragraph("body", "文档正文直接包含在 HTTP 响应中。"), { id: "sample", type: "codeBlock", props: { language: "html" }, content: code, children: [] },
+    ...Array.from({ length: 6 }, (_, index) => ({ ...paragraph(`heading-${index}`, `Default heading ${index + 1}`), type: "heading", props: { level: index + 1 } })),
+    { id: "table", type: "table", props: {}, content: { type: "tableContent", rows: [{ cells: ["Name", "Value"] }] }, children: [] },
+  ] } } });
   expect(saved.ok()).toBe(true);
   expect((await request.put(`${apiOrigin}/notes/${second.id}/content`, { headers, data: { expected_version: 1, blocks: { schema_version: 2, editor: "blocknote", blocks: [paragraph("second", "这是独立按需读取的安装正文。")]} } })).ok()).toBe(true);
   const config = { name: "生产文档", slug: "production-docs", description: "一份公开文档，多种读取方式。", navigation: [], source: { kind: "notebooks", notebooks: [{ notebook_id: notebook.id }], excluded_note_ids: [], page_overrides: [{ note_id: first.id, slug: "guides/start" }, { note_id: second.id, slug: "guides/install" }] } };
@@ -54,8 +73,16 @@ test("built documentation serves readable HTML, deep paths, versioned exports an
   await plain.goto(startUrl);
   await expect(plain.getByRole("heading", { name: "指南 & <说明>", level: 1 })).toBeVisible();
   await expect(plain.getByText("文档正文直接包含在 HTTP 响应中。", { exact: true })).toBeVisible();
+  await expectReadingScale(plain);
+  // The server fallback keeps the same hierarchy when CSS assets are unavailable.
+  await plainContext.route("**/*.css", route => route.abort());
+  await plain.reload();
+  await expectReadingScale(plain);
   await plain.getByRole("navigation", { name: "站点导航", exact: true }).getByRole("link", { name: "安装指南", exact: true }).click();
   await expect(plain.getByText("这是独立按需读取的安装正文。", { exact: true })).toBeVisible();
+  await plain.goto(`${webOrigin}/s/production-docs/missing/page`);
+  expect(await plain.locator("h1").evaluate(element => getComputedStyle(element).fontSize)).toBe("18px");
+  expect(await plain.locator("p").evaluate(element => getComputedStyle(element).fontSize)).toBe("14px");
   await plainContext.close();
 
   const interactive = await browser.newContext({ permissions: ["clipboard-read", "clipboard-write"] });
@@ -67,6 +94,7 @@ test("built documentation serves readable HTML, deep paths, versioned exports an
   await page.goto(startUrl);
   await expect(page.locator("#orbis-site-bootstrap")).toHaveCount(0);
   await expect(page.getByText("文档正文直接包含在 HTTP 响应中。", { exact: true })).toBeVisible();
+  await expectReadingScale(page);
   expect(requested).not.toContain("/api/public/sites/production-docs");
   expect(requested).not.toContain("/api/public/sites/production-docs/pages/guides/install");
   expect(requested).not.toContain("/api/public/sites/production-docs/search");

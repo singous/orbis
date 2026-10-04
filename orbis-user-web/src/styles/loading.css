@@ -1,5 +1,5 @@
 .loading-state { min-width: 0; padding: 18px 0; }
-.loading-state-label { display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+.loading-state-label { display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: var(--orbis-text-ui-size); margin-bottom: 18px; line-height: var(--orbis-text-ui-leading); }
 .loading-layout { display: grid; gap: 14px; }
 .loading-layout--cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .loading-item { display: flex; align-items: center; gap: 16px; min-height: 74px; padding: 14px 12px; }

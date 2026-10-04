@@ -12,6 +12,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
+import { z } from "zod";
 
 import type { DocumentGroup, Notebook } from "../../shared/api/schemas";
 import { authStore } from "../../shared/auth/auth-store";
@@ -28,6 +29,7 @@ import { NotebookDialog } from "./NotebookDialog";
 import { NotebookIcon } from "./NotebookIcon";
 import type { NotebookIconValue } from "./notebook-icons";
 import { ResourceDialog } from "./ResourceDialog";
+import { SearchGroupTarget } from "../search/SearchGroupTarget";
 import {
   useArchiveDocumentGroup,
   useArchiveNotebook,
@@ -55,6 +57,9 @@ type CollectionLocationState = {
 export function CollectionsPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const parsedGroup = z.string().uuid().safeParse(new URLSearchParams(location.search).get("group"));
+  const targetGroupId = parsedGroup.success ? parsedGroup.data : null;
+  const focusedGroup = useRef<string | null>(null);
   const workspace = useStore(authStore, (state) => state.workspace);
   const { isCollapsed, toggleGroup } = useCollapsedGroups(workspace?.id);
   const canEdit = canMutateWorkspaceContent(workspace);
@@ -73,6 +78,16 @@ export function CollectionsPage() {
   const groups = groupsQuery.data?.items ?? [];
   const notebooks = notebooksQuery.data?.items ?? [];
   const notes = notesQuery.data?.items ?? [];
+  useEffect(() => {
+    if (!targetGroupId) { focusedGroup.current = null; return; }
+    if (focusedGroup.current === targetGroupId || !groups.some(group => group.id === targetGroupId)) return;
+    if (isCollapsed(targetGroupId)) toggleGroup(targetGroupId);
+    const target = document.getElementById(`group-${targetGroupId}`);
+    if (!target) return;
+    target.focus({ preventScroll: true });
+    target.scrollIntoView?.({ block: "nearest" });
+    focusedGroup.current = targetGroupId;
+  }, [targetGroupId, groups, isCollapsed, toggleGroup]);
   const resourceError = (location.state as CollectionLocationState | null)
     ?.resourceError;
   const shownResourceError = useRef<string | null>(null);
@@ -167,6 +182,7 @@ export function CollectionsPage() {
           </StatusMessage>
         ) : null}
         <section className="workbench-section" aria-label="笔记本">
+          {targetGroupId && !groupsQuery.isLoading && !groups.some(group => group.id === targetGroupId) ? <SearchGroupTarget id={targetGroupId} canCreate={canEdit} onCreate={() => setDialog({ kind: "notebook", groupId: targetGroupId })} /> : null}
           {groupsQuery.isLoading || notebooksQuery.isLoading ? (
             <LoadingState label="正在加载笔记本…" variant="cards" />
           ) : null}
@@ -196,7 +212,7 @@ export function CollectionsPage() {
               const collapsed = isCollapsed(group.id);
               const contentId = `notebook-group-${group.id}`;
               return (
-                <div key={group.id} className={`workbench-collection-group${collapsed ? " is-collapsed" : ""}`}>
+                <div key={group.id} id={`group-${group.id}`} tabIndex={targetGroupId === group.id ? -1 : undefined} className={`workbench-collection-group${collapsed ? " is-collapsed" : ""}`}>
                   <div className="workbench-section-heading">
                     <h3 className="workbench-group-heading"><ActionButton type="button" className="workbench-group-toggle" aria-expanded={!collapsed} aria-controls={contentId} aria-label={`${collapsed ? "展开" : "收起"}分组 ${group.name}`} onClick={() => toggleGroup(group.id)}>
                       <ChevronDown size={16} aria-hidden="true" className="workbench-group-chevron" />

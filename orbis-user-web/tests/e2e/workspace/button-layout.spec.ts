@@ -61,8 +61,8 @@ test("workspace actions share sizing and notebook headings retain breathing room
     measurements[`create-${width}`] = { main: primary, sidebar: secondary };
     expect.soft(primary.height, `${width}px: the primary action uses standard sizing`).toBe(36);
     expect.soft(primary.fontSize, `${width}px: primary action typography`).toBe("14px");
-    expect.soft(secondary.height, `${width}px: the directory uses a compact, accessible action`).toBeGreaterThanOrEqual(28);
-    expect.soft(secondary.width, `${width}px: compact action has room for its icon`).toBeGreaterThanOrEqual(28);
+    expect.soft(secondary.height, `${width}px: the directory uses a compact, accessible action`).toBeGreaterThanOrEqual(32);
+    expect.soft(secondary.width, `${width}px: compact action has room for its icon`).toBeGreaterThanOrEqual(32);
     await expect(main.getByRole("button", { name: "导出全部", exact: true })).toHaveCount(0);
     await expect(main.getByRole("button", { name: "导入 Markdown", exact: true })).toHaveCount(0);
     await main.getByRole("button", { name: "笔记本操作", exact: true }).click();
@@ -107,8 +107,8 @@ test("workspace actions share sizing and notebook headings retain breathing room
     expect.soft(metrics.fontSize, `notebook dialog ${name} action font`).toBe("14px");
     expect.soft(metrics.lineHeight, `notebook dialog ${name} action line height`).toBe("20px");
   }
-  expect.soft(uploadAction.iconWidth, "upload action icon width").toBe(16);
-  expect.soft(uploadAction.iconHeight, "upload action icon height").toBe(16);
+  expect.soft(uploadAction.iconWidth, "upload action icon width").toBe(18);
+  expect.soft(uploadAction.iconHeight, "upload action icon height").toBe(18);
   await notebookDialog.getByRole("button", { name: "取消", exact: true }).click();
 
   await page.goto("/home");

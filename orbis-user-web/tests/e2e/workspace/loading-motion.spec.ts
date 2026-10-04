@@ -59,7 +59,7 @@ test("ordinary menus and notebook trees share local collapse motion, focus and r
     expect(collapse.intermediateFrames).toBeGreaterThan(2);
     expect(collapse.transitions).toContain("grid-template-columns:420");
     expect(collapse.railIntermediateFrames).toBeGreaterThan(2);
-    expect(collapse.endRailTop - collapse.startRailTop).toBeCloseTo(27, 0);
+    expect(collapse.endRailTop - collapse.startRailTop).toBeCloseTo(32, 0);
     expect(collapse.transitions).toContain("height:420");
     if (ordinaryWidth === undefined) ordinaryWidth = collapse.startWidth;
     else expect(collapse.startWidth).toBeCloseTo(ordinaryWidth, 0);
@@ -70,7 +70,7 @@ test("ordinary menus and notebook trees share local collapse motion, focus and r
     const expansion = await sampleToggle(page, entry.expand);
     expect(expansion.intermediateFrames).toBeGreaterThan(2);
     expect(expansion.railIntermediateFrames).toBeGreaterThan(2);
-    expect(expansion.endRailTop - expansion.startRailTop).toBeCloseTo(-27, 0);
+    expect(expansion.endRailTop - expansion.startRailTop).toBeCloseTo(-32, 0);
     expect(expansion.endWidth).toBeCloseTo(collapse.startWidth, 0);
     await expect(page.getByRole("button", { name: entry.collapse, exact: true })).toBeFocused();
     await page.emulateMedia({ reducedMotion: "reduce" });
@@ -104,12 +104,12 @@ test("slow document overview loading keeps the rail, global search and pinned sh
     await expect(placeholder.locator(".skeleton").first()).toBeVisible();
     await expect(page.getByRole("link", { name: "在线文档", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "新建资产", exact: true })).toBeVisible();
-    await expect(page.getByRole("searchbox", { name: "全局搜索", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "搜索", exact: true })).toBeVisible();
   } finally { release(); }
   await expect(placeholder).toHaveCount(0);
 });
 
-test("ordinary and notebook mobile drawers share navigation, nested menus and focus restoration without changing desktop preferences", async ({ page, request }) => {
+test("ordinary and notebook mobile drawers share navigation, creation dialogs and focus restoration without changing desktop preferences", async ({ page, request }) => {
   const owner = { email: "owner@example.com", password: "Orbis-browser-test-2026!" };
   expect([201, 409]).toContain((await request.post("/api/setup", { data: { ...owner, display_name: "抽屉一致性验收" } })).status());
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -140,16 +140,14 @@ test("ordinary and notebook mobile drawers share navigation, nested menus and fo
     const create = page.getByRole("button", { name: "新建资产", exact: true });
     await create.focus();
     await page.keyboard.press("Enter");
-    await expect(page.getByRole("menu", { name: "新建资产", exact: true })).toBeVisible();
+    await expect(page.getByRole("dialog", { name: "新建资产", exact: true })).toBeVisible();
     await page.keyboard.press("Escape");
-    await expect(page.getByRole("menu", { name: "新建资产", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("dialog", { name: "新建资产", exact: true })).toHaveCount(0);
     await expect(trigger).toHaveAttribute("aria-expanded", "true");
     await expect(create).toBeFocused();
     const shortcuts = frame.getByRole("link", { name: "在线文档", exact: true });
     await shortcuts.focus();
     await shortcuts.press("ArrowRight");
-    await expect(page.getByRole("navigation", { name: "笔记本快捷访问", exact: true })).toBeVisible();
-    await page.keyboard.press("Escape");
     await expect(page.getByRole("navigation", { name: "笔记本快捷访问", exact: true })).toHaveCount(0);
     await expect(trigger).toHaveAttribute("aria-expanded", "true");
     await expect(shortcuts).toBeFocused();

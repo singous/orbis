@@ -4,7 +4,6 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, RouterProvider, Routes, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { DocumentSearchPage } from "./DocumentSearchPage";
 import { CollectionsPage } from "./CollectionsPage";
 import { DocumentEditorPage } from "./DocumentEditorPage";
 import { NotebookPage } from "./NotebookPage";
@@ -236,6 +235,7 @@ vi.mock("./queries", () => {
   });
 
   return {
+    useNotebook: (id?: string) => ({ data: ((mocks.activeNotebooks ?? notebooks) as typeof notebooks).find(item => item.id === id), isLoading: false, isError: false }),
     useDocumentGroups: (status?: string) =>
       result(status === "archived" ? archivedGroups : groups),
     useNotebooks: (
@@ -345,11 +345,14 @@ async function renderRoute(path: string, role: "owner" | "normal" = "owner", wor
   return render(<RouterProvider router={router} />);
 }
 
-function CurrentSearch() {
-  return <output aria-label="current search">{useLocation().search}</output>;
-}
-
 describe("document function pages", () => {
+  it("reveals and focuses a collapsed group opened from global search", async () => {
+    const groupId = "018ff7c4-a5b6-7000-8000-000000000001";
+    localStorage.setItem(`orbis.collapsedDocumentGroups.${workspace.id}`, JSON.stringify([groupId]));
+    await renderRoute(`/documents/collections?group=${groupId}`);
+    expect(await screen.findByRole("button", { name: "收起分组 默认分组" })).toHaveAttribute("aria-expanded", "true");
+    expect(document.getElementById(`group-${groupId}`)).toHaveFocus();
+  });
   it("collapses a notebook group with keyboard and restores its choice after remount", async () => {
     const actor = userEvent.setup();
     const view = await renderRoute("/documents/collections");
@@ -420,65 +423,6 @@ describe("document function pages", () => {
     expect(await screen.findByRole(role, { name, level: 1 })).toBeVisible();
   });
 
-  it("renders the document search input", async () => {
-    await renderRoute("/documents/search");
-    expect(
-      await screen.findByRole("searchbox", { name: "搜索文档" }),
-    ).toBeVisible();
-  });
-
-  it("stores a document search query in the URL", async () => {
-    const actor = userEvent.setup();
-    render(
-      <MemoryRouter initialEntries={["/documents/search"]}>
-        <DocumentSearchPage />
-        <CurrentSearch />
-      </MemoryRouter>,
-    );
-
-    await actor.type(
-      screen.getByRole("searchbox", { name: "搜索文档" }),
-      "最新",
-    );
-
-    expect(
-      screen.getByRole("status", { name: "current search" }),
-    ).toHaveTextContent("?q=%E6%9C%80%E6%96%B0");
-    expect(screen.getByRole("heading", { name: "最新文档" })).toBeVisible();
-  });
-
-  it("does not search or render all documents for a blank query", async () => {
-    await renderRoute("/documents/search");
-
-    expect(await screen.findByText("输入关键词搜索标题或正文。")).toBeVisible();
-    expect(screen.queryByRole("heading", { name: "最新文档" })).not.toBeInTheDocument();
-    expect(mocks.noteSearchCalls).toContainEqual({
-      query: "",
-      status: "active",
-      options: { enabled: false },
-    });
-  });
-
-  it("shows each search result's collection without additional row requests", async () => {
-    await renderRoute("/documents/search?q=%E6%9C%80%E6%96%B0");
-
-    expect(await screen.findByText("所属笔记本：产品手册")).toBeVisible();
-  });
-
-  it("provides a clear action to reset the document search", async () => {
-    const actor = userEvent.setup();
-    render(
-      <MemoryRouter initialEntries={["/documents/search?q=%E6%9C%80%E6%96%B0"]}>
-        <DocumentSearchPage />
-        <CurrentSearch />
-      </MemoryRouter>,
-    );
-
-    await actor.click(screen.getByRole("button", { name: "清空搜索" }));
-
-    expect(screen.getByRole("status", { name: "current search" })).toHaveTextContent("");
-  });
-
   it("shows recent home documents in the API order", async () => {
     await renderRoute("/home");
 
@@ -498,7 +442,8 @@ describe("document function pages", () => {
     expect(window.location.pathname).toBe("/home");
     const rail = screen.getByRole("navigation", { name: "业务板块" });
     expect(within(rail).getByRole("link", { name: "首页" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("link", { name: "Orbis 首页" })).toHaveAttribute("href", "/home");
+    expect(within(rail).getByRole("link", { name: "首页" })).toHaveAttribute("href", "/home");
+    expect(screen.getByRole("button", { name: "切换工作空间" })).toBeInTheDocument();
   });
 
   it("keeps account settings on the workspace shell without document functions", async () => {

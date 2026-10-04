@@ -46,36 +46,58 @@ export const OrbisBlockSelection = Extension.create({
   name: 'orbisBlockSelection',
   addProseMirrorPlugins() {
     const editor = this.editor;
-    const decorated = new WeakMap<PMNode, { key: string; value: DecorationSet }>();
+    const decorated = new WeakMap<BlockSelectionState, DecorationSet>();
+    function reconcile(doc: PMNode, selection: BlockSelectionState, previous = DecorationSet.empty): DecorationSet {
+      const selected = new Set(selection.ids);
+      const existing = previous.find();
+      const byId = new Map(existing.map(decoration => [decoration.spec.blockId as string, decoration]));
+      const retained = new Set<Decoration>();
+      const additions: Decoration[] = [];
+      for (const entry of locateEditorBlocks(doc)) {
+        const isSelected = selected.has(entry.id);
+        const isTarget = selection.targetId === entry.id;
+        const old = byId.get(entry.id);
+        if (old && old.from === entry.pos && old.to === entry.pos + entry.node.nodeSize && old.spec.selected === isSelected && old.spec.target === isTarget) {
+          retained.add(old);
+          continue;
+        }
+        additions.push(Decoration.node(entry.pos, entry.pos + entry.node.nodeSize, {
+          'data-orbis-block-id': entry.id,
+          class: [isSelected ? 'orbis-block-selected' : '', isTarget ? 'orbis-block-target' : ''].filter(Boolean).join(' '),
+          ...(isSelected ? {'data-orbis-selected':'true'} : {}),
+          ...(isTarget ? {'data-orbis-target':'true'} : {}),
+        }, { blockId: entry.id, selected: isSelected, target: isTarget }));
+      }
+      // Mapping preserves unaffected decorations. Reconcile the complete live
+      // index so split, paste, regroup, delete and undo retain correct identity.
+      return previous.remove(existing.filter(decoration => !retained.has(decoration))).add(doc, additions);
+    }
     return [new Plugin<BlockSelectionState>({
       key: blockSelectionKey,
       state: {
-        init: () => emptySelection,
+        init: (_, state) => {
+          const initial = { ...emptySelection };
+          decorated.set(initial, reconcile(state.doc, initial));
+          return initial;
+        },
         apply(transaction, current) {
           const requested = transaction.getMeta(blockSelectionKey) as BlockSelectionState | undefined;
-          if (requested) return requested;
-          if (!transaction.docChanged || !current.ids.length) return current;
-          const known = new Set(locateEditorBlocks(transaction.doc).map((entry) => entry.id));
-          const ids = current.ids.filter((id) => known.has(id));
-          return ids.length === current.ids.length ? current : { ids, anchorId: ids.includes(current.anchorId ?? '') ? current.anchorId : ids[0] ?? null, focusId: ids.includes(current.focusId ?? "") ? current.focusId : ids.at(-1) ?? null };
+          if (!requested && !transaction.docChanged) return current;
+          let next = requested ?? { ...current };
+          if (!requested && current.ids.length) {
+            const known = new Set(locateEditorBlocks(transaction.doc).map(entry => entry.id));
+            const ids = current.ids.filter(id => known.has(id));
+            next = { ...next, ids, anchorId: ids.includes(current.anchorId ?? '') ? current.anchorId : ids[0] ?? null, focusId: ids.includes(current.focusId ?? '') ? current.focusId : ids.at(-1) ?? null };
+          }
+          const mapped = (decorated.get(current) ?? DecorationSet.empty).map(transaction.mapping, transaction.doc);
+          decorated.set(next, reconcile(transaction.doc, next, mapped));
+          return next;
         },
       },
       props: {
         decorations(state) {
-          const ids = blockSelectionKey.getState(state)?.ids ?? [];
-          const targetId = blockSelectionKey.getState(state)?.targetId;
-          const key = JSON.stringify([ids, targetId]);
-          const cached = decorated.get(state.doc);
-          if (cached?.key === key) return cached.value;
-          const selected = new Set(ids);
-          const value = DecorationSet.create(state.doc, locateEditorBlocks(state.doc).map((entry) => Decoration.node(entry.pos, entry.pos + entry.node.nodeSize, {
-            'data-orbis-block-id': entry.id,
-            class: [selected.has(entry.id) ? 'orbis-block-selected' : '', targetId === entry.id ? 'orbis-block-target' : ''].filter(Boolean).join(' '),
-            ...(selected.has(entry.id) ? {'data-orbis-selected':'true'} : {}),
-            ...(targetId === entry.id ? {'data-orbis-target':'true'} : {}),
-          })));
-          decorated.set(state.doc, {key, value});
-          return value;
+          const selection = blockSelectionKey.getState(state);
+          return selection ? decorated.get(selection) ?? DecorationSet.empty : DecorationSet.empty;
         },
         handleClick() {
           if (blockSelectionKey.getState(editor.state)?.ids.length) clearBlockSelection(editor);

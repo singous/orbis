@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import type { NotebookIconValue, NoteTreeItem } from "../../shared/api/schemas";
+import type { Notebook, NotebookIconValue, NoteTreeItem, PageData } from "../../shared/api/schemas";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import {
   createDocumentGroup,
@@ -9,12 +9,15 @@ import {
   createNotebook,
   exportMarkdown,
   getNote,
+  getNotebook,
   getNoteContent,
+  getNoteContentPage,
   getNoteTree,
   importMarkdown,
   listDocumentGroups,
   listNotebooks,
   saveNoteContent,
+  saveNoteContentPrefix,
   searchNotes,
   setDocumentGroupArchived,
   setNoteArchived,
@@ -45,7 +48,21 @@ export function useNotebooks(
   const auth = useDocumentAuth();
   return useQuery({
     queryKey: ["notebooks", status, groupId ?? "all", options.includeInactiveParents ?? false],
-    queryFn: () => listNotebooks(auth, groupId, status, options),
+    queryFn: ({ signal }) => listNotebooks(auth, groupId, status, { ...options, signal }),
+  });
+}
+
+export function useNotebook(notebookId?: string) {
+  const auth = useDocumentAuth();
+  const client = useQueryClient();
+  return useQuery({
+    queryKey: ["notebook", notebookId],
+    enabled: Boolean(notebookId),
+    queryFn: ({ signal }) => getNotebook(notebookId!, auth, signal),
+    initialData: () => client.getQueriesData<PageData<Notebook>>({ queryKey: ["notebooks", "active"] })
+      .flatMap(([, value]) => value?.items ?? []).find(item => item.id === notebookId),
+    // A list snapshot paints immediately while the detail verifies its freshness.
+    initialDataUpdatedAt: 0,
   });
 }
 
@@ -54,7 +71,7 @@ export function useNoteTree(notebookId?: string) {
   return useQuery({
     queryKey: ["note-tree", notebookId],
     enabled: Boolean(notebookId),
-    queryFn: () => getNoteTree(notebookId as string, auth),
+    queryFn: ({ signal }) => getNoteTree(notebookId as string, auth, signal),
   });
 }
 
@@ -96,16 +113,16 @@ export function useNote(noteId?: string) {
   return useQuery({
     queryKey: ["note", noteId],
     enabled: Boolean(noteId),
-    queryFn: () => getNote(noteId as string, auth),
+    queryFn: ({ signal }) => getNote(noteId as string, auth, signal),
   });
 }
 
-export function useNoteContent(noteId?: string) {
+export function useNoteContent(noteId?: string, options?: { pageSize: number }) {
   const auth = useDocumentAuth();
   return useQuery({
-    queryKey: ["note-content", noteId],
+    queryKey: [options ? "note-content-pages" : "note-content", noteId],
     enabled: Boolean(noteId),
-    queryFn: () => getNoteContent(noteId as string, auth),
+    queryFn: ({ signal }) => options ? getNoteContentPage(noteId as string, auth, { limit: options.pageSize, signal }) : getNoteContent(noteId as string, auth, signal),
   });
 }
 
@@ -133,8 +150,10 @@ function useRefreshDocuments() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["document-groups"] }),
       queryClient.invalidateQueries({ queryKey: ["notebooks"] }),
+      queryClient.invalidateQueries({ queryKey: ["notebook"] }),
       queryClient.invalidateQueries({ queryKey: ["note-tree"] }),
       queryClient.invalidateQueries({ queryKey: ["note-search"] }),
+      queryClient.invalidateQueries({ queryKey: ["global-search"] }),
     ]);
   };
 }
@@ -187,9 +206,18 @@ export function useUpdateNote() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, ...payload }: { id: string; title?: string; parent_id?: string | null; sort_order?: number }) => updateNote(id, payload, auth),
-    onSuccess: async (note) => {
+    onSuccess: (note, payload) => {
       queryClient.setQueryData(["note", note.id], note);
-      await refresh();
+      if (payload.parent_id !== undefined || payload.sort_order !== undefined) return refresh();
+      const updateTitle = (items: NoteTreeItem[]): NoteTreeItem[] => items.map(item => item.id === note.id
+        ? { ...item, title: note.title, updated_at_ms: note.updated_at_ms }
+        : { ...item, children: updateTitle(item.children) });
+      queryClient.setQueryData<{ items: NoteTreeItem[] }>(["note-tree", note.notebook_id], tree => tree ? { ...tree, items: updateTitle(tree.items) } : tree);
+      // Reconcile the affected list in the background; a title save must not
+      // delay the body write behind unrelated workspace directory requests.
+      void queryClient.invalidateQueries({ queryKey: ["note-tree", note.notebook_id] });
+      void queryClient.invalidateQueries({ queryKey: ["note-search"] });
+      void queryClient.invalidateQueries({ queryKey: ["global-search"] });
     },
   });
 }
@@ -212,11 +240,13 @@ export function useSaveNoteContent() {
   const auth = useDocumentAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { noteId: string; expectedVersion: number; blocks: Parameters<typeof saveNoteContent>[0]["blocks"] }) => saveNoteContent(payload, auth),
+    mutationFn: async (payload: { noteId: string; expectedVersion: number; blocks: Parameters<typeof saveNoteContent>[0]["blocks"]; loadedBlockIds?: string[] }) => payload.loadedBlockIds ? await saveNoteContentPrefix({ ...payload, loadedBlockIds: payload.loadedBlockIds }, auth) : await saveNoteContent(payload, auth),
     onSuccess: (content) => {
-      queryClient.setQueryData(["note-content", content.note_id], content);
+      if ("blocks" in content) queryClient.setQueryData(["note-content", content.note_id], content);
+      else void queryClient.invalidateQueries({ queryKey: ["note-content", content.note_id] });
       void queryClient.invalidateQueries({ queryKey: ["collaboration", content.note_id, "revisions"] });
       void queryClient.invalidateQueries({ queryKey: ["note-search"] });
+      void queryClient.invalidateQueries({ queryKey: ["global-search"] });
     },
   });
 }

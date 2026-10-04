@@ -12,7 +12,7 @@ export function TextInput({ label, className, ...props }: TextInputProps) {
   const input = (
     <HeroInput
       className={cn(
-        "h-9 w-full",
+        "orbis-text-input w-full",
         className,
       )}
       {...props}

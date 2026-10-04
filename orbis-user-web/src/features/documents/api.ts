@@ -1,4 +1,5 @@
 import { apiRequest } from "../../shared/api/api-client";
+import { authRequestOptions as authOptions, type AuthRequestOptions as SharedAuthRequestOptions } from "../../shared/auth/use-auth-request";
 import {
   documentGroupListResponseSchema,
   documentGroupSchema,
@@ -6,6 +7,8 @@ import {
   notebookListResponseSchema,
   notebookSchema,
   noteContentSchema,
+  noteContentPageSchema,
+  noteContentPrefixSchema,
   noteSchema,
   noteSearchResponseSchema,
   noteTreeResponseSchema,
@@ -21,26 +24,12 @@ import {
   type PageData,
 } from "../../shared/api/schemas";
 
-export type AuthRequestOptions = {
-  accessToken: string;
-  refreshToken: string | null;
-  onTokenRefresh: (accessToken: string) => void;
-  onUnauthorized: () => void;
-};
+export type AuthRequestOptions = SharedAuthRequestOptions;
 
 export type ResourceStatus = "active" | "archived";
 
 const DEFAULT_PAGE = "1";
 const DEFAULT_PAGE_SIZE = "100";
-
-function authOptions(auth: AuthRequestOptions) {
-  return {
-    token: auth.accessToken,
-    refreshToken: auth.refreshToken,
-    onTokenRefresh: auth.onTokenRefresh,
-    onUnauthorized: auth.onUnauthorized,
-  };
-}
 
 function queryPath(path: string, values: Record<string, string | null | undefined>): string {
   const params = new URLSearchParams();
@@ -75,7 +64,7 @@ export async function listNotebooks(
   auth: AuthRequestOptions,
   groupId?: string,
   status: ResourceStatus = "active",
-  options: { includeInactiveParents?: boolean } = {},
+  options: { includeInactiveParents?: boolean; signal?: AbortSignal } = {},
 ): Promise<PageData<Notebook>> {
   const items: Notebook[] = [];
   let pageNumber = Number(DEFAULT_PAGE);
@@ -87,7 +76,7 @@ export async function listNotebooks(
       include_inactive_parents: options.includeInactiveParents ? "true" : null,
       page: String(pageNumber),
       page_size: DEFAULT_PAGE_SIZE,
-    }), authOptions(auth)));
+    }), { ...authOptions(auth), signal: options.signal }));
     items.push(...result.items);
     pageNumber += 1;
   } while (result.pagination.has_next);
@@ -96,6 +85,10 @@ export async function listNotebooks(
 
 export async function createNotebook(payload: { title: string; group_id?: string | null; sort_order: number; icon?: NotebookIconValue | null }, auth: AuthRequestOptions): Promise<Notebook> {
   return notebookSchema.parse(await apiRequest("/notebooks", { method: "POST", body: payload, ...authOptions(auth) }));
+}
+
+export async function getNotebook(notebookId: string, auth: AuthRequestOptions, signal?: AbortSignal): Promise<Notebook> {
+  return notebookSchema.parse(await apiRequest(`/notebooks/${notebookId}`, { ...authOptions(auth), signal }));
 }
 
 export async function updateNotebook(notebookId: string, payload: { title?: string; group_id?: string | null; sort_order?: number; icon?: NotebookIconValue | null }, auth: AuthRequestOptions): Promise<Notebook> {
@@ -117,8 +110,8 @@ export async function reorderNotebookNotes(notebookId: string, payload: NoteOrde
   return noteTreeResponseSchema.parse(await apiRequest(`/notebooks/${notebookId}/notes/order`, { method: "PUT", body: payload, ...authOptions(auth) }));
 }
 
-export async function getNote(noteId: string, auth: AuthRequestOptions): Promise<Note> {
-  return noteSchema.parse(await apiRequest(`/notes/${noteId}`, authOptions(auth)));
+export async function getNote(noteId: string, auth: AuthRequestOptions, signal?: AbortSignal): Promise<Note> {
+  return noteSchema.parse(await apiRequest(`/notes/${noteId}`, { ...authOptions(auth), signal }));
 }
 
 export async function updateNote(noteId: string, payload: { title?: string; parent_id?: string | null; sort_order?: number }, auth: AuthRequestOptions): Promise<Note> {
@@ -129,12 +122,27 @@ export async function setNoteArchived(noteId: string, archived: boolean, auth: A
   return noteSchema.parse(await apiRequest(`/notes/${noteId}/${archived ? "archive" : "restore"}`, { method: "POST", ...authOptions(auth) }));
 }
 
-export async function getNoteTree(notebookId: string, auth: AuthRequestOptions): Promise<{ items: NoteTreeItem[] }> {
-  return noteTreeResponseSchema.parse(await apiRequest(`/notebooks/${notebookId}/notes/tree`, authOptions(auth)));
+export async function getNoteTree(notebookId: string, auth: AuthRequestOptions, signal?: AbortSignal): Promise<{ items: NoteTreeItem[] }> {
+  return noteTreeResponseSchema.parse(await apiRequest(`/notebooks/${notebookId}/notes/tree`, { ...authOptions(auth), signal }));
 }
 
-export async function getNoteContent(noteId: string, auth: AuthRequestOptions): Promise<NoteContent> {
-  return noteContentSchema.parse(await apiRequest(`/notes/${noteId}/content`, authOptions(auth)));
+export async function getNoteContent(noteId: string, auth: AuthRequestOptions, signal?: AbortSignal): Promise<NoteContent> {
+  return noteContentSchema.parse(await apiRequest(`/notes/${noteId}/content`, { ...authOptions(auth), signal }));
+}
+
+export async function getNoteContentPage(noteId: string, auth: AuthRequestOptions, options: { offset?: number; limit?: number; version?: number; signal?: AbortSignal } = {}) {
+  const data = await apiRequest(queryPath(`/notes/${noteId}/content`, { offset: String(options.offset ?? 0), limit: String(options.limit ?? 32), expected_version: options.version === undefined ? null : String(options.version) }), { ...authOptions(auth), signal: options.signal });
+  if (data && typeof data === "object" && "next_offset" in data) return noteContentPageSchema.parse(data);
+  // Older servers retain their full-read/write contract during rolling upgrades.
+  return noteContentSchema.parse(data);
+}
+
+export async function saveNoteContentPrefix(payload: { noteId: string; expectedVersion: number; loadedBlockIds: string[]; blocks: NoteBlocks }, auth: AuthRequestOptions) {
+  return noteContentPrefixSchema.parse(await apiRequest(`/notes/${payload.noteId}/content`, { method: "PATCH", body: { expected_version: payload.expectedVersion, loaded_block_ids: payload.loadedBlockIds, blocks: payload.blocks }, ...authOptions(auth) }));
+}
+
+export async function getNoteContentOutline(noteId: string, version: number, auth: AuthRequestOptions, signal?: AbortSignal) {
+  return await apiRequest<{ content_version: number; items: Array<{ id: string; text: string; level: number; root_index: number }> }>(queryPath(`/notes/${noteId}/content/outline`, { version: String(version) }), { ...authOptions(auth), signal });
 }
 
 export async function saveNoteContent(payload: { noteId: string; expectedVersion: number; blocks: NoteBlocks }, auth: AuthRequestOptions): Promise<NoteContent> {

@@ -5,23 +5,31 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from orbis_user_api.api.errors import ApiError
 from orbis_user_api.core.time import now_ms
 from orbis_user_api.models.user import User
 from orbis_user_api.models.workspace import Workspace, WorkspaceMember
+from orbis_user_api.services.capabilities import READABLE_WORKSPACE_ROLES
 from orbis_user_api.services.exceptions import UserWorkspaceMissing, WorkspaceNotFound
 
 DEFAULT_PRIVATE_WORKSPACE_NAME = "私人空间"
+REQUEST_WORKSPACE_ID = "orbis.request_workspace_id"
 
 
 def workspace_payload(
-    workspace: Workspace, membership: WorkspaceMember, user: User
+    workspace: Workspace,
+    membership: WorkspaceMember,
+    user: User,
+    *,
+    current_workspace_id: UUID | None = None,
 ) -> dict[str, object]:
     return {
         "id": workspace.id,
         "name": workspace.name,
         "workspace_type": workspace.workspace_type,
         "role": membership.role,
-        "is_current": user.current_workspace_id == workspace.id,
+        "is_current": (current_workspace_id or user.current_workspace_id)
+        == workspace.id,
         "created_at_ms": workspace.created_at_ms,
         "updated_at_ms": workspace.updated_at_ms,
     }
@@ -107,23 +115,42 @@ async def ensure_default_workspace(session: AsyncSession, user: User) -> Workspa
 
 
 async def get_current_workspace(
-    user: User, session: AsyncSession
+    user: User, session: AsyncSession, *, use_request_context: bool = True
 ) -> tuple[Workspace, WorkspaceMember]:
-    if user.current_workspace_id is not None:
+    raw_context = (
+        session.info.get(REQUEST_WORKSPACE_ID) if use_request_context else None
+    )
+    try:
+        requested_id = UUID(str(raw_context)) if raw_context is not None else None
+    except (ValueError, TypeError, AttributeError):
+        raise ApiError(
+            status_code=422,
+            code="WORKSPACE_CONTEXT_INVALID",
+            message="X-Workspace-ID 必须是有效的工作空间 UUID",
+        ) from None
+    selected_id = requested_id or user.current_workspace_id
+    if selected_id is not None:
         result = await session.execute(
             select(Workspace, WorkspaceMember)
             .join(WorkspaceMember, WorkspaceMember.workspace_id == Workspace.id)
             .where(
-                Workspace.id == user.current_workspace_id,
+                Workspace.id == selected_id,
                 Workspace.status == "active",
                 WorkspaceMember.user_id == user.id,
                 WorkspaceMember.status == "active",
+                WorkspaceMember.role.in_(READABLE_WORKSPACE_ROLES),
             )
         )
         current = result.first()
         if current is not None:
             workspace, membership = current
             return workspace, membership
+    if requested_id is not None:
+        raise ApiError(
+            status_code=403,
+            code="WORKSPACE_CONTEXT_FORBIDDEN",
+            message="请求工作空间不可用或无权访问",
+        )
 
     result = await session.execute(
         select(Workspace, WorkspaceMember)
@@ -132,18 +159,54 @@ async def get_current_workspace(
             WorkspaceMember.user_id == user.id,
             WorkspaceMember.status == "active",
             Workspace.status == "active",
+            WorkspaceMember.role.in_(READABLE_WORKSPACE_ROLES),
         )
-        .order_by(Workspace.created_at_ms.asc())
+        .order_by(Workspace.created_at_ms.asc(), Workspace.id.asc())
     )
     fallback = result.first()
     if fallback is None:
         raise UserWorkspaceMissing
 
     workspace, membership = fallback
-    user.current_workspace_id = workspace.id
-    user.updated_at_ms = now_ms()
-    await session.commit()
+    # Legacy requests still resolve an available fallback, but ordinary reads
+    # and writes must not silently persist a new account preference.
     return workspace, membership
+
+
+async def accessible_workspaces(
+    user: User, session: AsyncSession
+) -> list[tuple[Workspace, WorkspaceMember]]:
+    result = await session.execute(
+        select(Workspace, WorkspaceMember)
+        .join(WorkspaceMember, WorkspaceMember.workspace_id == Workspace.id)
+        .where(
+            Workspace.status == "active",
+            WorkspaceMember.user_id == user.id,
+            WorkspaceMember.status == "active",
+            WorkspaceMember.role.in_(READABLE_WORKSPACE_ROLES),
+        )
+        .order_by(Workspace.created_at_ms.asc(), Workspace.id.asc())
+    )
+    return [(workspace, membership) for workspace, membership in result.all()]
+
+
+async def switch_workspace(
+    workspace_id: UUID, user: User, session: AsyncSession
+) -> tuple[Workspace, WorkspaceMember]:
+    rows = await accessible_workspaces(user, session)
+    selected = next((row for row in rows if row[0].id == workspace_id), None)
+    if selected is None:
+        raise ApiError(
+            status_code=403,
+            code="WORKSPACE_SWITCH_FORBIDDEN",
+            message="无权切换到所选工作空间",
+        )
+    if user.current_workspace_id != workspace_id:
+        user.current_workspace_id = workspace_id
+        user.updated_at_ms = now_ms()
+        await session.commit()
+        await session.refresh(user)
+    return selected
 
 
 async def require_workspace_member(

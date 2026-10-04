@@ -1,0 +1,74 @@
+/* Solid material roles: a neutral canvas, raised cards and elevated menus. */
+:root, .light, .default, [data-theme="light"], [data-theme="default"] {
+  --orbis-canvas-bg: #f2f4f7;
+  --orbis-item-hover-bg: #f3f4f6;
+  --orbis-item-selected-bg: #f3f4f6;
+  --orbis-item-foreground: rgb(66 66 66);
+  --orbis-shadow-color: rgb(16 24 40 / 8%);
+  --orbis-scrim: rgb(16 24 40 / 28%);
+}
+.dark, [data-theme="dark"] {
+  --orbis-canvas-bg: var(--background);
+  --orbis-item-hover-bg: var(--surface-tertiary);
+  --orbis-item-selected-bg: var(--surface-tertiary);
+  --orbis-item-foreground: var(--foreground);
+  --orbis-shadow-color: rgb(0 0 0 / 28%);
+  --orbis-scrim: rgb(0 0 0 / 48%);
+}
+:root, .light, .default, [data-theme="light"], [data-theme="default"], .dark, [data-theme="dark"] {
+  --orbis-panel-bg: var(--surface);
+  --orbis-floating-bg: var(--overlay);
+  --orbis-card-bg: var(--surface);
+  --orbis-surface-edge: color-mix(in oklab, var(--foreground) 8%, var(--surface));
+  --orbis-panel-shadow: 0 1px 2px var(--orbis-shadow-color);
+  --orbis-card-shadow: 0 2px 4px var(--orbis-shadow-color);
+  --orbis-card-hover-shadow: 0 4px 12px var(--orbis-shadow-color);
+  --orbis-floating-shadow: 0 12px 28px var(--orbis-shadow-color), 0 2px 6px var(--orbis-shadow-color);
+  --overlay-shadow: var(--orbis-floating-shadow);
+}
+
+.popover, [data-slot="dropdown-popover"], .orbis-select-popover, .orbis-modal-dialog,
+.orbis-block-menu, .editor-more-menu, .orbis-block-notice, .tooltip, .toast,
+.orbis-auth-card {
+  background: var(--orbis-floating-bg);
+  border: 1px solid var(--orbis-surface-edge);
+  box-shadow: var(--orbis-floating-shadow);
+}
+.tooltip { box-shadow: var(--orbis-panel-shadow); }
+.orbis-auth-layout { background: var(--orbis-canvas-bg); }
+.workspace-shell .workspace-main-navigation,
+.workspace-shell .workspace-toolbar,
+.workspace-shell .workspace-context-panel { background: var(--orbis-panel-bg); }
+.workspace-shell .workspace-main-area { background: transparent; }
+.workspace-shell .workspace-content { background: var(--orbis-canvas-bg); }
+.workspace-shell .workspace-route-content,
+.workspace-shell .workspace-route-content > .page-container,
+.workspace-shell .workspace-content > .page-container { background: transparent; }
+.workspace-shell .workspace-document-content { background: var(--orbis-panel-bg); }
+.workspace-shell :is(.workbench-resource-card, .workbench-collection-card, .notebook-overview-card, .document-card, .collection-card, .card) {
+  background: var(--orbis-card-bg);
+  border-color: var(--orbis-surface-edge);
+  box-shadow: var(--orbis-card-shadow);
+}
+.workspace-shell :is(.workbench-resource-card, .workbench-collection-card, .notebook-overview-card, .document-card, .collection-card, .card):hover {
+  background: var(--orbis-card-bg);
+  border-color: var(--border);
+  box-shadow: var(--orbis-card-hover-shadow);
+}
+
+@media (forced-colors: active) {
+  :root, .light, .default, [data-theme="light"], [data-theme="default"], .dark, [data-theme="dark"] {
+    --orbis-canvas-bg: Canvas;
+    --orbis-panel-bg: Canvas;
+    --orbis-floating-bg: Canvas;
+    --orbis-card-bg: Canvas;
+    --orbis-surface-edge: CanvasText;
+    --orbis-item-hover-bg: Highlight;
+    --orbis-item-selected-bg: Highlight;
+    --orbis-item-foreground: HighlightText;
+    --orbis-panel-shadow: none;
+    --orbis-card-shadow: none;
+    --orbis-card-hover-shadow: none;
+    --orbis-floating-shadow: none;
+  }
+}

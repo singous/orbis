@@ -7,7 +7,7 @@ test("the supplied theme reaches rendered fields in both color schemes", async (
   for (const mode of ["light", "dark"] as const) {
     await page.evaluate((theme) => { document.documentElement.dataset.theme = theme; }, mode);
     await email.focus();
-    await expect.poll(() => page.locator("body").evaluate((element) => getComputedStyle(element).backgroundColor)).toBe(mode === "light" ? "oklch(0.9702 0 0)" : "oklch(0.12 0 0)");
+    await expect.poll(() => page.locator("body").evaluate((element) => getComputedStyle(element).backgroundColor)).toBe(mode === "light" ? "oklch(0.9702 0.0124 273.85)" : "oklch(0.12 0.0124 273.85)");
     const rendered = await email.evaluate(async (element) => {
       await document.fonts.ready;
       const field = getComputedStyle(element);
@@ -24,6 +24,8 @@ test("the supplied theme reaches rendered fields in both color schemes", async (
         fieldBackground: field.backgroundColor,
         radius: field.borderRadius,
         buttonRadius: getComputedStyle(document.querySelector(".auth-submit")!).borderRadius,
+        buttonBackground: getComputedStyle(document.querySelector(".auth-submit")!).backgroundColor,
+        buttonForeground: getComputedStyle(document.querySelector(".auth-submit")!).color,
         focus,
         fieldBorder,
         outline: field.outlineStyle,
@@ -31,11 +33,13 @@ test("the supplied theme reaches rendered fields in both color schemes", async (
         loadedInter: Array.from(document.fonts).some((font) => font.family.includes("Inter Variable") && font.status === "loaded"),
       };
     });
-    expect(rendered.background).toBe(mode === "light" ? "oklch(0.9702 0 0)" : "oklch(0.12 0 0)");
-    expect(rendered.fieldBackground).toBe(mode === "light" ? "oklch(1 0 0)" : "oklch(0.2103 0 0)");
+    expect(rendered.background).toBe(mode === "light" ? "oklch(0.9702 0.0124 273.85)" : "oklch(0.12 0.0124 273.85)");
+    expect(rendered.fieldBackground).toBe(mode === "light" ? "oklch(1 0.0062 273.85)" : "oklch(0.2103 0.0248 273.85)");
     expect(rendered.radius).toBe("8px");
     expect(rendered.buttonRadius).toBe("12px");
-    expect(rendered.focus).toBe(mode === "light" ? "oklch(0 0 0)" : "oklch(0.9848 0 0)");
+    expect(rendered.buttonBackground).toBe("oklch(0.5774 0.2091 273.85)");
+    expect(rendered.buttonForeground).toBe("oklch(0.9911 0 0)");
+    expect(rendered.focus).toBe("oklch(0.5774 0.2091 273.85)");
     expect(rendered.fieldBorder).toBe("rgba(0, 0, 0, 0)");
     expect(rendered.outline).toBe("none");
     expect(rendered.font).toContain("Inter Variable");
@@ -45,6 +49,8 @@ test("the supplied theme reaches rendered fields in both color schemes", async (
 
 
 test("workbench action and field shapes follow HeroUI theme calculations", async ({ page, request }) => {
+  // Desktop retains the global header search; web uses the rail entry.
+  await page.addInitScript(() => Object.assign(window, { __ORBIS_HOST__: { surface: "desktop" } }));
   await page.emulateMedia({ reducedMotion: "reduce" });
   const owner = { email: "owner@example.com", password: "Orbis-browser-test-2026!" };
   const setup = await request.post("/api/setup", { data: { ...owner, display_name: "主题验收" } });
@@ -61,14 +67,14 @@ test("workbench action and field shapes follow HeroUI theme calculations", async
   await page.evaluate(() => document.documentElement.style.setProperty("--radius", "0.5rem"));
   expect(await createNotebook.evaluate((element) => getComputedStyle(element).borderRadius)).toBe("24px");
   await page.evaluate(() => document.documentElement.style.removeProperty("--radius"));
-  expect(await page.getByRole("searchbox", { name: "全局搜索", exact: true }).evaluate((element) => getComputedStyle(element.closest('[data-slot="input-group"]')!).borderRadius)).toBe("8px");
+  expect(await page.getByRole("button", { name: "全局搜索", exact: true }).evaluate((element) => getComputedStyle(element).borderRadius)).toBe("8px");
   await page.goto("/sites");
   await page.getByRole("button", { name: "创建站点", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "创建文档站点", exact: true });
   for (const mode of ["light", "dark"] as const) {
     await page.evaluate((theme) => { document.documentElement.dataset.theme = theme; }, mode);
     const cancel = dialog.getByRole("button", { name: "取消", exact: true });
-    await expect.poll(() => cancel.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe(mode === "light" ? "oklch(0.94 0 0)" : "oklch(0.274 0 0)");
+    await expect.poll(() => cancel.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe(mode === "light" ? "oklch(0.94 0.0124 273.85)" : "oklch(0.274 0.0124 273.85)");
     expect(await cancel.evaluate((element) => getComputedStyle(element).borderRadius)).toBe("12px");
     expect(await dialog.evaluate((element) => getComputedStyle(element).borderRadius)).toBe("12px");
     const radio = dialog.locator('[data-slot="radio-control"]').first();

@@ -16,6 +16,7 @@ from orbis_user_api.services.exceptions import (
     UserWorkspaceMissing,
     WorkspaceMemberForbidden,
 )
+from orbis_user_api.services.workspace import REQUEST_WORKSPACE_ID
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 optional_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
@@ -24,6 +25,7 @@ optional_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error
 async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
     session_factory = request.app.state.session_factory
     async with session_factory() as session:
+        session.info[REQUEST_WORKSPACE_ID] = request.headers.get("X-Workspace-ID")
         yield session
 
 

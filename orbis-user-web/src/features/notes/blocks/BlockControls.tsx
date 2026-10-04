@@ -22,6 +22,7 @@ export function requestBlockMenu(editor: Editor) { editor.view.dom.dispatchEvent
 const DRAG_MIME='application/x-orbis-block-drag';
 const EDGE_SCROLL_DISTANCE=56;
 const MAX_SCROLL_STEP=16;
+const HANDLE_CLEARANCE=4;
 type DropTarget={id:string;placement:'before'|'after'|'inside';ok:boolean;message?:string;rect:{top:number;left:number;width:number;height:number}};
 
 export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:boolean;noteId?:string}) {
@@ -75,10 +76,11 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
   const root=editor.view.dom.closest('.orbis-tiptap');
   if(!(element instanceof HTMLElement)||!root){setPoint(null);return;}
   const rect=element.getBoundingClientRect(), parent=root.getBoundingClientRect();
-  const next={top:rect.top-parent.top+2,left:Math.max(4-parent.left,rect.left-parent.left-42)};
+  const controlsWidth=controlsRef.current?.getBoundingClientRect().width??0;
+  const next={top:rect.top-parent.top+2,left:Math.max(HANDLE_CLEARANCE-parent.left,rect.left-parent.left-controlsWidth-HANDLE_CLEARANCE)};
   setPoint(previous=>previous?.top===next.top&&previous?.left===next.left?previous:next);
  }
- useLayoutEffect(()=>{positionHandle(activeId);},[activeId,doc]);
+ useLayoutEffect(()=>{positionHandle(activeId);},[activeId,doc,Boolean(point),readOnly,selection?.ids.length]);
 
  useEffect(()=>{
   const sync=()=>{

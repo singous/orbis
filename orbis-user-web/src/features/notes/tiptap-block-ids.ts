@@ -14,16 +14,20 @@ const OWN_CONTENT_PARENTS = new Set(["orbisComponent", "orbisToggle", "blockquot
 // IDs must be unique before group normalization restores a selection by ID.
 const BLOCK_ID_PRIORITY = 110;
 
-function persistedNodes(doc: PMNode): Array<{ node: PMNode; pos: number }> {
+function persistedNodes(doc: PMNode, idsByPosition?: Map<number, unknown>): Array<{ node: PMNode; pos: number }> {
   const result: Array<{ node: PMNode; pos: number }> = [];
   doc.descendants((node, pos, parent, index) => {
+    idsByPosition?.set(pos, node.attrs.orbisId);
     if (!OWNED_BLOCKS.has(node.type.name)) return;
     const containerHead = parent?.type.name === "orbisContainer" && index === 0;
     const ownContent = node.attrs.orbisOwn && index === 0 && OWN_CONTENT_PARENTS.has(parent?.type.name ?? "");
     const syntheticParagraph = node.type.name === "paragraph" && (ownContent || (SYNTHETIC_PARAGRAPH_PARENTS.has(parent?.type.name ?? "") && (index === 0 || ["tableCell", "tableHeader"].includes(parent?.type.name ?? ""))));
     if (!containerHead && !syntheticParagraph) result.push({ node, pos });
     // Table cell blocks are persisted as inline content, not independent blocks.
-    if (node.type.name === "table") return false;
+    if (node.type.name === "table") {
+      if (idsByPosition) node.descendants((child, offset) => { idsByPosition.set(pos + 1 + offset, child.attrs.orbisId); });
+      return false;
+    }
   });
   return result;
 }
@@ -39,12 +43,15 @@ export const OrbisBlockIds = Extension.create({
         if (!transactions.some((transaction) => transaction.docChanged)) return null;
         const mapping = new Mapping();
         transactions.forEach((transaction) => mapping.appendMapping(transaction.mapping));
-        const nodes = persistedNodes(state.doc);
+        // Resolve mapped positions once. Repeated nodeAt on a flat document
+        // searches sibling offsets for every retained block.
+        const idsByPosition = new Map<number, unknown>();
+        const nodes = persistedNodes(state.doc, idsByPosition);
         const retained = new Map<string, number>();
         for (const { node, pos } of persistedNodes(oldState.doc)) {
           const id = node.attrs.orbisId;
           const mapped = mapping.map(pos);
-          if (typeof id === "string" && id && !retained.has(id) && state.doc.nodeAt(mapped)?.attrs.orbisId === id) retained.set(id, mapped);
+          if (typeof id === "string" && id && !retained.has(id) && idsByPosition.get(mapped) === id) retained.set(id, mapped);
         }
         const reserved = new Set<string>(nodes.map(({ node }) => node.attrs.orbisId).filter((id): id is string => typeof id === "string" && Boolean(id)));
         const seen = new Set<string>();

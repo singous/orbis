@@ -33,6 +33,8 @@ export class AutosaveCoordinator<T> {
   #inFlight: Promise<void> | null = null;
   #current: T | null = null;
   #saved: T | null = null;
+  #currentFingerprint: string | null = null;
+  #savedFingerprint: string | null = null;
   #state: AutosaveState = "saved";
   #dirtySince: number | null = null;
   #lastFlushAt = Number.NEGATIVE_INFINITY;
@@ -58,17 +60,51 @@ export class AutosaveCoordinator<T> {
     return this.#saved;
   }
 
+  async settlePendingSave(): Promise<void> {
+    if (this.#inFlight) await this.#inFlight;
+  }
+
+  /** Add server-read data to both baselines without treating loading as an edit. */
+  extend(transform: (value: T) => T): void {
+    if (this.#inFlight) throw new Error("Wait for the current save before extending its snapshot");
+    if (!this.#saved || !this.#current) return;
+    this.#saved = transform(this.#saved);
+    this.#current = transform(this.#current);
+    this.#savedFingerprint = this.#fingerprint(this.#saved);
+    this.#currentFingerprint = this.#fingerprint(this.#current);
+    if (this.#state === "error" || this.#state === "conflict") return;
+    if (this.#currentFingerprint === this.#savedFingerprint) {
+      this.#clearTimer(); this.#dirtySince = null; this.#setState("saved");
+    } else {
+      this.#setState("dirty"); this.#schedule();
+    }
+  }
+
+  alignCurrentAfterRead(value: T): void {
+    this.#current = value;
+    this.#currentFingerprint = this.#fingerprint(value);
+    // Reading another page is not permission to retry an unresolved save.
+    if (this.#state === "error" || this.#state === "conflict") return;
+    if (this.#currentFingerprint === this.#savedFingerprint) {
+      this.#clearTimer(); this.#dirtySince = null; this.#setState("saved");
+    } else {
+      this.#setState("dirty"); this.#schedule();
+    }
+  }
+
   hydrate(value: T): void {
     this.#clearTimer();
     this.#current = value;
     this.#saved = value;
+    this.#currentFingerprint = this.#savedFingerprint = this.#fingerprint(value);
     this.#dirtySince = null;
     this.#setState("saved");
   }
 
   change(value: T): void {
     this.#current = value;
-    if (this.#saved && this.#fingerprint(value) === this.#fingerprint(this.#saved)) {
+    this.#currentFingerprint = this.#fingerprint(value);
+    if (this.#saved && this.#currentFingerprint === this.#savedFingerprint) {
       this.#clearTimer();
       this.#dirtySince = null;
       this.#setState("saved");
@@ -86,7 +122,7 @@ export class AutosaveCoordinator<T> {
     }
     const current = this.#current;
     const saved = this.#saved;
-    if (!current || !saved || this.#fingerprint(current) === this.#fingerprint(saved)) {
+    if (!current || !saved || this.#currentFingerprint === this.#savedFingerprint) {
       this.#dirtySince = null;
       this.#setState("saved");
       return;
@@ -95,17 +131,19 @@ export class AutosaveCoordinator<T> {
     this.#lastFlushAt = Date.now();
     this.#dirtySince = null;
     this.#setState("saving");
-    const savingFingerprint = this.#fingerprint(current);
+    const savingFingerprint = this.#currentFingerprint;
     this.#inFlight = this.#save(current, saved)
       .then((nextSaved) => {
         this.#saved = nextSaved;
-        if (this.#current && this.#fingerprint(this.#current) !== this.#fingerprint(nextSaved)) {
+        this.#savedFingerprint = this.#fingerprint(nextSaved);
+        if (this.#current && this.#currentFingerprint !== this.#savedFingerprint) {
           this.#dirtySince ??= Date.now();
           this.#setState("dirty");
           this.#schedule();
         } else {
-          if (this.#current && this.#fingerprint(this.#current) === savingFingerprint) {
+          if (this.#current && this.#currentFingerprint === savingFingerprint) {
             this.#current = nextSaved;
+            this.#currentFingerprint = this.#savedFingerprint;
           }
           this.#setState("saved");
         }

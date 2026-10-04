@@ -1,0 +1,65 @@
+/* Orbis semantic scale. DESIGN.md owns role definitions; values live here. */
+:root {
+  --orbis-text-caption-size: .75rem;
+  --orbis-text-caption-leading: 1.125rem;
+  --orbis-text-ui-size: .875rem;
+  --orbis-text-ui-leading: 1.25rem;
+  --orbis-text-section-size: 1rem;
+  --orbis-text-section-leading: 1.5rem;
+  --orbis-text-panel-title-size: 1rem;
+  --orbis-text-panel-title-leading: 1.5rem;
+  --orbis-text-page-title-size: 1.125rem;
+  --orbis-text-page-title-leading: 1.625rem;
+  --orbis-weight-body: 400;
+  --orbis-weight-action: 500;
+  --orbis-weight-heading: 600;
+  --orbis-control-compact-height: 2rem;
+  --orbis-control-default-height: 2.25rem;
+  --orbis-control-form-height: 2.5rem;
+  --orbis-control-touch-height: 2.75rem;
+  --orbis-icon-compact-size: 1rem;
+  --orbis-icon-default-size: 1.125rem;
+  --orbis-icon-navigation-size: 1.25rem;
+  --orbis-space-1: .25rem;
+  --orbis-space-2: .5rem;
+  --orbis-space-3: .75rem;
+  --orbis-space-4: 1rem;
+  --orbis-space-6: 1.5rem;
+  --orbis-space-8: 2rem;
+  --orbis-space-12: 3rem;
+  --orbis-tree-indent: 1.25rem;
+  /* Default reading typography follows the shared scale; authored sizes remain content. */
+  --orbis-prose-body-size: var(--orbis-text-ui-size);
+  --orbis-prose-body-leading: 1.9;
+  --orbis-prose-h1-size: var(--orbis-text-page-title-size);
+  --orbis-prose-h2-size: var(--orbis-text-section-size);
+  --orbis-prose-h3-size: var(--orbis-text-ui-size);
+  --orbis-prose-table-size: var(--orbis-text-ui-size);
+  --orbis-prose-caption-size: var(--orbis-text-caption-size);
+  --orbis-prose-title-size: var(--orbis-text-page-title-size);
+  font-size: 100%;
+}
+
+@theme inline {
+  --text-xs: var(--orbis-text-caption-size);
+  --text-xs--line-height: var(--orbis-text-caption-leading);
+  --text-sm: var(--orbis-text-ui-size);
+  --text-sm--line-height: var(--orbis-text-ui-leading);
+  --text-base: var(--orbis-text-section-size);
+  --text-base--line-height: var(--orbis-text-section-leading);
+  --text-lg: var(--orbis-text-panel-title-size);
+  --text-lg--line-height: var(--orbis-text-panel-title-leading);
+  --text-xl: var(--orbis-text-panel-title-size);
+  --text-xl--line-height: var(--orbis-text-panel-title-leading);
+  --text-2xl: var(--orbis-text-page-title-size);
+  --text-2xl--line-height: var(--orbis-text-page-title-leading);
+}
+
+/* Touch targets grow together, including controls inside dense toolbars. */
+@media (pointer: coarse) {
+  :root {
+    --orbis-control-compact-height: var(--orbis-control-touch-height);
+    --orbis-control-default-height: var(--orbis-control-touch-height);
+    --orbis-control-form-height: var(--orbis-control-touch-height);
+  }
+}
