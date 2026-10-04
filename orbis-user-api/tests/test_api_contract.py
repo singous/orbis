@@ -165,6 +165,8 @@ def test_all_json_operations_document_the_unified_success_envelope() -> None:
     binary_operations = {
         ("GET", "/files/{file_id}/content"),
         ("GET", "/public/sites/{slug}/assets/{key}"),
+        ("GET", "/public/shares/{token}/notes/{note_id}/files/{file_id}"),
+        ("GET", "/open/v1/notes/{note_id}/files/{file_id}/content"),
     }
     text_operations = {
         ("GET", "/s/{slug}/sitemap.xml"): "application/xml",

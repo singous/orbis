@@ -28,10 +28,12 @@ jobs:
           enable-cache: true
           cache-dependency-glob: uv.lock
       - name: Install backend dependencies
-        run: uv sync --frozen --package orbis-user-api --group dev
+        run: uv sync --frozen --all-packages --group dev
       - name: Run backend tests
         working-directory: orbis-user-api
-        run: ../.venv/bin/python -m pytest -q
+        env:
+          PYTHONPATH: src:../orbis-cli/src
+        run: ../.venv/bin/python -m pytest -q tests ../orbis-cli/tests
 
   frontend:
     name: Frontend checks

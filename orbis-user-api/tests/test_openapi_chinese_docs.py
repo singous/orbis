@@ -53,6 +53,12 @@ def test_every_operation_uses_a_chinese_business_folder() -> None:
         "公开站点",
         "文档协作",
         "全局搜索",
+        "智能体集成",
+        "开放文档库",
+        "开放文档附件",
+        "开放大文档导入",
+        "开放实时分享",
+        "实时文档分享",
     }
 
     assert {tag["name"] for tag in schema["tags"]} == expected_tags

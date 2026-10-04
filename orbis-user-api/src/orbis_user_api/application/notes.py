@@ -5,10 +5,9 @@ from collections import defaultdict
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import func, or_, select, update
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from orbis_user_api.application.note_revisions import record_content_revisions
 from orbis_user_api.core.time import now_ms
 from orbis_user_api.domain.note_content import (
     InvalidNoteContent,
@@ -16,7 +15,6 @@ from orbis_user_api.domain.note_content import (
     derive_plain_text,
     empty_note_blocks,
     markdown_to_blocks,
-    normalize_note_blocks,
 )
 from orbis_user_api.models.note import Note, Notebook, NoteContent, NoteGroup
 from orbis_user_api.models.user import User
@@ -35,7 +33,6 @@ from orbis_user_api.services.exceptions import (
     NoteNotFound,
     NoteOrderConflict,
     NoteParentInvalid,
-    NoteVersionConflict,
 )
 from orbis_user_api.services.workspace import get_current_workspace
 
@@ -113,6 +110,10 @@ async def create_note(
             content_version=1,
         )
     )
+    await session.flush()
+    from orbis_user_api.application.block_content import BlockContentStore
+
+    await BlockContentStore(session, note).activate()
     await session.commit()
     await session.refresh(note)
     return note
@@ -154,7 +155,22 @@ async def update_note_metadata(
         note.parent_id = payload.parent_id
     if payload.sort_order is not None:
         note.sort_order = payload.sort_order
-    note.updated_at_ms = now_ms()
+    from sqlalchemy import case, update
+
+    timestamp = now_ms()
+    # Preserve existing last-writer-wins metadata edits while making the token
+    # used by conditional Agent writes strictly advance, even within one ms.
+    await session.execute(
+        update(Note)
+        .where(Note.id == note.id, Note.workspace_id == workspace.id)
+        .values(
+            updated_at_ms=case(
+                (Note.updated_at_ms >= timestamp, Note.updated_at_ms + 1),
+                else_=timestamp,
+            )
+        )
+        .execution_options(synchronize_session=False)
+    )
     await session.commit()
     await session.refresh(note)
     return note
@@ -307,15 +323,10 @@ async def reorder_notes(
 async def get_note_content(
     note_id: UUID, user: User, session: AsyncSession
 ) -> NoteContent:
-    workspace, _ = await get_current_workspace(user, session)
-    await _get_active_note(note_id, workspace.id, session)
-    result = await session.execute(
-        select(NoteContent).where(NoteContent.note_id == note_id)
-    )
-    content = result.scalar_one_or_none()
-    if content is None:
-        raise NoteNotFound
-    return content
+    from orbis_user_api.application.block_content import read_stored_content
+
+    note = await get_note(note_id, user, session)
+    return await read_stored_content(note, session)
 
 
 async def update_note_content(
@@ -324,62 +335,12 @@ async def update_note_content(
     user: User,
     session: AsyncSession,
 ) -> NoteContent:
-    try:
-        blocks = normalize_note_blocks(payload.blocks)
-    except InvalidNoteContent:
-        raise NoteContentInvalid from None
+    from orbis_user_api.application.block_content import BlockContentStore
 
-    workspace, _ = await get_current_workspace(user, session)
-    note = await _get_active_note(note_id, workspace.id, session)
-    result = await session.execute(
-        select(NoteContent).where(NoteContent.note_id == note.id)
+    note = await get_note(note_id, user, session)
+    return await BlockContentStore(session, note).replace(
+        payload.expected_version, payload.blocks, user
     )
-    content = result.scalar_one_or_none()
-    if content is None:
-        raise NoteNotFound
-    timestamp = now_ms()
-    plain_text = derive_plain_text(blocks)
-    try:
-        if content.content_version != payload.expected_version:
-            raise NoteVersionConflict
-        # The database predicate decides the winner even if both requests read
-        # the same version. Keep the old ORM state for its immutable snapshot.
-        result = await session.execute(
-            update(NoteContent)
-            .where(
-                NoteContent.note_id == note.id,
-                NoteContent.content_version == payload.expected_version,
-            )
-            .values(
-                blocks=blocks,
-                plain_text=plain_text,
-                content_version=payload.expected_version + 1,
-                updated_at_ms=timestamp,
-            )
-            .execution_options(synchronize_session=False)
-        )
-        if result.rowcount != 1:
-            raise NoteVersionConflict
-        await record_content_revisions(
-            note,
-            content,
-            blocks=blocks,
-            plain_text=plain_text,
-            author=user,
-            timestamp=timestamp,
-            session=session,
-        )
-        note.updated_at_ms = timestamp
-        await session.commit()
-    except Exception:
-        await session.rollback()
-        raise
-    await session.refresh(content)
-    logger.info(
-        "Note content saved with revision history",
-        extra={"note_id": str(note_id), "content_version": content.content_version},
-    )
-    return content
 
 
 async def import_markdown_note(
@@ -415,6 +376,10 @@ async def import_markdown_note(
             content_version=1,
         )
     )
+    await session.flush()
+    from orbis_user_api.application.block_content import BlockContentStore
+
+    await BlockContentStore(session, note).activate()
     await session.commit()
     await session.refresh(note)
     return note
@@ -437,6 +402,9 @@ async def search_notes(
     offset: int = 0,
     limit: int = 20,
 ) -> tuple[list[dict[str, Any]], int]:
+    from orbis_user_api.application.block_search import ContentText
+
+    body_text = ContentText(Note.id, NoteContent.plain_text)
     workspace, _ = await get_current_workspace(user, session)
     conditions = [
         Note.workspace_id == workspace.id,
@@ -445,7 +413,7 @@ async def search_notes(
     if resource_status == "active":
         conditions.extend([Notebook.status == "active", NoteGroup.status == "active"])
     statement = (
-        select(Note, NoteContent.plain_text)
+        select(Note, body_text)
         .join(NoteContent, NoteContent.note_id == Note.id)
         .join(Notebook, Notebook.id == Note.notebook_id)
         .join(NoteGroup, NoteGroup.id == Notebook.group_id)
@@ -457,7 +425,7 @@ async def search_notes(
         statement = statement.where(
             or_(
                 func.lower(Note.title).like(pattern),
-                func.lower(NoteContent.plain_text).like(pattern),
+                func.lower(body_text).like(pattern),
             )
         )
     count_statement = (
@@ -471,7 +439,7 @@ async def search_notes(
         count_statement = count_statement.where(
             or_(
                 func.lower(Note.title).like(pattern),
-                func.lower(NoteContent.plain_text).like(pattern),
+                func.lower(body_text).like(pattern),
             )
         )
     total = await session.scalar(count_statement)

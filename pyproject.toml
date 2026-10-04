@@ -13,6 +13,7 @@ package = false
 members = [
   "orbis-gateway",
   "orbis-user-api",
+  "orbis-cli",
   "orbis-user-web",
   "orbis-omni-processor",
   "orbis-indexer",

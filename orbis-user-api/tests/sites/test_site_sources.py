@@ -455,7 +455,7 @@ def test_converting_legacy_manual_site_preserves_existing_public_path(
             await session.execute(
                 update(SiteRelease)
                 .where(SiteRelease.id == UUID(release["release_id"]))
-                .values(source_manifest={})
+                .values(snapshot=release, source_manifest={})
             )
             await session.commit()
 
@@ -523,7 +523,7 @@ def test_legacy_release_diff_includes_removed_pages_without_source_identity(
             await session.execute(
                 update(SiteRelease)
                 .where(SiteRelease.id == UUID(release["release_id"]))
-                .values(source_manifest={})
+                .values(snapshot=release, source_manifest={})
             )
             await session.commit()
 
@@ -558,7 +558,9 @@ def test_legacy_release_without_new_metadata_only_reports_real_changes(
     async def downgrade_snapshot():
         async with client.app.state.session_factory() as session:
             record = await session.get(SiteRelease, UUID(release["release_id"]))
-            snapshot = deepcopy(record.snapshot)
+            # Recreate an actual historical full-JSON release. New releases
+            # intentionally keep their bodies in immutable indexed page rows.
+            snapshot = deepcopy(release)
             for key in ("description", "updated_at_ms", "parent_slug", "section"):
                 snapshot["pages"][0].pop(key)
             await session.execute(

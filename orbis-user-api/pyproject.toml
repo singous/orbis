@@ -17,6 +17,7 @@ dependencies = [
   "sqlalchemy[asyncio]>=2.0.40",
   "uuid6>=2024.7.10",
   "python-dotenv>=1.2.2",
+  "markdown-it-py>=4.2,<5",
 ]
 
 [dependency-groups]

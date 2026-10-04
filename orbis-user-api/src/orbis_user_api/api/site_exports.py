@@ -65,12 +65,29 @@ async def current_snapshot(
 Snapshot = Annotated[SiteSnapshotOut, Depends(current_snapshot)]
 
 
+async def current_metadata(
+    slug: str,
+    request: Request,
+    session: Session,
+    expected_release_id: ExpectedRelease = None,
+) -> SiteSnapshotOut:
+    try:
+        if b"%25" in request.scope.get("raw_path", b"").lower():
+            raise delivery.missing_page()
+        return await delivery.active_metadata(slug, session, expected_release_id)
+    except SiteError as error:
+        raise api_error(error) from None
+
+
+Metadata = Annotated[SiteSnapshotOut, Depends(current_metadata)]
+
+
 @router.get(
     "/public/sites/{slug}/manifest",
     response_model=SiteManifestOut,
     summary="读取公开站点导航清单",
 )
-async def manifest(snapshot: Snapshot, request: Request, response: Response):
+async def manifest(snapshot: Metadata, request: Request, response: Response):
     response.headers.update(NO_STORE)
     return delivery.manifest(
         snapshot, base_url(request) + exports.site_path(snapshot.slug)
@@ -82,9 +99,17 @@ async def manifest(snapshot: Snapshot, request: Request, response: Response):
     response_model=SiteSearchOut,
     summary="读取当前版本的公开搜索索引",
 )
-async def search(snapshot: Snapshot, response: Response):
+async def search(
+    slug: str,
+    session: Session,
+    response: Response,
+    expected_release_id: ExpectedRelease = None,
+):
     response.headers.update(NO_STORE)
-    return delivery.search_index(snapshot)
+    try:
+        return await delivery.active_search(slug, session, expected_release_id)
+    except SiteError as error:
+        raise api_error(error) from None
 
 
 @router.get(
@@ -92,10 +117,19 @@ async def search(snapshot: Snapshot, response: Response):
     response_model=SitePageDeliveryOut,
     summary="读取当前版本的单页正文",
 )
-async def page(page_slug: str, snapshot: Snapshot, response: Response):
+async def page(
+    slug: str,
+    page_slug: str,
+    request: Request,
+    session: Session,
+    response: Response,
+    expected_release_id: ExpectedRelease = None,
+):
     response.headers.update(NO_STORE)
     try:
-        return delivery.page_delivery(snapshot, page_slug)
+        if b"%25" in request.scope.get("raw_path", b"").lower():
+            raise delivery.missing_page()
+        return await delivery.active_page(slug, page_slug, session, expected_release_id)
     except SiteError as error:
         raise api_error(error) from None
 
@@ -110,7 +144,7 @@ def base_url(request: Request) -> str:
     summary="读取公开站点 XML 站点地图",
     responses={200: {"content": {"application/xml": {"schema": {"type": "string"}}}}},
 )
-async def sitemap(snapshot: Snapshot, request: Request):
+async def sitemap(snapshot: Metadata, request: Request):
     return Response(
         exports.sitemap(snapshot, base_url(request)),
         media_type="application/xml",
@@ -123,7 +157,7 @@ async def sitemap(snapshot: Snapshot, request: Request):
     response_class=PlainTextResponse,
     summary="读取公开站点抓取规则",
 )
-async def robots(snapshot: Snapshot, request: Request):
+async def robots(snapshot: Metadata, request: Request):
     return PlainTextResponse(
         exports.robots(snapshot, base_url(request)), headers=NO_STORE
     )
@@ -134,7 +168,7 @@ async def robots(snapshot: Snapshot, request: Request):
     response_class=PlainTextResponse,
     summary="读取公开站点机器阅读目录",
 )
-async def llms(snapshot: Snapshot, request: Request):
+async def llms(snapshot: Metadata, request: Request):
     return PlainTextResponse(
         exports.llms(snapshot, base_url(request)), headers=NO_STORE
     )
@@ -157,9 +191,19 @@ async def llms_full(snapshot: Snapshot, request: Request):
     summary="读取当前公开页面的 Markdown",
     responses={200: {"content": {"text/markdown": {"schema": {"type": "string"}}}}},
 )
-async def markdown(page_slug: str, snapshot: Snapshot, request: Request):
+async def markdown(
+    slug: str,
+    page_slug: str,
+    request: Request,
+    session: Session,
+    expected_release_id: ExpectedRelease = None,
+):
     try:
-        selected = delivery.find_page(snapshot, page_slug)
+        if b"%25" in request.scope.get("raw_path", b"").lower():
+            raise delivery.missing_page()
+        selected = (
+            await delivery.active_page(slug, page_slug, session, expected_release_id)
+        ).page
     except SiteError as error:
         raise api_error(error) from None
     return Response(
@@ -203,7 +247,7 @@ async def site_html(
     try:
         if b"%25" in request.scope.get("raw_path", b"").lower():
             raise delivery.missing_page()
-        snapshot = await delivery.active_snapshot(slug, session)
+        snapshot = await delivery.active_metadata(slug, session)
         target = delivery.redirect_target(snapshot, page_slug)
         if target:
             return RedirectResponse(
@@ -211,7 +255,15 @@ async def site_html(
                 status_code=307,
                 headers=NO_STORE,
             )
-        selected = delivery.find_page(snapshot, page_slug)
+        metadata = delivery.find_page(snapshot, page_slug)
+        selected = (
+            await delivery.active_page(
+                slug, metadata.slug, session, snapshot.release_id
+            )
+        ).page
+        snapshot.pages = [
+            selected if item.slug == selected.slug else item for item in snapshot.pages
+        ]
         return HTMLResponse(
             render_site(
                 snapshot,

@@ -326,7 +326,11 @@ def test_postgres_native_types_and_server_defaults(postgres_client):
                 (row["table_name"], row["column_name"]): row for row in columns
             }
             for row in columns:
-                if row["column_name"] == "id" or row["column_name"].endswith("_id"):
+                if row["table_name"] == "note_block_versions" and row[
+                    "column_name"
+                ] in {"block_id", "parent_id"}:
+                    assert row["data_type"] == "character varying", row
+                elif row["column_name"] == "id" or row["column_name"].endswith("_id"):
                     assert row["data_type"] == "uuid", row
                 if row["column_name"].endswith("_at_ms"):
                     assert row["data_type"] == "bigint", row

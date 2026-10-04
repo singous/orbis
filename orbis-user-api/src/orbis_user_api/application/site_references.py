@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
+from types import MappingProxyType
 from typing import Any
 from urllib.parse import urlsplit
 from uuid import UUID
@@ -24,6 +25,7 @@ from orbis_user_api.application.site_urls import (
     _normalized_path,
     _origin,
 )
+from orbis_user_api.domain.document_references import iter_document_references
 from orbis_user_api.domain.note_content import InvalidNoteContent, normalize_note_blocks
 from orbis_user_api.models.site import Site
 from orbis_user_api.services.storage import LocalFileStorage
@@ -52,6 +54,12 @@ def use_prepared_site_references(
         yield
     finally:
         _prepared_references.reset(token)
+
+
+def current_reference_rewrites() -> Mapping[tuple[str, bool], str]:
+    """Expose prepared dependency URLs without allowing renderer mutation."""
+    prepared = _prepared_references.get()
+    return MappingProxyType(prepared.rewrites if prepared is not None else {})
 
 
 def validate_site_reference(
@@ -168,31 +176,6 @@ def _note_reference(value: str) -> tuple[str, str] | None:
     return note_id, fragment
 
 
-def _iter_references(value: Any) -> Iterator[tuple[str, bool]]:
-    if isinstance(value, list):
-        for item in value:
-            yield from _iter_references(item)
-        return
-    if not isinstance(value, dict):
-        return
-    item_type = value.get("type")
-    if item_type == "link" and isinstance(value.get("href"), str):
-        yield value["href"], False
-    if item_type == "link" and isinstance(value.get("attrs"), dict):
-        href = value["attrs"].get("href")
-        if isinstance(href, str):
-            yield href, False
-    props = value.get("props")
-    if isinstance(props, dict):
-        if item_type in MEDIA_TYPES and isinstance(props.get("url"), str) and props["url"]:
-            yield props["url"], True
-        if item_type == "card" and isinstance(props.get("href"), str):
-            yield props["href"], False
-    for child in value.values():
-        if isinstance(child, (dict, list)):
-            yield from _iter_references(child)
-
-
 async def prepare_site_references(
     site: Site,
     resolved: ResolvedSource,
@@ -239,9 +222,7 @@ async def prepare_site_references(
                 ) from None
             manifest[str(file_id)] = asset.as_dict()
             rewrites[rewrite_key] = (
-                value
-                if preview
-                else f"/public/sites/{site.slug}/assets/{asset.key}"
+                value if preview else f"/public/sites/{site.slug}/assets/{asset.key}"
             )
             return
 
@@ -279,7 +260,7 @@ async def prepare_site_references(
             canonical = normalize_note_blocks(page.blocks)
         except (InvalidNoteContent, TypeError, ValueError, RecursionError):
             raise unsafe_site_content() from None
-        for value, media in _iter_references(canonical):
+        for value, media in iter_document_references(canonical):
             await prepare(value, media, page.metadata.title)
 
     branding = site.branding or {}
