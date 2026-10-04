@@ -4,6 +4,7 @@ import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Mapping } from "@tiptap/pm/transform";
 
 import { newBlockId } from "./block-model";
+import { inlineTransactionsOnly } from "./tiptap-inline-change";
 
 const OWNED_BLOCKS = new Set([
   "paragraph", "heading", "codeBlock", "horizontalRule", "blockquote", "listItem", "taskItem",
@@ -32,15 +33,35 @@ function persistedNodes(doc: PMNode, idsByPosition?: Map<number, unknown>): Arra
   return result;
 }
 
+function validIdentities(doc: PMNode): boolean {
+  const seen = new Set<string>();
+  for (const { node } of persistedNodes(doc)) {
+    const id = node.attrs.orbisId;
+    if (typeof id !== "string" || !id || seen.has(id)) return false;
+    if (node.type.name === "orbisContainer" && node.firstChild?.attrs.orbisId !== id) return false;
+    seen.add(id);
+  }
+  return true;
+}
+
 /** New Tiptap nodes need stable Orbis IDs before an autosave is emitted. */
 export const OrbisBlockIds = Extension.create({
   name: "orbisBlockIds",
   priority: BLOCK_ID_PRIORITY,
   addProseMirrorPlugins() {
+    const validated = new WeakSet<PMNode>();
     return [new Plugin({
       key: new PluginKey("orbisBlockIds"),
+      state: {
+        init: (_, state) => { if (validIdentities(state.doc)) validated.add(state.doc); return null; },
+        apply: (_transaction, value) => value,
+      },
       appendTransaction(transactions, oldState, state) {
         if (!transactions.some((transaction) => transaction.docChanged)) return null;
+        if (validated.has(oldState.doc) && inlineTransactionsOnly(transactions)) {
+          validated.add(state.doc);
+          return null;
+        }
         const mapping = new Mapping();
         transactions.forEach((transaction) => mapping.appendMapping(transaction.mapping));
         // Resolve mapped positions once. Repeated nodeAt on a flat document
@@ -71,6 +92,7 @@ export const OrbisBlockIds = Extension.create({
             transaction.setNodeMarkup(pos + 1, undefined, { ...node.firstChild.attrs, orbisId: id });
           }
         }
+        validated.add(transaction.docChanged ? transaction.doc : state.doc);
         return transaction.docChanged ? transaction : null;
       },
     })];

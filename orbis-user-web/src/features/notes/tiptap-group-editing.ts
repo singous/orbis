@@ -4,6 +4,7 @@ import { NodeSelection, Plugin, PluginKey, TextSelection } from "@tiptap/pm/stat
 
 import { documentBlockDefinition } from "../content/document-components";
 import { newBlockId } from "./block-model";
+import { inlineTransactionsOnly } from "./tiptap-inline-change";
 
 function childKind(node: PMNode): string {
   if (node.type.name === "orbisContainer" && node.firstChild) return childKind(node.firstChild);
@@ -56,16 +57,29 @@ export const OrbisGroupEditing = Extension.create({
   name: "orbisGroupEditing",
   addProseMirrorPlugins() {
     const editor = this.editor;
+    const validated = new WeakSet<PMNode>();
     return [new Plugin({
       key: new PluginKey("orbisGroupEditing"),
-      appendTransaction(transactions, _oldState, state) {
+      state: {
+        init: (_, state) => {
+          const normalized = normalizeNode(state.doc);
+          if (normalized.length === 1 && normalized[0] === state.doc) validated.add(state.doc);
+          return null;
+        },
+        apply: (_transaction, value) => value,
+      },
+      appendTransaction(transactions, oldState, state) {
         if (!editor.isEditable || !transactions.some((transaction) => transaction.docChanged)) return null;
+        if (validated.has(oldState.doc) && inlineTransactionsOnly(transactions)) {
+          validated.add(state.doc);
+          return null;
+        }
         const replacements: Array<{ pos: number; node: PMNode; replacement: PMNode[] }> = [];
         state.doc.forEach((node, pos) => {
           const replacement = normalizeNode(node);
           if (replacement.length !== 1 || replacement[0] !== node) replacements.push({ pos, node, replacement });
         });
-        if (!replacements.length) return null;
+        if (!replacements.length) { validated.add(state.doc); return null; }
         const anchor = blockPoint(state.selection.$anchor);
         const head = blockPoint(state.selection.$head);
         const transaction = state.tr;
@@ -82,6 +96,7 @@ export const OrbisGroupEditing = Extension.create({
         } else if (state.selection instanceof NodeSelection && anchorPos !== undefined) {
           transaction.setSelection(NodeSelection.create(transaction.doc, anchorPos));
         }
+        validated.add(transaction.doc);
         return transaction;
       },
     })];
