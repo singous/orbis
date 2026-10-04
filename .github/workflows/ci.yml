@@ -33,7 +33,9 @@ jobs:
         working-directory: orbis-user-api
         env:
           PYTHONPATH: src:../orbis-cli/src
-        run: ../.venv/bin/python -m pytest -q tests ../orbis-cli/tests
+        run: |
+          export PATH="$GITHUB_WORKSPACE/.venv/bin:$PATH"
+          ../.venv/bin/python -m pytest -q tests ../orbis-cli/tests
 
   frontend:
     name: Frontend checks

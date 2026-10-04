@@ -27,12 +27,13 @@ def _compile(element, compiler, *, postgres, **kw):
         else "group_concat(plain_text, char(10))"
     )
     return f"""CASE WHEN EXISTS (SELECT 1 FROM note_block_documents h WHERE h.note_id={note_id})
-    THEN COALESCE((WITH RECURSIVE block_text_walk(block_id,path,plain_text) AS (
-        SELECT b.block_id,{position},b.plain_text FROM note_block_versions b
+    THEN COALESCE((WITH RECURSIVE block_text_walk(note_id,block_id,path,plain_text) AS (
+        SELECT b.note_id,b.block_id,{position},b.plain_text FROM note_block_versions b
         WHERE b.note_id={note_id} AND b.valid_to IS NULL AND b.parent_id IS NULL
-        UNION ALL SELECT b.block_id,w.path || '.' || {position},b.plain_text
-        FROM note_block_versions b JOIN block_text_walk w ON b.parent_id=w.block_id
-        WHERE b.note_id={note_id} AND b.valid_to IS NULL)
+        UNION ALL SELECT b.note_id,b.block_id,w.path || '.' || {position},b.plain_text
+        FROM block_text_walk w JOIN note_block_versions b
+        ON b.note_id=w.note_id AND b.parent_id=w.block_id
+        WHERE b.valid_to IS NULL)
         SELECT {aggregate} FROM (SELECT plain_text,path FROM block_text_walk WHERE plain_text<>'' ORDER BY path) ordered_text), '')
     ELSE {legacy} END"""
 
