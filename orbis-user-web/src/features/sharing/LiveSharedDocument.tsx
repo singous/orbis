@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ApiError } from "../../shared/api/api-client";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { ContentRenderer } from "../content/ContentRenderer";
+import { TableHostContext } from "../data-tables/context";
 import {
   readSharedBlock,
   readSharedContent,
@@ -187,7 +188,7 @@ export function LiveSharedDocument({
         token={token}
         noteId={noteId}
       >
-        <ContentRenderer blocks={blocks} pageTitle={first.data.title} />
+        <TableHostContext.Provider value={{ noteId, draftScope: "", auth: null, readOnly: true, shareToken: token }}><ContentRenderer blocks={blocks} pageTitle={first.data.title} /></TableHostContext.Provider>
       </PublicShareFiles>
       {error ? (
         <p role="alert">

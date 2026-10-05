@@ -206,6 +206,8 @@ async def markdown(
         ).page
     except SiteError as error:
         raise api_error(error) from None
+    from orbis_user_api.application.published_tables import hydrate_for_export
+    selected = selected.model_copy(update={"blocks": await hydrate_for_export(session, selected.blocks)})
     return Response(
         exports.page_markdown(selected, base_url(request)),
         media_type="text/markdown",

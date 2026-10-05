@@ -31,6 +31,8 @@ export class AutosaveCoordinator<T> {
   readonly #onStateChange?: (state: AutosaveState) => void;
   #timer: ReturnType<typeof setTimeout> | null = null;
   #inFlight: Promise<void> | null = null;
+  #external: Promise<void> | null = null;
+  #externalQueue: Promise<void> = Promise.resolve();
   #current: T | null = null;
   #saved: T | null = null;
   #currentFingerprint: string | null = null;
@@ -59,6 +61,8 @@ export class AutosaveCoordinator<T> {
   get saved(): T | null {
     return this.#saved;
   }
+
+  get hasUnsavedChanges(): boolean { return this.#currentFingerprint !== this.#savedFingerprint; }
 
   holdConflict(): void {
     this.#clearTimer();
@@ -121,6 +125,7 @@ export class AutosaveCoordinator<T> {
   }
 
   async flush(): Promise<void> {
+    if (this.#external) await this.#external;
     this.#clearTimer();
     if (this.#inFlight) {
       await this.#inFlight;
@@ -167,6 +172,34 @@ export class AutosaveCoordinator<T> {
     await this.flush();
   }
 
+  /** Serialize an external document mutation while preserving concurrent typing. */
+  externalChange<R>(perform: (saved: T) => Promise<{ result: R; transform: (value: T) => T }>): Promise<R> {
+    const operation = this.#externalQueue.then(() => this.#performExternalChange(perform));
+    this.#externalQueue = operation.then(() => {}, () => {});
+    return operation;
+  }
+
+  async #performExternalChange<R>(perform: (saved: T) => Promise<{ result: R; transform: (value: T) => T }>): Promise<R> {
+    if (this.#external) await this.#external;
+    await this.flush();
+    if (this.#state !== "saved" || !this.#saved) throw new Error("请先处理正文保存失败或版本冲突，本机草稿仍保留。");
+    this.#clearTimer();
+    let release!: () => void;
+    this.#external = new Promise<void>(resolve => { release = resolve; });
+    try {
+      const update = await perform(this.#saved);
+      this.extend(update.transform);
+      return update.result;
+    } catch (error) {
+      if (isConflict(error)) this.#setState("conflict");
+      throw error;
+    } finally {
+      this.#external = null;
+      release();
+      if (this.#currentFingerprint !== this.#savedFingerprint && this.state !== "conflict") this.#schedule();
+    }
+  }
+
   dispose(flush = false): void {
     this.#clearTimer();
     if (flush) {
@@ -176,6 +209,7 @@ export class AutosaveCoordinator<T> {
 
   #schedule(): void {
     this.#clearTimer();
+    if (this.#external) return;
     const now = Date.now();
     // Quiet period coalesces keystrokes; the min interval rate-limits
     // back-to-back saves; the max delay caps the crash-loss window.

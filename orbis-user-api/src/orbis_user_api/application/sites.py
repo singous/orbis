@@ -462,4 +462,6 @@ async def unpublish_site(site_id: UUID, user: User, session: AsyncSession) -> Si
 
 async def read_public_site(slug: str, session: AsyncSession) -> SiteSnapshotOut:
     repository = SitePageRepository(session)
-    return await repository.snapshot(await repository.active(slug))
+    snapshot = await repository.snapshot(await repository.active(slug))
+    from orbis_user_api.application.published_tables import bind_urls
+    return snapshot.model_copy(update={"pages": [page.model_copy(update={"blocks": bind_urls(page.blocks, slug, snapshot.release_id)}) for page in snapshot.pages]})

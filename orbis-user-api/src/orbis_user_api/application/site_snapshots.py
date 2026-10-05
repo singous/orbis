@@ -56,6 +56,9 @@ async def build_snapshot(
             if reused
             else public_note_blocks(page.blocks, url_policy=url_policy)
         )
+        if not reused:
+            from orbis_user_api.application.data_table_exports import project_document_tables
+            blocks = await project_document_tables(blocks, session, page.metadata.note_id, public=True)
         pages.append(
             SitePageOut(
                 **page.metadata.model_dump(exclude={"note_id"}),

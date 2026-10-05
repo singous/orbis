@@ -1,5 +1,7 @@
 """ORM model registry."""
 
+from orbis_user_api.models.data_table import DataTable, DataTableRevision, DataTableRecord, DataTableReceipt, PublishedTable, PublishedTableRecord
+
 from orbis_user_api.models.community import CommunityState, CommunityTenant
 from orbis_user_api.models.collaboration import NoteComment, NoteRevision
 from orbis_user_api.models.document_share import DocumentShare
@@ -18,6 +20,8 @@ from orbis_user_api.models.workspace import (
 )
 
 __all__ = [
+    "DataTable", "DataTableRevision", "DataTableRecord", "DataTableReceipt",
+    "PublishedTable", "PublishedTableRecord",
     "CommunityState",
     "CommunityTenant",
     "DocumentShare",

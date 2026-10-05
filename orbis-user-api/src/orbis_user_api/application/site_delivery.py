@@ -65,9 +65,11 @@ async def active_page(
     if page_slug is not None and not re.fullmatch(PAGE_SLUG_PATTERN, page_slug):
         raise missing_page()
     release = await active_release(slug, session, expected_release_id)
+    from orbis_user_api.application.published_tables import bind_urls
+    page = await SitePageRepository(session).page(release, page_slug)
     return SitePageDeliveryOut(
         release_id=release.release_id,
-        page=await SitePageRepository(session).page(release, page_slug),
+        page=page.model_copy(update={"blocks": bind_urls(page.blocks, slug, release.release_id)}),
     )
 
 

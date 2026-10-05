@@ -22,6 +22,18 @@ from orbis_user_api.services.file import secure_file_response
 from orbis_user_api.services.storage import LocalFileStorage
 
 
+def redact_table_metadata(value):
+    if isinstance(value, list):
+        return [redact_table_metadata(item) for item in value]
+    if not isinstance(value, dict):
+        return value
+    result = {key: redact_table_metadata(item) for key, item in value.items()}
+    if value.get("type") == "dataTable":
+        result["props"] = {key: item for key, item in value.get("props", {}).items() if key in {"table_id", "table_revision", "title"}}
+        result.pop("table_snapshot", None)
+    return result
+
+
 async def public_content(
     scope: ShareScope,
     note_id: UUID,
@@ -47,7 +59,7 @@ async def public_content(
     if expected_version is not None and expected_version != version:
         raise NoteVersionConflict
     page = await store.children(parent_id, offset, limit, version)
-    return {**page, "title": note.title}
+    return {**page, "blocks": redact_table_metadata(page["blocks"]), "title": note.title}
 
 
 async def public_block(
@@ -71,7 +83,8 @@ async def public_block(
         raise ShareUnavailable
     if expected_version is not None and expected_version != version:
         raise NoteVersionConflict
-    return await store.block(block_id, version)
+    result = await store.block(block_id, version)
+    return {**result, "block": redact_table_metadata(result["block"])}
 
 
 async def shared_asset(

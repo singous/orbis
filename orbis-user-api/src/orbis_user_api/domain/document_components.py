@@ -69,6 +69,17 @@ def component_markdown(
         return None
     title = _markdown_title(component_title(block))
     children = block.get("children", [])
+    if kind == "dataTable":
+        data = block.get("table_snapshot")
+        if not data:
+            return f"### {title}\n\n[多维表格：请通过表格导出获取完整记录]"
+        def cell(value):
+            return str(value).replace("\\", "\\\\").replace("|", "\\|").replace("\r", "").replace("\n", "<br>")
+        columns = data.get("columns", [])
+        if not columns:
+            return f"### {title}\n\n暂无记录"
+        rows = [columns, ["---"] * len(columns), *data["rows"]]
+        return f'### {_markdown_title(data["title"])}\n\n视图：{_markdown_title(data["view"])}；快照版本：{data["revision"]}\n\n' + "\n".join("| " + " | ".join(cell(value) for value in row) + " |" for row in rows)
     if kind == "callout":
         body = "\n\n".join(
             part

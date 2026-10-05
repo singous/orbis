@@ -12,6 +12,7 @@ from orbis_user_api.api.openapi_site_delivery import install_site_delivery_docs
 EXAMPLE_REQUEST_ID = "019fe1e0-1234-7abc-8def-0123456789ab"
 
 TAG_DOCS: dict[str, tuple[str, str]] = {
+    "data-tables": ("多维表格", "文档内嵌多维表格的字段、视图、分页记录、版本化保存与公开读取。日期时间值使用毫秒 Unix 时间戳。"),
     "integrations": ("智能体集成", "管理受限集成令牌与远程文档库访问权限。"),
     "open-library-imports": ("开放大文档导入", "受限分片上传、持久进度和原子完成新的远程文档。"),
     "open-library-files": ("开放文档附件", "受集成身份与文档范围约束的附件上传和读取。"),
@@ -612,6 +613,8 @@ def install_chinese_openapi(app: FastAPI) -> None:
         _install_base_mvp_docs(schema)
         install_site_delivery_docs(schema, _add_error_example, _envelope)
         install_document_platform_docs(schema, _operation_description, _error_response)
+        from orbis_user_api.api.data_table_docs import install_data_table_docs
+        install_data_table_docs(schema, _operation_description, _add_error_example)
         _install_workspace_context_docs(schema)
         app.openapi_schema = schema
         return schema

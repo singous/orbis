@@ -1,4 +1,5 @@
 import { ApiError, apiRequest } from "../../shared/api/api-client";
+import { z } from "zod";
 import { authRequestOptions as authOptions, type AuthRequestOptions as SharedAuthRequestOptions } from "../../shared/auth/use-auth-request";
 import { LEGACY_CONTENT_PAGE_LIMIT } from "./editor-content-handle";
 import {
@@ -146,7 +147,7 @@ export async function saveNoteContentPrefix(payload: { noteId: string; expectedV
 }
 
 export async function saveNoteBlockChanges(payload: { noteId: string; expectedVersion: number; changes: import("./block-changes").BlockChanges }, auth: AuthRequestOptions) {
-  return noteContentPrefixSchema.omit({ loaded_block_ids: true }).parse(await apiRequest(`/notes/${payload.noteId}/blocks`, { method: "PATCH", body: { expected_version: payload.expectedVersion, ...payload.changes }, ...authOptions(auth) }));
+  return noteContentPrefixSchema.omit({ loaded_block_ids: true }).extend({ table_blocks: z.array(z.custom<import("../notes/block-model").OrbisBlock>()).default([]) }).parse(await apiRequest(`/notes/${payload.noteId}/blocks`, { method: "PATCH", body: { expected_version: payload.expectedVersion, ...payload.changes }, ...authOptions(auth) }));
 }
 
 export async function getNoteContentOutline(noteId: string, version: number, auth: AuthRequestOptions, signal?: AbortSignal) {

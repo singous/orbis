@@ -53,5 +53,6 @@ export function createOwnedDraftCheckpoints(options: {
       finally { lane?.release(); initialization.abort(); }
     },
     get sequence() { return controller?.sequence ?? 0; },
+    get physicalScopeKey() { return lane ? withDraftLane(options.scopeKey, lane.laneId) : null; },
   };
 }

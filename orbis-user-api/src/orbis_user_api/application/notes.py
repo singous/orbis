@@ -334,12 +334,13 @@ async def update_note_content(
     payload: NoteContentUpdateRequest,
     user: User,
     session: AsyncSession,
+    *, allow_table_copy: bool = False,
 ) -> NoteContent:
     from orbis_user_api.application.block_content import BlockContentStore
 
     note = await get_note(note_id, user, session)
     return await BlockContentStore(session, note).replace(
-        payload.expected_version, payload.blocks, user
+        payload.expected_version, payload.blocks, user, allow_table_copy=allow_table_copy
     )
 
 
@@ -390,7 +391,9 @@ async def export_note_markdown(
 ) -> tuple[Note, str]:
     note = await get_note(note_id, user, session)
     content = await get_note_content(note_id, user, session)
-    return note, blocks_to_markdown(content.blocks)
+    from orbis_user_api.application.data_table_exports import project_document_tables
+    projected = await project_document_tables(content.blocks, session, note.id, public=False)
+    return note, blocks_to_markdown(projected)
 
 
 async def search_notes(
