@@ -12,6 +12,7 @@ from orbis_user_api.application.block_content import (
     read_stored_content,
 )
 from orbis_user_api.application.document_shares import ShareScope, ShareUnavailable
+from orbis_user_api.application.block_pages import json_bytes
 from orbis_user_api.application.site_assets import file_reference
 from orbis_user_api.domain.document_references import managed_file_ids
 from orbis_user_api.models.file import FileAsset
@@ -20,6 +21,18 @@ from orbis_user_api.models.note_block import NoteBlockVersion
 from orbis_user_api.services.exceptions import NoteVersionConflict
 from orbis_user_api.services.file import secure_file_response
 from orbis_user_api.services.storage import LocalFileStorage
+
+
+def _reader_block(block: dict[str, Any]) -> dict[str, Any]:
+    """Drawing source remains private in both live and published readers."""
+    if block.get("type") == "drawing":
+        return {
+            **block,
+            "props": {key: value for key, value in block.get("props", {}).items() if key in {"url", "caption", "previewWidth"}},
+        }
+    if block.get("children"):
+        return {**block, "children": [_reader_block(child) for child in block["children"]]}
+    return block
 
 
 async def public_content(
@@ -47,7 +60,12 @@ async def public_content(
     if expected_version is not None and expected_version != version:
         raise NoteVersionConflict
     page = await store.children(parent_id, offset, limit, version)
-    return {**page, "title": note.title}
+    blocks = [_reader_block(block) for block in page["blocks"]["blocks"]]
+    return {
+        **page, "title": note.title,
+        "blocks": {**page["blocks"], "blocks": blocks},
+        "returned_bytes": sum(json_bytes(block) for block in blocks),
+    }
 
 
 async def public_block(
@@ -71,7 +89,8 @@ async def public_block(
         raise ShareUnavailable
     if expected_version is not None and expected_version != version:
         raise NoteVersionConflict
-    return await store.block(block_id, version)
+    result = await store.block(block_id, version)
+    return {**result, "block": _reader_block(result["block"])}
 
 
 async def shared_asset(
