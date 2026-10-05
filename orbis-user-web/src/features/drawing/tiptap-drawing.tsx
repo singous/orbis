@@ -8,6 +8,7 @@ import { PencilLine } from "../../shared/ui/icons";
 import { useManagedFiles } from "../files/use-managed-files";
 import { EditorReadOnlyContext } from "../notes/tiptap-editor-context";
 import { clipboardPropsAttribute, parseClipboardProps } from "../notes/tiptap-clipboard";
+import { blockActionNeedsRead, prepareBlockAction } from "../notes/blocks/block-action-read";
 import type { DrawingEditorProps } from "./DrawingEditorDialog";
 import { DrawingPreview } from "./DrawingPreview";
 import { parseDrawingScene } from "./drawing-scene";
@@ -35,9 +36,15 @@ function DrawingView({ node, editor, updateAttributes, getPos }: NodeViewProps) 
   async function open() {
     setLoading(true); setError(null);
     try {
-      parseDrawingScene(props.scene);
+      await prepareBlockAction(editor, [node.attrs.orbisId]);
       const { default: Component } = await import("./DrawingEditorDialog");
-      if (mounted.current && !live.current.readOnly) setSession({ Component, scene: String(live.current.node.attrs.orbisProps?.scene ?? ""), caption: String(live.current.node.attrs.orbisProps?.caption || "画板"), scope: live.current.files.scope });
+      if (!mounted.current || live.current.readOnly || editor.isDestroyed) return;
+      const position = getPos();
+      const current = position === undefined ? null : editor.state.doc.nodeAt(position);
+      if (!current || current.attrs.orbisId !== node.attrs.orbisId || current.type.name !== "orbisDrawing") throw new Error("目标画板已变化，请重新打开。");
+      const source = current.attrs.orbisProps ?? {};
+      parseDrawingScene(source.scene);
+      setSession({ Component, scene: String(source.scene ?? ""), caption: String(source.caption || "画板"), scope: live.current.files.scope });
     } catch (cause) { if (mounted.current) setError(cause instanceof Error ? cause.message : "画板编辑器加载失败，请重试。"); }
     finally { if (mounted.current) setLoading(false); }
   }
@@ -46,6 +53,7 @@ function DrawingView({ node, editor, updateAttributes, getPos }: NodeViewProps) 
       const position = getPos();
       const current = position === undefined || editor.isDestroyed ? null : editor.state.doc.nodeAt(position);
       if (!mounted.current || !current || current.type.name !== "orbisDrawing" || live.current.readOnly || !editor.isEditable || !session || live.current.files.scope !== session.scope || current.attrs.orbisId !== node.attrs.orbisId) throw new Error("文档已关闭或不可编辑，请保留绘制内容。");
+      if (blockActionNeedsRead(editor, [node.attrs.orbisId])) throw new Error("画板原内容尚未完整载入，请先完成读取后重试。");
       if ((current.attrs.orbisProps?.scene ?? "") !== session.scene) throw new Error("正文中的画板已更新，请关闭后重新打开，避免覆盖较新的内容。");
     };
     check();
@@ -54,6 +62,9 @@ function DrawingView({ node, editor, updateAttributes, getPos }: NodeViewProps) 
     editor.view.dispatch(closeHistory(editor.state.tr));
     updateAttributes({ orbisProps: { ...live.current.node.attrs.orbisProps, scene: value.scene, caption: value.caption, url } });
     editor.view.dispatch(closeHistory(editor.state.tr));
+    const position = getPos();
+    const saved = position === undefined ? null : editor.state.doc.nodeAt(position)?.attrs.orbisProps;
+    if (saved?.scene !== value.scene || saved?.url !== url || saved?.caption !== value.caption) throw new Error("画板尚未写回正文，本次绘制已保留，请重试。");
   }
   return <NodeViewWrapper data-orbis-block-id={node.attrs.orbisId} contentEditable={false} className="orbis-drawing" data-orbis-embedded-editor>
     <DrawingPreview props={props} actions={!readOnly ? <ActionButton aria-label="编辑画板" isPending={loading} onClick={() => void open()}><PencilLine size={15} aria-hidden="true" />编辑画板</ActionButton> : undefined} />
