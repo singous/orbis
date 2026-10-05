@@ -143,6 +143,15 @@ test("field configuration, visibility and keyboard edits persist through the API
   await expect(
     page.getByRole("spinbutton", { name: "工作量", exact: true }),
   ).toHaveValue("8");
+  await page.getByRole("button", { name: "添加视图", exact: true }).click();
+  await expect(page.getByRole("tab", { name: "新视图 3" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator(".dt-save")).toHaveText("已保存");
+  await page.getByRole("button", { name: "视图设置", exact: true }).click();
+  await page.getByRole("dialog").getByLabel("视图名称").fill("工作量视图");
+  await page.getByRole("dialog").getByRole("button", { name: "保存视图", exact: true }).click();
+  await expect(page.locator(".dt-save")).toHaveText("已保存");
+  await page.reload();
+  await expect(page.getByRole("tab", { name: "工作量视图" })).toHaveAttribute("aria-selected", "true");
   expect((await read()).content_version).toBeGreaterThan(3);
 });
 
@@ -221,4 +230,106 @@ test("duplicating a table block creates an independent table and undo restores a
   await expect(
     page.getByRole("textbox", { name: "标题", exact: true }).nth(1),
   ).toHaveValue("原始记录");
+});
+
+test("ten thousand records keep browser pages and rendered rows bounded", async ({
+  page,
+  request,
+}) => {
+  const { read, note, headers } = await prepare(page, request);
+  await page.getByRole("button", { name: "插入内容", exact: true }).click();
+  await page.getByRole("option", { name: "多维表格", exact: true }).click();
+  await page.getByRole("button", { name: "创建表格", exact: true }).click();
+  await expect(page.getByRole("tab", { name: "全部记录" })).toBeVisible();
+  const content = await read();
+  const block = content.blocks.blocks.find(
+    (block: { type: string }) => block.type === "dataTable",
+  );
+  const url = `${api}/notes/${note.id}/tables/${block.props.table_id}`;
+  const initial = (await (await request.get(url, { headers })).json()).data;
+  const titleField = initial.definition.fields[0].id;
+  let documentVersion = content.content_version,
+    revision = initial.revision;
+  for (let batch = 0; batch < 100; batch++) {
+    const response = await request.patch(url, {
+      headers,
+      data: {
+        operation_id: crypto.randomUUID(),
+        block_id: block.id,
+        expected_document_version: documentVersion,
+        expected_table_revision: revision,
+        upserts: Array.from({ length: 100 }, (_, index) => ({
+          id: crypto.randomUUID(),
+          values: { [titleField]: `Record ${batch * 100 + index}` },
+        })),
+      },
+    });
+    expect(response.ok(), await response.text()).toBeTruthy();
+    const result = (await response.json()).data;
+    documentVersion = result.content_version;
+    revision = result.table_revision;
+  }
+  await page.reload();
+  await expect(page.locator(".dt-footer")).toContainText("10000 条记录");
+  expect(await page.locator(".dt-grid-row").count()).toBeLessThan(32);
+  const response = await request.get(url, { headers, params: { limit: 100 } });
+  const first = (await response.json()).data;
+  expect(first.records).toHaveLength(100);
+  expect(first.total).toBe(10000);
+  expect((await response.body()).byteLength).toBeLessThan(64 * 1024);
+  await page.evaluate(() => {
+    const sample = window as Window & { tableFrames?: number[] };
+    sample.tableFrames = [];
+    document.querySelector(".dt-grid-scroll")!.addEventListener("input", () => {
+      const start = performance.now();
+      requestAnimationFrame(() =>
+        sample.tableFrames!.push(performance.now() - start),
+      );
+    });
+  });
+  const input = page
+    .getByRole("textbox", { name: "标题", exact: true })
+    .first();
+  await input.fill("");
+  await input.pressSequentially("large-table-acceptance-0123456789", {
+    delay: 15,
+  });
+  await input.press("Tab");
+  await expect(page.locator(".dt-save")).toHaveText("已保存");
+  const metrics = await page.evaluate(() => {
+    const frames = (
+      window as Window & { tableFrames: number[] }
+    ).tableFrames.toSorted((a, b) => a - b);
+    return {
+      samples: frames.length,
+      p95: frames[Math.floor((frames.length - 1) * 0.95)],
+    };
+  });
+  expect(metrics.samples).toBeGreaterThan(20);
+  console.log(
+    JSON.stringify({
+      records: 10000,
+      renderedRows: await page.locator(".dt-grid-row").count(),
+      inputFrameP95Ms: metrics.p95,
+    }),
+  );
+  const saved = (
+    await (await request.get(url, { headers, params: { limit: 100 } })).json()
+  ).data;
+  expect(
+    saved.records.some(
+      (row: { values: Record<string, unknown> }) =>
+        row.values[titleField] === "large-table-acceptance-0123456789",
+    ),
+  ).toBeTruthy();
+});
+
+test.afterEach(async ({ page }, info) => {
+  if (info.status !== info.expectedStatus)
+    console.log(
+      JSON.stringify({
+        tableErrors: await page.locator(".dt-notice").allTextContents(),
+        tableState: await page.locator(".dt-save").allTextContents(),
+      }),
+    );
 });

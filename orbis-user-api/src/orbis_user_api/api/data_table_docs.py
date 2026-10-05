@@ -97,9 +97,29 @@ def install_data_table_docs(schema, operation_description, add_error):
                 + "。表格继承文档权限；字段、记录和视图变更与文档版本原子提交。公开读取仅包含服务端允许的字段。"
             )
             operation["description"] = operation_description(method, path, description)
+            if path.startswith("/public/"):
+                operation["description"] = operation["description"].replace(
+                    "必须在 Authorization 请求头中携带 `Bearer <access_token>`；部分写操作还要求资源管理权限。",
+                    "匿名读取；实时分享凭据或站点活动发布版本必须有效。",
+                )
+            if method == "get" and not path.endswith(
+                ("/export", "/export-text", "/html")
+            ):
+                operation["description"] = operation["description"].replace(
+                    "本接口不使用分页；业务结果直接位于 `data`。",
+                    "使用 offset/limit 分页。记录位于 data.records，发布快照单元格位于 data.rows；data.total 为完整匹配数，data.next_offset 与 data.has_more 指示后续读取。",
+                )
             if path.endswith("/export") or path.endswith("/html"):
-                operation["description"] += (
-                    " 成功响应格式为原始 CSV、Markdown 或 HTML；失败的 JSON 响应包含 request_id。"
+                access = (
+                    "匿名访问，受活动发布版本约束。"
+                    if path.startswith("/public/")
+                    else "需要 Bearer 身份认证及归属文档读取权限。"
+                )
+                operation["description"] = (
+                    description
+                    + "\n\n"
+                    + access
+                    + "\n\n响应格式：成功返回原始 CSV、Markdown 或 HTML 文本；失败返回统一 JSON，包含 code、message、request_id 与 data。"
                 )
             for parameter in operation.get("parameters", []):
                 parameter["description"] = PARAMETERS.get(

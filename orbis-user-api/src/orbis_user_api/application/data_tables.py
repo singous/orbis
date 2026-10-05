@@ -184,8 +184,8 @@ async def create_table(note_id, payload: TableCreate, user, session):
         if not source:
             raise NoteNotFound
         source_note, _ = await authorize_table(source.note_id, source.id, user, session)
-        _, _, _ = await referenced_table(source_note, source, session)
-        revision = payload.source_revision or source.head_revision
+        source_block, _, _ = await referenced_table(source_note, source, session)
+        revision = payload.source_revision or source_block["props"]["table_revision"]
         definition = await definition_at(session, source.id, revision)
         source_records = await copy_records(session, source.id, revision)
     table, definition = stage_table(

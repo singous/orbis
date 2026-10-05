@@ -173,7 +173,7 @@ function DataTableEditor({
   }
   function saveDefinition(next: TableDefinition) {
     table.stage({ definition: next });
-    save();
+    return table.save().catch(() => undefined);
   }
   function exportFile(format: "csv" | "markdown") {
     if (!host.auth) return;
@@ -328,17 +328,17 @@ function DataTableEditor({
             type="button"
             className="dt-add-view"
             aria-label="添加视图"
-            onClick={() => {
+            onClick={async () => {
               const next = {
                 ...structuredClone(view),
                 id: tableId(),
                 name: `新视图 ${definition.views.length + 1}`,
               };
-              saveDefinition({
+              const saved = await saveDefinition({
                 ...definition,
                 views: [...definition.views, next],
               });
-              table.setViewId(next.id);
+              if (saved) table.setViewId(next.id);
             }}
           >
             <Plus size={15} />

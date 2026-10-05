@@ -48,12 +48,12 @@ export function useDataTable(
   });
   const current = useRef({ host, page, scope });
   current.current = { host, page, scope };
-  const inFlight = useRef<Promise<void> | null>(null);
-  const saveAgain = useRef(false);
+  const inFlight = useRef<Promise<TableResult | undefined> | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const undo = useRef<TableChanges[]>([]),
     redo = useRef<TableChanges[]>([]);
   const generation = useRef(0);
+  const acknowledged = useRef({ documentVersion: 0, revision });
   const mounted = useRef(true);
   const query = useRef({ id, viewId, offset });
   query.current = { id, viewId, offset };
@@ -75,18 +75,46 @@ export function useDataTable(
       const requestGeneration = ++generation.current;
       const expected =
         offset > 0 && !restart
-          ? paging.current !== null && paging.current.viewId === viewId &&
+          ? paging.current !== null &&
+            paging.current.viewId === viewId &&
             paging.current.blockRevision === revision
             ? paging.current.revision
             : revision
           : undefined;
-      const next = await readTable(host.noteId, id, host.auth, {
-        viewId,
-        offset,
-        revision: expected,
-        shareToken: host.shareToken,
-        signal,
-      });
+      let next: TablePage;
+      try {
+        next = await readTable(host.noteId, id, host.auth, {
+          viewId,
+          offset,
+          revision: expected,
+          shareToken: host.shareToken,
+          signal,
+        });
+      } catch (error) {
+        if (
+          viewId &&
+          error instanceof ApiError &&
+          error.code === "DATA_TABLE_INVALID" &&
+          error.status === 422 &&
+          mounted.current &&
+          requestGeneration === generation.current
+        ) {
+          setViewId(undefined);
+          setOffset(0);
+          try {
+            sessionStorage.removeItem(viewKey);
+          } catch {
+            /* Preferences are optional. */
+          }
+          const url = new URL(window.location.href);
+          if (url.searchParams.get("table") === blockId) {
+            url.searchParams.delete("view");
+            history.replaceState({}, "", url);
+          }
+          return;
+        }
+        throw error;
+      }
       if (
         mounted.current &&
         requestGeneration === generation.current &&
@@ -95,6 +123,11 @@ export function useDataTable(
         query.current.viewId === viewId &&
         query.current.offset === offset
       ) {
+        if (next.content_version < acknowledged.current.documentVersion) return;
+        acknowledged.current = {
+          documentVersion: next.content_version,
+          revision: next.revision,
+        };
         paging.current = {
           viewId,
           revision: next.revision,
@@ -175,7 +208,9 @@ export function useDataTable(
     draft.current = {
       ...old,
       scope,
-      revision: hasChanges(old.changes) ? old.revision : page.revision,
+      revision: hasChanges(old.changes)
+        ? old.revision
+        : acknowledged.current.revision,
       changes: combineChanges(old.changes, changes),
       sequence: old.sequence + 1,
     };
@@ -187,15 +222,16 @@ export function useDataTable(
     }, 750);
   }
 
-  async function save(recordHistory = true) {
+  async function save(recordHistory = true): Promise<TableResult | undefined> {
     if (saveTimer.current) {
       clearTimeout(saveTimer.current);
       saveTimer.current = null;
     }
     if (inFlight.current) {
-      saveAgain.current = true;
-      await inFlight.current;
-      return;
+      const completed = await inFlight.current;
+      return hasChanges(draft.current.changes)
+        ? save(recordHistory)
+        : completed;
     }
     const state = current.current;
     if (
@@ -205,7 +241,6 @@ export function useDataTable(
     )
       return;
     const owner = state.scope;
-    let succeeded = false;
     const task = (async () => {
       setSaving(true);
       setError(null);
@@ -229,6 +264,11 @@ export function useDataTable(
           return mutateTable(state.host.noteId, id, request, state.host.auth!);
         });
         if (current.current.scope !== owner) return;
+        if (result.content_version >= acknowledged.current.documentVersion)
+          acknowledged.current = {
+            documentVersion: result.content_version,
+            revision: result.table_revision,
+          };
         const sent = draft.current.request!;
         const remaining = afterAcknowledgement(draft.current.changes, sent);
         draft.current = {
@@ -249,7 +289,6 @@ export function useDataTable(
           redo.current = [];
           setHistoryState((value) => value + 1);
         }
-        succeeded = true;
         await refreshRef.current(undefined, true);
         return result;
       } catch (error) {
@@ -268,20 +307,11 @@ export function useDataTable(
         if (current.current.scope === owner) setSaving(false);
       }
     })();
-    inFlight.current = task.then(
-      () => {},
-      () => {},
-    );
+    inFlight.current = task;
     try {
       return await task;
     } finally {
-      inFlight.current = null;
-      const repeat = saveAgain.current;
-      saveAgain.current = false;
-      if (succeeded && repeat && hasChanges(draft.current.changes))
-        queueMicrotask(() => {
-          void save().catch(() => {});
-        });
+      if (inFlight.current === task) inFlight.current = null;
     }
   }
 
