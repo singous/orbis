@@ -13,6 +13,10 @@ const proxy = {
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  optimizeDeps: {
+    entries: ["index.html"],
+    include: ["@excalidraw/excalidraw"],
+  },
   build: {
     manifest: true,
     rollupOptions: {

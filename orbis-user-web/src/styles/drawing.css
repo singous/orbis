@@ -1,0 +1,27 @@
+.drawing-block { margin-block: 1rem; border: 1px solid var(--border-subtle, #dfe5e3); border-radius: 12px; overflow: hidden; background: var(--surface, #fff); }
+.drawing-block-bar { min-height: 44px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 6px 12px; border-bottom: 1px solid var(--border-subtle, #dfe5e3); }
+.drawing-block-label, .drawing-block-actions { display: flex; align-items: center; gap: 8px; }
+.drawing-block-label { min-width: 0; overflow-wrap: anywhere; font: 500 13px/1.5 var(--font-sans, sans-serif); color: var(--text-secondary); }
+.drawing-block-actions .orbis-action-button { font-size: 12px; min-height: 30px; padding: 4px 8px; }
+.drawing-preview { background: #fff; padding: 12px; }
+.drawing-preview figure, .drawing-expanded figure { margin: 0 !important; }
+.drawing-preview img { display: block; width: 100%; max-height: 480px; object-fit: contain; }
+.drawing-empty { min-height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--text-secondary); background-image: radial-gradient(var(--border-subtle, #dfe5e3) 1px, transparent 1px); background-size: 20px 20px; }
+.drawing-empty small { font-size: 12px; color: var(--text-muted); }
+.drawing-preview-dialog.orbis-modal-dialog, .drawing-editor-dialog.orbis-modal-dialog { width: min(1280px, calc(100vw - 32px)); max-width: none; max-height: calc(100dvh - 32px); overflow: auto; padding: 20px; }
+.drawing-editor-meta { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; color: var(--text-secondary); font-size: 12px; }
+.drawing-editor-meta label { display: flex; align-items: center; gap: 10px; }
+.drawing-editor-meta input { width: min(260px, 40vw); border: 1px solid var(--border-subtle, #dfe5e3); border-radius: 6px; padding: 6px 10px; background: var(--surface); color: var(--text-primary); font-size: 14px; }
+.drawing-editor-surface { position: relative; height: min(680px, calc(100dvh - 245px)); min-height: 300px; border: 1px solid #dfe5e3; border-radius: 8px; overflow: hidden; color: #1b1b1f; }
+.drawing-editor-surface .excalidraw { --color-primary: #167568; --color-primary-darker: #0d5f54; --color-primary-light: #dff2ed; }
+/* Version 1 supports document drawings; external embeds and libraries have no storage contract. */
+.drawing-editor-surface .App-toolbar__extra-tools-trigger, .drawing-editor-surface .layer-ui__library { display: none; }
+.drawing-expanded { overflow: auto; max-height: calc(100dvh - 160px); background: #fff; padding: 16px; border-radius: 8px; }
+.drawing-expanded img { max-width: 100%; height: auto; margin: auto; }
+.drawing-error { margin: 10px 0; color: var(--danger, #b42318); font-size: 13px; }
+.drawing-discard { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 10px; font-size: 13px; }
+@media (max-width: 640px) {
+  .drawing-editor-dialog.orbis-modal-dialog, .drawing-preview-dialog.orbis-modal-dialog { width: calc(100vw - 12px); padding: 12px; }
+  .drawing-editor-meta > span { display: none; }
+  .drawing-editor-surface { height: calc(100dvh - 230px); }
+}

@@ -8,7 +8,7 @@ import { inlineTransactionsOnly } from "./tiptap-inline-change";
 
 const OWNED_BLOCKS = new Set([
   "paragraph", "heading", "codeBlock", "horizontalRule", "blockquote", "listItem", "taskItem",
-  "table", "orbisComponent", "orbisMedia", "orbisToggle", "orbisContainer",
+  "table", "orbisComponent", "orbisMedia", "orbisDrawing", "orbisToggle", "orbisContainer",
 ]);
 const SYNTHETIC_PARAGRAPH_PARENTS = new Set(["listItem", "taskItem", "tableCell", "tableHeader"]);
 const OWN_CONTENT_PARENTS = new Set(["orbisComponent", "orbisToggle", "blockquote"]);

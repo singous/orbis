@@ -9,12 +9,14 @@ from orbis_user_api.application.site_urls import PublicUrlPolicy
 from orbis_user_api.domain.document_components import DOCUMENT_BLOCKS
 from orbis_user_api.domain.note_content import InvalidNoteContent, normalize_note_blocks
 
-MEDIA_TYPES = frozenset({"image", "file", "audio", "video"})
+MEDIA_TYPES = frozenset({"image", "file", "audio", "video", "drawing"})
 
 
 def _empty_media_placeholder(block: dict[str, Any]) -> bool:
     """An unfinished upload has no reader-visible content to publish."""
     props = block.get("props", {})
+    if block.get("type") == "drawing" and not props.get("url"):
+        return True
     return (
         block.get("type") in MEDIA_TYPES
         and not props.get("url")

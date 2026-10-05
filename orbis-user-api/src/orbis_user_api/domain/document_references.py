@@ -4,7 +4,7 @@ from collections.abc import Iterator
 from typing import Any
 from uuid import UUID
 
-MEDIA_TYPES = frozenset({"image", "file", "audio", "video"})
+MEDIA_TYPES = frozenset({"image", "file", "audio", "video", "drawing"})
 FILE_REFERENCE_PREFIX = "orbis-file:"
 STRUCTURAL_KEYS = frozenset(
     {"blocks", "doc", "content", "children", "rows", "cells", "marks"}

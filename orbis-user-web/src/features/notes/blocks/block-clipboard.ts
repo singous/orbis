@@ -1,3 +1,4 @@
+import { parseDrawingScene } from "../../drawing/drawing-scene";
 import type { Editor } from '@tiptap/core';
 import { DOMParser as ProseMirrorDOMParser, DOMSerializer } from '@tiptap/pm/model';
 import { safeContentUrl } from '../../content/ContentRenderer';
@@ -15,7 +16,7 @@ export const BLOCK_CLIPBOARD_MIME = 'application/x-orbis-blocks+json';
 const MAX_BYTES = 16 * 1024 * 1024;
 const MAX_NODES = 100_000;
 const MAX_DEPTH = 40;
-const BASIC_TYPES = new Set(['paragraph','heading','bulletListItem','numberedListItem','checkListItem','toggleListItem','quote','codeBlock','divider','table','image','video','audio','file']);
+const BASIC_TYPES = new Set(['paragraph','heading','bulletListItem','numberedListItem','checkListItem','toggleListItem','quote','codeBlock','divider','table','image','video','audio','file','drawing']);
 export type BlockClipboardResult = { ok: boolean; selectedIds?: string[]; message?: string };
 type Payload = { version: 1; blocks: OrbisBlock[]; cutToken?: string };
 type Serialized = { structured: string; html: string; text: string; payload: Payload };
@@ -102,7 +103,9 @@ function sanitizeBlocks(input: unknown): OrbisBlock[] {
     return input.map((value): OrbisBlock => {
       check(depth);
       if (!record(value) || typeof value.type !== 'string' || !BASIC_TYPES.has(value.type) && !documentBlockDefinition(value.type)) throw new Error('Invalid block');
+      if (value.type === "drawing") parseDrawingScene(record(value.props) ? value.props.scene : undefined);
       const children = blocks(value.children ?? [],depth+1);
+      if (value.type === "drawing" && (children.length || (value.content != null && (!Array.isArray(value.content) || value.content.length)))) throw new Error("Drawing content is unsupported");
       const definition = documentBlockDefinition(value.type);
       if (Array.isArray(definition?.children) && children.some(child=>!definition.children.includes(child.type))) throw new Error('Invalid children');
       let content: OrbisBlock['content'];

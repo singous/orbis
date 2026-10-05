@@ -27,6 +27,7 @@ import { createDocumentBlock } from "./tiptap-insert";
 import { clipboardPropsAttribute, parseClipboardProps } from "./tiptap-clipboard";
 import { OrbisBlockIds } from "./tiptap-block-ids";
 import { OrbisGroupEditing } from "./tiptap-group-editing";
+import { OrbisDrawing } from "../drawing/tiptap-drawing";
 import { OrbisCodeHighlight } from "./tiptap-code-highlight";
 import { toTiptapDocument } from "./tiptap-model";
 import "../../styles/document-editor.css";
@@ -223,5 +224,5 @@ export const tiptapExtensions = [
   Placeholder.configure({ placeholder: "输入正文，或输入 / 插入内容…" }),
   TaskList, TaskItem.configure({ nested: true }),
   ScrollableTable.configure({ resizable: false }), TableRow, TableHeader, TableCell,
-  OrbisMetadata, OrbisStyle, OrbisComponent, OrbisMedia, OrbisToggle, OrbisToggleSummary, OrbisContainer, OrbisBlockIds, OrbisGroupEditing, OrbisCodeHighlight,
+  OrbisMetadata, OrbisStyle, OrbisComponent, OrbisMedia, OrbisDrawing, OrbisToggle, OrbisToggleSummary, OrbisContainer, OrbisBlockIds, OrbisGroupEditing, OrbisCodeHighlight,
 ];

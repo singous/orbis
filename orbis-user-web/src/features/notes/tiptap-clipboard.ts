@@ -1,6 +1,6 @@
 /** Clipboard data includes authored properties, never IDs or source snapshots. */
 const EDITABLE_PROPS = new Set([
-  "title", "href", "tone", "columns", "url", "name", "caption", "previewWidth", "showPreview",
+  "scene", "title", "href", "tone", "columns", "url", "name", "caption", "previewWidth", "showPreview",
   "textAlignment", "textColor", "backgroundColor", "level", "checked", "language", "start", "isToggleable",
   "colspan", "rowspan",
 ]);
