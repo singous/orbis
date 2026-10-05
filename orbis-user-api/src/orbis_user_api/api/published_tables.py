@@ -1,7 +1,6 @@
 """Active-release and authorized preview access to frozen table pages."""
 
 from contextlib import asynccontextmanager
-from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
@@ -20,6 +19,7 @@ from orbis_user_api.application.published_tables import (
 )
 from orbis_user_api.application.site_errors import SiteError
 from orbis_user_api.models.user import User
+from orbis_user_api.schemas.data_table import PublishedTablePage
 
 router = ApiRouter(tags=["data-tables"])
 html_router = APIRouter(tags=["data-tables"])
@@ -38,7 +38,7 @@ async def errors(session):
 
 @router.get(
     "/table-snapshots/{snapshot_id}",
-    response_model=dict[str, Any],
+    response_model=PublishedTablePage,
     summary="读取当前空间站点预览中的表格快照页",
 )
 async def preview_table(
@@ -55,7 +55,7 @@ async def preview_table(
 
 @router.get(
     "/public/sites/{slug}/table-snapshots/{snapshot_id}",
-    response_model=dict[str, Any],
+    response_model=PublishedTablePage,
     summary="分页读取活动发布版本中的多维表格快照",
 )
 async def public_table(

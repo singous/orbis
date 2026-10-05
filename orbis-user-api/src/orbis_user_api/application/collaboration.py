@@ -8,12 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import load_only
 
 from orbis_user_api.application.note_revisions import UNKNOWN_AUTHOR_NAME
-from orbis_user_api.application.notes import _get_active_note, update_note_content
+from orbis_user_api.application.notes import authorize_note as _authorize_note, update_note_content
 from orbis_user_api.core.time import now_ms
 from orbis_user_api.models.collaboration import NoteComment, NoteRevision
 from orbis_user_api.models.note import Note, NoteContent
 from orbis_user_api.models.user import User
-from orbis_user_api.models.workspace import WorkspaceMember
 from orbis_user_api.schemas.collaboration import (
     CommentCreateRequest,
     CommentOut,
@@ -37,32 +36,6 @@ class CommentNotFound(ServiceError):
 
 class RevisionNotFound(ServiceError):
     pass
-
-
-async def _authorize_note(
-    note_id: UUID,
-    user: User,
-    session: AsyncSession,
-) -> tuple[Note, WorkspaceMember]:
-    workspace, membership = await AuthorizationService.actor(user, session)
-    AuthorizationService.require_capability(membership, Capability.RESOURCE_READ)
-    note = await _get_active_note(note_id, workspace.id, session)
-    seen = {note.id}
-    ancestor_id = note.parent_id
-    while ancestor_id is not None:
-        if ancestor_id in seen:
-            raise NoteNotFound
-        seen.add(ancestor_id)
-        ancestor = await session.get(Note, ancestor_id)
-        if (
-            ancestor is None
-            or ancestor.workspace_id != workspace.id
-            or ancestor.notebook_id != note.notebook_id
-            or ancestor.status != "active"
-        ):
-            raise NoteNotFound
-        ancestor_id = ancestor.parent_id
-    return note, membership
 
 
 async def _get_comment(

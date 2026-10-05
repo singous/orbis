@@ -18,6 +18,8 @@ from orbis_user_api.domain.note_content import (
 )
 from orbis_user_api.models.note import Note, Notebook, NoteContent, NoteGroup
 from orbis_user_api.models.user import User
+from orbis_user_api.models.workspace import WorkspaceMember
+from orbis_user_api.services.authorization import AuthorizationService, Capability
 from orbis_user_api.schemas.note import (
     MarkdownImportRequest,
     NoteContentUpdateRequest,
@@ -122,6 +124,33 @@ async def create_note(
 async def get_note(note_id: UUID, user: User, session: AsyncSession) -> Note:
     workspace, _ = await get_current_workspace(user, session)
     return await _get_active_note(note_id, workspace.id, session)
+
+
+async def authorize_note(
+    note_id: UUID,
+    user: User,
+    session: AsyncSession,
+) -> tuple[Note, WorkspaceMember]:
+    workspace, membership = await AuthorizationService.actor(user, session)
+    AuthorizationService.require_capability(membership, Capability.RESOURCE_READ)
+    note = await _get_active_note(note_id, workspace.id, session)
+    seen = {note.id}
+    ancestor_id = note.parent_id
+    while ancestor_id is not None:
+        if ancestor_id in seen:
+            raise NoteNotFound
+        seen.add(ancestor_id)
+        ancestor = await session.get(Note, ancestor_id)
+        if (
+            ancestor is None
+            or ancestor.workspace_id != workspace.id
+            or ancestor.notebook_id != note.notebook_id
+            or ancestor.status != "active"
+        ):
+            raise NoteNotFound
+        ancestor_id = ancestor.parent_id
+    return note, membership
+
 
 
 async def update_note_metadata(

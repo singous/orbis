@@ -9,20 +9,19 @@ from sqlalchemy import String, cast, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from orbis_user_api.application.block_content import BlockContentStore
-from orbis_user_api.application.collaboration import _authorize_note
+from orbis_user_api.application.notes import authorize_note
 from orbis_user_api.application.data_table_query import (
     at_revision,
     record_page,
     scalar_value,
 )
-from orbis_user_api.core.ids import new_uuidv7
 from orbis_user_api.domain.data_tables import (
     InvalidTable,
     default_definition,
     validate_definition,
     validate_value,
 )
-from orbis_user_api.domain.data_table_copy import copy_definition
+from orbis_user_api.application.data_table_creation import copy_records, stage_table
 from orbis_user_api.models.data_table import (
     DataTable,
     DataTableReceipt,
@@ -38,14 +37,13 @@ from orbis_user_api.services.authorization import AuthorizationService, Capabili
 from orbis_user_api.services.exceptions import NoteNotFound, NoteVersionConflict
 
 logger = logging.getLogger(__name__)
-MAX_COPY_RECORDS = 50000
 MAX_RECORD_BYTES = 64 * 1024
 
 
 async def authorize_table(
     note_id, table_id, user, session: AsyncSession, *, write=False
 ):
-    note, membership = await _authorize_note(note_id, user, session)
+    note, membership = await authorize_note(note_id, user, session)
     if write:
         AuthorizationService.require_capability(membership, Capability.RESOURCE_MANAGE)
     table = await session.get(DataTable, table_id)
@@ -165,7 +163,7 @@ async def commit_change(
 
 
 async def create_table(note_id, payload: TableCreate, user, session):
-    note, membership = await _authorize_note(note_id, user, session)
+    note, membership = await authorize_note(note_id, user, session)
     AuthorizationService.require_capability(membership, Capability.RESOURCE_MANAGE)
     if result := await replay(session, note.id, payload, None):
         return result
@@ -189,37 +187,9 @@ async def create_table(note_id, payload: TableCreate, user, session):
         _, _, _ = await referenced_table(source_note, source, session)
         revision = payload.source_revision or source.head_revision
         definition = await definition_at(session, source.id, revision)
-        source_records = list(
-            await session.scalars(
-                select(DataTableRecord)
-                .where(at_revision(source.id, revision))
-                .limit(MAX_COPY_RECORDS + 1)
-            )
-        )
-        if len(source_records) > MAX_COPY_RECORDS:
-            raise InvalidTable("表格超过本次复制预算，请分批处理")
-    definition, copy_values = copy_definition(definition)
-    table = DataTable(
-        id=new_uuidv7(),
-        note_id=note.id,
-        workspace_id=note.workspace_id,
-        block_id=payload.block_id,
-        head_revision=1,
-    )
-    session.add(table)
-    session.add(
-        DataTableRevision(
-            table_id=table.id, revision=1, definition=definition.model_dump(mode="json")
-        )
-    )
-    session.add_all(
-        DataTableRecord(
-            table_id=table.id,
-            record_id=new_uuidv7(),
-            valid_from=1,
-            values=copy_values(row.values),
-        )
-        for row in source_records
+        source_records = await copy_records(session, source.id, revision)
+    table, definition = stage_table(
+        session, note, payload.block_id, definition, source_records
     )
     return await commit_change(
         session, note, block, definition, table, 1, payload, user, {}, identity=None
@@ -228,6 +198,8 @@ async def create_table(note_id, payload: TableCreate, user, session):
 
 async def mutate_table(note_id, table_id, payload: TableMutation, user, session):
     note, table = await authorize_table(note_id, table_id, user, session, write=True)
+    if payload.block_id is not None and payload.block_id != table.block_id:
+        raise NoteVersionConflict
     if result := await replay(session, note.id, payload, table.id):
         return result
     block, version, previous = await referenced_table(note, table, session)
@@ -460,6 +432,7 @@ async def read_table(
             page["groups"] = []
     return {
         "table_id": str(table.id),
+        "block_id": table.block_id,
         "revision": revision,
         "content_version": version,
         "definition": definition.model_dump(mode="json"),

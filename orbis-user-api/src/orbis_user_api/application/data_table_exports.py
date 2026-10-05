@@ -1,6 +1,9 @@
 """Complete, budgeted exports and immutable public table projections."""
 
 from copy import deepcopy
+from orbis_user_api.domain.table_markdown import (
+    render_table_markdown as projection_markdown,
+)
 import csv
 import io
 
@@ -58,29 +61,6 @@ async def table_projection(session, table_id, revision, *, view_id=None, public=
         "total": len(rows),
     }
     return {**data, "digest": digest(data)}
-
-
-def projection_markdown(data):
-    def escape(value):
-        return (
-            str(value)
-            .replace("\\", "\\\\")
-            .replace("|", "\\|")
-            .replace("\r", "")
-            .replace("\n", "<br>")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-        )
-
-    lines = [
-        f"### {escape(data['title'])}",
-        f"视图：{escape(data['view'])}；快照版本：{data['revision']}",
-        "",
-        "| " + " | ".join(map(escape, data["columns"])) + " |",
-        "| " + " | ".join("---" for _ in data["columns"]) + " |",
-    ]
-    lines.extend("| " + " | ".join(map(escape, row)) + " |" for row in data["rows"])
-    return "\n".join(lines)
 
 
 async def export_table(note, table, session, format, view_id=None):

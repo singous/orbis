@@ -174,6 +174,7 @@ def test_all_json_operations_document_the_unified_success_envelope() -> None:
         ("GET", "/s/{slug}/llms.txt"): "text/plain",
         ("GET", "/s/{slug}/llms-full.txt"): "text/plain",
         ("GET", "/s/{slug}/pages/{page_slug}.md"): "text/markdown",
+        ("GET", "/public/sites/{slug}/table-snapshots/{snapshot_id}/html"): "text/html",
     }
     assert text_operations.keys() <= {(method, path) for method, path, _ in operations}
     assert binary_operations.issubset(
@@ -197,6 +198,12 @@ def test_all_json_operations_document_the_unified_success_envelope() -> None:
             continue
         if (method, path) in text_operations:
             assert response["content"] == {text_operations[(method, path)]: {"schema": {"type": "string"}}}
+            continue
+        if (method, path) == ("GET", "/notes/{note_id}/tables/{table_id}/export"):
+            assert response["content"] == {
+                "text/csv": {"schema": {"type": "string"}},
+                "text/markdown": {"schema": {"type": "string"}},
+            }
             continue
         schema = response["content"]["application/json"]["schema"]
         if "$ref" in schema:

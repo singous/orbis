@@ -2,15 +2,10 @@
 
 from uuid import UUID
 
-from sqlalchemy import select
 
-from orbis_user_api.application.data_table_query import at_revision
-from orbis_user_api.core.ids import new_uuidv7
-from orbis_user_api.domain.data_table_copy import copy_definition
+from orbis_user_api.application.data_table_creation import copy_records, stage_table
 from orbis_user_api.models.data_table import (
     DataTable,
-    DataTableRecord,
-    DataTableRevision,
 )
 from orbis_user_api.services.exceptions import (
     NoteContentInvalid,
@@ -18,8 +13,6 @@ from orbis_user_api.services.exceptions import (
     UserWorkspaceMissing,
     WorkspaceMemberForbidden,
 )
-
-COPY_BUDGET = 50000
 
 
 async def prepare_table_references(session, note, user, blocks, *, allow_copy):
@@ -55,39 +48,9 @@ async def prepare_table_references(session, note, user, blocks, *, allow_copy):
             if not allow_copy:
                 raise NoteContentInvalid
             await authorize_table(table.note_id, table.id, user, session)
-            rows = list(
-                await session.scalars(
-                    select(DataTableRecord)
-                    .where(at_revision(table.id, revision))
-                    .limit(COPY_BUDGET + 1)
-                )
-            )
-            if len(rows) > COPY_BUDGET:
-                raise NoteContentInvalid
-            definition, copy_values = copy_definition(definition)
-            copied = DataTable(
-                id=new_uuidv7(),
-                note_id=note.id,
-                workspace_id=note.workspace_id,
-                block_id=block["id"],
-                head_revision=1,
-            )
-            session.add(copied)
-            session.add(
-                DataTableRevision(
-                    table_id=copied.id,
-                    revision=1,
-                    definition=definition.model_dump(mode="json"),
-                )
-            )
-            session.add_all(
-                DataTableRecord(
-                    table_id=copied.id,
-                    record_id=new_uuidv7(),
-                    valid_from=1,
-                    values=copy_values(row.values),
-                )
-                for row in rows
+            rows = await copy_records(session, table.id, revision)
+            copied, definition = stage_table(
+                session, note, block["id"], definition, rows
             )
             replacement = table_block(block, copied.id, 1, definition)
             block["props"] = replacement["props"]

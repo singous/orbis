@@ -384,6 +384,8 @@ def test_published_table_pages_are_bounded_and_revoked_with_the_release(client):
     markdown = client.get("/s/paged-table/pages/records.md")
     assert markdown.status_code == 200, markdown.text
     assert markdown.text.count("Frozen row ") == 300
+    full = client.get("/s/paged-table/llms-full.txt")
+    assert full.status_code == 200 and full.text.count("Frozen row ") == 300
     assert (
         client.post(f"/sites/{site['id']}/unpublish", headers=headers).status_code
         == 200
@@ -423,6 +425,7 @@ def test_table_access_is_bound_to_note_and_current_workspace_role(client):
     from orbis_user_api.models.workspace import WorkspaceMember
 
     headers, base, url, state, _ = seed(client)
+    assert client.patch(url, headers=headers, json=mutation(state, block_id="uninitialized-copy", upserts=[{"values": {}}])).status_code == 409
     assert (
         client.get(url.replace(base, f"/notes/{uuid4()}"), headers=headers).status_code
         == 404
@@ -520,3 +523,14 @@ def test_all_field_types_validate_and_hidden_field_values_do_not_break_undo(clie
         url, headers=headers, json=mutation(changed, **changed["inverse"])
     )
     assert restored.status_code == 200, restored.text
+
+
+def test_markdown_projection_is_identical_and_escapes_html_before_line_breaks(client):
+    headers, base, url, state, page = seed(client)
+    field = page["definition"]["fields"][0]["id"]
+    response = client.patch(url, headers=headers, json=mutation(state, upserts=[{"values": {field: "<b>literal</b>\nnext | cell"}}]))
+    assert response.status_code == 200, response.text
+    table = client.get(url + "/export?format=markdown", headers=headers).text
+    document = client.get(base + "/markdown", headers=headers).json()["data"]["markdown"]
+    assert table.strip() == document.strip()
+    assert "&lt;b&gt;literal&lt;/b&gt;<br>next \\| cell" in table

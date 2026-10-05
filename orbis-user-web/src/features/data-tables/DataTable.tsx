@@ -159,6 +159,12 @@ function DataTableEditor({
         ) : null}
       </section>
     );
+  if (table.page.block_id !== blockId)
+    return (
+      <section className="data-table dt-start" contentEditable={false}>
+        正在保存独立副本，完成后即可编辑。
+      </section>
+    );
   const view =
     definition.views.find((view) => view.id === table.viewId) ??
     definition.views[0];
@@ -395,8 +401,15 @@ function DataTableEditor({
                   </button>
                   <button
                     type="button"
-                    disabled={definition.views.length < 2 || definition.public_view_id === view.id}
-                    title={definition.public_view_id === view.id ? "请先在视图设置中选择其他公开视图" : undefined}
+                    disabled={
+                      definition.views.length < 2 ||
+                      definition.public_view_id === view.id
+                    }
+                    title={
+                      definition.public_view_id === view.id
+                        ? "请先在视图设置中选择其他公开视图"
+                        : undefined
+                    }
                     onClick={() => {
                       const views = definition.views.filter(
                         (item) => item.id !== view.id,

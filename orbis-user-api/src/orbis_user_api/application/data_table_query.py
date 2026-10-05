@@ -1,6 +1,5 @@
 """Database-side table filtering, ordering and bounded projection."""
 
-
 from sqlalchemy import and_, cast, func, or_, select, String
 from sqlalchemy.ext.asyncio import AsyncSession
 

@@ -54,18 +54,56 @@ export function useDataTable(
   const undo = useRef<TableChanges[]>([]),
     redo = useRef<TableChanges[]>([]);
   const generation = useRef(0);
+  const mounted = useRef(true);
+  const query = useRef({ id, viewId, offset });
+  query.current = { id, viewId, offset };
+  const paging = useRef<{
+    viewId: string | undefined;
+    revision: number;
+    blockRevision: number;
+  } | null>(null);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      generation.current++;
+    };
+  }, []);
   const refresh = useCallback(
-    async (signal?: AbortSignal) => {
+    async (signal?: AbortSignal, restart = false) => {
       if (!id) return;
+      const requestGeneration = ++generation.current;
+      const expected =
+        offset > 0 && !restart
+          ? paging.current !== null && paging.current.viewId === viewId &&
+            paging.current.blockRevision === revision
+            ? paging.current.revision
+            : revision
+          : undefined;
       const next = await readTable(host.noteId, id, host.auth, {
         viewId,
         offset,
+        revision: expected,
         shareToken: host.shareToken,
         signal,
       });
-      if (!signal?.aborted) setPage(next);
+      if (
+        mounted.current &&
+        requestGeneration === generation.current &&
+        !signal?.aborted &&
+        query.current.id === id &&
+        query.current.viewId === viewId &&
+        query.current.offset === offset
+      ) {
+        paging.current = {
+          viewId,
+          revision: next.revision,
+          blockRevision: revision,
+        };
+        setPage(next);
+      }
     },
-    [id, host.noteId, host.auth, host.shareToken, viewId, offset],
+    [id, host.noteId, host.auth, host.shareToken, viewId, offset, revision],
   );
   const refreshRef = useRef(refresh);
   refreshRef.current = refresh;
@@ -131,7 +169,8 @@ export function useDataTable(
       .catch((error) => setStorageError(error.message));
   }
   function stage(changes: TableChanges) {
-    if (host.readOnly || !page || recovering) return;
+    if (host.readOnly || !page || recovering || page.block_id !== blockId)
+      return;
     const old = draft.current;
     draft.current = {
       ...old,
@@ -172,9 +211,14 @@ export function useDataTable(
       setError(null);
       try {
         const result = await state.host.transact!(async (version) => {
+          if (!mounted.current || current.current.scope !== owner)
+            throw new Error(
+              "表格引用已经更新，本机修改仍保留，请在当前表格中继续操作。",
+            );
           const request = draft.current.request ?? {
             ...structuredClone(draft.current.changes),
             operation_id: tableId(),
+            block_id: blockId,
             expected_document_version: version,
             expected_table_revision: draft.current.revision,
           };
@@ -206,7 +250,7 @@ export function useDataTable(
           setHistoryState((value) => value + 1);
         }
         succeeded = true;
-        await refreshRef.current();
+        await refreshRef.current(undefined, true);
         return result;
       } catch (error) {
         if (error instanceof ApiError && error.status === 422) {

@@ -179,7 +179,12 @@ async def llms(snapshot: Metadata, request: Request):
     response_class=PlainTextResponse,
     summary="读取公开站点完整 Markdown 文档集",
 )
-async def llms_full(snapshot: Snapshot, request: Request):
+async def llms_full(snapshot: Snapshot, request: Request, session: Session):
+    from orbis_user_api.application.published_tables import hydrate_for_export
+    pages = []
+    for page in snapshot.pages:
+        pages.append(page.model_copy(update={"blocks": await hydrate_for_export(session, page.blocks)}))
+    snapshot = snapshot.model_copy(update={"pages": pages})
     return PlainTextResponse(
         exports.llms_full(snapshot, base_url(request)), headers=NO_STORE
     )

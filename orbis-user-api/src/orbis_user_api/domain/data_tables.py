@@ -109,6 +109,8 @@ def validate_definition(
                 "datetime",
             }:
                 raise InvalidTable("大小筛选仅支持数字和日期")
+            if item.operator in {"gt", "gte", "lt", "lte"} and item.value is None:
+                raise InvalidTable("大小筛选必须提供数字或日期值")
             if item.operator == "contains":
                 if field.kind not in {"text", "url", "multi_select"} or not isinstance(
                     item.value, str

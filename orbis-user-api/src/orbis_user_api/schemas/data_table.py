@@ -79,6 +79,7 @@ class RecordUpsert(StrictModel):
 
 class TableMutation(StrictModel):
     operation_id: UUID
+    block_id: str | None = Field(default=None, min_length=1, max_length=120)
     expected_document_version: int = Field(ge=1)
     expected_table_revision: int = Field(ge=1)
     definition: TableDefinition | None = None
@@ -98,6 +99,7 @@ class TableMutationOut(BaseModel):
 
 class TablePage(BaseModel):
     table_id: UUID
+    block_id: str
     revision: int
     content_version: int
     definition: TableDefinition
@@ -108,3 +110,17 @@ class TablePage(BaseModel):
     next_offset: int
     has_more: bool
     groups: list[dict[str, Any]]
+
+
+class PublishedTablePage(BaseModel):
+    snapshot_id: UUID
+    title: str
+    view: str
+    revision: int
+    columns: list[str]
+    rows: list[list[str]]
+    total: int
+    offset: int
+    next_offset: int
+    has_more: bool
+    release_id: UUID | None = None

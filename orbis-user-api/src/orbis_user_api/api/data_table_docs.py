@@ -15,6 +15,11 @@ PARAMETERS = {
     "expected_release_id": "期望的活动发布 UUID；发布切换后返回 409，避免混合两个版本。",
 }
 FIELDS = {
+    "snapshot_id": "不可变公开表格快照 UUID；匿名读取同时受活动站点发布范围约束。",
+    "release_id": "当前活动站点发布 UUID；内部预览读取时可为空。",
+    "columns": "按视图显示顺序排列的公开字段名称。",
+    "rows": "当前页已经格式化的单元格文本；不包含未授权字段。",
+    "view": "冻结的发布视图名称。",
     "id": "应用生成的稳定 UUID，默认 UUIDv7；重命名不改变标识。",
     "name": "显示名称。",
     "label": "选项显示文字；记录保存选项 ID，不保存此文字。",
@@ -60,6 +65,7 @@ FIELDS = {
     "groups": "完整筛选范围内的分组名称、选项 ID 及记录数。",
 }
 SCHEMAS = {
+    "PublishedTablePage",
     "SelectOption",
     "TableField",
     "TableFilter",

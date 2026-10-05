@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "../../shared/ui/Button";
 import { Dialog, DialogContent } from "../../shared/ui/Dialog";
+import { CellEditor } from "./CellEditor";
 import {
   FIELD_LABELS,
   tableId,
@@ -71,10 +72,24 @@ export function FieldDialog({
   }
   function remove() {
     if (!field || definition.fields.length === 1) return;
-    const publicFields = definition.public_field_ids.filter(id => id !== field.id);
-    if (!publicFields.length) { setError("这是唯一公开字段，请先在视图设置中明确选择其他公开字段，再删除。"); return; }
-    const publicView = definition.views.find(view => view.id === definition.public_view_id)!;
-    if (publicView.filters.some(filter => filter.field_id === field.id)) { setError("公开视图正在使用此字段筛选记录，请先调整公开筛选，再删除字段。"); return; }
+    const publicFields = definition.public_field_ids.filter(
+      (id) => id !== field.id,
+    );
+    if (!publicFields.length) {
+      setError(
+        "这是唯一公开字段，请先在视图设置中明确选择其他公开字段，再删除。",
+      );
+      return;
+    }
+    const publicView = definition.views.find(
+      (view) => view.id === definition.public_view_id,
+    )!;
+    if (publicView.filters.some((filter) => filter.field_id === field.id)) {
+      setError(
+        "公开视图正在使用此字段筛选记录，请先调整公开筛选，再删除字段。",
+      );
+      return;
+    }
     const fields = definition.fields.filter((item) => item.id !== field.id);
     const views = definition.views.map((view) => ({
       ...view,
@@ -322,7 +337,12 @@ export function ViewDialog({
                     onChange={(event) =>
                       setFilter(index, {
                         field_id: event.target.value,
-                        operator: "eq",
+                        operator:
+                          definition.fields.find(
+                            (field) => field.id === event.target.value,
+                          )?.kind === "multi_select"
+                            ? "contains"
+                            : "eq",
                         value: null,
                       })
                     }
@@ -343,13 +363,22 @@ export function ViewDialog({
                     }
                   >
                     {Object.entries({
-                      eq: "等于",
-                      ne: "不等于",
-                      contains: "包含",
+                      ...(field.kind !== "multi_select"
+                        ? { eq: "等于", ne: "不等于" }
+                        : {}),
+                      ...(["text", "url", "multi_select"].includes(field.kind)
+                        ? { contains: "包含" }
+                        : {}),
                       empty: "为空",
                       not_empty: "不为空",
-                      gt: "大于",
-                      lt: "小于",
+                      ...(["number", "datetime"].includes(field.kind)
+                        ? {
+                            gt: "大于",
+                            lt: "小于",
+                            gte: "大于等于",
+                            lte: "小于等于",
+                          }
+                        : {}),
                     }).map(([key, value]) => (
                       <option key={key} value={key}>
                         {value}
@@ -375,20 +404,12 @@ export function ViewDialog({
                         ))}
                       </select>
                     ) : (
-                      <input
-                        aria-label={`筛选值 ${index + 1}`}
-                        value={String(filter.value ?? "")}
-                        onChange={(event) =>
-                          setFilter(index, {
-                            value:
-                              field.kind === "number" ||
-                              field.kind === "datetime"
-                                ? Number(event.target.value)
-                                : field.kind === "checkbox"
-                                  ? event.target.value === "true"
-                                  : event.target.value,
-                          })
-                        }
+                      <CellEditor
+                        field={{ ...field, name: `筛选值 ${index + 1}` }}
+                        value={filter.value}
+                        readOnly={false}
+                        onChange={(value) => setFilter(index, { value })}
+                        onCommit={() => {}}
                       />
                     )
                   ) : null}

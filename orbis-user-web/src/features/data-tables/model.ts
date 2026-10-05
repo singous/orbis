@@ -47,6 +47,7 @@ export type TableDefinition = {
 export type TableRecord = { id: string; values: Record<string, CellValue> };
 export type TablePage = {
   table_id: string;
+  block_id: string;
   revision: number;
   content_version: number;
   definition: TableDefinition;
@@ -65,6 +66,7 @@ export type TableChanges = {
 };
 export type TableMutation = TableChanges & {
   operation_id: string;
+  block_id?: string;
   expected_document_version: number;
   expected_table_revision: number;
 };
