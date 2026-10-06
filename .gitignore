@@ -87,3 +87,6 @@ bin/
 
 # Rust
 target/
+
+# Generated self-hosted drawing fonts
+orbis-user-web/public/drawing-assets/

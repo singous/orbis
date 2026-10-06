@@ -9,6 +9,7 @@
 import type { JSONContent } from "@tiptap/react";
 
 import type { NoteBlocks } from "../../shared/api/schemas";
+import { drawingText } from "../drawing/drawing-scene";
 import { documentBlockMarkdown, documentBlockTitle } from "../content/document-components";
 import { markdownCodeFence, markdownDestination } from "../content/markdown-urls";
 
@@ -295,6 +296,7 @@ function inlineText(inline: OrbisInline): string {
 }
 
 function blockContentText(block: OrbisBlock): string {
+  if (block.type === "drawing") return [block.props.caption, drawingText(block.props.scene)].filter(Boolean).join("\n");
   if (block.content == null) return "";
   if (typeof block.content === "string") return block.content;
   if (block.type === "table" && isLegacyTableContent(block.content)) {
@@ -415,13 +417,14 @@ function renderMarkdownBlocks(blocks: OrbisBlock[], depth: number): string {
       case "divider":
         out.push("---");
         break;
+      case "drawing":
       case "image":
       case "video":
       case "audio":
       case "file": {
         const label = String(block.props.caption || block.props.name || text || block.type).replace(/([\\[\]])/g, "\\$1");
         const url = String(block.props.url || "");
-        out.push(url ? `${block.type === "image" ? "!" : ""}[${label}](${markdownDestination(url)})` : label);
+        out.push(url ? `${["image", "drawing"].includes(block.type) ? "!" : ""}[${label}](${markdownDestination(url)})` : label);
         break;
       }
       case "table": {

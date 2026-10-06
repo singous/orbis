@@ -51,6 +51,7 @@ const COMMANDS: Command[] = [
   { label: "代码块", keywords: "code", icon: <Code size={16} />, run: (editor) => editor.chain().focus().toggleCodeBlock().run() },
   { label: "分隔线", keywords: "divider rule", icon: <Minus size={16} />, run: (editor) => editor.chain().focus().setHorizontalRule().run() },
   { label: "表格", keywords: "table", icon: <Table2 size={16} />, run: (editor) => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run() },
+  { label: "画板", keywords: "drawing whiteboard canvas 画板", icon: <Plus size={16} />, run: (editor) => insertBlock(editor, { id: newBlockId(), type: "drawing", props: { scene: "", url: "", caption: "画板" }, content: [], children: [] }) },
   ...INSERTABLE_DOCUMENT_BLOCKS.filter(kind => kind !== "group").map((kind: DocumentBlockKind) => ({ label: DOCUMENT_BLOCKS[kind].label, keywords: `${kind} document`, icon: <Plus size={16} />, run: (editor: Editor) => insertBlock(editor, createDocumentBlock(kind)) })),
 ];
 

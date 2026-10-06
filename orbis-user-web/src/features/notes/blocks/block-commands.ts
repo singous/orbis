@@ -12,7 +12,7 @@ import { cloneBlockTree, editBlockChildren, emptyParagraph, indexBlocks, mapBloc
 export type { BlockAction } from "./block-tree";
 export type BlockCommandResult = { ok: boolean; selectedIds: string[]; message?: string };
 export type EditorBlockAddress = { id: string; pos: number; node: PMNode; parentId: string | null };
-const OWNED_NODES = new Set(["paragraph", "heading", "codeBlock", "horizontalRule", "blockquote", "listItem", "taskItem", "table", "orbisComponent", "orbisMedia", "orbisToggle", "orbisContainer"]);
+const OWNED_NODES = new Set(["paragraph", "heading", "codeBlock", "horizontalRule", "blockquote", "listItem", "taskItem", "table", "orbisComponent", "orbisMedia", "orbisDrawing", "orbisToggle", "orbisContainer"]);
 const OWN_CONTENT_PARENTS = new Set(["orbisComponent", "orbisToggle", "blockquote"]);
 
 const addressCache = new WeakMap<PMNode, EditorBlockAddress[]>();

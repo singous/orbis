@@ -265,7 +265,7 @@ class SparseBlockChangePlanner:
                 await self.load([parent])
                 if parent not in self.current:
                     raise NoteContentInvalid
-                allowed = DOCUMENT_BLOCKS.get(
+                allowed = [] if self.current[parent]["block_type"] == "drawing" else DOCUMENT_BLOCKS.get(
                     self.current[parent]["block_type"], {}
                 ).get("children", "any")
                 if (
@@ -276,7 +276,7 @@ class SparseBlockChangePlanner:
                 seen.add(parent)
                 child, parent = parent, self.current[parent]["parent_id"]
             # A type change may invalidate untouched, unloaded children.
-            allowed = DOCUMENT_BLOCKS.get(value["block_type"], {}).get(
+            allowed = [] if value["block_type"] == "drawing" else DOCUMENT_BLOCKS.get(value["block_type"], {}).get(
                 "children", "any"
             )
             if allowed != "any":

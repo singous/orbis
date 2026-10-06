@@ -14,9 +14,9 @@ const no = (message: string): BlockAvailability => ({ ok: false, message });
 export function blockCapabilities(type: string) {
   const definition = documentBlockDefinition(type);
   return {
-    children: definition?.children ?? "any" as const,
+    children: type === "drawing" ? [] : definition?.children ?? "any" as const,
     conversionTargets: (TEXT_CONVERSION_TARGETS as readonly string[]).includes(type) ? TEXT_CONVERSION_TARGETS : [],
-    interaction: ["table", "codeBlock", "image", "video", "audio", "file"].includes(type) ? "embedded" as const : "text" as const,
+    interaction: ["table", "codeBlock", "image", "video", "audio", "file", "drawing"].includes(type) ? "embedded" as const : "text" as const,
     copy: "author-content-and-resource-references" as const,
     readonly: "render" as const,
   };
