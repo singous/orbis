@@ -5,6 +5,7 @@ import { useStore } from "zustand";
 
 import { authStore, getAuthSessionKey } from "../../shared/auth/auth-store";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
+import { TableHostContext } from "../data-tables/context";
 import { Button } from "../../shared/ui/Button";
 import { Dialog, DialogContent, DialogFooter } from "../../shared/ui/Dialog";
 import { LoadingState } from "../../shared/ui/LoadingState";
@@ -75,7 +76,7 @@ function SavedDocumentPreview({ noteId, title, onClose }: { noteId: string; titl
         {refreshing ? <p className="document-preview-refresh" role="status">正在更新已保存的内容…</p> : null}
         <SavedPreviewBoundary><AuthenticatedFileContent>
           <Suspense fallback={<LoadingState label="正在渲染文档预览…" variant="editor-body" />}>
-            <SavedContentRenderer blocks={content.data.blocks} pageTitle={note.data.title} />
+            <TableHostContext.Provider value={{ noteId, draftScope: "", auth, readOnly: true }}><SavedContentRenderer blocks={content.data.blocks} pageTitle={note.data.title} /></TableHostContext.Provider>
           </Suspense>
         </AuthenticatedFileContent></SavedPreviewBoundary>
       </article> : null}

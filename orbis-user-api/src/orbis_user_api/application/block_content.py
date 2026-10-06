@@ -799,6 +799,7 @@ class BlockContentStore:
         commit: bool = True,
         touch_note: bool = True,
         planned: BlockChangePlan | None = None,
+        allow_table_copy: bool = False,
     ) -> dict[str, Any]:
         """Stage an atomic mutation, optionally sharing the caller's transaction.
 
@@ -821,6 +822,12 @@ class BlockContentStore:
         )
         if claimed.rowcount != 1:
             raise NoteVersionConflict
+        from orbis_user_api.application.data_table_copies import prepare_table_references
+        table_blocks = await prepare_table_references(
+            self.session, self.note, user,
+            list(planned.payloads.values()) if planned else upserts,
+            allow_copy=allow_table_copy,
+        )
         plan = planned or await SparseBlockChangePlanner(
             self.session, self.note.id
         ).plan(upserts, moves, deletes)
@@ -958,6 +965,7 @@ class BlockContentStore:
             "content_version": version,
             "total_blocks": total,
             "updated_at_ms": note_timestamp,
+            "table_blocks": table_blocks,
         }
 
     async def _record_revisions(
@@ -1019,7 +1027,7 @@ class BlockContentStore:
         )
 
     async def replace(
-        self, expected_version: int, blocks: dict[str, Any], user: User
+        self, expected_version: int, blocks: dict[str, Any], user: User, *, allow_table_copy: bool = False
     ) -> NoteContent:
         try:
             source = normalize_note_blocks(blocks)
@@ -1051,7 +1059,7 @@ class BlockContentStore:
             set(manifest) - set(current),
         )
         await self.changes(
-            expected_version, [], [], [], user, source=source, planned=plan
+            expected_version, [], [], [], user, source=source, planned=plan, allow_table_copy=allow_table_copy
         )
         return await self.full(expected_version + 1)
 

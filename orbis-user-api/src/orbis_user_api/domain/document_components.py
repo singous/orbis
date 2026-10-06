@@ -69,6 +69,12 @@ def component_markdown(
         return None
     title = _markdown_title(component_title(block))
     children = block.get("children", [])
+    if kind == "dataTable":
+        data = block.get("table_snapshot")
+        if not data:
+            return f"### {title}\n\n[多维表格：请通过表格导出获取完整记录]"
+        from orbis_user_api.domain.table_markdown import render_table_markdown
+        return render_table_markdown(data)
     if kind == "callout":
         body = "\n\n".join(
             part

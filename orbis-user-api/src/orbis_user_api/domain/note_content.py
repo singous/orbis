@@ -334,6 +334,10 @@ def derive_plain_text(blocks: dict[str, Any]) -> str:
             title = component_title(block).strip()
             if title:
                 lines.append(title)
+            if block.get("type") == "dataTable":
+                names = block.get("props", {}).get("field_names", "")
+                if isinstance(names, str) and names:
+                    lines.append(names)
             text = _v2_block_text(block).strip()
             if text:
                 lines.append(text)

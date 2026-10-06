@@ -103,6 +103,32 @@
         "codeBlock"
       ],
       "props": {}
+    },
+    "dataTable": {
+      "label": "多维表格",
+      "content": "none",
+      "children": [],
+      "props": {
+        "title": {
+          "default": "多维表格",
+          "maxLength": 240
+        },
+        "table_id": {
+          "default": "",
+          "maxLength": 36
+        },
+        "table_revision": {
+          "default": 0
+        },
+        "default_view_id": {
+          "default": "",
+          "maxLength": 36
+        },
+        "field_names": {
+          "default": "",
+          "maxLength": 8192
+        }
+      }
     }
   }
 }

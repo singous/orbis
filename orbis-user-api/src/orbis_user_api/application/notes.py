@@ -18,6 +18,8 @@ from orbis_user_api.domain.note_content import (
 )
 from orbis_user_api.models.note import Note, Notebook, NoteContent, NoteGroup
 from orbis_user_api.models.user import User
+from orbis_user_api.models.workspace import WorkspaceMember
+from orbis_user_api.services.authorization import AuthorizationService, Capability
 from orbis_user_api.schemas.note import (
     MarkdownImportRequest,
     NoteContentUpdateRequest,
@@ -122,6 +124,33 @@ async def create_note(
 async def get_note(note_id: UUID, user: User, session: AsyncSession) -> Note:
     workspace, _ = await get_current_workspace(user, session)
     return await _get_active_note(note_id, workspace.id, session)
+
+
+async def authorize_note(
+    note_id: UUID,
+    user: User,
+    session: AsyncSession,
+) -> tuple[Note, WorkspaceMember]:
+    workspace, membership = await AuthorizationService.actor(user, session)
+    AuthorizationService.require_capability(membership, Capability.RESOURCE_READ)
+    note = await _get_active_note(note_id, workspace.id, session)
+    seen = {note.id}
+    ancestor_id = note.parent_id
+    while ancestor_id is not None:
+        if ancestor_id in seen:
+            raise NoteNotFound
+        seen.add(ancestor_id)
+        ancestor = await session.get(Note, ancestor_id)
+        if (
+            ancestor is None
+            or ancestor.workspace_id != workspace.id
+            or ancestor.notebook_id != note.notebook_id
+            or ancestor.status != "active"
+        ):
+            raise NoteNotFound
+        ancestor_id = ancestor.parent_id
+    return note, membership
+
 
 
 async def update_note_metadata(
@@ -334,12 +363,13 @@ async def update_note_content(
     payload: NoteContentUpdateRequest,
     user: User,
     session: AsyncSession,
+    *, allow_table_copy: bool = False,
 ) -> NoteContent:
     from orbis_user_api.application.block_content import BlockContentStore
 
     note = await get_note(note_id, user, session)
     return await BlockContentStore(session, note).replace(
-        payload.expected_version, payload.blocks, user
+        payload.expected_version, payload.blocks, user, allow_table_copy=allow_table_copy
     )
 
 
@@ -390,7 +420,9 @@ async def export_note_markdown(
 ) -> tuple[Note, str]:
     note = await get_note(note_id, user, session)
     content = await get_note_content(note_id, user, session)
-    return note, blocks_to_markdown(content.blocks)
+    from orbis_user_api.application.data_table_exports import project_document_tables
+    projected = await project_document_tables(content.blocks, session, note.id, public=False)
+    return note, blocks_to_markdown(projected)
 
 
 async def search_notes(

@@ -1,0 +1,539 @@
+.data-table {
+  --dt-line: var(--border-subtle, #e5e7eb);
+  --dt-bg: var(--surface-content, #fff);
+  --dt-muted: var(--text-secondary, #71717a);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-primary, #25272b);
+  background: var(--dt-bg);
+  border: 1px solid var(--dt-line);
+  border-radius: 10px;
+  margin: 20px 0;
+  min-width: 0;
+  position: relative;
+  overflow: visible;
+}
+.data-table button {
+  font: inherit;
+}
+.dt-heading {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--dt-line);
+}
+.dt-title-area {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+.dt-title {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  background: none;
+  border: 0;
+  text-align: left;
+  cursor: text;
+}
+.dt-save {
+  font-size: 11px;
+  color: var(--dt-muted);
+  white-space: nowrap;
+}
+.dt-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--dt-line);
+  flex-wrap: wrap;
+}
+.dt-view-tabs {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  overflow-x: auto;
+  max-width: 60%;
+}
+.dt-view-tabs button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  border: 0;
+  padding: 7px 10px;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--dt-muted);
+}
+.dt-view-tabs button[aria-selected="true"] {
+  background: var(--surface-secondary, #f3f4f5);
+  color: var(--text-primary, #27272a);
+  font-weight: 600;
+}
+.dt-add-view {
+  background: none;
+  border: 0;
+  padding: 6px;
+  cursor: pointer;
+}
+.dt-tools {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  margin-left: auto;
+}
+.dt-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--dt-line);
+  padding: 8px 12px;
+  color: var(--dt-muted);
+  font-size: 12px;
+}
+.dt-footer > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dt-grid-scroll {
+  height: 360px;
+  overflow: auto;
+  position: relative;
+  overscroll-behavior: contain;
+  max-width: 100%;
+}
+.dt-grid-head {
+  position: sticky;
+  top: 0;
+  height: 38px;
+  background: var(--surface-secondary, #f8f9fa);
+  z-index: 3;
+  border-bottom: 1px solid var(--dt-line);
+}
+.dt-header-cell {
+  position: absolute;
+  top: 0;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  border: 0;
+  border-right: 1px solid var(--dt-line);
+  background: transparent;
+  font-weight: 500 !important;
+  text-align: left;
+  color: inherit;
+}
+.dt-header-cell span {
+  color: var(--dt-muted);
+}
+.dt-row-number {
+  position: sticky;
+  left: 0;
+  width: 44px;
+  height: 100%;
+  border: 0;
+  border-right: 1px solid var(--dt-line);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dt-muted);
+  background: var(--dt-bg);
+  font-size: 11px !important;
+  z-index: 2;
+}
+.dt-grid-body {
+  position: relative;
+  min-height: 100px;
+}
+.dt-grid-row {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-bottom: 1px solid var(--dt-line);
+}
+.dt-grid-cell {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  border-right: 1px solid var(--dt-line);
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  min-width: 0;
+}
+.dt-grid-cell:focus-within {
+  outline: 2px solid var(--accent, #328575);
+  outline-offset: -2px;
+  z-index: 2;
+  background: var(--dt-bg);
+}
+.dt-grid-cell input:not([type="checkbox"]),
+.dt-grid-cell select {
+  font: inherit;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  outline: 0;
+  padding: 0;
+}
+.dt-cell-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+.dt-empty {
+  padding: 42px 20px;
+  color: var(--dt-muted);
+  font-size: 13px;
+  text-align: center;
+}
+.dt-start {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 24px;
+  flex-wrap: wrap;
+}
+.dt-start p {
+  color: var(--dt-muted);
+  font-size: 12px;
+  margin: 4px 0 0;
+}
+.dt-start > button {
+  margin-left: auto;
+}
+.dt-unavailable {
+  padding: 18px;
+  border: 1px dashed var(--border-subtle, #ddd);
+  border-radius: 8px;
+  color: var(--text-secondary, #777);
+}
+.dt-notice,
+.dt-draft-bar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 8px 16px;
+  font-size: 12px;
+  background: var(--surface-secondary, #f8f7f2);
+}
+.dt-notice {
+  color: var(--danger, #aa3e32);
+}
+.dt-draft-bar {
+  color: var(--dt-muted);
+}
+.dt-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 70vh;
+  overflow: auto;
+  padding: 2px;
+}
+.dt-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+.dt-form input:not([type="checkbox"]),
+.dt-form select,
+.dt-form textarea,
+.dt-title-area > input {
+  font: inherit;
+  padding: 9px 10px;
+  border: 1px solid var(--border-subtle, #dedfe2);
+  border-radius: 6px;
+  background: var(--surface-content, #fff);
+  color: inherit;
+  min-width: 0;
+}
+.dt-form fieldset {
+  padding: 12px;
+  border: 1px solid var(--border-subtle, #dedfe2);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dt-form legend {
+  padding: 0 6px;
+  font-size: 12px;
+  color: var(--text-secondary, #666);
+}
+.dt-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 10px;
+}
+.dt-settings-dialog {
+  width: min(680px, 95vw) !important;
+  max-width: 680px !important;
+}
+.dt-setting-row,
+.dt-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dt-setting-row label {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.dt-setting-row input[type="number"] {
+  width: 72px;
+}
+.dt-setting-row > button,
+.dt-filter-row > button {
+  border: 1px solid var(--dt-line);
+  border-radius: 5px;
+  padding: 4px 8px;
+  background: var(--dt-bg);
+}
+.dt-form .dt-check {
+  flex-direction: row;
+  align-items: center;
+}
+.dt-filter-row input,
+.dt-filter-row select {
+  flex: 1;
+  width: 0;
+}
+.dt-actions {
+  position: relative;
+  z-index: 5;
+}
+.dt-actions summary {
+  cursor: pointer;
+  padding: 5px 8px;
+  list-style: none;
+}
+.dt-actions > div {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  display: flex;
+  flex-direction: column;
+  min-width: 155px;
+  padding: 5px;
+  background: var(--dt-bg);
+  border: 1px solid var(--dt-line);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px #0001;
+}
+.dt-actions button {
+  padding: 8px 10px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dt-actions button:hover {
+  background: var(--surface-secondary, #f5f5f5);
+}
+.dt-multi {
+  width: 100%;
+  position: relative;
+}
+.dt-multi summary {
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+}
+.dt-multi-options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 10;
+  background: var(--dt-bg);
+  border: 1px solid var(--dt-line);
+  box-shadow: 0 6px 20px #0001;
+  padding: 10px;
+  min-width: 170px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.dt-multi-options label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.dt-board {
+  display: flex;
+  gap: 14px;
+  padding: 16px;
+  overflow: auto;
+  background: var(--surface-secondary, #f8f9fa);
+  max-height: 540px;
+}
+.dt-board-column {
+  flex: 0 0 250px;
+  min-height: 260px;
+}
+.dt-board-column > header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 2px 12px;
+  font-size: 12px;
+}
+.dt-board-column > header > span:last-child {
+  margin-left: auto;
+  color: var(--dt-muted);
+  font-variant-numeric: tabular-nums;
+}
+.dt-board-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent, #648a7a);
+}
+.dt-board-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  max-height: 390px;
+  overflow: auto;
+}
+.dt-board-card {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  background: var(--dt-bg);
+  color: inherit;
+  border: 1px solid var(--dt-line);
+  border-radius: 7px;
+  padding: 12px;
+  text-align: left;
+  box-shadow: 0 1px 2px #00000005;
+}
+.dt-board-card:focus-visible {
+  outline: 2px solid var(--accent, #328575);
+}
+.dt-card-field {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--dt-muted);
+}
+.dt-board-empty {
+  font-size: 12px;
+  color: var(--dt-muted);
+  padding: 15px 3px;
+}
+.dt-expanded {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--dt-bg);
+}
+.dt-expanded .dt-grid-scroll {
+  height: auto;
+  flex: 1;
+}
+.dt-expanded .dt-board {
+  flex: 1;
+  max-height: none;
+}
+.dt-expanded .dt-board-cards {
+  max-height: calc(100vh - 240px);
+}
+.dt-back {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  border: 0;
+  background: none;
+  padding: 6px 10px 6px 0;
+  color: var(--dt-muted);
+  font-size: 12px !important;
+}
+.dt-snapshot-scroll {
+  max-height: 480px;
+  overflow: auto;
+}
+.dt-snapshot table {
+  border-collapse: collapse;
+  min-width: 100%;
+  font-size: 13px;
+}
+.dt-snapshot th,
+.dt-snapshot td {
+  border: 1px solid var(--dt-line);
+  padding: 10px 12px;
+  white-space: pre-wrap;
+  text-align: left;
+}
+.dt-snapshot th {
+  background: var(--surface-secondary, #f5f6f7);
+}
+@media (max-width: 720px) {
+  .dt-toolbar {
+    padding: 8px;
+  }
+  .dt-view-tabs {
+    max-width: 100%;
+    flex: 1;
+  }
+  .dt-tools {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .dt-save {
+    display: none;
+  }
+  .dt-footer {
+    flex-wrap: wrap;
+  }
+  .dt-grid-scroll {
+    height: 320px;
+  }
+  .dt-filter-row {
+    flex-wrap: wrap;
+  }
+  .dt-filter-row input,
+  .dt-filter-row select {
+    min-width: 100px;
+  }
+  .dt-form {
+    max-height: 65vh;
+  }
+}
+
+.dt-group-label {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 26px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--surface-secondary);
+  border-bottom: 1px solid var(--dt-line);
+}

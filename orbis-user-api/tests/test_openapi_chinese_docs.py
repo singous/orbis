@@ -59,6 +59,7 @@ def test_every_operation_uses_a_chinese_business_folder() -> None:
         "开放大文档导入",
         "开放实时分享",
         "实时文档分享",
+        "多维表格",
     }
 
     assert {tag["name"] for tag in schema["tags"]} == expected_tags

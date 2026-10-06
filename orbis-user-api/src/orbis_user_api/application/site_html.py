@@ -314,6 +314,17 @@ class DocumentHtml:
         suffix = "" if legacy else children
         if kind == "text":
             return self.inline(item)
+        if kind == "dataTable":
+            data = item.get("table_snapshot", {})
+            title = escape(str(data.get("title", "多维表格")))
+            columns = "".join(f'<th scope="col">{escape(str(value))}</th>' for value in data.get("columns", []))
+            rows = "".join("<tr>" + "".join(f"<td>{escape(str(value))}</td>" for value in row) + "</tr>" for row in data.get("rows", []))
+            more = ""
+            if data.get("records_url") and data.get("total", 0) > len(data.get("rows", [])):
+                path, _, query = data["records_url"].partition("?")
+                href = escape(path + "/html?" + query + "&offset=" + str(len(data["rows"])), quote=True)
+                more = f'<a href="{href}">继续阅读表格</a>'
+            return f'<section class="data-table-snapshot"><h3>{title}</h3><p>{data.get("total", len(data.get("rows", [])))} 条记录</p><div class="content-table-scroll"><table><thead><tr>{columns}</tr></thead><tbody>{rows}</tbody></table></div>{more}</section>'
         if kind == "heading":
             if (
                 path_key == "0"

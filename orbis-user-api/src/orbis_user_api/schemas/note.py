@@ -139,6 +139,7 @@ class NoteBlockChangesOut(BaseModel):
     content_version: int
     total_blocks: int
     updated_at_ms: int
+    table_blocks: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class NoteOut(BaseModel):

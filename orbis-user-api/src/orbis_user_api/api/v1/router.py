@@ -4,6 +4,8 @@ from fastapi import APIRouter
 
 from orbis_user_api.api import (
     collaboration,
+    data_tables,
+    published_tables,
     members,
     notes,
     ownership,
@@ -29,6 +31,10 @@ api_router.include_router(ownership.router)
 api_router.include_router(search.router)
 api_router.include_router(workspaces.router)
 api_router.include_router(notes.router)
+api_router.include_router(data_tables.router)
+api_router.include_router(data_tables.export_router)
+api_router.include_router(published_tables.router)
+api_router.include_router(published_tables.html_router)
 api_router.include_router(collaboration.router)
 api_router.include_router(sites.router)
 api_router.include_router(sites.public_router)

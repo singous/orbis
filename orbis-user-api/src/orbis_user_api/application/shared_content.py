@@ -23,6 +23,18 @@ from orbis_user_api.services.file import secure_file_response
 from orbis_user_api.services.storage import LocalFileStorage
 
 
+def redact_table_metadata(value):
+    if isinstance(value, list):
+        return [redact_table_metadata(item) for item in value]
+    if not isinstance(value, dict):
+        return value
+    result = {key: redact_table_metadata(item) for key, item in value.items()}
+    if value.get("type") == "dataTable":
+        result["props"] = {key: item for key, item in value.get("props", {}).items() if key in {"table_id", "table_revision", "title"}}
+        result.pop("table_snapshot", None)
+    return result
+
+
 def _reader_block(block: dict[str, Any]) -> dict[str, Any]:
     """Drawing source remains private in both live and published readers."""
     if block.get("type") == "drawing":
@@ -60,7 +72,7 @@ async def public_content(
     if expected_version is not None and expected_version != version:
         raise NoteVersionConflict
     page = await store.children(parent_id, offset, limit, version)
-    blocks = [_reader_block(block) for block in page["blocks"]["blocks"]]
+    blocks = [_reader_block(redact_table_metadata(block)) for block in page["blocks"]["blocks"]]
     return {
         **page, "title": note.title,
         "blocks": {**page["blocks"], "blocks": blocks},
@@ -90,7 +102,7 @@ async def public_block(
     if expected_version is not None and expected_version != version:
         raise NoteVersionConflict
     result = await store.block(block_id, version)
-    return {**result, "block": _reader_block(result["block"])}
+    return {**result, "block": _reader_block(redact_table_metadata(result["block"]))}
 
 
 async def shared_asset(

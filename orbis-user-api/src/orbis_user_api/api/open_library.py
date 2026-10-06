@@ -450,7 +450,15 @@ async def export(
                 "文档超过同步导出大小限制，请分页读取 JSON 内容",
             )
         content = await readonly_content(note, version, session)
-    encoded = json.dumps(content.blocks, ensure_ascii=False).encode()
+    export_blocks = content.blocks
+    if format == "markdown":
+        from orbis_user_api.application.data_table_exports import project_document_tables
+        from orbis_user_api.domain.data_tables import InvalidTable
+        try:
+            export_blocks = await project_document_tables(export_blocks, session, note.id, public=False)
+        except InvalidTable as cause:
+            raise error(413, "EXPORT_BUDGET_EXCEEDED", str(cause)) from None
+    encoded = json.dumps(export_blocks, ensure_ascii=False).encode()
     if len(encoded) > MAX_EXPORT_BYTES:
         raise error(
             413,
@@ -458,16 +466,16 @@ async def export(
             "文档超过同步导出大小限制，请分页读取 JSON 内容",
         )
     unsupported = (
-        markdown_losses(note_id, content.blocks) if format == "markdown" else []
+        markdown_losses(note_id, export_blocks) if format == "markdown" else []
     )
     return {
         "note_id": note_id,
         "content_version": version,
         "format": format,
         "complete": True,
-        "content": blocks_to_markdown(content.blocks)
+        "content": blocks_to_markdown(export_blocks)
         if format == "markdown"
-        else content.blocks,
+        else export_blocks,
         "losses": unsupported,
         "preserves_block_ids": format == "json",
     }

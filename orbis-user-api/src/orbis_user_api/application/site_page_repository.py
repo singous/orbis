@@ -16,6 +16,7 @@ from orbis_user_api.application.site_sources import digest
 from orbis_user_api.db.types import GUID
 from orbis_user_api.models.site import Site, SiteRelease
 from orbis_user_api.models.site_page import SitePageBody, SiteReleasePage
+from orbis_user_api.core.ids import new_uuidv7
 from orbis_user_api.schemas.site import SitePageOut, SiteSnapshotOut
 from orbis_user_api.schemas.site_delivery import SiteSearchOut
 
@@ -346,7 +347,8 @@ class SitePageRepository:
         for position, page in enumerate(snapshot.pages):
             metadata = page.model_dump(mode="json", exclude={"blocks", "plain_text"})
             header["pages"].append(metadata)
-            body_digest = digest({"blocks": page.blocks, "plain_text": page.plain_text})
+            from orbis_user_api.application.published_tables import digest_content, persist_tables
+            body_digest = digest({"blocks": digest_content(page.blocks), "plain_text": page.plain_text})
             body = await self.session.scalar(
                 select(SitePageBody).where(
                     SitePageBody.site_id == site_id,
@@ -354,14 +356,17 @@ class SitePageRepository:
                 )
             )
             if body is None:
+                body_id = new_uuidv7()
+                blocks = await persist_tables(self.session, site_id, body_id, page.blocks)
                 body = SitePageBody(
+                    id=body_id,
                     site_id=site_id,
                     content_digest=body_digest,
-                    blocks=page.blocks,
+                    blocks=blocks,
                     plain_text=page.plain_text,
                     body_bytes=len(
                         json.dumps(
-                            {"blocks": page.blocks, "plain_text": page.plain_text},
+                            {"blocks": blocks, "plain_text": page.plain_text},
                             ensure_ascii=False,
                         ).encode()
                     ),

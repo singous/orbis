@@ -1,4 +1,5 @@
 import { LoadingState } from "../../shared/ui/LoadingState";
+import { TableHostContext, replaceTableBlock, type TableHost } from "../data-tables/context";
 import { Dropdown } from "@heroui/react/dropdown";
 import { Label } from "@heroui/react/label";
 import { Input as HeroInput } from "@heroui/react/input";
@@ -236,12 +237,22 @@ export function DocumentEditorPage() {
           await updateNote.mutateAsync({ id: noteId, title: current.title.trim() || "未命名文档" });
         }
         let version = saved.version;
+        let savedBlocks = current.blocks;
         if (fingerprint({ ...current, title: "" }) !== fingerprint({ ...saved, title: "" })) {
           const result = await saveContent.mutateAsync({ noteId, expectedVersion: saved.version, blocks: current.blocks, ...(mode.blocks ? { changes: diffBlocks(saved.blocks, current.blocks) } : mode.partial ? { loadedBlockIds: saved.blocks.blocks.map(block => block.id) } : {}) });
           version = result.content_version;
+          if ("table_blocks" in result && result.table_blocks.length) {
+            for (const block of result.table_blocks) {
+              savedBlocks = { ...savedBlocks, blocks: replaceTableBlock(savedBlocks.blocks, block) };
+              contentHandle.current?.hydratePayload(block);
+            }
+            const live = coordinatorRef.current?.current;
+            const blocks = contentHandle.current?.snapshot();
+            if (live && blocks) changeDraft({ ...live, blocks });
+          }
         }
         void checkpoints.controller.acknowledge(acknowledgedSequence).catch(() => {});
-        return { ...current, title: current.title.trim() || "未命名文档", version };
+        return { ...current, blocks: savedBlocks, title: current.title.trim() || "未命名文档", version };
       },
     });
     coordinator.hydrate(savedInitial);
@@ -424,6 +435,12 @@ export function DocumentEditorPage() {
 
   const loadMoreRef = useRef(loadMoreContent);
   loadMoreRef.current = loadMoreContent;
+  const expandedTableId = searchParams.get("table");
+  useEffect(() => {
+    if (!editorReady || !expandedTableId || document.querySelector(`[data-orbis-block-id="${CSS.escape(expandedTableId)}"]`)) return;
+    // An explicit deep link may point beyond the initial document window.
+    void loadCompleteContent().catch(error => setEditorError(error instanceof Error ? error.message : "表格所在内容未能载入"));
+  }, [editorReady, expandedTableId, noteId]);
   useEffect(() => {
     const target = loadMoreTarget.current;
     if (!editorReady || !hasMoreContent || loadingMore || loadMoreError || !target) return;
@@ -593,6 +610,30 @@ export function DocumentEditorPage() {
     }
   }
 
+  const tableHost = useMemo<TableHost>(() => ({
+    noteId, auth: documentAuth, readOnly: !canEdit || editorBusy,
+    draftScope: checkpoints.controller.physicalScopeKey ?? draftKey,
+    reload: async () => {
+      if (coordinatorRef.current?.hasUnsavedChanges) throw new Error("正文也有未同步修改，请先在文档顶部处理版本冲突；表格本机草稿会保留。");
+      await reloadServer();
+    },
+    transact: async perform => {
+      const coordinator = coordinatorRef.current;
+      if (!canEdit || !coordinator || !documentAuth) throw new Error("当前无法编辑表格");
+      if (loadingRequest.current) await loadingRequest.current;
+      const result = await coordinator.externalChange(async saved => {
+        const result = await perform(saved.version);
+        if (coordinatorRef.current === coordinator && result.content_version > saved.version) {
+          contentHandle.current?.hydratePayload(result.block);
+          if (contentWindow.current) contentWindow.current.version = result.content_version;
+        }
+        return { result, transform: value => result.content_version <= value.version ? value : { ...value, version: result.content_version, blocks: { ...value.blocks, blocks: replaceTableBlock(value.blocks.blocks, result.block) } } };
+      });
+      if (coordinatorRef.current === coordinator && coordinator.current) setDraft(coordinator.current);
+      return result;
+    },
+  }), [noteId, documentAuth, canEdit, editorBusy, checkpoints.controller, draftKey, Boolean(draft)]);
+
   if (noteQuery.isError || contentQuery.isError) {
     return <DocumentShell><div className="mx-auto max-w-3xl p-8"><StatusMessage tone="error" title="无法打开文档">文档可能已归档，或你没有访问权限。</StatusMessage><Link to="/documents" className="mt-4 inline-flex text-sm font-semibold">返回文档中心</Link></div></DocumentShell>;
   }
@@ -648,7 +689,7 @@ export function DocumentEditorPage() {
             </StatusMessage></div> : null}
             {saveState === "error" && !editorError ? <div className="mb-5"><StatusMessage tone="error" title="自动保存失败">网络恢复后可手动重试，本地草稿不会丢失。<div className="mt-3"><Button variant="secondary" icon={<RefreshCw aria-hidden="true" size={14} />} onClick={() => coordinatorRef.current?.retry()}>重试保存</Button></div></StatusMessage></div> : null}
 
-            <EditorErrorBoundary key={noteId}>
+            <TableHostContext.Provider value={tableHost}><EditorErrorBoundary key={noteId}>
               <Suspense fallback={<LoadingState label="正在准备编辑…" variant="editor-body" delayMs={180} />}>
                 <LiveDocumentEditor
                   noteId={noteId}
@@ -664,7 +705,7 @@ export function DocumentEditorPage() {
                   onChange={({ blocks }) => changeDraft({ ...(coordinatorRef.current?.current ?? draft), blocks })}
                 />
               </Suspense>
-            </EditorErrorBoundary>
+            </EditorErrorBoundary></TableHostContext.Provider>
             {hasMoreContent ? <div ref={loadMoreTarget} className="document-load-more" aria-live="polite">
               {loadingMore ? <LoadingState label="正在载入后续正文…" compact /> : null}
               {loadMoreError ? <StatusMessage tone="error" title="后续正文未能载入">{loadMoreError}<Button variant="secondary" onClick={() => void loadMoreContent().catch(() => {})}>重试加载</Button></StatusMessage> : null}

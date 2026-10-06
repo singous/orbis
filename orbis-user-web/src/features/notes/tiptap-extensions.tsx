@@ -15,7 +15,7 @@ import Underline from "@tiptap/extension-underline";
 import { NodeViewContent, NodeViewWrapper, ReactNodeViewRenderer, type NodeViewProps } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { BookOpen, Code2, Info, Layers, ListOrdered, Plus, Settings2, CircleCheck, TriangleAlert, OctagonAlert } from "../../shared/ui/icons";
-import { useContext, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useContext, useEffect, useRef, useState } from "react";
 
 import { ContentMedia } from "../content/ContentMedia";
 import { contentCellStyle, contentInlineStyle, contentTextAlignment } from "../content/content-format";
@@ -67,6 +67,13 @@ const OrbisStyle = Mark.create({
 const GROUP_CHILD: Partial<Record<DocumentBlockKind, DocumentBlockKind | "codeBlock">> = { cardGroup: "card", steps: "step", tabs: "tab", codeGroup: "codeBlock" };
 const PROP_LABELS: Record<string, string> = { title: "标题", href: "链接", tone: "提示类型", columns: "每行卡片数量" };
 const VALUE_LABELS: Record<string, string> = { info: "说明", success: "成功", warning: "注意", danger: "警告" };
+
+const LazyDataTableBlock = lazy(() => import("../data-tables/DataTable").then(module => ({ default: module.DataTableBlock })));
+function ComponentNodeView(props: NodeViewProps) {
+  const readOnly = useContext(EditorReadOnlyContext);
+  if (props.node.attrs.kind === "dataTable") return <NodeViewWrapper data-orbis-block-id={props.node.attrs.orbisId} contentEditable={false} className="orbis-data-table"><Suspense fallback={<div>正在准备多维表格…</div>}><LazyDataTableBlock blockId={String(props.node.attrs.orbisId)} props={props.node.attrs.orbisProps ?? {}} readOnly={readOnly} /></Suspense></NodeViewWrapper>;
+  return <ComponentView {...props} />;
+}
 
 function ComponentView({ node, editor, updateAttributes, getPos }: NodeViewProps) {
   const readOnly = useContext(EditorReadOnlyContext);
@@ -148,7 +155,7 @@ const OrbisComponent = Node.create({
   addAttributes() { return { orbisId: blockIdentity, orbisProps: { ...hidden, parseHTML: (element: HTMLElement) => parseClipboardProps(element), renderHTML: (attributes: Record<string, unknown>) => clipboardPropsAttribute(attributes.orbisProps) }, orbisOriginal: hidden, orbisSignature: hidden, kind: { default: "callout", parseHTML: () => null, rendered: false } }; },
   parseHTML() { return [{ tag: "section[data-document-component]", getAttrs: (element) => { const kind = (element as HTMLElement).dataset.documentComponent; return kind && documentBlockDefinition(kind) ? { kind } : false; } }]; },
   renderHTML({ node, HTMLAttributes }) { return ["section", mergeAttributes(HTMLAttributes, { "data-document-component": node.attrs.kind }), 0]; },
-  addNodeView() { return ReactNodeViewRenderer(ComponentView); },
+  addNodeView() { return ReactNodeViewRenderer(ComponentNodeView); },
 });
 
 function MediaView({ node, editor, updateAttributes }: NodeViewProps) {

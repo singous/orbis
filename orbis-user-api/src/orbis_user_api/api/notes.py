@@ -288,7 +288,7 @@ async def save_note_content(
     session: AsyncSession = Depends(get_session),
 ) -> NoteContent:
     try:
-        return await update_note_content(note_id, payload, user, session)
+        return await update_note_content(note_id, payload, user, session, allow_table_copy=True)
     except NoteNotFound:
         raise _not_found("NOTE_NOT_FOUND", "文档不存在") from None
     except NoteContentInvalid:
@@ -464,6 +464,7 @@ async def save_note_block_changes(
             [move.model_dump() for move in payload.moves],
             payload.deletes,
             user,
+            allow_table_copy=True,
         )
     except NoteNotFound:
         raise _not_found("NOTE_NOT_FOUND", "文档不存在") from None
