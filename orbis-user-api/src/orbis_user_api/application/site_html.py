@@ -455,7 +455,7 @@ class DocumentHtml:
                 + "</tbody></table></div>"
                 + suffix
             )
-        if kind in {"image", "file", "audio", "video"}:
+        if kind in {"image", "file", "audio", "video", "drawing"}:
             url = public_url(props.get("url"), self.base, media=True)
             label = escape(str(props.get("caption") or props.get("name") or kind))
             if not url:
@@ -463,7 +463,7 @@ class DocumentHtml:
             src = escape(url, quote=True)
             media = (
                 f'<img src="{src}" alt="{label}" loading="lazy">'
-                if kind == "image"
+                if kind in {"image", "drawing"}
                 else f'<{kind} src="{src}" controls preload="metadata"></{kind}>'
                 if kind in {"audio", "video"}
                 else f'<a href="{src}">{label}</a>'

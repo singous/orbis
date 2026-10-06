@@ -17,7 +17,7 @@ import { copyBlocks, pasteBlocks, installBlockClipboard, type BlockClipboardResu
 import { blockActionNeedsRead, prepareBlockAction } from './block-action-read';
 import '../../../styles/block-controls.css';
 
-const LABELS:Record<string,string>={paragraph:'段落',heading:'标题',bulletListItem:'无序列表',numberedListItem:'有序列表',checkListItem:'任务清单',quote:'引用',codeBlock:'代码块',table:'表格',image:'图片',video:'视频',audio:'音频',file:'附件',divider:'分隔线',toggleListItem:'折叠块',...Object.fromEntries(Object.entries(DOCUMENT_BLOCKS).map(([kind,definition])=>[kind,definition.label]))};
+const LABELS:Record<string,string>={paragraph:'段落',heading:'标题',bulletListItem:'无序列表',numberedListItem:'有序列表',checkListItem:'任务清单',quote:'引用',codeBlock:'代码块',table:'表格',drawing:'画板',image:'图片',video:'视频',audio:'音频',file:'附件',divider:'分隔线',toggleListItem:'折叠块',...Object.fromEntries(Object.entries(DOCUMENT_BLOCKS).map(([kind,definition])=>[kind,definition.label]))};
 const CONVERSIONS=[{value:'paragraph',label:'段落'},{value:'heading:1',label:'标题 1'},{value:'heading:2',label:'标题 2'},{value:'heading:3',label:'标题 3'},{value:'bulletListItem',label:'无序列表'},{value:'numberedListItem',label:'有序列表'},{value:'checkListItem',label:'任务清单'},{value:'quote',label:'引用'},{value:'codeBlock',label:'代码块'},{value:'toggleListItem',label:'折叠块'}];
 const OPEN_BLOCK_MENU_EVENT = 'orbis-open-block-menu';
 export function requestBlockMenu(editor: Editor) { editor.view.dom.dispatchEvent(new Event(OPEN_BLOCK_MENU_EVENT)); }

@@ -5,6 +5,7 @@ import re
 from copy import deepcopy
 from typing import Any
 
+from orbis_user_api.domain.drawing import drawing_text, validate_drawing
 from orbis_user_api.domain.document_components import (
     DOCUMENT_BLOCKS,
     apply_component_defaults,
@@ -70,6 +71,7 @@ V2_BLOCK_TYPES = {
     "file",
     "audio",
     "video",
+    "drawing",
 } | set(DOCUMENT_BLOCKS)
 
 
@@ -245,6 +247,8 @@ def _validate_v2_block(block: object) -> None:
         _validate_v2_block(child)
     try:
         validate_component(block)
+        if block["type"] == "drawing":
+            validate_drawing(block)
     except ValueError as error:
         raise InvalidNoteContent(str(error)) from error
 
@@ -293,6 +297,9 @@ def _v2_inline_text(inline: object) -> str:
 
 
 def _v2_block_text(block: dict[str, Any]) -> str:
+    if block.get("type") == "drawing":
+        props = block.get("props", {})
+        return "\n".join(part for part in (props.get("caption", ""), drawing_text(props.get("scene", ""))) if part)
     content = block.get("content", [])
     if isinstance(content, str):
         return content
@@ -689,12 +696,12 @@ def _render_v2_blocks(block_list: list[dict[str, Any]], depth: int = 0) -> str:
         elif block_type == "quote":
             body = "\n\n".join(part for part in [text, _render_v2_blocks(children, 0)] if part)
             out.append("\n".join(f"> {line}" for line in (body or text).splitlines()))
-        elif block_type in {"image", "file", "audio", "video"}:
+        elif block_type in {"image", "file", "audio", "video", "drawing"}:
             props = block.get("props", {})
             url = props.get("url", "")
             label = str(props.get("caption") or props.get("name") or text or block_type)
             label = label.replace("\\", "\\\\").replace("[", "\\[").replace("]", "\\]")
-            prefix = "!" if block_type == "image" else ""
+            prefix = "!" if block_type in {"image", "drawing"} else ""
             out.append(f"{prefix}[{label}]({markdown_destination(url)})" if url else label)
             if children:
                 out.append(_render_v2_blocks(children, depth + 1))

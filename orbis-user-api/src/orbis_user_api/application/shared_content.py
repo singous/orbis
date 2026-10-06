@@ -12,6 +12,7 @@ from orbis_user_api.application.block_content import (
     read_stored_content,
 )
 from orbis_user_api.application.document_shares import ShareScope, ShareUnavailable
+from orbis_user_api.application.block_pages import json_bytes
 from orbis_user_api.application.site_assets import file_reference
 from orbis_user_api.domain.document_references import managed_file_ids
 from orbis_user_api.models.file import FileAsset
@@ -32,6 +33,18 @@ def redact_table_metadata(value):
         result["props"] = {key: item for key, item in value.get("props", {}).items() if key in {"table_id", "table_revision", "title"}}
         result.pop("table_snapshot", None)
     return result
+
+
+def _reader_block(block: dict[str, Any]) -> dict[str, Any]:
+    """Drawing source remains private in both live and published readers."""
+    if block.get("type") == "drawing":
+        return {
+            **block,
+            "props": {key: value for key, value in block.get("props", {}).items() if key in {"url", "caption", "previewWidth"}},
+        }
+    if block.get("children"):
+        return {**block, "children": [_reader_block(child) for child in block["children"]]}
+    return block
 
 
 async def public_content(
@@ -59,7 +72,12 @@ async def public_content(
     if expected_version is not None and expected_version != version:
         raise NoteVersionConflict
     page = await store.children(parent_id, offset, limit, version)
-    return {**page, "blocks": redact_table_metadata(page["blocks"]), "title": note.title}
+    blocks = [_reader_block(redact_table_metadata(block)) for block in page["blocks"]["blocks"]]
+    return {
+        **page, "title": note.title,
+        "blocks": {**page["blocks"], "blocks": blocks},
+        "returned_bytes": sum(json_bytes(block) for block in blocks),
+    }
 
 
 async def public_block(
@@ -84,7 +102,7 @@ async def public_block(
     if expected_version is not None and expected_version != version:
         raise NoteVersionConflict
     result = await store.block(block_id, version)
-    return {**result, "block": redact_table_metadata(result["block"])}
+    return {**result, "block": _reader_block(redact_table_metadata(result["block"]))}
 
 
 async def shared_asset(

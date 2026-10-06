@@ -18,6 +18,7 @@ DEFAULT_STYLE_PROPERTIES = {
     "textAlignment": "left",
 }
 STRUCTURAL_COMPONENTS = {
+    "drawing",
     "image",
     "file",
     "audio",
