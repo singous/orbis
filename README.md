@@ -50,16 +50,17 @@ processing and retrieval capabilities.
 
 ## Development
 
-NAS 上的 Orbis 开发部署通过 Jenkins 出包，再由 Compose 启动前后端与 PostgreSQL。
-
-- 应用入口：`http://10.0.0.223:28190/setup`
-- API 文档：`http://10.0.0.223:28190/api/docs`
-- Jenkins：`http://10.0.0.223:28200/job/orbis/`
-
-前后端构建、发布和回滚使用仓库内 `ci/Jenkinsfile.*`。
-部署与访问说明见 [Jenkins 与 Compose 指南](docs/intro/ci-cd.md)。
-`make app-status` 查看已部署版本，`make app-up` 恢复当前应用容器。
 `make setup` / `make shell` 提供修改代码所需的容器工具环境。
+
+应用镜像由 `docker/orbis.Dockerfile` 构建，部署编排位于 `deploy/compose.yaml`。
+可分别构建前端与后端镜像：
+
+```bash
+docker build -f docker/orbis.Dockerfile --target frontend -t orbis/frontend:local .
+docker build -f docker/orbis.Dockerfile --target backend -t orbis/backend:local .
+```
+
+使用 Compose 部署时，在部署环境中配置镜像引用、公开访问 URL、数据库密码与应用密钥。
 
 Python is pinned to the 3.12 minor line:
 

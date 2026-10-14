@@ -22,8 +22,6 @@ WORKDIR /app
 COPY --chmod=644 pyproject.toml uv.lock .python-version ./
 COPY --chown=1000:1000 --chmod=755 orbis-user-api/ ./orbis-user-api/
 COPY --chown=1000:1000 --chmod=755 orbis-cli/ ./orbis-cli/
-COPY --chmod=755 ci/ ./ci/
-COPY --chmod=755 tests/ ./tests/
 COPY --chmod=644 orbis-user-web/pyproject.toml ./orbis-user-web/
 COPY --chmod=644 orbis-gateway/pyproject.toml ./orbis-gateway/
 COPY --chmod=644 orbis-data-receiver/pyproject.toml ./orbis-data-receiver/

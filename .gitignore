@@ -47,6 +47,11 @@ docs/**
 # Local linked worktrees
 .worktrees/
 
+# Machine-specific CI lives in the local deployment directory
+/ci/
+/ops/jenkins/
+/docs/intro/ci-cd.md
+
 # Local Alembic migration artifacts
 orbis-user-api/migrations/versions/*.py
 

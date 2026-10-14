@@ -1,12 +1,11 @@
 .DEFAULT_GOAL := help
 
-# Keep Buildx metadata local, including on NAS hosts with restrictive home ACLs.
+# Keep Buildx metadata in the workspace.
 export BUILDX_CONFIG := $(CURDIR)/.dev/buildx
 COMPOSE := docker compose
 RUN := $(COMPOSE) run --rm -T dev
-APP_RUNTIME ?= /vol1/1000/Deploy/internal/orbis-dev
 
-.PHONY: help init setup dev sync shell run uv lock lint format format-check test check doctor status logs down app-status app-up app-logs rollback
+.PHONY: help init setup dev sync shell run uv lock lint format format-check test check doctor status logs down
 
 help:
 	@printf '%s\n' \
@@ -17,18 +16,13 @@ help:
 	  'make uv ARGS="add --package orbis-user-api httpx"  Change dependencies' \
 	  'make sync         Install the dependencies recorded in uv.lock' \
 	  'make lock         Update uv.lock after editing pyproject.toml' \
-	  'make check        Check Compose, lockfile, lint, formatting and shell syntax' \
+	  'make check        Check Compose, lockfile and shell syntax' \
 	  'make test         Run pytest (no tests collected is an error)' \
 	  'make format       Format Python source with Ruff' \
 	  'make doctor       Show tool versions and check installed dependencies' \
 	  'make status       Show development containers' \
 	  'make logs         Follow development container logs' \
 	  'make down         Remove development containers; keep local data and cache'
-	@printf '%s\n' \
-	  'make app-status   Show the current Jenkins release' \
-	  'make app-up       Start the current application release with Compose' \
-	  'make app-logs     Follow application logs' \
-	  'make rollback RELEASE=<release-id>  Restore a retained release'
 
 init:
 	@sh scripts/init-dev.sh
@@ -71,7 +65,7 @@ test: init
 
 check: init
 	$(COMPOSE) config --quiet
-	$(RUN) sh -ec 'uv lock --check; uv run --no-sync ruff check ci tests/deployment; uv run --no-sync ruff format --check ci tests/deployment; for file in scripts/*.sh docker/dev/*.sh ops/jenkins/*.sh; do sh -n "$$file"; done'
+	$(RUN) sh -ec 'uv lock --check; for file in scripts/*.sh docker/dev/*.sh; do sh -n "$$file"; done'
 
 doctor: init
 	$(COMPOSE) config --quiet
@@ -85,16 +79,3 @@ logs:
 
 down:
 	$(COMPOSE) down
-
-app-status:
-	python3 ci/release.py status --runtime-dir "$(APP_RUNTIME)"
-
-app-up:
-	python3 ci/release.py up --runtime-dir "$(APP_RUNTIME)"
-
-app-logs:
-	docker compose --project-directory "$(APP_RUNTIME)" --env-file "$(APP_RUNTIME)/.env" --env-file "$(APP_RUNTIME)/images.env" -p orbis-app -f "$(APP_RUNTIME)/docker-compose.yml" logs --tail=100 -f
-
-rollback:
-	$(if $(strip $(RELEASE)),,$(error Set RELEASE to a retained release identifier))
-	python3 ci/release.py rollback --runtime-dir "$(APP_RUNTIME)" --release-id "$(RELEASE)"
