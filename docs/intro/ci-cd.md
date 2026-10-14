@@ -2,11 +2,14 @@
 
 ## 当前访问入口
 
-- Orbis：`http://10.0.0.223:28190/`，首次使用进入 `/setup` 创建自己的所有者账号。
-- API 文档：`http://10.0.0.223:28190/api/docs`。
+- Orbis：`https://orbis-dev.poflow.cn/`，首次使用进入 `/setup` 创建自己的所有者账号。
+- API 文档：`https://orbis-dev.poflow.cn/api/docs`。
+- 局域网入口：`http://10.0.0.223:28190/`。
 - Jenkins：`http://10.0.0.223:28200/`，项目位于 `orbis` 文件夹。
 
-以上为 NAS 局域网入口。运行镜像使用 Git 中的真实 React / FastAPI 应用。
+公网入口由 nas-web 的 OpenResty 终止 TLS，再通过 NPS/NPC 转发到 NAS 的 28190 端口。
+HTTP 自动跳转到 HTTPS，证书由 1Panel 自动续期。Jenkins 保留局域网入口。
+运行镜像使用 Git 中的真实 React / FastAPI 应用。
 后端、前端、PostgreSQL 由独立 Compose 项目 `orbis-app` 管理。
 开发库位于本机，与既有共享开发数据库隔离；首次启动只创建表，保留应用的首次安装流程。
 
@@ -79,6 +82,11 @@ docker compose --env-file .env --env-file images.env -p orbis-app ps
 
 停止或重建应用容器不会删除数据库、文件或密钥。禁止执行 `down -v`，禁止以旧数据库覆盖新增数据。
 DPanel 可读取这里的 Compose 项目并查看容器和日志；正式发布与回滚统一从 Jenkins 或发布脚本发起。
+
+运行目录 `.env` 中的 `ORBIS_PUBLIC_URL=https://orbis-dev.poflow.cn` 用于邀请、所有权转移及公开站点链接。
+此配置独立于镜像版本，发布和回滚均保留。云端代理覆盖客户端提供的转发协议头，
+应用内层 nginx 保留有效的 HTTP/HTTPS 协议值；直连局域网时使用本次请求的协议。
+公网路由、证书及对应资源的撤销记录保存在运行目录 `public-access.json` 和 README 中。
 
 ## 部署验证与回滚
 
