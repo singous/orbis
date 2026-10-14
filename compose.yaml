@@ -1,0 +1,45 @@
+name: orbis-dev
+
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: docker/dev/Dockerfile
+      target: dev
+      args:
+        ORBIS_UID: ${ORBIS_UID:-1000}
+        ORBIS_GID: ${ORBIS_GID:-1000}
+    user: "${ORBIS_UID:-1000}:${ORBIS_GID:-1000}"
+    working_dir: /workspace
+    init: true
+    environment:
+      TZ: Asia/Shanghai
+      UV_PROJECT_ENVIRONMENT: /workspace/.dev/venv
+      UV_CACHE_DIR: /workspace/.dev/cache/uv
+      XDG_CACHE_HOME: /workspace/.dev/cache
+    volumes:
+      - type: bind
+        source: .
+        target: /workspace
+        bind:
+          create_host_path: false
+    cpus: ${ORBIS_DEV_CPUS:-2}
+    mem_limit: ${ORBIS_DEV_MEMORY:-2g}
+    pids_limit: 512
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:mode=1777,size=256m
+    healthcheck:
+      test: ["CMD", "test", "-f", "/tmp/orbis-dev-ready"]
+      interval: 5s
+      timeout: 3s
+      start_period: 120s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

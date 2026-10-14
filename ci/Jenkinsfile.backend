@@ -1,0 +1,26 @@
+pipeline {
+    agent { label 'orbis-builder' }
+    options { disableConcurrentBuilds(); timeout(time: 35, unit: 'MINUTES'); buildDiscarder(logRotator(numToKeepStr: '20')) }
+    parameters {
+        string(name: 'GIT_REF', defaultValue: env.ORBIS_SOURCE_REF ?: 'develop', description: 'Trusted Git branch or complete commit')
+        string(name: 'RELEASE_ID', defaultValue: '', description: 'Identifier supplied by the release pipeline')
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout([$class: 'GitSCM', branches: [[name: params.GIT_REF]],
+                    userRemoteConfigs: [[url: env.ORBIS_REPOSITORY]]])
+                script {
+                    env.ORBIS_RELEASE_ID = params.RELEASE_ID ?: "backend-${env.BUILD_NUMBER}-${sh(script: 'git rev-parse --short=12 HEAD', returnStdout: true).trim()}"
+                }
+            }
+        }
+        stage('Test, build and publish backend') {
+            steps { sh 'python3 ci/pipeline.py backend --release-id "$ORBIS_RELEASE_ID"' }
+        }
+    }
+    post {
+        always { junit testResults: 'artifacts/reports/backend.xml', allowEmptyResults: true }
+        success { archiveArtifacts artifacts: 'artifacts/backend.json', fingerprint: true }
+    }
+}

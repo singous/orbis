@@ -1,0 +1,48 @@
+pipeline {
+    agent none
+    options { disableConcurrentBuilds(); timeout(time: 75, unit: 'MINUTES'); buildDiscarder(logRotator(numToKeepStr: '20')) }
+    parameters {
+        string(name: 'GIT_REF', defaultValue: env.ORBIS_SOURCE_REF ?: 'develop', description: 'Trusted Git branch or complete commit')
+        booleanParam(name: 'DEPLOY', defaultValue: true, description: 'Deploy after both components pass their checks')
+    }
+    stages {
+        stage('Resolve release commit') {
+            agent { label 'orbis-builder' }
+            steps {
+                checkout([$class: 'GitSCM', branches: [[name: params.GIT_REF]],
+                    userRemoteConfigs: [[url: env.ORBIS_REPOSITORY]]])
+                script {
+                    env.ORBIS_COMMIT = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+                    env.ORBIS_RELEASE_ID = "release-${env.BUILD_NUMBER}-${env.ORBIS_COMMIT.take(12)}"
+                    currentBuild.description = env.ORBIS_RELEASE_ID
+                }
+            }
+        }
+        stage('Frontend pipeline') {
+            steps {
+                build job: 'frontend', wait: true, propagate: true,
+                    parameters: [string(name: 'GIT_REF', value: env.ORBIS_COMMIT), string(name: 'RELEASE_ID', value: env.ORBIS_RELEASE_ID)]
+            }
+        }
+        stage('Backend pipeline') {
+            steps {
+                build job: 'backend', wait: true, propagate: true,
+                    parameters: [string(name: 'GIT_REF', value: env.ORBIS_COMMIT), string(name: 'RELEASE_ID', value: env.ORBIS_RELEASE_ID)]
+            }
+        }
+        stage('Package release and deploy Compose') {
+            agent { label 'orbis-builder' }
+            steps {
+                checkout([$class: 'GitSCM', branches: [[name: env.ORBIS_COMMIT]],
+                    userRemoteConfigs: [[url: env.ORBIS_REPOSITORY]]])
+                sh 'python3 ci/pipeline.py assemble --release-id "$ORBIS_RELEASE_ID"'
+                archiveArtifacts artifacts: 'artifacts/release.json,deploy/compose.yaml', fingerprint: true
+                script {
+                    if (params.DEPLOY) {
+                        sh 'python3 ci/release.py deploy --runtime-dir "$ORBIS_RUNTIME_DIR" --manifest artifacts/release.json'
+                    }
+                }
+            }
+        }
+    }
+}

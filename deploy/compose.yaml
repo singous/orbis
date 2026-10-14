@@ -1,0 +1,69 @@
+services:
+  db:
+    image: postgres:16@sha256:ca0bd484cb98bf4b24eb1010e73fb3fcbd6714d240fbc1a10eea5b7dbecb641d
+    user: "${ORBIS_UID:-1000}:${ORBIS_GID:-1000}"
+    environment:
+      POSTGRES_DB: orbis
+      POSTGRES_USER: orbis
+      POSTGRES_PASSWORD: ${ORBIS_DATABASE_PASSWORD:?database password is required}
+      TZ: Asia/Shanghai
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orbis -d orbis"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    mem_limit: 1g
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  api:
+    image: ${ORBIS_API_IMAGE:?an immutable API image is required}
+    user: "${ORBIS_UID:-1000}:${ORBIS_GID:-1000}"
+    environment:
+      ORBIS_DATABASE_URL: postgresql+asyncpg://orbis:${ORBIS_DATABASE_PASSWORD}@db:5432/orbis
+      ORBIS_AUTO_CREATE_TABLES: "true"
+      ORBIS_ACCESS_TOKEN_SECRET: ${ORBIS_ACCESS_TOKEN_SECRET:?access secret is required}
+      ORBIS_REFRESH_TOKEN_SECRET: ${ORBIS_REFRESH_TOKEN_SECRET:?refresh secret is required}
+      ORBIS_ACTION_TOKEN_SECRET: ${ORBIS_ACTION_TOKEN_SECRET:?action secret is required}
+      ORBIS_STORAGE_DIR: /data/files
+      ORBIS_MAIL_TRANSPORT: outbox
+      ORBIS_MAIL_OUTBOX_DIR: /data/mail-outbox
+      ORBIS_USER_WEB_BASE_URL: ${ORBIS_PUBLIC_URL:?public URL is required}
+      TZ: Asia/Shanghai
+    volumes:
+      - ./data/api:/data
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9201/healthz', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    init: true
+    restart: unless-stopped
+    mem_limit: 2g
+    cpus: 2
+    logging: *logging
+
+  web:
+    image: ${ORBIS_WEB_IMAGE:?an immutable web image is required}
+    ports:
+      - "${ORBIS_BIND_ADDRESS:-0.0.0.0}:${ORBIS_PORT:-28190}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://127.0.0.1/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+    mem_limit: 256m
+    logging: *logging
