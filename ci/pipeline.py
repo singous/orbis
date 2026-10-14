@@ -46,6 +46,8 @@ def component(name: str, release_id: str, registry: str, artifact_root: Path) ->
         "--cpus=2",
         "--memory=4g",
         "--shm-size=256m",
+        "--tmpfs",
+        "/tmp:mode=1777,size=2g",
         "--user",
         f"{os.getuid()}:{os.getgid()}",
         "--mount",
