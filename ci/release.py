@@ -139,6 +139,14 @@ def smoke(base_url: str) -> None:
     with urllib.request.urlopen(base_url + "/api/openapi.json", timeout=10) as response:
         if "/setup" not in json.load(response).get("paths", {}):
             raise RuntimeError("API contract is unavailable")
+    with urllib.request.urlopen(base_url + "/api/docs", timeout=10) as response:
+        docs = response.read().decode()
+    schema_urls = re.findall(r"url: ['\"]([^'\"]+)", docs)
+    if not schema_urls:
+        raise RuntimeError("API documentation schema link is missing")
+    with urllib.request.urlopen(base_url + schema_urls[0], timeout=10) as response:
+        if "/setup" not in json.load(response).get("paths", {}):
+            raise RuntimeError("API documentation schema link is unavailable")
     with urllib.request.urlopen(base_url + "/setup", timeout=10) as response:
         html = response.read().decode()
     scripts = re.findall(r'src="([^"]+\.js)"', html)
