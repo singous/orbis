@@ -45,12 +45,15 @@ services:
     user: "${ORBIS_UID:-1000}:${ORBIS_GID:-1000}"
     group_add:
       - "${DOCKER_GID:?}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       ORBIS_AGENT_WORKDIR: ${JENKINS_DATA_ROOT}/agent
       BUILDX_CONFIG: ${JENKINS_DATA_ROOT}/agent/.buildx
       ORBIS_RUNTIME_DIR: ${ORBIS_RUNTIME_DIR}
       ORBIS_ARTIFACT_ROOT: ${JENKINS_DATA_ROOT}/artifacts
       ORBIS_REGISTRY: 127.0.0.1:28210
+      ORBIS_SMOKE_HOST: host.docker.internal
       TZ: Asia/Shanghai
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock

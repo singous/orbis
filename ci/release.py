@@ -169,7 +169,8 @@ def apply_release(runtime: Path, project: str, release: dict, timeout: int) -> N
         timeout=timeout + 30,
     )
     port = int(read_env(runtime)["ORBIS_PORT"])
-    smoke(f"http://127.0.0.1:{port}")
+    host = os.environ.get("ORBIS_SMOKE_HOST", "127.0.0.1")
+    smoke(f"http://{host}:{port}")
     schema = subprocess.check_output(
         command
         + [

@@ -83,3 +83,14 @@ def test_concurrent_deployment_is_rejected(tmp_path):
         release.release_lock(tmp_path),
     ):
         pytest.fail("Second deployment acquired the lock")
+
+
+def test_agent_smoke_uses_the_host_gateway(tmp_path, monkeypatch):
+    release.initialize_runtime(tmp_path, "http://localhost:28190")
+    monkeypatch.setenv("ORBIS_SMOKE_HOST", "host.docker.internal")
+    monkeypatch.setattr(release.subprocess, "run", lambda *args, **kwargs: None)
+    monkeypatch.setattr(release.subprocess, "check_output", lambda *args, **kwargs: "1\n")
+    addresses = []
+    monkeypatch.setattr(release, "smoke", addresses.append)
+    release.apply_release(tmp_path, "orbis-test", manifest(), 5)
+    assert addresses == ["http://host.docker.internal:28190"]
