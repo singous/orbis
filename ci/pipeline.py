@@ -5,23 +5,32 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 import subprocess
 import time
 from pathlib import Path
 
-from release import RELEASE_ID, validate_manifest, write_json
+try:
+    from . import registry as registry_client
+    from .release import RELEASE_ID, validate_manifest, write_json
+except ImportError:
+    import registry as registry_client
+    from release import RELEASE_ID, validate_manifest, write_json
 
 
-def run(*args: str) -> None:
-    subprocess.run(args, check=True)
+def run(*args: str, environment: dict[str, str] | None = None) -> None:
+    subprocess.run(args, env=environment, check=True)
 
 
-def component(name: str, release_id: str, registry: str, artifact_root: Path) -> None:
+def component(
+    name: str,
+    release_id: str,
+    registry: str,
+    artifact_root: Path,
+    environment: dict[str, str],
+) -> None:
     if not RELEASE_ID.fullmatch(release_id):
         raise ValueError("Invalid release identifier")
-    if not re.fullmatch(r"[a-zA-Z0-9.:-]+", registry):
-        raise ValueError("Invalid registry address")
+    registry_client.validate_address(registry)
     revision = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
     artifacts = Path("artifacts")
     artifacts.mkdir(exist_ok=True)
@@ -38,6 +47,7 @@ def component(name: str, release_id: str, registry: str, artifact_root: Path) ->
         "-t",
         test_image,
         ".",
+        environment=environment,
     )
     test_command = [
         "docker",
@@ -80,7 +90,7 @@ def component(name: str, release_id: str, registry: str, artifact_root: Path) ->
             "--reporter=junit",
             "--outputFile.junit=/reports/frontend.xml",
         ]
-    run(*test_command)
+    run(*test_command, environment=environment)
     target = "backend" if name == "backend" else "frontend"
     image = f"{registry}/orbis/{name}:{release_id}"
     run(
@@ -97,8 +107,17 @@ def component(name: str, release_id: str, registry: str, artifact_root: Path) ->
         "-t",
         image,
         ".",
+        environment=environment,
     )
-    run("docker", "push", image)
+    published = registry_client.transport_image(
+        image, registry, os.environ.get("ORBIS_REGISTRY_TRANSPORT")
+    )
+    if published != image:
+        run("docker", "tag", image, published, environment=environment)
+    run("docker", "push", published, environment=environment)
+    if published != image:
+        # Layers are already cached; this records the public repository digest.
+        run("docker", "pull", image, environment=environment)
     details = json.loads(subprocess.check_output(["docker", "image", "inspect", image], text=True))[
         0
     ]
@@ -155,7 +174,10 @@ def main() -> None:
     if args.action == "assemble":
         assemble(args.release_id, args.artifact_root)
     else:
-        component(args.action, args.release_id, args.registry, args.artifact_root)
+        with registry_client.authenticated(
+            args.registry, os.environ.get("ORBIS_REGISTRY_TRANSPORT")
+        ) as environment:
+            component(args.action, args.release_id, args.registry, args.artifact_root, environment)
 
 
 if __name__ == "__main__":

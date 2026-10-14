@@ -16,7 +16,14 @@ pipeline {
             }
         }
         stage('Test, build and publish backend') {
-            steps { sh 'python3 ci/pipeline.py backend --release-id "$ORBIS_RELEASE_ID"' }
+            steps {
+                script {
+                    def registry = load 'ci/registry.groovy'
+                    registry.withAccess(env.ORBIS_PUSH_CREDENTIAL_ID) {
+                        sh 'python3 ci/pipeline.py backend --release-id "$ORBIS_RELEASE_ID"'
+                    }
+                }
+            }
         }
     }
     post {

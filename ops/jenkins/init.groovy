@@ -19,7 +19,8 @@ if (environment == null) {
     environment = new EnvironmentVariablesNodeProperty()
     properties.add(environment)
 }
-['ORBIS_SOURCE_REF', 'ORBIS_REPOSITORY', 'ORBIS_RUNTIME_DIR', 'ORBIS_ARTIFACT_ROOT', 'ORBIS_REGISTRY'].each {
+['ORBIS_SOURCE_REF', 'ORBIS_REPOSITORY', 'ORBIS_RUNTIME_DIR', 'ORBIS_ARTIFACT_ROOT', 'ORBIS_REGISTRY',
+ 'ORBIS_REGISTRY_TRANSPORT', 'ORBIS_PUSH_CREDENTIAL_ID', 'ORBIS_PULL_CREDENTIAL_ID'].each {
     environment.envVars.put(it, System.getenv(it))
 }
 

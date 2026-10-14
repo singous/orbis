@@ -15,6 +15,11 @@ import time
 import urllib.request
 from pathlib import Path
 
+try:
+    from . import registry as registry_client
+except ImportError:
+    import registry as registry_client
+
 RELEASE_ID = re.compile(r"[a-zA-Z0-9][a-zA-Z0-9_.-]{0,95}\Z")
 IMAGE_DIGEST = re.compile(r"[^\s]+@sha256:[a-f0-9]{64}\Z")
 COMMIT_ID = re.compile(r"[a-f0-9]{40}\Z")
@@ -52,6 +57,7 @@ def read_state(runtime: Path) -> dict:
 
 
 def publish_compose_entrypoint(runtime: Path, manifest: dict) -> None:
+    manifest = resolve_registry_images(runtime, manifest)
     source = runtime / "releases" / manifest["release_id"] / "compose.yaml"
     temporary = runtime / "docker-compose.yml.tmp"
     shutil.copyfile(source, temporary)
@@ -62,6 +68,23 @@ def publish_compose_entrypoint(runtime: Path, manifest: dict) -> None:
         f"ORBIS_WEB_IMAGE={manifest['images']['web']}\n"
     )
     os.replace(image_env, runtime / "images.env")
+
+
+def resolve_registry_images(runtime: Path, manifest: dict) -> dict:
+    mapping = runtime / "registry-migration.json"
+    if not mapping.exists():
+        return manifest
+    references = json.loads(mapping.read_text())["images"]
+    images = {}
+    for name, original in manifest["images"].items():
+        target = references.get(original, original)
+        if (
+            not IMAGE_DIGEST.fullmatch(target)
+            or target.rsplit("@", 1)[1] != original.rsplit("@", 1)[1]
+        ):
+            raise ValueError("Registry migration must preserve the immutable image digest")
+        images[name] = target
+    return {**manifest, "images": images}
 
 
 def read_env(runtime: Path) -> dict[str, str]:
@@ -158,8 +181,26 @@ def smoke(base_url: str) -> None:
 
 
 def apply_release(runtime: Path, project: str, release: dict, timeout: int) -> None:
+    release = resolve_registry_images(runtime, release)
+    settings = read_env(runtime)
+    registry = settings.get("ORBIS_REGISTRY", "127.0.0.1:28210")
+    transport = settings.get("ORBIS_REGISTRY_TRANSPORT")
+    with registry_client.authenticated(
+        registry, transport, settings.get("ORBIS_DOCKER_CONFIG")
+    ) as environment:
+        registry_client.prefetch(list(release["images"].values()), registry, transport, environment)
+        _apply_release(runtime, project, release, timeout, environment)
+
+
+def _apply_release(
+    runtime: Path, project: str, release: dict, timeout: int, environment: dict[str, str]
+) -> None:
     command = compose_command(runtime, project, release)
-    env = compose_env(release)
+    env = {
+        **environment,
+        "ORBIS_API_IMAGE": release["images"]["api"],
+        "ORBIS_WEB_IMAGE": release["images"]["web"],
+    }
     subprocess.run(command + ["config", "--quiet"], env=env, check=True)
     subprocess.run(command + ["pull"], env=env, check=True, timeout=600)
     subprocess.run(
@@ -272,7 +313,7 @@ def rollback(runtime: Path, release_id: str | None, project: str, timeout: int) 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("action", choices=["init", "deploy", "rollback", "status"])
+    parser.add_argument("action", choices=["init", "deploy", "rollback", "up", "status"])
     parser.add_argument("--runtime-dir", type=Path, required=True)
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--template", type=Path, default=Path("deploy/compose.yaml"))
@@ -290,6 +331,11 @@ def main() -> None:
         deploy(runtime, args.manifest, args.template, args.project, args.timeout)
     elif args.action == "rollback":
         rollback(runtime, args.release_id, args.project, args.timeout)
+    elif args.action == "up":
+        current = read_state(runtime).get("current")
+        if not current:
+            raise ValueError("No current release is available")
+        rollback(runtime, current, args.project, args.timeout)
     else:
         print(json.dumps(read_state(runtime), indent=2))
 

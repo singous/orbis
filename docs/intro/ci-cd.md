@@ -43,9 +43,33 @@ agent 有本机 Docker 管理权限，仅用于本项目受信任流水线；不
 前后端镜像 digest、创建时间戳及数据库兼容合同。
 `created_at`、`deployed_at` 和 `failed_at` 使用 Unix 时间戳，单位为秒；界面与操作记录按 UTC+8 展示。
 
-NAS 本机镜像仓库监听 `127.0.0.1:28210`，数据持久化在 Jenkins 服务的 `data/registry`。
+当前镜像仓库为 Harbor 的私有 `orbis` 项目，镜像地址为
+`hub.poflow.cn/orbis/frontend` 与 `hub.poflow.cn/orbis/backend`。
 部署使用 digest，不跟随 `latest`，历史镜像与清单用于回滚。
-当前采用本机仓库即可跑通出包，不依赖额外的外部仓库凭据；镜像仓库地址可由配置更换。
+
+Jenkins 文件夹凭据 `orbis-harbor-push` 对应项目推拉机器人，`orbis-harbor-pull` 对应只读机器人。
+流水线按阶段绑定凭据，通过 stdin 登录并使用临时 Docker 配置；阶段结束即移除临时配置。
+人工部署使用运行目录 `registry/docker/config.json` 中的只读凭据，不覆盖用户全局 Docker 配置。
+密钥不进入 Git、发布清单或构建日志。轮换机器人密钥时同时更新对应 Jenkins 凭据和部署侧配置。
+
+镜像层通过本机 `127.0.0.1:28182` 代理到 Harbor 的 loopback `28181`，不经公网穿透。
+代理只监听 loopback，提供本机 Docker HTTP 认证端点和上传地址；公网 Harbor 的 HTTPS 配置保持独立。
+发布时再读取公网仓库的 manifest，记录可在外部使用的镜像 digest；部署先通过本机路径预取镜像层，
+再由 Compose 校验公网 manifest 并启动服务。因此仍需要公网域名可达，但大文件传输留在本机。
+
+Jenkins 部署配置示例：
+
+```dotenv
+ORBIS_REGISTRY=hub.poflow.cn
+ORBIS_REGISTRY_TRANSPORT=127.0.0.1:28182
+ORBIS_PUSH_CREDENTIAL_ID=orbis-harbor-push
+ORBIS_PULL_CREDENTIAL_ID=orbis-harbor-pull
+COMPOSE_PROFILES=harbor
+```
+
+旧 Registry `127.0.0.1:28210` 与其数据继续保留。历史镜像已按原摘要迁移到 Harbor，
+运行目录 `registry-migration.json` 保存验证过的地址映射。发布和回滚使用此映射，
+不修改原始历史清单，也不允许映射到不同内容的摘要。
 
 Jenkins 保留各阶段日志、JUnit 报告、组件镜像元数据和完整发布清单。
 不要删除仍被发布清单引用的镜像；只清理确认不再需要的临时测试镜像和构建缓存。
@@ -60,6 +84,8 @@ images.env            # 当前成功版本的镜像摘要
 docker-compose.yml    # 当前成功版本的部署配置
 state.json            # 当前和上一成功发布标识
 releases/<id>/        # 每个版本的 manifest 与 Compose 配置
+registry/docker/     # 部署机器人 Docker 配置，仅本机保存
+registry-migration.json # 历史镜像的摘要不变地址映射
 data/postgres/        # 开发数据库
 data/api/             # 上传文件、邮件 outbox
 ```
@@ -87,6 +113,9 @@ DPanel 可读取这里的 Compose 项目并查看容器和日志；正式发布�
 此配置独立于镜像版本，发布和回滚均保留。云端代理覆盖客户端提供的转发协议头，
 应用内层 nginx 保留有效的 HTTP/HTTPS 协议值；直连局域网时使用本次请求的协议。
 公网路由、证书及对应资源的撤销记录保存在运行目录 `public-access.json` 和 README 中。
+
+直接执行 Compose 拉取时，先设置 `DOCKER_CONFIG="$PWD/registry/docker"`。
+仓库根目录的 `make app-up`、`make rollback` 自动读取运行目录的只读认证配置，并验证页面和 API。
 
 ## 部署验证与回滚
 

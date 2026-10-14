@@ -90,7 +90,7 @@ app-status:
 	python3 ci/release.py status --runtime-dir "$(APP_RUNTIME)"
 
 app-up:
-	docker compose --project-directory "$(APP_RUNTIME)" --env-file "$(APP_RUNTIME)/.env" --env-file "$(APP_RUNTIME)/images.env" -p orbis-app -f "$(APP_RUNTIME)/docker-compose.yml" up -d --wait
+	python3 ci/release.py up --runtime-dir "$(APP_RUNTIME)"
 
 app-logs:
 	docker compose --project-directory "$(APP_RUNTIME)" --env-file "$(APP_RUNTIME)/.env" --env-file "$(APP_RUNTIME)/images.env" -p orbis-app -f "$(APP_RUNTIME)/docker-compose.yml" logs --tail=100 -f

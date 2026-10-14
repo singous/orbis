@@ -16,12 +16,16 @@ services:
       ORBIS_SOURCE_REF: ${ORBIS_SOURCE_REF:-develop}
       ORBIS_RUNTIME_DIR: ${ORBIS_RUNTIME_DIR:?}
       ORBIS_ARTIFACT_ROOT: ${JENKINS_DATA_ROOT}/artifacts
-      ORBIS_REGISTRY: 127.0.0.1:28210
+      ORBIS_REGISTRY: ${ORBIS_REGISTRY:-127.0.0.1:28210}
+      ORBIS_REGISTRY_TRANSPORT: ${ORBIS_REGISTRY_TRANSPORT:-}
+      ORBIS_PUSH_CREDENTIAL_ID: ${ORBIS_PUSH_CREDENTIAL_ID:-}
+      ORBIS_PULL_CREDENTIAL_ID: ${ORBIS_PULL_CREDENTIAL_ID:-}
       ORBIS_JENKINS_URL: ${JENKINS_PUBLIC_URL:?}
       TZ: Asia/Shanghai
     volumes:
       - ./data/home:/var/jenkins_home
       - ./data/bootstrap:/run/orbis-bootstrap
+      - ./init.groovy:/var/jenkins_home/init.groovy.d/orbis.groovy:ro
     restart: unless-stopped
     mem_limit: 2g
     cpus: 2
@@ -52,7 +56,8 @@ services:
       BUILDX_CONFIG: ${JENKINS_DATA_ROOT}/agent/.buildx
       ORBIS_RUNTIME_DIR: ${ORBIS_RUNTIME_DIR}
       ORBIS_ARTIFACT_ROOT: ${JENKINS_DATA_ROOT}/artifacts
-      ORBIS_REGISTRY: 127.0.0.1:28210
+      ORBIS_REGISTRY: ${ORBIS_REGISTRY:-127.0.0.1:28210}
+      ORBIS_REGISTRY_TRANSPORT: ${ORBIS_REGISTRY_TRANSPORT:-}
       ORBIS_SMOKE_HOST: host.docker.internal
       TZ: Asia/Shanghai
     volumes:
@@ -78,4 +83,18 @@ services:
       - ./data/registry:/var/lib/registry
     restart: unless-stopped
     mem_limit: 256m
+    logging: *logging
+
+  registry-transport:
+    profiles: [harbor]
+    image: nginx:stable-alpine@sha256:0985e772fb9f729e6fa0980da05fca5d9c468e870eed43071545afa9d2e27d94
+    network_mode: host
+    environment:
+      ORBIS_TRANSPORT_ADDRESS: ${ORBIS_REGISTRY_TRANSPORT:-127.0.0.1:28182}
+      ORBIS_HARBOR_UPSTREAM: ${ORBIS_HARBOR_UPSTREAM:-http://127.0.0.1:28181}
+    volumes:
+      - ./registry-transport.conf.template:/etc/nginx/templates/default.conf.template:ro
+    restart: unless-stopped
+    mem_limit: 128m
+    cpus: 0.5
     logging: *logging

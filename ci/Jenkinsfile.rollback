@@ -8,14 +8,19 @@ pipeline {
         stage('Checkout deployment tooling') { steps { checkout scm } }
         stage('Restore release and verify health') {
             steps {
-                withEnv(["ORBIS_ROLLBACK_ID=${params.RELEASE_ID}"]) {
-                    sh '''
-                        if [ -n "$ORBIS_ROLLBACK_ID" ]; then
-                            python3 ci/release.py rollback --runtime-dir "$ORBIS_RUNTIME_DIR" --release-id "$ORBIS_ROLLBACK_ID"
-                        else
-                            python3 ci/release.py rollback --runtime-dir "$ORBIS_RUNTIME_DIR"
-                        fi
-                    '''
+                script {
+                    def registry = load 'ci/registry.groovy'
+                    registry.withAccess(env.ORBIS_PULL_CREDENTIAL_ID) {
+                        withEnv(["ORBIS_ROLLBACK_ID=${params.RELEASE_ID}"]) {
+                            sh '''
+                                if [ -n "$ORBIS_ROLLBACK_ID" ]; then
+                                    python3 ci/release.py rollback --runtime-dir "$ORBIS_RUNTIME_DIR" --release-id "$ORBIS_ROLLBACK_ID"
+                                else
+                                    python3 ci/release.py rollback --runtime-dir "$ORBIS_RUNTIME_DIR"
+                                fi
+                            '''
+                        }
+                    }
                 }
             }
         }

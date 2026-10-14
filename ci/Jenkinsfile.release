@@ -40,7 +40,10 @@ pipeline {
                 archiveArtifacts artifacts: 'artifacts/release.json,deploy/compose.yaml', fingerprint: true
                 script {
                     if (params.DEPLOY) {
-                        sh 'python3 ci/release.py deploy --runtime-dir "$ORBIS_RUNTIME_DIR" --manifest artifacts/release.json'
+                        def registry = load 'ci/registry.groovy'
+                        registry.withAccess(env.ORBIS_PULL_CREDENTIAL_ID) {
+                            sh 'python3 ci/release.py deploy --runtime-dir "$ORBIS_RUNTIME_DIR" --manifest artifacts/release.json'
+                        }
                     }
                 }
             }
