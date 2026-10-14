@@ -94,3 +94,25 @@ def test_agent_smoke_uses_the_host_gateway(tmp_path, monkeypatch):
     monkeypatch.setattr(release, "smoke", addresses.append)
     release.apply_release(tmp_path, "orbis-test", manifest(), 5)
     assert addresses == ["http://host.docker.internal:28190"]
+
+
+def test_failed_manual_rollback_restores_the_active_version(tmp_path, monkeypatch):
+    release.initialize_runtime(tmp_path, "http://localhost:28190")
+    for name in ["release-1", "release-2"]:
+        folder = tmp_path / "releases" / name
+        folder.mkdir()
+        release.write_json(folder / "manifest.json", manifest(name))
+    release.write_json(tmp_path / "state.json", {"current": "release-2", "previous": "release-1"})
+    original = (tmp_path / "state.json").read_bytes()
+    calls = []
+
+    def apply(runtime, project, value, timeout):
+        calls.append(value["release_id"])
+        if value["release_id"] == "release-1":
+            raise RuntimeError("Rollback target failed its health check")
+
+    monkeypatch.setattr(release, "apply_release", apply)
+    with pytest.raises(RuntimeError, match="target failed"):
+        release.rollback(tmp_path, "release-1", "orbis-test", 5)
+    assert calls == ["release-1", "release-2"]
+    assert (tmp_path / "state.json").read_bytes() == original

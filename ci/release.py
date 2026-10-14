@@ -246,7 +246,14 @@ def rollback(runtime: Path, release_id: str | None, project: str, timeout: int) 
         if not target:
             raise ValueError("No previous successful release is available")
         release = load_release(runtime, target)
-        apply_release(runtime, project, release, timeout)
+        try:
+            apply_release(runtime, project, release, timeout)
+        except Exception:
+            current = state.get("current")
+            if current and current != target:
+                print(f"Rollback verification failed; restoring {current}", flush=True)
+                apply_release(runtime, project, load_release(runtime, current), timeout)
+            raise
         if target == state.get("current"):
             print(f"Release {target} is already current; health verified", flush=True)
             return
