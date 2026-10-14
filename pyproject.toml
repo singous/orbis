@@ -6,6 +6,9 @@ readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = []
 
+[dependency-groups]
+dev = ["pytest==9.1.1", "ruff==0.17.0"]
+
 [tool.uv]
 package = false
 
@@ -21,3 +24,13 @@ members = [
   "orbis-retrievaler",
   "orbis-data-receiver",
 ]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = [".dev"]
+
+[tool.pytest.ini_options]
+addopts = ["--strict-config", "--strict-markers"]
+pythonpath = [".", "orbis-user-api/src", "orbis-cli/src"]
+norecursedirs = [".*", "node_modules", "build", "dist"]
