@@ -1,6 +1,7 @@
 pipeline {
     agent none
     options { disableConcurrentBuilds(); timeout(time: 75, unit: 'MINUTES'); buildDiscarder(logRotator(numToKeepStr: '20')) }
+    triggers { pollSCM('H/5 * * * *') }
     parameters {
         string(name: 'GIT_REF', defaultValue: env.ORBIS_SOURCE_REF ?: 'develop', description: 'Trusted Git branch or complete commit')
         booleanParam(name: 'DEPLOY', defaultValue: true, description: 'Deploy after both components pass their checks')

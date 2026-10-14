@@ -23,6 +23,7 @@ Jenkins 首次安装保留官方设置向导，日常管理员账号由使用者
 | `orbis/rollback` | 按历史发布标识恢复镜像与配置，重新检查页面和 API |
 
 `release` 的 `GIT_REF` 选择需要出包的受信任分支或完整提交；`DEPLOY` 控制是否在出包后部署。
+发布作业每五分钟检查受信任源分支，只在 Git 提交变化时自动运行；人工也可随时触发。
 初次接入时可使用包含 Jenkinsfile 的功能分支；合入 `develop` 后，将 Jenkins 配置中的
 `ORBIS_SOURCE_REF` 切换到 `develop` 并重启控制器。
 
@@ -37,6 +38,7 @@ agent 有本机 Docker 管理权限，仅用于本项目受信任流水线；不
 构建产物是两个运行镜像，以及一个 JSON 发布清单。
 发布标识采用 `release-<Jenkins build number>-<commit prefix>`，清单保存完整 Git SHA、
 前后端镜像 digest、创建时间戳及数据库兼容合同。
+`created_at`、`deployed_at` 和 `failed_at` 使用 Unix 时间戳，单位为秒；界面与操作记录按 UTC+8 展示。
 
 NAS 本机镜像仓库监听 `127.0.0.1:28210`，数据持久化在 Jenkins 服务的 `data/registry`。
 部署使用 digest，不跟随 `latest`，历史镜像与清单用于回滚。
