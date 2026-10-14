@@ -63,6 +63,18 @@ def test_runtime_initialization_preserves_secrets(tmp_path):
     assert (tmp_path / ".env").read_bytes() == original
 
 
+def test_repeated_rollback_preserves_previous_release(tmp_path, monkeypatch):
+    release.initialize_runtime(tmp_path, "http://localhost:28190")
+    current = tmp_path / "releases/release-2"
+    current.mkdir()
+    release.write_json(current / "manifest.json", manifest("release-2"))
+    release.write_json(tmp_path / "state.json", {"current": "release-2", "previous": "release-1"})
+    original = (tmp_path / "state.json").read_bytes()
+    monkeypatch.setattr(release, "apply_release", lambda *args: None)
+    release.rollback(tmp_path, "release-2", "orbis-test", 5)
+    assert (tmp_path / "state.json").read_bytes() == original
+
+
 def test_concurrent_deployment_is_rejected(tmp_path):
     release.initialize_runtime(tmp_path, "http://localhost:28190")
     with (

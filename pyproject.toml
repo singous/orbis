@@ -32,4 +32,5 @@ extend-exclude = [".dev"]
 
 [tool.pytest.ini_options]
 addopts = ["--strict-config", "--strict-markers"]
+pythonpath = [".", "orbis-user-api/src", "orbis-cli/src"]
 norecursedirs = [".*", "node_modules", "build", "dist"]

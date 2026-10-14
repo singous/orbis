@@ -246,6 +246,9 @@ def rollback(runtime: Path, release_id: str | None, project: str, timeout: int) 
             raise ValueError("No previous successful release is available")
         release = load_release(runtime, target)
         apply_release(runtime, project, release, timeout)
+        if target == state.get("current"):
+            print(f"Release {target} is already current; health verified", flush=True)
+            return
         publish_compose_entrypoint(runtime, release)
         write_json(
             runtime / "state.json",
