@@ -1,0 +1,2 @@
+DROP TABLE document_collaboration_updates;
+DROP TABLE document_collaboration_states;

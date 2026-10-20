@@ -1,0 +1,231 @@
+.share-disclosure {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--border-color, #dce2e5);
+  border-radius: 10px;
+  background: var(--surface-muted, #f6f8f9);
+}
+.share-disclosure p,
+.share-created p {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: var(--text-secondary, #5b6571);
+}
+.share-created {
+  display: grid;
+  gap: 0.6rem;
+  margin: 1rem 0;
+}
+.share-created label {
+  font-size: 0.875rem;
+}
+.share-created input {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid var(--border-color, #dce2e5);
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+.share-existing {
+  margin-top: 1.5rem;
+}
+.share-existing h3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.share-existing ul {
+  list-style: none;
+  padding: 0;
+  max-height: 220px;
+  overflow: auto;
+}
+.share-existing li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--border-color, #dce2e5);
+}
+.share-existing li small {
+  display: block;
+  color: var(--text-secondary, #5b6571);
+  margin-top: 0.25rem;
+}
+.share-link-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.public-share-reader {
+  min-height: 100vh;
+  color: #23303a;
+  background: #fff;
+}
+.public-share-header {
+  height: 66px;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  border-bottom: 1px solid #e5e9ec;
+  padding: 0 2rem;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 3;
+}
+.public-share-header > a {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-weight: 650;
+  color: inherit;
+  text-decoration: none;
+}
+.public-share-header > span {
+  font-size: 0.8rem;
+  color: #697882;
+  margin-left: auto;
+}
+.public-share-layout {
+  max-width: 1480px;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  margin: auto;
+}
+.public-share-layout > aside {
+  padding: 2rem 1.25rem;
+  border-right: 1px solid #e5e9ec;
+  min-height: calc(100vh - 66px);
+}
+.public-share-layout aside > p {
+  color: #697882;
+  font-size: 0.75rem;
+  margin-top: 2rem;
+}
+.public-share-layout nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.public-share-layout nav ul ul {
+  padding-left: 1rem;
+  border-left: 1px solid #e5e9ec;
+  margin-left: 0.5rem;
+}
+.public-share-layout nav a {
+  display: block;
+  color: #455762;
+  padding: 0.55rem 0.65rem;
+  border-radius: 6px;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  font-size: 0.9rem;
+}
+.public-share-layout nav a:hover,
+.public-share-layout nav a[aria-current="page"] {
+  background: #eef6f4;
+  color: #08765e;
+}
+.public-share-layout > main {
+  min-width: 0;
+}
+.public-share-document {
+  max-width: 900px;
+  padding: 3rem 3rem 6rem;
+  margin: auto;
+}
+.public-share-document > header {
+  margin-bottom: 2.5rem;
+}
+.public-share-document h1 {
+  font-size: clamp(1.8rem, 3vw, 2.5rem);
+  line-height: 1.25;
+  letter-spacing: -0.035em;
+  font-weight: 650;
+}
+.public-share-document > header p {
+  color: #697882;
+  font-size: 0.8rem;
+  margin-top: 0.75rem;
+}
+.share-pending-children {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  border: 1px solid #e5e9ec;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 2rem;
+}
+.share-pending-children p {
+  width: 100%;
+  color: #697882;
+  font-size: 0.85rem;
+}
+.share-load-more {
+  display: block;
+  margin: 2rem auto 0;
+}
+.public-share-status,
+.public-share-empty {
+  padding: 4rem 2rem;
+  max-width: 760px;
+  margin: auto;
+}
+.public-share-status h1,
+.public-share-empty h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+.public-share-status p,
+.public-share-empty p {
+  color: #697882;
+  line-height: 1.7;
+  margin-bottom: 1.5rem;
+}
+.share-skip-link {
+  position: fixed;
+  left: 1rem;
+  top: -100px;
+  z-index: 10;
+  background: #fff;
+  padding: 0.6rem;
+}
+.share-skip-link:focus {
+  top: 0.5rem;
+}
+.share-large-block-note {
+  color: #697882;
+  font-size: 0.8rem;
+}
+@media (max-width: 760px) {
+  .public-share-header {
+    padding: 0 1rem;
+    gap: 0.75rem;
+  }
+  .public-share-header > span {
+    display: none;
+  }
+  .public-share-header .orbis-action-button {
+    margin-left: auto;
+  }
+  .public-share-layout {
+    grid-template-columns: 1fr;
+  }
+  .public-share-layout > aside {
+    min-height: 0;
+    border-right: 0;
+    border-bottom: 1px solid #e5e9ec;
+    padding: 1rem;
+    max-height: 240px;
+    overflow: auto;
+  }
+  .public-share-layout aside > p {
+    display: none;
+  }
+  .public-share-document {
+    padding: 2rem 1.25rem 4rem;
+  }
+}

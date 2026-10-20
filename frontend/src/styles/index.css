@@ -1,0 +1,712 @@
+@import "tailwindcss";
+@import "@heroui/styles";
+@import "@fontsource-variable/inter";
+@import "./heroui-theme.css";
+@import "./design-tokens.css";
+@import "./surface-theme.css";
+@import "./ui-controls.css";
+@import "./document-tree.css";
+@import "./scrollbars.css";
+@import "./icons.css";
+@import "./loading.css";
+
+@layer components {
+  /* Feature controls keep their native layout while HeroUI owns interaction states. */
+  .orbis-action-button {
+    position: static;
+    isolation: auto;
+    display: inline-block;
+    width: auto;
+    height: auto;
+    min-width: 0;
+    padding: 0;
+    font: inherit;
+    text-align: inherit;
+    white-space: normal;
+    justify-content: normal;
+    gap: normal;
+  }
+
+  .orbis-action-button svg {
+    width: auto;
+    height: auto;
+    margin: 0;
+    align-self: auto;
+  }
+
+  .orbis-action-button[data-focus-visible="true"] {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    box-shadow: none;
+  }
+}
+
+/* Shared dimensions and font assets do not override the HeroUI theme. */
+:root {
+  --layer-dialog: 80;
+  --font-inter: "Inter Variable", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --brand-mark: #23ad83;
+  --avatar-background: #daf3f5;
+  --avatar-foreground: #238d9d;
+  --action-height: var(--orbis-control-default-height);
+  --action-font-size: var(--orbis-text-ui-size);
+  --action-line-height: var(--orbis-text-ui-leading);
+  --action-font-weight: var(--orbis-weight-action);
+  --action-padding-x: var(--orbis-space-3);
+  --action-gap: var(--orbis-space-2);
+  --action-icon-size: var(--orbis-icon-default-size);
+  --compact-control-height: var(--orbis-control-compact-height);
+  --form-control-height: var(--orbis-control-form-height);
+  --radius-pill: 999px;
+  font-family: var(--font-sans);
+  font-size: 100%;
+}
+
+/* Resolve aliases in each theme scope, including nested reader themes. */
+:root, .light, .default, [data-theme="light"], [data-theme="default"], .dark, [data-theme="dark"] {
+  --gray-0: var(--surface);
+  --gray-25: var(--surface);
+  --gray-50: var(--background);
+  --gray-75: var(--surface-secondary);
+  --gray-100: var(--default);
+  --gray-150: var(--separator);
+  --gray-200: var(--border);
+  --gray-300: color-mix(in oklab, var(--foreground) 30%, var(--background));
+  --gray-400: color-mix(in oklab, var(--foreground) 45%, var(--background));
+  --gray-500: var(--muted);
+  --gray-600: color-mix(in oklab, var(--foreground) 75%, var(--background));
+  --gray-700: var(--foreground);
+  --gray-800: var(--foreground);
+  --gray-900: var(--foreground);
+  --gray-950: var(--foreground);
+  --surface-app: var(--background);
+  --surface-sidebar: var(--surface);
+  --surface-panel: var(--surface);
+  --surface-content: var(--surface);
+  --surface-hover: var(--orbis-item-hover-bg);
+  --surface-active: var(--orbis-item-selected-bg);
+  --surface-overlay: var(--overlay);
+  --surface-inverse: var(--accent);
+  --surface-inverse-hover: color-mix(in oklab, var(--accent) 85%, var(--background));
+  --text-primary: var(--foreground);
+  --text-secondary: var(--muted);
+  --text-tertiary: var(--muted);
+  --text-oncolor: var(--accent-foreground);
+  --text-oninverse: var(--accent-foreground);
+  --border-subtle: var(--border);
+  --border-strong: var(--border);
+  --border-inverse: color-mix(in oklab, var(--accent-foreground) 20%, transparent);
+  --rail-bg: var(--surface-sidebar);
+  --rail-border: var(--border-subtle);
+  --rail-text: var(--text-secondary);
+  --rail-text-strong: var(--text-primary);
+  --rail-dim: var(--text-tertiary);
+  --rail-hover: var(--surface-hover);
+  --rail-active: var(--surface-active);
+  --rail-chip-bg: var(--surface-inverse);
+  --rail-chip-text: var(--text-oninverse);
+  --accent-strong: var(--accent);
+  --accent-deep: var(--accent);
+  --accent-softer: var(--accent-soft);
+  --accent-border: var(--border);
+  --accent-text: var(--accent);
+  --focus-ring: var(--focus);
+  --danger-strong: var(--danger);
+  --danger-bg: var(--danger-soft);
+  --danger-border: color-mix(in oklab, var(--danger) 25%, var(--surface));
+  --danger-text: var(--danger);
+  --warning-bg: var(--warning-soft);
+  --warning-border: color-mix(in oklab, var(--warning) 25%, var(--surface));
+  --warning-text: var(--warning-soft-foreground);
+  --success-bg: var(--success-soft);
+  --success-border: color-mix(in oklab, var(--success) 25%, var(--surface));
+  --success-text: var(--success-soft-foreground);
+  --shadow-pop: var(--overlay-shadow);
+  --radius-control: var(--radius-3xl);
+  --radius-container: calc(var(--radius) * 3);
+  --radius-pop: calc(var(--radius) * 3);
+  --radius-card: calc(var(--radius) * 3);
+  --app-bg: var(--surface-app);
+  --workspace: var(--surface-app);
+  --panel: var(--surface-panel);
+  --chrome: var(--surface-inverse);
+  --text: var(--text-primary);
+  --muted-light: var(--text-tertiary);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--app-bg);
+  color: var(--text);
+  font-size: var(--orbis-text-ui-size);
+  -webkit-font-smoothing: antialiased;
+  line-height: var(--orbis-text-ui-leading);
+}
+
+/* Composite controls draw their own border and focus treatment around the input. */
+.orbis-embedded-input {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+
+::selection {
+  background: var(--accent-softer);
+}
+
+.collection-link,
+.document-tree-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: var(--orbis-text-ui-size);
+  line-height: var(--orbis-text-ui-leading);
+  transition: 140ms ease;
+}
+
+.collection-link {
+  padding: 9px 12px;
+  font-weight: var(--orbis-weight-action);
+}
+
+.document-tree-link {
+  margin-top: 2px;
+  padding-top: 7px;
+  padding-right: 10px;
+  padding-bottom: 7px;
+  font-size: var(--orbis-text-ui-size);
+  line-height: var(--orbis-text-ui-leading);
+}
+
+.collection-link:hover,
+.document-tree-link:hover,
+.collection-link.is-active,
+.document-tree-link.is-active {
+  background: var(--surface-content);
+  color: var(--text);
+  box-shadow: 0 1px 0 rgb(0 0 0 / 3%);
+}
+
+.icon-button {
+  display: inline-grid;
+  width: var(--orbis-control-compact-height);
+  height: var(--orbis-control-compact-height);
+  flex: none;
+  place-items: center;
+  color: var(--muted);
+  transition: 140ms ease;
+}
+
+.icon-button:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.28;
+}
+
+.danger-hover:hover {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+/* Shared geometry for labeled actions, independent of placement or emphasis. */
+.ui-button,
+.mvp-button,
+.workbench-primary-action,
+.text-action {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  height: var(--action-height);
+  min-height: var(--action-height);
+  gap: var(--action-gap);
+  padding: 0 var(--action-padding-x);
+  font-family: inherit;
+  font-size: var(--action-font-size);
+  font-weight: var(--action-font-weight);
+  line-height: var(--action-line-height);
+  white-space: nowrap;
+}
+
+:is(.ui-button, .mvp-button, .workbench-primary-action, .text-action) > svg {
+  width: var(--action-icon-size);
+  height: var(--action-icon-size);
+  flex: none;
+}
+
+.ui-button--sm {
+  height: var(--compact-control-height);
+  min-height: var(--compact-control-height);
+  padding-inline: 10px;
+}
+
+.orbis-modal-backdrop {
+  z-index: var(--layer-dialog);
+  background: var(--orbis-scrim);
+}
+
+.orbis-modal-dialog {
+  width: min(448px, calc(100vw - 32px));
+  max-width: none;
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  padding: 28px;
+}
+
+.orbis-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.orbis-modal-close {
+  display: grid;
+  width: var(--orbis-control-compact-height);
+  height: var(--orbis-control-compact-height);
+  flex: none;
+  place-items: center;
+  color: var(--text-secondary);
+}
+
+.orbis-modal-close:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.text-action {
+  border-color: transparent;
+  color: var(--muted);
+}
+
+.text-action:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.section-heading h2 {
+  font-size: var(--orbis-text-section-size);
+  font-weight: var(--orbis-weight-heading);
+  letter-spacing: -0.025em;
+  line-height: var(--orbis-text-section-leading);
+}
+
+.section-heading p {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: var(--orbis-text-caption-size);
+  line-height: var(--orbis-text-caption-leading);
+}
+
+/* Canonical page column + header (see shared/ui/PageContainer). */
+.page-container {
+  width: 100%;
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 46px clamp(28px, 4.8vw, 76px) 72px;
+}
+
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 28px;
+  margin-bottom: 32px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.page-eyebrow {
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+  font-size: var(--orbis-text-ui-size);
+  font-weight: var(--orbis-weight-action);
+  line-height: var(--orbis-text-ui-leading);
+}
+
+.page-title {
+  color: var(--text-primary);
+  font-size: var(--orbis-text-page-title-size);
+  font-weight: var(--orbis-weight-heading);
+  letter-spacing: -0.025em;
+  line-height: var(--orbis-text-page-title-leading);
+}
+
+.page-description {
+  margin-top: 7px;
+  max-width: 46rem;
+  color: var(--text-secondary);
+  font-size: var(--orbis-text-ui-size);
+  line-height: var(--orbis-text-ui-leading);
+}
+
+.page-actions {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Compact inline statistics: a boxless hairline band, mono figures. */
+.stat-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 36px;
+  margin-bottom: 32px;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 12px 2px;
+}
+
+.stat-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.stat-value {
+  color: var(--text-primary);
+  font-size: var(--orbis-text-section-size);
+  font-weight: var(--orbis-weight-heading);
+  letter-spacing: -0.02em;
+  line-height: var(--orbis-text-section-leading);
+}
+
+.stat-label {
+  color: var(--text-secondary);
+  font-size: var(--orbis-text-caption-size);
+  line-height: var(--orbis-text-caption-leading);
+}
+
+/* Mono for metadata: figures, dates, save state. */
+.stat-value,
+.page-container time,
+.document-main-item time {
+  font-family: var(--font-mono);
+  letter-spacing: -0.02em;
+}
+
+.document-card,
+.collection-card {
+  position: relative;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface-content);
+  padding: 18px;
+  transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+
+.collection-card {
+  display: flex;
+  min-height: 166px;
+}
+
+.document-card:hover,
+.collection-card:hover {
+  border-color: transparent;
+  background: color-mix(in oklab, var(--surface-hover) 70%, var(--surface-content));
+  box-shadow: none;
+}
+
+.document-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: var(--radius-pop);
+  background: var(--surface-hover);
+  color: var(--gray-700);
+}
+
+.document-icon.small {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+}
+
+.document-icon.large {
+  width: 58px;
+  height: 58px;
+  border-radius: 17px;
+  background: var(--surface-inverse);
+  color: var(--text-oninverse);
+}
+
+
+.empty-panel {
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  background: var(--surface-content);
+  padding: 34px 30px;
+  color: var(--muted);
+  text-align: center;
+  font-size: var(--orbis-text-ui-size);
+  line-height: var(--orbis-text-ui-leading);
+}
+
+.notebook-hero {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 36px;
+}
+
+/* The editor retains a continuous reading canvas inside the workbench. */
+.editor-layout {
+  display: grid;
+  min-height: calc(100vh - 80px);
+  grid-template-columns: minmax(0, 1fr) 44px;
+  gap: 24px;
+  background: transparent;
+  padding: 24px 32px 96px;
+  transition: grid-template-columns 200ms ease;
+}
+
+/* Outline expanded (hover or pinned): squeeze the editor column. */
+.editor-layout.outline-open {
+  grid-template-columns: minmax(0, 1fr) 232px;
+}
+
+/* Content column, not a sheet of paper: no border, no shadow, transparent bg. */
+.editor-canvas {
+  --editor-content-gutter: calc(2 * var(--orbis-control-compact-height) + var(--orbis-space-3));
+  --editor-body-width: 760px;
+  width: 100%;
+  max-width: calc(var(--editor-body-width) + 2 * var(--editor-content-gutter));
+  justify-self: center;
+  background: transparent;
+  padding: 8px 0 0;
+}
+
+.editor-title {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: var(--orbis-prose-title-size);
+  font-weight: var(--orbis-weight-heading);
+  letter-spacing: -0.03em;
+  line-height: 1.5;
+  outline: none;
+  /* Align the title with the document body. */
+  padding-inline: var(--editor-content-gutter);
+}
+
+.editor-title::placeholder {
+  color: var(--text-tertiary);
+}
+
+.editor-canvas > :not(.editor-title) {
+  margin-inline: var(--editor-content-gutter);
+}
+
+.editor-outline {
+  position: sticky;
+  top: 96px;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: calc(100vh - 120px);
+  overflow: hidden;
+  border-left: 1px solid var(--border-strong);
+  padding: 8px 0 8px 10px;
+}
+
+.editor-outline-pin {
+  display: grid;
+  width: var(--orbis-control-compact-height);
+  height: var(--orbis-control-compact-height);
+  flex: none;
+  place-items: center;
+  border: 1px solid var(--border);
+  background: var(--surface-content);
+  color: var(--muted);
+  transition: color 120ms ease, background 120ms ease;
+}
+
+.editor-outline-pin:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.editor-outline-body {
+  display: none;
+  min-width: 0;
+  overflow: auto;
+}
+
+.editor-layout.outline-open .editor-outline-body {
+  display: block;
+}
+
+
+
+
+.notebook-menu-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 6px;
+  padding: 2px 4px;
+  margin-left: -4px;
+  color: var(--muted-light);
+  font-size: var(--orbis-text-caption-size);
+  font-weight: var(--orbis-weight-action);
+  transition: 140ms ease;
+  line-height: var(--orbis-text-caption-leading);
+}
+
+.notebook-menu-back:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.notebook-menu-title {
+  margin-top: 6px;
+  color: var(--text);
+  font-size: var(--orbis-text-section-size);
+  font-weight: var(--orbis-weight-heading);
+  letter-spacing: -0.01em;
+  line-height: var(--orbis-text-section-leading);
+}
+
+
+.document-main-row { min-height: 44px; padding: 3px 6px; }
+.document-main-link {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  gap: 11px;
+  padding: 6px 3px;
+  color: var(--text-primary);
+}
+.document-main-link > svg { flex: none; color: var(--text-tertiary); }
+.document-main-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--orbis-text-ui-size); font-weight: var(--orbis-weight-body); line-height: var(--orbis-text-ui-leading); }
+.document-main-leader { flex: 1; min-width: 16px; border-bottom: 1px dashed var(--border-subtle); }
+.document-main-link[aria-current="page"] .document-main-title { font-weight: var(--orbis-weight-heading); }
+.document-main-link time { flex: none; white-space: nowrap; font-size: var(--orbis-text-caption-size); color: var(--text-tertiary); line-height: var(--orbis-text-caption-leading); }
+.document-main-item, .document-main-children { min-width: 0; }
+.document-main-children { padding-left: 20px; }
+
+@media (max-width: 600px) {
+  .document-main-row { min-height: 44px; padding: 2px 0; }
+  .document-main-link { gap: 8px; }
+  .document-main-leader, .document-main-link time { display: none; }
+  .document-main-title { flex: 1; }
+}
+
+/* Notebook page main-column document list (DocumentContextPanel variant="main"). */
+.document-main-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+
+
+/* Pin button on notebook cards (top-right) */
+.notebook-pin {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 5;
+  display: grid;
+  width: var(--orbis-control-compact-height);
+  height: var(--orbis-control-compact-height);
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-content);
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.collection-card:hover .notebook-pin,
+.notebook-pin.is-on {
+  opacity: 1;
+}
+
+.notebook-pin:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.notebook-pin.is-on {
+  color: var(--accent-strong);
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+}
+
+
+
+@media (max-width: 1023px) {
+  .page-container { padding: 32px 28px 60px; }
+  .editor-layout, .editor-layout.outline-open { grid-template-columns: minmax(0, 1fr); padding: 24px 16px 60px; }
+  .editor-outline { display: none; }
+  .editor-canvas { padding: 24px 0 64px; }
+}
+
+@media (max-width: 640px) {
+  .editor-title { padding-inline: 20px; }
+  .editor-canvas > :not(.editor-title) { margin-inline: 20px; }
+  .page-container { padding: 24px 20px 48px; }
+  .page-header { align-items: flex-start; flex-wrap: wrap; gap: 18px; margin-bottom: 24px; padding-bottom: 22px; }
+  .page-title { font-size: var(--orbis-text-page-title-size); line-height: var(--orbis-text-page-title-leading); }
+  .page-actions { flex-wrap: wrap; }
+  .notebook-hero { flex-direction: column; }
+  .editor-canvas { padding: 24px 0 52px; }
+  .editor-layout { padding-right: 0; padding-left: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+}
+
+/* HeroUI owns field focus rings; these rules only arrange controls and copy. */
+.orbis-select-field { min-width: 0; gap: 8px; }
+.orbis-select-field [data-slot="select-trigger"] { width: 100%; min-width: 0; font-weight: var(--orbis-weight-body); }
+.orbis-select-popover { max-width: calc(100vw - 24px); }
+.orbis-field-description { color: var(--text-secondary); font-size: var(--orbis-text-caption-size); line-height: var(--orbis-text-caption-leading); font-weight: var(--orbis-weight-body); }
+.orbis-field-label, .site-settings-fields .orbis-select-field > label { font-size: var(--orbis-text-ui-size); font-weight: var(--orbis-weight-action); line-height: var(--orbis-text-ui-leading); }
+.orbis-color-field { display: grid; align-content: start; min-width: 0; gap: 8px; }
+.orbis-color-field [data-slot="color-picker-trigger"] { display: flex; gap: 10px; align-items: center; min-height: 36px; font-size: var(--orbis-text-ui-size); line-height: var(--orbis-text-ui-leading); }
+.orbis-color-popover { width: 260px; max-width: calc(100vw - 24px); display: grid; gap: 16px; padding: 16px; }
+.orbis-color-popover [data-slot="color-area"] { width: 100%; height: 160px; }
+.member-role-select { min-width: 120px; }
+
+/* Compact shell search dimensions keep the InputGroup theme intact. */
+.orbis-compact-search { min-height: 0; }
+.orbis-compact-search [data-slot="input-group-input"] { min-width: 0; height: 100%; padding-block: 0; }

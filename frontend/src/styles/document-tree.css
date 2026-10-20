@@ -1,0 +1,152 @@
+/* Directory geometry follows the reference; controls consume shared UI tokens. */
+.document-context-shell { position: relative; height: 100%; }
+.document-context-close {
+  position: absolute; top: 14px; right: 12px; display: grid;
+  width: var(--orbis-control-compact-height); height: var(--orbis-control-compact-height);
+  place-items: center; border: 1px solid var(--border); background: var(--surface-content); color: var(--muted);
+}
+.document-context {
+  --document-tree-indent: 1.5rem;
+  --document-tree-toggle-column: 1.5rem;
+  padding: var(--orbis-space-3) 0 var(--orbis-space-2);
+  container-type: inline-size;
+  container-name: document-directory;
+}
+.workspace-function-menu > .document-context { margin-inline: -5px; }
+.document-context-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--orbis-control-default-height);
+  gap: var(--orbis-space-2);
+  padding: 0 var(--orbis-space-1) var(--orbis-space-1);
+}
+.document-context-header h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--orbis-space-3);
+  margin: 0;
+  color: var(--text-primary);
+  font-size: var(--orbis-text-section-size);
+  line-height: var(--orbis-text-section-leading);
+  font-weight: var(--orbis-weight-action);
+}
+.document-context-header h2 > svg { margin-inline: var(--orbis-space-1); }
+.document-tree-tools { display: flex; gap: 0; }
+.document-tree-tools .icon-button {
+  width: var(--orbis-control-compact-height);
+  height: var(--orbis-control-compact-height);
+  color: var(--text-tertiary);
+}
+.document-tree-tools .icon-button:disabled { opacity: .4; }
+.document-context-tree { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
+.document-context-item, .document-context-children { min-width: 0; }
+.document-context-children { padding: 0; }
+.document-context-row, .document-main-row {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 0;
+  border-radius: calc(var(--radius) * 1.5);
+  transition: background 140ms ease;
+}
+.document-context-row {
+  --document-row-actions-width: var(--orbis-control-compact-height);
+  min-height: var(--orbis-control-default-height);
+  padding: 0 var(--orbis-space-1) 0 calc(var(--orbis-space-1) + var(--document-depth, 0) * var(--document-tree-indent));
+}
+.document-context-row[data-editable="true"] { --document-row-actions-width: calc(3 * var(--orbis-control-compact-height)); }
+.document-context-row:is(:hover, :focus-within, .is-active),
+.document-context-row:has([data-menu-open="true"]), .document-main-row:hover { background: var(--surface-hover); }
+.document-context-link {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  align-self: stretch;
+  padding: var(--orbis-space-2) 2px;
+  color: var(--text-primary);
+  font-size: var(--orbis-text-ui-size);
+  line-height: var(--orbis-text-ui-leading);
+  font-weight: var(--orbis-weight-body);
+  text-decoration: none;
+}
+.document-context-link > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.document-context-link.is-active { font-weight: var(--orbis-weight-heading); }
+.document-context-link:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; border-radius: var(--radius); }
+.document-tree-prefix {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--document-tree-toggle-column, var(--orbis-control-compact-height));
+}
+.document-disclosure-placeholder { width: 100%; }
+.document-tree-disclosure {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--orbis-control-compact-height);
+  min-width: var(--orbis-control-compact-height);
+  height: var(--orbis-control-compact-height);
+  padding: 0;
+  color: var(--text-secondary);
+}
+.document-tree-disclosure:hover { color: var(--text-primary); }
+.document-tree-disclosure svg { transition: transform 140ms ease; }
+.document-tree-disclosure[aria-expanded="false"] svg { transform: rotate(-90deg); }
+[data-document-drag-row] { touch-action: pan-y; user-select: none; }
+[data-document-drag-row] .document-context-link { cursor: pointer; }
+.document-context-item[data-dragging="true"] { position: relative; z-index: 2; opacity: .65; }
+.document-context-item[data-dragging="true"] .document-context-link { cursor: grabbing; }
+.document-context-item[data-drop-target="true"] > .document-context-row { outline: 2px solid var(--accent); outline-offset: -2px; }
+.document-context-actions {
+  display: flex;
+  flex: none;
+  width: var(--document-row-actions-width);
+  align-items: center;
+  gap: 0;
+}
+.document-context-actions .icon-button {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--orbis-control-compact-height);
+  min-width: var(--orbis-control-compact-height);
+  height: var(--orbis-control-compact-height);
+  padding: 0;
+  color: var(--text-primary);
+  background: transparent;
+}
+.document-context-actions .icon-button:hover { background: var(--surface-active); }
+.document-actions-popover { width: 180px; padding: var(--orbis-space-1); }
+.document-actions-popover [role="menuitem"] { min-height: var(--orbis-control-default-height); font-size: var(--orbis-text-ui-size); line-height: var(--orbis-text-ui-leading); }
+.document-actions-popover [role="menuitem"] svg { width: var(--orbis-icon-default-size); height: var(--orbis-icon-default-size); flex: none; }
+.document-actions-popover .document-archive-action { color: var(--danger-text); }
+.document-tree-empty { display: grid; justify-items: start; gap: var(--orbis-space-3); padding: var(--orbis-space-4) var(--orbis-space-3); }
+
+@media (hover: hover) and (pointer: fine) {
+  .document-context-actions { width: 0; overflow: hidden; opacity: 0; pointer-events: none; }
+  .document-context-row:is(:hover, :focus-within) > .document-context-actions,
+  .document-context-actions[data-menu-open="true"] { width: var(--document-row-actions-width); overflow: visible; opacity: 1; pointer-events: auto; }
+}
+/* Touch and very narrow panes keep a single menu target; every action remains inside it. */
+@media (pointer: coarse) {
+  .document-context { --document-tree-toggle-column: var(--orbis-control-compact-height); }
+  .document-context-row[data-editable="true"] { --document-row-actions-width: var(--orbis-control-compact-height); }
+  .document-context-row[data-editable="true"] :is(.document-preview-action, .document-create-child) { display: none; }
+}
+@container document-directory (max-width: 190px) {
+  .document-context-row[data-editable="true"] { --document-row-actions-width: var(--orbis-control-compact-height); }
+  .document-context-row[data-editable="true"] :is(.document-preview-action, .document-create-child) { display: none; }
+}
+
+.document-preview-dialog { display: flex; flex-direction: column; width: min(760px, calc(100vw - 32px)); overflow: hidden; }
+.document-preview-dialog .orbis-modal-header { flex: none; }
+.document-preview-body { min-height: 0; overflow: auto; overscroll-behavior: contain; margin-top: var(--orbis-space-4); }
+.document-preview-content { padding: var(--orbis-space-1) var(--orbis-space-2); }
+.document-preview-title { margin: 0 0 var(--orbis-space-6); font-size: var(--orbis-text-page-title-size); line-height: var(--orbis-text-page-title-leading); font-weight: var(--orbis-weight-heading); }
+.document-preview-refresh { color: var(--text-secondary); font-size: var(--orbis-text-caption-size); }
+.document-preview-open { display: inline-flex; align-items: center; min-height: var(--orbis-control-default-height); padding-inline: var(--orbis-space-3); color: var(--text-primary); font-size: var(--orbis-text-ui-size); border-radius: var(--radius-control); }
+.document-preview-open:hover { background: var(--surface-hover); }
+.document-preview-open:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }

@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["DOM", "ES2023"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@tiptap/pm/*": ["node_modules/@tiptap/pm/*"],
+      "yjs": ["node_modules/yjs"],
+      "lib0/*": ["node_modules/lib0/*"],
+      "zod": ["node_modules/zod"]
+    }
+  },
+  "include": ["src", "tests", "types"]
+}

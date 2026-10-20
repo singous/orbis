@@ -1,0 +1,81 @@
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Editor and IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Coding agents
+.codex/
+.claude/
+.cursor/
+.zcode/
+.worktreeinclude
+CLAUDE.md
+AGENTS.md
+agents.md
+Agents.md
+CLAUDE.local.md
+.claude/settings.local.json
+.claude/**/settings.local.json
+.claude/cache/
+.claude/logs/
+.claude/tmp/
+.claude/transcripts/
+.codex/sessions/
+.codex/logs/
+.codex/cache/
+.codex/tmp/
+.codex/history*
+.codex/*.local.*
+
+# Local planning and generated docs
+docs/**
+!docs/intro/
+!docs/intro/**
+!docs/release/
+!docs/release/**
+
+# Local linked worktrees
+.worktrees/
+
+# Machine-specific CI lives in the local deployment directory
+/ci/
+/ops/jenkins/
+
+# Logs
+*.log
+logs/
+
+# Dependency directories
+node_modules/
+vendor/
+
+# Build and cache output
+dist/
+collaboration/dist-tests/
+/collaboration/dist-tests/
+build/
+coverage/
+test-results/
+playwright-report/
+.cache/
+.dev/
+.parcel-cache/
+.turbo/
+.next/
+out/
+
+# Go
+bin/
+
+# Generated self-hosted drawing fonts
+frontend/public/drawing-assets/

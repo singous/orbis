@@ -1,0 +1,53 @@
+import {afterEach,expect,it,vi} from "vitest";
+import {ApiError} from "../../../shared/api/api-client";
+import {AutosaveCoordinator} from "./autosave";
+import {DocumentWriter,type PendingDocumentWrite} from "./document-writer";
+import {createDraftCheckpointController,type DraftCheckpoint,type DraftCheckpointAdapter} from "./draft-checkpoints";
+import {createEditorDraftFingerprint,type EditorDraft} from "./editor-draft";
+const did="00000000-0000-4000-8000-000000000001",bid="00000000-0000-4000-8000-000000000002";
+const draft=(text:string):EditorDraft=>({title:"文档",version:1,blocks:{schema_version:2,editor:"blocknote",blocks:[{id:bid,type:"paragraph",props:{},content:[{type:"text",text}],children:[]}]}});
+afterEach(()=>vi.useRealTimers());
+it("recovers an unknown write even after undo reaches the previous saved text",async()=>{
+  let stored:DraftCheckpoint|null=null;
+  const adapter:DraftCheckpointAdapter={read:async()=>stored,put:async value=>{stored=structuredClone(value);},remove:async()=>{stored=null;}};
+  const checkpoints=createDraftCheckpointController({scopeKey:"test",adapter,delayMs:100_000});
+  const sent:PendingDocumentWrite[]=[];
+  let coordinator:AutosaveCoordinator<EditorDraft>;
+  const writer=new DocumentWriter({documentId:did,checkpoint:async(_pending,flush)=>{
+    checkpoints.schedule(()=>({saved:coordinator.saved!,current:coordinator.current!,window:{noteId:did,version:1,cursor:"opaque",loaded:32,hasMore:true},descriptors:[],pending:writer.pending}));
+    if(flush)await checkpoints.flush();
+  },write:async pending=>{
+    const prepared=await adapter.read("test");
+    expect(prepared?.pending?.operation_id).toBe(pending.operation_id);
+    sent.push(structuredClone(pending));
+    if(sent.length===1)throw new ApiError(503,"unknown","DOCUMENT_WRITE_RESULT_UNKNOWN");
+    return {content_version:sent.length,title:"文档"};
+  }});
+  coordinator=new AutosaveCoordinator({delayMs:100_000,fingerprint:createEditorDraftFingerprint(),hasPendingWrite:()=>writer.pending!==null,save:(current,saved)=>writer.save(current,saved,false)});
+  coordinator.hydrate(draft("old"));coordinator.change(draft("A"));await coordinator.flush();
+  expect(coordinator.state).toBe("error");
+  coordinator.change(draft("old"));
+  expect(coordinator.hasUnsavedChanges).toBe(true);
+  await coordinator.flush();
+  expect(sent[1].operation_id).toBe(sent[0].operation_id);
+  expect(coordinator.state).toBe("dirty");
+  await coordinator.flush();await checkpoints.flush();
+  expect(sent[2].operation_id).not.toBe(sent[0].operation_id);
+  expect(sent[2].expected_version).toBe(2);
+  const restored=await adapter.read("test");
+  expect(restored?.saved.version).toBe(3);
+  expect(restored?.pending).toBeNull();
+  expect(restored?.window?.cursor).toBe("opaque");
+  coordinator.dispose();await checkpoints.dispose();
+});
+it("does not schedule another save after its owner disposes an in-flight operation",async()=>{
+  vi.useFakeTimers();
+  let finish!:(value:EditorDraft)=>void;
+  const save=vi.fn((current:EditorDraft)=>new Promise<EditorDraft>(resolve=>{finish=()=>resolve({...current,version:2});}));
+  const coordinator=new AutosaveCoordinator({delayMs:10,fingerprint:createEditorDraftFingerprint(),save});
+  coordinator.hydrate(draft("old"));coordinator.change(draft("A"));
+  const active=coordinator.flush();coordinator.change(draft("B"));coordinator.dispose(false);
+  finish(draft("A"));await active;await vi.advanceTimersByTimeAsync(1000);
+  expect(save).toHaveBeenCalledTimes(1);
+  expect(coordinator.current?.blocks.blocks[0].content).toEqual([{type:"text",text:"B"}]);
+});

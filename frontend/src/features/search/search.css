@@ -1,0 +1,20 @@
+.global-search-form { display: grid; gap: var(--orbis-space-4, 1rem); margin-bottom: var(--orbis-space-6, 1.5rem); }
+.global-search-input-row { display: flex; flex-wrap: wrap; align-items: end; gap: var(--orbis-space-3, .75rem); }
+.global-search-input-row > label { flex: 1 1 16rem; min-width: 0; }
+.global-search-filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--orbis-space-3, .75rem); }
+.global-search-help, .global-search-result-location, .global-search-result-heading > span { color: var(--text-secondary); font-size: var(--orbis-text-caption-size, .75rem); line-height: var(--orbis-text-caption-leading, 1.125rem); }
+.global-search-summary, .global-search-empty, .global-search-pagination { font-size: var(--orbis-text-ui-size, .875rem); line-height: var(--orbis-text-ui-leading, 1.25rem); }
+.global-search-empty { padding-block: var(--orbis-space-6, 1.5rem); color: var(--text-secondary); }
+.global-search-results { padding: 0; margin: var(--orbis-space-4, 1rem) 0; list-style: none; }
+.global-search-result { display: flex; gap: var(--orbis-space-3, .75rem); padding: var(--orbis-space-4, 1rem); border-bottom: 1px solid var(--border-subtle); border-radius: var(--radius-md, .5rem); color: var(--text-primary); }
+.global-search-result > svg { flex: none; margin-top: .125rem; }
+.global-search-result:hover { background: var(--surface-hover); }
+.global-search-result:focus-visible { outline: 2px solid var(--focus, var(--text-primary)); outline-offset: 2px; }
+.global-search-result-copy { min-width: 0; flex: 1; }
+.global-search-result-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--orbis-space-3, .75rem); }
+.global-search-result-heading h2 { margin: 0; overflow-wrap: anywhere; font-size: var(--orbis-text-section-size, 1rem); line-height: var(--orbis-text-section-leading, 1.5rem); font-weight: 600; }
+.global-search-result-location { margin: var(--orbis-space-1, .25rem) 0; overflow-wrap: anywhere; }
+.global-search-result-snippet { margin: var(--orbis-space-2, .5rem) 0 0; overflow-wrap: anywhere; font-size: var(--orbis-text-ui-size, .875rem); line-height: var(--orbis-text-ui-leading, 1.25rem); }
+.global-search-pagination { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: var(--orbis-space-4, 1rem); }
+.global-search-open { display: grid; gap: var(--orbis-space-4, 1rem); }
+@media (max-width: 767px) { .global-search-filters { grid-template-columns: 1fr; } }
