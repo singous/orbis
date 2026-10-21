@@ -196,6 +196,11 @@ func (r *Repository) project(ctx context.Context, tx *gorm.DB, scope scopeState,
 		}
 	}
 	options := publicview.Options{URLs: policy, RedactUnsafeLinks: true, MaxBytes: sharing.MaxPageBytes, BudgetError: contentLimit()}
+	// A live document share does not grant read access to an independent resource.
+	options.Sheet = func(id, view string) (publicview.TableRef, error) {
+		return publicview.TableRef{Restricted: true, ID: id, Version: 1, Title: "多维表格", Fields: []table.Field{}, View: table.PublicView{Name: "需要工作空间访问权限", Kind: "grid", Widths: map[string]int{}}, Groups: []table.Group{}, Items: []table.PublicRecord{}}, nil
+	}
+
 	options.Asset = func(id string) (string, error) {
 		if _, exists := types[id]; !exists {
 			return "", sharing.Missing()

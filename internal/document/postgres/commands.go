@@ -119,6 +119,15 @@ func RequireBlockReferences(ctx context.Context, tx *gorm.DB, scope document.Dir
 	return blockReferences(ctx, tx, scope, blocks, true)
 }
 func blockReferences(ctx context.Context, tx *gorm.DB, scope document.DirectoryScope, blocks []document.Block, lock bool) error {
+	for _, ref := range document.SheetReferences(blocks) {
+		var count int64
+		if err := tx.WithContext(ctx).Table("sheets s").Joins("JOIN collections c ON c.id=s.collection_id").Joins("JOIN collection_groups g ON g.id=c.group_id").Where("s.id=? AND s.workspace_id=? AND c.archived_at_ms IS NULL AND g.archived_at_ms IS NULL", ref.ID, scope.WorkspaceID).Count(&count).Error; err != nil {
+			return err
+		}
+		if count != 1 {
+			return fault.Missing()
+		}
+	}
 	references := document.MediaReferences(blocks)
 	ids := []string{}
 	for _, ref := range references {

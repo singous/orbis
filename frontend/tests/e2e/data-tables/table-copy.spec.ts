@@ -28,11 +28,11 @@ test("an initialized table duplicates atomically after a lost response and edits
       socket.send(message);
     });
   });
+  const legacyBlock=crypto.randomUUID();
+  await responseData(await request.put(`${path}/content`,{headers,data:{operation_id:crypto.randomUUID(),expected_version:metadata.content_version,title:"表格复制验收",blocks:[{id:legacyBlock,type:"data_table"}]}}));
+  await responseData(await request.post(`${path}/tables`,{headers,data:{operation_id:crypto.randomUUID(),expected_document_version:(await responseData(await request.get(path,{headers}))).content_version,block_id:legacyBlock}}));
   await openWithSession(page,session,`/documents/${note.id}`);
   await expect(page.locator(".ProseMirror")).toBeVisible();
-  await page.getByRole("button",{name:"插入内容",exact:true}).click();
-  await page.getByRole("option",{name:"多维表格",exact:true}).click();
-  await page.getByRole("button",{name:"创建表格",exact:true}).click();
   await expect(page.getByRole("tab",{name:"全部记录",exact:true})).toBeVisible();
   await page.getByRole("button",{name:"添加记录",exact:true}).click();
   const title=page.getByRole("textbox",{name:"标题",exact:true});

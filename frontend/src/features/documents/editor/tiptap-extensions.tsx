@@ -69,9 +69,11 @@ const GROUP_CHILD: Partial<Record<DocumentBlockKind, DocumentBlockKind | "codeBl
 const PROP_LABELS: Record<string, string> = { title: "标题", href: "链接", tone: "提示类型", columns: "每行卡片数量" };
 const VALUE_LABELS: Record<string, string> = { info: "说明", success: "成功", warning: "注意", danger: "警告" };
 
+const LazySheetEmbed=lazy(()=>import("../../sheets/SheetEmbed").then(m=>({default:m.SheetEmbed})));
 const LazyDataTableBlock = lazy(() => import("../../data-tables/DataTable").then(module => ({ default: module.DataTableBlock })));
 function ComponentNodeView(props: NodeViewProps) {
   const readOnly = useContext(EditorReadOnlyContext);
+  if (props.node.attrs.kind === "dataTable" && !props.node.attrs.orbisProps?.table_id) return <NodeViewWrapper data-orbis-block-id={props.node.attrs.orbisId} contentEditable={false} className="orbis-data-table"><Suspense fallback={<div>正在准备多维表格…</div>}><LazySheetEmbed id={props.node.attrs.orbisProps?.sheet_id} viewId={props.node.attrs.orbisProps?.sheet_view_id} readOnly={readOnly} onBind={(sheet_id,sheet_view_id)=>props.updateAttributes({orbisProps:{...props.node.attrs.orbisProps,sheet_id,sheet_view_id}})} /></Suspense></NodeViewWrapper>;
   if (props.node.attrs.kind === "dataTable") return <NodeViewWrapper data-orbis-block-id={props.node.attrs.orbisId} contentEditable={false} className="orbis-data-table"><Suspense fallback={<div>正在准备多维表格…</div>}><LazyDataTableBlock blockId={String(props.node.attrs.orbisId)} props={props.node.attrs.orbisProps ?? {}} readOnly={readOnly} /></Suspense></NodeViewWrapper>;
   return <ComponentView {...props} />;
 }

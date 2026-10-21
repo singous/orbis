@@ -11,6 +11,7 @@ import "../../styles/document-components.css";
 type ContentNode = Record<string, unknown>;
 export type ContentOutlineItem = { id: string; text: string; level: number };
 const PUBLIC_ASSET_PATH = /^\/public\/sites\/[a-z0-9]+(?:-[a-z0-9]+)*\/assets\/[0-9a-f]{64}$/;
+const ReadSheetEmbed=lazy(()=>import("../sheets/SheetEmbed").then(m=>({default:m.SheetEmbed})));
 const ReadDataTable = lazy(() => import("../data-tables/DataTable").then(module => ({ default: module.DataTableBlock })));
 const ReadDataTableSnapshot = lazy(() => import("../data-tables/DataTableSnapshot").then(module => ({ default: module.DataTableSnapshot })));
 const PUBLIC_PAGE_PATH = /^\/s\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*(?:#[a-zA-Z0-9_-]+)?$/;
@@ -131,6 +132,7 @@ function renderBlock(value: unknown, path: number[], legacy: boolean, pageTitle?
   const item = node(value);
   const props = node(legacy ? item.attrs : item.props);
   const content = inline(item.content);
+  if (item.type === "dataTable" && props.sheet_id) return <Suspense fallback={<p>正在读取多维表格…</p>}><ReadSheetEmbed id={String(props.sheet_id)} viewId={String(props.sheet_view_id??"")} readOnly /></Suspense>;
   if (item.type === "dataTable") return <Suspense fallback={<p>正在读取多维表格…</p>}>{item.table_snapshot ? <ReadDataTableSnapshot data={item.table_snapshot as TableSnapshot} /> : <ReadDataTable blockId={String(item.id)} props={props} readOnly />}</Suspense>;
   if (!legacy && documentBlockDefinition(String(item.type))) {
     const children = ["steps", "tabs", "codeGroup"].includes(String(item.type)) ? null : renderNodes(nodes(item.children), path, false);

@@ -1,0 +1,10 @@
+DROP TABLE sheet_form_uploads;
+DROP TABLE sheet_activity;
+DROP TABLE sheet_asset_references;
+DROP TABLE sheet_forms;
+DROP TABLE sheet_schema_history;
+DROP TABLE sheet_record_history;
+DROP TABLE sheet_operations;
+DROP TABLE sheet_cells;
+DROP TABLE sheet_records;
+DROP TABLE sheets;

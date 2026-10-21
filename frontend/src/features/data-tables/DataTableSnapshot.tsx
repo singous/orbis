@@ -39,7 +39,7 @@ export function DataTableSnapshot({ data }: { data: TableSnapshot }) {
     setLoaded(null);
   }, [data.snapshot_id, data.revision]);
   useEffect(() => {
-    if (!data.snapshot_id || offset === (data.offset ?? 0)) {
+    if (!data.records_url || !data.snapshot_id || offset === (data.offset ?? 0)) {
       setLoaded(null);
       return;
     }
@@ -62,10 +62,11 @@ export function DataTableSnapshot({ data }: { data: TableSnapshot }) {
     }).catch(error=>{if(!abort.signal.aborted)setError(error.message);}).finally(()=>{if(!abort.signal.aborted)setLoading(false);});
     return () => abort.abort();
   }, [data.snapshot_id, data.records_url, data.offset, offset, auth]);
-  const rows = data.snapshot_id
+  const rows = !data.records_url ? data.rows.slice(offset,offset+TABLE_PAGE_SIZE) : data.snapshot_id
     ? (loaded?.offset===offset?loaded.rows:offset===(data.offset??0)?data.rows:[])
     : data.rows.slice(offset, offset + TABLE_PAGE_SIZE);
   const total = data.total ?? data.rows.length;
+  if(data.restricted)return <section className="data-table dt-snapshot"><header className="dt-heading"><Table2 size={18}/><strong>多维表格</strong></header><div className="dt-empty">此数据表未通过文档分享公开。<a href={`/sheets/${data.snapshot_id}`}>在拥有访问权限的工作空间中打开</a></div></section>;
   return (
     <section className="data-table dt-snapshot" aria-busy={loading}>
       <header className="dt-heading">

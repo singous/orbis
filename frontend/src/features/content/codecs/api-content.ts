@@ -96,7 +96,8 @@ export function nativePayload(block: Omit<OrbisBlock, "children">): NativePayloa
     if (MEDIA_TYPES.has(block.type) && key === "url") props.source = nativeSource(value);
     else if (MEDIA_TYPES.has(block.type) && ["previewWidth", "previewHeight"].includes(key) && value === 0) continue;
     else if (block.type === "dataTable") {
-      if (key === "table_id") props.table_id = value || null;
+      if (key === "sheet_id" || key === "sheet_view_id") { if(value) props[key]=value; }
+      else if (key === "table_id") props.table_id = value || null;
       else if (key === "table_revision") props.table_version = value || null;
       else if (!["title", "default_view_id", "field_names"].includes(key)) throw new Error("表格引用包含不支持的字段。");
     } else props[NATIVE_PROP_NAMES[key] ?? key] = key === "href" && typeof value === "string" ? nativeLink(value) : value;

@@ -1,3 +1,4 @@
+import {SheetDirectory} from "../sheets/SheetDirectory";
 import type { WorkspaceSidebarConfig } from "../workspace/workspace-sidebar-config";
 import { useStore } from "zustand";
 import { Link, NavLink, useNavigate } from "react-router-dom";
@@ -69,6 +70,7 @@ export function NotebookSectionMenu({ notebookId, activeNoteId }: NotebookSectio
       <ActionButton type="button" aria-label={isPinned(notebookId) ? "移出快捷访问" : "加入快捷访问"} aria-pressed={isPinned(notebookId)} onClick={() => togglePin(notebookId)}><Pin size={15} />{isPinned(notebookId) ? "已加入快捷访问" : "加入快捷访问"}</ActionButton>
     </div>
     <NavLink end to={`/collections/${notebookId}`} aria-label="笔记本首页" className={({ isActive }) => `workspace-function-link notebook-home-link${isActive ? " is-active" : ""}`}><Home aria-hidden="true" size={16} /><span>首页</span></NavLink>
+    <SheetDirectory collectionId={notebookId} />
     <DocumentContextPanel notebookId={notebookId} activeNoteId={activeNoteId} />
   </nav>;
 }
