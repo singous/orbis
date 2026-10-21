@@ -1,0 +1,20 @@
+.loading-state { min-width: 0; padding: 18px 0; }
+.loading-state-label { display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: var(--orbis-text-ui-size); margin-bottom: 18px; line-height: var(--orbis-text-ui-leading); }
+.loading-layout { display: grid; gap: 14px; }
+.loading-layout--cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.loading-item { display: flex; align-items: center; gap: 16px; min-height: 74px; padding: 14px 12px; }
+.loading-layout--cards .loading-item { min-height: 96px; border: 1px solid var(--border-subtle); border-radius: 15px; padding: 18px; }
+.loading-icon { width: 32px; height: 32px; flex: none; border-radius: var(--field-radius); }
+.loading-copy { display: grid; gap: 12px; flex: 1; min-width: 0; }
+.loading-line { height: 12px; width: 100%; border-radius: var(--radius); }
+.loading-line--short { width: 64%; }
+.loading-layout--editor { max-width: 760px; min-height: 300px; align-content: start; gap: 23px; }
+.loading-layout--editor .loading-line:first-child { height: 30px; width: 55%; margin-bottom: 16px; }
+.loading-state--compact .loading-item { min-height: 42px; padding: 6px 0; }
+.loading-state--compact .loading-icon { width: 22px; height: 22px; }
+@media (max-width: 850px) { .loading-layout--cards { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .loading-state .skeleton, .loading-state .spinner { animation: none; } }
+.action-pending-spinner { vertical-align: middle; margin-inline-end: 8px; }
+@media (prefers-reduced-motion: reduce) {
+  .ui-button .spinner, .orbis-action-button .spinner, .workspace-shell .animate-spin { animation: none; }
+}

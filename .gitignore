@@ -14,7 +14,14 @@ Thumbs.db
 !.env.example
 
 # Coding agents
+.codex/
+.claude/
+.cursor/
+.zcode/
+.worktreeinclude
+CLAUDE.md
 AGENTS.md
+agents.md
 Agents.md
 CLAUDE.local.md
 .claude/settings.local.json
@@ -31,7 +38,18 @@ CLAUDE.local.md
 .codex/*.local.*
 
 # Local planning and generated docs
-docs/superpowers/
+docs/**
+!docs/intro/
+!docs/intro/**
+!docs/release/
+!docs/release/**
+
+# Local linked worktrees
+.worktrees/
+
+# Machine-specific CI lives in the local deployment directory
+/ci/
+/ops/jenkins/
 
 # Logs
 *.log
@@ -43,25 +61,21 @@ vendor/
 
 # Build and cache output
 dist/
+collaboration/dist-tests/
+/collaboration/dist-tests/
 build/
 coverage/
+test-results/
+playwright-report/
 .cache/
+.dev/
 .parcel-cache/
 .turbo/
 .next/
 out/
 
-# Python
-__pycache__/
-*.py[cod]
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.venv/
-venv/
-
 # Go
 bin/
 
-# Rust
-target/
+# Generated self-hosted drawing fonts
+frontend/public/drawing-assets/

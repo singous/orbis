@@ -1,0 +1,142 @@
+# A new Go installation. Use a separate Compose project and volumes from any legacy deployment.
+# Install the schema explicitly with the maintenance profile before starting api/web.
+# The built-in database uses one URL-safe password source. An explicit URL keeps
+# existing custom database configurations available without changing their intent.
+x-database-url: &database-url "${ORBIS_DATABASE_URL:-postgres://orbis:${ORBIS_DATABASE_PASSWORD:?database password is required}@db:5432/orbis?sslmode=disable&connect_timeout=5}"
+
+services:
+  db:
+    image: postgres:16@sha256:ca0bd484cb98bf4b24eb1010e73fb3fcbd6714d240fbc1a10eea5b7dbecb641d
+    environment:
+      POSTGRES_DB: orbis
+      POSTGRES_USER: orbis
+      POSTGRES_PASSWORD: ${ORBIS_DATABASE_PASSWORD:?database password is required}
+      TZ: Asia/Shanghai
+    volumes:
+      - go-database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orbis -d orbis"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    mem_limit: 1g
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  redis:
+    image: redis:6.2.24@sha256:b362b5dff9d14d961dc3352db4776aba6a8c53ca2661d7c74ad2c121f82cdaea
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - go-queue:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    mem_limit: 512m
+    logging: *logging
+
+  migrate:
+    image: ${ORBIS_API_IMAGE:?an immutable API image is required}
+    profiles: ["maintenance"]
+    command: ["migrate"]
+    healthcheck:
+      disable: true
+    environment:
+      ORBIS_DATABASE_URL: *database-url
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+    mem_limit: 256m
+    logging: *logging
+
+  collaboration:
+    image: ${ORBIS_COLLABORATION_IMAGE:?an immutable collaboration image is required}
+    environment:
+      ORBIS_COLLABORATION_KEY: ${ORBIS_COLLABORATION_KEY:?an independent collaboration key of at least 32 random bytes is required}
+      ORBIS_COLLABORATION_HOST: 0.0.0.0
+      ORBIS_COLLABORATION_PORT: 9203
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:9203/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    read_only: true
+    init: true
+    stop_grace_period: 20s
+    restart: unless-stopped
+    mem_limit: 1536m
+    cpus: 2
+    logging: *logging
+
+  api:
+    image: ${ORBIS_API_IMAGE:?an immutable API image is required}
+    environment:
+      ORBIS_DATABASE_URL: *database-url
+      ORBIS_SIGNING_KEY: ${ORBIS_SIGNING_KEY:?a signing key of at least 32 random bytes is required}
+      ORBIS_LISTEN_ADDRESS: 0.0.0.0:9202
+      ORBIS_STORAGE_DIR: /data/objects
+      ORBIS_REDIS_URL: redis://redis:6379/0
+      ORBIS_COLLABORATION_URL: http://collaboration:9203
+      ORBIS_COLLABORATION_KEY: ${ORBIS_COLLABORATION_KEY:?an independent collaboration key is required}
+      ORBIS_MAX_BODY_BYTES: ${ORBIS_MAX_BODY_BYTES:-8388608}
+      ORBIS_MAX_UPLOAD_BYTES: ${ORBIS_MAX_UPLOAD_BYTES:-33554432}
+      ORBIS_MAIL_TRANSPORT: ${ORBIS_MAIL_TRANSPORT:-disabled}
+      ORBIS_MAIL_OUTBOX_DIR: /data/mail-outbox
+      ORBIS_PUBLIC_BASE_URL: ${ORBIS_PUBLIC_BASE_URL:?public URL is required}
+      ORBIS_MAIL_FROM: ${ORBIS_MAIL_FROM:-noreply@example.test}
+      ORBIS_SMTP_ADDRESS: ${ORBIS_SMTP_ADDRESS:-}
+      ORBIS_SMTP_SECURITY: ${ORBIS_SMTP_SECURITY:-starttls}
+      ORBIS_SMTP_USERNAME: ${ORBIS_SMTP_USERNAME:-}
+      ORBIS_SMTP_PASSWORD: ${ORBIS_SMTP_PASSWORD:-}
+      # Configure these only as part of a reviewed legacy credential conversion.
+      ORBIS_LEGACY_REFRESH_SECRET: ${ORBIS_LEGACY_REFRESH_SECRET:-}
+      ORBIS_LEGACY_ACTION_SECRET: ${ORBIS_LEGACY_ACTION_SECRET:-}
+      TZ: Asia/Shanghai
+    volumes:
+      - go-private-data:/data
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      collaboration:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/orbis-server", "-healthcheck"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    stop_grace_period: 45s
+    init: true
+    restart: unless-stopped
+    mem_limit: 2g
+    cpus: 2
+    logging: *logging
+
+  web:
+    image: ${ORBIS_WEB_IMAGE:?an immutable web image is required}
+    ports:
+      - "${ORBIS_BIND_ADDRESS:-127.0.0.1}:${ORBIS_PORT:-28190}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://127.0.0.1/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+    mem_limit: 256m
+    logging: *logging
+
+volumes:
+  go-database:
+  go-queue:
+  go-private-data:

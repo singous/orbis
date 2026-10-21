@@ -1,0 +1,81 @@
+import { Editor, getSchema } from "@tiptap/core";
+import * as Y from "yjs";
+import { prosemirrorJSONToYDoc } from "y-prosemirror";
+import { afterEach, expect, it } from "vitest";
+import { collaborativeEditorExtensions } from "./TiptapEditor";
+import { tiptapExtensions } from "./tiptap-extensions";
+import { fromTiptapDocument, toTiptapDocument } from "./tiptap-model";
+import type { OrbisBlock, NoteBlocksV2 } from "../../content/model/blocks";
+import { nativeBlock } from "../../content/codecs/api-content";
+
+const paragraphId = "00000000-0000-4000-8000-000000000001";
+const editors: Editor[] = [], documents: Y.Doc[] = [];
+afterEach(() => { for (const editor of editors.splice(0)) editor.destroy(); for (const doc of documents.splice(0)) doc.destroy(); });
+function seed() {
+  const schemaDoc = new Y.Doc();
+  const schema = getSchema(collaborativeEditorExtensions(schemaDoc));
+  const doc = prosemirrorJSONToYDoc(schema, toTiptapDocument({ schema_version: 2, editor: "blocknote", blocks: [{ id: paragraphId, type: "paragraph", props: {}, content: [{ type: "text", text: "Base", styles: {} }], children: [] }] }, { cacheMetadata: false }), "body");
+  documents.push(doc); schemaDoc.destroy(); return doc;
+}
+function open(doc: Y.Doc) { const editor = new Editor({ extensions: collaborativeEditorExtensions(doc) }); editors.push(editor); return editor; }
+
+it("merges concurrent same-paragraph typing and keeps undo local to each editor", () => {
+  const initial = seed(), left = new Y.Doc(), right = new Y.Doc();
+  documents.push(left, right);
+  Y.applyUpdate(left, Y.encodeStateAsUpdate(initial)); Y.applyUpdate(right, Y.encodeStateAsUpdate(initial));
+  const a = open(left), b = open(right);
+  a.commands.insertContentAt(5, " left"); b.commands.insertContentAt(5, " right");
+  Y.applyUpdate(left, Y.encodeStateAsUpdate(right)); Y.applyUpdate(right, Y.encodeStateAsUpdate(left));
+  expect(a.getText()).toBe(b.getText());
+  expect(a.getText()).toContain(" left"); expect(a.getText()).toContain(" right");
+  expect(fromTiptapDocument(a.state.doc).blocks[0].id).toBe(paragraphId);
+  a.commands.undo();
+  Y.applyUpdate(right, Y.encodeStateAsUpdate(left));
+  expect(a.getText()).toBe("Base right"); expect(b.getText()).toBe("Base right");
+});
+
+it("keeps a paste separate from typing before and after it in collaborative undo", () => {
+  const doc = seed(), editor = open(doc);
+  editor.commands.insertContentAt(5, " before");
+  editor.view.dispatch(editor.state.tr.insertText(" paste", editor.state.doc.content.size - 1).setMeta("uiEvent", "paste"));
+  editor.commands.insertContentAt(editor.state.doc.content.size - 1, " after");
+  editor.commands.undo(); expect(editor.getText()).toBe("Base before paste");
+  editor.commands.undo(); expect(editor.getText()).toBe("Base before");
+  editor.commands.undo(); expect(editor.getText()).toBe("Base");
+});
+
+it("assigns a stable block ID on the first edit of an empty collaborative body without reseeding", async () => {
+  const doc = new Y.Doc(); documents.push(doc);
+  let updates = 0; doc.on("update", () => { updates++; });
+  const editor = open(doc);
+  await new Promise<void>(resolve => editor.on("create", () => resolve()));
+  expect(updates).toBe(0);
+  expect(doc.getXmlFragment("body").length).toBe(0);
+  editor.commands.insertContent("First paragraph");
+  const block = fromTiptapDocument(editor.state.doc).blocks[0];
+  expect(block.id).toMatch(/^[0-9a-f-]{36}$/);
+  expect((doc.getXmlFragment("body").get(0) as Y.XmlElement).getAttribute("orbisId")).toBe(block.id);
+  const restored = new Y.Doc(); documents.push(restored); Y.applyUpdate(restored, Y.encodeStateAsUpdate(doc));
+  const reopened = open(restored);
+  expect(reopened.getText()).toBe("First paragraph");
+  expect(restored.getXmlFragment("body").length).toBe(1);
+  expect(fromTiptapDocument(reopened.state.doc).blocks[0].id).toBe(block.id);
+});
+
+it("keeps transient conversion caches out of every collaborative node and mark", () => {
+  const doc = new Y.Doc(); documents.push(doc);
+  const schema = getSchema(collaborativeEditorExtensions(doc));
+  for (const type of [...Object.values(schema.nodes), ...Object.values(schema.marks)]) for (const name of ["orbisOriginal", "orbisSignature", "orbisCellOriginal"]) expect(type.spec.attrs ?? {}).not.toHaveProperty(name);
+  expect(getSchema(tiptapExtensions).nodes.paragraph.spec.attrs).toHaveProperty("orbisOriginal");
+});
+
+it("round-trips a deeply nested large document without duplicating ancestor content in Yjs", () => {
+  let block: OrbisBlock = { id: paragraphId, type: "paragraph", props: {}, content: [{ type: "text", text: "Large paragraph ".repeat(8192), styles: {} }], children: [] };
+  for (let depth = 1; depth < 32; depth++) block = { id: `00000000-0000-4000-8000-${String(depth + 1).padStart(12, "0")}`, type: "group", props: {}, content: [], children: [block] };
+  const value: NoteBlocksV2 = { schema_version: 2, editor: "blocknote", blocks: [block] };
+  const schemaDoc = new Y.Doc(); documents.push(schemaDoc);
+  const doc = prosemirrorJSONToYDoc(getSchema(collaborativeEditorExtensions(schemaDoc)), toTiptapDocument(value, { cacheMetadata: false }), "body"); documents.push(doc);
+  const editor = open(doc);
+  expect(fromTiptapDocument(editor.state.doc).blocks.map(nativeBlock)).toEqual(value.blocks.map(nativeBlock));
+  expect(Y.encodeStateAsUpdate(doc).byteLength).toBeLessThan(JSON.stringify(value).length * 1.5);
+});

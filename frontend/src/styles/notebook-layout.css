@@ -1,0 +1,37 @@
+/* Notebook content supplies business styling within the shared sidebar. */
+.document-business-links { padding-bottom: 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border-subtle); }
+.notebook-menu-actions { display: flex; align-items: center; justify-content: space-between; padding: 4px 8px 12px; gap: 8px; font-size: var(--orbis-text-ui-size); color: var(--muted); line-height: var(--orbis-text-ui-leading); }
+.notebook-menu-actions button { display: inline-flex; align-items: center; gap: 6px; min-height: var(--orbis-control-compact-height); }
+.notebook-overview .page-header { padding-bottom: 16px; margin-bottom: 24px; }
+.notebook-overview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, max(260px, calc((100% - 32px) / 3))), 1fr)); gap: 16px; }
+.notebook-overview-common { padding: 20px; background: var(--surface-secondary); border-radius: 10px; margin-bottom: 36px; }
+.notebook-overview-group { margin-bottom: 32px; }
+.notebook-overview-card { position: relative; border: 1px solid var(--border-subtle); border-radius: 12px; background: var(--surface-content); min-width: 0; }
+.notebook-overview-card:hover { border-color: var(--muted-light); }
+.notebook-overview-card-link { display: flex; gap: 14px; padding: 20px 44px 20px 20px; min-height: 136px; height: 100%; }
+.notebook-overview-card-copy { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+.notebook-overview-card-copy strong { color: var(--text); font-size: var(--orbis-text-ui-size); font-weight: var(--orbis-weight-action); line-height: var(--orbis-text-ui-leading); overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.notebook-overview-card-copy > span { font-size: var(--orbis-text-caption-size); color: var(--muted); line-height: var(--orbis-text-caption-leading); }
+.notebook-overview-count { margin-top: auto; padding-top: 18px; }
+.notebook-overview-card.is-compact .notebook-overview-card-link { min-height: 78px; padding-block: 18px; }
+.notebook-overview-pin { position: absolute; right: 10px; top: 14px; width: var(--orbis-control-compact-height); height: var(--orbis-control-compact-height); display: flex; align-items: center; justify-content: center; color: var(--muted); border-radius: 6px; }
+.notebook-overview-pin:hover, .notebook-overview-pin.is-pinned { background: var(--surface-secondary); color: var(--text); }
+.editor-loading-reserve { min-height: 160px; }
+.loading-layout { min-width: 0; grid-template-columns: minmax(0, 1fr); }
+.loading-layout--cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.loading-state--editor-body { max-width: 100%; }
+.loading-state--editor-body .loading-state-label { font-size: var(--orbis-text-caption-size); margin-bottom: 20px; line-height: var(--orbis-text-caption-leading); }
+.loading-layout--editor-body { width: 100%; max-width: 760px; gap: 18px; min-height: 140px; align-content: start; }
+.loading-layout--editor-body .loading-line { height: 10px; }
+@media (max-width: 767px) {
+  .notebook-overview-grid, .loading-layout--cards { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Creation stays in the visible rail, and notebook identity owns the first row. */
+.workspace-business-rail:has(.rail-create-entry) .rail-brand { margin-bottom: 16px; }
+.rail-create-entry { margin-bottom: 20px; }
+.rail-create-entry .rail-create-trigger { width: var(--orbis-control-default-height); height: var(--orbis-control-default-height); border-radius: 8px; }
+.notebook-menu-header { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.notebook-menu-header .notebook-menu-back { display: grid; place-items: center; width: var(--orbis-control-compact-height); height: var(--orbis-control-compact-height); flex: none; margin: 0; }
+.notebook-menu-header .notebook-menu-title { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; font-size: var(--orbis-text-section-size); font-weight: var(--orbis-weight-heading); line-height: var(--orbis-text-section-leading); }
+.notebook-menu-create { display: grid; place-items: center; width: var(--orbis-control-compact-height); height: var(--orbis-control-compact-height); flex: none; border-radius: 7px; background: var(--surface-inverse); color: var(--text-oninverse); }

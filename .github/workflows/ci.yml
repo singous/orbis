@@ -1,0 +1,179 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend contracts and PostgreSQL integration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install the pinned Go toolchain
+        run: |
+          set -o pipefail
+          docker run --rm --entrypoint tar golang:1.27.2-bookworm@sha256:5cf287a799e6b94384bad13d16b14904c531f51ba65792237e122ce42b392f61 -C /usr/local -c go | tar -C "$RUNNER_TEMP" -x
+          echo "ORBIS_GO_BIN=$RUNNER_TEMP/go/bin/go" >> "$GITHUB_ENV"
+      - name: Check and build backend
+        run: make backend-check backend-build
+      - name: Build the owned collaboration test engine
+        env:
+          BUILDX_CONFIG: ${{ runner.temp }}/orbis-buildx
+        run: docker build --target collaboration -t orbis-collaboration:ci .
+      - name: Run isolated PostgreSQL and Redis concurrency tests
+        env:
+          ORBIS_TEST_COLLABORATION_IMAGE: orbis-collaboration:ci
+        run: make integration TEST_ARGS='-race -v'
+
+  collaboration:
+    name: Collaboration engine checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: collaboration
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: collaboration/package-lock.json
+      - name: Install locked engine dependencies
+        run: npm ci
+      - name: Validate types, persistence, concurrent edits and HTTP lifecycle
+        run: npm test
+      - name: Build the headless runtime
+        run: npm run build
+
+  cli:
+    name: Independent Go CLI
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install the pinned Go toolchain
+        run: |
+          set -o pipefail
+          docker run --rm --entrypoint tar golang:1.27.2-bookworm@sha256:5cf287a799e6b94384bad13d16b14904c531f51ba65792237e122ce42b392f61 -C /usr/local -c go | tar -C "$RUNNER_TEMP" -x
+          echo "ORBIS_GO_BIN=$RUNNER_TEMP/go/bin/go" >> "$GITHUB_ENV"
+      - name: Check and build standalone module
+        env:
+          GOWORK: "off"
+        run: make cli-check cli-build
+
+  frontend:
+    name: Frontend checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Check schemas, types and units
+        run: |
+          npm run check:document-blocks
+          npm run typecheck
+          npm run test:run -- --maxWorkers=2
+      - name: Build frontend
+        run: npm run build
+
+  browser:
+    name: Browser acceptance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install the pinned Go toolchain
+        run: |
+          set -o pipefail
+          docker run --rm --entrypoint tar golang:1.27.2-bookworm@sha256:5cf287a799e6b94384bad13d16b14904c531f51ba65792237e122ce42b392f61 -C /usr/local -c go | tar -C "$RUNNER_TEMP" -x
+          echo "ORBIS_GO_BIN=$RUNNER_TEMP/go/bin/go" >> "$GITHUB_ENV"
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Install Chromium and system dependencies
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+      - name: Build production frontend
+        working-directory: frontend
+        run: npm run build
+      - name: Build the owned collaboration test engine
+        env:
+          BUILDX_CONFIG: ${{ runner.temp }}/orbis-buildx
+        run: docker build --target collaboration -t orbis-collaboration:ci .
+      - name: Run browser acceptance with the owned Go test environment
+        working-directory: frontend
+        env:
+          ORBIS_E2E_PRODUCTION: "1"
+          ORBIS_E2E_PERFORMANCE_MODE: "report"
+          ORBIS_TEST_COLLABORATION_IMAGE: orbis-collaboration:ci
+        run: npm run test:e2e
+      - name: Upload browser failure evidence
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: browser-failure-evidence
+          path: frontend/test-results/browser/
+          if-no-files-found: ignore
+          retention-days: 7
+
+
+  deployment:
+    name: Docker Compose deployment
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install the pinned Go toolchain
+        run: |
+          set -o pipefail
+          docker run --rm --entrypoint tar golang:1.27.2-bookworm@sha256:5cf287a799e6b94384bad13d16b14904c531f51ba65792237e122ce42b392f61 -C /usr/local -c go | tar -C "$RUNNER_TEMP" -x
+          echo "ORBIS_GO_BIN=$RUNNER_TEMP/go/bin/go" >> "$GITHUB_ENV"
+      - name: Check Docker Compose availability
+        run: docker compose version
+      - name: Build the three deployment images
+        env:
+          BUILDX_CONFIG: ${{ runner.temp }}/orbis-buildx
+        run: |
+          docker build --target server --iidfile "$RUNNER_TEMP/orbis-server-image" .
+          docker build --target frontend --iidfile "$RUNNER_TEMP/orbis-frontend-image" .
+          docker build --target collaboration --iidfile "$RUNNER_TEMP/orbis-collaboration-image" .
+      - name: Verify an owned Compose installation and persistent restart
+        run: |
+          make compose-check IMAGE="$(cat "$RUNNER_TEMP/orbis-server-image")" FRONTEND_IMAGE="$(cat "$RUNNER_TEMP/orbis-frontend-image")" COLLABORATION_IMAGE="$(cat "$RUNNER_TEMP/orbis-collaboration-image")"

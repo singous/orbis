@@ -1,0 +1,10 @@
+DROP TABLE document_operations;
+DROP TABLE document_block_versions;
+DROP TABLE document_revisions;
+DROP TABLE documents;
+DROP TABLE collections;
+DROP TABLE workspace_members;
+DROP TABLE workspaces;
+DROP TABLE sessions;
+DROP TABLE users;
+DROP TABLE installation;

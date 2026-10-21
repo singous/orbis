@@ -1,0 +1,472 @@
+{
+  "version": 1,
+  "nodes": {
+    "doc": {
+      "content": "block*"
+    },
+    "text": {
+      "group": "inline"
+    },
+    "paragraph": {
+      "group": "block",
+      "content": "inline*",
+      "attrs": {
+        "orbisId": {
+          "default": null
+        },
+        "orbisProps": {
+          "default": null
+        },
+        "orbisOwn": {
+          "default": false
+        },
+        "orbisCellProps": {
+          "default": null
+        },
+        "headerRows": {
+          "default": null
+        },
+        "headerCols": {
+          "default": null
+        },
+        "columnWidths": {
+          "default": null
+        }
+      }
+    },
+    "heading": {
+      "group": "block",
+      "content": "inline*",
+      "defining": true,
+      "attrs": {
+        "orbisId": {
+          "default": null
+        },
+        "orbisProps": {
+          "default": null
+        },
+        "orbisOwn": {
+          "default": false
+        },
+        "orbisCellProps": {
+          "default": null
+        },
+        "headerRows": {
+          "default": null
+        },
+        "headerCols": {
+          "default": null
+        },
+        "columnWidths": {
+          "default": null
+        },
+        "level": {
+          "default": 1
+        }
+      }
+    },
+    "blockquote": {
+      "group": "block",
+      "content": "block+",
+      "defining": true,
+      "attrs": {
+        "orbisId": {
+          "default": null
+        },
+        "orbisProps": {
+          "default": null
+        },
+        "orbisOwn": {
+          "default": false
+        },
+        "orbisCellProps": {
+          "default": null
+        },
+        "headerRows": {
+          "default": null
+        },
+        "headerCols": {
+          "default": null
+        },
+        "columnWidths": {
+          "default": null
+        }
+      }
+    },
+    "bulletList": {
+      "group": "block list",
+      "content": "listItem+"
+    },
+    "orderedList": {
+      "group": "block list",
+      "content": "listItem+",
+      "attrs": {
+        "start": {
+          "default": 1
+        },
+        "type": {
+          "default": null
+        }
+      }
+    },
+    "listItem": {
+      "content": "paragraph block*",
+      "defining": true,
+      "attrs": {
+        "orbisId": {
+          "default": null
+        },
+        "orbisProps": {
+          "default": null
+        },
+        "orbisOwn": {
+          "default": false
+        },
+        "orbisCellProps": {
+          "default": null
+        },
+        "headerRows": {
+          "default": null
+        },
+        "headerCols": {
+          "default": null
+        },
+        "columnWidths": {
+          "default": null
+        }
+      }
+    },
+    "taskList": {
+      "group": "block list",
+      "content": "taskItem+"
+    },
+    "taskItem": {
+      "content": "paragraph block*",
+      "defining": true,
+      "attrs": {
+        "orbisId": {
+          "default": null
+        },
+        "orbisProps": {
+          "default": null
+        },
+        "orbisOwn": {
+          "default": false
+        },
+        "orbisCellProps": {
+          "default": null
+        },
+        "headerRows": {
+          "default": null
+        },
+        "headerCols": {
+          "default": null
+        },
+        "columnWidths": {
+          "default": null
+        },
+        "checked": {
+          "default": false
+        }
+      }
+    },
+    "codeBlock": {
+      "group": "block",
+      "content": "text*",
+      "marks": "",
+      "code": true,
+      "defining": true,
+      "attrs": {
+        "orbisId": {
+          "default": null
+        },
+        "orbisProps": {
+          "default": null
+        },
+        "orbisOwn": {
+          "default": false
+        },
+        "orbisCellProps": {
+          "default": null
+        },
+        "headerRows": {
+          "default": null
+        },
+        "headerCols": {
+          "default": null
+        },
+        "columnWidths": {
+          "default": null
+        },
+        "language": {
+          "default": null
+        },
+        "orbisCodeFormat": {
+          "default": null
+        }
+      }
+    },
+    "horizontalRule": {
+      "group": "block",
+      "attrs": {
+        "orbisId": {
+          "default": null
+        },
+        "orbisProps": {
+          "default": null
+        },
+        "orbisOwn": {
+          "default": false
+        },
+        "orbisCellProps": {
+          "default": null
+        },
+        "headerRows": {
+          "default": null
+        },
+        "headerCols": {
+          "default": null
+        },
+        "columnWidths": {
+          "default": null
+        }
+      }
+    },
+    "hardBreak": {
+      "inline": true,
+      "group": "inline",
+      "selectable": false,
+      "linebreakReplacement": true
+    },
+    "table": {
+      "group": "block",
+      "content": "tableRow*",
+      "tableRole": "table",
+      "isolating": true,
+      "attrs": {
+        "orbisId": {
+          "default": null
+        },
+        "orbisProps": {
+          "default": null
+        },
+        "orbisOwn": {
+          "default": false
+        },
+        "orbisCellProps": {
+          "default": null
+        },
+        "headerRows": {
+          "default": null
+        },
+        "headerCols": {
+          "default": null
+        },
+        "columnWidths": {
+          "default": null
+        }
+      }
+    },
+    "tableRow": {
+      "content": "(tableCell | tableHeader)*",
+      "tableRole": "row"
+    },
+    "tableCell": {
+      "content": "block+",
+      "tableRole": "cell",
+      "isolating": true,
+      "attrs": {
+        "orbisId": {
+          "default": null
+        },
+        "orbisProps": {
+          "default": null
+        },
+        "orbisOwn": {
+          "default": false
+        },
+        "orbisCellProps": {
+          "default": null
+        },
+        "headerRows": {
+          "default": null
+        },
+        "headerCols": {
+          "default": null
+        },
+        "columnWidths": {
+          "default": null
+        },
+        "colspan": {
+          "default": 1
+        },
+        "rowspan": {
+          "default": 1
+        },
+        "colwidth": {
+          "default": null
+        }
+      }
+    },
+    "tableHeader": {
+      "content": "block+",
+      "tableRole": "header_cell",
+      "isolating": true,
+      "attrs": {
+        "orbisId": {
+          "default": null
+        },
+        "orbisProps": {
+          "default": null
+        },
+        "orbisOwn": {
+          "default": false
+        },
+        "orbisCellProps": {
+          "default": null
+        },
+        "headerRows": {
+          "default": null
+        },
+        "headerCols": {
+          "default": null
+        },
+        "columnWidths": {
+          "default": null
+        },
+        "colspan": {
+          "default": 1
+        },
+        "rowspan": {
+          "default": 1
+        },
+        "colwidth": {
+          "default": null
+        }
+      }
+    },
+    "orbisComponent": {
+      "group": "block",
+      "content": "block*",
+      "defining": true,
+      "attrs": {
+        "orbisId": {
+          "default": null
+        },
+        "orbisProps": {
+          "default": null
+        },
+        "kind": {
+          "default": "callout"
+        }
+      }
+    },
+    "orbisMedia": {
+      "group": "block",
+      "atom": true,
+      "selectable": true,
+      "attrs": {
+        "orbisId": {
+          "default": null
+        },
+        "orbisProps": {
+          "default": null
+        },
+        "kind": {
+          "default": "file"
+        },
+        "url": {
+          "default": ""
+        },
+        "caption": {
+          "default": ""
+        }
+      }
+    },
+    "orbisDrawing": {
+      "group": "block",
+      "atom": true,
+      "selectable": true,
+      "attrs": {
+        "orbisId": {
+          "default": null
+        },
+        "orbisProps": {
+          "default": null
+        }
+      }
+    },
+    "orbisToggleSummary": {
+      "content": "inline*",
+      "defining": true,
+      "attrs": {
+        "orbisOwn": {
+          "default": true
+        }
+      }
+    },
+    "orbisToggle": {
+      "group": "block",
+      "content": "orbisToggleSummary block*",
+      "defining": true,
+      "attrs": {
+        "orbisId": {
+          "default": null
+        },
+        "orbisProps": {
+          "default": null
+        }
+      }
+    },
+    "orbisContainer": {
+      "group": "block",
+      "content": "block+",
+      "defining": true,
+      "attrs": {
+        "orbisId": {
+          "default": null
+        },
+        "orbisProps": {
+          "default": null
+        },
+        "kind": {
+          "default": "paragraph"
+        }
+      }
+    }
+  },
+  "marks": {
+    "bold": {},
+    "italic": {},
+    "underline": {},
+    "strike": {},
+    "code": {
+      "code": true,
+      "excludes": ""
+    },
+    "link": {
+      "inclusive": true,
+      "attrs": {
+        "href": {
+          "default": null
+        },
+        "target": {
+          "default": "_blank"
+        },
+        "rel": {
+          "default": "noopener noreferrer nofollow"
+        },
+        "class": {
+          "default": null
+        }
+      }
+    },
+    "orbisStyle": {
+      "attrs": {
+        "styles": {
+          "default": {}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,56 @@
+.orbis-tiptap .doc-editor-block { position: relative; width: 100%; min-width: 0; margin: 24px 0; color: var(--reading-text); }
+.orbis-tiptap .doc-editor-heading { display: flex; align-items: center; gap: 7px; color: var(--reading-muted); font-size: var(--orbis-text-caption-size); line-height: 1.6; margin-bottom: 7px; }
+.orbis-tiptap .doc-editor-heading svg { color: var(--reading-accent); }
+.orbis-tiptap .doc-editor-title { display: block; margin: 0 0 8px; font-size: var(--orbis-prose-h3-size); font-weight: 650; line-height: 1.5; }
+.orbis-tiptap .doc-editor-content { min-width: 0; }
+.orbis-tiptap .doc-editor-content > :first-child { margin-top: 0; }
+.orbis-tiptap .doc-editor-controls { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 10px; margin: 9px 0; padding: 9px 0; border-top: 1px solid var(--reading-border); font-family: inherit; }
+.orbis-tiptap .doc-editor-controls label { display: grid; gap: 3px; min-width: 125px; flex: 1; margin: 0; }
+.orbis-tiptap .doc-editor-controls label > span { color: var(--text-tertiary); font-size: var(--orbis-text-ui-size); }
+.orbis-tiptap .doc-editor-controls button { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--reading-border); background: var(--reading-bg); color: var(--reading-muted); border-radius: 5px; padding: 5px 9px; cursor: pointer; font-size: var(--orbis-text-ui-size); line-height: 1.6; }
+.orbis-tiptap .doc-editor-controls button:focus-visible { outline: 2px solid var(--reading-accent); outline-offset: 2px; }
+.orbis-tiptap .doc-editor-callout { padding: 17px 20px; border: 1px solid #cae1ee; border-radius: 10px; background: #eff8fd; font-size: var(--orbis-prose-body-size); line-height: 1.85; }
+.orbis-tiptap .doc-editor-callout[data-tone="warning"] { border-color: #edd9af; background: #fff9eb; }
+.orbis-tiptap .doc-editor-callout[data-tone="success"] { border-color: #c5e4d0; background: #f1faf4; }
+.orbis-tiptap .doc-editor-callout[data-tone="danger"] { border-color: #edcbca; background: #fff3f2; }
+.orbis-tiptap .doc-editor-callout .doc-editor-title { font-size: var(--orbis-prose-body-size); }
+.orbis-tiptap .doc-editor-cardGroup > div > .doc-editor-content > [data-node-view-content-react] { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px; }
+.orbis-tiptap .doc-editor-cardGroup[data-columns="3"] > div > .doc-editor-content > [data-node-view-content-react] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.orbis-tiptap .doc-editor-card { margin: 0; padding: 22px; border: 1px solid var(--reading-border); border-radius: 12px; background: var(--reading-bg); }
+.orbis-tiptap .doc-editor-card .doc-editor-title { font-size: var(--orbis-prose-h3-size); }
+.orbis-tiptap .doc-editor-steps > div > .doc-editor-content > [data-node-view-content-react] { counter-reset: doc-step; }
+.orbis-tiptap .doc-editor-step { position: relative; counter-increment: doc-step; min-height: 48px; margin: 0; padding: 0 0 28px 46px; }
+.orbis-tiptap .doc-editor-step::before { content: counter(doc-step); display: grid; place-items: center; position: absolute; top: 2px; left: 0; width: 28px; height: 28px; border: 1px solid var(--reading-border); border-radius: 50%; background: var(--reading-muted-bg); color: var(--reading-muted); font-size: var(--orbis-prose-caption-size); font-weight: 600; }
+.orbis-tiptap .doc-editor-step:not(:last-child)::after { content: ""; position: absolute; top: 38px; bottom: 9px; left: 14px; border-left: 1px solid var(--reading-border); }
+.orbis-tiptap .doc-editor-step .doc-editor-title { font-size: var(--orbis-prose-h3-size); }
+.orbis-tiptap .doc-editor-panes { display: flex; gap: 24px; border-bottom: 1px solid var(--reading-border); overflow-x: auto; }
+.orbis-tiptap .doc-editor-panes button { flex: none; padding: 10px 1px 11px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--reading-muted); font-size: var(--orbis-prose-body-size); cursor: pointer; }
+.orbis-tiptap .doc-editor-panes button[aria-selected="true"] { color: var(--reading-accent); border-bottom-color: var(--reading-accent); }
+.orbis-tiptap .doc-editor-tab { margin: 0; padding-top: 16px; }
+.orbis-tiptap .doc-editor-tab > .doc-editor-heading { display: none; }
+.orbis-tiptap .doc-editor-codeGroup > div > .doc-editor-content > [data-node-view-content-react] > .orbis-code { margin-top: 16px; }
+@media (max-width: 700px) { .orbis-tiptap .doc-editor-cardGroup > div > .doc-editor-content > [data-node-view-content-react] { grid-template-columns: 1fr; }.orbis-tiptap .doc-editor-card { padding: 19px; }.orbis-tiptap .doc-editor-callout { padding: 14px; }.orbis-tiptap .doc-editor-step { padding-left: 40px; } }
+
+.orbis-tiptap .doc-editor-settings { position: absolute; top: 4px; right: 4px; z-index: 2; display: grid; place-items: center; width: var(--orbis-control-compact-height); height: var(--orbis-control-compact-height); border: 1px solid transparent; border-radius: 5px; background: var(--reading-bg); color: var(--reading-muted); cursor: pointer; opacity: .65; }
+.orbis-tiptap .doc-editor-settings:hover, .orbis-tiptap .doc-editor-settings:focus-visible { opacity: 1; border-color: var(--reading-border); outline-color: var(--reading-accent); }
+.orbis-tiptap .doc-editor-card .doc-editor-heading { margin-bottom: 12px; }
+.orbis-tiptap .ProseMirror .doc-editor-card p { margin: 6px 0; font-size: var(--orbis-prose-body-size); line-height: 1.8; color: var(--reading-muted); }
+.orbis-tiptap .doc-editor-cardGroup > .doc-editor-body > .doc-editor-content > [data-node-view-content-react] > * { min-width: 0; }
+.orbis-tiptap .doc-editor-cardGroup .doc-editor-card { height: 100%; }
+.orbis-tiptap .doc-editor-cardGroup, .orbis-tiptap .doc-editor-steps, .orbis-tiptap .doc-editor-tabs, .orbis-tiptap .doc-editor-codeGroup { padding-top: 0; }
+.orbis-tiptap .doc-editor-cardGroup > .doc-editor-settings, .orbis-tiptap .doc-editor-steps > .doc-editor-settings { top: -25px; }
+.orbis-tiptap .doc-editor-tabs > .doc-editor-settings, .orbis-tiptap .doc-editor-codeGroup > .doc-editor-settings { top: 5px; }
+.orbis-tiptap .doc-editor-panes { padding-right: 35px; }
+.orbis-tiptap .doc-editor-tab > .doc-editor-settings { top: 0; }
+.orbis-tiptap .doc-editor-callout { display: grid; grid-template-columns: 19px minmax(0, 1fr); column-gap: 13px; }
+.orbis-tiptap .doc-editor-callout > .doc-editor-heading { grid-column: 1; grid-row: 1 / 3; margin-top: 3px; }
+.orbis-tiptap .doc-editor-callout > .doc-editor-title, .orbis-tiptap .doc-editor-callout > .doc-editor-body { grid-column: 2; }
+.orbis-tiptap .doc-editor-callout > .doc-editor-controls { grid-column: 1 / -1; }
+.orbis-tiptap .ProseMirror .doc-editor-callout p { margin: 8px 0 0; font-size: var(--orbis-prose-body-size); line-height: 1.85; }
+.orbis-tiptap .ProseMirror .doc-editor-callout .doc-editor-content > [data-node-view-content-react] > p:first-child { margin-top: 0; }
+@media (max-width: 700px) { .orbis-tiptap .doc-editor-cardGroup[data-columns] > div > .doc-editor-content > [data-node-view-content-react] { grid-template-columns: 1fr; } }
+
+.orbis-tiptap .doc-editor-callout > .doc-editor-heading { align-self: start; }
+.orbis-tiptap .doc-editor-callout > .doc-editor-title { margin-bottom: 4px; font-weight: 700; }
+
+.orbis-tiptap .doc-editor-controls > .orbis-select-field { min-width: 125px; flex: 1; }

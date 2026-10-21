@@ -1,0 +1,146 @@
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { toast as heroToast } from "@heroui/react/toast";
+import userEvent from "@testing-library/user-event";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { NotebookDialog } from "./NotebookDialog";
+import { NotebookIcon } from "./NotebookIcon";
+import { authStore } from "../../shared/auth/auth-store";
+import { Toaster } from "../../shared/ui/Toast";
+
+const fileId = "018ff7c4-a5b6-7000-8000-000000000040";
+const dataUrl = "data:image/png;base64,aWNvbg==";
+
+function envelope(data: unknown, status = 200) {
+  return new Response(JSON.stringify({ code: status === 200 ? "OK" : "ERROR", message: "图标上传失败，请重试", request_id: "icon-test", data }), {
+    status, headers: { "Content-Type": "application/json" },
+  });
+}
+
+function openDialog(onSubmit = vi.fn()) {
+  return { onSubmit, ...render(<><NotebookDialog open onClose={vi.fn()} onSubmit={onSubmit} /><Toaster /></>) };
+}
+
+afterEach(() => {
+  act(() => heroToast.clear());
+  vi.unstubAllGlobals();
+  act(() => authStore.getState().clearSession());
+});
+
+describe("notebook icons", () => {
+  it("renders existing notebooks with a blue book without requiring a query provider", () => {
+    const { container } = render(<NotebookIcon />);
+    expect(container.querySelector(".notebook-icon--blue")).toBeInTheDocument();
+    expect(container.querySelector("svg")).toBeInTheDocument();
+  });
+
+  it("loads custom images with authentication and keeps a visible fallback if the image fails", async () => {
+    authStore.setState({accessToken:"image-token",workspace:{id:fileId,name:"测试空间",role:"owner",created_at_ms:1,updated_at_ms:1}});
+    const fetchMock = vi.fn().mockResolvedValue(new Response("icon",{headers:{"Content-Type":"image/png"}}));
+    vi.stubGlobal("fetch", fetchMock);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { container } = render(<QueryClientProvider client={queryClient}><NotebookIcon icon={{ type: "image", asset_id: fileId }} /></QueryClientProvider>);
+    expect(container.querySelector(".notebook-icon--blue")).toBeInTheDocument();
+    const image = await screen.findByAltText("自定义笔记本图标");
+    expect(image).toHaveAttribute("src", dataUrl);
+    expect(fetchMock).toHaveBeenCalledWith(`/api/v1/workspaces/${fileId}/assets/${fileId}/content`, expect.objectContaining({ headers: { authorization: "Bearer image-token" } }));
+    fireEvent.error(image);
+    expect(container.querySelector(".notebook-icon--blue")).toBeInTheDocument();
+    queryClient.clear();
+  });
+
+  it("submits a selected preset and color with the trimmed title", async () => {
+    const user = userEvent.setup();
+    const { onSubmit } = openDialog();
+    await user.type(screen.getByRole("textbox", { name: "笔记本名称" }), "  产品想法  ");
+    await user.click(screen.getByRole("radio", { name: "灵感" }));
+    await user.click(screen.getByRole("radio", { name: "琥珀黄" }));
+    expect(screen.getByRole("radio", { name: "灵感" })).toBeChecked();
+    await user.click(screen.getByRole("button", { name: "创建" }));
+    expect(onSubmit).toHaveBeenCalledWith({ title: "产品想法", icon: { type: "preset", name: "lightbulb", color: "amber" } });
+  });
+
+  it("lets keyboard users choose icons and colors with radio-group navigation", async () => {
+    const user = userEvent.setup();
+    const { onSubmit } = openDialog();
+    await user.type(screen.getByRole("textbox", { name: "笔记本名称" }), "音乐灵感");
+    await user.click(screen.getByRole("radio", { name: "灵感" }));
+    await user.keyboard("[ArrowRight]");
+    expect(screen.getByRole("radio", { name: "代码" })).toHaveFocus();
+    expect(screen.getByRole("radio", { name: "代码" })).toBeChecked();
+    await user.keyboard("[Home]");
+    expect(screen.getByRole("radio", { name: "书本" })).toHaveFocus();
+    await user.keyboard("[End]");
+    expect(screen.getByRole("radio", { name: "音乐" })).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole("radio", { name: "湖蓝色" })).toHaveFocus();
+    await user.keyboard("[ArrowRight]");
+    expect(screen.getByRole("radio", { name: "薄荷绿" })).toHaveFocus();
+    await user.click(screen.getByRole("button", { name: "创建" }));
+    expect(onSubmit).toHaveBeenCalledWith({ title: "音乐灵感", icon: { type: "preset", name: "music", color: "mint" } });
+  });
+
+  it("can reset an existing icon and starts fresh after reopening", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+    const props = { onClose: vi.fn(), onSubmit, initialValue: "研发", initialIcon: { type: "preset" as const, name: "code" as const, color: "violet" as const } };
+    const view = render(<NotebookDialog open {...props} />);
+    await user.click(screen.getByRole("button", { name: "恢复默认图标" }));
+    await user.click(screen.getByRole("button", { name: "创建" }));
+    expect(onSubmit).toHaveBeenCalledWith({ title: "研发", icon: null });
+    view.rerender(<NotebookDialog open={false} {...props} />);
+    view.rerender(<NotebookDialog open {...props} />);
+    expect(screen.getByRole("radio", { name: "代码" })).toBeChecked();
+  });
+
+  it("blocks submission during upload and saves the server file id after previewing", async () => {
+    const user = userEvent.setup();
+    authStore.setState({accessToken:"icon-access-token",workspace:{id:fileId,name:"测试空间",role:"owner",created_at_ms:1,updated_at_ms:1}});
+    let resolveUpload: (response: Response) => void = () => {};
+    const upload=new Promise<Response>(resolve=>{resolveUpload=resolve;});
+    const fetchMock=vi.fn().mockImplementation((_path:string,options:RequestInit)=>options.method==="POST"?upload:Promise.resolve(new Response("icon",{headers:{"Content-Type":"image/png"}})));
+    vi.stubGlobal("fetch", fetchMock);
+    const { onSubmit } = openDialog();
+    await user.type(screen.getByRole("textbox", { name: "笔记本名称" }), "视觉规范");
+    const file = new File(["image"], "brand.png", { type: "image/png" });
+    await user.upload(screen.getByLabelText("上传自定义图标"), file);
+    expect(screen.getByRole("button", { name: "上传中…" })).toBeDisabled();
+    await act(async () => resolveUpload(envelope({id:fileId})));
+    expect(await screen.findByAltText("自定义笔记本图标")).toHaveAttribute("src", dataUrl);
+    await user.click(screen.getByRole("button", { name: "创建" }));
+    expect(onSubmit).toHaveBeenCalledWith({ title: "视觉规范", icon: { type: "image", asset_id: fileId } });
+    const [path, options] = fetchMock.mock.calls[0];
+    expect(path).toBe(`/api/v1/workspaces/${fileId}/collection-icons`);
+    expect(options.headers.authorization).toBe("Bearer icon-access-token");
+    expect(options.body.get("file")).toBe(file);
+    expect(options.headers["Content-Type"]).toBeUndefined();
+  });
+
+  it("rejects oversized and unsupported files without uploading", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    openDialog();
+    const input = screen.getByLabelText("上传自定义图标");
+    fireEvent.change(input, { target: { files: [new File(["<svg/>"], "icon.svg", { type: "image/svg+xml" })] } });
+    expect(screen.getByText(/PNG、JPEG 或 WebP/)).toBeInTheDocument();
+    fireEvent.change(input, { target: { files: [new File([new Uint8Array(2 * 1024 * 1024 + 1)], "large.png", { type: "image/png" })] } });
+    expect(screen.getByText("图片大小不能超过 2 MB。")).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("retains the selected preset after upload failure and shows save errors in toasts", async () => {
+    const user = userEvent.setup();
+    authStore.setState({accessToken:"icon-access-token",workspace:{id:fileId,name:"测试空间",role:"owner",created_at_ms:1,updated_at_ms:1}});
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(envelope(null, 422)));
+    const onSubmit = vi.fn().mockRejectedValue(new Error("笔记本名称已存在"));
+    openDialog(onSubmit);
+    await user.type(screen.getByRole("textbox", { name: "笔记本名称" }), "测试");
+    await user.click(screen.getByRole("radio", { name: "火箭" }));
+    await user.upload(screen.getByLabelText("上传自定义图标"), new File(["image"], "icon.png", { type: "image/png" }));
+    expect(await screen.findByText("图标上传失败，请重试")).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "火箭" })).toBeChecked();
+    await user.click(screen.getByRole("button", { name: "创建" }));
+    expect(await screen.findByText("笔记本名称已存在")).toBeInTheDocument();
+  });
+});
