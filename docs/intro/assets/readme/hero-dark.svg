@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="560" viewBox="0 0 1280 560" role="img" aria-labelledby="title desc">
+  <title id="title">Orbis — 记录好想法，连接每一次协作。</title>
+  <desc id="desc">文档、多维表格与公开文档站的能力示意图。三张内容卡片沿轨道连接，代表从记录到协作与发布。</desc>
+  <rect x="1" y="1" width="1278" height="558" rx="24" fill="#0e1b17" stroke="#2b4538" stroke-width="2"/>
+  <g fill="none" stroke="#6cdeb3" stroke-width="2.4" transform="translate(64 62)">
+    <circle cx="22" cy="22" r="12"/>
+    <ellipse cx="22" cy="22" rx="22" ry="9" transform="rotate(-35 22 22)"/>
+    <circle cx="4" cy="35" r="4" fill="#0e1b17"/>
+    <circle cx="41" cy="9" r="4" fill="#6cdeb3" stroke="none"/>
+  </g>
+  <g font-family="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'WenQuanYi Zen Hei', sans-serif">
+    <text x="122" y="97" font-size="40" font-weight="650" letter-spacing="-1.5" fill="#edf5ee">Orbis</text>
+    <text x="64" y="222" font-size="64" font-weight="650" letter-spacing="-1.8" fill="#edf5ee">记录好想法，</text>
+    <text x="64" y="308" font-size="64" font-weight="650" letter-spacing="-1.8" fill="#6cdeb3">连接每一次协作。</text>
+    <text x="66" y="377" font-size="25" fill="#abc4b5">文档 · 多维表格 · 公开文档站</text>
+  </g>
+  <g fill="none" stroke="#2b493b" stroke-width="1.5">
+    <circle cx="1014" cy="264" r="171"/>
+    <circle cx="1014" cy="264" r="114" stroke-dasharray="4 9"/>
+    <ellipse cx="1014" cy="264" rx="224" ry="91" transform="rotate(-32 1014 264)"/>
+    <path d="M970 201C926 223 887 237 867 272M939 326C982 349 1020 369 1052 386" stroke="#6cdeb3" stroke-dasharray="4 6"/>
+  </g>
+  <circle cx="1183" cy="237" r="7" fill="#6cdeb3"/>
+  <circle cx="1058" cy="98" r="5" fill="#6cdeb3"/>
+  <circle cx="845" cy="306" r="6" fill="#0e1b17" stroke="#6cdeb3" stroke-width="2"/>
+  <g font-family="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'WenQuanYi Zen Hei', sans-serif">
+    <g transform="translate(870 112)">
+      <rect width="294" height="96" rx="16" fill="#172d23" stroke="#2b4538" stroke-width="1.5"/>
+      <rect x="18" y="23" width="50" height="50" rx="12" fill="#223e30"/>
+      <g transform="translate(31 35)" fill="none" stroke="#6cdeb3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 1h10l5 5v19H5zM15 1v6h5M9 12h7M9 17h7M9 22h4"/>
+      </g>
+      <text x="87" y="44" font-size="23" font-weight="600" fill="#edf5ee">文档</text>
+      <text x="88" y="69" font-size="14" letter-spacing="1.5" fill="#abc4b5">A PLACE FOR IDEAS</text>
+    </g>
+    <g transform="translate(737 254)">
+      <rect width="286" height="96" rx="16" fill="#172d23" stroke="#2b4538" stroke-width="1.5"/>
+      <rect x="18" y="23" width="50" height="50" rx="12" fill="#223e30"/>
+      <g transform="translate(30 36)" fill="none" stroke="#6cdeb3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="1" y="1" width="24" height="24" rx="3"/><path d="M1 9h24M1 17h24M9 9v16M17 9v16"/>
+      </g>
+      <text x="87" y="44" font-size="23" font-weight="600" fill="#edf5ee">多维表格</text>
+      <text x="88" y="69" font-size="14" letter-spacing="1.5" fill="#abc4b5">BRING WORK TOGETHER</text>
+    </g>
+    <g transform="translate(927 366)">
+      <rect width="289" height="76" rx="16" fill="#172d23" stroke="#2b4538" stroke-width="1.5"/>
+      <rect x="18" y="15" width="46" height="46" rx="12" fill="#223e30"/>
+      <g transform="translate(29 26)" fill="none" stroke="#6cdeb3" stroke-width="1.8" stroke-linecap="round">
+        <circle cx="12" cy="12" r="11"/><ellipse cx="12" cy="12" rx="5" ry="11"/><path d="M1 12h22"/>
+      </g>
+      <text x="83" y="34" font-size="22" font-weight="600" fill="#edf5ee">文档站</text>
+      <text x="84" y="57" font-size="13" letter-spacing="1.5" fill="#abc4b5">READY FOR YOUR READERS</text>
+    </g>
+  </g>
+  <path d="M64 471H1216" stroke="#2b4538" stroke-width="1.5"/>
+  <g fill="#abc4b5" font-family="ui-monospace, 'SFMono-Regular', Consolas, monospace" font-size="14" letter-spacing="2">
+    <text x="64" y="518">OPEN SOURCE · SELF-HOSTED</text>
+    <text x="1216" y="518" text-anchor="end">WRITE / COLLABORATE / PUBLISH</text>
+  </g>
+</svg>
