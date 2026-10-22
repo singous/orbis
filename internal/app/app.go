@@ -51,6 +51,7 @@ type Application struct {
 	objects              *storage.Local
 	assets               *asset.Service
 	imports              *tasks.Imports
+	versions             *tasks.Versions
 	importStore          *appstore.Imports
 }
 
@@ -123,8 +124,9 @@ func NewWithClock(ctx context.Context, cfg config.Config, logger *slog.Logger, w
 		}
 		engine = collaborationEngine
 	}
+	documentRepo := docstore.NewWithCollaboration(db, engine)
 	documents := document.New(
-		docstore.NewWithCollaboration(db, engine),
+		documentRepo,
 		workspaces,
 		wallClock,
 		security.NewCursorSigner(cfg.SigningKey),
@@ -138,6 +140,7 @@ func NewWithClock(ctx context.Context, cfg config.Config, logger *slog.Logger, w
 	libraryRepo := appstore.NewLibraryWithCollaboration(db, wallClock, cfg.SigningKey, engine)
 	importsRepo := appstore.NewImports(db, libraryRepo, objects, wallClock)
 	var importWorkers *tasks.Imports
+	var versionWorkers *tasks.Versions
 	if cfg.RedisURL != "" {
 		source, _ := url.Parse(cfg.DatabaseURL)
 		namespace := security.Digest(source.Host + source.Path)[:16]
@@ -148,24 +151,33 @@ func NewWithClock(ctx context.Context, cfg config.Config, logger *slog.Logger, w
 		cleanup = func(err error) (*Application, error) {
 			return nil, errors.Join(err, importWorkers.Close(), objects.Close(), pool.Close())
 		}
+		versionWorkers, err = tasks.StartVersions(ctx, cfg.RedisURL, namespace, documentRepo, wallClock, logger)
+		if err != nil {
+			return cleanup(err)
+		}
+		cleanup = func(err error) (*Application, error) {
+			return nil, errors.Join(err, versionWorkers.Close(), importWorkers.Close(), objects.Close(), pool.Close())
+		}
 	}
 	collaborationSockets := httpapi.NewCollaborationSockets()
 	router, err := httpapi.New(httpapi.Dependencies{
 		CollaborationSockets: collaborationSockets,
 		Identity:             accounts, Workspaces: workspaces, Documents: documents,
-		Imports:           integration.NewImports(importsRepo, wallClock, importWorkers != nil),
-		IntegrationTokens: integration.NewTokens(itstore.New(db, wallClock), workspaces, wallClock),
-		Library:           integration.NewLibrary(libraryRepo, wallClock, objects, cfg.MaxUploadBytes, shares),
-		Preferences:       identity.NewPreferences(appstore.NewPreferences(db), wallClock),
-		Publishing:        publishing.New(publishingRepo, workspaces, wallClock),
-		Sharing:           shares,
-		PublicBaseURL:     publicBaseURL,
-		Search:            search.New(searchstore.New(db), workspaces),
-		Transfers:         integration.NewTransfers(appstore.NewTransfers(db), workspaces, wallClock),
-		Sheets:            sheet.New(sheetstore.New(db, cfg.SigningKey, engine), workspaces, wallClock),
-		Tables:            table.New(appstore.NewTablesWithCollaboration(db, engine), workspaces, wallClock),
-		Actions:           actions,
-		Assets:            assets, MaxUploadBytes: cfg.MaxUploadBytes,
+		Versions:              document.NewVersions(documentRepo, documents, workspaces, wallClock, security.NewCursorSigner(cfg.SigningKey)),
+		VersionHistoryEnabled: versionWorkers != nil,
+		Imports:               integration.NewImports(importsRepo, wallClock, importWorkers != nil),
+		IntegrationTokens:     integration.NewTokens(itstore.New(db, wallClock), workspaces, wallClock),
+		Library:               integration.NewLibrary(libraryRepo, wallClock, objects, cfg.MaxUploadBytes, shares),
+		Preferences:           identity.NewPreferences(appstore.NewPreferences(db), wallClock),
+		Publishing:            publishing.New(publishingRepo, workspaces, wallClock),
+		Sharing:               shares,
+		PublicBaseURL:         publicBaseURL,
+		Search:                search.New(searchstore.New(db), workspaces),
+		Transfers:             integration.NewTransfers(appstore.NewTransfers(db), workspaces, wallClock),
+		Sheets:                sheet.New(sheetstore.New(db, cfg.SigningKey, engine), workspaces, wallClock),
+		Tables:                table.New(appstore.NewTablesWithCollaboration(db, engine), workspaces, wallClock),
+		Actions:               actions,
+		Assets:                assets, MaxUploadBytes: cfg.MaxUploadBytes,
 		Catalog:  document.NewCatalog(docstore.New(db), workspaces, wallClock),
 		Comments: document.NewComments(docstore.New(db), workspaces, wallClock),
 		Setup:    NewSetup(appstore.NewSetup(db), accounts), Ready: pool.PingContext,
@@ -178,7 +190,7 @@ func NewWithClock(ctx context.Context, cfg config.Config, logger *slog.Logger, w
 		}
 		return cleanup(err)
 	}
-	return &Application{Handler: router, pool: pool, objects: objects, assets: assets, imports: importWorkers, importStore: importsRepo, collaborationEngine: collaborationEngine, collaborationSockets: collaborationSockets}, nil
+	return &Application{Handler: router, pool: pool, objects: objects, assets: assets, imports: importWorkers, versions: versionWorkers, importStore: importsRepo, collaborationEngine: collaborationEngine, collaborationSockets: collaborationSockets}, nil
 }
 
 // Close releases the database pool after request processing has stopped.
@@ -190,7 +202,7 @@ func (a *Application) Close() error {
 		if a.collaborationEngine != nil {
 			a.collaborationEngine.Close()
 		}
-		a.closeErr = errors.Join(a.imports.Close(), a.objects.Close(), a.pool.Close())
+		a.closeErr = errors.Join(a.versions.Close(), a.imports.Close(), a.objects.Close(), a.pool.Close())
 	})
 	return a.closeErr
 }

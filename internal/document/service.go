@@ -55,6 +55,8 @@ type Change struct {
 	Title           string
 	Blocks          []Block
 	RestoreVersion  *int64
+	// Omitting an absent marker preserves the hashes of legacy restore requests.
+	RestoreMarkerID string `json:"RestoreMarkerID,omitempty"`
 }
 
 const MaxVersion int64 = 1<<53 - 1
@@ -323,6 +325,10 @@ func (s *Service) Restore(
 	actor, wid, did, operation string,
 	expected, source int64,
 ) (Content, error) {
+	return s.restore(ctx, actor, wid, did, operation, expected, source, "")
+}
+
+func (s *Service) restore(ctx context.Context, actor, wid, did, operation string, expected, source int64, markerID string) (Content, error) {
 	if source < 1 || source > MaxVersion {
 		return Content{}, fault.Field("body.source_version", "历史版本号不正确")
 	}
@@ -363,6 +369,7 @@ func (s *Service) Restore(
 			Title:           restoreTitle,
 			Blocks:          content.Blocks,
 			RestoreVersion:  &source,
+			RestoreMarkerID: markerID,
 		},
 	)
 }

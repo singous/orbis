@@ -805,7 +805,7 @@ export function LegacyDocumentEditorPage() {
               readOnly={!canEdit || editorBusy}
               onChange={(event) => changeDraft({ ...(coordinatorRef.current?.current ?? draft), title: event.target.value })}
             />
-            <div className="mb-7 mt-2 flex items-center gap-2 text-xs text-[var(--muted-light)]"><span>版本 {coordinatorRef.current?.saved?.version ?? draft.version}</span><span>·</span><span>{canEdit ? "停手后自动保存" : "只读访问"}</span></div>
+            <div className="mb-7 mt-2 flex items-center gap-2 text-xs text-[var(--muted-light)]"><span>{canEdit ? "停手后自动保存" : "只读访问"}</span></div>
 
             {archiveError ? <div role="alert" className="mb-5"><StatusMessage tone="error" title="未能归档文档">{archiveError}</StatusMessage></div> : null}
             {checkpoints.candidates.length ? <StatusMessage tone="warning" title="检测到其他会话保留的本机草稿">选择需要恢复的内容，原会话草稿会继续保留。<div className="mt-3 flex flex-wrap gap-2">{checkpoints.candidates.map(record => <Button key={record.scopeKey} size="sm" variant="secondary" disabled={autosaveState !== "saved"} onClick={() => void recoverLocalDraft(record)}>恢复“{record.current.title || "未命名文档"}”（基础版本 {record.saved.version}）</Button>)}<Button size="sm" variant="ghost" onClick={checkpoints.dismissCandidates}>稍后处理</Button></div></StatusMessage> : null}
@@ -840,7 +840,7 @@ export function LegacyDocumentEditorPage() {
           </article>
         </EditorLayout>
       )}
-      {collaborationOpen ? <Suspense fallback={<LoadingState label="正在加载评论与历史…" compact />}><DocumentCollaborationPanel key={noteId} noteId={noteId} currentUserId={currentUserId} canManage={canEdit} onClose={closeCollaboration} onRestore={restoreSavedRevision} /></Suspense> : null}
+      {collaborationOpen ? <Suspense fallback={<LoadingState label="正在加载评论与历史…" compact />}><DocumentCollaborationPanel key={noteId} noteId={noteId} currentUserId={currentUserId} canManage={canEdit} onClose={closeCollaboration} onRestore={restoreSavedRevision} onPrepareVersion={async () => { const coordinator = coordinatorRef.current; if (!coordinator || !canEdit || restoringRef.current || archivingRef.current) throw new Error("当前草稿尚未准备好。"); return (await flushCurrentDraft(coordinator)).version; }} /></Suspense> : null}
     </DocumentShell>
   );
 }

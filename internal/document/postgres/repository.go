@@ -269,6 +269,11 @@ func (r *Repository) Commit(ctx context.Context, c document.Commit) (int64, erro
 		if err := CheckVersion(doc.ContentVersion, c.ExpectedVersion); err != nil {
 			return err
 		}
+		if c.RestoreVersion != nil {
+			if _, err := captureVersion(ctx, tx, doc.ID, doc.ContentVersion, document.VersionKindBeforeRestore, nil, "", &c.ActorID, c.Timestamp); err != nil {
+				return err
+			}
+		}
 		ids := make([]string, 0, len(c.AssetReferences))
 		for _, reference := range c.AssetReferences {
 			ids = append(ids, reference.ID)
@@ -350,6 +355,11 @@ func (r *Repository) Commit(ctx context.Context, c document.Commit) (int64, erro
 		}
 		if err := SyncCollaboration(ctx, tx, doc.ID, version, c.OperationID, c.ActorID, c.Timestamp, c.RestoreVersion != nil, r.collaboration); err != nil {
 			return err
+		}
+		if c.RestoreVersion != nil {
+			if _, err := captureVersion(ctx, tx, doc.ID, version, document.VersionKindRestored, nil, "", &c.ActorID, c.Timestamp); err != nil {
+				return err
+			}
 		}
 		return tx.Create(&operationRow{
 			DocumentID:    c.DocumentID,

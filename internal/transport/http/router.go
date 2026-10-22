@@ -32,31 +32,33 @@ type SetupService interface {
 }
 
 type Dependencies struct {
-	CollaborationSockets *CollaborationSockets
-	Imports              *integration.Imports
-	Library              *integration.Library
-	IntegrationTokens    *integration.Tokens
-	Preferences          *identity.Preferences
-	Sharing              *sharing.Service
-	Publishing           *publishing.Service
-	PublicBaseURL        string
-	Search               *search.Service
-	Transfers            *integration.Transfers
-	Tables               *table.Service
-	Sheets               *sheet.Service
-	Assets               *asset.Service
-	MaxUploadBytes       int64
-	Identity             *identity.Service
-	Workspaces           *workspace.Service
-	Actions              *workspace.Actions
-	Documents            *document.Service
-	Catalog              *document.Catalog
-	Comments             *document.Comments
-	Setup                SetupService
-	Ready                func(context.Context) error
-	Logger               *slog.Logger
-	MaxBodyBytes         int64
-	RequestTimeout       time.Duration
+	CollaborationSockets  *CollaborationSockets
+	Imports               *integration.Imports
+	Versions              *document.Versions
+	VersionHistoryEnabled bool
+	Library               *integration.Library
+	IntegrationTokens     *integration.Tokens
+	Preferences           *identity.Preferences
+	Sharing               *sharing.Service
+	Publishing            *publishing.Service
+	PublicBaseURL         string
+	Search                *search.Service
+	Transfers             *integration.Transfers
+	Tables                *table.Service
+	Sheets                *sheet.Service
+	Assets                *asset.Service
+	MaxUploadBytes        int64
+	Identity              *identity.Service
+	Workspaces            *workspace.Service
+	Actions               *workspace.Actions
+	Documents             *document.Service
+	Catalog               *document.Catalog
+	Comments              *document.Comments
+	Setup                 SetupService
+	Ready                 func(context.Context) error
+	Logger                *slog.Logger
+	MaxBodyBytes          int64
+	RequestTimeout        time.Duration
 }
 
 type handler struct {
@@ -154,6 +156,12 @@ func New(deps Dependencies) (*gin.Engine, error) {
 	agent.GET("/documents/:document_id/blocks/:block_id", h.agentBlock)
 	agent.GET("/documents/:document_id/outline", h.agentOutline)
 	agent.GET("/documents/:document_id/changes", h.agentChanges)
+	agent.GET("/documents/:document_id/versions", h.agentDocumentVersions)
+	agent.POST("/documents/:document_id/versions", h.agentSaveDocumentVersion)
+	agent.PUT("/documents/:document_id/versions/:version_id", h.agentEditDocumentVersion)
+	agent.GET("/documents/:document_id/versions/:version_id/content", h.agentDocumentVersionContent)
+	agent.GET("/documents/:document_id/versions/:version_id/compare", h.agentCompareDocumentVersions)
+	agent.POST("/documents/:document_id/versions/:version_id/restore", h.agentRestoreDocumentVersion)
 	agent.POST("/documents/:document_id/operations", h.agentApply)
 	agent.POST("/documents/:document_id/operations/preview", h.agentPreview)
 	agent.GET("/operations/:operation_id", h.agentOperation)
@@ -255,6 +263,13 @@ func New(deps Dependencies) (*gin.Engine, error) {
 	scope.GET("/documents/:document_id/content", h.content)
 	scope.PUT("/documents/:document_id/content", h.writeContent)
 	scope.GET("/documents/:document_id/revisions", h.revisions)
+	scope.GET("/documents/:document_id/versions", h.documentVersions)
+	scope.POST("/documents/:document_id/versions", h.createDocumentVersion)
+	scope.GET("/documents/:document_id/versions/:version_id", h.documentVersion)
+	scope.PUT("/documents/:document_id/versions/:version_id", h.editDocumentVersion)
+	scope.GET("/documents/:document_id/versions/:version_id/content", h.documentVersionContent)
+	scope.GET("/documents/:document_id/versions/:version_id/compare", h.compareDocumentVersions)
+	scope.POST("/documents/:document_id/versions/:version_id/restore", h.restoreDocumentVersion)
 	scope.POST("/documents/:document_id/restore", h.restore)
 	scope.GET("/documents/:document_id/blocks", h.blocks)
 	scope.GET("/documents/:document_id/blocks/:block_id", h.readDocumentBlock)
