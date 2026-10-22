@@ -33,6 +33,8 @@ import (
 	searchstore "orbis.local/orbis/internal/search/postgres"
 	"orbis.local/orbis/internal/sharing"
 	sharestore "orbis.local/orbis/internal/sharing/postgres"
+	"orbis.local/orbis/internal/sheet"
+	sheetstore "orbis.local/orbis/internal/sheet/postgres"
 	"orbis.local/orbis/internal/table"
 	httpapi "orbis.local/orbis/internal/transport/http"
 	"orbis.local/orbis/internal/workspace"
@@ -160,6 +162,7 @@ func NewWithClock(ctx context.Context, cfg config.Config, logger *slog.Logger, w
 		PublicBaseURL:     publicBaseURL,
 		Search:            search.New(searchstore.New(db), workspaces),
 		Transfers:         integration.NewTransfers(appstore.NewTransfers(db), workspaces, wallClock),
+		Sheets:            sheet.New(sheetstore.New(db, cfg.SigningKey, engine), workspaces, wallClock),
 		Tables:            table.New(appstore.NewTablesWithCollaboration(db, engine), workspaces, wallClock),
 		Actions:           actions,
 		Assets:            assets, MaxUploadBytes: cfg.MaxUploadBytes,

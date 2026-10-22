@@ -31,7 +31,14 @@ const SitePreviewPage = lazy(() => import("../features/sites/PublicSitePage").th
 const siteFallback = <div className="site-reader-status"><LoadingState label="正在打开站点…" variant="editor" /></div>;
 const workspaceFallback = <WorkspaceLoadingPage />;
 
+const SheetPage = lazy(() => import("../features/sheets/SheetPage").then(m => ({default:m.SheetPage})));
+const SheetsHome = lazy(() => import("../features/sheets/SheetsHome").then(m => ({default:m.SheetsHome})));
+const PublicSheetForm = lazy(() => import("../features/sheets/SheetForms").then(m => ({default:m.PublicSheetForm})));
+
 export const router = createBrowserRouter([
+ {path:"/sheets",element:<RequireAuth><Suspense fallback={workspaceFallback}><SheetsHome /></Suspense></RequireAuth>},
+ {path:"/sheets/:sheetId",element:<RequireAuth><Suspense fallback={workspaceFallback}><SheetPage /></Suspense></RequireAuth>},
+ {path:"/forms/:token",element:<Suspense fallback={<LoadingState label="正在打开表单…" />}><PublicSheetForm /></Suspense>},
   { path: "/share/:shareToken/:noteId?", element: <Suspense fallback={<LoadingState label="正在打开分享…" variant="editor" />}><PublicSharePage /></Suspense> },
   { path: "/search", element: <RequireAuth><Suspense fallback={workspaceFallback}><SearchPage /></Suspense></RequireAuth> },
   { path: "/search/open", element: <RequireAuth><Suspense fallback={workspaceFallback}><SearchOpenPage /></Suspense></RequireAuth> },

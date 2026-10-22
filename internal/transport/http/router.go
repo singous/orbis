@@ -21,6 +21,7 @@ import (
 	"orbis.local/orbis/internal/publishing"
 	"orbis.local/orbis/internal/search"
 	"orbis.local/orbis/internal/sharing"
+	"orbis.local/orbis/internal/sheet"
 	"orbis.local/orbis/internal/table"
 	"orbis.local/orbis/internal/workspace"
 )
@@ -42,6 +43,7 @@ type Dependencies struct {
 	Search               *search.Service
 	Transfers            *integration.Transfers
 	Tables               *table.Service
+	Sheets               *sheet.Service
 	Assets               *asset.Service
 	MaxUploadBytes       int64
 	Identity             *identity.Service
@@ -119,6 +121,9 @@ func New(deps Dependencies) (*gin.Engine, error) {
 	v1.GET("/public/sites/:slug/tables/:table_id/records", h.publicResponseLimit(false), h.publicSiteTable)
 	v1.GET("/public/sites/:slug/assets/:asset_id", h.publicSiteAsset)
 	v1.HEAD("/public/sites/:slug/assets/:asset_id", h.publicSiteAsset)
+	v1.POST("/public/forms/:token/fields/:field_id/assets", h.publicResponseLimit(false), h.uploadSheetForm)
+	v1.GET("/public/forms/:token", h.publicResponseLimit(false), h.publicSheetForm)
+	v1.POST("/public/forms/:token/submissions", h.publicResponseLimit(false), h.submitSheetForm)
 	v1.GET("/setup", h.setupStatus)
 	v1.POST("/setup", h.setup)
 	v1.POST("/auth/login", h.login)
@@ -172,6 +177,15 @@ func New(deps Dependencies) (*gin.Engine, error) {
 	private.POST("/workspaces", h.createWorkspace)
 	scope := private.Group("/workspaces/:workspace_id", h.pathIDs())
 
+	scope.GET("/sheets", h.listSheets)
+	scope.POST("/sheets", h.createSheet)
+	scope.GET("/sheets/:sheet_id", h.getSheet)
+	scope.PUT("/sheets/:sheet_id", h.updateSheet)
+	scope.GET("/sheets/:sheet_id/records", h.sheetRecords)
+	scope.GET("/sheets/:sheet_id/stats", h.sheetStats)
+	scope.POST("/sheets/:sheet_id/changes", h.changeSheet)
+	scope.GET("/sheets/:sheet_id/forms", h.sheetForms)
+	scope.PUT("/sheets/:sheet_id/forms", h.saveSheetForm)
 	scope.GET("/integration-tokens", h.integrationTokens)
 	scope.POST("/integration-tokens", h.createIntegrationToken)
 	scope.POST("/integration-tokens/:token_id/revoke", h.revokeIntegrationToken)

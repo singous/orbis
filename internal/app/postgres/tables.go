@@ -149,7 +149,7 @@ func (r *Tables) Create(ctx context.Context, command table.CreateCommand) (table
 			return err
 		}
 		if block.Type != "data_table" {
-			return fault.Field("body.block_id", "目标块不是多维表格")
+			return fault.Field("body.block_id", "目标块不是数据表")
 		}
 		if block.Props["table_id"] != nil {
 			return fault.New(fault.Conflict, "TABLE_ALREADY_INITIALIZED", "表格已初始化")

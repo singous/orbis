@@ -17,6 +17,7 @@ import (
 	"orbis.local/orbis/internal/platform/fault"
 	"orbis.local/orbis/internal/platform/pagination"
 	"orbis.local/orbis/internal/sharing"
+	sheetstore "orbis.local/orbis/internal/sheet/postgres"
 	"orbis.local/orbis/internal/table"
 	tablestore "orbis.local/orbis/internal/table/postgres"
 )
@@ -196,6 +197,22 @@ func (r *Repository) project(ctx context.Context, tx *gorm.DB, scope scopeState,
 		}
 	}
 	options := publicview.Options{URLs: policy, RedactUnsafeLinks: true, MaxBytes: sharing.MaxPageBytes, BudgetError: contentLimit()}
+	// Only tables owned by this authorized document inherit its public projection.
+	options.Sheet = func(id, view string) (publicview.TableRef, error) {
+		var count int64
+		if err := tx.WithContext(ctx).Table("sheets").Where("id=? AND document_id=? AND workspace_id=?", id, doc.ID, scope.share.WorkspaceID).Count(&count).Error; err != nil {
+			return publicview.TableRef{}, err
+		}
+		if count == 1 {
+			data, err := sheetstore.Snapshot(ctx, tx, scope.share.WorkspaceID, id, view)
+			if err != nil {
+				return publicview.TableRef{}, err
+			}
+			return publicview.TableRef{ID: id, Version: sheetstore.SnapshotRevision(data), Title: data.Title, Fields: data.Fields, View: data.View, Groups: data.Groups, Items: data.Records}, nil
+		}
+		return publicview.TableRef{Restricted: true, ID: id, Version: 1, Title: "数据表", Fields: []table.Field{}, View: table.PublicView{Name: "需要工作空间访问权限", Kind: "grid", Widths: map[string]int{}}, Groups: []table.Group{}, Items: []table.PublicRecord{}}, nil
+	}
+
 	options.Asset = func(id string) (string, error) {
 		if _, exists := types[id]; !exists {
 			return "", sharing.Missing()

@@ -13,6 +13,7 @@ import (
 const InitialTableRows = 100
 
 type TableRef struct {
+	Restricted bool                 `json:"restricted,omitempty"`
 	Groups     []table.Group        `json:"groups"`
 	ID         string               `json:"id"`
 	Version    int64                `json:"version"`
@@ -40,6 +41,7 @@ type Options struct {
 	URLs              URLPolicy
 	Asset             func(string) (string, error)
 	Table             func(table.Reference) (TableRef, error)
+	Sheet             func(string, string) (TableRef, error)
 }
 
 // Project copies only renderer fields, rewriting managed media and removing editor-only state.
@@ -142,6 +144,17 @@ func Project(blocks []document.Block, options Options) ([]Block, error) {
 			target.Props["source"] = nil
 		}
 		if b.Type == "data_table" {
+			if id, ok := b.Props["sheet_id"].(string); ok {
+				if options.Sheet == nil {
+					return nil, Unsafe()
+				}
+				view, _ := b.Props["sheet_view_id"].(string)
+				projected, err := options.Sheet(id, view)
+				if err != nil {
+					return nil, err
+				}
+				target.DataTable = &projected
+			}
 			if ref, ok := document.TableReference(b.ID, document.Payload{Type: b.Type, Props: b.Props}); ok {
 				if options.Table == nil {
 					return nil, Unsafe()

@@ -46,7 +46,7 @@ export function DataTableBlock({
   if (!host)
     return (
       <div className="dt-unavailable">
-        {String(props.title || "多维表格")} · 请在所属文档中打开
+        {String(props.title || "数据表")} · 请在所属文档中打开
       </div>
     );
   const effective = { ...host, readOnly: readOnly || host.readOnly };
@@ -56,7 +56,7 @@ export function DataTableBlock({
       <div className="data-table dt-start" contentEditable={false}>
         <Table2 size={24} />
         <div>
-          <strong>多维表格</strong>
+          <strong>数据表</strong>
           <p>用字段整理信息，在表格与看板之间切换。</p>
         </div>
         {!effective.readOnly ? (
@@ -150,7 +150,7 @@ function DataTableEditor({
     return (
       <section className="data-table dt-start" contentEditable={false}>
         <Table2 size={22} />
-        <span>{table.error ?? "正在读取多维表格…"}</span>
+        <span>{table.error ?? "正在读取数据表…"}</span>
         {table.error ? (
           <Button size="sm" onClick={() => void table.refresh()}>
             重试

@@ -276,7 +276,7 @@ func blocks(w *writer, items []publicview.Block, anchors map[string]string) {
 			if b.DataTable != nil {
 				publicTable(w, *b.DataTable)
 			} else {
-				w.emit(`<p class="muted">多维表格尚未初始化</p>`)
+				w.emit(`<p class="muted">数据表尚未初始化</p>`)
 			}
 		case "card", "step":
 			class := b.Type

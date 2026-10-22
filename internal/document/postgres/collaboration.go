@@ -380,7 +380,7 @@ func (r *Repository) CommitCollaboration(ctx context.Context, commit document.Co
 			command := document.Command{Scope: commit.Scope, Timestamp: commit.Timestamp, Input: document.CommandsInput{TableCopies: commit.Input.TableCopies, Operations: []document.Operation{{Type: "insert_blocks", Blocks: blocks}}}}
 			// Copy validation is performed against the exact merged tree and current stored identities below.
 			if len(commit.Input.TableCopies) > document.MaxCopiedTables {
-				return fault.Field("body.table_copies", "单次最多复制 100 个多维表格")
+				return fault.Field("body.table_copies", "单次最多复制 100 个数据表")
 			}
 			seen := map[string]bool{}
 			for _, copy := range commit.Input.TableCopies {

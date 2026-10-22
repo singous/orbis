@@ -261,6 +261,19 @@ func resolve(ctx context.Context, tx *gorm.DB, row siteRow, config publishing.Co
 		if err != nil {
 			return result, err
 		}
+		related := []string{}
+		for _, ref := range document.SheetReferences(content.Blocks) {
+			var stamp struct{ Version, Revision int64 }
+			res := tx.WithContext(ctx).Table("sheets s").Select("s.version,a.revision").Joins("JOIN sheet_activity a ON a.sheet_id=s.id").Where("s.id=? AND s.workspace_id=?", ref.ID, row.WorkspaceID).Take(&stamp)
+			if res.Error != nil {
+				return result, sourceInvalid()
+			}
+			related = append(related, ref.ID+":"+strconv.FormatInt(stamp.Version, 10)+":"+strconv.FormatInt(stamp.Revision, 10))
+		}
+		if len(related) > 0 {
+			extra, _ := json.Marshal(related)
+			encoded = append(encoded, extra...)
+		}
 		result.manifest = append(result.manifest, manifestEntry{Position: position, Page: page, Digest: security.Digest(string(encoded))})
 		result.pages = append(result.pages, publishing.DocumentSource{Metadata: page, Blocks: content.Blocks})
 	}

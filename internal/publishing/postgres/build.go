@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	sheetstore "orbis.local/orbis/internal/sheet/postgres"
 	"sort"
 	"strings"
 
@@ -107,6 +108,14 @@ func (r *Repository) build(ctx context.Context, tx *gorm.DB, row siteRow, config
 	size, rowCount := 0, 0
 	for _, page := range source.pages {
 		options := publicview.Options{URLs: policy, Asset: assetURL}
+		options.Sheet = func(id, view string) (publicview.TableRef, error) {
+			data, err := sheetstore.Snapshot(ctx, tx, row.WorkspaceID, id, view)
+			if err != nil {
+				return publicview.TableRef{}, err
+			}
+			return publicview.TableRef{ID: id, Version: sheetstore.SnapshotRevision(data), Title: data.Title, Fields: data.Fields, View: data.View, Groups: data.Groups, Items: data.Records, Total: int64(len(data.Records)), RecordsURL: ""}, nil
+		}
+
 		options.Table = func(ref table.Reference) (publicview.TableRef, error) {
 			scope := table.Scope{WorkspaceID: row.WorkspaceID, DocumentID: page.Metadata.DocumentID, TableID: ref.TableID}
 			header, err := tablestore.LoadHeader(ctx, tx, scope, false)

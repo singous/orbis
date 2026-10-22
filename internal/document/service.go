@@ -28,6 +28,7 @@ type Collection struct {
 	ArchivedAtMS             *int64
 }
 type Document struct {
+	SheetID                              *string
 	IsArchived                           bool
 	ID, WorkspaceID, CollectionID, Title string
 	ContentVersion                       int64

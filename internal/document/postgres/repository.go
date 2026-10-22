@@ -136,7 +136,8 @@ func InsertDocument(ctx context.Context, tx *gorm.DB, actor string, d document.D
 		}
 		d.Position = position
 		row := documentRow{
-			ID: d.ID, WorkspaceID: d.WorkspaceID, CollectionID: d.CollectionID, Title: d.Title,
+			SheetID: d.SheetID,
+			ID:      d.ID, WorkspaceID: d.WorkspaceID, CollectionID: d.CollectionID, Title: d.Title,
 			ContentVersion: 1, ParentID: d.ParentID, Position: position, CreatedAtMS: d.CreatedAtMS, UpdatedAtMS: d.UpdatedAtMS,
 		}
 		if err := tx.Create(&row).Error; err != nil {
@@ -191,6 +192,17 @@ func (r *Repository) Get(ctx context.Context, wid, did string) (document.Documen
 	}
 	if err := readableDocument(tx, row); err != nil {
 		return document.Document{}, err
+	}
+	// A table-only page can become a mixed document through normal content APIs.
+	// Resolve presentation from at most two active blocks so added prose stays visible.
+	if row.SheetID != nil {
+		var primary []struct{ Kind, SheetID string }
+		if err := tx.Table("document_block_versions").Select("payload->>'type' AS kind, payload->'props'->>'sheet_id' AS sheet_id").Where("document_id=? AND valid_to IS NULL", row.ID).Limit(2).Scan(&primary).Error; err != nil {
+			return document.Document{}, err
+		}
+		if len(primary) != 1 || primary[0].Kind != "data_table" || primary[0].SheetID != *row.SheetID {
+			row.SheetID = nil
+		}
 	}
 	return row.domain(), nil
 }

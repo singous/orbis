@@ -1,3 +1,4 @@
+import {LayoutGrid} from "lucide-react";
 import { Archive, BookOpen, Clock3, Globe, Home, Notebook, Search, Settings, Users } from "../../shared/ui/icons";
 import type { ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
@@ -40,6 +41,7 @@ function DocumentNavigation() {
       <NavLink to="/sites" className={navClass}><Globe size={18} />站点</NavLink>
     </div>
     <span className="workspace-nav-label">在线文档</span>
+    <NavLink to="/sheets" className={navClass}><LayoutGrid size={18} />数据表</NavLink>
     {documentLinks.map(({ to, label, icon: Icon }) => <NavLink key={to} to={to} end className={navClass}><Icon size={18} />{label}</NavLink>)}
     <ActionButton type="button" className="workspace-function-link" aria-haspopup="dialog" aria-expanded={isOpen} onClick={() => openSearch({ type: "document" })}><Search size={18} aria-hidden="true" />搜索文档</ActionButton>
     {commonNotebooks.map((notebook) => <NavLink key={notebook.id} to={`/collections/${notebook.id}`} className={navClass}><NotebookIcon icon={notebook.icon} size="sm" /><span className="truncate">{notebook.title}</span></NavLink>)}
