@@ -97,8 +97,10 @@ export function NotebookIconPicker({ value, onChange, uploadFile, onPendingChang
       if (color) chooseIcon({ type: "preset", name: selected.name, color: color.name });
     }}>
       {NOTEBOOK_ICON_COLORS.map(({ name, label }) => <Radio key={name} value={name} aria-label={label} render={(props) => <div {...props} title={label} />}>
-        <Radio.Content className={`notebook-icon-swatch notebook-icon--${name}`}>
-          {({ isSelected }) => isSelected ? <Check size={14} strokeWidth={2.5} aria-hidden="true" /> : null}
+        <Radio.Content className="notebook-icon-color-choice">
+          {({ isSelected }) => <span className={`notebook-icon-swatch notebook-icon--${name}`}>
+            {isSelected ? <Check size={14} strokeWidth={2.5} aria-hidden="true" /> : null}
+          </span>}
         </Radio.Content>
       </Radio>)}
     </RadioGroup>

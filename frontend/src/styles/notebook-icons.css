@@ -33,30 +33,35 @@
 .notebook-icon-picker-preview > div { flex: 1; }
 .notebook-icon-picker-preview strong { font-size: var(--orbis-text-ui-size); font-weight: var(--orbis-weight-action); color: var(--text-primary); line-height: var(--orbis-text-ui-leading); }
 .notebook-icon-picker-preview p { margin-top: 5px; font-size: var(--orbis-text-caption-size); color: var(--text-tertiary); line-height: var(--orbis-text-caption-leading); }
-.notebook-icon-picker-grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 5px; }
+.notebook-icon-picker-grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: var(--orbis-space-1); }
 .notebook-icon-picker-grid .radio { min-width: 0; margin: 0; }
-.notebook-icon-choice { display: flex; width: 100%; align-items: center; justify-content: center; padding: 3px; border: 1px solid transparent; border-radius: 10px; cursor: pointer; }
+.notebook-icon-choice { display: flex; width: 100%; min-height: var(--orbis-control-compact-height); align-items: center; justify-content: center; padding: 3px; border: 1px solid transparent; border-radius: 10px; cursor: pointer; }
 .notebook-icon-picker-grid .notebook-icon { width: 35px; height: 35px; border-radius: 8px; }
 .notebook-icon-picker-grid .notebook-icon > svg { width: 20px; height: 20px; }
 .notebook-icon-picker-grid .radio[data-selected] .notebook-icon-choice { border-color: var(--text-secondary); background: var(--surface-content); }
 .notebook-icon-choice:hover { background: var(--surface-hover); }
-.notebook-icon-choice[data-focus-visible],
-.notebook-icon-swatch[data-focus-visible] { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
-.notebook-icon-picker-colors { display: flex; flex-direction: row; justify-content: center; gap: 15px; margin: 19px 0 24px; }
-.notebook-icon-swatch { display: inline-flex; align-items: center; justify-content: center; width: 23px; height: 23px; border-radius: 50%; background: var(--notebook-icon-fg); color: white; cursor: pointer; }
+.notebook-icon-choice[data-focus-visible="true"],
+.notebook-icon-color-choice[data-focus-visible="true"] { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.notebook-icon-picker-colors { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; gap: var(--orbis-space-2); margin: var(--orbis-space-4) 0 var(--orbis-space-6); }
+.notebook-icon-picker-colors .radio { display: grid; flex: none; place-items: center; width: var(--orbis-control-compact-height); height: var(--orbis-control-compact-height); margin: 0; padding: 0; }
+.notebook-icon-color-choice { display: grid; width: 100%; height: var(--orbis-control-compact-height); place-items: center; border-radius: var(--field-radius); cursor: pointer; }
+.notebook-icon-color-choice:hover { background: var(--surface-hover); }
+.notebook-icon-swatch { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: var(--notebook-icon-fg); color: white; cursor: pointer; }
 .notebook-icon-picker-colors .radio[data-selected] .notebook-icon-swatch { box-shadow: 0 0 0 3px var(--surface-content), 0 0 0 4px var(--notebook-icon-fg); }
 .notebook-icon-picker button:disabled { opacity: .45; cursor: default; }
 .notebook-icon-picker .radio[data-disabled] { opacity: .45; cursor: default; }
 .notebook-icon-upload { display: flex; align-items: center; flex-direction: column; gap: 8px; padding-top: 18px; border-top: 1px solid var(--border-subtle); }
 .notebook-icon-upload-hint { font-size: var(--orbis-text-caption-size); color: var(--text-tertiary); line-height: var(--orbis-text-caption-leading); }
+@media (pointer: coarse) {
+  .notebook-icon-picker-colors { max-width: calc(4 * var(--orbis-control-touch-height) + 3 * var(--orbis-space-2)); margin-inline: auto; }
+}
 @media (max-width: 420px) {
-  .notebook-icon-picker-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 2px; }
+  .notebook-icon-picker-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .notebook-icon-picker-grid .notebook-icon { width: 29px; height: 32px; }
   .notebook-icon-choice { padding: 1px; }
   .notebook-icon-picker-preview { gap: 11px; }
 }
 
 @media (max-width: 360px) {
-  .notebook-icon-picker-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
-  .notebook-icon-picker-colors { gap: 10px; }
+  .notebook-icon-picker-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
