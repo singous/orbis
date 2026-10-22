@@ -139,7 +139,7 @@ func (r *Repository) loadPublic(ctx context.Context, tx *gorm.DB, token string, 
 	if lock {
 		strength = "SHARE"
 	}
-	t, err := get(ctx, tx, sheet.Scope{WorkspaceID: raw.WorkspaceID, SheetID: raw.ID}, strength)
+	t, err := get(ctx, tx, sheet.Scope{WorkspaceID: raw.WorkspaceID, SheetID: raw.ID, ActorID: row.OwnerID}, strength)
 	if err != nil {
 		return row, t, err
 	}

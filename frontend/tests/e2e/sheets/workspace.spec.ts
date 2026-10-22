@@ -19,12 +19,12 @@ test("table, field menus, board and public collection share the same records", a
     collection = await createCollection(
       request,
       session,
-      `多维表格 ${Date.now()}`,
+      `数据表 ${Date.now()}`,
     );
   await openWithSession(page, session, `/sheets?collection=${collection.id}`);
   await page
+    .locator(".page-actions")
     .getByRole("button", { name: "新建数据表", exact: true })
-    .first()
     .click();
   await page
     .getByRole("textbox", { name: "数据表名称", exact: true })
@@ -42,10 +42,7 @@ test("table, field menus, board and public collection share the same records", a
   await page
     .getByRole("textbox", { name: "文本", exact: true })
     .fill("准备产品演示");
-  await page
-    .locator(".sheet-cell-editor")
-    .getByRole("button", { name: "保存", exact: true })
-    .click();
+  await page.getByRole("textbox", { name: "文本", exact: true }).press("Enter");
   await expect(page.getByRole("gridcell").first()).toContainText(
     "准备产品演示",
   );
@@ -345,58 +342,55 @@ test("selection paste, duplicate highlighting, resize and filters operate on sto
   await expect(page.getByText("0 条记录", { exact: true })).toBeVisible();
 });
 
-test("document embeds reference independent data without changing document versions", async ({
+test("document table blocks are created and edited in place without rewriting document content", async ({
   page,
   request,
 }) => {
   const session = await ownerSession(request),
-    collection = await createCollection(
-      request,
-      session,
-      `文档引用 ${Date.now()}`,
-    ),
     headers = sessionHeaders(session);
-  const sheet = await responseData(
-    await request.post(workspacePath(session, "/sheets"), {
-      headers,
-      data: {
-        id: crypto.randomUUID(),
-        collection_id: collection.id,
-        title: "独立数据源",
-        template: "",
-      },
-    }),
-  );
-  const field = sheet.definition.fields[0].id,
-    record = crypto.randomUUID();
-  const base = workspacePath(session, `/sheets/${sheet.id}`);
-  await responseData(
-    await request.post(`${base}/changes`, {
-      headers,
-      data: {
-        operation_id: crypto.randomUUID(),
-        schema_version: 1,
-        records: [{ id: record, version: 0, values: { [field]: "引用前" } }],
-      },
-    }),
+  const collection = await createCollection(
+    request,
+    session,
+    `块组件验收 ${Date.now()}`,
   );
   const doc = await responseData(
     await request.post(
       workspacePath(session, `/collections/${collection.id}/documents`),
-      { headers, data: { title: "引用验收" } },
+      { headers, data: { title: "块组件验收" } },
     ),
   );
   const docPath = workspacePath(session, `/documents/${doc.id}`);
   await openWithSession(page, session, `/documents/${doc.id}`);
   await page.getByRole("button", { name: "插入内容", exact: true }).click();
-  await page.getByRole("option", { name: "多维表格", exact: true }).click();
-  await page
-    .getByRole("combobox", { name: "选择数据表" })
-    .selectOption(sheet.id);
-  await page.getByRole("button", { name: "插入引用", exact: true }).click();
+  await page.getByRole("option", { name: "数据表", exact: true }).click();
+  const embedded = page.locator(".sheet-embed-editor");
   await expect(
-    page.locator(".sheet-embed td").filter({ hasText: "引用前" }),
+    embedded.getByRole("grid", { name: "数据表", exact: true }),
   ).toBeVisible();
+  await embedded
+    .getByRole("button", { name: "添加记录", exact: true })
+    .first()
+    .click();
+  await expect(embedded.getByText("1 条记录", { exact: true })).toBeVisible();
+  await embedded.getByRole("gridcell").first().click();
+  await embedded
+    .getByRole("textbox", { name: "文本", exact: true })
+    .fill("块内直接输入");
+  await embedded
+    .getByRole("textbox", { name: "文本", exact: true })
+    .press("Enter");
+  await expect(embedded.getByRole("gridcell").first()).toContainText(
+    "块内直接输入",
+  );
+  const list = await responseData(
+    await request.get(
+      workspacePath(session, `/sheets?collection_id=${collection.id}`),
+      { headers },
+    ),
+  );
+  expect(list.items).toHaveLength(1);
+  const table = list.items[0];
+  expect(table.document_id).toBe(doc.id);
   await expect
     .poll(async () =>
       JSON.stringify(
@@ -407,26 +401,29 @@ test("document embeds reference independent data without changing document versi
         ).blocks,
       ),
     )
-    .toContain(sheet.id);
+    .toContain(table.id);
   const before = await responseData(await request.get(docPath, { headers }));
-  await responseData(
-    await request.post(`${base}/changes`, {
-      headers,
-      data: {
-        operation_id: crypto.randomUUID(),
-        schema_version: 1,
-        records: [
-          { id: record, version: 1, values: { [field]: "独立修改后" } },
-        ],
-      },
-    }),
+  await embedded.getByRole("gridcell").first().click();
+  await embedded
+    .getByRole("textbox", { name: "文本", exact: true })
+    .fill("再次编辑已保存");
+  await embedded
+    .getByRole("textbox", { name: "文本", exact: true })
+    .press("Enter");
+  await expect(embedded.getByRole("gridcell").first()).toContainText(
+    "再次编辑已保存",
   );
   await page.reload();
-  await expect(
-    page.locator(".sheet-embed td").filter({ hasText: "独立修改后" }),
-  ).toBeVisible();
+  await expect(embedded.getByRole("gridcell").first()).toContainText(
+    "再次编辑已保存",
+  );
   const after = await responseData(await request.get(docPath, { headers }));
   expect(after.content_version).toBe(before.content_version);
+  await expect(page.locator('[aria-modal="true"]')).toHaveCount(0);
+  await page.screenshot({
+    path: test.info().outputPath("editable-document-table.png"),
+    animations: "disabled",
+  });
 });
 
 test("sheet controls follow the Orbis theme in light and dark appearances", async ({
@@ -662,17 +659,17 @@ test("bounded grid pages retain the reading position when old pages leave the ca
     .toBeGreaterThan(0);
   const before = await visibleRows();
   await page
-    .getByRole("gridcell", { name: before[0].text, exact: true })
+    .getByRole("gridcell")
+    .filter({ has: page.getByText(before[0].text, { exact: true }) })
     .click();
   await expect(
     page.locator('[role="gridcell"][aria-selected="true"]'),
   ).toHaveCount(1);
   await more.click();
   await expect(page.getByText("1100 条记录", { exact: true })).toBeVisible();
-  const retainedCell = page.getByRole("gridcell", {
-    name: before[0].text,
-    exact: true,
-  });
+  const retainedCell = page
+    .getByRole("gridcell")
+    .filter({ has: page.getByText(before[0].text, { exact: true }) });
   await expect(retainedCell).toBeVisible();
   await expect(retainedCell.locator("..")).toHaveAttribute(
     "aria-rowindex",
@@ -684,4 +681,174 @@ test("bounded grid pages retain the reading position when old pages leave the ca
   await page.getByRole("grid", { name: "数据表", exact: true }).focus();
   await page.keyboard.press("Delete");
   await expect(retainedCell).toHaveText(before[0].text);
+});
+
+test("table pages live in the document tree and edit cells with anchored pickers", async ({
+  page,
+  request,
+}) => {
+  const session = await ownerSession(request),
+    headers = sessionHeaders(session);
+  const collection = await createCollection(
+    request,
+    session,
+    `目录与原位编辑 ${Date.now()}`,
+  );
+  await openWithSession(page, session, `/collections/${collection.id}`);
+  await page.getByRole("button", { name: "新建数据表", exact: true }).click();
+  await expect(page).toHaveURL(/\/documents\/[a-f0-9-]+$/);
+  await expect(
+    page
+      .locator(".workspace-main-navigation")
+      .getByRole("link", { name: "未命名数据表", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "未命名数据表", exact: true }).click();
+  await page
+    .getByRole("textbox", { name: "数据表名称", exact: true })
+    .fill("项目数据");
+  await page
+    .getByRole("textbox", { name: "数据表名称", exact: true })
+    .press("Enter");
+  await expect(
+    page
+      .locator(".workspace-main-navigation")
+      .getByRole("link", { name: "项目数据", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "添加记录", exact: true })
+    .first()
+    .click();
+  await expect(page.getByText("1 条记录", { exact: true })).toBeVisible();
+  const cells = page.getByRole("gridcell");
+  await cells.first().click();
+  const input = page.getByRole("textbox", { name: "文本", exact: true });
+  await input.fill("原位编辑");
+  const cellBox = (await cells.first().boundingBox())!,
+    inputBox = (await input.boundingBox())!;
+  expect(inputBox.x).toBeGreaterThanOrEqual(cellBox.x);
+  expect(inputBox.x + inputBox.width).toBeLessThanOrEqual(
+    cellBox.x + cellBox.width,
+  );
+  expect(inputBox.y + inputBox.height).toBeLessThanOrEqual(
+    cellBox.y + cellBox.height,
+  );
+  await expect(page.locator('[aria-modal="true"]')).toHaveCount(0);
+  await page.screenshot({
+    path: test.info().outputPath("inline-text-editor.png"),
+    animations: "disabled",
+  });
+  await input.press("Tab");
+  await page.screenshot({
+    path: test.info().outputPath("inline-option-picker.png"),
+    animations: "disabled",
+  });
+  await page.getByRole("option", { name: "进行中", exact: true }).click();
+  await expect(cells.nth(1)).toContainText("进行中");
+  await cells.nth(1).click();
+  await page
+    .getByRole("textbox", { name: "搜索状态选项", exact: true })
+    .fill("待复核");
+  await page
+    .getByRole("button", { name: "新建选项「待复核」", exact: true })
+    .click();
+  await expect(cells.nth(1)).toContainText("待复核");
+  await cells.nth(2).click();
+  const calendar = page.getByRole("dialog", { name: "日期选择", exact: true });
+  await expect(calendar).toBeVisible();
+  await page.screenshot({
+    path: test.info().outputPath("inline-date-picker.png"),
+    animations: "disabled",
+  });
+  await calendar.getByRole("button", { name: "今天", exact: true }).click();
+  await expect(cells.nth(2)).not.toBeEmpty();
+  await cells.first().click();
+  await input.fill("取消的修改");
+  await input.press("Escape");
+  await expect(cells.first()).toContainText("原位编辑");
+  const gutter = page.locator(".sheet-grid-row .sheet-row-label").first();
+  expect((await gutter.boundingBox())!.width).toBe(44);
+  await gutter.hover();
+  await expect(gutter.getByRole("checkbox")).toBeVisible();
+  expect((await gutter.getByRole("checkbox").boundingBox())!.width).toBe(14);
+  await page.getByRole("button", { name: "查看记录 1", exact: true }).click();
+  await expect(
+    page.getByRole("region", { name: "记录详情", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator('[aria-modal="true"]')).toHaveCount(0);
+  await page.getByRole("button", { name: "收起", exact: true }).click();
+  await page.reload();
+  await expect(cells.first()).toContainText("原位编辑");
+  await expect(cells.nth(1)).toContainText("待复核");
+  await page.screenshot({
+    path: test.info().outputPath("document-table-inline.png"),
+    animations: "disabled",
+  });
+});
+
+test("inline edits preserve newer typing through a lost save response and retry", async ({
+  page,
+  request,
+}) => {
+  const session = await ownerSession(request),
+    headers = sessionHeaders(session);
+  const collection = await createCollection(
+    request,
+    session,
+    `单元格重试 ${Date.now()}`,
+  );
+  const sheet = await responseData(
+    await request.post(workspacePath(session, "/sheets"), {
+      headers,
+      data: {
+        id: crypto.randomUUID(),
+        collection_id: collection.id,
+        title: "原位保存重试",
+        template: "",
+      },
+    }),
+  );
+  const base = workspacePath(session, `/sheets/${sheet.id}`);
+  const record = crypto.randomUUID(),
+    field = sheet.definition.fields[0].id;
+  await responseData(
+    await request.post(`${base}/changes`, {
+      headers,
+      data: {
+        operation_id: crypto.randomUUID(),
+        schema_version: 1,
+        records: [{ id: record, version: 0, values: { [field]: "原值" } }],
+      },
+    }),
+  );
+  await openWithSession(page, session, `/documents/${sheet.document_id}`);
+  let drop = true;
+  await page.route(`**/sheets/${sheet.id}/changes`, async (route) => {
+    if (drop) {
+      drop = false;
+      await route.fetch();
+      await route.abort("failed");
+    } else await route.continue();
+  });
+  await page.getByRole("gridcell").first().click();
+  const input = page.getByRole("textbox", { name: "文本", exact: true });
+  await input.fill("第一次保存");
+  await input.press("Enter");
+  const retry = page.getByRole("button", { name: "重试保存", exact: true });
+  await expect(retry).toBeVisible();
+  await input.fill("继续输入的新内容");
+  await retry.click();
+  await expect(retry).toHaveCount(0);
+  await input.press("Enter");
+  await expect(page.getByRole("gridcell").first()).toContainText(
+    "继续输入的新内容",
+  );
+  await page.reload();
+  await expect(page.getByRole("gridcell").first()).toContainText(
+    "继续输入的新内容",
+  );
+  const saved = await responseData(
+    await request.get(`${base}/records`, { headers }),
+  );
+  expect(saved.items).toHaveLength(1);
+  expect(saved.items[0].version).toBe(3);
 });

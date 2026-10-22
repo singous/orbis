@@ -103,6 +103,7 @@ export const viewSchema = z.object({
 });
 export type View = z.infer<typeof viewSchema>;
 export const sheetSchema = z.object({
+  document_id: z.string().uuid(),
   data_revision: z.number(),
   schema_version: z.number(),
   id: z.string(),

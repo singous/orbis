@@ -7,11 +7,14 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
+  type CSSProperties,
 } from "react";
 import type { AuthRequestOptions } from "../../shared/auth/use-auth-request";
 import { newUUID } from "../../shared/ids";
+import { registerPendingNavigation } from "../../shared/navigation/pending-navigation";
 import { ActionButton } from "../../shared/ui/ActionButton";
-import { CellValue, ValueEditor } from "./Cell";
+import { CellValue } from "./Cell";
+import { CellEditor, type CellNavigation } from "./CellEditor";
 import { decodeCells, encodeCells } from "./clipboard";
 import { FieldIcon } from "./FieldIcon";
 import { moveGridSelection, type GridPoint as Point } from "./grid-navigation";
@@ -28,8 +31,11 @@ import {
 } from "./model";
 import { anchorAt, type Anchor } from "./Popover";
 
+const ROW_HEADER_WIDTH = 44;
+
 export function SheetGrid({
   rows,
+  confirmedRows,
   rowOffset,
   total,
   fields: allFields,
@@ -37,12 +43,15 @@ export function SheetGrid({
   view,
   readOnly,
   busy,
+  hasPending,
   auth,
   onChange,
   onFieldMenu,
   onNewField,
   onWidth,
-  onRecord,
+  onCreateOption,
+  onInspect,
+  onDraftChange,
   onAdd,
   hasMore,
   loading,
@@ -50,6 +59,7 @@ export function SheetGrid({
   onError,
 }: {
   rows: Row[];
+  confirmedRows: Row[];
   rowOffset: number;
   total?: number;
   fields: Field[];
@@ -57,12 +67,15 @@ export function SheetGrid({
   view: View;
   readOnly: boolean;
   busy: boolean;
+  hasPending: boolean;
   auth: AuthRequestOptions;
   onChange: (patches: Patch[]) => Promise<unknown>;
   onFieldMenu: (f: Field, anchor: Anchor) => void;
-  onNewField: () => void;
+  onNewField: (anchor: Anchor) => void;
   onWidth: (id: string, width: number) => void;
-  onRecord: (row: Row) => void;
+  onCreateOption: (field: Field, label: string) => Promise<string>;
+  onInspect: (row: Row) => void;
+  onDraftChange: (dirty: boolean) => void;
   onAdd: () => void;
   hasMore: boolean;
   loading: boolean;
@@ -84,8 +97,33 @@ export function SheetGrid({
       row: Row;
       field: Field;
       value: Value;
+      initial?: string;
     } | null>(null),
     [selected, setSelected] = useState<Set<string>>(new Set());
+  const committedRows = useRef(new Map<string, Row>());
+  useEffect(() => {
+    onDraftChange(
+      Boolean(
+        editing &&
+          JSON.stringify(editing.value) !==
+            JSON.stringify(editing.row.values[editing.field.id] ?? null),
+      ),
+    );
+  }, [editing, onDraftChange]);
+  useEffect(() => () => onDraftChange(false), [onDraftChange]);
+  useEffect(() => {
+    // A confirmed retry may finish while the user continues typing in the cell.
+    // Advance only the acknowledged base version and preserve the newer draft.
+    setEditing((current) => {
+      if (!current) return current;
+      const acknowledged = confirmedRows.find(
+        (row) => row.id === current.row.id,
+      );
+      return acknowledged && acknowledged.version > current.row.version
+        ? { ...current, row: acknowledged }
+        : current;
+    });
+  }, [confirmedRows]);
   const [widths, setWidths] = useState(view.widths);
   useEffect(() => setWidths(view.widths), [view.widths]);
   useEffect(() => {
@@ -142,7 +180,7 @@ export function SheetGrid({
     count: fields.length,
     getScrollElement: () => scroller.current,
     estimateSize: (i) => widths[fields[i].id] ?? 180,
-    paddingStart: 64,
+    paddingStart: ROW_HEADER_WIDTH,
     overscan: 2,
   });
   useEffect(() => {
@@ -151,7 +189,10 @@ export function SheetGrid({
   useEffect(() => {
     virtualRows.measure();
   }, [view.row_height, view.group_field_id, rows]);
-  const width = 64 + fields.reduce((s, f) => s + (widths[f.id] ?? 180), 0) + 44;
+  const width =
+    ROW_HEADER_WIDTH +
+    fields.reduce((s, f) => s + (widths[f.id] ?? 180), 0) +
+    44;
   const pagingAnchor = useRef<{
     id: string;
     offset: number;
@@ -210,39 +251,154 @@ export function SheetGrid({
     scroller.current?.focus({ preventScroll: true });
   }
   function edit(p: Point, initial?: string) {
-    const row = rows[p.row],
+    const source = rows[p.row],
       field = fields[p.col];
+    const local = source && committedRows.current.get(source.id);
+    const row = local && local.version > source.version ? local : source;
     if (!row || !field || readOnly || busy || KINDS[field.kind].system) return;
     setEditing({
       row,
       field,
-      value: initial === undefined ? (row.values[field.id] ?? null) : initial,
+      value:
+        initial === undefined
+          ? (row.values[field.id] ?? null)
+          : ["select", "multi_select", "person", "datetime"].includes(
+                field.kind,
+              )
+            ? (row.values[field.id] ?? null)
+            : initial,
+      initial,
     });
   }
-  const committing = useRef(false);
-  async function commit() {
-    if (!editing || busy || committing.current) return;
-    committing.current = true;
-    try {
-      if (
-        JSON.stringify(editing.value) !==
-        JSON.stringify(editing.row.values[editing.field.id] ?? null)
-      )
-        await onChange([
-          {
-            id: editing.row.id,
-            version: editing.row.version,
-            values: { [editing.field.id]: editing.value },
-          },
-        ]);
-      setEditing(null);
-      scroller.current?.focus();
-    } catch (e) {
-      onError((e as Error).message);
-    } finally {
-      committing.current = false;
-    }
+  const latest = useRef({ rows, fields, onChange, editing });
+  latest.current = { rows, fields, onChange, editing };
+  const saving = useRef<Promise<boolean> | null>(null);
+  function leaveGrid(backward: boolean) {
+    const grid = scroller.current;
+    if (!grid) return;
+    const items = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        "a[href],button,input,select,textarea,[tabindex]",
+      ),
+    ).filter(
+      (el) =>
+        el.tabIndex >= 0 &&
+        !el.matches(":disabled") &&
+        !el.closest("[inert]") &&
+        el.getClientRects().length > 0 &&
+        !grid.contains(el),
+    );
+    const direction = backward
+      ? Node.DOCUMENT_POSITION_PRECEDING
+      : Node.DOCUMENT_POSITION_FOLLOWING;
+    const target = (backward ? items.reverse() : items).find((el) =>
+      Boolean(grid.compareDocumentPosition(el) & direction),
+    );
+    target?.focus();
   }
+  function commit(
+    value?: Value,
+    navigation?: CellNavigation,
+  ): Promise<boolean> {
+    if (saving.current) return saving.current;
+    if (hasPending) return Promise.resolve(false);
+    const active = latest.current.editing;
+    if (!active) return Promise.resolve(true);
+    const task = Promise.resolve().then(async () => {
+      try {
+        let nextValue = value === undefined ? active.value : value;
+        if (typeof nextValue === "string" && KINDS[active.field.kind].numeric)
+          nextValue = parseCell(active.field, nextValue);
+        let saved: Row | undefined;
+        if (
+          JSON.stringify(nextValue) !==
+          JSON.stringify(active.row.values[active.field.id] ?? null)
+        ) {
+          const result = (await latest.current.onChange([
+            {
+              id: active.row.id,
+              version: active.row.version,
+              values: { [active.field.id]: nextValue },
+            },
+          ])) as { records: Row[] } | undefined;
+          saved = result?.records.find((r) => r.id === active.row.id);
+          if (saved) {
+            committedRows.current.set(saved.id, saved);
+            if (committedRows.current.size > 200)
+              committedRows.current.delete(
+                committedRows.current.keys().next().value!,
+              );
+          }
+        }
+        const newerDraft = latest.current.editing;
+        if (
+          newerDraft?.row.id === active.row.id &&
+          newerDraft.field.id === active.field.id &&
+          JSON.stringify(newerDraft.value) !== JSON.stringify(active.value)
+        ) {
+          setEditing({ ...newerDraft, row: saved ?? newerDraft.row });
+          return false;
+        }
+        latest.current.editing = null;
+        setEditing(null);
+        if (navigation || value !== undefined)
+          scroller.current?.focus({ preventScroll: true });
+        if (navigation) {
+          const row = latest.current.rows.findIndex(
+              (r) => r.id === active.row.id,
+            ),
+            col = latest.current.fields.findIndex(
+              (f) => f.id === active.field.id,
+            );
+          if (row >= 0 && col >= 0) {
+            const next = moveGridSelection(
+              { row, col },
+              navigation === "next" || navigation === "previous"
+                ? "Tab"
+                : "Enter",
+              navigation === "previous" || navigation === "up",
+              latest.current.rows.length,
+              latest.current.fields.length,
+            );
+            if (!next && (navigation === "next" || navigation === "previous"))
+              leaveGrid(navigation === "previous");
+            if (next && (next.row !== row || next.col !== col)) {
+              select(next, false);
+              virtualRows.scrollToIndex(next.row, { align: "auto" });
+              columns.scrollToIndex(next.col, { align: "auto" });
+              const target = latest.current.rows[next.row],
+                field = latest.current.fields[next.col];
+              const record = saved?.id === target.id ? saved : target;
+              if (!KINDS[field.kind].system && field.kind !== "checkbox")
+                setEditing({
+                  row: record,
+                  field,
+                  value: record.values[field.id] ?? null,
+                });
+            }
+          }
+        }
+        return true;
+      } catch (e) {
+        onError((e as Error).message);
+        return false;
+      } finally {
+        saving.current = null;
+      }
+    });
+    saving.current = task;
+    return task;
+  }
+  const flush = useRef(commit);
+  flush.current = commit;
+  useEffect(
+    () =>
+      registerPendingNavigation(async () => {
+        if (!(await flush.current()))
+          throw new Error("数据表修改尚未保存，请重试后再离开");
+      }),
+    [],
+  );
   function keyboard(e: KeyboardEvent) {
     if (
       editing ||
@@ -276,7 +432,13 @@ export function SheetGrid({
         rows.length,
         fields.length,
       );
-      if (!next) return;
+      if (!next) {
+        if (e.key === "Tab") {
+          e.preventDefault();
+          leaveGrid(e.shiftKey);
+        }
+        return;
+      }
       e.preventDefault();
       select(next, e.shiftKey && e.key !== "Tab");
       virtualRows.scrollToIndex(next.row, { align: "auto" });
@@ -306,7 +468,12 @@ export function SheetGrid({
     }
   }
   return (
-    <div className="sheet-grid-area">
+    <div
+      className="sheet-grid-area"
+      style={
+        { "--sheet-row-header-width": `${ROW_HEADER_WIDTH}px` } as CSSProperties
+      }
+    >
       {selected.size > 0 && (
         <div className="sheet-selection-bar">
           已选择 {selected.size} 条记录
@@ -360,10 +527,21 @@ export function SheetGrid({
           );
         }}
         onPaste={(e) => {
-          if (editing || !end || readOnly || busy) return;
+          const clipboard = e.clipboardData.getData("text/plain");
+          if (
+            (editing && !/[\t\r\n]/.test(clipboard)) ||
+            !end ||
+            readOnly ||
+            busy
+          )
+            return;
+          if (editing) {
+            latest.current.editing = null;
+            setEditing(null);
+          }
           e.preventDefault();
           try {
-            const data = decodeCells(e.clipboardData.getData("text/plain"));
+            const data = decodeCells(clipboard);
             if (data.length > MAX_BATCH) throw new Error("每次最多粘贴 200 行");
             const patches = data.map((values, i) => {
               const row = rows[end.row + i];
@@ -475,7 +653,7 @@ export function SheetGrid({
               className="sheet-add-column"
               style={{ left: width - 44 }}
               aria-label="添加字段"
-              onClick={onNewField}
+              onClick={(event) => onNewField(anchorAt(event.currentTarget))}
             >
               <Plus size={15} />
             </ActionButton>
@@ -521,13 +699,6 @@ export function SheetGrid({
                     }
                   />
                   <span>{rowOffset + virtual.index + 1}</span>
-                  <ActionButton
-                    size="sm"
-                    aria-label={`打开记录 ${rowOffset + virtual.index + 1}`}
-                    onClick={() => onRecord(row)}
-                  >
-                    <Expand size={12} />
-                  </ActionButton>
                 </div>
                 {columns.getVirtualItems().map((col) => {
                   const field = fields[col.index],
@@ -543,6 +714,7 @@ export function SheetGrid({
                   return (
                     <div
                       role="gridcell"
+                      data-first-column={col.index === 0 || undefined}
                       aria-selected={Boolean(isSelected)}
                       key={field.id}
                       className={`sheet-cell${duplicates[field.id]?.includes(row.id) ? " duplicate" : ""}${isSelected ? " selected" : ""}${isEditing ? " editing" : ""}`}
@@ -560,6 +732,23 @@ export function SheetGrid({
                           (e.target as HTMLElement).closest("a,button")
                         )
                           return;
+                        if (
+                          editing &&
+                          (editing.row.id !== row.id ||
+                            editing.field.id !== field.id)
+                        ) {
+                          e.preventDefault();
+                          void commit().then((ok) => {
+                            if (ok) {
+                              select(
+                                { row: virtual.index, col: col.index },
+                                false,
+                              );
+                              edit({ row: virtual.index, col: col.index });
+                            }
+                          });
+                          return;
+                        }
                         select(
                           { row: virtual.index, col: col.index },
                           e.shiftKey,
@@ -572,13 +761,15 @@ export function SheetGrid({
                       }}
                       onClick={(event) => {
                         if (
-                          field.kind === "checkbox" &&
-                          !readOnly &&
-                          !busy &&
-                          (event.target as HTMLElement).matches(
-                            "input[type=checkbox]",
-                          )
+                          isEditing ||
+                          event.shiftKey ||
+                          readOnly ||
+                          busy ||
+                          (event.target as HTMLElement).closest("a")
                         )
+                          return;
+                        if (editing) return;
+                        if (field.kind === "checkbox") {
                           void onChange([
                             {
                               id: row.id,
@@ -586,75 +777,74 @@ export function SheetGrid({
                               values: { [field.id]: !row.values[field.id] },
                             },
                           ]).catch((e) => onError(e.message));
+                        } else {
+                          select({ row: virtual.index, col: col.index }, false);
+                          edit({ row: virtual.index, col: col.index });
+                        }
                       }}
                       onDoubleClick={() =>
                         edit({ row: virtual.index, col: col.index })
                       }
-                      onKeyDown={(e) => {
-                        if (isEditing && e.key === "Escape") {
-                          setEditing(null);
-                          scroller.current?.focus();
-                        }
-                        if (
-                          isEditing &&
-                          e.key === "Enter" &&
-                          !e.nativeEvent.isComposing
-                        ) {
-                          e.preventDefault();
-                          void commit();
-                        }
-                      }}
                     >
                       {isEditing ? (
-                        <div
-                          className="sheet-cell-editor"
-                          onBlur={(event) => {
-                            if (
-                              !event.currentTarget.contains(
-                                event.relatedTarget as Node,
-                              )
-                            )
-                              void commit();
-                          }}
-                        >
-                          <fieldset
-                            disabled={busy}
-                            className="sheet-editing-fields"
-                          >
-                            <ValueEditor
-                              field={field}
-                              value={editing.value}
-                              autoFocus
-                              auth={auth}
-                              onChange={(value) =>
-                                setEditing((old) =>
-                                  old ? { ...old, value } : null,
-                                )
-                              }
-                            />
-                          </fieldset>
-                          <div className="sheet-cell-editor-actions">
-                            <ActionButton
-                              size="sm"
-                              disabled={busy}
-                              onClick={() => void commit()}
-                            >
-                              保存
-                            </ActionButton>
-                            <ActionButton
-                              size="sm"
-                              onClick={() => setEditing(null)}
-                            >
-                              取消
-                            </ActionButton>
-                          </div>
-                        </div>
-                      ) : (
-                        <CellValue
+                        <CellEditor
+                          key={`${row.id}:${field.id}`}
                           field={field}
-                          value={row.values[field.id]}
-                          interactive={!readOnly && !busy}
+                          value={editing.value}
+                          initial={editing.initial}
+                          auth={auth}
+                          onChange={(value) =>
+                            setEditing((old) =>
+                              old ? { ...old, value } : null,
+                            )
+                          }
+                          onCommit={commit}
+                          onCancel={() => {
+                            latest.current.editing = null;
+                            setEditing(null);
+                            scroller.current?.focus();
+                          }}
+                          onCreateOption={
+                            ["select", "multi_select"].includes(field.kind)
+                              ? (label) => onCreateOption(field, label)
+                              : undefined
+                          }
                         />
+                      ) : (
+                        <>
+                          {col.index === 0 && (
+                            <ActionButton
+                              size="sm"
+                              className="sheet-row-inspect"
+                              aria-label={`查看记录 ${rowOffset + virtual.index + 1}`}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                onInspect(row);
+                              }}
+                            >
+                              <Expand size={12} />
+                            </ActionButton>
+                          )}
+                          <CellValue
+                            field={field}
+                            value={row.values[field.id]}
+                            interactive={!readOnly && !busy}
+                          />
+                          {!readOnly &&
+                            [
+                              "select",
+                              "multi_select",
+                              "datetime",
+                              "person",
+                            ].includes(field.kind) && (
+                              <button
+                                className="sheet-cell-picker"
+                                aria-label={`编辑${field.name}`}
+                              >
+                                <ChevronDown size={14} />
+                              </button>
+                            )}
+                        </>
                       )}
                     </div>
                   );

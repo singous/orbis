@@ -132,8 +132,8 @@ function renderBlock(value: unknown, path: number[], legacy: boolean, pageTitle?
   const item = node(value);
   const props = node(legacy ? item.attrs : item.props);
   const content = inline(item.content);
-  if (item.type === "dataTable" && props.sheet_id) return <Suspense fallback={<p>正在读取多维表格…</p>}><ReadSheetEmbed id={String(props.sheet_id)} viewId={String(props.sheet_view_id??"")} readOnly /></Suspense>;
-  if (item.type === "dataTable") return <Suspense fallback={<p>正在读取多维表格…</p>}>{item.table_snapshot ? <ReadDataTableSnapshot data={item.table_snapshot as TableSnapshot} /> : <ReadDataTable blockId={String(item.id)} props={props} readOnly />}</Suspense>;
+  if (item.type === "dataTable" && props.sheet_id) return <Suspense fallback={<p>正在读取数据表…</p>}><ReadSheetEmbed id={String(props.sheet_id)} viewId={String(props.sheet_view_id??"")} readOnly /></Suspense>;
+  if (item.type === "dataTable") return <Suspense fallback={<p>正在读取数据表…</p>}>{item.table_snapshot ? <ReadDataTableSnapshot data={item.table_snapshot as TableSnapshot} /> : <ReadDataTable blockId={String(item.id)} props={props} readOnly />}</Suspense>;
   if (!legacy && documentBlockDefinition(String(item.type))) {
     const children = ["steps", "tabs", "codeGroup"].includes(String(item.type)) ? null : renderNodes(nodes(item.children), path, false);
     return <DocumentBlock kind={String(item.type)} props={props} inline={content} children={children}

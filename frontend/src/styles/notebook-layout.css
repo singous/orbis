@@ -35,3 +35,15 @@
 .notebook-menu-header .notebook-menu-back { display: grid; place-items: center; width: var(--orbis-control-compact-height); height: var(--orbis-control-compact-height); flex: none; margin: 0; }
 .notebook-menu-header .notebook-menu-title { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; font-size: var(--orbis-text-section-size); font-weight: var(--orbis-weight-heading); line-height: var(--orbis-text-section-leading); }
 .notebook-menu-create { display: grid; place-items: center; width: var(--orbis-control-compact-height); height: var(--orbis-control-compact-height); flex: none; border-radius: 7px; background: var(--surface-inverse); color: var(--text-oninverse); }
+
+.notebook-menu-create-table.orbis-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 28px;
+  min-width: 28px;
+  height: 30px;
+  padding: 4px;
+  margin-right: 4px;
+}

@@ -65,6 +65,7 @@ export function sheetAPI(auth: AuthRequestOptions) {
           items: z.array(
             sheetSchema.pick({
               id: true,
+              document_id: true,
               collection_id: true,
               title: true,
               created_at_ms: true,
@@ -86,6 +87,8 @@ export function sheetAPI(auth: AuthRequestOptions) {
       collection_id: string;
       title: string;
       template: string;
+      document_id?: string;
+      parent_id?: string | null;
     }) => sheetSchema.parse(await request("", "POST", input)),
     get: async (id: string, signal?: AbortSignal) =>
       sheetSchema.parse(await request(`/${id}`, "GET", undefined, signal)),

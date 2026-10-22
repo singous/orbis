@@ -105,12 +105,12 @@
       "props": {}
     },
     "dataTable": {
-      "label": "多维表格",
+      "label": "数据表",
       "content": "none",
       "children": [],
       "props": {
         "title": {
-          "default": "多维表格",
+          "default": "数据表",
           "maxLength": 240
         },
         "table_id": {

@@ -3,7 +3,7 @@
   "info": {
     "title": "Orbis Go API",
     "version": "0.1.0-dev",
-    "description": "Go 后端阶段性实现：账号、资料与头像、成员和邀请、所有权转移、分组/目录/归档、评论、私有文件、丰富内容、绘图、版本化多维表格、工作空间搜索和 Markdown 文档导入导出。尚未完成发布、分享和 Agent API、旧库转换及客户端适配。时间点统一 Unix 毫秒。"
+    "description": "Go 后端阶段性实现：账号、资料与头像、成员和邀请、所有权转移、分组/目录/归档、评论、私有文件、丰富内容、绘图、版本化数据表、工作空间搜索和 Markdown 文档导入导出。尚未完成发布、分享和 Agent API、旧库转换及客户端适配。时间点统一 Unix 毫秒。"
   },
   "servers": [
     {
@@ -11612,10 +11612,10 @@
     "/api/v1/workspaces/{workspace_id}/documents/{document_id}/tables": {
       "post": {
         "operationId": "createDataTable",
-        "summary": "初始化或复制多维表格",
+        "summary": "初始化或复制数据表",
         "responses": {
           "201": {
-            "description": "初始化或复制多维表格",
+            "description": "初始化或复制数据表",
             "headers": {
               "X-Request-ID": {
                 "schema": {
@@ -11809,10 +11809,10 @@
     "/api/v1/workspaces/{workspace_id}/documents/{document_id}/tables/{table_id}": {
       "get": {
         "operationId": "getDataTable",
-        "summary": "读取多维表格定义与版本",
+        "summary": "读取数据表定义与版本",
         "responses": {
           "200": {
-            "description": "读取多维表格定义与版本",
+            "description": "读取数据表定义与版本",
             "headers": {
               "X-Request-ID": {
                 "schema": {
@@ -12259,10 +12259,10 @@
     "/api/v1/workspaces/{workspace_id}/documents/{document_id}/tables/{table_id}/changes": {
       "post": {
         "operationId": "changeDataTable",
-        "summary": "原子修改多维表格与文档引用",
+        "summary": "原子修改数据表与文档引用",
         "responses": {
           "200": {
-            "description": "原子修改多维表格与文档引用",
+            "description": "原子修改数据表与文档引用",
             "headers": {
               "X-Request-ID": {
                 "schema": {
@@ -13253,7 +13253,7 @@
             }
           }
         },
-        "description": "需要编辑权限；目标文集、分组、父文档与全部祖先有效。创建文档/初始正文版本 1/目录版本递增/幂等回执在同一事务提交。同工作空间和文集的 operation_id 绑定操作者及完整请求意图，重复返回原始结果，冲突返回 409 IDEMPOTENCY_CONFLICT；重放仍验证当前资源权限与可见性。最多 2 MiB 原文、100000 AST 节点/128 AST 层，转换后还须满足块合同限制；413 MARKDOWN_TOO_LARGE / CONTENT_TOO_LARGE。不抓取外部 URL。本空间规范资产内容路径可还原图片引用并验证类型及归属；原始 HTML、无法表示的图片/链接保留为纯文本并返回去重警告。Markdown 是内容交换格式，不是结构化块/附件/多维表格的无损备份。 单实例最多2个在途文档导入/导出；容量已满返回503 DOCUMENT_TRANSFER_BUSY，请稍后重试。 Markdown解析工作量最多400000次，AST最多100000节点/128层；普通表格最多1000行/64列/10000格位。超出限制整体失败，不返回截断正文。"
+        "description": "需要编辑权限；目标文集、分组、父文档与全部祖先有效。创建文档/初始正文版本 1/目录版本递增/幂等回执在同一事务提交。同工作空间和文集的 operation_id 绑定操作者及完整请求意图，重复返回原始结果，冲突返回 409 IDEMPOTENCY_CONFLICT；重放仍验证当前资源权限与可见性。最多 2 MiB 原文、100000 AST 节点/128 AST 层，转换后还须满足块合同限制；413 MARKDOWN_TOO_LARGE / CONTENT_TOO_LARGE。不抓取外部 URL。本空间规范资产内容路径可还原图片引用并验证类型及归属；原始 HTML、无法表示的图片/链接保留为纯文本并返回去重警告。Markdown 是内容交换格式，不是结构化块/附件/数据表的无损备份。 单实例最多2个在途文档导入/导出；容量已满返回503 DOCUMENT_TRANSFER_BUSY，请稍后重试。 Markdown解析工作量最多400000次，AST最多100000节点/128层；普通表格最多1000行/64列/10000格位。超出限制整体失败，不返回截断正文。"
       }
     },
     "/api/v1/workspaces/{workspace_id}/documents/{document_id}/export/markdown": {
@@ -31225,6 +31225,17 @@
                   },
                   "template": {
                     "type": "string"
+                  },
+                  "document_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Host document for an embedded table; omit to create a standalone document page."
+                  },
+                  "parent_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true,
+                    "description": "Parent of a newly created standalone document."
                   }
                 },
                 "required": [
@@ -33620,6 +33631,12 @@
             "type": "boolean",
             "default": false,
             "description": "当前实例支持 CRDT 文档编辑。旧服务缺少该字段时客户端按 false 处理；不代表本文档已经启用。"
+          },
+          "sheet_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Primary data table of a document page, or null for ordinary documents."
           }
         },
         "required": [
@@ -33633,7 +33650,8 @@
           "updated_at_ms",
           "parent_id",
           "position",
-          "is_archived"
+          "is_archived",
+          "sheet_id"
         ],
         "additionalProperties": false
       },
@@ -35197,7 +35215,7 @@
             "description": "未初始化时 ID 与版本均为 null。已初始化时必须同时提供，并且属于同文档、同块的已存表格版本；禁止复用其他块或文档的表格引用。"
           }
         ],
-        "description": "原生块树，最多 10000 块、32 层、7 MiB。支持文本样式、容器组件、普通表格、绘图、媒体与多维表格引用。正文保存与恢复校验资源归属。"
+        "description": "原生块树，最多 10000 块、32 层、7 MiB。支持文本样式、容器组件、普通表格、绘图、媒体与数据表引用。正文保存与恢复校验资源归属。"
       },
       "BlockPayload": {
         "type": "object",
@@ -40111,7 +40129,7 @@
             "additionalProperties": false
           }
         ],
-        "description": "原生块树，最多 10000 块、32 层、7 MiB。支持文本样式、容器组件、普通表格、绘图、媒体与多维表格引用。正文保存与恢复校验资源归属。"
+        "description": "原生块树，最多 10000 块、32 层、7 MiB。支持文本样式、容器组件、普通表格、绘图、媒体与数据表引用。正文保存与恢复校验资源归属。"
       },
       "PublicSitePageMetadata": {
         "type": "object",
@@ -43809,6 +43827,12 @@
             "type": "boolean",
             "default": false,
             "description": "当前实例支持 CRDT 文档编辑。旧服务缺少该字段时客户端按 false 处理；不代表本文档已经启用。"
+          },
+          "sheet_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Primary data table of a document page, or null for ordinary documents."
           }
         },
         "required": [
@@ -43823,7 +43847,8 @@
           "parent_id",
           "position",
           "is_archived",
-          "summary"
+          "summary",
+          "sheet_id"
         ],
         "additionalProperties": false
       },
@@ -44650,6 +44675,11 @@
           "updated_at_ms": {
             "type": "integer",
             "format": "int64"
+          },
+          "document_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Owning document. Standalone tables appear in its notebook directory."
           }
         },
         "required": [
@@ -44662,7 +44692,8 @@
           "definition",
           "version",
           "created_at_ms",
-          "updated_at_ms"
+          "updated_at_ms",
+          "document_id"
         ],
         "additionalProperties": false,
         "description": "version 管理表格配置；schema_version 管理字段定义；data_revision 标识已提交的记录变化。时间字段均为 Unix 毫秒。"
@@ -44870,6 +44901,11 @@
           "updated_at_ms": {
             "type": "integer",
             "format": "int64"
+          },
+          "document_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Owning document. Standalone tables appear in its notebook directory."
           }
         },
         "required": [
@@ -44877,7 +44913,8 @@
           "collection_id",
           "title",
           "created_at_ms",
-          "updated_at_ms"
+          "updated_at_ms",
+          "document_id"
         ],
         "additionalProperties": false
       }

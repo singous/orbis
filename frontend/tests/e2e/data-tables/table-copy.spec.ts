@@ -40,7 +40,7 @@ test("an initialized table duplicates atomically after a lost response and edits
   await title.press("Tab");
   const tableBlock=page.locator(".orbis-data-table").first();
   await tableBlock.hover({position:{x:3,y:3}});
-  await page.getByRole("button",{name:"块操作：多维表格",exact:true}).click();
+  await page.getByRole("button",{name:"块操作：数据表",exact:true}).click();
   let receiptUnavailable=true;
   if(!collaborative){
     await page.route("**/api/v1/workspaces/*/documents/*/operations/*",route=>receiptUnavailable?route.abort("failed"):route.continue());
@@ -77,7 +77,7 @@ test("an initialized table duplicates atomically after a lost response and edits
   await expect(page.getByRole("textbox",{name:"标题",exact:true}).nth(1)).toHaveValue("只修改副本");
   await page.context().grantPermissions(["clipboard-read","clipboard-write"]);
   await page.locator(".orbis-data-table").first().hover({position:{x:3,y:3}});
-  await page.getByRole("button",{name:"块操作：多维表格",exact:true}).click();
+  await page.getByRole("button",{name:"块操作：数据表",exact:true}).click();
   await page.getByRole("menuitem",{name:"复制块",exact:true}).click();
   await expect(page.locator(".orbis-block-notice")).toContainText("已复制");
   const destination=await createDocument(request,session,collection.id,"跨文档粘贴验收");

@@ -54,6 +54,7 @@ type Definition struct {
 	Views  []View  `json:"views"`
 }
 type Summary struct {
+	DocumentID   string `json:"document_id"`
 	ID           string `json:"id"`
 	CollectionID string `json:"collection_id"`
 	Title        string `json:"title"`
@@ -65,6 +66,7 @@ type ListPage struct {
 	NextCursor string    `json:"next_cursor"`
 }
 type Sheet struct {
+	DocumentID    string     `json:"document_id"`
 	SchemaVersion int64      `json:"schema_version"`
 	DataRevision  int64      `json:"data_revision"`
 	ID            string     `json:"id"`
@@ -102,10 +104,12 @@ type ChangeResult struct {
 	Deleted []string `json:"deleted"`
 }
 type Create struct {
-	ID           string `json:"id"`
-	CollectionID string `json:"collection_id"`
-	Title        string `json:"title"`
-	Template     string `json:"template"`
+	DocumentID   string  `json:"document_id,omitempty"`
+	ParentID     *string `json:"parent_id,omitempty"`
+	ID           string  `json:"id"`
+	CollectionID string  `json:"collection_id"`
+	Title        string  `json:"title"`
+	Template     string  `json:"template"`
 }
 type Update struct {
 	Version    int64      `json:"version"`

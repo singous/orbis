@@ -10,7 +10,7 @@ import { authStore } from "../../shared/auth/auth-store";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { newUUID } from "../../shared/ids";
 import { sheetAPI, type RecordPage } from "./api";
-import type { Changes, Patch, Sheet } from "./model";
+import type { Changes, Patch, Row, Sheet } from "./model";
 
 type RecordPageParam = { cursor: string; offset: number };
 
@@ -60,6 +60,7 @@ export function useSheet(id: string, viewId: string, search: string) {
   });
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  const [confirmedRows, setConfirmedRows] = useState<Row[]>([]);
   const request = useRef<Changes | null>(null);
   const userID = useStore(authStore, (state) => state.user?.id);
   const draftKey = `orbis.sheet-draft:${userID}:${auth.workspaceId}:${id}`;
@@ -100,6 +101,7 @@ export function useSheet(id: string, viewId: string, search: string) {
     setError("");
     try {
       const result = await api.change(id, request.current);
+      if (alive.current) setConfirmedRows(result.records);
       request.current = null;
       sessionStorage.removeItem(draftKey);
       if (alive.current) await refresh();
@@ -125,6 +127,10 @@ export function useSheet(id: string, viewId: string, search: string) {
           queryKey: ["sheet-directory", auth.workspaceId],
         });
         await refresh();
+        await client.invalidateQueries({ queryKey: ["note-tree"] });
+        await client.invalidateQueries({
+          queryKey: ["note", saved.document_id],
+        });
       }
       return saved;
     } catch (e) {
@@ -162,6 +168,7 @@ export function useSheet(id: string, viewId: string, search: string) {
     pages,
     stats,
     forms,
+    confirmedRows,
     rowOffset: pages.data?.pageParams[0]?.offset ?? 0,
     rows: Array.from(
       new Map(

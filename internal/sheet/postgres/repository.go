@@ -14,6 +14,8 @@ import (
 	"gorm.io/gorm/clause"
 
 	assetstore "orbis.local/orbis/internal/asset/postgres"
+	"orbis.local/orbis/internal/document"
+	docstore "orbis.local/orbis/internal/document/postgres"
 	"orbis.local/orbis/internal/platform/fault"
 	"orbis.local/orbis/internal/platform/security"
 	"orbis.local/orbis/internal/sheet"
@@ -22,11 +24,19 @@ import (
 type Repository struct {
 	db     *gorm.DB
 	secret []byte
+	engine document.CollaborationEngine
 }
 
-func New(db *gorm.DB, secret string) *Repository { return &Repository{db, []byte(secret)} }
+func New(db *gorm.DB, secret string, engines ...document.CollaborationEngine) *Repository {
+	r := &Repository{db: db, secret: []byte(secret)}
+	if len(engines) > 0 {
+		r.engine = engines[0]
+	}
+	return r
+}
 
 type sheetRow struct {
+	DocumentID                           string
 	CreationHash                         string
 	SchemaVersion                        int64
 	ID, WorkspaceID, CollectionID, Title string
@@ -38,7 +48,7 @@ func (sheetRow) TableName() string { return "sheets" }
 func (row sheetRow) domain() (sheet.Sheet, error) {
 	var d sheet.Definition
 	err := json.Unmarshal(row.Definition, &d)
-	return sheet.Sheet{SchemaVersion: row.SchemaVersion, ID: row.ID, WorkspaceID: row.WorkspaceID, CollectionID: row.CollectionID, Title: row.Title, Definition: d, Version: row.Version, CreatedAtMS: row.CreatedAtMS, UpdatedAtMS: row.UpdatedAtMS}, err
+	return sheet.Sheet{DocumentID: row.DocumentID, SchemaVersion: row.SchemaVersion, ID: row.ID, WorkspaceID: row.WorkspaceID, CollectionID: row.CollectionID, Title: row.Title, Definition: d, Version: row.Version, CreatedAtMS: row.CreatedAtMS, UpdatedAtMS: row.UpdatedAtMS}, err
 }
 func missing(err error) error {
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -49,11 +59,23 @@ func missing(err error) error {
 func get(ctx context.Context, tx *gorm.DB, sc sheet.Scope, lock string) (sheet.Sheet, error) {
 	var row sheetRow
 	q := tx.WithContext(ctx).Where("id=? AND workspace_id=?", sc.SheetID, sc.WorkspaceID).Where("EXISTS (SELECT 1 FROM collections c JOIN collection_groups g ON g.id=c.group_id WHERE c.id=sheets.collection_id AND c.archived_at_ms IS NULL AND g.archived_at_ms IS NULL)")
-	if lock != "" {
-		q = q.Clauses(clause.Locking{Strength: lock})
-	}
 	if err := q.Take(&row).Error; err != nil {
 		return sheet.Sheet{}, missing(err)
+	}
+	if lock != "" {
+		if err := docstore.LockDocumentDirectoryForRead(ctx, tx, document.DirectoryScope{ActorID: sc.ActorID, WorkspaceID: sc.WorkspaceID, CollectionID: row.CollectionID, DocumentID: row.DocumentID}); err != nil {
+			return sheet.Sheet{}, err
+		}
+		if err := q.Clauses(clause.Locking{Strength: lock}).Take(&row).Error; err != nil {
+			return sheet.Sheet{}, missing(err)
+		}
+	}
+	doc, err := docstore.New(tx).Get(ctx, sc.WorkspaceID, row.DocumentID)
+	if err != nil {
+		return sheet.Sheet{}, err
+	}
+	if doc.SheetID != nil && *doc.SheetID == row.ID {
+		row.Title = doc.Title
 	}
 	t, err := row.domain()
 	if err != nil {
@@ -70,17 +92,22 @@ func (r *Repository) Get(ctx context.Context, sc sheet.Scope) (sheet.Sheet, erro
 	return get(ctx, r.db, sc, "")
 }
 
+const activeOwnerAncestors = `NOT EXISTS (WITH RECURSIVE parents AS (
+SELECT id,parent_id,is_archived,1 depth FROM documents WHERE id=d.parent_id
+UNION ALL SELECT p.id,p.parent_id,p.is_archived,a.depth+1 FROM documents p JOIN parents a ON p.id=a.parent_id WHERE a.depth<64
+) SELECT 1 FROM parents WHERE is_archived)`
+
 // List projects navigation metadata only; definitions are loaded on demand.
 func (r *Repository) List(ctx context.Context, sc sheet.Scope, collection, cursor string) (sheet.ListPage, error) {
 	result := sheet.ListPage{Items: []sheet.Summary{}}
-	q := r.db.WithContext(ctx).Table("sheets").Select("sheets.id,sheets.collection_id,sheets.title,sheets.created_at_ms,GREATEST(sheets.updated_at_ms,a.updated_at_ms) AS updated_at_ms").Joins("JOIN sheet_activity a ON a.sheet_id=sheets.id").Where("workspace_id=?", sc.WorkspaceID).Where("EXISTS (SELECT 1 FROM collections c JOIN collection_groups g ON g.id=c.group_id WHERE c.id=sheets.collection_id AND c.archived_at_ms IS NULL AND g.archived_at_ms IS NULL)")
+	q := r.db.WithContext(ctx).Table("sheets").Select("sheets.id,sheets.document_id,sheets.collection_id,CASE WHEN d.sheet_id=sheets.id THEN d.title ELSE sheets.title END AS title,sheets.created_at_ms,GREATEST(sheets.updated_at_ms,a.updated_at_ms,d.updated_at_ms) AS updated_at_ms").Joins("JOIN sheet_activity a ON a.sheet_id=sheets.id").Joins("JOIN documents d ON d.id=sheets.document_id AND d.workspace_id=sheets.workspace_id").Where("sheets.workspace_id=? AND d.is_archived=FALSE", sc.WorkspaceID).Where(activeOwnerAncestors).Where("EXISTS (SELECT 1 FROM collections c JOIN collection_groups g ON g.id=c.group_id WHERE c.id=sheets.collection_id AND c.archived_at_ms IS NULL AND g.archived_at_ms IS NULL)")
 	if collection != "" {
-		q = q.Where("collection_id=?", collection)
+		q = q.Where("sheets.collection_id=?", collection)
 	}
 	if cursor != "" {
-		q = q.Where("id>?", cursor)
+		q = q.Where("sheets.id>?", cursor)
 	}
-	if err := q.Order("id").Limit(sheet.PageSize + 1).Scan(&result.Items).Error; err != nil {
+	if err := q.Order("sheets.id").Limit(sheet.PageSize + 1).Scan(&result.Items).Error; err != nil {
 		return result, err
 	}
 	if len(result.Items) > sheet.PageSize {
@@ -108,7 +135,19 @@ func (r *Repository) Create(ctx context.Context, sc sheet.Scope, in sheet.Create
 		creationHash := security.Digest(string(body))
 		d := sheet.DefaultDefinition(in.Template)
 		raw, _ := json.Marshal(d)
-		row := sheetRow{CreationHash: creationHash, SchemaVersion: 1, ID: in.ID, WorkspaceID: sc.WorkspaceID, CollectionID: in.CollectionID, Title: in.Title, Definition: raw, Version: 1, CreatedAtMS: now, UpdatedAtMS: now}
+		ownerID := in.DocumentID
+		if ownerID == "" {
+			ownerID = uuid.NewString()
+		} else {
+			owner, err := docstore.New(tx).Get(ctx, sc.WorkspaceID, ownerID)
+			if err != nil {
+				return err
+			}
+			if owner.CollectionID != in.CollectionID {
+				return fault.Missing()
+			}
+		}
+		row := sheetRow{DocumentID: ownerID, CreationHash: creationHash, SchemaVersion: 1, ID: in.ID, WorkspaceID: sc.WorkspaceID, CollectionID: in.CollectionID, Title: in.Title, Definition: raw, Version: 1, CreatedAtMS: now, UpdatedAtMS: now}
 		res := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&row)
 		if res.Error != nil {
 			return res.Error
@@ -131,6 +170,16 @@ func (r *Repository) Create(ctx context.Context, sc sheet.Scope, in sheet.Create
 		if err := tx.Exec("INSERT INTO sheet_activity(sheet_id,updated_at_ms) VALUES(?,?)", row.ID, now).Error; err != nil {
 			return err
 		}
+		if in.DocumentID == "" {
+			blocks, err := document.Flatten([]document.Block{{ID: uuid.NewString(), Type: "data_table", Props: map[string]any{"sheet_id": in.ID, "sheet_view_id": d.Views[0].ID}, Content: []document.TextRun{}, Children: []document.Block{}}})
+			if err != nil {
+				return err
+			}
+			_, err = docstore.InsertDocument(ctx, tx, sc.ActorID, document.Document{ID: ownerID, WorkspaceID: sc.WorkspaceID, CollectionID: in.CollectionID, Title: in.Title, SheetID: &in.ID, ParentID: in.ParentID, ContentVersion: 1, CreatedAtMS: now, UpdatedAtMS: now}, blocks)
+			if err != nil {
+				return err
+			}
+		}
 		result, _ = row.domain()
 		return schemaHistory(tx, result)
 	})
@@ -139,6 +188,23 @@ func (r *Repository) Create(ctx context.Context, sc sheet.Scope, in sheet.Create
 func (r *Repository) Update(ctx context.Context, sc sheet.Scope, in sheet.Update, now int64) (sheet.Sheet, error) {
 	var result sheet.Sheet
 	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// Document metadata writes acquire document locks before sheet schema locks.
+		before, err := get(ctx, tx, sc, "")
+		if err != nil {
+			return err
+		}
+		owner, err := docstore.New(tx).Get(ctx, sc.WorkspaceID, before.DocumentID)
+		if err != nil {
+			return err
+		}
+		if owner.SheetID != nil && *owner.SheetID == sc.SheetID && in.Title != owner.Title {
+			command := document.CommandsInput{OperationID: uuid.NewString(), ExpectedVersion: owner.ContentVersion, Operations: []document.Operation{{Type: "update_metadata", Title: in.Title}}}
+			raw, _ := json.Marshal(command)
+			_, err = docstore.ApplyCommandsInTransaction(ctx, tx, document.Command{Scope: document.DirectoryScope{ActorID: sc.ActorID, WorkspaceID: sc.WorkspaceID, CollectionID: owner.CollectionID, DocumentID: owner.ID}, Input: command, RequestHash: security.Digest(string(raw)), Timestamp: now}, r.engine)
+			if err != nil {
+				return err
+			}
+		}
 		current, err := get(ctx, tx, sc, "UPDATE")
 		if err != nil {
 			return err

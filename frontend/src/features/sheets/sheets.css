@@ -227,7 +227,7 @@
 .sheet-row-label {
   position: sticky;
   left: 0;
-  width: 64px;
+  width: var(--sheet-row-header-width);
   height: 100%;
   display: flex;
   align-items: center;
@@ -297,31 +297,6 @@
   z-index: 5;
   padding: 0;
   background: var(--surface-content);
-}
-.sheet-cell-editor {
-  position: absolute;
-  left: 0;
-  top: 0;
-  min-width: 100%;
-  width: max-content;
-  max-width: 420px;
-  background: var(--orbis-floating-bg);
-  border: 1px solid var(--focus);
-  border-radius: 8px;
-  box-shadow: var(--orbis-floating-shadow);
-  padding: 8px;
-  white-space: normal;
-}
-.sheet-cell-editor .orbis-text-input {
-  min-width: 150px;
-  min-height: 32px;
-  height: 32px;
-}
-.sheet-cell-editor-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 6px;
-  padding-top: 8px;
 }
 .sheet-grid-tail {
   height: 48px;
@@ -1324,4 +1299,272 @@
   .sheet-public .sheet-multi-options label {
     min-height: var(--orbis-control-touch-height);
   }
+}
+
+/* Cell editing stays inside the selected cell; only typed pickers use anchored menus. */
+.sheet-cell.editing {
+  overflow: hidden;
+  background: var(--orbis-panel-bg);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.sheet-cell.selected {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.sheet-inline-editor {
+  position: absolute;
+  inset: 2px;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  background: var(--orbis-panel-bg);
+}
+.sheet-inline-input {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 5px 10px;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  user-select: text;
+  resize: none;
+}
+.sheet-inline-value {
+  overflow: hidden;
+  padding: 5px 28px 5px 10px;
+}
+.sheet-cell-picker {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 24px;
+  border-radius: 4px;
+  border: 0;
+  color: var(--text-secondary);
+  background: transparent;
+  opacity: 0;
+}
+.sheet-cell:hover > .sheet-cell-picker,
+.sheet-cell.selected > .sheet-cell-picker,
+.sheet-inline-editor > .sheet-cell-picker,
+.sheet-cell-picker:focus-visible {
+  opacity: 1;
+}
+.sheet-cell-picker:hover {
+  background: var(--surface-hover);
+}
+.sheet-cell-picker-popover {
+  width: 300px;
+  padding: 10px;
+}
+.sheet-option-search {
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  outline: none;
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 6px;
+  background: transparent;
+  color: var(--text-primary);
+}
+.sheet-option-list {
+  max-height: 240px;
+  overflow: auto;
+}
+.sheet-option-list > button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 9px;
+  border-radius: 6px;
+}
+.sheet-option-list > button:hover,
+.sheet-option-list > button:focus-visible {
+  background: var(--surface-hover);
+  outline: none;
+}
+.sheet-date-picker header,
+.sheet-date-picker footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px;
+}
+.sheet-date-picker footer {
+  border-top: 1px solid var(--border-subtle);
+  margin-top: 8px;
+}
+.sheet-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  text-align: center;
+  gap: 3px;
+}
+.sheet-calendar-grid > span {
+  padding: 10px 0;
+  color: var(--text-tertiary);
+}
+.sheet-calendar-grid > button {
+  height: 32px;
+  border-radius: 6px;
+}
+.sheet-calendar-grid > button:hover {
+  background: var(--surface-hover);
+}
+.sheet-calendar-grid > button[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+.sheet-row-label {
+  justify-content: center;
+  gap: 0;
+}
+.sheet-row-label > input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
+.sheet-row-label > input:checked + span {
+  display: none;
+}
+.sheet-embedded-workspace {
+  height: 460px;
+  min-height: 320px;
+}
+.sheet-embed-editor {
+  padding: 0;
+  overflow: hidden;
+}
+.sheet-embedded-workspace .sheet-view-tabs {
+  padding-inline: 10px;
+  min-height: 42px;
+}
+.sheet-embedded-workspace .sheet-toolbar {
+  padding: 6px 10px;
+  min-height: 44px;
+}
+.sheet-field-popover {
+  width: 380px;
+  padding: 20px;
+}
+.sheet-field-popover h3 {
+  margin: 0 0 16px;
+  font-size: var(--orbis-text-ui-size);
+}
+.sheet-field-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+.sheet-tab-rename {
+  width: 120px;
+  padding: 5px;
+  border-bottom: 1px solid var(--focus);
+  outline: none;
+  background: transparent;
+}
+.sheet-record-panel {
+  flex: none;
+  border-top: 1px solid var(--border-subtle);
+  padding: 16px 20px;
+  max-height: 280px;
+  overflow: auto;
+}
+.sheet-record-panel > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sheet-record-panel > div {
+  display: flex;
+  gap: 24px;
+  padding: 8px 0;
+}
+.sheet-record-panel > div > span:first-child {
+  width: 100px;
+  color: var(--text-secondary);
+}
+
+.sheet-card-editable {
+  cursor: text;
+  display: block;
+}
+.sheet-card-cell {
+  position: relative;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+}
+.sheet-card-cell:has(.sheet-inline-editor) {
+  outline: 2px solid var(--accent);
+}
+.sheet-card-title {
+  font-weight: var(--orbis-weight-action);
+}
+
+.sheet-grid-scroll .sheet-row-label > input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  min-width: 14px;
+  min-height: 14px;
+  margin: 0;
+}
+.sheet-comments-panel {
+  padding: 16px;
+}
+.sheet-comments-panel > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.sheet-row-inspect.orbis-action-button {
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px;
+  min-width: 22px;
+  height: 24px;
+  min-height: 24px;
+  padding: 2px;
+  opacity: 0;
+}
+.sheet-grid-row:hover .sheet-row-inspect,
+.sheet-row-inspect:focus-visible {
+  opacity: 1;
+}
+.sheet-grid-row:has(.sheet-cell.selected) {
+  background: color-mix(in oklab, var(--accent) 5%, var(--orbis-panel-bg));
+}
+.sheet-embedded-workspace .sheet-record-panel {
+  max-height: 120px;
+}
+
+.sheet-cell {
+  --sheet-cell-content-inset: 12px;
+}
+.sheet-cell[data-first-column] {
+  --sheet-cell-content-inset: 32px;
+}
+.sheet-cell[data-first-column]:not(.editing) {
+  padding-inline-start: var(--sheet-cell-content-inset);
+}
+.sheet-inline-input,
+.sheet-inline-value {
+  padding-inline-start: calc(var(--sheet-cell-content-inset) - 2px);
+}
+textarea.sheet-inline-input {
+  align-content: center;
 }

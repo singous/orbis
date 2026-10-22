@@ -90,7 +90,10 @@ export function SheetsHome() {
       await client.invalidateQueries({
         queryKey: ["sheet-embed-list", auth.workspaceId],
       });
-      navigate(`/sheets/${sheet.id}`);
+      await client.invalidateQueries({
+        queryKey: ["note-tree", sheet.collection_id],
+      });
+      navigate(`/documents/${sheet.document_id}`);
     } catch (e) {
       if (e instanceof ApiError && e.status >= 400 && e.status < 500)
         intent.current = null;
@@ -102,7 +105,7 @@ export function SheetsHome() {
   return (
     <DocumentShell notebookId={collection || undefined}>
       <PageContainer
-        title="多维表格"
+        title="数据表"
         description="组织结构化信息，在表格、看板和收集表单之间协作。"
         actions={
           canEdit ? (
@@ -133,7 +136,7 @@ export function SheetsHome() {
           ) : items.length ? (
             <div className="sheet-home-list">
               {items.map((item) => (
-                <Link key={item.id} to={`/sheets/${item.id}`}>
+                <Link key={item.id} to={`/documents/${item.document_id}`}>
                   <Table2 size={18} />
                   <span>{item.title}</span>
                   <small>

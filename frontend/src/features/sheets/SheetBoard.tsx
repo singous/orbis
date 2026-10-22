@@ -5,8 +5,100 @@ import { newUUID } from "../../shared/ids";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Plus } from "../../shared/ui/icons";
 import { CellValue } from "./Cell";
-import type { Field, Row, View } from "./model";
+import { CellEditor } from "./CellEditor";
+import {
+  KINDS,
+  parseCell,
+  type Field,
+  type Row,
+  type Value,
+  type View,
+} from "./model";
 import type { SheetController } from "./use-sheet";
+
+function BoardCell({
+  controller: c,
+  field,
+  row,
+  readOnly,
+  primary,
+}: {
+  controller: SheetController;
+  field: Field;
+  row: Row;
+  readOnly: boolean;
+  primary: boolean;
+}) {
+  const [editing, setEditing] = useState(false),
+    [value, setValue] = useState<Value>(null);
+  return (
+    <div
+      className={`sheet-card-field sheet-card-editable${primary ? " sheet-card-title" : ""}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (readOnly || c.busy || editing || KINDS[field.kind].system) return;
+        if (field.kind === "checkbox")
+          void c
+            .change([
+              {
+                id: row.id,
+                version: row.version,
+                values: { [field.id]: !row.values[field.id] },
+              },
+            ])
+            .catch(() => {});
+        else {
+          setValue(row.values[field.id] ?? null);
+          setEditing(true);
+        }
+      }}
+    >
+      {!primary && <small>{field.name}</small>}
+      <div className="sheet-card-cell">
+        {editing ? (
+          <CellEditor
+            field={field}
+            value={value}
+            auth={c.auth}
+            onChange={setValue}
+            onCancel={() => setEditing(false)}
+            onCommit={async (next) => {
+              try {
+                const v = next === undefined ? value : next;
+                await c.change([
+                  {
+                    id: row.id,
+                    version: row.version,
+                    values: {
+                      [field.id]:
+                        typeof v === "string" && KINDS[field.kind].numeric
+                          ? parseCell(field, v)
+                          : v,
+                    },
+                  },
+                ]);
+                setEditing(false);
+                return true;
+              } catch {
+                return false;
+              }
+            }}
+          />
+        ) : row.values[field.id] != null ? (
+          <CellValue
+            field={field}
+            value={row.values[field.id]}
+            interactive={!readOnly}
+          />
+        ) : (
+          <span className="sheet-muted">
+            {primary ? "未命名记录" : "点击填写"}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
 
 type ColumnProps = {
   controller: SheetController;
@@ -111,21 +203,15 @@ function ColumnRecords({
                     }
                   }}
                 >
-                  <strong>
-                    {row.values[fields[0].id] != null && row.values[fields[0].id] !== "" ? (
-                      <CellValue
-                        field={fields[0]}
-                        value={row.values[fields[0].id]}
-                      />
-                    ) : (
-                      "未命名记录"
-                    )}
-                  </strong>
-                  {fields.slice(1, 5).map((f) => (
-                    <span className="sheet-card-field" key={f.id}>
-                      <small>{f.name}</small>
-                      <CellValue field={f} value={row.values[f.id]} />
-                    </span>
+                  {fields.slice(0, 5).map((field, index) => (
+                    <BoardCell
+                      key={field.id}
+                      controller={c}
+                      field={field}
+                      row={row}
+                      readOnly={readOnly}
+                      primary={index === 0}
+                    />
                   ))}
                 </article>
               </div>

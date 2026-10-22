@@ -79,6 +79,7 @@ export const nativeNoteSchema = resourceIdentitySchema.extend({
   collection_id: z.string().uuid(), parent_id: z.string().uuid().nullable(), position: z.number().int().nonnegative(),
   title: z.string(), content_version: z.number().int().positive(),
   collaboration_available: z.boolean().optional(),
+  sheet_id: z.string().uuid().nullable().optional(),
 });
 // The existing UI vocabulary is a local view model; wire fields remain native.
 export const noteSchema = nativeNoteSchema.transform(value => ({ ...value, notebook_id: value.collection_id, sort_order: value.position }));

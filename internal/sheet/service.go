@@ -47,6 +47,9 @@ func (s *Service) Create(ctx context.Context, sc Scope, in Create) (Sheet, error
 	if !ValidID(in.ID) || !ValidID(in.CollectionID) || !validName(in.Title, 240) {
 		return Sheet{}, Invalid("请填写有效的数据表名称和所属笔记本")
 	}
+	if in.DocumentID != "" && !ValidID(in.DocumentID) || in.ParentID != nil && !ValidID(*in.ParentID) {
+		return Sheet{}, Invalid("文档标识无效")
+	}
 	switch in.Template {
 	case "", "books", "tasks", "plan", "contacts":
 	default:

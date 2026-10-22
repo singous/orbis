@@ -19,6 +19,9 @@ export function Popover({
   onClose,
   wide = false,
   className = "",
+  anchorElement,
+  onEscape,
+  onTab,
 }: {
   anchor: Anchor;
   label: string;
@@ -26,7 +29,12 @@ export function Popover({
   onClose: () => void;
   wide?: boolean;
   className?: string;
+  anchorElement?: HTMLElement | null;
+  onEscape?: () => void;
+  onTab?: (backward: boolean) => void;
 }) {
+  const handlers = useRef({ onClose, onEscape, anchorElement });
+  handlers.current = { onClose, onEscape, anchorElement };
   const ref = useRef<HTMLDivElement>(null),
     [position, setPosition] = useState(anchor);
   useLayoutEffect(() => {
@@ -41,7 +49,11 @@ export function Popover({
     const previous = document.activeElement;
     const dismiss = (e: PointerEvent) => {
       if ((e.target as HTMLElement).closest?.(".orbis-select-popover")) return;
-      if (!ref.current?.contains(e.target as Node)) onClose();
+      if (
+        !ref.current?.contains(e.target as Node) &&
+        !handlers.current.anchorElement?.contains(e.target as Node)
+      )
+        handlers.current.onClose();
     };
     const key = (e: KeyboardEvent) => {
       if (
@@ -49,7 +61,7 @@ export function Popover({
         !(e.target as HTMLElement).closest?.(".orbis-select-popover")
       ) {
         e.stopPropagation();
-        onClose();
+        (handlers.current.onEscape ?? handlers.current.onClose)();
       }
     };
     document.addEventListener("pointerdown", dismiss);
@@ -60,7 +72,7 @@ export function Popover({
       if (previous instanceof HTMLElement && previous.isConnected)
         previous.focus();
     };
-  }, [onClose]);
+  }, []);
   return createPortal(
     <div
       ref={ref}
@@ -70,6 +82,11 @@ export function Popover({
       style={{ left: position.left, top: position.top }}
       onKeyDown={(e) => {
         e.stopPropagation();
+        if (e.key === "Tab" && onTab) {
+          e.preventDefault();
+          onTab(e.shiftKey);
+          return;
+        }
         const menu = (e.target as HTMLElement).closest('[role="menu"]');
         if (menu && ["ArrowDown", "ArrowUp", "Home", "End"].includes(e.key)) {
           e.preventDefault();

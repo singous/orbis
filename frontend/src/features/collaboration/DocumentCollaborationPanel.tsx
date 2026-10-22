@@ -63,7 +63,7 @@ function CommentItem({ comment, parent, canManage, currentUserId, onChanged }: {
   </article>;
 }
 
-function Comments({ noteId, canManage, currentUserId }: Pick<Props, "noteId" | "canManage" | "currentUserId">) {
+export function DocumentComments({ noteId, canManage, currentUserId }: Pick<Props, "noteId" | "canManage" | "currentUserId">) {
   const query = useComments(noteId);
   const create = useCreateComment(noteId);
   const [recentComments, setRecentComments] = useState<DocumentComment[]>([]);
@@ -144,7 +144,7 @@ export function DocumentCollaborationPanel(props: Props) {
           <Tabs.Tab id="comments" isDisabled={busy}><MessageSquare size={16} aria-hidden="true" />评论<Tabs.Indicator /></Tabs.Tab>
           <Tabs.Tab id="revisions" isDisabled={busy}><History size={16} aria-hidden="true" />历史版本<Tabs.Indicator /></Tabs.Tab>
         </Tabs.List></Tabs.ListContainer>
-        <Drawer.Body className="collaboration-panel-scroll"><Tabs.Panel id="comments" shouldForceMount><Comments {...props} /></Tabs.Panel><Tabs.Panel id="revisions">{tab === "revisions" ? <Revisions {...props} onBusyChange={setBusy} /> : null}</Tabs.Panel></Drawer.Body>
+        <Drawer.Body className="collaboration-panel-scroll"><Tabs.Panel id="comments" shouldForceMount><DocumentComments {...props} /></Tabs.Panel><Tabs.Panel id="revisions">{tab === "revisions" ? <Revisions {...props} onBusyChange={setBusy} /> : null}</Tabs.Panel></Drawer.Body>
       </Tabs>
     </Drawer.Dialog></Drawer.Content>
   </Drawer.Backdrop>;
