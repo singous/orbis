@@ -130,7 +130,7 @@ function WorkspaceShellContent({ children, sectionTitle, sidebar, toolbar, conte
             resizeHandle={sidebarResizeEnabled ? <SidebarResizeHandle {...sidebarResize} label={sidebarConfig.resizeLabel} controls={sidebarConfig.id ?? "workspace-sidebar"} /> : undefined}
           /> : null}
         </div>
-        <section className={`workspace-main-area${contextPanel && contextOpen ? " has-context" : ""}`} aria-label="主工作区">
+        <section className={`workspace-main-area${contentLayout === "document" ? " workspace-main-area-panel" : ""}${contextPanel && contextOpen ? " has-context" : ""}`} aria-label="主工作区">
           <section className={`workspace-content${contentLayout === "document" ? " workspace-document-content" : ""}`} inert={drawerOpen ? true : undefined}>
             {showToolbar ? (
               <header className="workspace-toolbar">
