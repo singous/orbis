@@ -700,16 +700,18 @@ export function SheetGrid({
       >
         <div className="sheet-grid-header" role="row" style={{ width }}>
           <div className="sheet-row-label">
-            <input
-              type="checkbox"
-              aria-label="选择当前已加载记录"
-              checked={rows.length > 0 && selected.size === rows.length}
-              onChange={(e) =>
-                setSelected(
-                  e.target.checked ? new Set(rows.map((r) => r.id)) : new Set(),
-                )
-              }
-            />
+            <label className="sheet-row-select">
+              <input
+                type="checkbox"
+                aria-label="选择当前已加载记录"
+                checked={rows.length > 0 && selected.size === rows.length}
+                onChange={(e) =>
+                  setSelected(
+                    e.target.checked ? new Set(rows.map((r) => r.id)) : new Set(),
+                  )
+                }
+              />
+            </label>
           </div>
           {columns.getVirtualItems().map((col) => {
             const field = fields[col.index];
@@ -820,20 +822,22 @@ export function SheetGrid({
                   className="sheet-row-label"
                   style={{ top: groupTop, height: view.row_height }}
                 >
-                  <input
-                    type="checkbox"
-                    aria-label={`选择记录 ${rowOffset + virtual.index + 1}`}
-                    checked={selected.has(row.id)}
-                    onChange={(e) =>
-                      setSelected((old) => {
-                        const next = new Set(old);
-                        if (e.target.checked) next.add(row.id);
-                        else next.delete(row.id);
-                        return next;
-                      })
-                    }
-                  />
-                  <span>{rowOffset + virtual.index + 1}</span>
+                  <label className="sheet-row-select">
+                    <input
+                      type="checkbox"
+                      aria-label={`选择记录 ${rowOffset + virtual.index + 1}`}
+                      checked={selected.has(row.id)}
+                      onChange={(e) =>
+                        setSelected((old) => {
+                          const next = new Set(old);
+                          if (e.target.checked) next.add(row.id);
+                          else next.delete(row.id);
+                          return next;
+                        })
+                      }
+                    />
+                    <span>{rowOffset + virtual.index + 1}</span>
+                  </label>
                 </div>
                 {columns.getVirtualItems().map((col) => {
                   const field = fields[col.index],
