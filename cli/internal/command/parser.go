@@ -19,6 +19,17 @@ type spec struct {
 }
 
 var specs = map[string]spec{
+	"boards templates":   {},
+	"boards template":    {values: "template board-page operation-id", required: "template board-page operation-id", positionals: 1},
+	"boards list":        {values: "page page-size collection"},
+	"boards catalog":     {},
+	"boards get":         {values: "revision", positionals: 1},
+	"boards elements":    {values: "board-page revision cursor", required: "board-page revision", positionals: 1},
+	"boards changes":     {values: "after", required: "after", positionals: 1},
+	"boards history":     {values: "before", positionals: 1},
+	"boards create":      {values: "file", required: "file"},
+	"boards apply":       {values: "file", required: "file", positionals: 1},
+	"boards export":      {values: "revision out", required: "out", positionals: 1},
 	"doctor":             {},
 	"capabilities":       {},
 	"schema":             {},
@@ -161,10 +172,10 @@ func parse(argv []string) (arguments, error) {
 			return a, argError()
 		}
 	}
-	for _, key := range []string{"page", "page-size", "version", "since-version", "expected-version", "expires-at-ms"} {
+	for _, key := range []string{"page", "page-size", "version", "since-version", "expected-version", "expires-at-ms", "revision", "after", "before"} {
 		if raw := a.flags[key]; raw != "" {
 			v, err := strconv.ParseInt(raw, 10, 64)
-			if err != nil || v < 1 || (key == "page-size" && v > 100) {
+			if err != nil || v < 0 || (v == 0 && key != "after" && key != "before") || (key == "page-size" && v > 100) {
 				return a, argError()
 			}
 		}
@@ -188,6 +199,7 @@ const help = `Orbis CLI — 通过工作空间 Agent API 管理文档
   auth login --token-stdin | auth status | auth logout
   workspaces list | collections list
   documents list|search|resolve|get|outline|changes|export|create|import
+  boards list|catalog|templates|template|get|elements|changes|history|create|apply|export
   imports get|finalize
   blocks list|get
   operations preview|apply|get

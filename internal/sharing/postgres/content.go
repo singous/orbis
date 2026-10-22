@@ -11,6 +11,7 @@ import (
 	"gorm.io/gorm"
 	"orbis.local/orbis/internal/asset"
 	assetstore "orbis.local/orbis/internal/asset/postgres"
+	"orbis.local/orbis/internal/board"
 	"orbis.local/orbis/internal/document"
 	docstore "orbis.local/orbis/internal/document/postgres"
 	"orbis.local/orbis/internal/document/publicview"
@@ -172,6 +173,28 @@ func (r *Repository) project(ctx context.Context, tx *gorm.DB, scope scopeState,
 		return nil, err
 	}
 	references := document.MediaReferences(blocks)
+	boardAllowed := map[string]bool{}
+	if r.boards != nil {
+		for _, ref := range document.BoardReferences(blocks) {
+			var count int64
+			if err := tx.WithContext(ctx).Table("boards").Where("id=? AND workspace_id=? AND document_id=?", ref.ID, scope.share.WorkspaceID, doc.ID).Count(&count).Error; err != nil {
+				return nil, err
+			}
+			if count != 1 {
+				continue
+			}
+			boardAllowed[ref.ID] = true
+			snapshot, err := r.boards.Read(ctx, tx, scope.share.WorkspaceID, ref)
+			if err != nil {
+				return nil, err
+			}
+			for _, element := range snapshot.Elements {
+				if element.Structure.AssetID != nil {
+					references = append(references, document.AssetReference{ID: *element.Structure.AssetID, Kind: "image"})
+				}
+			}
+		}
+	}
 	ids := []string{}
 	seen := map[string]bool{}
 	for _, ref := range references {
@@ -218,6 +241,12 @@ func (r *Repository) project(ctx context.Context, tx *gorm.DB, scope scopeState,
 			return "", sharing.Missing()
 		}
 		return "/api/v1/public/shares/" + input.Token + "/documents/" + doc.ID + "/assets/" + id + "?version=" + versionString(doc.ContentVersion), nil
+	}
+	options.Board = func(ref document.BoardReference) (board.View, error) {
+		if !boardAllowed[ref.ID] || r.boards == nil {
+			return board.View{Title: "画板", Restricted: true}, nil
+		}
+		return r.boards.Project(ctx, tx, scope.share.WorkspaceID, ref, options.Asset)
 	}
 	options.Table = func(ref table.Reference) (publicview.TableRef, error) {
 		metadata, err := tableMetadata(ctx, tx, scope, doc, ref.TableID)
@@ -382,7 +411,47 @@ func (r *Repository) Asset(ctx context.Context, input sharing.PublicQuery) (asse
 			return err
 		}
 		if !referenced {
-			return sharing.Missing()
+			if r.boards == nil {
+				return sharing.Missing()
+			}
+			var rows []struct{ Payload json.RawMessage }
+			if err := tx.WithContext(ctx).Table("document_block_versions").Select("payload").Where("document_id=? AND valid_from<=? AND (valid_to IS NULL OR valid_to>?) AND payload->>'type'='board'", doc.ID, doc.ContentVersion, doc.ContentVersion).Limit(document.MaxBlocks).Find(&rows).Error; err != nil {
+				return err
+			}
+			for _, row := range rows {
+				var block document.Block
+				if err := json.Unmarshal(row.Payload, &block); err != nil {
+					return err
+				}
+				for _, ref := range document.BoardReferences([]document.Block{block}) {
+					var count int64
+					if err := tx.Table("boards").Where("workspace_id=? AND id=? AND document_id=?", scope.share.WorkspaceID, ref.ID, doc.ID).Count(&count).Error; err != nil {
+						return err
+					}
+					if count != 1 {
+						continue
+					}
+					snapshot, err := r.boards.Read(ctx, tx, scope.share.WorkspaceID, ref)
+					if err != nil {
+						return err
+					}
+					for _, element := range snapshot.Elements {
+						if element.Structure.AssetID != nil && *element.Structure.AssetID == input.AssetID {
+							referenced = true
+							break
+						}
+					}
+					if referenced {
+						break
+					}
+				}
+				if referenced {
+					break
+				}
+			}
+			if !referenced {
+				return sharing.Missing()
+			}
 		}
 		var row assetstore.Record
 		if err := tx.Where("id=? AND workspace_id=? AND kind='file' AND state='ready'", input.AssetID, scope.share.WorkspaceID).Take(&row).Error; err != nil {

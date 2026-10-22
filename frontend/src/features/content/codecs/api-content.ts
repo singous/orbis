@@ -10,7 +10,7 @@ export type NativePayload = z.infer<typeof nativePayloadSchema>;
 export type NativeBlock = NativePayload & { id: string; children: NativeBlock[] };
 export const nativeBlockSchema: z.ZodType<NativeBlock> = nativePayloadSchema.extend({ id: z.string().uuid(), children: z.lazy(() => z.array(nativeBlockSchema)) });
 const BLOCK_TYPES: Record<string, string> = {
-  paragraph: "paragraph", heading: "heading", quote: "quote", bullet_list_item: "bulletListItem", numbered_list_item: "numberedListItem", check_list_item: "checkListItem", toggle_list_item: "toggleListItem", code_block: "codeBlock", table: "table", divider: "divider", group: "group", image: "image", audio: "audio", video: "video", file: "file", drawing: "drawing", data_table: "dataTable", callout: "callout", card: "card", card_group: "cardGroup", steps: "steps", step: "step", tabs: "tabs", tab: "tab", code_group: "codeGroup",
+  paragraph: "paragraph", heading: "heading", quote: "quote", bullet_list_item: "bulletListItem", numbered_list_item: "numberedListItem", check_list_item: "checkListItem", toggle_list_item: "toggleListItem", code_block: "codeBlock", table: "table", divider: "divider", group: "group", image: "image", audio: "audio", video: "video", file: "file", drawing: "drawing", board: "board", data_table: "dataTable", callout: "callout", card: "card", card_group: "cardGroup", steps: "steps", step: "step", tabs: "tabs", tab: "tab", code_group: "codeGroup",
 };
 const NATIVE_TYPES = Object.fromEntries(Object.entries(BLOCK_TYPES).map(([key, value]) => [value, key]));
 const PROP_NAMES: Record<string, string> = { text_alignment: "textAlignment", text_color: "textColor", background_color: "backgroundColor", show_preview: "showPreview", width: "previewWidth", height: "previewHeight" };

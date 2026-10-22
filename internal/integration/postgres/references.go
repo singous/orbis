@@ -22,6 +22,22 @@ func ValidateReferences(ctx context.Context, tx *gorm.DB, p integration.Principa
 			blocks = append(blocks, op.Blocks...)
 		}
 	}
+	for _, ref := range document.BoardReferences(blocks) {
+		if err := p.Require(integration.DocumentsRead); err != nil {
+			return err
+		}
+		var owner struct{ DocumentID string }
+		if err := tx.WithContext(ctx).Table("boards").Select("document_id").Where("workspace_id=? AND id=?", p.Token.WorkspaceID, ref.ID).Take(&owner).Error; err != nil {
+			return integration.ScopeMissing()
+		}
+		source, err := docstore.New(tx).Get(ctx, p.Token.WorkspaceID, owner.DocumentID)
+		if err != nil {
+			return err
+		}
+		if !AllowedDocument(p, source) {
+			return integration.ScopeMissing()
+		}
+	}
 	refs := document.MediaReferences(blocks)
 	ids := []string{}
 	seen := map[string]bool{}

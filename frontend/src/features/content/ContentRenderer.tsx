@@ -12,6 +12,8 @@ type ContentNode = Record<string, unknown>;
 export type ContentOutlineItem = { id: string; text: string; level: number };
 const PUBLIC_ASSET_PATH = /^\/public\/sites\/[a-z0-9]+(?:-[a-z0-9]+)*\/assets\/[0-9a-f]{64}$/;
 const ReadSheetEmbed=lazy(()=>import("../sheets/SheetEmbed").then(m=>({default:m.SheetEmbed})));
+const ReadBoardEmbed=lazy(()=>import("../boards/BoardEmbed").then(m=>({default:m.BoardEmbed})));
+const ReadBoardView=lazy(()=>import("../boards/BoardView").then(m=>({default:m.BoardView})));
 const ReadDataTable = lazy(() => import("../data-tables/DataTable").then(module => ({ default: module.DataTableBlock })));
 const ReadDataTableSnapshot = lazy(() => import("../data-tables/DataTableSnapshot").then(module => ({ default: module.DataTableSnapshot })));
 const PUBLIC_PAGE_PATH = /^\/s\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*(?:#[a-zA-Z0-9_-]+)?$/;
@@ -174,6 +176,7 @@ function renderBlock(value: unknown, path: number[], legacy: boolean, pageTitle?
     case "tableCell": return <td colSpan={Number(props.colspan) || undefined} rowSpan={Number(props.rowspan) || undefined}>{children}</td>;
     case "toggleListItem": return <details><summary>{content}</summary>{children}</details>;
     case "drawing": return <DrawingPreview props={props} />;
+    case "board": return <Suspense fallback={<p>正在读取画板…</p>}>{item.board_snapshot?<ReadBoardView view={item.board_snapshot as import("../boards/public-contract").BoardViewData}/>:<ReadBoardEmbed props={props}/>}</Suspense>;
     case "image":
     case "video":
     case "audio":

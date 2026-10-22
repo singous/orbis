@@ -158,6 +158,11 @@ func (r *Library) File(ctx context.Context, claimed integration.Principal, did, 
 		}
 		if count == 0 {
 			referenced, err := docstore.ReferencesAsset(ctx, tx, did, doc.ContentVersion, id)
+			if err == nil && !referenced {
+				var linked int64
+				err = tx.Table("boards b").Joins("JOIN board_element_versions e ON e.board_id=b.id").Where("b.workspace_id=? AND b.document_id=? AND e.asset_id=?", p.Token.WorkspaceID, did, id).Limit(1).Select("1").Scan(&linked).Error
+				referenced = linked == 1
+			}
 			if err != nil {
 				return err
 			}

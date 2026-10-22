@@ -433,6 +433,19 @@
           "default": "paragraph"
         }
       }
+    },
+    "orbisBoard": {
+      "group": "block",
+      "atom": true,
+      "selectable": true,
+      "attrs": {
+        "orbisId": {
+          "default": null
+        },
+        "orbisProps": {
+          "default": null
+        }
+      }
     }
   },
   "marks": {

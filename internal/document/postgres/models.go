@@ -35,6 +35,7 @@ func (r collectionRow) domain() document.Collection {
 }
 
 type documentRow struct {
+	BoardID                              *string
 	SheetID                              *string
 	IsArchived                           bool
 	ID, WorkspaceID, CollectionID, Title string
@@ -50,6 +51,7 @@ type documentRow struct {
 func (documentRow) TableName() string { return "documents" }
 func (r documentRow) domain() document.Document {
 	return document.Document{
+		BoardID:        r.BoardID,
 		SheetID:        r.SheetID,
 		ID:             r.ID,
 		WorkspaceID:    r.WorkspaceID,

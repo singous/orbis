@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"orbis.local/orbis/internal/board"
 	"orbis.local/orbis/internal/document"
 	"orbis.local/orbis/internal/platform/fault"
 	"orbis.local/orbis/internal/table"
@@ -32,6 +33,7 @@ type Block struct {
 	Children  []Block            `json:"children"`
 	Table     *document.Grid     `json:"table,omitempty"`
 	DataTable *TableRef          `json:"data_table,omitempty"`
+	Board     *board.View        `json:"board,omitempty"`
 }
 type Options struct {
 	RedactUnsafeLinks bool
@@ -42,6 +44,7 @@ type Options struct {
 	Asset             func(string) (string, error)
 	Table             func(table.Reference) (TableRef, error)
 	Sheet             func(string, string) (TableRef, error)
+	Board             func(document.BoardReference) (board.View, error)
 }
 
 // Project copies only renderer fields, rewriting managed media and removing editor-only state.
@@ -166,6 +169,19 @@ func Project(blocks []document.Block, options Options) ([]Block, error) {
 				target.DataTable = &projected
 			}
 		}
+		if b.Type == "board" {
+			refs := document.BoardReferences([]document.Block{b})
+			if len(refs) > 0 {
+				if options.Board == nil {
+					return nil, Unsafe()
+				}
+				view, err := options.Board(refs[0])
+				if err != nil {
+					return nil, err
+				}
+				target.Board = &view
+			}
+		}
 		if options.used != nil {
 			encoded, err := json.Marshal(target)
 			if err != nil {
@@ -219,6 +235,9 @@ func PlainText(blocks []Block) string {
 			if b.DataTable != nil {
 				values = append(values, b.DataTable.Title)
 			}
+			if b.Board != nil && !b.Board.Restricted {
+				values = append(values, b.Board.Title, b.Board.Text)
+			}
 			visit(b.Children)
 		}
 	}
@@ -268,6 +287,8 @@ func MarkdownBlocks(blocks []Block) ([]document.Block, map[string][]byte, error)
 
 func knownBlock(kind string) bool {
 	switch kind {
+	case "board":
+		return true
 	case "paragraph", "heading", "quote", "bullet_list_item", "numbered_list_item", "check_list_item", "toggle_list_item", "group", "divider", "code_block", "image", "audio", "video", "file", "drawing", "table", "data_table", "callout", "card", "card_group", "steps", "step", "tabs", "tab", "code_group":
 		return true
 	}

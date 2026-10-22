@@ -13,6 +13,7 @@ import (
 	"gorm.io/gorm/clause"
 	"orbis.local/orbis/internal/asset"
 	assetstore "orbis.local/orbis/internal/asset/postgres"
+	"orbis.local/orbis/internal/board"
 	"orbis.local/orbis/internal/document"
 	"orbis.local/orbis/internal/document/publicview"
 	"orbis.local/orbis/internal/platform/fault"
@@ -42,6 +43,20 @@ func (r *Repository) build(ctx context.Context, tx *gorm.DB, row siteRow, config
 	result.preview = publishing.Preview{Snapshot: snapshot, Pages: []publishing.Page{}, SourceFingerprint: source.fingerprint}
 	references := map[string]string{}
 	for _, page := range source.pages {
+		for _, ref := range document.BoardReferences(page.Blocks) {
+			if r.boards == nil {
+				return result, publicview.Unsafe()
+			}
+			snapshot, err := r.boards.Read(ctx, tx, row.WorkspaceID, ref)
+			if err != nil {
+				return result, err
+			}
+			for _, element := range snapshot.Elements {
+				if element.Structure.AssetID != nil {
+					references[*element.Structure.AssetID] = "image"
+				}
+			}
+		}
 		for _, ref := range document.MediaReferences(page.Blocks) {
 			if ref.Kind != "file" {
 				references[ref.ID] = ref.Kind
@@ -108,6 +123,12 @@ func (r *Repository) build(ctx context.Context, tx *gorm.DB, row siteRow, config
 	size, rowCount := 0, 0
 	for _, page := range source.pages {
 		options := publicview.Options{URLs: policy, Asset: assetURL}
+		options.Board = func(ref document.BoardReference) (board.View, error) {
+			if r.boards == nil {
+				return board.View{}, publicview.Unsafe()
+			}
+			return r.boards.Project(ctx, tx, row.WorkspaceID, ref, assetURL)
+		}
 		options.Sheet = func(id, view string) (publicview.TableRef, error) {
 			data, err := sheetstore.Snapshot(ctx, tx, row.WorkspaceID, id, view)
 			if err != nil {

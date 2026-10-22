@@ -79,3 +79,6 @@ bin/
 
 # Generated self-hosted drawing fonts
 frontend/public/drawing-assets/
+
+# Generated self-hosted board icons
+frontend/public/board-icons/

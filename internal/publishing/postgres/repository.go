@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	boardstore "orbis.local/orbis/internal/board/postgres"
 	"orbis.local/orbis/internal/document/publicview"
 	"orbis.local/orbis/internal/platform/fault"
 	"orbis.local/orbis/internal/platform/pagination"
@@ -24,12 +25,13 @@ import (
 const rowBatchSize = 250
 
 type Repository struct {
+	boards        *boardstore.Projector
 	db            *gorm.DB
 	policy        publicview.URLPolicy
 	publicBaseURL string
 }
 
-func New(db *gorm.DB, publicBaseURL string) (*Repository, error) {
+func New(db *gorm.DB, publicBaseURL string, boards ...*boardstore.Projector) (*Repository, error) {
 	if publicBaseURL == "" {
 		publicBaseURL = publishing.DefaultPublicBaseURL
 	}
@@ -37,7 +39,11 @@ func New(db *gorm.DB, publicBaseURL string) (*Repository, error) {
 	if err != nil || parsed.Hostname() == "" || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.User != nil || parsed.RawQuery != "" || parsed.Fragment != "" {
 		return nil, errors.New("public base URL must be HTTP(S) without credentials, query or fragment")
 	}
-	return &Repository{db: db, policy: publicview.URLPolicy{InternalHosts: []string{parsed.Hostname()}}, publicBaseURL: strings.TrimRight(publicBaseURL, "/")}, nil
+	var projector *boardstore.Projector
+	if len(boards) > 0 {
+		projector = boards[0]
+	}
+	return &Repository{boards: projector, db: db, policy: publicview.URLPolicy{InternalHosts: []string{parsed.Hostname()}}, publicBaseURL: strings.TrimRight(publicBaseURL, "/")}, nil
 }
 
 type siteRow struct {

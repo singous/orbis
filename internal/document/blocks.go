@@ -150,6 +150,13 @@ func Normalize(blocks []Block) ([]Block, error) {
 				for key := range b.Props {
 					allowed[key] = true
 				}
+			case "board":
+				if err := normalizeBoardReference(b); err != nil {
+					return err
+				}
+				for key := range b.Props {
+					allowed[key] = true
+				}
 			case "table":
 				if err := normalizeGrid(b.Table, &gridCells); err != nil {
 					return err
@@ -181,10 +188,10 @@ func Normalize(blocks []Block) ([]Block, error) {
 					return fault.Field("body.blocks", "块属性不受支持")
 				}
 			}
-			if (b.Type == "divider" || b.Type == "group" || mediaBlock(b.Type) || b.Type == "drawing" || b.Type == "table" || b.Type == "data_table") && len(b.Content) > 0 {
+			if (b.Type == "divider" || b.Type == "group" || mediaBlock(b.Type) || b.Type == "drawing" || b.Type == "board" || b.Type == "table" || b.Type == "data_table") && len(b.Content) > 0 {
 				return fault.Field("body.blocks", "该块类型不允许正文")
 			}
-			if (b.Type == "divider" || b.Type == "heading" || b.Type == "code_block" || mediaBlock(b.Type) || b.Type == "drawing" || b.Type == "table" || b.Type == "data_table") && len(b.Children) > 0 {
+			if (b.Type == "divider" || b.Type == "heading" || b.Type == "code_block" || mediaBlock(b.Type) || b.Type == "drawing" || b.Type == "board" || b.Type == "table" || b.Type == "data_table") && len(b.Children) > 0 {
 				return fault.Field("body.blocks", "该块类型不允许子块")
 			}
 			if err := normalizeRuns(b.Content); err != nil {

@@ -10,6 +10,7 @@ import (
 	"gorm.io/gorm"
 	"orbis.local/orbis/internal/asset"
 	assetstore "orbis.local/orbis/internal/asset/postgres"
+	"orbis.local/orbis/internal/board"
 	"orbis.local/orbis/internal/document"
 	"orbis.local/orbis/internal/document/publicview"
 	"orbis.local/orbis/internal/platform/fault"
@@ -68,6 +69,9 @@ func bindBlocks(blocks []publicview.Block, slug, release string) {
 		}
 		if b.DataTable != nil {
 			b.DataTable.RecordsURL = tableURL(slug, release, b.DataTable.ID)
+		}
+		if b.Board != nil {
+			b.Board.SVG = board.BindSVGAssets(b.Board.SVG, func(id string) string { return assetURL(slug, release, id) })
 		}
 		bindBlocks(b.Children, slug, release)
 	}
