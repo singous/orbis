@@ -106,7 +106,10 @@
   overflow-x: auto;
   white-space: nowrap;
   border-bottom: 1px solid var(--border-subtle);
+  overscroll-behavior-x: contain;
 }
+.sheet-toolbar > :not(.sheet-toolbar-spacer),
+.sheet-view-tabs > * { flex-shrink: 0; }
 .sheet-toolbar .orbis-action-button {
   gap: 7px;
   padding-inline: 8px;
@@ -141,6 +144,8 @@
 }
 .sheet-search:focus-within {
   border-color: var(--focus);
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 .sheet-grid-area {
   display: flex;
@@ -156,6 +161,7 @@
   min-height: 180px;
   isolation: isolate;
 }
+.sheet-grid-scroll:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
 .sheet-grid-header {
   position: sticky;
   top: 0;
@@ -242,28 +248,18 @@
 .sheet-grid-header .sheet-row-label {
   background: var(--surface-secondary);
 }
-.sheet-row-label > input,
-.sheet-row-label > button {
-  display: none;
-}
-.sheet-grid-header .sheet-row-label > input,
-.sheet-grid-row:hover .sheet-row-label > input,
-.sheet-row-label > input:checked,
-.sheet-row-label:focus-within > input {
-  display: block;
-}
-.sheet-grid-row:hover .sheet-row-label > span,
-.sheet-row-label:focus-within > span {
-  display: none;
-}
-.sheet-grid-row:hover .sheet-row-label > button,
-.sheet-row-label:focus-within > button {
-  display: inline-flex;
-  padding: 3px;
-  min-width: 22px;
-  min-height: 24px;
-  height: 24px;
-}
+.sheet-row-select { display: grid; place-items: center; width: 100%; height: 100%; cursor: pointer; }
+.sheet-row-select > input, .sheet-row-select > span { grid-area: 1 / 1; }
+.sheet-row-select > input { opacity: 0; }
+.sheet-row-select > span { pointer-events: none; }
+.sheet-grid-header .sheet-row-select > input,
+.sheet-grid-row:hover .sheet-row-select > input,
+.sheet-row-select:focus-within > input,
+.sheet-row-select > input:checked { opacity: 1; }
+.sheet-grid-row:hover .sheet-row-select > span,
+.sheet-row-select:focus-within > span,
+.sheet-row-select > input:checked + span { opacity: 0; }
+.sheet-row-select:focus-within { outline: 2px solid var(--focus); outline-offset: -2px; }
 .sheet-cell {
   position: absolute;
   top: 0;
@@ -354,10 +350,14 @@
   border: 1px solid var(--orbis-surface-edge);
   border-radius: 12px;
   box-shadow: var(--orbis-floating-shadow);
-  z-index: 300;
+  z-index: var(--layer-dialog);
+  max-width: calc(100vw - 16px);
   max-height: calc(100dvh - 16px);
   overflow: auto;
+  overscroll-behavior: contain;
+  animation: sheet-popover-enter var(--orbis-motion-popover) var(--orbis-ease-out);
 }
+@keyframes sheet-popover-enter { from { opacity: 0; } to { opacity: 1; } }
 .sheet-popover.wide {
   width: 360px;
 }
@@ -370,7 +370,7 @@
   justify-content: flex-start;
   gap: 10px;
   padding: 8px 10px;
-  min-height: 36px;
+  min-height: var(--orbis-control-default-height);
   text-align: left;
   font-size: var(--orbis-text-ui-size);
 }
@@ -433,7 +433,7 @@
 }
 .sheet-setting-row > button {
   padding: 4px;
-  min-width: 24px;
+  min-width: var(--orbis-control-compact-height);
 }
 .sheet-filter-row {
   display: flex;
@@ -800,6 +800,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  flex-wrap: wrap;
   opacity: 0;
 }
 .sheet-form-question:hover .sheet-question-tools,
@@ -815,9 +816,9 @@
 }
 .sheet-question-tools button {
   padding: 4px;
-  min-width: 24px;
-  min-height: 24px;
-  height: 24px;
+  min-width: var(--orbis-control-compact-height);
+  min-height: var(--orbis-control-compact-height);
+  height: var(--orbis-control-compact-height);
   font-size: var(--orbis-text-caption-size);
 }
 .sheet-form-question .sheet-question-description {
@@ -1214,6 +1215,7 @@
   )
   .orbis-action-button {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   gap: var(--action-gap);
@@ -1245,9 +1247,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-}
-.sheet-popover {
-  z-index: var(--layer-dialog);
 }
 .sheet-board-column {
   display: flex;
@@ -1335,7 +1334,7 @@
 }
 .sheet-inline-value {
   overflow: hidden;
-  padding: 5px 28px 5px 10px;
+  padding: 5px calc(var(--orbis-control-compact-height) + var(--orbis-space-2)) 5px 10px;
 }
 .sheet-cell-picker {
   position: absolute;
@@ -1344,7 +1343,7 @@
   transform: translateY(-50%);
   display: grid;
   place-items: center;
-  width: 22px;
+  width: 24px;
   height: 24px;
   border-radius: 4px;
   border: 0;
@@ -1364,6 +1363,7 @@
 .sheet-cell-picker-popover {
   width: 300px;
   padding: 10px;
+  animation: none;
 }
 .sheet-option-search {
   border: 0;
@@ -1371,6 +1371,7 @@
   outline: none;
   width: 100%;
   padding: 8px;
+  min-height: var(--orbis-control-form-height);
   margin-bottom: 6px;
   background: transparent;
   color: var(--text-primary);
@@ -1384,15 +1385,18 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  min-height: 36px;
+  min-height: var(--orbis-control-default-height);
   padding: 6px 9px;
   border-radius: 6px;
 }
 .sheet-option-list > button:hover,
 .sheet-option-list > button:focus-visible {
   background: var(--surface-hover);
-  outline: none;
 }
+.sheet-option-search:focus-visible,
+.sheet-option-list > button:focus-visible,
+.sheet-calendar-grid > button:focus-visible,
+.sheet-cell-picker:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
 .sheet-date-picker header,
 .sheet-date-picker footer {
   display: flex;
@@ -1400,6 +1404,7 @@
   justify-content: space-between;
   padding: 4px;
 }
+.sheet-date-picker header > button { min-width: var(--orbis-control-compact-height); }
 .sheet-date-picker footer {
   border-top: 1px solid var(--border-subtle);
   margin-top: 8px;
@@ -1415,7 +1420,7 @@
   color: var(--text-tertiary);
 }
 .sheet-calendar-grid > button {
-  height: 32px;
+  height: var(--orbis-control-compact-height);
   border-radius: 6px;
 }
 .sheet-calendar-grid > button:hover {
@@ -1429,13 +1434,10 @@
   justify-content: center;
   gap: 0;
 }
-.sheet-row-label > input {
+.sheet-row-select > input {
   width: 14px;
   height: 14px;
   margin: 0;
-}
-.sheet-row-label > input:checked + span {
-  display: none;
 }
 .sheet-embedded-workspace {
   height: 460px;
@@ -1513,7 +1515,7 @@
   font-weight: var(--orbis-weight-action);
 }
 
-.sheet-grid-scroll .sheet-row-label > input[type="checkbox"] {
+.sheet-grid-scroll .sheet-row-select > input[type="checkbox"] {
   width: 14px;
   height: 14px;
   min-width: 14px;
@@ -1534,8 +1536,8 @@
   left: 4px;
   top: 50%;
   transform: translateY(-50%);
-  width: 22px;
-  min-width: 22px;
+  width: 24px;
+  min-width: 24px;
   height: 24px;
   min-height: 24px;
   padding: 2px;
@@ -1568,3 +1570,31 @@
 textarea.sheet-inline-input {
   align-content: center;
 }
+
+@media (pointer: coarse) {
+  :is(.sheet-workspace, .sheet-popover, .sheet-public) input:not([type="checkbox"], [type="radio"], [type="range"], .sheet-form-title),
+  :is(.sheet-workspace, .sheet-popover, .sheet-public) textarea { font-size: var(--orbis-text-section-size); }
+  .sheet-inline-input { padding-block: 2px; }
+  .sheet-search { min-height: var(--orbis-control-touch-height); }
+  .sheet-tab > button:last-child:not([role="tab"]),
+  .sheet-setting-row > button { min-width: var(--orbis-control-touch-height); }
+  .sheet-check, .sheet-setting-row > label, .sheet-question-tools label { min-height: var(--orbis-control-touch-height); }
+  .sheet-grid-heading > button > svg:last-child, .sheet-question-tools, .sheet-row-inspect { opacity: 1; }
+  .sheet-row-select > input { opacity: 1; }
+  .sheet-row-select > span { opacity: 0; }
+  /* Dense rows keep their saved height; the whole gutter is a selection target. */
+  .sheet-row-inspect.orbis-action-button, .sheet-cell-picker {
+    width: var(--orbis-control-touch-height);
+    min-width: var(--orbis-control-touch-height);
+    height: min(100%, var(--orbis-control-touch-height));
+    min-height: 0;
+    opacity: 1;
+  }
+  .sheet-cell[data-first-column] { --sheet-cell-content-inset: calc(var(--orbis-control-touch-height) + var(--orbis-space-2)); }
+  .sheet-cell-picker-popover { width: 360px; }
+  .sheet-option-edit { grid-template-columns: 16px minmax(0, 1fr) var(--orbis-control-touch-height); }
+  .sheet-option-edit > .orbis-select-field { grid-column: 2; }
+  .sheet-option-edit > button { grid-column: 3; grid-row: auto; min-width: var(--orbis-control-touch-height); }
+}
+
+@media (prefers-reduced-motion: reduce) { .sheet-popover { animation: none; } }

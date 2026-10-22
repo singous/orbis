@@ -1,4 +1,11 @@
 /* Shared semantics for HeroUI and custom controls, independent of page layout. */
+:is(.ui-button, .orbis-icon-button, .orbis-action-button) {
+  touch-action: manipulation;
+  transition-property: color, background-color, border-color, box-shadow, transform;
+  transition-duration: var(--orbis-motion-feedback);
+  transition-timing-function: var(--orbis-ease-out);
+}
+
 .orbis-icon-button {
   --control-height: var(--orbis-control-default-height);
   width: var(--control-height);
@@ -21,6 +28,26 @@
 .rail-action > svg { width: var(--orbis-icon-navigation-size); height: var(--orbis-icon-navigation-size); }
 .orbis-nav-item { min-height: var(--orbis-control-default-height); }
 .orbis-nav-icon { width: var(--orbis-control-touch-height); height: var(--orbis-control-touch-height); }
+
+/* Portal content must stay above the dialog that owns its trigger. */
+.orbis-select-popover, .orbis-color-popover { z-index: var(--layer-popover); }
+.orbis-tooltip { z-index: var(--layer-tooltip); max-width: min(20rem, calc(100vw - 2 * var(--orbis-space-4))); overflow-wrap: anywhere; }
+
+:is(.orbis-tooltip, .orbis-select-popover, .orbis-color-popover)[data-entering="true"] {
+  animation-duration: var(--orbis-motion-popover);
+  animation-timing-function: var(--orbis-ease-out);
+}
+:is(.orbis-tooltip, .orbis-select-popover, .orbis-color-popover)[data-exiting="true"] {
+  animation-duration: var(--orbis-motion-feedback);
+}
+:is(.orbis-modal-backdrop, .orbis-modal-container)[data-entering="true"] {
+  animation-duration: var(--orbis-motion-dialog);
+  animation-timing-function: var(--orbis-ease-out);
+}
+:is(.orbis-modal-backdrop, .orbis-modal-container)[data-exiting="true"] {
+  animation-duration: var(--orbis-motion-popover);
+  animation-timing-function: var(--orbis-ease-out);
+}
 
 :where([data-slot="dropdown-menu"], .orbis-select-popover) [role="menuitem"],
 .orbis-select-popover [role="option"] {
@@ -69,4 +96,9 @@
   :is(input, textarea, [data-slot="select-trigger"]):not(.editor-title) {
     font-size: var(--orbis-text-section-size);
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.ui-button, .orbis-icon-button, .orbis-action-button) { transition: none; }
+  :is(.orbis-tooltip, .orbis-select-popover, .orbis-color-popover, .orbis-modal-backdrop, .orbis-modal-container) { animation: none; transition: none; }
 }

@@ -7,10 +7,26 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
-export type Anchor = { left: number; top: number };
+const ANCHOR_GAP = 6;
+const VIEWPORT_MARGIN = 8;
+const FOCUSABLE = [
+  'input:not([disabled]):not([type="hidden"])',
+  "textarea:not([disabled])",
+  "button:not([disabled])",
+  "select:not([disabled])",
+  "a[href]",
+  '[tabindex]:not([tabindex="-1"])',
+].join(", ");
+const NESTED_OVERLAY = ".orbis-select-popover, .orbis-color-popover";
+
+export type Anchor = { left: number; top: number; element?: HTMLElement };
 export function anchorAt(element: Element): Anchor {
   const r = element.getBoundingClientRect();
-  return { left: r.left, top: r.bottom + 6 };
+  return {
+    left: r.left,
+    top: r.bottom + ANCHOR_GAP,
+    element: element instanceof HTMLElement ? element : undefined,
+  };
 }
 export function Popover({
   anchor,
@@ -35,32 +51,107 @@ export function Popover({
 }) {
   const handlers = useRef({ onClose, onEscape, anchorElement });
   handlers.current = { onClose, onEscape, anchorElement };
-  const ref = useRef<HTMLDivElement>(null),
-    [position, setPosition] = useState(anchor);
+  const ref = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState({
+    left: anchor.left,
+    top: anchor.top,
+    maxWidth: innerWidth - 2 * VIEWPORT_MARGIN,
+    maxHeight: innerHeight - 2 * VIEWPORT_MARGIN,
+  });
+  const dismissal = useRef<"restore" | "outside" | "managed">("restore");
+
+  // Capture the trigger before moving focus, including menus that open another editor.
   useLayoutEffect(() => {
     const el = ref.current!;
-    setPosition({
-      left: Math.max(8, Math.min(anchor.left, innerWidth - el.offsetWidth - 8)),
-      top: Math.max(8, Math.min(anchor.top, innerHeight - el.offsetHeight - 8)),
-    });
-    el.querySelector<HTMLElement>("input,button,select")?.focus();
-  }, [anchor]);
+    const previous = anchorElement ?? anchor.element ?? document.activeElement;
+    const first = Array.from(el.querySelectorAll<HTMLElement>(FOCUSABLE)).find(
+      (item) => item.tabIndex >= 0 &&
+        !item.closest('[hidden], [inert], [aria-hidden="true"], [aria-disabled="true"]'),
+    );
+    (first ?? el).focus({ preventScroll: true });
+    return () => {
+      if (
+        dismissal.current === "restore" &&
+        previous instanceof HTMLElement && previous.isConnected
+      ) {
+        previous.focus();
+      }
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    const el = ref.current!;
+    let frame = 0;
+    const place = () => {
+      frame = 0;
+      const viewport = window.visualViewport;
+      const left = (viewport?.offsetLeft ?? 0) + VIEWPORT_MARGIN;
+      const top = (viewport?.offsetTop ?? 0) + VIEWPORT_MARGIN;
+      const maxWidth = Math.max(
+        0, (viewport?.width ?? innerWidth) - 2 * VIEWPORT_MARGIN,
+      );
+      const maxHeight = Math.max(
+        0, (viewport?.height ?? innerHeight) - 2 * VIEWPORT_MARGIN,
+      );
+      const trigger = anchorElement ?? anchor.element;
+      const rect = trigger?.isConnected ? trigger.getBoundingClientRect() : undefined;
+      const anchorLeft = rect?.left ?? anchor.left;
+      const anchorTop = rect ? rect.bottom + ANCHOR_GAP : anchor.top;
+      const maxLeft = left + maxWidth - Math.min(el.offsetWidth, maxWidth);
+      const maxTop = top + maxHeight - Math.min(el.offsetHeight, maxHeight);
+      const next = {
+        left: Math.max(left, Math.min(anchorLeft, maxLeft)),
+        top: Math.max(top, Math.min(anchorTop, maxTop)),
+        maxWidth,
+        maxHeight,
+      };
+      setPosition((old) => {
+        if (old.left === next.left && old.top === next.top &&
+          old.maxWidth === maxWidth && old.maxHeight === maxHeight) return old;
+        return next;
+      });
+    };
+    const schedule = (event?: Event) => {
+      if (event?.target instanceof Node && el.contains(event.target)) return;
+      if (!frame) frame = requestAnimationFrame(place);
+    };
+    place();
+    const observer = new ResizeObserver(() => schedule());
+    observer.observe(el);
+    window.addEventListener("resize", schedule);
+    window.addEventListener("scroll", schedule, true);
+    window.visualViewport?.addEventListener("resize", schedule);
+    window.visualViewport?.addEventListener("scroll", schedule);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener("resize", schedule);
+      window.removeEventListener("scroll", schedule, true);
+      window.visualViewport?.removeEventListener("resize", schedule);
+      window.visualViewport?.removeEventListener("scroll", schedule);
+    };
+  }, [anchor, anchorElement]);
+
   useEffect(() => {
-    const previous = document.activeElement;
     const dismiss = (e: PointerEvent) => {
-      if ((e.target as HTMLElement).closest?.(".orbis-select-popover")) return;
+      if (e.target instanceof Element && e.target.closest(NESTED_OVERLAY)) return;
       if (
         !ref.current?.contains(e.target as Node) &&
         !handlers.current.anchorElement?.contains(e.target as Node)
-      )
+      ) {
+        dismissal.current = "outside";
         handlers.current.onClose();
+      }
     };
     const key = (e: KeyboardEvent) => {
       if (
         e.key === "Escape" &&
-        !(e.target as HTMLElement).closest?.(".orbis-select-popover")
+        !e.isComposing && !e.defaultPrevented &&
+        !(e.target instanceof Element && e.target.closest(NESTED_OVERLAY))
       ) {
+        e.preventDefault();
         e.stopPropagation();
+        dismissal.current = handlers.current.onEscape ? "managed" : "restore";
         (handlers.current.onEscape ?? handlers.current.onClose)();
       }
     };
@@ -69,21 +160,21 @@ export function Popover({
     return () => {
       document.removeEventListener("pointerdown", dismiss);
       document.removeEventListener("keydown", key, true);
-      if (previous instanceof HTMLElement && previous.isConnected)
-        previous.focus();
     };
   }, []);
   return createPortal(
     <div
       ref={ref}
       role="dialog"
+      tabIndex={-1}
       aria-label={label}
       className={`sheet-popover${wide ? " wide" : ""} ${className}`}
-      style={{ left: position.left, top: position.top }}
+      style={position}
       onKeyDown={(e) => {
         e.stopPropagation();
         if (e.key === "Tab" && onTab) {
           e.preventDefault();
+          dismissal.current = "managed";
           onTab(e.shiftKey);
           return;
         }

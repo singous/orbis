@@ -27,7 +27,7 @@ export function Tooltip({
       <HeroTooltip.Content
         placement={placement}
         offset={6}
-        className="z-50"
+        className="orbis-tooltip"
       >
         {label}
       </HeroTooltip.Content>

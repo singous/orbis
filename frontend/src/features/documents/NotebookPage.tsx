@@ -35,12 +35,23 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
   const workspace = useStore(authStore, (state) => state.workspace);
   const canEdit = canMutateWorkspaceContent(workspace);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const actionsTriggerRef = useRef<HTMLButtonElement>(null);
   const notebookQuery = useNotebook(collectionId);
   const importMarkdown = useImportMarkdown();
   const exportMarkdown = useExportMarkdown();
   const createNote = useCreateNote();
   const updateNotebook = useUpdateNotebook();
   const [editing, setEditing] = useState<Notebook | null>(null);
+  function closeNotebookEditor() {
+    setEditing(null);
+    // The menu item that opened the dialog has unmounted. Restore its stable trigger.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const active = document.activeElement;
+      if (!active || active === document.body || !active.isConnected || active.closest(".notebook-dialog")) {
+        actionsTriggerRef.current?.focus();
+      }
+    }));
+  }
   const pendingImport = useRef<{intent:string;operationID:string;input:Parameters<typeof importMarkdown.mutateAsync>[0];uncertain:boolean}|null>(null);
   const [pendingImportTitle,setPendingImportTitle]=useState<string|null>(null);
   const [importBusy,setImportBusy]=useState(false);
@@ -139,7 +150,7 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
             {canEdit ? <Button variant="primary" icon={<Plus aria-hidden="true" size={14} />} onClick={() => void createDocument().catch((error) => showToast({ title: "创建文档失败", description: error instanceof Error ? error.message : "请稍后重试。", tone: "danger" }))} disabled={createNote.isPending}>新建文档</Button> : null}
             <input ref={fileInputRef} className="hidden" type="file" accept=".md,text/markdown,text/plain" onChange={handleImport} />
             <Dropdown>
-              <ActionButton type="button" className="icon-button notebook-actions-trigger" aria-label="笔记本操作" title="更多操作"><MoreHorizontal aria-hidden="true" size={18} /></ActionButton>
+              <ActionButton ref={actionsTriggerRef} type="button" className="icon-button notebook-actions-trigger" aria-label="笔记本操作" title="更多操作"><MoreHorizontal aria-hidden="true" size={18} /></ActionButton>
               <Dropdown.Popover className="notebook-actions-popover" placement="bottom end" offset={8}>
                 <Dropdown.Menu aria-label="笔记本操作" onAction={(key) => {
                   if (key === "edit") setEditing(notebook ?? null);
@@ -161,7 +172,7 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
           <DocumentContextPanel notebookId={collectionId} variant="main" />
         </section>
       </div>
-      {editing ? <NotebookDialog open={Boolean(editing)} title="编辑笔记本" initialValue={editing.title} initialIcon={editing.icon} submitLabel="保存" pending={updateNotebook.isPending} onClose={() => setEditing(null)} onSubmit={async ({ title, icon }) => { await updateNotebook.mutateAsync({ id: editing.id,expected_version:editing.metadata_version, title, icon }); setEditing(null); }} /> : null}
+      {editing ? <NotebookDialog open={Boolean(editing)} title="编辑笔记本" initialValue={editing.title} initialIcon={editing.icon} submitLabel="保存" pending={updateNotebook.isPending} onClose={closeNotebookEditor} onSubmit={async ({ title, icon }) => { await updateNotebook.mutateAsync({ id: editing.id,expected_version:editing.metadata_version, title, icon }); closeNotebookEditor(); }} /> : null}
     </DocumentShell>
   );
 }

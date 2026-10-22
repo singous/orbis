@@ -1,4 +1,4 @@
-/* Orbis semantic scale. DESIGN.md owns role definitions; values live here. */
+/* Orbis semantic scale. frontend/README.md documents roles; values live here. */
 :root {
   --orbis-text-caption-size: .75rem;
   --orbis-text-caption-leading: 1.125rem;
@@ -27,6 +27,14 @@
   --orbis-space-6: 1.5rem;
   --orbis-space-8: 2rem;
   --orbis-space-12: 3rem;
+  --orbis-motion-feedback: 120ms;
+  --orbis-motion-popover: 180ms;
+  --orbis-motion-dialog: 220ms;
+  --orbis-ease-out: cubic-bezier(.2, .8, .2, 1);
+  --orbis-dialog-gutter: var(--orbis-space-4);
+  --layer-dialog: 80;
+  --layer-popover: 90;
+  --layer-tooltip: 100;
   --orbis-tree-indent: 1.25rem;
   /* Default reading typography follows the shared scale; authored sizes remain content. */
   --orbis-prose-body-size: var(--orbis-text-ui-size);

@@ -117,6 +117,7 @@ function WorkspaceShellContent({ children, sectionTitle, sidebar, toolbar, conte
 
   return (
     <main data-app-surface={surface} style={shellStyle} className={`workspace-shell${showFunctionSidebar ? " has-section-menu" : " sidebar-unavailable"}${sidebarHidden ? " sidebar-collapsed" : ""}${animating ? " sidebar-animating" : ""}${mainNavigationOpen ? " main-navigation-open" : ""}${documentContextExpanded ? " document-context-drawer-open" : ""}`}>
+      <a className="workspace-skip-link" href="#workspace-main-content" inert={drawerOpen ? true : undefined}>跳转到主内容</a>
       {surface === "desktop" ? <WorkspaceTopbar disabled={drawerOpen} /> : null}
       <div ref={gridRef} className="workspace-shell-grid">
         {drawerOpen ? <ActionButton type="button" className="workspace-drawer-backdrop" aria-label={mainNavigationOpen ? "关闭主导航" : "关闭文档目录"} onClick={() => { setMainNavigationOpen(false); setDocumentContextOpen(false); }} /> : null}
@@ -141,7 +142,7 @@ function WorkspaceShellContent({ children, sectionTitle, sidebar, toolbar, conte
                 {contextPanel && onOpenContext ? <ActionButton type="button" aria-label="打开上下文面板" className="icon-button workspace-context-open-control" onClick={onOpenContext}><PanelRightOpen aria-hidden="true" size={16} /></ActionButton> : null}
               </header>
             ) : null}
-            <div key={pathname} className="workspace-route-content">{children}</div>
+            <div key={pathname} id="workspace-main-content" tabIndex={-1} className="workspace-route-content">{children}</div>
           </section>
           {contextPanel ? <aside ref={contextRef} className="workspace-context-panel" aria-label="上下文面板" aria-hidden={compact && !documentContextExpanded ? true : undefined} inert={compact && !documentContextExpanded ? true : undefined} hidden={!contextOpen} onClick={closeAfterLink}>{contextPanel}</aside> : null}
         </section>
