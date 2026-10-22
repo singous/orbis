@@ -59,3 +59,7 @@ No migration or service switch is implied by building this branch.
 - `frontend/tests/bench/boards/` contains a reproducible mixed-scene renderer harness.
   It measures the rendering layer, not server loading, concurrent-network latency
   or a 30-minute complete-product memory test.
+
+Embedding is limited to 32 board blocks per document. Sharing/publication deduplicate
+identical reference scopes within each request; a site supports up to 200 distinct
+board views and retains its aggregate 32 MiB snapshot budget.

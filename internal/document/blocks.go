@@ -66,6 +66,7 @@ func Normalize(blocks []Block) ([]Block, error) {
 	seen := map[string]bool{}
 	count := 0
 	gridCells := 0
+	boardReferences := 0
 	var visit func([]Block, int) error
 	visit = func(items []Block, depth int) error {
 		if len(items) == 0 {
@@ -151,6 +152,7 @@ func Normalize(blocks []Block) ([]Block, error) {
 					allowed[key] = true
 				}
 			case "board":
+				boardReferences++
 				if err := normalizeBoardReference(b); err != nil {
 					return err
 				}
@@ -205,6 +207,9 @@ func Normalize(blocks []Block) ([]Block, error) {
 	}
 	if err := visit(result, 1); err != nil {
 		return nil, err
+	}
+	if boardReferences > MaxBoardReferences {
+		return nil, fault.Field("body.blocks", fmt.Sprintf("单篇文档最多引用 %d 个画板视图", MaxBoardReferences))
 	}
 	normalized, err := json.Marshal(result)
 	if err != nil {

@@ -26,6 +26,7 @@ import (
 const assetPrefix = "orbis-asset:"
 const tablePrefix = "orbis-table:"
 const MaxSiteAssets = 10000
+const MaxSiteBoardViews = 200
 
 type builtSnapshot struct {
 	preview       publishing.Preview
@@ -35,27 +36,35 @@ type builtSnapshot struct {
 }
 
 func snapshotLimit() error {
-	return fault.New(fault.TooLarge, "SITE_SNAPSHOT_TOO_LARGE", "站点快照超过 32 MiB、400 个表格、100000 条表格记录或 10000 个附件限制")
+	return fault.New(fault.TooLarge, "SITE_SNAPSHOT_TOO_LARGE", "站点快照超过 32 MiB、400 个表格、100000 条表格记录、10000 个附件或 200 个画板视图限制")
 }
 func (r *Repository) build(ctx context.Context, tx *gorm.DB, row siteRow, config publishing.Config, source resolvedSource, preview bool) (builtSnapshot, error) {
 	result := builtSnapshot{tables: map[string]table.PublicData{}, assets: map[string]asset.Record{}, tableVersions: map[string]int64{}}
 	snapshot := publishing.Snapshot{Name: config.Name, Slug: config.Slug, Description: config.Description, SiteKind: config.SiteKind, AccentColor: config.AccentColor, Pages: []publishing.PageMetadata{}, Redirects: source.redirects, Branding: publishing.PublicBranding{Links: config.Branding.Links, FooterLinks: config.Branding.FooterLinks, CTA: config.Branding.CTA, Theme: config.Branding.Theme}}
 	result.preview = publishing.Preview{Snapshot: snapshot, Pages: []publishing.Page{}, SourceFingerprint: source.fingerprint}
 	references := map[string]string{}
+	boardViews := map[string]board.View{}
+	boardViewBytes := 0
 	for _, page := range source.pages {
 		for _, ref := range document.BoardReferences(page.Blocks) {
+			if _, exists := boardViews[ref.Key()]; exists {
+				continue
+			}
 			if r.boards == nil {
 				return result, publicview.Unsafe()
 			}
-			snapshot, err := r.boards.Read(ctx, tx, row.WorkspaceID, ref)
+			if len(boardViews) >= MaxSiteBoardViews {
+				return result, snapshotLimit()
+			}
+			view, err := r.boards.Project(ctx, tx, row.WorkspaceID, ref, func(id string) (string, error) { references[id] = "image"; return assetPrefix + id, nil })
 			if err != nil {
 				return result, err
 			}
-			for _, element := range snapshot.Elements {
-				if element.Structure.AssetID != nil {
-					references[*element.Structure.AssetID] = "image"
-				}
+			boardViewBytes += len(view.SVG) + len(view.Text)
+			if boardViewBytes > publishing.MaxSnapshotBytes {
+				return result, snapshotLimit()
 			}
+			boardViews[ref.Key()] = view
 		}
 		for _, ref := range document.MediaReferences(page.Blocks) {
 			if ref.Kind != "file" {
@@ -124,10 +133,14 @@ func (r *Repository) build(ctx context.Context, tx *gorm.DB, row siteRow, config
 	for _, page := range source.pages {
 		options := publicview.Options{URLs: policy, Asset: assetURL}
 		options.Board = func(ref document.BoardReference) (board.View, error) {
-			if r.boards == nil {
+			view, exists := boardViews[ref.Key()]
+			if !exists {
 				return board.View{}, publicview.Unsafe()
 			}
-			return r.boards.Project(ctx, tx, row.WorkspaceID, ref, assetURL)
+			if preview {
+				view.SVG = board.BindSVGAssets(view.SVG, func(id string) string { return "/api/v1/workspaces/" + row.WorkspaceID + "/assets/" + id + "/content" })
+			}
+			return view, nil
 		}
 		options.Sheet = func(id, view string) (publicview.TableRef, error) {
 			data, err := sheetstore.Snapshot(ctx, tx, row.WorkspaceID, id, view)

@@ -50664,5 +50664,12 @@
       "status": 503,
       "description": "The bounded preview pool is full; retry later."
     }
+  },
+  "x-board-projection-limits": {
+    "document_board_blocks": 32,
+    "site_distinct_board_views": 200,
+    "share_bytes": 8388608,
+    "site_snapshot_bytes": 33554432,
+    "description": "Preview generation is deduplicated by board/page/mode/revision/frame within each request. Reference count limits cover whole-body and incremental writes; public read and publication budgets remain independent."
   }
 }

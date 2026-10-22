@@ -1,10 +1,23 @@
 package document
 
 import (
+	"strconv"
+
 	"github.com/google/uuid"
 
 	"orbis.local/orbis/internal/platform/fault"
 )
+
+const MaxBoardReferences = 32
+
+// Key identifies one immutable projection scope within a request.
+func (r BoardReference) Key() string {
+	frame := ""
+	if r.FrameID != nil {
+		frame = *r.FrameID
+	}
+	return r.ID + ":" + r.PageID + ":" + r.Mode + ":" + strconv.FormatInt(r.Revision, 10) + ":" + frame
+}
 
 type BoardReference struct {
 	ID, PageID, Mode string

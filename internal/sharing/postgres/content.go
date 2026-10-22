@@ -174,25 +174,40 @@ func (r *Repository) project(ctx context.Context, tx *gorm.DB, scope scopeState,
 	}
 	references := document.MediaReferences(blocks)
 	boardAllowed := map[string]bool{}
+	boardViews := map[string]board.View{}
+	boardViewBytes := 0
 	if r.boards != nil {
 		for _, ref := range document.BoardReferences(blocks) {
-			var count int64
-			if err := tx.WithContext(ctx).Table("boards").Where("id=? AND workspace_id=? AND document_id=?", ref.ID, scope.share.WorkspaceID, doc.ID).Count(&count).Error; err != nil {
-				return nil, err
-			}
-			if count != 1 {
+			if _, exists := boardViews[ref.Key()]; exists {
 				continue
 			}
-			boardAllowed[ref.ID] = true
-			snapshot, err := r.boards.Read(ctx, tx, scope.share.WorkspaceID, ref)
+			allowed, checked := boardAllowed[ref.ID]
+			if !checked {
+				var count int64
+				if err := tx.WithContext(ctx).Table("boards").Where("id=? AND workspace_id=? AND document_id=?", ref.ID, scope.share.WorkspaceID, doc.ID).Count(&count).Error; err != nil {
+					return nil, err
+				}
+				allowed = count == 1
+				boardAllowed[ref.ID] = allowed
+			}
+			if !allowed {
+				continue
+			}
+			if len(boardViews) >= document.MaxBoardReferences {
+				return nil, contentLimit()
+			}
+			view, err := r.boards.Project(ctx, tx, scope.share.WorkspaceID, ref, func(id string) (string, error) {
+				references = append(references, document.AssetReference{ID: id, Kind: "image"})
+				return "orbis-asset:" + id, nil
+			})
 			if err != nil {
 				return nil, err
 			}
-			for _, element := range snapshot.Elements {
-				if element.Structure.AssetID != nil {
-					references = append(references, document.AssetReference{ID: *element.Structure.AssetID, Kind: "image"})
-				}
+			boardViewBytes += len(view.SVG) + len(view.Text)
+			if boardViewBytes > sharing.MaxPageBytes {
+				return nil, contentLimit()
 			}
+			boardViews[ref.Key()] = view
 		}
 	}
 	ids := []string{}
@@ -243,10 +258,14 @@ func (r *Repository) project(ctx context.Context, tx *gorm.DB, scope scopeState,
 		return "/api/v1/public/shares/" + input.Token + "/documents/" + doc.ID + "/assets/" + id + "?version=" + versionString(doc.ContentVersion), nil
 	}
 	options.Board = func(ref document.BoardReference) (board.View, error) {
-		if !boardAllowed[ref.ID] || r.boards == nil {
+		view, exists := boardViews[ref.Key()]
+		if !exists {
 			return board.View{Title: "画板", Restricted: true}, nil
 		}
-		return r.boards.Project(ctx, tx, scope.share.WorkspaceID, ref, options.Asset)
+		view.SVG = board.BindSVGAssets(view.SVG, func(id string) string {
+			return "/api/v1/public/shares/" + input.Token + "/documents/" + doc.ID + "/assets/" + id + "?version=" + versionString(doc.ContentVersion)
+		})
+		return view, nil
 	}
 	options.Table = func(ref table.Reference) (publicview.TableRef, error) {
 		metadata, err := tableMetadata(ctx, tx, scope, doc, ref.TableID)
