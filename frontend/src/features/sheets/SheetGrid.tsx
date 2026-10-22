@@ -15,6 +15,12 @@ import { registerPendingNavigation } from "../../shared/navigation/pending-navig
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { CellValue } from "./Cell";
 import { CellEditor, type CellNavigation } from "./CellEditor";
+import {
+  clearCellDraft,
+  readCellDraft,
+  storeCellDraft,
+  type CellDraft,
+} from "./cell-draft";
 import { decodeCells, encodeCells } from "./clipboard";
 import { FieldIcon } from "./FieldIcon";
 import { moveGridSelection, type GridPoint as Point } from "./grid-navigation";
@@ -36,6 +42,8 @@ const ROW_HEADER_WIDTH = 44;
 export function SheetGrid({
   rows,
   confirmedRows,
+  draftKey,
+  discardVersion,
   rowOffset,
   total,
   fields: allFields,
@@ -60,6 +68,8 @@ export function SheetGrid({
 }: {
   rows: Row[];
   confirmedRows: Row[];
+  draftKey: string;
+  discardVersion: number;
   rowOffset: number;
   total?: number;
   fields: Field[];
@@ -101,6 +111,20 @@ export function SheetGrid({
     } | null>(null),
     [selected, setSelected] = useState<Set<string>>(new Set());
   const committedRows = useRef(new Map<string, Row>());
+  const cellDraftKey = `${draftKey}:cell`;
+  const restored = useRef(false);
+  const [orphanDraft, setOrphanDraft] = useState<CellDraft | null>(null);
+  const queuedCommit = useRef<{
+    value?: Value;
+    navigation?: CellNavigation;
+  } | null>(null);
+  function persist(row: Row, fieldId: string, value: Value) {
+    try {
+      storeCellDraft(cellDraftKey, row, fieldId, value);
+    } catch {
+      onError("浏览器无法保留单元格草稿，请保持此页面打开并重试保存。");
+    }
+  }
   useEffect(() => {
     onDraftChange(
       Boolean(
@@ -139,6 +163,38 @@ export function SheetGrid({
     setEditing(null);
     setSelected(new Set());
   }, [view.id]);
+  useEffect(() => {
+    if (restored.current || readOnly || !fields.length) return;
+    const saved = readCellDraft(cellDraftKey);
+    if (!saved) {
+      restored.current = true;
+      return;
+    }
+    const index = rows.findIndex((row) => row.id === saved.row.id);
+    const col = fields.findIndex((field) => field.id === saved.fieldId);
+    if (index < 0 || col < 0) {
+      setOrphanDraft((current) =>
+        current?.row.id === saved.row.id &&
+        current.fieldId === saved.fieldId &&
+        JSON.stringify(current.value) === JSON.stringify(saved.value)
+          ? current
+          : saved,
+      );
+      return;
+    }
+    restored.current = true;
+    setOrphanDraft(null);
+    if (
+      JSON.stringify(rows[index].values[saved.fieldId] ?? null) ===
+      JSON.stringify(saved.value)
+    ) {
+      clearCellDraft(cellDraftKey, saved.row.id, saved.fieldId, saved.value);
+      return;
+    }
+    setEditing({ row: saved.row, field: fields[col], value: saved.value });
+    setStart({ row: index, col });
+    setEnd({ row: index, col });
+  }, [rows, fields, readOnly, cellDraftKey]);
   const previousOrder = useRef({
     rows: rows.map((r) => r.id),
     fields: fields.map((f) => f.id),
@@ -251,27 +307,43 @@ export function SheetGrid({
     scroller.current?.focus({ preventScroll: true });
   }
   function edit(p: Point, initial?: string) {
+    if (orphanDraft) {
+      onError("请先保存、导出或放弃上次的单元格草稿。");
+      return;
+    }
     const source = rows[p.row],
       field = fields[p.col];
     const local = source && committedRows.current.get(source.id);
     const row = local && local.version > source.version ? local : source;
     if (!row || !field || readOnly || busy || KINDS[field.kind].system) return;
-    setEditing({
-      row,
-      field,
-      value:
-        initial === undefined
-          ? (row.values[field.id] ?? null)
-          : ["select", "multi_select", "person", "datetime"].includes(
-                field.kind,
-              )
-            ? (row.values[field.id] ?? null)
-            : initial,
-      initial,
-    });
+    const existing = readCellDraft(cellDraftKey);
+    if (
+      existing &&
+      (existing.row.id !== row.id || existing.fieldId !== field.id)
+    ) {
+      setOrphanDraft(existing);
+      return;
+    }
+    const value = existing
+      ? existing.value
+      : initial === undefined ||
+          ["select", "multi_select", "person", "datetime"].includes(field.kind)
+        ? (row.values[field.id] ?? null)
+        : initial;
+    const base = existing?.row ?? row;
+    if (JSON.stringify(value) !== JSON.stringify(base.values[field.id] ?? null))
+      persist(base, field.id, value);
+    setEditing({ row: base, field, value, initial });
   }
-  const latest = useRef({ rows, fields, onChange, editing });
-  latest.current = { rows, fields, onChange, editing };
+  const latest = useRef({ rows, fields, onChange, editing, confirmedRows });
+  latest.current = { rows, fields, onChange, editing, confirmedRows };
+  useEffect(() => {
+    if (!discardVersion) return;
+    latest.current.editing = null;
+    queuedCommit.current = null;
+    setEditing(null);
+    setOrphanDraft(null);
+  }, [discardVersion]);
   const saving = useRef<Promise<boolean> | null>(null);
   function leaveGrid(backward: boolean) {
     const grid = scroller.current;
@@ -301,9 +373,16 @@ export function SheetGrid({
     navigation?: CellNavigation,
   ): Promise<boolean> {
     if (saving.current) return saving.current;
-    if (hasPending) return Promise.resolve(false);
-    const active = latest.current.editing;
-    if (!active) return Promise.resolve(true);
+    const draft = latest.current.editing;
+    if (!draft) return Promise.resolve(!hasPending);
+    if (hasPending || busy) {
+      if (navigation) queuedCommit.current = { value, navigation };
+      return Promise.resolve(false);
+    }
+    const acknowledged = latest.current.confirmedRows.find(
+      (row) => row.id === draft.row.id && row.version > draft.row.version,
+    );
+    const active = acknowledged ? { ...draft, row: acknowledged } : draft;
     const task = Promise.resolve().then(async () => {
       try {
         let nextValue = value === undefined ? active.value : value;
@@ -340,6 +419,12 @@ export function SheetGrid({
           return false;
         }
         latest.current.editing = null;
+        clearCellDraft(
+          cellDraftKey,
+          active.row.id,
+          active.field.id,
+          active.value,
+        );
         setEditing(null);
         if (navigation || value !== undefined)
           scroller.current?.focus({ preventScroll: true });
@@ -391,6 +476,12 @@ export function SheetGrid({
   }
   const flush = useRef(commit);
   flush.current = commit;
+  useEffect(() => {
+    if (hasPending || busy || !queuedCommit.current) return;
+    const queued = queuedCommit.current;
+    queuedCommit.current = null;
+    void flush.current(queued.value, queued.navigation);
+  }, [hasPending, busy, confirmedRows]);
   useEffect(
     () =>
       registerPendingNavigation(async () => {
@@ -474,6 +565,43 @@ export function SheetGrid({
         { "--sheet-row-header-width": `${ROW_HEADER_WIDTH}px` } as CSSProperties
       }
     >
+      {orphanDraft && (
+        <div className="sheet-notice" role="status">
+          <span>当前视图之外还有未保存的单元格草稿。</span>
+          <ActionButton
+            size="sm"
+            onClick={() => {
+              const url = URL.createObjectURL(
+                new Blob([JSON.stringify(orphanDraft, null, 2)], {
+                  type: "application/json",
+                }),
+              );
+              const link = document.createElement("a");
+              link.href = url;
+              link.download = "data-table-cell-draft.json";
+              link.click();
+              setTimeout(() => URL.revokeObjectURL(url), 0);
+            }}
+          >
+            导出草稿
+          </ActionButton>
+          <ActionButton
+            size="sm"
+            onClick={() => {
+              clearCellDraft(
+                cellDraftKey,
+                orphanDraft.row.id,
+                orphanDraft.fieldId,
+                orphanDraft.value,
+              );
+              setOrphanDraft(null);
+              restored.current = true;
+            }}
+          >
+            放弃草稿
+          </ActionButton>
+        </div>
+      )}
       {selected.size > 0 && (
         <div className="sheet-selection-bar">
           已选择 {selected.size} 条记录
@@ -536,6 +664,13 @@ export function SheetGrid({
           )
             return;
           if (editing) {
+            clearCellDraft(
+              cellDraftKey,
+              editing.row.id,
+              editing.field.id,
+              editing.value,
+            );
+            queuedCommit.current = null;
             latest.current.editing = null;
             setEditing(null);
           }
@@ -782,9 +917,6 @@ export function SheetGrid({
                           edit({ row: virtual.index, col: col.index });
                         }
                       }}
-                      onDoubleClick={() =>
-                        edit({ row: virtual.index, col: col.index })
-                      }
                     >
                       {isEditing ? (
                         <CellEditor
@@ -793,13 +925,25 @@ export function SheetGrid({
                           value={editing.value}
                           initial={editing.initial}
                           auth={auth}
-                          onChange={(value) =>
+                          onChange={(value) => {
+                            const current = latest.current.editing;
+                            if (current)
+                              persist(current.row, current.field.id, value);
                             setEditing((old) =>
                               old ? { ...old, value } : null,
-                            )
-                          }
+                            );
+                          }}
                           onCommit={commit}
                           onCancel={() => {
+                            queuedCommit.current = null;
+                            const current = latest.current.editing;
+                            if (current)
+                              clearCellDraft(
+                                cellDraftKey,
+                                current.row.id,
+                                current.field.id,
+                                current.value,
+                              );
                             latest.current.editing = null;
                             setEditing(null);
                             scroller.current?.focus();

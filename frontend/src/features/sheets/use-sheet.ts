@@ -10,6 +10,7 @@ import { authStore } from "../../shared/auth/auth-store";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { newUUID } from "../../shared/ids";
 import { sheetAPI, type RecordPage } from "./api";
+import { acknowledgeCellDraft, readCellDraft } from "./cell-draft";
 import type { Changes, Patch, Row, Sheet } from "./model";
 
 type RecordPageParam = { cursor: string; offset: number };
@@ -61,6 +62,7 @@ export function useSheet(id: string, viewId: string, search: string) {
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const [confirmedRows, setConfirmedRows] = useState<Row[]>([]);
+  const [discardVersion, setDiscardVersion] = useState(0);
   const request = useRef<Changes | null>(null);
   const userID = useStore(authStore, (state) => state.user?.id);
   const draftKey = `orbis.sheet-draft:${userID}:${auth.workspaceId}:${id}`;
@@ -86,6 +88,10 @@ export function useSheet(id: string, viewId: string, search: string) {
   }, [client, auth.workspaceId, id]);
   async function change(patches?: Patch[]) {
     if (lock.current) throw new Error("正在保存，请稍候");
+    if (patches && !request.current) {
+      const pending = sessionStorage.getItem(draftKey);
+      if (pending) request.current = JSON.parse(pending);
+    }
     if (patches && request.current) throw new Error("请先处理尚未确认的修改");
     if (patches)
       request.current = {
@@ -95,15 +101,19 @@ export function useSheet(id: string, viewId: string, search: string) {
       };
     if (!request.current) return;
     // Persist the exact request before sending so a lost acknowledgement can be retried.
-    sessionStorage.setItem(draftKey, JSON.stringify(request.current));
+    const attempted = request.current;
+    const encoded = JSON.stringify(attempted);
+    sessionStorage.setItem(draftKey, encoded);
     lock.current = true;
     setBusy(true);
     setError("");
     try {
-      const result = await api.change(id, request.current);
+      const result = await api.change(id, attempted);
+      acknowledgeCellDraft(`${draftKey}:cell`, result.records);
       if (alive.current) setConfirmedRows(result.records);
       request.current = null;
-      sessionStorage.removeItem(draftKey);
+      if (sessionStorage.getItem(draftKey) === encoded)
+        sessionStorage.removeItem(draftKey);
       if (alive.current) await refresh();
       return result;
     } catch (e) {
@@ -153,8 +163,14 @@ export function useSheet(id: string, viewId: string, search: string) {
     }
   }, [meta.data?.data_revision]);
   function discard() {
+    if (
+      request.current &&
+      sessionStorage.getItem(draftKey) === JSON.stringify(request.current)
+    )
+      sessionStorage.removeItem(draftKey);
     request.current = null;
-    sessionStorage.removeItem(draftKey);
+    sessionStorage.removeItem(`${draftKey}:cell`);
+    setDiscardVersion((version) => version + 1);
     setError("");
     void refresh();
   }
@@ -169,6 +185,13 @@ export function useSheet(id: string, viewId: string, search: string) {
     stats,
     forms,
     confirmedRows,
+    discardVersion,
+    exportDraft: () =>
+      JSON.stringify(
+        { operation: request.current, cell: readCellDraft(`${draftKey}:cell`) },
+        null,
+        2,
+      ),
     rowOffset: pages.data?.pageParams[0]?.offset ?? 0,
     rows: Array.from(
       new Map(

@@ -586,10 +586,9 @@ export function SheetWorkspace({
               <ActionButton
                 size="sm"
                 onClick={() => {
-                  const blob = new Blob(
-                    [sessionStorage.getItem(c.draftKey) ?? ""],
-                    { type: "application/json" },
-                  );
+                  const blob = new Blob([c.exportDraft()], {
+                    type: "application/json",
+                  });
                   const url = URL.createObjectURL(blob),
                     a = document.createElement("a");
                   a.href = url;
@@ -693,6 +692,8 @@ export function SheetWorkspace({
               )}
               rows={c.rows}
               confirmedRows={c.confirmedRows}
+              draftKey={c.draftKey}
+              discardVersion={c.discardVersion}
               rowOffset={c.rowOffset}
               total={c.stats.data?.total}
               fields={fields}

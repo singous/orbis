@@ -113,7 +113,7 @@ export function DocumentEditorPage() {
   const { noteId = "" } = useParams();
   const note = useNote(noteId);
   if (note.isPending) return <DocumentShell><LoadingState label="正在打开文档…" variant="editor" /></DocumentShell>;
-  if (note.data?.sheet_id) return <Suspense fallback={<DocumentShell><LoadingState label="正在打开数据表…" variant="editor" /></DocumentShell>}><SheetDocument id={note.data.sheet_id} /></Suspense>;
+  if (note.data?.sheet_id) return <Suspense fallback={<DocumentShell><LoadingState label="正在打开数据表…" variant="editor" /></DocumentShell>}><SheetDocument key={note.data.id} id={note.data.sheet_id} /></Suspense>;
   if (note.data?.collaboration_available === true) return <Suspense fallback={<DocumentShell><LoadingState label="正在打开文档…" variant="editor" /></DocumentShell>}><CollaborativeDocumentEditorPage /></Suspense>;
   return <LegacyDocumentEditorPage />;
 }

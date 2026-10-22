@@ -282,11 +282,16 @@ test("selection paste, duplicate highlighting, resize and filters operate on sto
   await openWithSession(page, session, `/sheets/${sheet.id}`);
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.getByRole("gridcell").first().click();
+  await page
+    .getByRole("textbox", { name: "文本", exact: true })
+    .fill("将被粘贴替换的草稿");
   await page.evaluate(() =>
     navigator.clipboard.writeText("重复内容\n重复内容"),
   );
   await page.keyboard.press("Control+V");
   await expect(page.getByText("2 条记录", { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("gridcell").first()).toContainText("重复内容");
   await page.getByRole("button", { name: "文本列菜单", exact: true }).click();
   await page.getByRole("menuitem", { name: "高亮重复值", exact: true }).click();
   await expect(page.locator(".sheet-cell.duplicate")).toHaveCount(2);
@@ -821,12 +826,16 @@ test("inline edits preserve newer typing through a lost save response and retry"
     }),
   );
   await openWithSession(page, session, `/documents/${sheet.document_id}`);
-  let drop = true;
+  let attempts = 0;
   await page.route(`**/sheets/${sheet.id}/changes`, async (route) => {
-    if (drop) {
-      drop = false;
+    attempts += 1;
+    if (attempts === 1) {
       await route.fetch();
       await route.abort("failed");
+    } else if (attempts === 2) {
+      const response = await route.fetch();
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      await route.fulfill({ response });
     } else await route.continue();
   });
   await page.getByRole("gridcell").first().click();
@@ -839,6 +848,7 @@ test("inline edits preserve newer typing through a lost save response and retry"
   await retry.click();
   await expect(retry).toHaveCount(0);
   await input.press("Enter");
+  await expect(input).toHaveCount(0);
   await expect(page.getByRole("gridcell").first()).toContainText(
     "继续输入的新内容",
   );
@@ -851,4 +861,54 @@ test("inline edits preserve newer typing through a lost save response and retry"
   );
   expect(saved.items).toHaveLength(1);
   expect(saved.items[0].version).toBe(3);
+});
+
+test("a typed cell draft survives reload before submission", async ({
+  page,
+  request,
+}) => {
+  const session = await ownerSession(request),
+    headers = sessionHeaders(session);
+  const collection = await createCollection(
+    request,
+    session,
+    `单元格草稿 ${Date.now()}`,
+  );
+  const sheet = await responseData(
+    await request.post(workspacePath(session, "/sheets"), {
+      headers,
+      data: {
+        id: crypto.randomUUID(),
+        collection_id: collection.id,
+        title: "恢复单元格输入",
+        template: "",
+      },
+    }),
+  );
+  const base = workspacePath(session, `/sheets/${sheet.id}`),
+    record = crypto.randomUUID(),
+    field = sheet.definition.fields[0].id;
+  await responseData(
+    await request.post(`${base}/changes`, {
+      headers,
+      data: {
+        operation_id: crypto.randomUUID(),
+        schema_version: 1,
+        records: [{ id: record, version: 0, values: { [field]: "原值" } }],
+      },
+    }),
+  );
+  await openWithSession(page, session, `/documents/${sheet.document_id}`);
+  await page.getByRole("gridcell").first().click();
+  const input = page.getByRole("textbox", { name: "文本", exact: true });
+  await input.fill("还未提交的输入");
+  await page.reload();
+  await expect(input).toHaveValue("还未提交的输入");
+  await input.press("Enter");
+  await expect(input).toHaveCount(0);
+  const saved = await responseData(
+    await request.get(`${base}/records`, { headers }),
+  );
+  expect(saved.items[0].values[field]).toBe("还未提交的输入");
+  expect(saved.items[0].version).toBe(2);
 });
