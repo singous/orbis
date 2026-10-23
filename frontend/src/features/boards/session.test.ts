@@ -199,3 +199,284 @@ it("does not apply a local mutation twice when the stream arrives before its HTT
   resolve(saved);
   await vi.waitFor(() => expect(s.getSnapshot().pending).toBe(0));
 });
+
+function historyBackend(initial: ReturnType<typeof makeElement>[] = []) {
+  const elements = new Map(
+    initial.map((element) => [element.id, structuredClone(element)]),
+  );
+  const deleted = new Map<string, ReturnType<typeof makeElement>>();
+  const deletedPages = new Map<string, Board["pages"][number]>();
+  const groups = ["geometry", "style", "text", "structure"] as const;
+  const conflict = () => {
+    throw new ApiError(409, "Conflict", "BOARD_ELEMENT_CONFLICT");
+  };
+  mock.elements.mockImplementation(async (_id, pageID) => ({
+    items: structuredClone(
+      [...elements.values()].filter((element) => element.page_id === pageID),
+    ),
+    revision: metadata.revision,
+    next_cursor: null,
+    has_more: false,
+  }));
+  mock.change.mockImplementation(async (_id, input: Mutation) => {
+    const change: Change = {
+      operation_id: input.operation_id,
+      revision: ++metadata.revision,
+      elements: [],
+      deleted: [],
+      pages: [],
+      deleted_pages: [],
+      updated_at_ms: metadata.revision,
+    };
+    for (const command of input.commands) {
+      if (command.type === "elements.create") {
+        for (const item of command.elements) {
+          const element = {
+            ...structuredClone(item),
+            version: 1,
+            versions: { geometry: 1, style: 1, text: 1, structure: 1 },
+          };
+          elements.set(element.id, element);
+          change.elements.push(element);
+        }
+      } else if (
+        command.type === "elements.update" ||
+        command.type === "layout.apply"
+      ) {
+        for (const patch of command.patches) {
+          const element = structuredClone(elements.get(patch.id)!);
+          for (const group of groups)
+            if (patch[group] !== undefined) {
+              if (element.versions[group] !== patch.expected[group]) conflict();
+              Object.assign(element, { [group]: patch[group] });
+              element.versions[group]++;
+            }
+          element.version++;
+          elements.set(element.id, element);
+          change.elements.push(element);
+        }
+      } else if (
+        command.type === "elements.delete" ||
+        command.type === "elements.restore"
+      ) {
+        for (const target of command.targets) {
+          const restore = command.type === "elements.restore";
+          const element = structuredClone(
+            (restore ? deleted : elements).get(target.id)!,
+          );
+          if (element.version !== target.version) conflict();
+          if (restore) {
+            element.version++;
+            for (const group of groups) element.versions[group]++;
+            elements.set(element.id, element);
+            change.elements.push(element);
+          } else {
+            deleted.set(element.id, element);
+            elements.delete(element.id);
+            change.deleted.push(element.id);
+          }
+        }
+      } else if ("page" in command) {
+        const current =
+          command.type === "pages.restore"
+            ? deletedPages.get(command.page.id)
+            : metadata.pages.find((page) => page.id === command.page.id);
+        if (
+          command.type !== "pages.create" &&
+          current?.version !== command.page.version
+        )
+          conflict();
+        metadata.pages = metadata.pages.filter(
+          (page) => page.id !== command.page.id,
+        );
+        if (command.type === "pages.delete") {
+          deletedPages.set(command.page.id, structuredClone(current!));
+          change.deleted_pages.push(command.page.id);
+        } else {
+          const page = {
+            ...structuredClone(command.page),
+            version:
+              command.type === "pages.create" ? 1 : command.page.version + 1,
+          };
+          metadata.pages.push(page);
+          change.pages.push(page);
+        }
+      }
+    }
+    return structuredClone(change);
+  });
+  return elements;
+}
+async function saved(s: BoardSession) {
+  await vi.waitFor(() => expect(s.getSnapshot().status).toBe("saved"));
+}
+async function move(s: BoardSession, x: number) {
+  const element = [...s.getSnapshot().elements.values()][0];
+  await s.submit([
+    {
+      type: "elements.update",
+      patches: [
+        {
+          id: element.id,
+          expected: element.versions,
+          geometry: { ...element.geometry, x },
+        },
+      ],
+    },
+  ]);
+  await saved(s);
+}
+async function create(s: BoardSession) {
+  await s.submit([
+    {
+      type: "elements.create",
+      elements: [makeElement("flow.process", metadata.pages[0].id, 0, 0)],
+    },
+  ]);
+  await saved(s);
+}
+
+describe("board history", () => {
+  it("loads the affected page before cross-page undo and redo", async () => {
+    historyBackend();
+    metadata.pages.push({
+      ...metadata.pages[0],
+      id: crypto.randomUUID(),
+      name: "Second",
+      position: 1,
+    });
+    const { s } = session();
+    await s.start();
+    await create(s);
+    await move(s, 20);
+    const first = s.getSnapshot().pageID;
+    await s.switchPage(metadata.pages[1].id);
+    await s.undo();
+    await saved(s);
+    expect(s.getSnapshot().pageID).toBe(first);
+    expect([...s.getSnapshot().elements.values()][0].geometry.x).toBe(0);
+    await s.redo();
+    await saved(s);
+    expect(s.getSnapshot().elements.size).toBe(1);
+    expect([...s.getSnapshot().elements.values()][0].geometry.x).toBe(20);
+  });
+
+  it("undoes and redoes consecutive moves and creation using acknowledged versions", async () => {
+    historyBackend();
+    const { s } = session();
+    await s.start();
+    await create(s);
+    await move(s, 10);
+    await move(s, 20);
+    for (const x of [10, 0]) {
+      await s.undo();
+      await saved(s);
+      expect([...s.getSnapshot().elements.values()][0].geometry.x).toBe(x);
+    }
+    await s.undo();
+    await saved(s);
+    expect(s.getSnapshot().elements.size).toBe(0);
+    for (const x of [0, 10, 20]) {
+      await s.redo();
+      await saved(s);
+      expect([...s.getSnapshot().elements.values()][0].geometry.x).toBe(x);
+    }
+  });
+
+  it("keeps earlier edits usable after restoring a deleted element", async () => {
+    historyBackend();
+    const { s } = session();
+    await s.start();
+    await create(s);
+    await move(s, 10);
+    const element = [...s.getSnapshot().elements.values()][0];
+    await s.submit([
+      {
+        type: "elements.delete",
+        targets: [{ id: element.id, version: element.version }],
+      },
+    ]);
+    await saved(s);
+    await s.undo();
+    await saved(s);
+    await s.undo();
+    await saved(s);
+    expect([...s.getSnapshot().elements.values()][0].geometry.x).toBe(0);
+    await s.redo();
+    await saved(s);
+    await s.redo();
+    await saved(s);
+    expect(s.getSnapshot().elements.size).toBe(0);
+  });
+
+  it("rebases page history after updates and restoration", async () => {
+    historyBackend();
+    metadata.pages.push({
+      ...metadata.pages[0],
+      id: crypto.randomUUID(),
+      name: "Second",
+      position: 1,
+    });
+    const { s } = session();
+    await s.start();
+    const second = metadata.pages[1].id;
+    const page = () =>
+      s.getSnapshot().board!.pages.find((value) => value.id === second)!;
+    for (const name of ["Renamed", "Renamed again"]) {
+      await s.submit([{ type: "pages.update", page: { ...page(), name } }]);
+      await saved(s);
+    }
+    await s.submit([{ type: "pages.delete", page: page() }]);
+    await saved(s);
+    for (const name of ["Renamed again", "Renamed", "Second"]) {
+      await s.undo();
+      await saved(s);
+      expect(page().name).toBe(name);
+    }
+    for (const name of ["Renamed", "Renamed again"]) {
+      await s.redo();
+      await saved(s);
+      expect(page().name).toBe(name);
+    }
+    await s.redo();
+    await saved(s);
+    expect(page()).toBeUndefined();
+  });
+
+  it("does not rebase across an intervening collaborator edit to the same property", async () => {
+    const elements = historyBackend();
+    const { s } = session();
+    await s.start();
+    await create(s);
+    await move(s, 10);
+    const element = [...elements.values()][0];
+    element.geometry.x = 30;
+    element.versions.geometry++;
+    element.version++;
+    await s.loadPage(s.getSnapshot().pageID);
+    await move(s, 40);
+    await s.undo();
+    await saved(s);
+    await s.undo();
+    await vi.waitFor(() => expect(s.getSnapshot().status).toBe("conflict"));
+    expect(elements.get(element.id)!.geometry.x).toBe(30);
+  });
+
+  it("does not let undoing creation delete an unrelated collaborator edit", async () => {
+    const elements = historyBackend();
+    const { s } = session();
+    await s.start();
+    await create(s);
+    await move(s, 10);
+    const element = [...elements.values()][0];
+    element.style.fill = "#ff0000";
+    element.versions.style++;
+    element.version++;
+    await s.loadPage(s.getSnapshot().pageID);
+    await s.undo();
+    await saved(s);
+    await s.undo();
+    await vi.waitFor(() => expect(s.getSnapshot().status).toBe("conflict"));
+    expect(elements.get(element.id)!.style.fill).toBe("#ff0000");
+  });
+});

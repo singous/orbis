@@ -29,6 +29,7 @@ export type SessionState = {
 const MAX_HISTORY_BYTES = 16 * 1024 * 1024;
 type History = {
   bytes: number;
+  pageID: string;
   input: Mutation;
   before: Element[];
   beforePages: BoardPage[];
@@ -105,6 +106,8 @@ export class BoardSession {
   private pending: PendingOperation[] = [];
   private undoStack: History[] = [];
   private redoStack: History[] = [];
+  private historySources = new Map<string, History>();
+  private navigatingHistory = false;
   private controller = new AbortController();
   private timer: ReturnType<typeof setTimeout> | null = null;
   private work: Promise<void> = Promise.resolve();
@@ -223,13 +226,14 @@ export class BoardSession {
     this.openFeed();
   }
   async switchPage(page: string) {
-    if (this.pending.length)
+    if (this.pending.length || this.navigatingHistory)
       throw new Error("请先同步当前页面的修改，再切换页面。");
     await this.loadPage(page);
   }
   async submit(
     commands: Command[],
     historyMode: "normal" | "undo" | "redo" = "normal",
+    historySource?: History,
   ): Promise<void> {
     this.work = this.work
       .catch(() => {})
@@ -273,6 +277,8 @@ export class BoardSession {
         await writeJournal(this.key, queue, this.pending);
         if (this.controller.signal.aborted) return;
         this.pending = queue;
+        if (historySource)
+          this.historySources.set(input.operation_id, historySource);
         if (historyMode === "normal") this.redoStack = [];
         this.emit({ status: "saving", error: null });
         void this.flush();
@@ -357,7 +363,13 @@ export class BoardSession {
             this.observedPending.delete(operation.input.operation_id);
             this.accept(change);
             this.uncertain = false;
+            const source = this.historySources.get(
+              operation.input.operation_id,
+            );
+            if (source) this.advanceHistory(source, operation, change);
+            this.historySources.delete(operation.input.operation_id);
             const historyData = {
+              pageID: operation.page_id,
               input: operation.input,
               before: operation.before,
               beforePages: operation.before_pages,
@@ -411,6 +423,98 @@ export class BoardSession {
       const removed = stack.shift();
       if (!removed) break;
       bytes -= removed.bytes;
+    }
+  }
+  private advanceHistory(
+    source: History,
+    operation: PendingOperation,
+    change: Change,
+  ) {
+    const groups = ["geometry", "style", "text", "structure"] as const;
+    const restored = new Map(
+      source.before.map((element) => [element.id, element]),
+    );
+    const acknowledged = new Map(
+      change.elements.map((element) => [element.id, element]),
+    );
+    const predicted = preview(
+      new Map(operation.before.map((element) => [element.id, element])),
+      operation.input.commands,
+    );
+    const transitions = new Map(
+      [...acknowledged].flatMap(([id, next]) => {
+        const old = restored.get(id);
+        if (!old) return [];
+        const element = next;
+        const restore = operation.input.commands.some(
+          (command) =>
+            command.type === "elements.restore" &&
+            command.targets.some((target) => target.id === element.id),
+        );
+        const changedGroups = new Set(
+          groups.filter(
+            (group) =>
+              restore ||
+              operation.input.commands.some(
+                (command) =>
+                  (command.type === "elements.update" ||
+                    command.type === "layout.apply") &&
+                  command.patches.some(
+                    (patch) =>
+                      patch.id === element.id && patch[group] !== undefined,
+                  ),
+              ),
+          ),
+        );
+        // Whole-element deletion must still detect edits to unrelated property groups.
+        const before = operation.before.find(
+          (value) => value.id === element.id,
+        );
+        const original = source.change.elements.find(
+          (value) => value.id === element.id,
+        );
+        const wholeVersionKnown =
+          restore ||
+          (before?.version === original?.version &&
+            before !== undefined &&
+            predicted.get(element.id)?.version === next.version);
+        return [[id, { old, next, changedGroups, wholeVersionKnown }] as const];
+      }),
+    );
+    const rebaseElement = (element: Element): Element => {
+      const transition = transitions.get(element.id);
+      if (!transition) return element;
+      const { old, next, changedGroups, wholeVersionKnown } = transition;
+      const versions = { ...element.versions };
+      for (const group of changedGroups)
+        if (versions[group] === old.versions[group])
+          versions[group] = next.versions[group];
+      return {
+        ...element,
+        versions,
+        version:
+          wholeVersionKnown && element.version === old.version
+            ? next.version
+            : element.version,
+      };
+    };
+    const rebasePage = (page: BoardPage): BoardPage => {
+      const old = source.beforePages.find((value) => value.id === page.id);
+      const next = change.pages.find((value) => value.id === page.id);
+      return old && next && page.version === old.version
+        ? { ...page, version: next.version }
+        : page;
+    };
+    for (const entry of [...this.undoStack, ...this.redoStack]) {
+      entry.before = entry.before.map(rebaseElement);
+      entry.beforePages = entry.beforePages.map(rebasePage);
+      entry.change = {
+        ...entry.change,
+        elements: entry.change.elements.map(rebaseElement),
+        pages: entry.change.pages.map(rebasePage),
+      };
+      const { bytes: _, ...data } = entry;
+      entry.bytes = new TextEncoder().encode(JSON.stringify(data)).byteLength;
     }
   }
   private advance(revision: number) {
@@ -548,6 +652,7 @@ export class BoardSession {
       await this.loadPage(this.state.pageID);
       await writeJournal(this.key, [], this.pending);
       this.pending = [];
+      this.historySources.clear();
       this.halted = false;
     } catch (error) {
       this.halted = wasHalted;
@@ -618,27 +723,28 @@ export class BoardSession {
     return commands;
   }
   async undo() {
-    if (this.pending.length || !this.undoStack.length) return;
-    const entry = this.undoStack.at(-1)!;
-    const commands = this.inverse(entry);
-    this.undoStack.pop();
-    try {
-      await this.submit(commands, "undo");
-    } catch (error) {
-      this.undoStack.push(entry);
-      throw error;
-    }
+    await this.navigateHistory("undo");
   }
   async redo() {
-    if (this.pending.length || !this.redoStack.length) return;
-    const entry = this.redoStack.at(-1)!;
-    const commands = this.inverse(entry);
-    this.redoStack.pop();
+    await this.navigateHistory("redo");
+  }
+  private async navigateHistory(mode: "undo" | "redo") {
+    const stack = mode === "undo" ? this.undoStack : this.redoStack;
+    if (this.pending.length || this.navigatingHistory || !stack.length) return;
+    this.navigatingHistory = true;
     try {
-      await this.submit(commands, "redo");
-    } catch (error) {
-      this.redoStack.push(entry);
-      throw error;
+      const entry = stack.at(-1)!;
+      if (entry.pageID !== this.state.pageID) await this.loadPage(entry.pageID);
+      const commands = this.inverse(entry);
+      stack.pop();
+      try {
+        await this.submit(commands, mode, entry);
+      } catch (error) {
+        stack.push(entry);
+        throw error;
+      }
+    } finally {
+      this.navigatingHistory = false;
     }
   }
   dispose() {
