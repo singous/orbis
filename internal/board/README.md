@@ -1,9 +1,11 @@
 # Native boards
 
 The board aggregate owns typed elements, page identities, group versions, durable
-operations and temporal revisions. It does not store Konva or Excalidraw objects.
+operations and temporal revisions. It does not store renderer objects.
 The owner document supplies directory placement and current visibility; its primary
-board block is a reference. Legacy drawing blocks keep their existing behavior.
+board block is a reference. Retired drawing blocks have no rendering or editing UI.
+Editable document sessions remove them through the normal content transaction;
+other document content and CRDT identities remain unchanged.
 
 ## Boundaries
 
