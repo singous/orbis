@@ -173,3 +173,17 @@ func TestGridCodePipeRoundTrip(t *testing.T) {
 		t.Fatalf("grid code lost pipe: %s", out)
 	}
 }
+
+func TestRetiredDrawingsDoNotExportTheirPreview(t *testing.T) {
+	output, err := Render(t.Context(), []document.Block{
+		{ID: uuid.NewString(), Type: "paragraph", Content: []document.TextRun{{Text: "Before"}}},
+		{ID: uuid.NewString(), Type: "drawing", Props: map[string]any{"caption": "Retired caption", "source": map[string]any{"type": "external", "url": "https://example.test/retired.png"}}},
+		{ID: uuid.NewString(), Type: "paragraph", Content: []document.TextRun{{Text: "After"}}},
+	}, uuid.NewString(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(output), "retired.png") || strings.Contains(string(output), "Retired caption") || !strings.Contains(string(output), "Before") || !strings.Contains(string(output), "After") {
+		t.Fatalf("retired drawing changed surrounding content: %s", output)
+	}
+}

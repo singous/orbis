@@ -1,3 +1,4 @@
+import { registerRetiredBlockCleanup } from "./tiptap-retired";
 import { ActionButton } from "../../../shared/ui/ActionButton";
 import { SelectField } from "../../../shared/ui/SelectField";
 import { createPortal } from "react-dom";
@@ -370,6 +371,11 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
   useEffect(() => {
     if (!editor) return;
     editor.setEditable(!readOnly, false);
+  }, [editor, readOnly]);
+
+  useEffect(() => {
+    if (!editor || readOnly) return;
+    return registerRetiredBlockCleanup(editor, message => errorCallback.current?.(message));
   }, [editor, readOnly]);
 
   async function upload(event: ChangeEvent<HTMLInputElement>) {

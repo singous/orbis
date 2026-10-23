@@ -54,6 +54,9 @@ func Project(blocks []document.Block, options Options) ([]Block, error) {
 		options.used = new(int)
 	}
 	for _, source := range blocks {
+		if source.Type == "drawing" {
+			continue
+		}
 		if !knownBlock(source.Type) {
 			return nil, Unsafe()
 		}
