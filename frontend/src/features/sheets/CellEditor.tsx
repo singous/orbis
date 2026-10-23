@@ -9,7 +9,7 @@ import {
 import { useLayoutEffect, useRef, useState } from "react";
 import type { AuthRequestOptions } from "../../shared/auth/use-auth-request";
 import { ActionButton } from "../../shared/ui/ActionButton";
-import { CellValue, ValueEditor } from "./Cell";
+import { CellValue, PersonChip, ValueEditor } from "./Cell";
 import { KINDS, type Field, type Value } from "./model";
 import { Popover, anchorAt, type Anchor } from "./Popover";
 
@@ -239,12 +239,19 @@ export function CellEditor({
                       key={option.id}
                       onClick={() => choose(option.id)}
                     >
-                      <span
-                        className="sheet-tag"
-                        style={{ background: `var(--sheet-${option.color})` }}
-                      >
-                        {option.label}
-                      </span>
+                      {field.kind === "person" ? (
+                        <PersonChip id={option.id} label={option.label} />
+                      ) : (
+                        <span
+                          className="sheet-tag"
+                          style={{
+                            background: `var(--sheet-${option.color})`,
+                            color: `var(--sheet-ink-${option.color}, var(--text-primary))`,
+                          }}
+                        >
+                          {option.label}
+                        </span>
+                      )}
                       {selected && <Check size={14} />}
                     </button>
                   );

@@ -5,7 +5,8 @@
 .sheet-popover,
 .sheet-record-dialog,
 .sheet-field-dialog,
-.sheet-share-dialog {
+.sheet-share-dialog,
+.sheet-embed {
   --sheet-green: color-mix(in oklab, var(--success) 16%, var(--surface));
   --sheet-amber: color-mix(in oklab, var(--warning) 16%, var(--surface));
   --sheet-blue: color-mix(in oklab, #4084d5 15%, var(--surface));
@@ -64,8 +65,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 56px;
-  padding: 8px 20px;
+  min-height: 44px;
+  padding: 4px 20px;
   border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
   overflow-x: auto;
@@ -100,8 +101,8 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  min-height: 52px;
-  padding: 10px 20px;
+  min-height: 44px;
+  padding: 6px 20px;
   flex-shrink: 0;
   overflow-x: auto;
   white-space: nowrap;
@@ -143,7 +144,6 @@
   font-size: var(--orbis-text-caption-size);
 }
 .sheet-search:focus-within {
-  border-color: var(--focus);
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
@@ -277,16 +277,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.sheet-cell.selected {
-  background: var(--accent-softer);
-  box-shadow: inset 0 0 0 1px
-    color-mix(in oklab, var(--accent) 35%, transparent);
-}
 .sheet-cell.duplicate {
   background: color-mix(in oklab, var(--warning) 14%, var(--surface));
-}
-.sheet-cell.duplicate.selected {
-  box-shadow: inset 0 0 0 2px var(--accent);
 }
 .sheet-cell.editing {
   overflow: visible;
@@ -295,24 +287,31 @@
   background: var(--surface-content);
 }
 .sheet-grid-tail {
-  height: 48px;
-  padding: 7px 16px;
+  display: flex;
+  min-height: 40px;
+  padding: 4px 8px;
   border-bottom: 1px solid var(--border-subtle);
 }
-.sheet-grid-hint {
-  font-size: var(--orbis-text-caption-size);
+.sheet-grid-tail > button {
+  flex: 1;
+  justify-content: flex-start;
+  padding-inline: 12px;
   color: var(--text-tertiary);
-  padding: 6px 20px;
+}
+.sheet-grid-tail > button:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text-primary);
 }
 .sheet-statusbar {
   display: flex;
   gap: 12px;
   align-items: center;
-  min-height: 40px;
+  min-height: 36px;
   padding: 0 20px;
   border-top: 1px solid var(--border-subtle);
   color: var(--text-secondary);
   font-size: var(--orbis-text-caption-size);
+  flex-shrink: 0;
 }
 .sheet-statusbar button {
   margin-left: auto;
@@ -534,11 +533,51 @@
   gap: 8px;
   width: 100%;
   font-size: var(--orbis-text-caption-size);
+  color: var(--text-secondary);
 }
-.sheet-progress progress {
-  max-width: 100px;
-  height: 7px;
-  accent-color: var(--accent);
+.sheet-progress-track {
+  flex: 0 1 100px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--surface-tertiary);
+  overflow: hidden;
+}
+.sheet-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width var(--orbis-motion-feedback) var(--orbis-ease-out);
+}
+.sheet-progress-fill.done {
+  background: var(--success);
+}
+.sheet-person {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.sheet-person-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.sheet-person-avatar {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: var(--orbis-weight-action);
+  flex: none;
+}
+.sheet-person-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .sheet-attachments {
   display: flex;
@@ -1001,12 +1040,22 @@
   right: 0;
   top: 0;
   height: 28px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
   background: var(--surface-secondary);
   color: var(--text-secondary);
   padding: 4px 16px;
   font-size: var(--orbis-text-caption-size);
   border-bottom: 1px solid var(--border-subtle);
   z-index: 2;
+}
+.sheet-group-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+  flex: none;
 }
 .sheet-embed {
   border: 1px solid var(--border-subtle);
@@ -1194,8 +1243,28 @@
 .sheet-editing-fields:disabled {
   opacity: 0.65;
 }
-.dark :is(.sheet-workspace, .sheet-popover),
-[data-theme="dark"] :is(.sheet-workspace, .sheet-popover) {
+.dark
+  :is(
+    .sheet-workspace,
+    .sheet-home,
+    .sheet-public,
+    .sheet-popover,
+    .sheet-record-dialog,
+    .sheet-field-dialog,
+    .sheet-share-dialog,
+    .sheet-embed
+  ),
+[data-theme="dark"]
+  :is(
+    .sheet-workspace,
+    .sheet-home,
+    .sheet-public,
+    .sheet-popover,
+    .sheet-record-dialog,
+    .sheet-field-dialog,
+    .sheet-share-dialog,
+    .sheet-embed
+  ) {
   --sheet-ink-blue: #79b8ff;
   --sheet-ink-green: #79d9b6;
   --sheet-ink-amber: #eac378;
@@ -1306,8 +1375,12 @@
   background: var(--orbis-panel-bg);
   box-shadow: inset 0 0 0 2px var(--accent);
 }
-.sheet-cell.selected {
+/* The active cell keeps its content untinted; range members carry the fill. */
+.sheet-cell.active {
   box-shadow: inset 0 0 0 2px var(--accent);
+}
+.sheet-cell.selected {
+  background: color-mix(in oklab, var(--accent) 8%, var(--orbis-panel-bg));
 }
 .sheet-inline-editor {
   position: absolute;
@@ -1449,11 +1522,11 @@
 }
 .sheet-embedded-workspace .sheet-view-tabs {
   padding-inline: 10px;
-  min-height: 42px;
+  min-height: 40px;
 }
 .sheet-embedded-workspace .sheet-toolbar {
   padding: 6px 10px;
-  min-height: 44px;
+  min-height: 40px;
 }
 .sheet-field-popover {
   width: 380px;
@@ -1547,7 +1620,7 @@
 .sheet-row-inspect:focus-visible {
   opacity: 1;
 }
-.sheet-grid-row:has(.sheet-cell.selected) {
+.sheet-grid-row:has(.sheet-cell:is(.selected, .active)) {
   background: color-mix(in oklab, var(--accent) 5%, var(--orbis-panel-bg));
 }
 .sheet-embedded-workspace .sheet-record-panel {
