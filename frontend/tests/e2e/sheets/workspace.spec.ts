@@ -700,7 +700,8 @@ test("table pages live in the document tree and edit cells with anchored pickers
     `目录与原位编辑 ${Date.now()}`,
   );
   await openWithSession(page, session, `/collections/${collection.id}`);
-  await page.getByRole("button", { name: "新建数据表", exact: true }).click();
+  await page.getByRole("button", { name: "创建内容", exact: true }).click();
+  await page.getByRole("menuitem", { name: "数据表", exact: true }).click();
   await expect(page).toHaveURL(/\/documents\/[a-f0-9-]+$/);
   await expect(
     page

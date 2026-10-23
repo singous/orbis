@@ -32,15 +32,21 @@ beforeEach(() => {
 afterEach(() => { cleanup(); authStore.getState().clearSession(); });
 
 describe("notebook layout", () => {
-  it("shows only explicitly common notebooks in navigation and updates immediately", () => {
+  it("lists all notebooks and moves shortcuts to the top without hiding other notebooks", () => {
     render(<MemoryRouter initialEntries={["/documents"]}><SearchPaletteProvider><WorkspaceNavigation /><PinControl /></SearchPaletteProvider></MemoryRouter>);
     const navigation = screen.getByRole("navigation", { name: "文档导航" });
+    expect(within(navigation).getByRole("link", { name: "笔记本 0" })).toHaveAttribute("href", "/collections/notebook-0");
+    expect(within(navigation).getByRole("link", { name: "笔记本 7" })).toHaveAttribute("href", "/collections/notebook-7");
+    expect(within(navigation).getByRole("link", { name: "开始" })).toHaveAttribute("href", "/documents");
+    expect(within(navigation).queryByRole("link", { name: "数据表" })).toBeNull();
+    expect(within(navigation).getByRole("link", { name: "回收站" })).toHaveAttribute("href", "/documents/archive");
+    fireEvent.click(screen.getByRole("button", { name: "收起笔记本" }));
     expect(within(navigation).queryByRole("link", { name: "笔记本 0" })).toBeNull();
-    expect(within(navigation).queryByRole("link", { name: "笔记本 7" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "展开笔记本" }));
     fireEvent.click(screen.getByText("切换测试常用"));
     expect(within(navigation).getByRole("link", { name: "笔记本 0" })).toHaveAttribute("href", "/collections/notebook-0");
     fireEvent.click(screen.getByText("切换测试常用"));
-    expect(within(navigation).queryByRole("link", { name: "笔记本 0" })).toBeNull();
+    expect(within(navigation).getByRole("link", { name: "笔记本 0" })).toBeInTheDocument();
   });
   it("shows all notebooks in their groups and shares common settings with navigation", () => {
     render(<MemoryRouter initialEntries={["/documents"]}><SearchPaletteProvider><WorkspaceNavigation /><DocumentOverviewPage /></SearchPaletteProvider></MemoryRouter>);
@@ -68,5 +74,6 @@ describe("notebook layout", () => {
       window.dispatchEvent(new StorageEvent("storage", { key }));
     });
     expect(screen.getByRole("link", { name: "笔记本 1" })).toBeInTheDocument();
+    expect(document.querySelector(".document-notebooks-list > a")).toHaveTextContent("笔记本 1");
   });
 });

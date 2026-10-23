@@ -72,6 +72,8 @@
 .workspace-sidebar[hidden] { display: none; }
 .workspace-sidebar-header { display: flex; gap: 7px; align-items: center; min-height: 56px; padding: 12px 13px 8px 12px; }
 .workspace-sidebar-title { min-width: 0; flex: 1; }
+.workspace-sidebar-header-spacer { flex: 1; }
+.workspace-sidebar-heading { min-width: 0; padding: 0 var(--orbis-space-3) var(--orbis-space-3); }
 .workspace-sidebar-title h2 { font-size: var(--orbis-text-section-size); font-weight: var(--orbis-weight-heading); letter-spacing: -.025em; margin: 0; line-height: var(--orbis-text-section-leading); }
 .workspace-sidebar-actions { display: flex; align-items: center; flex: none; }
 .sidebar-collapse, .sidebar-mobile-close { width: var(--orbis-control-compact-height); height: var(--orbis-control-compact-height); display: grid; place-items: center; color: var(--text-tertiary); }

@@ -1,6 +1,6 @@
-import {LayoutGrid, StickyNote} from "lucide-react";
-import { Archive, BookOpen, Clock3, Globe, Home, Notebook, Search, Settings, Users } from "../../shared/ui/icons";
-import type { ReactNode } from "react";
+import { StickyNote } from "lucide-react";
+import { BookOpen, ChevronDown, ChevronRight, Clock3, Globe, Home, Pin, Search, Settings, Trash2, Users } from "../../shared/ui/icons";
+import { type ReactNode, useId, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useStore } from "zustand";
 
@@ -14,10 +14,9 @@ import { usePinnedNotebooks } from "../documents/pinned-notebooks";
 import { resolveWorkspaceArea } from "./workspace-areas";
 
 const documentLinks = [
+  { to: "/documents", label: "开始", icon: Clock3 },
   { to: "/documents/quick-notes", label: "随手记", icon: StickyNote },
-  { to: "/documents", label: "笔记本总览", icon: BookOpen },
   { to: "/documents/recent", label: "最近编辑", icon: Clock3 },
-  { to: "/documents/collections", label: "我的笔记本", icon: Notebook },
 ];
 const navClass = ({ isActive }: { isActive: boolean }) => `workspace-function-link${isActive ? " is-active" : ""}`;
 
@@ -34,18 +33,23 @@ function DocumentNavigation() {
   const workspace = useStore(authStore, (state) => state.workspace);
   const notebooks = useNotebooks();
   const { isPinned } = usePinnedNotebooks(workspace?.id);
-  const commonNotebooks = (notebooks.data?.items ?? []).filter((notebook) => isPinned(notebook.id));
+  const [expanded, setExpanded] = useState(true);
+  const notebooksId = useId();
+  const items = [...(notebooks.data?.items ?? [])].sort((a, b) => Number(isPinned(b.id)) - Number(isPinned(a.id)));
 
-  return <MenuFrame label="文档导航" footer={<NavLink to="/documents/archive" className={navClass}><Archive size={18} />归档</NavLink>}>
-    <div className="document-business-links">
-      <NavLink to="/home" className={navClass}><Home size={18} />首页</NavLink>
-      <NavLink to="/sites" className={navClass}><Globe size={18} />站点</NavLink>
+  return <MenuFrame label="文档导航" footer={<NavLink to="/documents/archive" className={navClass}><Trash2 size={18} aria-hidden="true" />回收站</NavLink>}>
+    <ActionButton type="button" className="workspace-function-link document-menu-search" aria-haspopup="dialog" aria-expanded={isOpen} onClick={() => openSearch({ type: "document" })}><Search size={18} aria-hidden="true" />搜索文档</ActionButton>
+    {documentLinks.map(({ to, label, icon: Icon }) => <NavLink key={to} to={to} end className={navClass}><Icon size={18} aria-hidden="true" />{label}</NavLink>)}
+    <div className="document-notebooks-heading">
+      <ActionButton type="button" className="workspace-function-link" aria-label={expanded ? "收起笔记本" : "展开笔记本"} aria-expanded={expanded} aria-controls={notebooksId} onClick={() => setExpanded(value => !value)}><ChevronDown size={16} aria-hidden="true" /><span>笔记本</span></ActionButton>
+      <NavLink to="/documents/collections" className="document-notebooks-manage" aria-label="管理笔记本" title="管理笔记本"><ChevronRight size={16} aria-hidden="true" /></NavLink>
     </div>
-    <span className="workspace-nav-label">在线文档</span>
-    <NavLink to="/sheets" className={navClass}><LayoutGrid size={18} />数据表</NavLink>
-    {documentLinks.map(({ to, label, icon: Icon }) => <NavLink key={to} to={to} end className={navClass}><Icon size={18} />{label}</NavLink>)}
-    <ActionButton type="button" className="workspace-function-link" aria-haspopup="dialog" aria-expanded={isOpen} onClick={() => openSearch({ type: "document" })}><Search size={18} aria-hidden="true" />搜索文档</ActionButton>
-    {commonNotebooks.map((notebook) => <NavLink key={notebook.id} to={`/collections/${notebook.id}`} className={navClass}><NotebookIcon icon={notebook.icon} size="sm" /><span className="truncate">{notebook.title}</span></NavLink>)}
+    <div id={notebooksId} className="document-notebooks-list" hidden={!expanded}>
+      {notebooks.isLoading ? <span className="document-notebooks-status" role="status">正在加载笔记本…</span> : null}
+      {notebooks.isError ? <div className="document-notebooks-status" role="alert">笔记本加载失败<ActionButton type="button" onClick={() => void notebooks.refetch()}>重试</ActionButton></div> : null}
+      {!notebooks.isLoading && !notebooks.isError && !items.length ? <NavLink to="/documents/collections" className={navClass}><BookOpen size={18} aria-hidden="true" />创建第一个笔记本</NavLink> : null}
+      {items.map((notebook) => <NavLink key={notebook.id} to={`/collections/${notebook.id}`} className={navClass}><NotebookIcon icon={notebook.icon} size="sm" /><span className="truncate">{notebook.title}</span>{isPinned(notebook.id) ? <Pin className="document-notebook-pin" size={13} aria-hidden="true" /> : null}</NavLink>)}
+    </div>
   </MenuFrame>;
 }
 

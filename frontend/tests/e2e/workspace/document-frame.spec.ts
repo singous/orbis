@@ -5,7 +5,7 @@ const api = `http://127.0.0.1:${process.env.ORBIS_E2E_API_PORT || '9311'}`;
 const credentials = { email: 'owner@example.com', password: 'Orbis-browser-test-2026!' };
 test.use({ screenshot: 'off', trace: 'off' });
 
-test('document overview shares the shell and exposes its function menu alongside notebook content', async ({ page, request }) => {
+test('document overview shares the shell and exposes its function menu alongside notebook content', async ({ page, request }, testInfo) => {
   const auth=await ownerSession(request,"Document frame regression");
   const headers = { Authorization: `Bearer ${auth.access_token}` };
   const group = (await (await request.post(workspacePath(auth,"/collection-groups"), { headers, data: { name: 'Frame notebooks', sort_order: 0 } })).json()).data;
@@ -39,6 +39,11 @@ test('document overview shares the shell and exposes its function menu alongside
     expect({ ...documents, railWidth: home.railWidth, titleX: home.titleX }).toEqual(home);
     expect(documents.railWidth).toBeGreaterThan(home.railWidth);
     await expect(page.getByRole('navigation', { name: '文档导航', exact: true })).toBeVisible();
+    const navigation = page.getByRole('navigation', { name: '文档导航', exact: true });
+    await expect(navigation.getByRole('link', { name: '开始', exact: true })).toHaveAttribute('href', '/documents');
+    await expect(navigation.getByRole('link', { name: '数据表', exact: true })).toHaveCount(0);
+    await expect(navigation.getByRole('link', { name: '回收站', exact: true })).toBeVisible();
+    await expect(navigation.getByRole('link', { name: 'Frame notebook one', exact: true })).toBeVisible();
     const section = page.getByRole('region', { name: 'Frame notebooks', exact: true });
     await expect(section).toBeVisible();
     await expect(page.getByRole('region', { name: 'Empty frame group', exact: true })).toHaveCount(0);
@@ -74,15 +79,35 @@ test('document overview shares the shell and exposes its function menu alongside
   await page.keyboard.press('Escape');
   await page.locator('.notebook-overview-card-link').first().click();
   const notebookHeader = page.locator('#notebook-directory .workspace-sidebar-header');
-  await expect(notebookHeader.getByRole('button', { name: '新建文档', exact: true })).toBeEnabled();
+  await expect(notebookHeader.getByRole('button', { name: '创建内容', exact: true })).toBeEnabled();
   await expect(page.locator('.workspace-main-navigation > #notebook-directory')).toBeVisible();
   await expect(page.locator('.workspace-shell-grid > #notebook-directory')).toHaveCount(0);
   expect(await page.locator('#notebook-directory').evaluate(element => getComputedStyle(element).boxShadow)).toBe('none');
   const columnBox = await page.locator('#notebook-directory').boundingBox();
-  const titleBox = await notebookHeader.locator('.notebook-menu-title').boundingBox();
-  expect(titleBox!.y - columnBox!.y).toBeLessThan(24);
+  const titleBox = await page.locator('#notebook-directory .notebook-menu-title').boundingBox();
+  const controlsBox = await notebookHeader.boundingBox();
+  expect(titleBox!.y).toBeGreaterThanOrEqual(controlsBox!.y + controlsBox!.height);
+  expect(titleBox!.x + titleBox!.width).toBeLessThanOrEqual(columnBox!.x + columnBox!.width);
+  await notebookHeader.getByRole('button', { name: '创建内容', exact: true }).click();
+  for (const name of ['随手记', '文档', '画板', '数据表']) {
+    await expect(page.getByRole('menuitem', { name, exact: true })).toBeVisible();
+  }
+  await page.keyboard.press('Escape');
+  await expect(notebookHeader.getByRole('button', { name: '创建内容', exact: true })).toBeFocused();
+  await notebookHeader.getByRole('button', { name: '创建内容', exact: true }).click();
+  await page.getByRole('menu', { name: '创建内容', exact: true }).evaluate(async element => {
+    await Promise.all(element.parentElement!.getAnimations({ subtree: true }).map(animation => animation.finished));
+  });
+  await page.screenshot({ path: testInfo.outputPath('notebook-create-menu.png') });
+  await page.getByRole('menuitem', { name: '文档', exact: true }).click();
+  await expect(page).toHaveURL(/\/documents\/[^/]+$/);
+  await expect(page.locator('#notebook-directory').getByRole('link', { name: '未命名文档', exact: true })).toBeVisible();
+  await page.locator('#notebook-directory').getByRole('button', { name: '创建内容', exact: true }).click();
+  await page.getByRole('menuitem', { name: '随手记', exact: true }).click();
+  await expect(page).toHaveURL(/\/documents\/quick-notes$/);
   await expect(create).toBeVisible();
   await page.goto('/documents');
+  await page.screenshot({ path: testInfo.outputPath('document-navigation.png') });
   await page.setViewportSize({ width: 390, height: 740 });
   await expect(page.locator('.notebook-overview-card').first()).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

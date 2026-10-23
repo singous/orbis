@@ -15,6 +15,8 @@ export const DEFAULT_SIDEBAR_PREFERENCES: SidebarPreferences = {
 export type WorkspaceSidebarConfig = {
   id?: string;
   title: ReactNode;
+  titlePlacement?: "header" | "below-header";
+  leadingActions?: ReactNode;
   actions?: ReactNode;
   content: ReactNode;
   label?: string;
