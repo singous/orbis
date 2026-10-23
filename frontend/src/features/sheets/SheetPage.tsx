@@ -731,6 +731,7 @@ export function SheetWorkspace({
               hasMore={c.pages.hasNextPage}
               loading={c.pages.isFetching}
               onMore={() => c.pages.fetchNextPage()}
+              onRefresh={c.refresh}
               onError={c.setError}
             />
           ) : (
@@ -741,16 +742,18 @@ export function SheetWorkspace({
               onRecord={openRecord}
             />
           )}
-          <footer className="sheet-statusbar">
-            <span>
-              {c.stats.data
-                ? `${c.stats.data.total} 条记录`
-                : "正在读取记录数…"}
-            </span>
-            <ActionButton size="sm" onClick={() => void c.refresh()}>
-              刷新
-            </ActionButton>
-          </footer>
+          {view.kind !== "grid" && (
+            <footer className="sheet-statusbar">
+              <span>
+                {c.stats.data
+                  ? `${c.stats.data.total} 条记录`
+                  : "正在读取记录数…"}
+              </span>
+              <ActionButton size="sm" onClick={() => void c.refresh()}>
+                刷新
+              </ActionButton>
+            </footer>
+          )}
         </>
       )}
       {menu && (
