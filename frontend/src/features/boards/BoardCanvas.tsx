@@ -477,14 +477,16 @@ export function BoardCanvas(props: Props) {
         }
         if (event.key === "Delete" || event.key === "Backspace") {
           event.preventDefault();
+          const targets = [...props.selection]
+            .map((id) => props.elements.get(id))
+            .filter((e): e is Element => !!e)
+            .map((e) => ({ id: e.id, version: e.version }));
+          if (!targets.length) return;
           void props
             .submit([
               {
                 type: "elements.delete",
-                targets: [...props.selection]
-                  .map((id) => props.elements.get(id))
-                  .filter((e): e is Element => !!e)
-                  .map((e) => ({ id: e.id, version: e.version })),
+                targets,
               },
             ])
             .catch(props.onError);
@@ -534,6 +536,8 @@ export function BoardCanvas(props: Props) {
           )
         ) {
           event.preventDefault();
+          const movable = descendants(props.elements, props.selection);
+          if (!movable.length) return;
           const step = event.shiftKey ? 10 : 1,
             dx =
               event.key === "ArrowLeft"
@@ -551,7 +555,7 @@ export function BoardCanvas(props: Props) {
             .submit([
               {
                 type: "elements.update",
-                patches: descendants(props.elements, props.selection).map((e) =>
+                patches: movable.map((e) =>
                   elementPatch(e, {
                     geometry: {
                       ...e.geometry,
