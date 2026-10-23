@@ -81,7 +81,7 @@ describe.each(["topbar", "rail"] as const)("WorkspaceSwitcher %s anchor", varian
     const view = renderSwitcher(variant, prepare);
     if (variant === "rail") {
       expect(view.trigger).toHaveClass("rail-brand", "workspace-switcher-rail-trigger");
-      expect(view.trigger.querySelector('[data-orbis-icon="Orbit"]')).toBeInTheDocument();
+      expect(view.trigger.querySelector('.orbis-logo use')).toHaveAttribute("href", "/brand/orbis-mark.svg#orbis-mark");
     } else expect(view.trigger).toHaveTextContent(workspace.name);
     await userEvent.click(view.trigger);
     await userEvent.click(await screen.findByRole("button", { name: `切换到 ${workspace.name}` }));

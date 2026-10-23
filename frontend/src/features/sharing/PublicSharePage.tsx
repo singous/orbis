@@ -1,3 +1,4 @@
+import { OrbisLogo } from "../../shared/ui/OrbisLogo";
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
@@ -52,7 +53,7 @@ export function PublicSharePage() {
           <BookOpen size={19} aria-hidden="true" />
           {manifest.data.title}
         </Link>
-        <span>实时文档分享</span>
+        <span className="orbis-attribution"><OrbisLogo size={20} />Orbis · 实时文档分享</span>
         <ActionButton
           aria-label="刷新目录与正文"
           onClick={() => {

@@ -28,6 +28,25 @@ npm run build
 
 内容组件登记由后端 `api/editor-components.json` 维护；`npm run sync:document-blocks` 更新前端副本，构建时检查同步状态。
 
+## 品牌资产
+
+`public/brand/orbis-mark.svg` 与 `orbis-wordmark.svg` 是 Logo 图形和字标的矢量源文件，依据品牌设计稿整理为路径，字标不依赖本机字体。
+页面通过 `OrbisLogo` 组件复用这些路径，横版用于登录和初始化页，独立图标用于导航及公开页面的 Orbis 署名；公开站点自己的 Logo 仍由站点配置决定。
+浅色背景使用黑色版，深色背景使用反白版，保持比例及图标内置留白。浏览器图标使用独立图形，SVG favicon 随系统明暗主题切换。
+
+修改源文件后，在完整仓库中执行：
+
+```sh
+npm run sync:brand
+npm run check:brand
+npm run export:brand
+```
+
+同步命令生成横版、竖版、反白版、应用图标、favicon、README 头图和服务端内嵌图形；构建会校验前端 SVG 资源。
+PNG/ICO 导出使用项目锁定的 Playwright 与 Chromium（首次使用需执行 `npx playwright install chromium`），运行时和 Docker 构建直接使用已提交的文件。
+`public/brand/` 提供透明 PNG 及 192/512px 应用图标，`public/apple-touch-icon.png` 为 180px，`favicon.ico` 包含 16/32/48px。
+仓库社交预览图片位于 `docs/intro/assets/readme/social-preview.png`，可以在 GitHub 仓库的 Social preview 设置中上传；提交图片不会自动修改该设置。
+
 ## UI 尺寸与交互规范
 
 尺寸和动效以 `src/styles/design-tokens.css` 为统一来源，页面优先复用 `src/shared/ui/` 组件。

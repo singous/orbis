@@ -12,7 +12,8 @@ import { Button } from "../../shared/ui/Button";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { UserAvatar, identityColor } from "../../shared/ui/UserAvatar";
-import { Boxes, Check, ChevronDown, Orbit } from "../../shared/ui/icons";
+import { OrbisLogo } from "../../shared/ui/OrbisLogo";
+import { Boxes, Check, ChevronDown } from "../../shared/ui/icons";
 import { listWorkspaces, switchWorkspace } from "./api";
 import { workspaceRoleLabel } from "./capabilities";
 
@@ -43,7 +44,7 @@ export function WorkspaceSwitcher({ variant = "topbar" }: { variant?: "topbar" |
   return <div className={`workspace-switcher${variant === "rail" ? " workspace-switcher--rail" : ""}`}>
     <Popover isOpen={open} onOpenChange={next => setOpen(next ? { sessionKey, locationKey: location.key } : null)}>
       <ActionButton type="button" className={variant === "rail" ? "rail-brand workspace-switcher-rail-trigger" : "workspace-brand"} aria-label="切换工作空间" disabled={!authenticated}>
-        {variant === "rail" ? <Orbit aria-hidden="true" size={28} strokeWidth={1.8} /> : <>
+        {variant === "rail" ? <OrbisLogo size={32} /> : <>
           <span className="workspace-brand-mark identity-mark" style={identityColor(workspace?.id || "orbis")}><Boxes size={16} aria-hidden="true" /></span>
           <span className="workspace-brand-word">{workspace?.name ?? "Orbis"}</span>
           <ChevronDown size={14} aria-hidden="true" />
