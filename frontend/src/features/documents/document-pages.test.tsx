@@ -412,7 +412,7 @@ describe("document function pages", () => {
     ["/documents", "在线文档", "heading"],
     ["/documents/recent", "最近文档", "heading"],
     ["/documents/collections", "我的笔记本", "heading"],
-    ["/documents/archive", "归档", "heading"],
+    ["/documents/archive", "回收站", "heading"],
   ] as const)("renders %s as the %s page", async (path, name, role) => {
     await renderRoute(path);
     expect(await screen.findByRole(role, { name, level: 1 })).toBeVisible();
@@ -634,7 +634,7 @@ describe("document function pages", () => {
   it("does not offer restore controls to a normal member", async () => {
     await renderRoute("/documents/archive", "viewer");
 
-    await screen.findByRole("heading", { name: "归档" });
+    await screen.findByRole("heading", { name: "回收站" });
     expect(
       screen.queryByRole("button", { name: /恢复/ }),
     ).not.toBeInTheDocument();
@@ -643,7 +643,7 @@ describe("document function pages", () => {
   it("does not offer restore controls without a current workspace", async () => {
     await renderRoute("/documents/archive", "owner", null);
 
-    await screen.findByRole("heading", { name: "归档" });
+    await screen.findByRole("heading", { name: "回收站" });
     expect(screen.queryByRole("button", { name: /恢复/ })).not.toBeInTheDocument();
   });
 });

@@ -58,7 +58,7 @@ function ArchiveSection({
       <div className="section-heading">
         <div>
           <h2>{title}</h2>
-          <p>{resources.length} 项已归档</p>
+          <p>{resources.length} 项内容</p>
         </div>
       </div>
       {resources.length ? (
@@ -101,7 +101,7 @@ function ArchiveSection({
           ))}
         </div>
       ) : (
-        <div className="empty-panel">没有已归档的{title}。</div>
+        <div className="empty-panel">回收站中没有{title}。</div>
       )}
     </section>
   );
@@ -164,16 +164,16 @@ export function ArchivePage() {
   return (
     <DocumentShell>
       <PageContainer
-        title="归档"
+        title="回收站"
         description={
           canRestore
-            ? "已归档内容不会出现在在线文档中，你可以在此恢复它们。"
-            : "已归档内容不会出现在在线文档中，只有工作空间管理者可以恢复内容。"
+            ? "移入回收站的内容不会出现在在线文档中，你可以在此恢复它们。"
+            : "移入回收站的内容不会出现在在线文档中。你当前没有恢复内容的权限。"
         }
       >
         {target ? <ArchiveSearchTarget id={target.id} type={target.type} canRestore={canRestore} /> : null}
         {groupsQuery.isError || notebooksQuery.isError || collectionDetails.some(query => query.isError) || notesQuery.isError ? (
-          <StatusMessage tone="error" title="归档加载失败">
+          <StatusMessage tone="error" title="回收站加载失败">
             请检查 API 服务后重试。
           </StatusMessage>
         ) : null}
@@ -181,7 +181,7 @@ export function ArchivePage() {
         notebooksQuery.isLoading ||
         collectionDetails.some(query => query.isPending) ||
         notesQuery.isLoading ? (
-          <LoadingState label="正在加载归档…" />
+          <LoadingState label="正在加载回收站…" />
         ) : null}
         <ArchiveSection
           title="分组"
@@ -226,7 +226,7 @@ export function ArchivePage() {
           onRestore={(id) => void completeRestore(() => archiveNote.mutateAsync({ id, archived: false,expected_directory_version:notebooksById.get(archivedNotesById.get(id)!.notebook_id)!.directory_version }))}
           pendingId={archiveNote.isPending ? archiveNote.variables?.id : undefined}
         />
-        <div className="collaboration-actions"><Button size="sm" disabled={documentPage<=1 || notesQuery.isFetching} onClick={() => setDocumentPage(value=>value-1)}>上一页归档文档</Button><span>第 {documentPage} 页</span><Button size="sm" disabled={!notesQuery.data?.pagination.has_next || notesQuery.isFetching} onClick={() => setDocumentPage(value=>value+1)}>下一页归档文档</Button></div>
+        <div className="collaboration-actions"><Button size="sm" disabled={documentPage<=1 || notesQuery.isFetching} onClick={() => setDocumentPage(value=>value-1)}>上一页回收站文档</Button><span>第 {documentPage} 页</span><Button size="sm" disabled={!notesQuery.data?.pagination.has_next || notesQuery.isFetching} onClick={() => setDocumentPage(value=>value+1)}>下一页回收站文档</Button></div>
       </PageContainer>
     </DocumentShell>
   );
@@ -262,11 +262,11 @@ function ArchiveSearchTarget({ id, type, canRestore }: { id: string; type: "docu
       showToast({ title: "恢复失败", description: error instanceof Error ? error.message : "请先检查上级资源是否已恢复。", tone: "danger" });
     }
   }
-  if (query.isPending) return <LoadingState label="正在定位归档内容…" />;
-  if (query.isError) return <StatusMessage tone="error" title="归档内容定位失败"><Button onClick={() => void query.refetch()}>重试</Button></StatusMessage>;
-  if (!query.data) return <StatusMessage tone="info" title="该内容已不在归档中">内容可能已恢复或当前已无权访问。</StatusMessage>;
+  if (query.isPending) return <LoadingState label="正在定位回收站内容…" />;
+  if (query.isError) return <StatusMessage tone="error" title="回收站内容定位失败"><Button onClick={() => void query.refetch()}>重试</Button></StatusMessage>;
+  if (!query.data) return <StatusMessage tone="info" title="该内容已不在回收站中">内容可能已恢复或当前已无权访问。</StatusMessage>;
   const Icon = type === "group" ? FolderKanban : type === "notebook" ? BookOpen : FilePlus2;
-  return <div ref={target} tabIndex={-1} aria-label="搜索定位的归档内容">
+  return <div ref={target} tabIndex={-1} aria-label="搜索定位的回收站内容">
     {canRestore && info.isPending ? <LoadingState label="正在准备恢复…" compact /> : null}
     {canRestore && info.isError ? <StatusMessage title="恢复信息加载失败" tone="error"><Button onClick={()=>void info.refetch()}>重试加载恢复信息</Button></StatusMessage> : null}
     <ArchiveSection title="搜索定位" icon={<Icon aria-hidden="true" size={18} />} resources={[{ id, label: query.data.title, parentLabel: query.data.location }]} canRestore={canRestore && info.data!==undefined && !info.isError} onRestore={() => void restore()} pendingId={action.isPending ? id : undefined} />

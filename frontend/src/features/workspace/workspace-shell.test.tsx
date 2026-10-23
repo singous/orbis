@@ -142,14 +142,14 @@ describe("WorkspaceShell (desktop surface)", () => {
 
     expect(within(rail).getByRole("link", { name: "在线文档" })).toHaveAttribute("aria-current", "page");
     expect(within(screen.getByRole("navigation", { name: "文档导航" })).getByRole("link", { name: "最近编辑" })).toHaveAttribute("aria-current", "page");
-    expect(within(screen.getByRole("navigation", { name: "文档导航" })).getByRole("link", { name: "笔记本总览" })).not.toHaveAttribute("aria-current");
+    expect(within(screen.getByRole("navigation", { name: "文档导航" })).getByRole("link", { name: "开始" })).not.toHaveAttribute("aria-current");
     await actor.click(within(rail).getByRole("link", { name: "站点" }));
 
     expect(within(rail).getByRole("link", { name: "站点" })).toHaveAttribute("aria-current", "page");
     expect(within(rail).getByRole("link", { name: "在线文档" })).not.toHaveAttribute("aria-current");
     expect(screen.queryByRole("navigation", { name: "文档导航" })).not.toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "站点导航" })).toHaveTextContent("我的站点");
-    expect(screen.queryByRole("link", { name: "归档" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "回收站" })).not.toBeInTheDocument();
   });
 
   it("resets collapse when switching areas and returning to a previous tab", async () => {

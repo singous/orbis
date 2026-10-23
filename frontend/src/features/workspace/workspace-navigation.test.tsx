@@ -27,9 +27,9 @@ it("keeps saved notebook shortcuts in the expanded function menu and removes the
   authStore.setState({ accessToken: "test" });
   render(<MemoryRouter initialEntries={["/documents"]}><QueryClientProvider client={new QueryClient()}><Routes><Route path="/login" element={<div>登录</div>}/><Route path="*" element={<RequireAuth><WorkspaceShell>内容</WorkspaceShell></RequireAuth>}/></Routes></QueryClientProvider></MemoryRouter>);
   expect(screen.getByRole("link", { name: "快捷笔记本" })).toHaveAttribute("href", "/collections/quick");
-  expect(screen.queryByRole("link", { name: "普通笔记本" })).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "普通笔记本" })).toHaveAttribute("href", "/collections/other");
   expect(screen.getByRole("link", { name: "最近编辑" })).toHaveAttribute("href", "/documents/recent");
-  expect(screen.getByRole("link", { name: "归档" })).toHaveAttribute("href", "/documents/archive");
+  expect(screen.getByRole("link", { name: "回收站" })).toHaveAttribute("href", "/documents/archive");
   expect(screen.queryByRole("link", { name: "知识库" })).not.toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "记忆" })).not.toBeInTheDocument();
   act(() => authStore.getState().clearSession());

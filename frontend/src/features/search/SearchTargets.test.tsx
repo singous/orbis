@@ -51,7 +51,7 @@ it.each([false, true])("locates an archived resource independently of loaded pag
   await screen.findByText("目标资源");
   expect(screen.getAllByText("目标资源")).toHaveLength(1);
   expect(screen.getByText("父目录")).toBeVisible();
-  expect(screen.getByLabelText("搜索定位的归档内容")).toHaveFocus();
+  expect(screen.getByLabelText("搜索定位的回收站内容")).toHaveFocus();
   await userEvent.click(await screen.findByRole("button", { name: "恢复 目标资源" }));
   expect(mocks.restore).toHaveBeenCalledWith({ id, archived: false,expected_directory_version:7 });
 });
