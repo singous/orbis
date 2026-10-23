@@ -48564,6 +48564,12 @@
             "format": "uuid",
             "nullable": true,
             "description": "Primary data table of a document page, or null for ordinary documents."
+          },
+          "board_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Primary native board, or null for other documents."
           }
         },
         "required": [
@@ -48579,7 +48585,8 @@
           "position",
           "is_archived",
           "summary",
-          "sheet_id"
+          "sheet_id",
+          "board_id"
         ],
         "additionalProperties": false
       },
