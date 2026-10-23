@@ -459,9 +459,6 @@ test("sheet controls follow the Orbis theme in light and dark appearances", asyn
       (theme) => (document.documentElement.dataset.theme = theme),
       mode,
     );
-    const brand = await page
-      .getByRole("button", { name: "新建资产", exact: true })
-      .evaluate((e) => getComputedStyle(e).backgroundColor);
     await page.getByRole("button", { name: "状态列菜单", exact: true }).click();
     await page.getByRole("menuitem", { name: "编辑列", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "字段设置", exact: true });
@@ -470,9 +467,18 @@ test("sheet controls follow the Orbis theme in light and dark appearances", asyn
       exact: true,
     });
 
-    expect(
-      await submit.evaluate((e) => getComputedStyle(e).backgroundColor),
-    ).toBe(brand);
+    // 主题切换存在颜色过渡，重读两处当前颜色，避免缓存切换前的值。
+    await expect
+      .poll(async () => {
+        const brand = await page
+          .getByRole("button", { name: "新建资产", exact: true })
+          .evaluate((e) => getComputedStyle(e).backgroundColor);
+        return submit.evaluate(
+          (e, expected) => getComputedStyle(e).backgroundColor === expected,
+          brand,
+        );
+      })
+      .toBe(true);
     const field = dialog.getByRole("textbox", {
       name: "字段名称",
       exact: true,
