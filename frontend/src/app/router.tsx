@@ -32,10 +32,12 @@ const siteFallback = <div className="site-reader-status"><LoadingState label="�
 const workspaceFallback = <WorkspaceLoadingPage />;
 
 const SheetPage = lazy(() => import("../features/sheets/SheetPage").then(m => ({default:m.SheetPage})));
+const QuickNotesPage = lazy(() => import("../features/quick-notes/QuickNotesPage").then(module => ({ default: module.QuickNotesPage })));
 const SheetsHome = lazy(() => import("../features/sheets/SheetsHome").then(m => ({default:m.SheetsHome})));
 const PublicSheetForm = lazy(() => import("../features/sheets/SheetForms").then(m => ({default:m.PublicSheetForm})));
 
 export const router = createBrowserRouter([
+ {path:"/documents/quick-notes",element:<RequireAuth><Suspense fallback={workspaceFallback}><QuickNotesPage /></Suspense></RequireAuth>},
  {path:"/sheets",element:<RequireAuth><Suspense fallback={workspaceFallback}><SheetsHome /></Suspense></RequireAuth>},
  {path:"/sheets/:sheetId",element:<RequireAuth><Suspense fallback={workspaceFallback}><SheetPage /></Suspense></RequireAuth>},
  {path:"/forms/:token",element:<Suspense fallback={<LoadingState label="正在打开表单…" />}><PublicSheetForm /></Suspense>},
