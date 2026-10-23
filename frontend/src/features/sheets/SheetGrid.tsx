@@ -64,6 +64,7 @@ export function SheetGrid({
   hasMore,
   loading,
   onMore,
+  onRefresh,
   onError,
 }: {
   rows: Row[];
@@ -90,6 +91,7 @@ export function SheetGrid({
   hasMore: boolean;
   loading: boolean;
   onMore: () => Promise<unknown>;
+  onRefresh: () => void;
   onError: (message: string) => void;
 }) {
   const scroller = useRef<HTMLDivElement>(null),
@@ -803,6 +805,12 @@ export function SheetGrid({
           {virtualRows.getVirtualItems().map((virtual) => {
             const row = rows[virtual.index],
               groupTop = groupStart(virtual.index) ? 28 : 0;
+            const groupOption =
+              groupTop > 0 && groupField
+                ? groupField.options.find(
+                    (option) => option.id === row.values[groupField.id],
+                  )
+                : undefined;
             return (
               <div
                 role="row"
@@ -813,9 +821,18 @@ export function SheetGrid({
               >
                 {groupTop > 0 && (
                   <div className="sheet-group-heading">
-                    {groupField?.options.find(
-                      (o) => o.id === row.values[groupField.id],
-                    )?.label ?? "未分组"}
+                    <span
+                      className="sheet-group-dot"
+                      aria-hidden
+                      style={
+                        groupOption
+                          ? {
+                              background: `var(--sheet-ink-${groupOption.color}, var(--text-tertiary))`,
+                            }
+                          : undefined
+                      }
+                    />
+                    {groupOption?.label ?? "未分组"}
                   </div>
                 )}
                 <div
@@ -844,19 +861,24 @@ export function SheetGrid({
                     isEditing =
                       editing?.row.id === row.id &&
                       editing.field.id === field.id;
-                  const isSelected =
-                    bounds &&
-                    virtual.index >= bounds.top &&
-                    virtual.index <= bounds.bottom &&
-                    col.index >= bounds.left &&
-                    col.index <= bounds.right;
+                  const inRange = Boolean(
+                      bounds &&
+                        virtual.index >= bounds.top &&
+                        virtual.index <= bounds.bottom &&
+                        col.index >= bounds.left &&
+                        col.index <= bounds.right,
+                    ),
+                    // The active cell keeps its content readable; only the
+                    // surrounding range carries the selection tint.
+                    isActive =
+                      end?.row === virtual.index && end.col === col.index;
                   return (
                     <div
                       role="gridcell"
                       data-first-column={col.index === 0 || undefined}
-                      aria-selected={Boolean(isSelected)}
+                      aria-selected={inRange}
                       key={field.id}
-                      className={`sheet-cell${duplicates[field.id]?.includes(row.id) ? " duplicate" : ""}${isSelected ? " selected" : ""}${isEditing ? " editing" : ""}`}
+                      className={`sheet-cell${duplicates[field.id]?.includes(row.id) ? " duplicate" : ""}${inRange && !isActive ? " selected" : ""}${isActive ? " active" : ""}${isEditing ? " editing" : ""}`}
                       style={{
                         left: col.start,
                         width: col.size,
@@ -1017,15 +1039,24 @@ export function SheetGrid({
               disabled={busy}
               onClick={onAdd}
             >
-              <Plus size={16} />
+              <Plus size={15} />
+              添加记录
             </ActionButton>
           ) : null}
         </div>
       </div>
-      <div className="sheet-grid-hint">
-        {bounds
-          ? `已选择 ${(bounds.bottom - bounds.top + 1) * (bounds.right - bounds.left + 1)} 个单元格`
-          : "双击单元格编辑 · 拖动选择 · 支持复制粘贴"}
+      <div className="sheet-statusbar">
+        <span>
+          {total != null ? `${total} 条记录` : "正在读取记录数…"}
+        </span>
+        <span className="sheet-muted">
+          {bounds
+            ? `已选择 ${(bounds.bottom - bounds.top + 1) * (bounds.right - bounds.left + 1)} 个单元格`
+            : "双击单元格编辑 · 拖动选择 · 支持复制粘贴"}
+        </span>
+        <ActionButton size="sm" onClick={() => void onRefresh()}>
+          刷新
+        </ActionButton>
       </div>
     </div>
   );

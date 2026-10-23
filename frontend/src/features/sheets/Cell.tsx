@@ -22,6 +22,32 @@ const MAX_CELL_ATTACHMENTS = 3;
 const MAX_AUTOMATIC_IMAGE_BYTES = 1 << 20;
 const ATTACHMENT_EDITOR_PAGE_SIZE = 8;
 
+const PERSON_COLORS = ["blue", "green", "amber", "purple", "pink"] as const;
+function personColor(id: string) {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++)
+    hash = (hash * 31 + id.charCodeAt(i)) | 0;
+  return PERSON_COLORS[Math.abs(hash) % PERSON_COLORS.length];
+}
+export function PersonChip({ id, label }: { id: string; label: string }) {
+  const color = personColor(id);
+  return (
+    <span className="sheet-person-chip">
+      <span
+        className="sheet-person-avatar"
+        aria-hidden
+        style={{
+          background: `var(--sheet-${color})`,
+          color: `var(--sheet-ink-${color})`,
+        }}
+      >
+        {[...label][0]?.toUpperCase()}
+      </span>
+      <span className="sheet-person-name">{label}</span>
+    </span>
+  );
+}
+
 export function Attachment({
   id,
   image = false,
@@ -134,6 +160,7 @@ export function CellValue({
               className="sheet-tag"
               style={{
                 background: `var(--sheet-${option.color}, var(--sheet-gray))`,
+                color: `var(--sheet-ink-${option.color}, var(--text-primary))`,
               }}
               key={id}
             >
@@ -156,13 +183,20 @@ export function CellValue({
         ))}
       </span>
     );
-  if (field.kind === "progress")
+  if (field.kind === "progress") {
+    const percent = Math.max(0, Math.min(100, Number(value)));
     return (
       <span className="sheet-progress">
-        <progress max={100} value={Number(value)} />
-        {value}%
+        <span className="sheet-progress-track" aria-hidden>
+          <span
+            className={`sheet-progress-fill${percent >= 100 ? " done" : ""}`}
+            style={{ width: `${percent}%` }}
+          />
+        </span>
+        {percent}%
       </span>
     );
+  }
   if (field.kind === "attachment" || field.kind === "image")
     return (
       <span className="sheet-attachments">
@@ -183,10 +217,14 @@ export function CellValue({
   ) {
     const ids = Array.isArray(value) ? value : [String(value)];
     return (
-      <span>
-        {ids
-          .map((id) => field.options.find((o) => o.id === id)?.label ?? "成员")
-          .join("、")}
+      <span className="sheet-person">
+        {ids.map((id) => (
+          <PersonChip
+            id={id}
+            key={id}
+            label={field.options.find((o) => o.id === id)?.label ?? "成员"}
+          />
+        ))}
       </span>
     );
   }
