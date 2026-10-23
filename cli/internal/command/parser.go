@@ -50,6 +50,12 @@ var specs = map[string]spec{
 	"documents export":   {values: "version format out", required: "version out", positionals: 1},
 	"documents create":   {values: "collection title parent file operation-id wait-seconds", bools: "dry-run", required: "collection title operation-id"},
 	"documents import":   {values: "collection title parent file operation-id wait-seconds", bools: "dry-run", required: "collection title operation-id file"},
+	"versions list":      {values: "document page-size cursor", required: "document"},
+	"versions get":       {values: "document", required: "document", positionals: 1},
+	"versions save":      {values: "document source-revision name description operation-id", required: "document source-revision name operation-id"},
+	"versions rename":    {values: "document expected-metadata-version name description operation-id", required: "document expected-metadata-version name operation-id", positionals: 1},
+	"versions restore":   {values: "document expected-revision operation-id", required: "document expected-revision operation-id", positionals: 1},
+	"versions compare":   {values: "document from page-size cursor", required: "document from", positionals: 1},
 	"imports get":        {positionals: 1},
 	"imports finalize":   {values: "wait-seconds", positionals: 1},
 	"blocks list":        {values: "document parent version page-size cursor", required: "document"},
@@ -172,7 +178,7 @@ func parse(argv []string) (arguments, error) {
 			return a, argError()
 		}
 	}
-	for _, key := range []string{"page", "page-size", "version", "since-version", "expected-version", "expires-at-ms", "revision", "after", "before"} {
+	for _, key := range []string{"page", "page-size", "version", "since-version", "expected-version", "expires-at-ms", "revision", "after", "before", "source-revision", "expected-revision", "expected-metadata-version"} {
 		if raw := a.flags[key]; raw != "" {
 			v, err := strconv.ParseInt(raw, 10, 64)
 			if err != nil || v < 0 || (v == 0 && key != "after" && key != "before") || (key == "page-size" && v > 100) {
@@ -200,6 +206,7 @@ const help = `Orbis CLI — 通过工作空间 Agent API 管理文档
   workspaces list | collections list
   documents list|search|resolve|get|outline|changes|export|create|import
   boards list|catalog|templates|template|get|elements|changes|history|create|apply|export
+  versions list|get|save|rename|compare|restore
   imports get|finalize
   blocks list|get
   operations preview|apply|get

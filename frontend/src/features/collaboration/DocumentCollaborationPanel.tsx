@@ -5,19 +5,17 @@ import { TextArea as HeroTextArea } from "@heroui/react/textarea";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Drawer } from "@heroui/react/drawer";
 import { History, MessageSquare, X } from "../../shared/ui/icons";
-import { useMemo,useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { ApiError } from "../../shared/api/api-client";
 import { showToast } from "../../shared/ui/Toast";
 import type { NoteContent } from "../../shared/api/schemas";
-import { TableHostContext,type TableHost } from "../data-tables/context";
-import { useAuthRequest } from "../../shared/auth/use-auth-request";
-import { ContentRenderer } from "../content/ContentRenderer";
-import { AuthenticatedFileContent } from "../files/FileContent";
+import { RevisionContent } from "./RevisionContent";
 import { useComments, useCreateComment, useRevision, useRevisions, useRestoreRevision, useUpdateComment } from "./queries";
+import { DocumentVersions } from "./DocumentVersions";
 import type { DocumentComment } from "./schemas";
 
 export type RestoreSavedRevision = (expectedVersion: number) => Promise<NoteContent>;
-type Props = { noteId: string; currentUserId: string; canManage: boolean; onClose: () => void; onRestore: (restore: RestoreSavedRevision) => Promise<void> };
+type Props = { noteId: string; currentUserId: string; canManage: boolean; onClose: () => void; onRestore: (restore: RestoreSavedRevision) => Promise<void>; onPrepareVersion?: () => Promise<number> };
 const MAX_COMMENT_LENGTH = 10_000;
 const timestamp = new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Shanghai" });
 function errorText(error: unknown) { return error instanceof ApiError ? error.message : error instanceof Error ? error.message : "操作失败，请稍后重试。"; }
@@ -88,12 +86,6 @@ export function DocumentComments({ noteId, canManage, currentUserId }: Pick<Prop
   </section>;
 }
 
-function RevisionContent({noteId,version,blocks}:{noteId:string;version:number;blocks:import("../../shared/api/schemas").NoteBlocks}){
-  const auth=useAuthRequest();
-  const host=useMemo<TableHost>(()=>({noteId,auth,readOnly:true,draftScope:"",documentVersion:()=>version}),[noteId,auth,version]);
-  return <TableHostContext.Provider value={host}><AuthenticatedFileContent><ContentRenderer blocks={blocks}/></AuthenticatedFileContent></TableHostContext.Provider>;
-}
-
 function Revisions({ noteId, canManage, onRestore, onBusyChange }: Pick<Props, "noteId" | "canManage" | "onRestore"> & { onBusyChange: (busy: boolean) => void }) {
   const query = useRevisions(noteId);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -115,19 +107,19 @@ function Revisions({ noteId, canManage, onRestore, onBusyChange }: Pick<Props, "
     finally { setPending(false); onBusyChange(false); }
   }
   return <section aria-label="文档历史版本" className="collaboration-section">
-    <p className="collaboration-hint">每次正文保存保留一个版本，恢复前的正文也会留在历史中。</p>
+    <p className="collaboration-hint">这里保留了逐次保存记录，可用于查找较早的内容。</p>
     {!canManage ? <p className="collaboration-hint">只读成员可以查看历史，恢复需要编辑权限。</p> : null}
     {query.isPending ? <LoadingState label="正在加载历史…" compact /> : null}
     <ErrorNotice error={query.error} />
     {query.isError ? <ActionButton variant="secondary" type="button" className="mvp-button secondary" onClick={() => void query.refetch()}>重试加载历史</ActionButton> : null}
     {query.data?.pages[0].items.length === 0 ? <p className="collaboration-empty">暂无历史版本，首次保存正文后会在这里显示。</p> : null}
-    <div className="collaboration-revisions">{query.data?.pages.flatMap((page) => page.items).map((revision) => <ActionButton type="button" className="collaboration-revision" key={revision.id} aria-label={`查看版本 ${revision.content_version}`} aria-pressed={selectedId === revision.id} disabled={pending} onClick={() => { setSelectedId(revision.id); setError(null); }}><span>版本 {revision.content_version}</span><small>{revision.author_name} · {timestamp.format(revision.created_at_ms)}</small></ActionButton>)}</div>
+    <div className="collaboration-revisions">{query.data?.pages.flatMap((page) => page.items).map((revision) => <ActionButton type="button" className="collaboration-revision" key={revision.id} aria-label={`查看保存记录 ${revision.content_version}`} aria-pressed={selectedId === revision.id} disabled={pending} onClick={() => { setSelectedId(revision.id); setError(null); }}><span>{timestamp.format(revision.created_at_ms)}</span><small>{revision.author_name} · {timestamp.format(revision.created_at_ms)}</small></ActionButton>)}</div>
     {query.hasNextPage ? <ActionButton variant="secondary" type="button" className="mvp-button secondary" isPending={query.isFetchingNextPage} disabled={query.isFetchingNextPage || pending} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? "正在加载…" : "加载更多版本"}</ActionButton> : null}
     {selectedId ? <div className="collaboration-preview">
       {detail.isPending ? <LoadingState label="正在加载版本正文…" variant="editor" /> : null}
       <ErrorNotice error={detail.error} />
       {detail.isError ? <ActionButton variant="secondary" type="button" className="mvp-button secondary" onClick={() => void detail.refetch()}>重试加载正文</ActionButton> : null}
-      {detail.data ? <><h3>版本 {detail.data.content_version} 预览</h3><RevisionContent noteId={noteId} version={detail.data.content_version} blocks={detail.data.blocks}/>{canManage ? <div className="collaboration-restore"><p className="collaboration-hint">恢复会先保存当前草稿，再将此正文保存为新版本。标题也会恢复至该版本；未记录标题的旧版本保留当前标题。</p><ActionButton variant="primary" className="mvp-button primary" type="button" onClick={restoreSelected} disabled={pending}>{pending ? "正在保存草稿并恢复…" : "恢复此版本"}</ActionButton></div> : null}</> : null}
+      {detail.data ? <><h3>保存记录预览</h3><RevisionContent noteId={noteId} version={detail.data.content_version} blocks={detail.data.blocks}/>{canManage ? <div className="collaboration-restore"><p className="collaboration-hint">恢复会先保存当前草稿，再将此正文保存为新版本。标题也会恢复至该版本；未记录标题的旧版本保留当前标题。</p><ActionButton variant="primary" className="mvp-button primary" type="button" onClick={restoreSelected} disabled={pending}>{pending ? "正在保存草稿并恢复…" : "恢复此版本"}</ActionButton></div> : null}</> : null}
       <ErrorNotice error={error} />
     </div> : null}
   </section>;
@@ -135,6 +127,7 @@ function Revisions({ noteId, canManage, onRestore, onBusyChange }: Pick<Props, "
 
 export function DocumentCollaborationPanel(props: Props) {
   const [busy, setBusy] = useState(false);
+  const [legacy, setLegacy] = useState(false);
   const [tab, setTab] = useState<"comments" | "revisions">("comments");
   return <Drawer.Backdrop isOpen isDismissable={!busy} isKeyboardDismissDisabled={busy} onOpenChange={(open) => { if (!open && !busy) props.onClose(); }} className="collaboration-overlay">
     <Drawer.Content placement="right" className="collaboration-drawer"><Drawer.Dialog className="collaboration-panel" aria-describedby="collaboration-description">
@@ -144,7 +137,7 @@ export function DocumentCollaborationPanel(props: Props) {
           <Tabs.Tab id="comments" isDisabled={busy}><MessageSquare size={16} aria-hidden="true" />评论<Tabs.Indicator /></Tabs.Tab>
           <Tabs.Tab id="revisions" isDisabled={busy}><History size={16} aria-hidden="true" />历史版本<Tabs.Indicator /></Tabs.Tab>
         </Tabs.List></Tabs.ListContainer>
-        <Drawer.Body className="collaboration-panel-scroll"><Tabs.Panel id="comments" shouldForceMount><DocumentComments {...props} /></Tabs.Panel><Tabs.Panel id="revisions">{tab === "revisions" ? <Revisions {...props} onBusyChange={setBusy} /> : null}</Tabs.Panel></Drawer.Body>
+        <Drawer.Body className="collaboration-panel-scroll"><Tabs.Panel id="comments" shouldForceMount><div className="collaboration-tab-content" hidden={tab !== "comments"}><DocumentComments {...props} /></div></Tabs.Panel><Tabs.Panel id="revisions">{tab === "revisions" ? legacy ? <><ActionButton type="button" variant="secondary" disabled={busy} onClick={() => setLegacy(false)}>返回版本时间线</ActionButton><Revisions {...props} onBusyChange={setBusy} /></> : <DocumentVersions {...props} onPrepare={props.onPrepareVersion} onBusyChange={setBusy} onLegacy={() => setLegacy(true)} /> : null}</Tabs.Panel></Drawer.Body>
       </Tabs>
     </Drawer.Dialog></Drawer.Content>
   </Drawer.Backdrop>;

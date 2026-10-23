@@ -105,7 +105,7 @@ describe("DocumentEditorPage", () => {
     expect(payload.expected_version).toBe(4);
     expect(payload.submitted.blocks.schema_version).toBe(2);
     expect(payload.submitted.blocks.editor).toBe("blocknote");
-    expect(screen.getByText(/版本 5/)).toBeInTheDocument();
+    expect(screen.queryByText(/版本 5/)).not.toBeInTheDocument();
   });
 
   it("keeps a server version conflict visible even when the local draft is persisted", async () => {

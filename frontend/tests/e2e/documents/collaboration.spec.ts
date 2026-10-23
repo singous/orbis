@@ -56,6 +56,59 @@ async function localOperations(page: Page, id: string): Promise<string[]> {
 
 // Real WebSocket transport, persisted Yjs state, Go transactions and the actual
 // editor are all exercised here; only disposable synthetic accounts are used.
+test("named document versions fix content and restore into an editable collaboration session", async ({ page, request }, testInfo) => {
+  const { session, document, blocks } = await fixture(request, "文档版本管理", ["Version baseline"]);
+  await openWithSession(page, session, `/documents/${document.id}`);
+  await expect(page.locator(".ProseMirror")).toBeVisible();
+  await expect(page.locator(".document-save-state")).toHaveText("已保存");
+  await expect(page.getByText(/^版本 \d+$/)).toHaveCount(0);
+  async function openVersions() {
+    await page.getByRole("button", { name: "评论与历史", exact: true }).click();
+    await page.getByRole("tab", { name: "历史版本", exact: true }).click();
+    await expect(page.getByLabel("新评论", { exact: true })).toBeHidden();
+  }
+  async function saveNamed(name: string) {
+    await page.getByRole("button", { name: "新建命名版本", exact: true }).click();
+    await page.getByLabel("新版本名称", { exact: true }).fill(name);
+    await page.getByRole("button", { name: "保存命名版本", exact: true }).click();
+    await expect(page.getByRole("button", { name: `查看版本 ${name}`, exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+  }
+  await openVersions();
+  await saveNamed("评审稿");
+  await page.getByRole("button", { name: "关闭评论与历史", exact: true }).click();
+  await append(page, blocks[0].id, " revised");
+  await expect.poll(async () => text((await content(request, session, document.id)).blocks[0])).toBe("Version baseline revised");
+  await openVersions();
+  await saveNamed("修订稿");
+  const saved = await responseData<{ items: Array<{ id: string; name: string; source_revision: number }> }>(await request.get(workspacePath(session, `/documents/${document.id}/versions`), { headers: sessionHeaders(session) }));
+  const review = saved.items.find(version => version.name === "评审稿")!;
+  const revised = saved.items.find(version => version.name === "修订稿")!;
+  const fixed = await responseData<{ content: { blocks: NativeBlock[] } }>(await request.get(workspacePath(session, `/documents/${document.id}/versions/${review.id}/content`), { headers: sessionHeaders(session) }));
+  expect(text(fixed.content.blocks[0])).toBe("Version baseline");
+  const compared = await responseData<{ items: Array<{ change: string; before_text: string; after_text: string }> }>(await request.get(workspacePath(session, `/documents/${document.id}/versions/${revised.id}/compare?from_id=${review.id}`), { headers: sessionHeaders(session) }));
+  expect(compared.items).toHaveLength(1);
+  expect(compared.items[0]).toMatchObject({ change: "modified", before_text: "Version baseline", after_text: "Version baseline revised" });
+  await page.locator('.document-versions [data-slot="select-trigger"]').click();
+  await page.getByRole("option", { name: /评审稿/ }).click();
+  await expect(page.getByRole("heading", { name: "内容差异", exact: true })).toBeVisible();
+  await expect(page.getByText("Version baseline", { exact: true })).toBeVisible();
+  await page.setViewportSize({ width: 375, height: 812 });
+  expect((await page.getByRole("button", { name: "新建命名版本", exact: true }).boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await expect(page.getByRole("button", { name: "恢复此版本", exact: true })).toBeVisible();
+  expect(await page.locator(".collaboration-panel").evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+  await page.getByRole("heading", { name: "修订稿", exact: true }).scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath("document-versions-mobile.png"), fullPage: true });
+  await page.getByRole("button", { name: "查看版本 评审稿", exact: true }).click();
+  await page.getByRole("button", { name: "恢复此版本", exact: true }).click();
+  await expect(page.getByText("历史版本已恢复", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "关闭评论与历史", exact: true }).click();
+  await expect(page.locator(".ProseMirror")).toHaveText("Version baseline");
+  await append(page, blocks[0].id, " after restore");
+  await expect.poll(async () => text((await content(request, session, document.id)).blocks[0])).toBe("Version baseline after restore");
+  await expect(page.locator(".document-save-state")).toHaveText("已保存");
+});
+
 test("same-paragraph offline text and formatting converge in two real editors", async ({ browser, request }) => {
   const { session, document, blocks } = await fixture(request, "同段协作", ["Shared base"]);
   const pair = await openPair(browser, session, document.id);
@@ -195,7 +248,8 @@ test("explicit history restore opens the new epoch and remains editable", async 
   await expect.poll(async () => text((await content(request, session, document.id)).blocks[0])).toBe("Historical body current");
   await page.getByRole("button", { name: "评论与历史", exact: true }).click();
   await page.getByRole("tab", { name: "历史版本", exact: true }).click();
-  await page.getByRole("button", { name: `查看版本 ${source.revision.version}`, exact: true }).click();
+  await page.getByRole("button", { name: "查看全部保存记录", exact: true }).click();
+  await page.getByRole("button", { name: `查看保存记录 ${source.revision.version}`, exact: true }).click();
   await page.getByRole("button", { name: "恢复此版本", exact: true }).click();
   await expect(page.getByText("历史版本已恢复", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "关闭评论与历史", exact: true }).click();

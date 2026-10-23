@@ -45,7 +45,8 @@ function server(mutate: (url: URL, init: RequestInit) => Response | Promise<Resp
 async function openHistory(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole("button", { name: "评论与历史" }));
   await user.click(await screen.findByRole("tab", { name: "历史版本" }));
-  await user.click(await screen.findByRole("button", { name: /查看版本 2/ }));
+    await user.click(await screen.findByRole("button", { name: "查看全部保存记录" }));
+  await user.click(await screen.findByRole("button", { name: /查看保存记录 2/ }));
   await screen.findByText("历史正文");
 }
 
@@ -70,7 +71,7 @@ describe("restoring from the editor", () => {
     expect(requests.find((request) => request.path.endsWith("/restore"))?.body).toEqual({ expected_version: 5,source_version:2,operation_id:expect.any(String) });
     await user.click(screen.getByRole("button", { name: "关闭评论与历史" }));
     expect(screen.getByLabelText("编辑正文")).toHaveValue("历史正文");
-    expect(screen.getByText("版本 6")).toBeInTheDocument();
+    expect(screen.queryByText("版本 6")).not.toBeInTheDocument();
   });
 
   it.each([409, 500])("blocks restore when saving fails with %s and keeps the local draft", async (status) => {
