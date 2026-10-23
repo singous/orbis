@@ -32,6 +32,8 @@ import (
 	"orbis.local/orbis/internal/platform/thumbnail"
 	"orbis.local/orbis/internal/publishing"
 	pubstore "orbis.local/orbis/internal/publishing/postgres"
+	"orbis.local/orbis/internal/quicknote"
+	quickstore "orbis.local/orbis/internal/quicknote/postgres"
 	"orbis.local/orbis/internal/search"
 	searchstore "orbis.local/orbis/internal/search/postgres"
 	"orbis.local/orbis/internal/sharing"
@@ -176,6 +178,7 @@ func NewWithClock(ctx context.Context, cfg config.Config, logger *slog.Logger, w
 	router, err := httpapi.New(httpapi.Dependencies{
 		Boards:               boards,
 		AgentBoards:          integration.NewBoards(appstore.NewAgentBoards(db, wallClock, cfg.SigningKey, boardCatalog, boardRenderer)),
+		QuickNotes:           quicknote.New(quickstore.New(db, engine), workspaces, wallClock),
 		CollaborationSockets: collaborationSockets,
 		Identity:             accounts, Workspaces: workspaces, Documents: documents,
 		Versions:              document.NewVersions(documentRepo, documents, workspaces, wallClock, security.NewCursorSigner(cfg.SigningKey)),

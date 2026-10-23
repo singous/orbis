@@ -1,4 +1,4 @@
-import {LayoutGrid} from "lucide-react";
+import {LayoutGrid, StickyNote} from "lucide-react";
 import { Archive, BookOpen, Clock3, Globe, Home, Notebook, Search, Settings, Users } from "../../shared/ui/icons";
 import type { ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
@@ -14,6 +14,7 @@ import { usePinnedNotebooks } from "../documents/pinned-notebooks";
 import { resolveWorkspaceArea } from "./workspace-areas";
 
 const documentLinks = [
+  { to: "/documents/quick-notes", label: "随手记", icon: StickyNote },
   { to: "/documents", label: "笔记本总览", icon: BookOpen },
   { to: "/documents/recent", label: "最近编辑", icon: Clock3 },
   { to: "/documents/collections", label: "我的笔记本", icon: Notebook },

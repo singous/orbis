@@ -20,6 +20,7 @@ import (
 	"orbis.local/orbis/internal/integration"
 	"orbis.local/orbis/internal/platform/fault"
 	"orbis.local/orbis/internal/publishing"
+	"orbis.local/orbis/internal/quicknote"
 	"orbis.local/orbis/internal/search"
 	"orbis.local/orbis/internal/sharing"
 	"orbis.local/orbis/internal/sheet"
@@ -62,6 +63,7 @@ type Dependencies struct {
 	RequestTimeout        time.Duration
 	Boards                *board.Service
 	AgentBoards           *integration.Boards
+	QuickNotes            *quicknote.Service
 }
 
 type handler struct {
@@ -230,6 +232,19 @@ func New(deps Dependencies) (*gin.Engine, error) {
 	scope.GET("/documents/:document_id/export/markdown", h.exportDocument)
 	scope.HEAD("/documents/:document_id/export/markdown", h.exportDocument)
 	scope.GET("/assets", h.assets)
+	scope.GET("/quick-notes", h.quickNotes)
+	scope.POST("/quick-notes", h.writeQuickNote)
+	scope.GET("/quick-notes/summary", h.quickNoteSummary)
+	scope.GET("/quick-notes/:quick_note_id", h.quickNote)
+	scope.PUT("/quick-notes/:quick_note_id", h.writeQuickNote)
+	scope.PATCH("/quick-notes/:quick_note_id", h.patchQuickNote)
+	scope.GET("/quick-note-tags", h.quickNoteTags)
+	scope.POST("/quick-note-tags", h.writeQuickNoteTag)
+	scope.PUT("/quick-note-tags/:tag_id", h.writeQuickNoteTag)
+	scope.DELETE("/quick-note-tags/:tag_id", h.writeQuickNoteTag)
+	scope.POST("/quick-note-assets", h.uploadQuickNoteAsset)
+	scope.GET("/quick-note-assets/:asset_id/content", h.quickNoteAssetContent)
+	scope.HEAD("/quick-note-assets/:asset_id/content", h.quickNoteAssetContent)
 	scope.POST("/collection-icons", h.uploadCollectionIcon)
 	scope.POST("/assets", h.uploadAsset)
 	scope.GET("/assets/:asset_id", h.asset)
@@ -324,7 +339,7 @@ func (h *handler) requestContext() gin.HandlerFunc {
 		c.Header("X-Request-ID", requestID)
 		c.Header("X-Content-Type-Options", "nosniff")
 		c.Header("Cache-Control", "no-store")
-		if c.FullPath() == "/api/v1/me/avatar" || c.FullPath() == "/api/v1/workspaces/:workspace_id/assets/:asset_id/content" {
+		if c.FullPath() == "/api/v1/me/avatar" || c.FullPath() == "/api/v1/workspaces/:workspace_id/assets/:asset_id/content" || c.FullPath() == "/api/v1/workspaces/:workspace_id/quick-note-assets/:asset_id/content" {
 			secureContentHeaders(c)
 		}
 		ctx := c.Request.Context()
@@ -341,7 +356,7 @@ func (h *handler) requestContext() gin.HandlerFunc {
 		if c.FullPath() == "/api/v1/agent/workspaces/:workspace_id/documents/:document_id/assets" && c.Request.Method == http.MethodPost {
 			bodyLimit = min(h.deps.MaxUploadBytes, integration.MaxAgentUploadBytes) + MultipartOverhead
 		}
-		if c.FullPath() == "/api/v1/workspaces/:workspace_id/assets" && c.Request.Method == http.MethodPost {
+		if (c.FullPath() == "/api/v1/workspaces/:workspace_id/assets" || c.FullPath() == "/api/v1/workspaces/:workspace_id/quick-note-assets") && c.Request.Method == http.MethodPost {
 			bodyLimit = h.deps.MaxUploadBytes + MultipartOverhead
 		}
 		if c.FullPath() == "/api/v1/workspaces/:workspace_id/collection-icons" && c.Request.Method == http.MethodPost {

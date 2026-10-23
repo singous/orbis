@@ -165,7 +165,7 @@ func pageQuery(c *gin.Context) (pagination.Page, error) {
 }
 
 func validPathIDs(c *gin.Context) error {
-	for _, key := range []string{"workspace_id", "collection_id", "document_id", "user_id", "invitation_id", "transfer_id", "group_id", "comment_id", "asset_id", "table_id", "sheet_id", "field_id"} {
+	for _, key := range []string{"workspace_id", "collection_id", "document_id", "user_id", "invitation_id", "transfer_id", "group_id", "comment_id", "asset_id", "table_id", "sheet_id", "field_id", "quick_note_id", "tag_id"} {
 		value := c.Param(key)
 		if value == "" {
 			continue

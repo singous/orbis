@@ -1,0 +1,93 @@
+.quick-notes-page { padding: var(--orbis-space-6); max-width: 1800px; margin: 0 auto; }
+.quick-notes-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--orbis-space-4); margin-bottom: var(--orbis-space-6); }
+.quick-notes-heading h1 { margin: 0; font-size: var(--orbis-text-page-title-size); font-weight: var(--orbis-weight-heading); }
+.quick-notes-heading > div:first-child { display: flex; align-items: baseline; gap: var(--orbis-space-4); }
+.quick-notes-heading span, .quick-note-hint, .quick-note-save-status, .quick-note-shortcut { color: var(--muted); font-size: var(--orbis-text-caption-size); }
+.quick-notes-view { display: flex; padding: 3px; background: var(--surface-secondary); border-radius: var(--field-radius); }
+.quick-notes-view button { width: var(--orbis-control-compact-height); height: var(--orbis-control-compact-height); display: grid; place-items: center; border-radius: var(--radius); color: var(--muted); }
+.quick-notes-view button[aria-pressed="true"] { background: var(--surface); color: var(--foreground); box-shadow: var(--orbis-panel-shadow); }
+.quick-notes-layout { display: grid; grid-template-columns: minmax(300px, .8fr) minmax(0, 1.2fr); align-items: start; gap: var(--orbis-space-6); }
+.quick-note-composer { min-width: 0; position: sticky; top: var(--orbis-space-4); background: var(--orbis-panel-bg); border: 1px solid var(--orbis-surface-edge); border-radius: var(--field-radius); box-shadow: var(--orbis-card-shadow); }
+.quick-note-composer-heading { display: flex; align-items: center; justify-content: space-between; padding: var(--orbis-space-3) var(--orbis-space-4) 0; gap: var(--orbis-space-3); font-size: var(--orbis-text-ui-size); color: var(--muted); }
+.quick-note-composer-heading > button { width: var(--orbis-control-compact-height); height: var(--orbis-control-compact-height); display: grid; place-items: center; border-radius: var(--radius); }
+.quick-note-editor { min-width: 0; }
+.quick-note-tools { display: flex; align-items: center; flex-wrap: wrap; padding: var(--orbis-space-3); gap: var(--orbis-space-1); border-bottom: 1px solid var(--orbis-surface-edge); }
+.quick-note-tools button { width: var(--orbis-control-compact-height); height: var(--orbis-control-compact-height); flex: 0 0 auto; display: grid; place-items: center; border-radius: var(--radius); color: var(--muted); }
+.quick-note-tools button:hover, .quick-note-tools button[aria-pressed="true"] { background: var(--orbis-item-hover-bg); color: var(--foreground); }
+.quick-note-tools button[aria-pressed="true"] { color: var(--accent); }
+.quick-note-tool-divider { width: 1px; height: 18px; background: var(--separator); margin: 0 var(--orbis-space-1); }
+.quick-note-editor .tiptap { min-height: 320px; max-height: calc(100dvh - 380px); overflow: auto; padding: var(--orbis-space-4) var(--orbis-space-6); outline: none; font-size: var(--orbis-text-ui-size); line-height: var(--orbis-prose-body-leading); overflow-wrap: anywhere; }
+.quick-note-editor .tiptap:focus-visible { box-shadow: inset 0 0 0 2px var(--focus); }
+.quick-note-editor .tiptap p.is-editor-empty:first-child::before { color: var(--field-placeholder); content: attr(data-placeholder); float: left; height: 0; pointer-events: none; }
+.quick-note-editor .tiptap p { margin: 0 0 .7em; }
+.quick-note-editor .tiptap ul, .quick-note-editor .tiptap ol { padding-left: 1.5em; }
+.quick-note-editor .tiptap ul[data-type="taskList"] { padding-left: 0; list-style: none; }
+.quick-note-editor .tiptap li[data-type="taskItem"] { display: flex; gap: var(--orbis-space-2); }
+.quick-note-editor .tiptap li[data-type="taskItem"] > div { flex: 1; min-width: 0; }
+.quick-note-editor img { max-width: 100%; height: auto; }
+.quick-note-editor pre { overflow-x: auto; }
+.quick-note-editor .quick-note-hint { margin: 0 var(--orbis-space-4) var(--orbis-space-3); }
+.quick-note-composer-tags { display: flex; align-items: center; flex-wrap: wrap; gap: var(--orbis-space-2); padding: var(--orbis-space-3) var(--orbis-space-4); border-top: 1px solid var(--orbis-surface-edge); }
+.quick-note-selected-tag { display: inline-flex; align-items: center; max-width: 100%; }
+.quick-note-selected-tag button { min-width: 24px; min-height: var(--orbis-control-compact-height); display: grid; place-items: center; }
+.quick-note-tag-picker { position: relative; font-size: var(--orbis-text-ui-size); }
+.quick-note-tag-picker summary { display: flex; align-items: center; gap: var(--orbis-space-1); cursor: pointer; min-height: var(--orbis-control-default-height); padding: 0 var(--orbis-space-2); border-radius: var(--radius); color: var(--muted); }
+.quick-note-tag-picker summary::-webkit-details-marker { display: none; }
+.quick-note-tag-options { position: absolute; z-index: 10; bottom: calc(100% + 4px); left: 0; width: 210px; max-height: 260px; overflow: auto; padding: var(--orbis-space-1); border: 1px solid var(--orbis-surface-edge); background: var(--orbis-floating-bg); box-shadow: var(--orbis-floating-shadow); border-radius: var(--field-radius); }
+.quick-note-tag-options button { display: flex; align-items: center; gap: var(--orbis-space-2); width: 100%; min-height: var(--orbis-control-default-height); padding: var(--orbis-space-2); text-align: left; overflow-wrap: anywhere; border-radius: var(--radius); }
+.quick-note-tag-options button:hover { background: var(--orbis-item-hover-bg); }
+.quick-note-composer-footer { display: flex; align-items: center; gap: var(--orbis-space-4); padding: var(--orbis-space-4) var(--orbis-space-4) var(--orbis-space-2); }
+.quick-note-save-status { min-height: 1.6em; padding: 0 var(--orbis-space-4) var(--orbis-space-4); }
+.quick-notes-feed { min-width: 0; }
+.quick-notes-filters { display: flex; align-items: center; gap: var(--orbis-space-2); margin-bottom: var(--orbis-space-4); }
+.quick-notes-filters .orbis-select-field { width: 140px; flex: 0 0 140px; }
+.quick-notes-search { display: flex; align-items: center; flex: 1; min-width: 100px; gap: var(--orbis-space-2); color: var(--muted); }
+.quick-notes-search input { min-width: 0; }
+.quick-notes-filters > button { display: grid; place-items: center; flex-shrink: 0; width: var(--orbis-control-default-height); height: var(--orbis-control-default-height); border-radius: var(--radius); }
+.quick-notes-filters > button[aria-pressed="true"] { color: var(--accent); background: var(--surface-secondary); }
+.quick-notes-tag-filters { display: flex; align-items: center; flex-wrap: wrap; gap: var(--orbis-space-2); margin-bottom: var(--orbis-space-4); }
+.quick-notes-tag-filters button { display: inline-flex; align-items: center; gap: var(--orbis-space-1); max-width: 100%; min-height: var(--orbis-control-compact-height); padding: var(--orbis-space-1) var(--orbis-space-3); border: 1px solid var(--orbis-surface-edge); border-radius: var(--radius); background: var(--orbis-card-bg); font-size: var(--orbis-text-ui-size); overflow-wrap: anywhere; }
+.quick-notes-tag-filters button[aria-pressed="true"] { background: color-mix(in oklab, var(--accent) 9%, var(--surface)); border-color: color-mix(in oklab, var(--accent) 30%, var(--surface)); color: var(--accent); }
+.quick-notes-records { display: grid; gap: var(--orbis-space-4); align-items: start; }
+.quick-note-card { min-width: 0; padding: var(--orbis-space-4) var(--orbis-space-6); border-radius: var(--field-radius); border: 1px solid var(--orbis-surface-edge); background: var(--orbis-card-bg); box-shadow: var(--orbis-card-shadow); }
+.quick-note-card-heading { display: flex; align-items: center; flex-wrap: wrap; gap: var(--orbis-space-2); margin-bottom: var(--orbis-space-4); color: var(--muted); font-size: var(--orbis-text-caption-size); }
+.quick-note-card-actions { margin-left: auto; display: flex; align-items: center; }
+.quick-note-card-actions button { display: grid; place-items: center; width: var(--orbis-control-compact-height); height: var(--orbis-control-compact-height); border-radius: var(--radius); }
+.quick-note-card-actions button:hover { background: var(--orbis-item-hover-bg); color: var(--foreground); }
+.quick-note-card-content { max-height: 320px; overflow: hidden; overflow-wrap: anywhere; font-size: var(--orbis-text-ui-size); line-height: var(--orbis-prose-body-leading); }
+.quick-note-card-content.is-expanded { max-height: none; }
+.quick-note-card-content pre { max-width: 100%; overflow: auto; }
+.quick-note-card-content img, .quick-note-card-content video { max-width: 100%; height: auto; }
+.quick-note-card-content audio { max-width: 100%; }
+.quick-note-card-footer { display: flex; align-items: end; justify-content: space-between; gap: var(--orbis-space-2); margin-top: var(--orbis-space-3); }
+.quick-note-card-tags { display: flex; flex-wrap: wrap; gap: var(--orbis-space-1); min-width: 0; }
+.quick-note-card-tags .chip { max-width: 100%; height: auto; overflow-wrap: anywhere; }
+.quick-note-card-footer > button { display: flex; align-items: center; flex-shrink: 0; gap: var(--orbis-space-1); min-height: var(--orbis-control-compact-height); font-size: var(--orbis-text-caption-size); color: var(--accent); }
+.quick-notes-empty { min-height: 340px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: var(--orbis-space-3); color: var(--muted); padding: var(--orbis-space-6); }
+.quick-notes-empty h2 { font-size: var(--orbis-text-section-size); font-weight: var(--orbis-weight-action); color: var(--foreground); margin: 0; }
+.quick-notes-empty p { margin: 0; font-size: var(--orbis-text-ui-size); }
+.quick-note-feedback:empty { display: none; }
+.quick-note-feedback { color: var(--muted); font-size: var(--orbis-text-caption-size); margin-bottom: var(--orbis-space-3); }
+.quick-note-error { color: var(--danger); font-size: var(--orbis-text-ui-size); padding: var(--orbis-space-3) var(--orbis-space-4); overflow-wrap: anywhere; }
+.quick-note-error p { margin-top: 0; }
+.quick-note-error button { margin: var(--orbis-space-2) 0; }
+.quick-notes-load-more { margin: var(--orbis-space-6) auto 0; display: flex; }
+.quick-note-edit-dialog { width: min(720px, calc(100vw - 32px)); }
+.quick-note-edit-dialog .quick-note-composer { position: static; border: 0; box-shadow: none; }
+.quick-note-edit-dialog .quick-note-composer-heading { display: none; }
+.quick-note-tag-form { display: flex; align-items: end; gap: var(--orbis-space-2); flex-wrap: wrap; margin-bottom: var(--orbis-space-4); }
+.quick-note-tag-form > label { flex: 1; min-width: 180px; }
+.quick-note-tag-list { max-height: 350px; overflow: auto; }
+.quick-note-tag-row { display: flex; align-items: center; gap: var(--orbis-space-2); padding: var(--orbis-space-2) 0; border-bottom: 1px solid var(--orbis-surface-edge); }
+.quick-note-tag-row > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.quick-note-tag-row small { display: block; color: var(--muted); }
+.quick-note-tag-row button { display: grid; place-items: center; width: var(--orbis-control-default-height); height: var(--orbis-control-default-height); flex-shrink: 0; }
+.quick-note-tag-confirm { margin-top: var(--orbis-space-4); }
+.quick-note-tag-confirm button { margin-right: var(--orbis-space-2); }
+.composer-expanded .quick-notes-layout { grid-template-columns: 1fr; }
+.composer-expanded .quick-notes-feed { display: none; }
+.quick-note-composer.is-expanded .tiptap { min-height: calc(100dvh - 380px); max-height: none; }
+.quick-notes-records.is-cards { grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
+@media (max-width: 1100px) { .quick-notes-layout { grid-template-columns: 1fr; } .quick-note-composer { position: static; } .quick-note-editor .tiptap { min-height: 220px; max-height: 420px; } .quick-notes-records.is-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 650px) { .quick-notes-page { padding: var(--orbis-space-4); } .quick-notes-heading > div:first-child { display: block; } .quick-notes-heading span { display: none; } .quick-notes-layout { gap: var(--orbis-space-4); } .quick-note-card { padding: var(--orbis-space-4); } .quick-note-shortcut { display: none; } .quick-notes-records.is-cards { grid-template-columns: 1fr; } .quick-notes-filters { flex-wrap: wrap; } .quick-notes-search { flex-basis: 100%; } .quick-note-editor .tiptap { padding: var(--orbis-space-4); } }
+@media (pointer: coarse) { .quick-note-selected-tag button { min-width: var(--orbis-control-touch-height); } }
