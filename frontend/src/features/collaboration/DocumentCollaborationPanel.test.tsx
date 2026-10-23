@@ -32,7 +32,8 @@ describe("document collaboration", () => {
     const user = userEvent.setup();
     showPanel({ onClose, onRestore: async () => { await pending; } });
     await user.click(screen.getByRole("tab", { name: "历史版本" }));
-    await user.click(await screen.findByRole("button", { name: "查看版本 2" }));
+    await user.click(await screen.findByRole("button", { name: "查看全部保存记录" }));
+    await user.click(await screen.findByRole("button", { name: "查看保存记录 2" }));
     await user.click(await screen.findByRole("button", { name: "恢复此版本" }));
     expect(screen.getByRole("button", { name: "关闭评论与历史" })).toBeDisabled();
     await user.keyboard("{Escape}");
@@ -115,7 +116,8 @@ describe("document collaboration", () => {
     expect(screen.queryByRole("button", { name: "解决讨论" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "回复评论" })).toBeEnabled();
     await user.click(screen.getByRole("tab", { name: "历史版本" }));
-    await screen.findByRole("button", { name: /查看版本 2/ });
+    await user.click(await screen.findByRole("button", { name: "查看全部保存记录" }));
+    await screen.findByRole("button", { name: /查看保存记录 2/ });
     expect(screen.queryByRole("button", { name: "恢复此版本" })).not.toBeInTheDocument();
     expect(screen.getByText(/只读成员/)).toBeInTheDocument();
   });
@@ -130,8 +132,9 @@ describe("document collaboration", () => {
     const user = userEvent.setup();
     const client = showPanel({ onRestore: async (restore) => { await restore(8); } });
     await user.click(screen.getByRole("tab", { name: "历史版本" }));
+    await user.click(await screen.findByRole("button", { name: "查看全部保存记录" }));
     await user.click(await screen.findByRole("button", { name: "加载更多版本" }));
-    await user.click(await screen.findByRole("button", { name: /查看版本 2/ }));
+    await user.click(await screen.findByRole("button", { name: /查看保存记录 2/ }));
     await screen.findByText("历史正文");
     await user.click(screen.getByRole("button", { name: "恢复此版本" }));
     await screen.findByText("历史版本已恢复");
@@ -149,7 +152,8 @@ describe("document collaboration", () => {
     const client = showPanel();
     client.setQueryData(["note-content", NOTE_ID], content());
     await user.click(screen.getByRole("tab", { name: "历史版本" }));
-    await user.click(await screen.findByRole("button", { name: /查看版本 2/ }));
+    await user.click(await screen.findByRole("button", { name: "查看全部保存记录" }));
+    await user.click(await screen.findByRole("button", { name: /查看保存记录 2/ }));
     await screen.findByText("历史正文");
     await user.click(screen.getByRole("button", { name: "恢复此版本" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(/版本|冲突/);

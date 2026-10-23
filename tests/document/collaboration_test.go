@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -22,6 +23,66 @@ import (
 	"orbis.local/orbis/internal/table"
 	"orbis.local/orbis/tests/testenv"
 )
+
+type delayedCollaborationEngine struct {
+	engine           document.CollaborationEngine
+	once             sync.Once
+	started, release chan struct{}
+}
+
+func (e *delayedCollaborationEngine) Transform(ctx context.Context, input document.CollaborationTransform) (document.CollaborationTransformResult, error) {
+	blocked := false
+	if input.Update != nil {
+		e.once.Do(func() { blocked = true; close(e.started) })
+	}
+	if blocked {
+		select {
+		case <-e.release:
+		case <-ctx.Done():
+			return document.CollaborationTransformResult{}, ctx.Err()
+		}
+	}
+	return e.engine.Transform(ctx, input)
+}
+
+func TestCollaborationPreparationReleasesLocksAndMergesAnInterveningCommit(t *testing.T) {
+	f, engine, blocks, baseline := collaborationFixtureWithBlocks(t, []document.Block{block("Left"), block("Right")})
+	changed := copyBlocks(t, blocks)
+	changed[0].Content[0].Text = "Left prepared"
+	update := generatedUpdate(t, engine, baseline, changed)
+	delayed := &delayedCollaborationEngine{engine: engine, started: make(chan struct{}), release: make(chan struct{})}
+	var releaseOnce sync.Once
+	release := func() { releaseOnce.Do(func() { close(delayed.release) }) }
+	defer release()
+	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
+	defer cancel()
+	repository := docstore.NewWithCollaboration(f.env.DB, delayed)
+	finished := make(chan error, 1)
+	go func() {
+		_, err := repository.CommitCollaboration(ctx, document.CollaborationCommit{Scope: document.DirectoryScope{ActorID: f.session.User.ID, WorkspaceID: f.workspaceID, DocumentID: f.documentID}, Input: update, RequestHash: "synthetic-prepared-update", Timestamp: f.env.Clock.Now().UnixMilli()})
+		finished <- err
+	}()
+	select {
+	case <-delayed.started:
+	case <-ctx.Done():
+		t.Fatal("conversion did not start")
+	}
+	// This writer must complete while the first engine invocation is still blocked.
+	f.env.Call(t, "POST", f.path+"/operations", f.session.AccessToken, document.CommandsInput{OperationID: uuid.NewString(), ExpectedVersion: baseline.ContentVersion, Operations: []document.Operation{{Type: "replace_text", BlockID: blocks[1].ID, Match: "Right", Replacement: "Right peer"}}}, 200)
+	release()
+	select {
+	case err := <-finished:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-ctx.Done():
+		t.Fatal("prepared update did not finish")
+	}
+	current := testenv.Decode[content](t, f.env.Call(t, "GET", f.path+"/content", f.session.AccessToken, nil, 200))
+	if current.Blocks[0].Content[0].Text != "Left prepared" || current.Blocks[1].Content[0].Text != "Right peer" {
+		t.Fatal("stale preparation overwrote a peer or rejected a mergeable update")
+	}
+}
 
 func collaborationFixture(t *testing.T) (fixture, *crdtengine.Client, []document.Block, document.CollaborationState) {
 	t.Helper()
