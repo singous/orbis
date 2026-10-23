@@ -29,6 +29,8 @@ import (
 	"orbis.local/orbis/internal/platform/thumbnail"
 	"orbis.local/orbis/internal/publishing"
 	pubstore "orbis.local/orbis/internal/publishing/postgres"
+	"orbis.local/orbis/internal/quicknote"
+	quickstore "orbis.local/orbis/internal/quicknote/postgres"
 	"orbis.local/orbis/internal/search"
 	searchstore "orbis.local/orbis/internal/search/postgres"
 	"orbis.local/orbis/internal/sharing"
@@ -151,6 +153,7 @@ func NewWithClock(ctx context.Context, cfg config.Config, logger *slog.Logger, w
 	}
 	collaborationSockets := httpapi.NewCollaborationSockets()
 	router, err := httpapi.New(httpapi.Dependencies{
+		QuickNotes:           quicknote.New(quickstore.New(db, engine), workspaces, wallClock),
 		CollaborationSockets: collaborationSockets,
 		Identity:             accounts, Workspaces: workspaces, Documents: documents,
 		Imports:           integration.NewImports(importsRepo, wallClock, importWorkers != nil),

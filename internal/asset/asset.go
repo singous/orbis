@@ -56,6 +56,8 @@ type Access interface {
 	Require(context.Context, string, string, workspace.Permission) error
 }
 type Repository interface {
+	PublishPrivateFile(context.Context, Scope, string, WriteObject) (Record, error)
+	PrivateFile(context.Context, Scope, string) (Record, error)
 	PublishIcon(context.Context, Scope, string, WriteObject) (Record, error)
 	Begin(context.Context, Record) error
 	PublishFile(context.Context, Scope, string, WriteObject) (Record, error)
@@ -121,6 +123,17 @@ func (s *Service) staging(actor, kind, filename string, wid *string) Record {
 	}
 }
 func (s *Service) Upload(ctx context.Context, scope Scope, filename, hint string, reader io.Reader) (Record, error) {
+	return s.upload(ctx, scope, filename, hint, reader, false)
+}
+
+const PrivateFileKind = "private_file"
+
+// UploadPrivateFile keeps personal captures out of workspace file delivery.
+func (s *Service) UploadPrivateFile(ctx context.Context, scope Scope, filename, hint string, reader io.Reader) (Record, error) {
+	return s.upload(ctx, scope, filename, hint, reader, true)
+}
+
+func (s *Service) upload(ctx context.Context, scope Scope, filename, hint string, reader io.Reader, private bool) (Record, error) {
 	if err := s.access.Require(ctx, scope.ActorID, scope.WorkspaceID, workspace.Edit); err != nil {
 		return Record{}, err
 	}
@@ -128,11 +141,17 @@ func (s *Service) Upload(ctx context.Context, scope Scope, filename, hint string
 		return Record{}, err
 	}
 	defer func() { <-s.uploads }()
-	row := s.staging(scope.ActorID, "file", filename, &scope.WorkspaceID)
+	kind := "file"
+	publish := s.repo.PublishFile
+	if private {
+		kind = PrivateFileKind
+		publish = s.repo.PublishPrivateFile
+	}
+	row := s.staging(scope.ActorID, kind, filename, &scope.WorkspaceID)
 	if err := s.repo.Begin(ctx, row); err != nil {
 		return Record{}, err
 	}
-	result, err := s.repo.PublishFile(ctx, scope, row.ID, func(ctx context.Context) (Metadata, error) {
+	result, err := publish(ctx, scope, row.ID, func(ctx context.Context) (Metadata, error) {
 		return s.write(ctx, row.StorageKey, reader, s.maxBytes, hint)
 	})
 	return result, uploadError(err)
@@ -172,6 +191,12 @@ func (s *Service) File(ctx context.Context, scope Scope, id string) (Record, err
 		return Record{}, err
 	}
 	return s.repo.File(ctx, scope, id)
+}
+func (s *Service) PrivateFile(ctx context.Context, scope Scope, id string) (Record, error) {
+	if err := s.access.Require(ctx, scope.ActorID, scope.WorkspaceID, workspace.Read); err != nil {
+		return Record{}, err
+	}
+	return s.repo.PrivateFile(ctx, scope, id)
 }
 func (s *Service) Open(ctx context.Context, row Record) (io.ReadSeekCloser, error) {
 	content, err := s.store.Open(ctx, row.StorageKey)

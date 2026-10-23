@@ -109,6 +109,12 @@ func PublishInTransaction(ctx context.Context, tx *gorm.DB, clock clock.Clock, a
 	return row.Domain(), err
 }
 func (r *Repository) PublishFile(ctx context.Context, scope asset.Scope, id string, write asset.WriteObject) (asset.Record, error) {
+	return r.publishFile(ctx, scope, id, "file", write)
+}
+func (r *Repository) PublishPrivateFile(ctx context.Context, scope asset.Scope, id string, write asset.WriteObject) (asset.Record, error) {
+	return r.publishFile(ctx, scope, id, asset.PrivateFileKind, write)
+}
+func (r *Repository) publishFile(ctx context.Context, scope asset.Scope, id, kind string, write asset.WriteObject) (asset.Record, error) {
 	var result asset.Record
 	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := wsstore.RequireLocked(ctx, tx, scope.WorkspaceID, scope.ActorID, workspace.Edit); err != nil {
@@ -121,7 +127,7 @@ func (r *Repository) PublishFile(ctx context.Context, scope asset.Scope, id stri
 			r.clock,
 			scope.ActorID,
 			id,
-			"file",
+			kind,
 			&scope.WorkspaceID,
 			write,
 		)
@@ -132,6 +138,11 @@ func (r *Repository) PublishFile(ctx context.Context, scope asset.Scope, id stri
 func (r *Repository) File(ctx context.Context, scope asset.Scope, id string) (asset.Record, error) {
 	var row Record
 	err := r.db.WithContext(ctx).Where("id=? AND workspace_id=? AND kind='file' AND state='ready'", id, scope.WorkspaceID).Take(&row).Error
+	return row.Domain(), missing(err)
+}
+func (r *Repository) PrivateFile(ctx context.Context, scope asset.Scope, id string) (asset.Record, error) {
+	var row Record
+	err := r.db.WithContext(ctx).Where("id=? AND workspace_id=? AND owner_id=? AND kind=? AND state='ready'", id, scope.WorkspaceID, scope.ActorID, asset.PrivateFileKind).Take(&row).Error
 	return row.Domain(), missing(err)
 }
 func (r *Repository) List(ctx context.Context, scope asset.Scope, page pagination.Page) ([]asset.Record, int64, error) {
