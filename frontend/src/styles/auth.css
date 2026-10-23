@@ -1,8 +1,39 @@
 .auth-layout {
+  /* 沿用 Glass 的通透层次，为整页的书页式排版减轻灰感。 */
+  --auth-glass-background: rgb(255 255 255 / 45%);
+  --auth-glass-border: rgb(255 255 255 / 60%);
+  --auth-glass-shadow: 0 20px 48px -32px rgb(16 24 40 / 22%), inset 0 1px 0 rgb(255 255 255 / 55%);
+  --auth-glass-blur: 24px;
+  --auth-artwork-opacity: 0.68;
+  --auth-artwork-filter: brightness(1.12) saturate(0.75);
+  position: relative;
+  isolation: isolate;
   display: grid;
   grid-template-rows: auto 1fr auto;
   min-height: 100dvh;
   padding: 28px 40px;
+  background: #f5f5f5;
+}
+
+.auth-layout::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 96px clamp(20px, 4vw, 72px) 72px;
+  border-radius: 32px;
+  background: url("/images/auth-diffused-light.webp") center / cover no-repeat;
+  filter: var(--auth-artwork-filter);
+  opacity: var(--auth-artwork-opacity);
+  pointer-events: none;
+}
+
+.dark .auth-layout,
+[data-theme="dark"] .auth-layout {
+  --auth-glass-background: rgb(24 24 27 / 65%);
+  --auth-glass-border: rgb(255 255 255 / 10%);
+  --auth-glass-shadow: 0 20px 48px -32px rgb(0 0 0 / 35%), inset 0 1px 0 rgb(255 255 255 / 6%);
+  --auth-artwork-opacity: 0.6;
+  --auth-artwork-filter: brightness(0.12) saturate(0.8);
   background: var(--orbis-canvas-bg);
 }
 
@@ -30,36 +61,116 @@
   line-height: var(--orbis-text-ui-leading);
 }
 
+.auth-content {
+  align-self: center;
+  justify-self: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 450px;
+  align-items: center;
+  gap: clamp(56px, 7vw, 112px);
+  width: min(1120px, calc(100% - 80px));
+}
+
+.auth-intro {
+  --auth-intro-muted: color-mix(in oklab, var(--foreground) 65%, var(--background));
+  min-width: 0;
+  color: var(--text-primary);
+}
+
+.auth-intro-eyebrow {
+  margin: 0 0 22px;
+  color: var(--auth-intro-muted);
+  font-size: var(--orbis-text-caption-size);
+  line-height: var(--orbis-text-caption-leading);
+  letter-spacing: 0.14em;
+}
+
+.auth-intro-title {
+  margin: 0;
+  font-family: "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", "SimSun", serif;
+  font-size: clamp(36px, 3.6vw, 52px);
+  font-weight: 400;
+  line-height: 1.55;
+  letter-spacing: 0.04em;
+}
+
+.auth-intro-description {
+  margin: 24px 0 0;
+  color: var(--auth-intro-muted);
+  font-size: var(--orbis-text-ui-size);
+  line-height: 2;
+}
+
 .auth-card {
   align-self: center;
   justify-self: center;
   width: min(100%, 450px);
   margin: 56px 0;
   border: 1px solid var(--orbis-surface-edge);
-  border-radius: 16px;
+  border-radius: 24px;
   background: var(--orbis-floating-bg);
-  padding: 42px;
+  padding: 36px;
   box-shadow: var(--orbis-floating-shadow);
 }
 
-.auth-card-heading { margin-bottom: 32px; }
-.auth-card-kicker { margin-bottom: 10px; color: var(--text-secondary); font-size: var(--orbis-text-ui-size); line-height: var(--orbis-text-ui-leading); }
-.auth-card-heading h1 { font-size: var(--orbis-text-page-title-size); line-height: var(--orbis-text-page-title-leading); font-weight: var(--orbis-weight-heading); letter-spacing: -.03em; }
-.auth-card-heading p { margin-top: 10px; font-size: var(--orbis-text-ui-size); line-height: var(--orbis-text-ui-leading); color: var(--text-secondary); }
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .auth-card {
+    background: var(--auth-glass-background);
+    border-color: var(--auth-glass-border);
+    -webkit-backdrop-filter: blur(var(--auth-glass-blur));
+    backdrop-filter: blur(var(--auth-glass-blur));
+    box-shadow: var(--auth-glass-shadow);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce), (forced-colors: active) {
+  .auth-layout::before {
+    display: none;
+  }
+
+  .auth-card {
+    background: var(--orbis-floating-bg);
+    border-color: var(--orbis-surface-edge);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: var(--orbis-floating-shadow);
+  }
+}
+
+.auth-card-heading { margin-bottom: 28px; }
+.auth-card-kicker { margin-bottom: 10px; color: var(--text-secondary); font-size: var(--orbis-text-caption-size); line-height: var(--orbis-text-caption-leading); }
+.auth-card-heading h1 { font-size: 26px; line-height: 1.4; font-weight: 600; letter-spacing: -.03em; }
+.auth-card-heading p { margin-top: 10px; font-size: var(--orbis-text-ui-size); line-height: 1.7; color: var(--text-secondary); }
 .auth-form { display: grid; gap: 22px; }
 .auth-form label { gap: 9px; }
 .auth-form input { height: var(--form-control-height); font-size: var(--orbis-text-ui-size); line-height: var(--orbis-text-ui-leading); }
 .auth-submit { width: 100%; height: var(--form-control-height); margin-top: 6px; }
 .auth-submit svg { margin-left: auto; }
-.auth-card-footer { border-top: 1px solid var(--border-subtle); margin-top: 28px; padding-top: 23px; color: var(--text-secondary); font-size: var(--orbis-text-ui-size); line-height: var(--orbis-text-ui-leading); text-align: center; }
+.auth-card-footer { border-top: 1px solid var(--border-subtle); margin-top: 24px; padding-top: 20px; color: var(--text-secondary); font-size: var(--orbis-text-ui-size); line-height: var(--orbis-text-ui-leading); text-align: center; }
 .auth-card-footer a { margin-left: 4px; color: var(--text-primary); font-weight: var(--orbis-weight-action); }
 .auth-card-footer a:hover { text-decoration: underline; text-underline-offset: 4px; }
 .auth-footer { text-align: center; font-size: var(--orbis-text-caption-size); letter-spacing: .16em; color: var(--text-tertiary); line-height: var(--orbis-text-caption-leading); }
 .auth-brand:focus-visible, .auth-card-footer a:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 4px; border-radius: 4px; }
 
+@media (max-width: 1023px) {
+  .auth-content { width: min(560px, 100%); grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .auth-intro { padding: 20px 24px 0; text-align: center; }
+  .auth-intro-eyebrow { margin-bottom: 14px; }
+  .auth-intro-title { font-size: 32px; }
+  .auth-intro-break { display: none; }
+  .auth-intro-description { margin-top: 14px; }
+  .auth-card { margin: 24px 0; }
+}
+
 @media (max-width: 640px) {
   .auth-layout { padding: 22px 20px; }
+  .auth-layout::before { inset: 84px 12px 64px; border-radius: 24px; }
   .auth-header-caption { display: none; }
-  .auth-card { padding: 30px 24px; margin: 36px 0; }
+  .auth-content { gap: 4px; }
+  .auth-intro { padding: 0 12px; }
+  .auth-intro-eyebrow { display: none; }
+  .auth-intro-title { font-size: clamp(22px, 6.6vw, 26px); }
+  .auth-intro-description { margin-top: 12px; font-size: 13px; line-height: 1.8; }
+  .auth-card { padding: 30px 24px; margin: 24px 0; }
   .auth-form input { font-size: var(--orbis-text-section-size); line-height: var(--orbis-text-section-leading); }
 }
