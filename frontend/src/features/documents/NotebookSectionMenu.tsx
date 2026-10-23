@@ -3,6 +3,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { newUUID } from "../../shared/ids";
 import { sheetAPI } from "../sheets/api";
+import { boardAPI } from "../boards/api";
+import { Shapes } from "lucide-react";
 import { Table2 } from "lucide-react";
 import type { WorkspaceSidebarConfig } from "../workspace/workspace-sidebar-config";
 import { useStore } from "zustand";
@@ -81,6 +83,21 @@ function NotebookCreateAction({ notebookId }: { notebookId: string }) {
   const auth = useAuthRequest(),
     client = useQueryClient();
   const [creatingTable, setCreatingTable] = useState(false);
+  const [creatingBoard,setCreatingBoard]=useState(false);
+  const boardIntent=useRef<{id:string;operation_id:string;page_id:string}|null>(null);
+  async function createBoard(){
+    if(creatingBoard)return;
+    setCreatingBoard(true);
+    boardIntent.current??={id:newUUID(),operation_id:newUUID(),page_id:newUUID()};
+    try{
+      const board=await boardAPI(auth).create({...boardIntent.current,collection_id:notebookId,parent_id:null,title:"未命名画板",elements:[]});
+      boardIntent.current=null;
+      await client.invalidateQueries({queryKey:["note-tree",notebookId]});
+      await client.invalidateQueries({queryKey:["notebooks"]});
+      navigate("/documents/"+board.document_id);
+    }catch(error){showToast({title:"创建画板失败",description:(error as Error).message,tone:"danger"});}
+    finally{setCreatingBoard(false);}
+  }
   const tableIntent = useRef<string | null>(null);
   async function createTable() {
     if (creatingTable) return;
@@ -128,6 +145,7 @@ function NotebookCreateAction({ notebookId }: { notebookId: string }) {
 
   return canMutateWorkspaceContent(workspace) ? (
     <>
+      <ActionButton type="button" aria-label="新建画板" title="新建画板" disabled={creatingBoard||!tree.isSuccess} onClick={()=>void createBoard()}><Shapes size={17}/></ActionButton>
       <ActionButton
         type="button"
         className="notebook-menu-create-table"

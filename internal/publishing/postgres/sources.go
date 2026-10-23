@@ -262,6 +262,16 @@ func resolve(ctx context.Context, tx *gorm.DB, row siteRow, config publishing.Co
 			return result, err
 		}
 		related := []string{}
+		for _, ref := range document.BoardReferences(content.Blocks) {
+			var stamp struct{ Revision int64 }
+			if err := tx.WithContext(ctx).Table("boards").Select("revision").Where("id=? AND workspace_id=?", ref.ID, row.WorkspaceID).Take(&stamp).Error; err != nil {
+				return result, sourceInvalid()
+			}
+			if ref.Mode == "snapshot" {
+				stamp.Revision = ref.Revision
+			}
+			related = append(related, "board-renderer-v1:"+ref.ID+":"+ref.PageID+":"+strconv.FormatInt(stamp.Revision, 10))
+		}
 		for _, ref := range document.SheetReferences(content.Blocks) {
 			var stamp struct{ Version, Revision int64 }
 			res := tx.WithContext(ctx).Table("sheets s").Select("s.version,a.revision").Joins("JOIN sheet_activity a ON a.sheet_id=s.id").Where("s.id=? AND s.workspace_id=?", ref.ID, row.WorkspaceID).Take(&stamp)

@@ -270,6 +270,15 @@ func blocks(w *writer, items []publicview.Block, anchors map[string]string) {
 			w.emit("<hr" + attrs + ">")
 		case "image", "drawing", "file", "audio", "video":
 			media(w, b, attrs)
+		case "board":
+			if b.Board != nil && !b.Board.Restricted {
+				w.emit(`<figure class="native-board"` + attrs + ` aria-label="` + escape(b.Board.Title) + `">`)
+				// SVG is generated from validated primitives and escaped labels by the board projector.
+				w.emit(b.Board.SVG)
+				w.emit("<figcaption>" + escape(b.Board.Title) + "</figcaption></figure>")
+			} else {
+				w.emit(`<p class="muted">画板需要工作空间访问权限</p>`)
+			}
 		case "table":
 			grid(w, b.Table)
 		case "data_table":

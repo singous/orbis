@@ -136,6 +136,8 @@ func (r Runtime) remote(ctx context.Context, a arguments, c config.Config, api *
 			return api.Agent(ctx, "POST", path+"/preview", client.Request{Body: body})
 		}
 		return api.Idempotent(ctx, path, body)
+	case "boards":
+		return r.boards(ctx, a, api)
 	case "files":
 		return r.files(ctx, a, api)
 	case "shares":

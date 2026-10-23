@@ -11,8 +11,11 @@ import (
 	"orbis.local/orbis/internal/platform/tasks"
 	"sync"
 
+	"orbis.local/orbis/api"
 	appstore "orbis.local/orbis/internal/app/postgres"
 	"orbis.local/orbis/internal/asset"
+	"orbis.local/orbis/internal/board"
+	boardstore "orbis.local/orbis/internal/board/postgres"
 	"orbis.local/orbis/internal/document"
 	"orbis.local/orbis/internal/document/crdtengine"
 	docstore "orbis.local/orbis/internal/document/postgres"
@@ -130,11 +133,20 @@ func NewWithClock(ctx context.Context, cfg config.Config, logger *slog.Logger, w
 		security.NewCursorSigner(cfg.SigningKey),
 	)
 	assets := asset.New(appstore.NewAssets(db, wallClock), workspaces, objects, thumbnail.Normalizer{}, wallClock, cfg.MaxUploadBytes)
-	publishingRepo, err := pubstore.New(db, publicBaseURL)
+	boardCatalog, err := board.ParseCatalog(api.BoardCatalog)
+	if err != nil {
+		return cleanup(fmt.Errorf("load board catalog: %w", err))
+	}
+	boardRenderer, err := board.NewRenderer(boardCatalog, api.BoardIcons)
+	if err != nil {
+		return cleanup(fmt.Errorf("load board resources: %w", err))
+	}
+	boardProjector := boardstore.NewProjector(boardRenderer)
+	publishingRepo, err := pubstore.New(db, publicBaseURL, boardProjector)
 	if err != nil {
 		return cleanup(err)
 	}
-	shares := sharing.New(sharestore.New(db, wallClock, publicBaseURL), workspaces, wallClock, cfg.SigningKey, cfg.LegacyActionSecret)
+	shares := sharing.New(sharestore.New(db, wallClock, publicBaseURL, boardProjector), workspaces, wallClock, cfg.SigningKey, cfg.LegacyActionSecret)
 	libraryRepo := appstore.NewLibraryWithCollaboration(db, wallClock, cfg.SigningKey, engine)
 	importsRepo := appstore.NewImports(db, libraryRepo, objects, wallClock)
 	var importWorkers *tasks.Imports
@@ -150,7 +162,10 @@ func NewWithClock(ctx context.Context, cfg config.Config, logger *slog.Logger, w
 		}
 	}
 	collaborationSockets := httpapi.NewCollaborationSockets()
+	boards := board.New(boardstore.New(db, boardCatalog, security.NewCursorSigner(cfg.SigningKey)), workspaces, wallClock, boardCatalog, boardRenderer)
 	router, err := httpapi.New(httpapi.Dependencies{
+		Boards:               boards,
+		AgentBoards:          integration.NewBoards(appstore.NewAgentBoards(db, wallClock, cfg.SigningKey, boardCatalog, boardRenderer)),
 		CollaborationSockets: collaborationSockets,
 		Identity:             accounts, Workspaces: workspaces, Documents: documents,
 		Imports:           integration.NewImports(importsRepo, wallClock, importWorkers != nil),

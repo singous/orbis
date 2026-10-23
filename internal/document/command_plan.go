@@ -276,7 +276,7 @@ func EncodedTreeBytes(nodes []StructureNode) (int, error) {
 }
 func childAllowed(parent, child string) bool {
 	switch parent {
-	case "heading", "code_block", "divider", "image", "audio", "video", "file", "drawing", "table", "data_table":
+	case "heading", "code_block", "divider", "image", "audio", "video", "file", "drawing", "board", "table", "data_table":
 		return false
 	case "card_group":
 		return child == "card"
@@ -294,9 +294,13 @@ func validateStructure(nodes map[string]*nodeState) error {
 		return fault.Field("body.operations", "文档块数量超出限制")
 	}
 	cells := 0
+	boardReferences := 0
 	metadata := make([]StructureNode, 0, len(nodes))
 	for _, node := range nodes {
 		cells += node.GridCells
+		if node.Type == "board" {
+			boardReferences++
+		}
 		metadata = append(metadata, node.StructureNode)
 		seen := map[string]bool{node.ID: true}
 		parent := parentKey(node.ParentID)
@@ -318,6 +322,9 @@ func validateStructure(nodes map[string]*nodeState) error {
 				return fault.Field("body.operations", "父块不支持此子块类型")
 			}
 		}
+	}
+	if boardReferences > MaxBoardReferences {
+		return fault.Field("body.operations", fmt.Sprintf("单篇文档最多引用 %d 个画板视图", MaxBoardReferences))
 	}
 	if cells > MaxDocumentGridCells {
 		return fault.Field("body.operations", "普通表格逻辑格位总数超出限制")

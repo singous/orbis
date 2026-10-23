@@ -30660,7 +30660,7 @@
       "get": {
         "operationId": "documentCollaborationSocket",
         "summary": "升级到经首帧鉴权的正文协同 WebSocket",
-        "description": "仅该路径支持 WebSocket Upgrade。HTTP 握手不传 access token；升级后十秒内发送 authenticate JSON 首帧，protocol_version=1、token 为登录 JWT，after_version 可选。使用子协议 orbis.crdt.v1。服务端在首帧与每次读写复验会话、当前工作空间与资源权限；撤权、归档或会话失效后停止写入并关闭连接。服务端 state/data 消息用于同步，ready 表示初始化完成；ack 仅代表数据库已提交的原操作结果，不能将发送成功或收到远端状态当作本地保存确认。网络中断时保留原 operation_id、targets 与二进制更新重试。服务端周期性 Ping，凭据不得放入 URL。工作空间、文集、文档及全部祖先当前可见；启用与写入需要编辑权限。正文 CRDT 状态、原生块查询投影、历史和幂等回执在同一事务提交后才确认保存。相同 operation_id 重试必须保持 epoch、update、targets 与 table_copies 的原始意图。409 COLLABORATION_TARGET_REMOVED（原所属块已更新、移动或删除，保留本地二进制草稿并停止自动重试）、COLLABORATION_EPOCH_CHANGED、COLLABORATION_SEED_MISMATCH、COLLABORATION_PROJECTION_MISMATCH、IDEMPOTENCY_CONFLICT；404 COLLABORATION_NOT_ENABLED；422 COLLABORATION_UPDATE_INVALID；413 COLLABORATION_TOO_LARGE；503 COLLABORATION_UNAVAILABLE。普通并发富文本通过 CRDT 合并；业务覆盖、权限和发布继续遵守各自的版本契约。",
+        "description": "正文协同与画板增量路径支持 WebSocket Upgrade。HTTP 握手不传 access token；升级后十秒内发送 authenticate JSON 首帧，protocol_version=1、token 为登录 JWT，after_version 可选。使用子协议 orbis.crdt.v1。服务端在首帧与每次读写复验会话、当前工作空间与资源权限；撤权、归档或会话失效后停止写入并关闭连接。服务端 state/data 消息用于同步，ready 表示初始化完成；ack 仅代表数据库已提交的原操作结果，不能将发送成功或收到远端状态当作本地保存确认。网络中断时保留原 operation_id、targets 与二进制更新重试。服务端周期性 Ping，凭据不得放入 URL。工作空间、文集、文档及全部祖先当前可见；启用与写入需要编辑权限。正文 CRDT 状态、原生块查询投影、历史和幂等回执在同一事务提交后才确认保存。相同 operation_id 重试必须保持 epoch、update、targets 与 table_copies 的原始意图。409 COLLABORATION_TARGET_REMOVED（原所属块已更新、移动或删除，保留本地二进制草稿并停止自动重试）、COLLABORATION_EPOCH_CHANGED、COLLABORATION_SEED_MISMATCH、COLLABORATION_PROJECTION_MISMATCH、IDEMPOTENCY_CONFLICT；404 COLLABORATION_NOT_ENABLED；422 COLLABORATION_UPDATE_INVALID；413 COLLABORATION_TOO_LARGE；503 COLLABORATION_UNAVAILABLE。普通并发富文本通过 CRDT 合并；业务覆盖、权限和发布继续遵守各自的版本契约。",
         "security": [],
         "parameters": [
           {
@@ -33393,6 +33393,4534 @@
           }
         }
       }
+    },
+    "/api/v1/workspaces/{workspace_id}/boards": {
+      "post": {
+        "operationId": "createBoard",
+        "summary": "创建独立画板与目录资源",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "创建独立画板与目录资源",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "CREATED"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Board"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoardCreate"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listBoards",
+        "summary": "分页列出可见画板",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "collection_id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "读取画板元数据与页面",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BoardList"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/boards/{board_id}": {
+      "get": {
+        "operationId": "getBoard",
+        "summary": "读取画板元数据与页面",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "读取画板元数据与页面",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Board"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/boards/{board_id}/pages/{page_id}/elements": {
+      "get": {
+        "operationId": "boardElements",
+        "summary": "读取固定版本的图元游标分页",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "读取固定版本的图元游标分页",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BoardElementPage"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/boards/{board_id}/commands": {
+      "post": {
+        "operationId": "changeBoard",
+        "summary": "原子提交有界图元命令",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "原子提交有界图元命令",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BoardChange"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoardMutation"
+              }
+            }
+          }
+        },
+        "description": "Atomic native-board commands. Input schema_version=1, max 100 commands / 500 touched elements / 1 MiB request; normalized receipt <=4 MiB. Geometry, style, text and structure use independent optimistic versions. Geometry depends on structure; structural edits also check geometry and text. 409 BOARD_ELEMENT_CONFLICT and BOARD_TARGET_REMOVED identify element_id in data; IDEMPOTENCY_CONFLICT rejects a changed intent under an existing operation_id. 422 BOARD_LIMIT_EXCEEDED rejects the complete transaction. Retries preserve the original operation_id and body. Page and element restore preserve historical identities and advance versions. Agent routes additionally require documents:write and enforce token scope."
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/boards/{board_id}/changes": {
+      "get": {
+        "operationId": "boardChanges",
+        "summary": "读取持久化的画板增量",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "读取持久化的画板增量",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BoardChanges"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Durable changes after a committed revision, ordered monotonically; at most 50 operations and approximately 4 MiB of payload. has_more requires continuation using the last returned revision. 409 BOARD_RESYNC_REQUIRED rejects a future cursor; reload a fixed snapshot and preserve pending operations."
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/boards/{board_id}/operations/{operation_id}": {
+      "get": {
+        "operationId": "boardReceipt",
+        "summary": "查询本人操作回执",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "operation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "查询本人操作回执",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BoardChange"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/boards/{board_id}/history": {
+      "get": {
+        "operationId": "boardHistory",
+        "summary": "读取画板历史",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "读取画板历史",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BoardHistory"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/boards/{board_id}/snapshot": {
+      "get": {
+        "operationId": "boardSnapshot",
+        "summary": "读取固定版本原生画板快照",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "读取固定版本原生画板快照",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BoardSnapshot"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/boards/{board_id}/preview": {
+      "get": {
+        "operationId": "boardPreview",
+        "summary": "读取固定版本画板 SVG 预览",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "page_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "frame_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded SVG with self-contained managed images.",
+            "content": {
+              "image/svg+xml": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified after current access validation."
+          },
+          "400": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Authenticated, bounded server SVG from a fixed page/frame. 503 BOARD_RENDER_BUSY means all 4 application-owned preview slots are occupied; retry later. Embedded raster images <=8 MiB and final SVG <=16 MiB. Current authorization is required even for fixed historical revisions and conditional responses."
+      },
+      "head": {
+        "operationId": "headBoardPreview",
+        "summary": "读取固定版本画板 SVG 预览",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "page_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "frame_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded SVG with self-contained managed images."
+          },
+          "304": {
+            "description": "Not modified after current access validation."
+          },
+          "400": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agent/workspaces/{workspace_id}/boards": {
+      "post": {
+        "operationId": "agentCreateBoard",
+        "summary": "创建独立画板与目录资源",
+        "security": [
+          {
+            "integrationBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "创建独立画板与目录资源",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "CREATED"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Board"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoardCreate"
+              }
+            }
+          }
+        },
+        "description": " Requires documents:read for reads and documents:write for writes. Token scope, current membership and ancestor visibility apply. Writes use the token operation ledger in the same transaction; replay returns the original result."
+      },
+      "get": {
+        "operationId": "agentListBoards",
+        "summary": "分页列出可见画板",
+        "security": [
+          {
+            "integrationBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "collection_id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "读取画板元数据与页面",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BoardList"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": " Requires documents:read for reads and documents:write for writes. Token scope, current membership and ancestor visibility apply. Writes use the token operation ledger in the same transaction; replay returns the original result."
+      }
+    },
+    "/api/v1/agent/workspaces/{workspace_id}/boards/{board_id}": {
+      "get": {
+        "operationId": "agentGetBoard",
+        "summary": "读取画板元数据与页面",
+        "security": [
+          {
+            "integrationBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "读取画板元数据与页面",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Board"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": " Requires documents:read for reads and documents:write for writes. Token scope, current membership and ancestor visibility apply. Writes use the token operation ledger in the same transaction; replay returns the original result."
+      }
+    },
+    "/api/v1/agent/workspaces/{workspace_id}/boards/{board_id}/pages/{page_id}/elements": {
+      "get": {
+        "operationId": "agentBoardElements",
+        "summary": "读取固定版本的图元游标分页",
+        "security": [
+          {
+            "integrationBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "读取固定版本的图元游标分页",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BoardElementPage"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": " Requires documents:read for reads and documents:write for writes. Token scope, current membership and ancestor visibility apply. Writes use the token operation ledger in the same transaction; replay returns the original result."
+      }
+    },
+    "/api/v1/agent/workspaces/{workspace_id}/boards/{board_id}/commands": {
+      "post": {
+        "operationId": "agentChangeBoard",
+        "summary": "原子提交有界图元命令",
+        "security": [
+          {
+            "integrationBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "原子提交有界图元命令",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BoardChange"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoardMutation"
+              }
+            }
+          }
+        },
+        "description": "Atomic native-board commands. Input schema_version=1, max 100 commands / 500 touched elements / 1 MiB request; normalized receipt <=4 MiB. Geometry, style, text and structure use independent optimistic versions. Geometry depends on structure; structural edits also check geometry and text. 409 BOARD_ELEMENT_CONFLICT and BOARD_TARGET_REMOVED identify element_id in data; IDEMPOTENCY_CONFLICT rejects a changed intent under an existing operation_id. 422 BOARD_LIMIT_EXCEEDED rejects the complete transaction. Retries preserve the original operation_id and body. Page and element restore preserve historical identities and advance versions. Agent routes additionally require documents:write and enforce token scope."
+      }
+    },
+    "/api/v1/agent/workspaces/{workspace_id}/boards/{board_id}/changes": {
+      "get": {
+        "operationId": "agentBoardChanges",
+        "summary": "读取持久化的画板增量",
+        "security": [
+          {
+            "integrationBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "读取持久化的画板增量",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BoardChanges"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Durable changes after a committed revision, ordered monotonically; at most 50 operations and approximately 4 MiB of payload. has_more requires continuation using the last returned revision. 409 BOARD_RESYNC_REQUIRED rejects a future cursor; reload a fixed snapshot and preserve pending operations."
+      }
+    },
+    "/api/v1/agent/workspaces/{workspace_id}/boards/{board_id}/operations/{operation_id}": {
+      "get": {
+        "operationId": "agentBoardReceipt",
+        "summary": "查询本人操作回执",
+        "security": [
+          {
+            "integrationBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "operation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "查询本人操作回执",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BoardChange"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": " Requires documents:read for reads and documents:write for writes. Token scope, current membership and ancestor visibility apply. Writes use the token operation ledger in the same transaction; replay returns the original result."
+      }
+    },
+    "/api/v1/agent/workspaces/{workspace_id}/boards/{board_id}/history": {
+      "get": {
+        "operationId": "agentBoardHistory",
+        "summary": "读取画板历史",
+        "security": [
+          {
+            "integrationBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "读取画板历史",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BoardHistory"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": " Requires documents:read for reads and documents:write for writes. Token scope, current membership and ancestor visibility apply. Writes use the token operation ledger in the same transaction; replay returns the original result."
+      }
+    },
+    "/api/v1/agent/workspaces/{workspace_id}/boards/{board_id}/snapshot": {
+      "get": {
+        "operationId": "agentBoardSnapshot",
+        "summary": "读取固定版本原生画板快照",
+        "security": [
+          {
+            "integrationBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "读取固定版本原生画板快照",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BoardSnapshot"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": " Requires documents:read for reads and documents:write for writes. Token scope, current membership and ancestor visibility apply. Writes use the token operation ledger in the same transaction; replay returns the original result."
+      }
+    },
+    "/api/v1/agent/workspaces/{workspace_id}/board-catalog": {
+      "get": {
+        "operationId": "agentBoardCatalog",
+        "summary": "读取版本化画板图形契约",
+        "security": [
+          {
+            "integrationBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "读取画板元数据与页面",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "schema_version",
+                        "version",
+                        "categories",
+                        "shapes",
+                        "font_family"
+                      ],
+                      "properties": {
+                        "schema_version": {
+                          "type": "integer",
+                          "enum": [
+                            1
+                          ]
+                        },
+                        "font_family": {
+                          "type": "string"
+                        },
+                        "categories": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": true
+                          }
+                        },
+                        "shapes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": true
+                          }
+                        }
+                      },
+                      "additionalProperties": true
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Static, non-private catalog for native board clients. Geometry is stored independently of the rendering engine. Authenticated tokens may inspect this catalog."
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/boards/{board_id}/sync": {
+      "get": {
+        "operationId": "boardSync",
+        "summary": "读取画板提交后的增量流",
+        "description": "WebSocket subprotocol orbis.board.v1. Authenticate in the first frame with type=authenticate, token, protocol_version=1 and after_version (last persisted revision, >=1). The server sends type=ready and type=changes with BoardChangePage data. No writes or private tokens in URL. Access is rechecked every 250 ms; durable HTTP commands and operation receipts remain authoritative. Closed/slow connections resume via changes using their last applied revision. Shared capacity: 32 connections, 8 per user, bounded writes and shutdown.",
+        "security": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "path",
+            "name": "board_id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "101": {
+            "description": "WebSocket 升级；之后按专门 JSON 帧协议交付，不使用 HTTP JSON 封装。"
+          },
+          "400": {
+            "description": "错误响应；稳定 code 见协同协议说明。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "错误响应；稳定 code 见协同协议说明。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "错误响应；稳定 code 见协同协议说明。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "错误响应；稳定 code 见协同协议说明。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "错误响应；稳定 code 见协同协议说明。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "错误响应；稳定 code 见协同协议说明。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "错误响应；稳定 code 见协同协议说明。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "错误响应；稳定 code 见协同协议说明。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "错误响应；稳定 code 见协同协议说明。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "错误响应；稳定 code 见协同协议说明。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "错误响应；稳定 code 见协同协议说明。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-websocket": {
+          "subprotocol": "orbis.crdt.v1",
+          "client_messages": [
+            {
+              "$ref": "#/components/schemas/CollaborationAuthenticateMessage"
+            },
+            {
+              "$ref": "#/components/schemas/CollaborationUpdateMessage"
+            }
+          ],
+          "server_messages": [
+            {
+              "$ref": "#/components/schemas/CollaborationStateMessage"
+            },
+            {
+              "$ref": "#/components/schemas/CollaborationReadyMessage"
+            },
+            {
+              "$ref": "#/components/schemas/CollaborationAckMessage"
+            },
+            {
+              "$ref": "#/components/schemas/CollaborationErrorMessage"
+            }
+          ]
+        }
+      }
+    },
+    "/api/v1/agent/workspaces/{workspace_id}/board-templates": {
+      "get": {
+        "operationId": "agentBoardTemplates",
+        "summary": "读取版本化画板模板",
+        "security": [
+          {
+            "integrationBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "读取画板元数据与页面",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "schema_version",
+                        "templates"
+                      ],
+                      "properties": {
+                        "schema_version": {
+                          "type": "integer",
+                          "enum": [
+                            1
+                          ]
+                        },
+                        "templates": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "version",
+                              "name",
+                              "category",
+                              "description",
+                              "elements"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "enum": [
+                                  1
+                                ]
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "category": {
+                                "type": "string"
+                              },
+                              "description": {
+                                "type": "string"
+                              },
+                              "elements": {
+                                "type": "array",
+                                "items": {
+                                  "$ref": "#/components/schemas/BoardElement"
+                                }
+                              }
+                            },
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Request rejected. Local changes may be retained for explicit retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Static native scene templates, versioned independently. Remap element/member IDs and endpoint/parent references before insertion into the target page; commit all elements in one command batch."
+      }
     }
   },
   "components": {
@@ -33637,6 +38165,12 @@
             "format": "uuid",
             "nullable": true,
             "description": "Primary data table of a document page, or null for ordinary documents."
+          },
+          "board_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Primary native board, or null for other documents."
           }
         },
         "required": [
@@ -33651,7 +38185,8 @@
           "parent_id",
           "position",
           "is_archived",
-          "sheet_id"
+          "sheet_id",
+          "board_id"
         ],
         "additionalProperties": false
       },
@@ -35213,6 +39748,85 @@
             ],
             "additionalProperties": false,
             "description": "未初始化时 ID 与版本均为 null。已初始化时必须同时提供，并且属于同文档、同块的已存表格版本；禁止复用其他块或文档的表格引用。"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "board"
+                ]
+              },
+              "props": {
+                "type": "object",
+                "properties": {
+                  "board_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "page_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "live",
+                      "snapshot"
+                    ]
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "nullable": true
+                  },
+                  "frame_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "board_id",
+                  "page_id",
+                  "mode",
+                  "revision",
+                  "frame_id"
+                ],
+                "additionalProperties": false
+              },
+              "content": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/TextRun"
+                },
+                "nullable": true,
+                "maxItems": 0
+              },
+              "children": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Block"
+                },
+                "maxItems": 0,
+                "nullable": true
+              }
+            },
+            "required": [
+              "id",
+              "type"
+            ],
+            "additionalProperties": false,
+            "description": "绘图为原子块。scene 为空字符串时初始化空场景；非空元素须有图片预览。仅允许 rectangle/diamond/ellipse/line/arrow/freedraw/text，坐标绝对值 <= 1000000，线条点数 <= 20000；禁止删除标记、链接和非空 customData。场景不作为文件授权来源。"
           }
         ],
         "description": "原生块树，最多 10000 块、32 层、7 MiB。支持文本样式、容器组件、普通表格、绘图、媒体与数据表引用。正文保存与恢复校验资源归属。"
@@ -40127,6 +44741,55 @@
               "children"
             ],
             "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512,
+                "description": "公开正文中的不透明标识；可保留历史位置标识以维持已发布锚点。"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "board"
+                ]
+              },
+              "props": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": false
+              },
+              "content": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/TextRun"
+                },
+                "nullable": true,
+                "maxItems": 0
+              },
+              "children": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PublicBlock"
+                },
+                "maxItems": 0,
+                "nullable": true
+              },
+              "board": {
+                "$ref": "#/components/schemas/PublicBoard"
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "props",
+              "content",
+              "children"
+            ],
+            "additionalProperties": false
           }
         ],
         "description": "原生块树，最多 10000 块、32 层、7 MiB。支持文本样式、容器组件、普通表格、绘图、媒体与数据表引用。正文保存与恢复校验资源归属。"
@@ -42319,6 +46982,72 @@
             ],
             "additionalProperties": false,
             "description": "未初始化时 ID 与版本均为 null。已初始化时必须同时提供，并且属于同文档、同块的已存表格版本；禁止复用其他块或文档的表格引用。"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "board"
+                ]
+              },
+              "props": {
+                "type": "object",
+                "properties": {
+                  "board_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "page_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "live",
+                      "snapshot"
+                    ]
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "nullable": true
+                  },
+                  "frame_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "board_id",
+                  "page_id",
+                  "mode",
+                  "revision",
+                  "frame_id"
+                ],
+                "additionalProperties": false
+              },
+              "content": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/TextRun"
+                },
+                "nullable": true,
+                "maxItems": 0
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false,
+            "description": "绘图为原子块。scene 为空字符串时初始化空场景；非空元素须有图片预览。仅允许 rectangle/diamond/ellipse/line/arrow/freedraw/text，坐标绝对值 <= 1000000，线条点数 <= 20000；禁止删除标记、链接和非空 customData。场景不作为文件授权来源。"
           }
         ]
       },
@@ -43238,7 +47967,9 @@
               "create",
               "commands",
               "upload",
-              "import"
+              "import",
+              "board.create",
+              "board.commands"
             ]
           },
           "document_id": {
@@ -43833,6 +48564,12 @@
             "format": "uuid",
             "nullable": true,
             "description": "Primary data table of a document page, or null for ordinary documents."
+          },
+          "board_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Primary native board, or null for other documents."
           }
         },
         "required": [
@@ -43848,7 +48585,8 @@
           "position",
           "is_archived",
           "summary",
-          "sheet_id"
+          "sheet_id",
+          "board_id"
         ],
         "additionalProperties": false
       },
@@ -44917,6 +49655,986 @@
           "document_id"
         ],
         "additionalProperties": false
+      },
+      "BoardGeometry": {
+        "type": "object",
+        "properties": {
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          },
+          "width": {
+            "type": "number",
+            "exclusiveMinimum": true,
+            "minimum": 0
+          },
+          "height": {
+            "type": "number",
+            "exclusiveMinimum": true,
+            "minimum": 0
+          },
+          "rotation_rad": {
+            "type": "number",
+            "minimum": -6.283185307179586,
+            "maximum": 6.283185307179586
+          }
+        },
+        "required": [
+          "x",
+          "y",
+          "width",
+          "height",
+          "rotation_rad"
+        ],
+        "additionalProperties": false
+      },
+      "BoardStyle": {
+        "type": "object",
+        "properties": {
+          "fill": {
+            "type": "string"
+          },
+          "stroke": {
+            "type": "string"
+          },
+          "stroke_width": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 32
+          },
+          "font_size": {
+            "type": "number",
+            "minimum": 8,
+            "maximum": 144
+          },
+          "text_color": {
+            "type": "string"
+          },
+          "opacity": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "dashed": {
+            "type": "boolean"
+          },
+          "bold": {
+            "type": "boolean"
+          },
+          "align": {
+            "type": "string",
+            "enum": [
+              "left",
+              "center",
+              "right"
+            ]
+          }
+        },
+        "required": [
+          "fill",
+          "stroke",
+          "stroke_width",
+          "font_size",
+          "text_color",
+          "opacity",
+          "dashed",
+          "bold",
+          "align"
+        ],
+        "additionalProperties": false
+      },
+      "BoardMember": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 240
+          },
+          "type": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "key": {
+            "type": "string",
+            "enum": [
+              "",
+              "primary",
+              "foreign"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type",
+          "key"
+        ],
+        "additionalProperties": false
+      },
+      "BoardEndpoint": {
+        "type": "object",
+        "properties": {
+          "element_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "port": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "element_id",
+          "port",
+          "x",
+          "y"
+        ],
+        "additionalProperties": false
+      },
+      "BoardStructure": {
+        "type": "object",
+        "properties": {
+          "parent_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "order": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoardMember"
+            },
+            "maxItems": 128
+          },
+          "start": {
+            "type": "object",
+            "properties": {
+              "element_id": {
+                "type": "string",
+                "format": "uuid",
+                "nullable": true
+              },
+              "port": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "element_id",
+              "port",
+              "x",
+              "y"
+            ],
+            "additionalProperties": false,
+            "nullable": true
+          },
+          "end": {
+            "type": "object",
+            "properties": {
+              "element_id": {
+                "type": "string",
+                "format": "uuid",
+                "nullable": true
+              },
+              "port": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "element_id",
+              "port",
+              "x",
+              "y"
+            ],
+            "additionalProperties": false,
+            "nullable": true
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "number"
+                },
+                "y": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "x",
+                "y"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 20000
+          },
+          "route": {
+            "type": "string",
+            "enum": [
+              "straight",
+              "orthogonal",
+              "curve"
+            ]
+          },
+          "start_marker": {
+            "type": "string",
+            "enum": [
+              "none",
+              "arrow",
+              "triangle",
+              "diamond",
+              "circle",
+              "one",
+              "many"
+            ]
+          },
+          "end_marker": {
+            "type": "string",
+            "enum": [
+              "none",
+              "arrow",
+              "triangle",
+              "diamond",
+              "circle",
+              "one",
+              "many"
+            ]
+          },
+          "icon_id": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "asset_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "collapsed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "parent_id",
+          "order",
+          "members",
+          "start",
+          "end",
+          "points",
+          "route",
+          "start_marker",
+          "end_marker",
+          "icon_id",
+          "asset_id",
+          "collapsed"
+        ],
+        "additionalProperties": false
+      },
+      "BoardVersions": {
+        "type": "object",
+        "properties": {
+          "geometry": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "style": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "text": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "structure": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "geometry",
+          "style",
+          "text",
+          "structure"
+        ],
+        "additionalProperties": false
+      },
+      "BoardElement": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "page_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shape_type": {
+            "type": "string"
+          },
+          "shape_version": {
+            "type": "integer",
+            "enum": [
+              1
+            ]
+          },
+          "geometry": {
+            "$ref": "#/components/schemas/BoardGeometry"
+          },
+          "style": {
+            "$ref": "#/components/schemas/BoardStyle"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 8192
+          },
+          "structure": {
+            "$ref": "#/components/schemas/BoardStructure"
+          },
+          "versions": {
+            "$ref": "#/components/schemas/BoardVersions"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "page_id",
+          "shape_type",
+          "shape_version",
+          "geometry",
+          "style",
+          "text",
+          "structure",
+          "versions",
+          "version"
+        ],
+        "additionalProperties": false
+      },
+      "BoardPage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "background": {
+            "type": "string"
+          },
+          "position": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 19
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "background",
+          "position",
+          "version"
+        ],
+        "additionalProperties": false
+      },
+      "Board": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "document_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "workspace_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "collection_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 240
+          },
+          "schema_version": {
+            "type": "integer",
+            "enum": [
+              1
+            ]
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "pages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoardPage"
+            },
+            "maxItems": 20
+          },
+          "created_at_ms": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Unix 毫秒时间戳。"
+          },
+          "updated_at_ms": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Unix 毫秒时间戳。"
+          }
+        },
+        "required": [
+          "id",
+          "document_id",
+          "workspace_id",
+          "collection_id",
+          "title",
+          "schema_version",
+          "revision",
+          "pages",
+          "created_at_ms",
+          "updated_at_ms"
+        ],
+        "additionalProperties": false
+      },
+      "BoardCreate": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "operation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "collection_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "parent_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 240
+          },
+          "page_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "elements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoardElement"
+            },
+            "maxItems": 500
+          }
+        },
+        "required": [
+          "id",
+          "operation_id",
+          "collection_id",
+          "parent_id",
+          "title",
+          "page_id",
+          "elements"
+        ],
+        "additionalProperties": false
+      },
+      "BoardPatch": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expected": {
+            "$ref": "#/components/schemas/BoardVersions"
+          },
+          "geometry": {
+            "$ref": "#/components/schemas/BoardGeometry"
+          },
+          "style": {
+            "$ref": "#/components/schemas/BoardStyle"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 8192
+          },
+          "structure": {
+            "$ref": "#/components/schemas/BoardStructure"
+          }
+        },
+        "required": [
+          "id",
+          "expected"
+        ],
+        "additionalProperties": false
+      },
+      "BoardCommand": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "elements.create"
+                ]
+              },
+              "elements": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/BoardElement"
+                },
+                "maxItems": 500
+              }
+            },
+            "required": [
+              "type",
+              "elements"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "elements.update",
+                  "layout.apply"
+                ]
+              },
+              "patches": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/BoardPatch"
+                },
+                "maxItems": 500
+              }
+            },
+            "required": [
+              "type",
+              "patches"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "elements.delete",
+                  "elements.restore"
+                ]
+              },
+              "targets": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "format": "int64",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "version"
+                  ],
+                  "additionalProperties": false
+                },
+                "maxItems": 500
+              }
+            },
+            "required": [
+              "type",
+              "targets"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "pages.create",
+                  "pages.update",
+                  "pages.delete",
+                  "pages.restore"
+                ]
+              },
+              "page": {
+                "$ref": "#/components/schemas/BoardPage"
+              }
+            },
+            "required": [
+              "type",
+              "page"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "BoardMutation": {
+        "type": "object",
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "schema_version": {
+            "type": "integer",
+            "enum": [
+              1
+            ]
+          },
+          "commands": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoardCommand"
+            },
+            "maxItems": 100,
+            "minItems": 1
+          }
+        },
+        "required": [
+          "operation_id",
+          "schema_version",
+          "commands"
+        ],
+        "additionalProperties": false
+      },
+      "BoardChange": {
+        "type": "object",
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "elements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoardElement"
+            }
+          },
+          "deleted": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "pages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoardPage"
+            }
+          },
+          "deleted_pages": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "updated_at_ms": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Unix 毫秒时间戳。"
+          }
+        },
+        "required": [
+          "operation_id",
+          "revision",
+          "elements",
+          "deleted",
+          "pages",
+          "deleted_pages",
+          "updated_at_ms"
+        ],
+        "additionalProperties": false
+      },
+      "BoardElementPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoardElement"
+            },
+            "maxItems": 500
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "next_cursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "items",
+          "revision",
+          "next_cursor",
+          "has_more"
+        ],
+        "additionalProperties": false
+      },
+      "BoardChanges": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoardChange"
+            },
+            "maxItems": 50
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "items",
+          "revision",
+          "has_more"
+        ],
+        "additionalProperties": false
+      },
+      "BoardSnapshot": {
+        "type": "object",
+        "properties": {
+          "board": {
+            "$ref": "#/components/schemas/Board"
+          },
+          "elements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoardElement"
+            },
+            "maxItems": 50000
+          }
+        },
+        "required": [
+          "board",
+          "elements"
+        ],
+        "additionalProperties": false
+      },
+      "BoardHistory": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "revision": {
+                  "type": "integer",
+                  "format": "int64",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "actor_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "created_at_ms": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Unix 毫秒时间戳。"
+                }
+              },
+              "required": [
+                "revision",
+                "actor_id",
+                "created_at_ms"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 50
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "BoardSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "document_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "collection_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 240
+          },
+          "updated_at_ms": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Unix 毫秒时间戳。"
+          }
+        },
+        "required": [
+          "id",
+          "document_id",
+          "collection_id",
+          "title",
+          "updated_at_ms"
+        ],
+        "additionalProperties": false
+      },
+      "BoardList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoardSummary"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        },
+        "required": [
+          "items",
+          "pagination"
+        ],
+        "additionalProperties": false
+      },
+      "PublicBoard": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "svg": {
+            "type": "string",
+            "description": "Server-generated SVG from validated primitives and escaped labels."
+          },
+          "text": {
+            "type": "string"
+          },
+          "restricted": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "title",
+          "revision",
+          "svg",
+          "text",
+          "restricted"
+        ],
+        "additionalProperties": false
       }
     },
     "securitySchemes": {
@@ -44931,5 +50649,34 @@
         "bearerFormat": "orbis_it_ credential"
       }
     }
+  },
+  "x-board-error-codes": {
+    "BOARD_ELEMENT_CONFLICT": {
+      "status": 409,
+      "description": "Expected property-group or dependency version differs; data.element_id identifies the target."
+    },
+    "BOARD_TARGET_REMOVED": {
+      "status": 409,
+      "description": "A target was deleted; retain the original pending command for explicit recovery."
+    },
+    "BOARD_RESYNC_REQUIRED": {
+      "status": 409,
+      "description": "Requested synchronization revision is ahead of the board; reload a snapshot without discarding pending operations."
+    },
+    "BOARD_LIMIT_EXCEEDED": {
+      "status": 422,
+      "description": "A named board capacity or byte budget was exceeded; no part of the transaction commits."
+    },
+    "BOARD_RENDER_BUSY": {
+      "status": 503,
+      "description": "The bounded preview pool is full; retry later."
+    }
+  },
+  "x-board-projection-limits": {
+    "document_board_blocks": 32,
+    "site_distinct_board_views": 200,
+    "share_bytes": 8388608,
+    "site_snapshot_bytes": 33554432,
+    "description": "Preview generation is deduplicated by board/page/mode/revision/frame within each request. Reference count limits cover whole-body and incremental writes; public read and publication budgets remain independent."
   }
 }

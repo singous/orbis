@@ -43,6 +43,7 @@ import { CONTENT_PAGE_SIZE, CONTENT_COMPLETION_PAGE_SIZE, type EditorContentHand
 // Load the editor only on document pages; readers use the lightweight renderer.
 const TiptapEditor = lazy(loadDocumentEditor);
 const SheetDocument = lazy(() => import("../../sheets/SheetPage").then(m => ({default:m.SheetWorkspace})));
+const BoardDocument = lazy(() => import("../../boards/BoardEditor").then(m => ({default:m.BoardEditor})));
 const CollaborativeDocumentEditorPage = lazy(() => import("./CollaborativeDocumentEditorPage"));
 
 function LiveDocumentEditor({ blocks, onChange, ...props }: {
@@ -113,6 +114,7 @@ export function DocumentEditorPage() {
   const { noteId = "" } = useParams();
   const note = useNote(noteId);
   if (note.isPending) return <DocumentShell><LoadingState label="正在打开文档…" variant="editor" /></DocumentShell>;
+  if (note.data?.board_id) return <Suspense fallback={<DocumentShell><LoadingState label="正在打开画板…" variant="editor" /></DocumentShell>}><BoardDocument key={note.data.id} id={note.data.board_id}/></Suspense>;
   if (note.data?.sheet_id) return <Suspense fallback={<DocumentShell><LoadingState label="正在打开数据表…" variant="editor" /></DocumentShell>}><SheetDocument key={note.data.id} id={note.data.sheet_id} /></Suspense>;
   if (note.data?.collaboration_available === true) return <Suspense fallback={<DocumentShell><LoadingState label="正在打开文档…" variant="editor" /></DocumentShell>}><CollaborativeDocumentEditorPage /></Suspense>;
   return <LegacyDocumentEditorPage />;

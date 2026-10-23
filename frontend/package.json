@@ -13,8 +13,9 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "sync:document-blocks": "node scripts/sync-document-blocks.mjs",
     "check:document-blocks": "node scripts/sync-document-blocks.mjs --check",
-    "prebuild": "node scripts/sync-document-blocks.mjs --check && node scripts/sync-drawing-assets.mjs",
-    "predev": "node scripts/sync-drawing-assets.mjs"
+    "prebuild": "node scripts/sync-document-blocks.mjs --check && node scripts/sync-drawing-assets.mjs && node scripts/sync-board-assets.mjs && node scripts/sync-board-templates.mjs",
+    "predev": "node scripts/sync-drawing-assets.mjs && node scripts/sync-board-assets.mjs && node scripts/sync-board-templates.mjs",
+    "sync:board-templates": "node scripts/sync-board-templates.mjs --write"
   },
   "dependencies": {
     "@dnd-kit/dom": "^0.5.0",
@@ -23,6 +24,7 @@
     "@fontsource-variable/inter": "^5.3.0",
     "@heroui/react": "^3.2.6",
     "@heroui/styles": "^3.2.6",
+    "@remixicon/react": "4.6.0",
     "@tailwindcss/vite": "^4.1.10",
     "@tanstack/react-query": "^5.81.2",
     "@tanstack/react-table": "9.2.6",
@@ -44,7 +46,9 @@
     "@tiptap/starter-kit": "^2.26.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "elkjs": "0.12.0",
     "highlight.js": "11.12.0",
+    "konva": "10.9.0",
     "lib0": "0.2.119",
     "lucide-react": "^0.468.0",
     "marked": "^18.0.5",
@@ -60,6 +64,7 @@
     "zustand": "^5.0.5"
   },
   "devDependencies": {
+    "@iconify-json/tabler": "1.2.42",
     "@playwright/test": "^1.63.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
@@ -69,6 +74,7 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.5.2",
+    "esbuild": "0.25.12",
     "fake-indexeddb": "6.2.6",
     "jsdom": "^26.1.0",
     "typescript": "^5.8.3",

@@ -14,6 +14,7 @@ import (
 
 	"orbis.local/orbis/api"
 	"orbis.local/orbis/internal/asset"
+	"orbis.local/orbis/internal/board"
 	"orbis.local/orbis/internal/document"
 	"orbis.local/orbis/internal/identity"
 	"orbis.local/orbis/internal/integration"
@@ -44,6 +45,8 @@ type Dependencies struct {
 	Transfers            *integration.Transfers
 	Tables               *table.Service
 	Sheets               *sheet.Service
+	Boards               *board.Service
+	AgentBoards          *integration.Boards
 	Assets               *asset.Service
 	MaxUploadBytes       int64
 	Identity             *identity.Service
@@ -92,6 +95,7 @@ func New(deps Dependencies) (*gin.Engine, error) {
 	r.GET("/openapi.json", func(c *gin.Context) { c.Data(http.StatusOK, "application/json", api.Contract) })
 	v1 := r.Group("/api/v1")
 	v1.GET("/workspaces/:workspace_id/documents/:document_id/collaboration/socket", h.pathIDs(), h.documentCollaborationSocket)
+	v1.GET("/workspaces/:workspace_id/boards/:board_id/sync", h.pathIDs(), h.boardSocket)
 
 	r.GET("/s/:slug", h.publicResponseLimit(true), h.siteWeb)
 	r.HEAD("/s/:slug", h.publicResponseLimit(true), h.siteWeb)
@@ -141,6 +145,17 @@ func New(deps Dependencies) (*gin.Engine, error) {
 	agent.GET("/workspaces", h.agentWorkspaces)
 	agent.GET("/capabilities", h.agentCapabilities)
 	agent.GET("/schema", h.agentSchema)
+	agent.GET("/boards", h.agentBoardsList)
+	agent.POST("/boards", h.agentBoardCreate)
+	agent.GET("/board-catalog", h.agentBoardCatalog)
+	agent.GET("/board-templates", h.agentBoardTemplates)
+	agent.GET("/boards/:board_id", h.agentBoardMetadata)
+	agent.GET("/boards/:board_id/snapshot", h.agentBoardSnapshot)
+	agent.GET("/boards/:board_id/pages/:page_id/elements", h.agentBoardElements)
+	agent.POST("/boards/:board_id/commands", h.agentBoardChange)
+	agent.GET("/boards/:board_id/changes", h.agentBoardChanges)
+	agent.GET("/boards/:board_id/history", h.agentBoardHistory)
+	agent.GET("/boards/:board_id/operations/:operation_id", h.agentBoardReceipt)
 	agent.GET("/collections", h.agentCollections)
 	agent.GET("/documents", h.agentDocuments)
 	agent.GET("/search", h.agentSearch)
@@ -230,6 +245,17 @@ func New(deps Dependencies) (*gin.Engine, error) {
 	scope.PATCH("/collection-groups/:group_id", h.updateGroup)
 	scope.PUT("/collection-groups/:group_id/archive", h.archiveGroup)
 	scope.GET("/collections", h.collections)
+	scope.POST("/boards", h.createBoard)
+	scope.GET("/boards", h.listBoards)
+	scope.GET("/boards/:board_id", h.getBoard)
+	scope.GET("/boards/:board_id/pages/:page_id/elements", h.boardElements)
+	scope.POST("/boards/:board_id/commands", h.changeBoard)
+	scope.GET("/boards/:board_id/changes", h.boardChanges)
+	scope.GET("/boards/:board_id/operations/:operation_id", h.boardReceipt)
+	scope.GET("/boards/:board_id/history", h.boardHistory)
+	scope.GET("/boards/:board_id/snapshot", h.boardSnapshot)
+	scope.GET("/boards/:board_id/preview", h.boardPreview)
+	scope.HEAD("/boards/:board_id/preview", h.boardPreview)
 	scope.POST("/collections", h.createCollection)
 	scope.GET("/collections/:collection_id", h.collection)
 	scope.PATCH("/collections/:collection_id", h.updateCollection)
@@ -288,7 +314,7 @@ func (h *handler) requestContext() gin.HandlerFunc {
 		}
 		ctx := c.Request.Context()
 		cancel := func() {}
-		if c.FullPath() != collaborationSocketPath {
+		if c.FullPath() != collaborationSocketPath && c.FullPath() != boardSocketPath {
 			ctx, cancel = context.WithTimeout(ctx, h.deps.RequestTimeout)
 		}
 		defer cancel()

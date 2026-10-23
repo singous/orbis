@@ -67,6 +67,7 @@ RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
 COPY --chown=1000:1000 --chmod=755 frontend/ ./
 RUN mkdir -p /app/api && chmod 755 /app/api
 COPY --chmod=644 api/editor-components.json /app/api/editor-components.json
+COPY --chmod=644 api/board-catalog.json api/board-icons.json api/board-templates.json /app/api/
 COPY --chmod=644 api/editor-prosemirror-schema.json /app/api/editor-prosemirror-schema.json
 RUN mkdir -p node_modules/.vite && chown 1000:1000 . node_modules/.vite
 

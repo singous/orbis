@@ -136,3 +136,32 @@ orbis --json shares revoke SHARE_UUID --expected-version 1
 兼容命令别名：`notes`/`documents`、`notebooks`/`collections`、`--note`/`--document`、`--notebook`/`--collection`、`--limit`/`--page-size`。
 
 产品 Skill 位于独立目录 `skills/orbis`，可单独分发；`0.1.x` Skill 配合 `0.1.x` CLI 和 Agent 协议 `2.0` 使用。
+
+## 原生画板
+
+开发分支的原生画板使用同一套服务端命令和令牌范围校验：
+
+```sh
+orbis --json boards list --collection COLLECTION_UUID
+orbis --json boards catalog
+orbis --json boards templates
+orbis --json boards template BOARD_UUID --template flow.approval --board-page PAGE_UUID --operation-id OPERATION_UUID
+orbis --json boards create --file create-board.json
+orbis --json boards get BOARD_UUID
+orbis --json boards elements BOARD_UUID --board-page PAGE_UUID --revision 3
+orbis --json boards apply BOARD_UUID --file board-commands.json
+orbis --json boards changes BOARD_UUID --after 3
+orbis --json boards history BOARD_UUID
+orbis --json boards export BOARD_UUID --revision 3 --out diagram.orbis-board.json
+```
+
+创建请求包含固定的 `id`、`operation_id`、`collection_id`、`page_id`、
+`parent_id`、`title` 与 `elements`；命令请求包含固定的 `operation_id`、
+`schema_version: 1` 与 `commands`。图元与版本字段依实例 OpenAPI 和图形目录构造。
+普通写入最多 500 个图元、1 MiB；失败后查询原始 `operations get OPERATION_UUID`，
+保留原操作标识与意图重试。
+
+读取要求 `documents:read`，写入要求 `documents:write`。单文档令牌不能创建新的目录画板。
+图片导出还需要 `assets:read`；图片上传使用画板所属文档的 `files upload`。
+导出固定版本后按页面游标读取，包含图片资产，文件最多 32 MiB、图片总量最多 16 MiB。
+网页导入当前限制为单次 500 个页面与图元，超限整体拒绝，不截断内容。

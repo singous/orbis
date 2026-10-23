@@ -42,7 +42,7 @@ Compose 进程中已导出的变量优先于 `--env-file`；部署应使用独�
 默认 Web 监听 `127.0.0.1:28190`。本机试用时设置 `ORBIS_PUBLIC_BASE_URL=http://127.0.0.1:28190`。
 使用 HTTPS 公开域名时，由前置反向代理终止 TLS 并转发到 Web 端口，公开地址填写该 HTTPS 地址。
 跨主机访问可按实际入口调整 `ORBIS_BIND_ADDRESS` 和 `ORBIS_PORT`。数据库、Redis、API 与协同引擎不发布宿主机端口。
-浏览器的协同 WebSocket 经 Web/Nginx 连接 Go API；只在文档协同 socket 路径启用 Upgrade，登录 JWT 通过首帧传递。
+浏览器的协同 WebSocket 经 Web/Nginx 连接 Go API；只在文档协同 socket 与原生画板 sync 路径启用 Upgrade，登录 JWT 通过首帧传递。
 前置反向代理也应允许该路径的 WebSocket；Go 每25秒发送 Ping，Nginx 为连接保留一小时空闲超时。
 当前前端与 Nginx 模板按域名根路径部署，不提供子路径挂载配置。
 

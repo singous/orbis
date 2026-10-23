@@ -9,6 +9,7 @@ import (
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	boardstore "orbis.local/orbis/internal/board/postgres"
 	"orbis.local/orbis/internal/document"
 	docstore "orbis.local/orbis/internal/document/postgres"
 	"orbis.local/orbis/internal/document/publicview"
@@ -20,17 +21,22 @@ import (
 )
 
 type Repository struct {
+	boards *boardstore.Projector
 	db     *gorm.DB
 	clock  clock.Clock
 	policy publicview.URLPolicy
 }
 
-func New(db *gorm.DB, c clock.Clock, publicBaseURL string) *Repository {
+func New(db *gorm.DB, c clock.Clock, publicBaseURL string, boards ...*boardstore.Projector) *Repository {
 	policy := publicview.URLPolicy{}
 	if parsed, err := url.Parse(publicBaseURL); err == nil && parsed.Hostname() != "" {
 		policy.InternalHosts = []string{parsed.Hostname()}
 	}
-	return &Repository{db: db, clock: c, policy: policy}
+	var projector *boardstore.Projector
+	if len(boards) > 0 {
+		projector = boards[0]
+	}
+	return &Repository{boards: projector, db: db, clock: c, policy: policy}
 }
 
 type shareRow struct {

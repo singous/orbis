@@ -25,7 +25,7 @@ var readerDecoders sync.Once
 
 func newContractRouter(spec *openapi3.T) (routers.Router, error) {
 	readerDecoders.Do(func() {
-		for _, kind := range []string{"text/html", "text/css", "application/javascript", "application/xml", "text/markdown"} {
+		for _, kind := range []string{"text/html", "text/css", "application/javascript", "application/xml", "image/svg+xml", "text/markdown"} {
 			openapi3filter.RegisterBodyDecoder(kind, openapi3filter.PlainBodyDecoder)
 		}
 	})
