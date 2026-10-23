@@ -7,7 +7,7 @@ test("the supplied theme reaches rendered fields in both color schemes", async (
   for (const mode of ["light", "dark"] as const) {
     await page.evaluate((theme) => { document.documentElement.dataset.theme = theme; }, mode);
     await email.focus();
-    await expect.poll(() => page.locator("body").evaluate((element) => getComputedStyle(element).backgroundColor)).toBe(mode === "light" ? "oklch(0.9702 0.0124 273.85)" : "oklch(0.12 0.0124 273.85)");
+    await expect.poll(() => page.locator("body").evaluate((element) => getComputedStyle(element).backgroundColor)).toBe(mode === "light" ? "oklch(0.9702 0 0)" : "oklch(0.12 0 0)");
     const rendered = await email.evaluate(async (element) => {
       await document.fonts.ready;
       const field = getComputedStyle(element);
@@ -33,13 +33,13 @@ test("the supplied theme reaches rendered fields in both color schemes", async (
         loadedInter: Array.from(document.fonts).some((font) => font.family.includes("Inter Variable") && font.status === "loaded"),
       };
     });
-    expect(rendered.background).toBe(mode === "light" ? "oklch(0.9702 0.0124 273.85)" : "oklch(0.12 0.0124 273.85)");
-    expect(rendered.fieldBackground).toBe(mode === "light" ? "oklch(1 0.0062 273.85)" : "oklch(0.2103 0.0248 273.85)");
+    expect(rendered.background).toBe(mode === "light" ? "oklch(0.9702 0 0)" : "oklch(0.12 0 0)");
+    expect(rendered.fieldBackground).toBe(mode === "light" ? "oklch(1 0 0)" : "oklch(0.2103 0 0)");
     expect(rendered.radius).toBe("8px");
     expect(rendered.buttonRadius).toBe("12px");
-    expect(rendered.buttonBackground).toBe("oklch(0.5774 0.2091 273.85)");
-    expect(rendered.buttonForeground).toBe("oklch(0.9911 0 0)");
-    expect(rendered.focus).toBe("oklch(0.5774 0.2091 273.85)");
+    expect(rendered.buttonBackground).toBe(mode === "light" ? "oklch(0 0 0)" : "oklch(0.9848 0 0)");
+    expect(rendered.buttonForeground).toBe(mode === "light" ? "oklch(0.9911 0 0)" : "oklch(0.15 0 0)");
+    expect(rendered.focus).toBe(mode === "light" ? "oklch(0 0 0)" : "oklch(0.9848 0 0)");
     expect(rendered.fieldBorder).toBe("rgba(0, 0, 0, 0)");
     expect(rendered.outline).toBe("none");
     expect(rendered.font).toContain("Inter Variable");
@@ -74,7 +74,7 @@ test("workbench action and field shapes follow HeroUI theme calculations", async
   for (const mode of ["light", "dark"] as const) {
     await page.evaluate((theme) => { document.documentElement.dataset.theme = theme; }, mode);
     const cancel = dialog.getByRole("button", { name: "取消", exact: true });
-    await expect.poll(() => cancel.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe(mode === "light" ? "oklch(0.94 0.0124 273.85)" : "oklch(0.274 0.0124 273.85)");
+    await expect.poll(() => cancel.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe(mode === "light" ? "oklch(0.94 0 0)" : "oklch(0.274 0 0)");
     expect(await cancel.evaluate((element) => getComputedStyle(element).borderRadius)).toBe("12px");
     expect(await dialog.evaluate((element) => getComputedStyle(element).borderRadius)).toBe("12px");
     const radio = dialog.locator('[data-slot="radio-control"]').first();

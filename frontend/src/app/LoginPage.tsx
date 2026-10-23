@@ -91,20 +91,28 @@ export function LoginPage({ mode }: { mode: "login" | "setup" }) {
         <span className="auth-header-caption">你的知识工作空间</span>
       </header>
 
-      <section className="auth-card" aria-labelledby="auth-heading">
-        <div className="auth-card-heading">
-          <div className="auth-card-kicker">{isSetup ? "从这里开始" : "欢迎回来"}</div>
-          <h1 id="auth-heading">{isSetup ? "初始化 Orbis" : "登录工作空间"}</h1>
-          <p>{isSetup ? "创建所有者账号，开启你的私人工作空间。" : "继续记录想法，整理和分享你的知识。"}</p>
-        </div>
-        <form className="auth-form" aria-labelledby="auth-heading" onSubmit={handleSubmit} noValidate>
-          {isSetup ? <TextInput label="显示名称" placeholder="你的名字" value={displayName} required onChange={(event) => setDisplayName(event.target.value)} autoComplete="name" /> : null}
-          <TextInput label="邮箱" type="email" placeholder="name@example.com" value={email} required onChange={(event) => setEmail(event.target.value)} autoComplete="email" />
-          <TextInput label="密码" type="password" placeholder={isSetup ? "至少 12 字节" : "输入密码"} value={password} required minLength={isSetup ? 12 : 1} onChange={(event) => setPassword(event.target.value)} autoComplete={isSetup ? "new-password" : "current-password"} />
-          <Button isPending={authMutation.isPending} type="submit" variant="primary" className="auth-submit" disabled={authMutation.isPending}>{authMutation.isPending ? "正在连接…" : isSetup ? "创建并进入工作空间" : "登录 Orbis"}<ArrowRight aria-hidden="true" size={16} /></Button>
-        </form>
-        <div className="auth-card-footer">{isSetup ? <>系统已初始化？ <Link to="/login">返回登录</Link></> : <>首次部署？ <Link to="/setup">初始化管理员账号</Link></>}</div>
-      </section>
+      <div className="auth-content">
+        <aside className="auth-intro" aria-label="关于 Orbis">
+          <p className="auth-intro-eyebrow">一个安静的地方</p>
+          <p className="auth-intro-title">随手记下，<br className="auth-intro-break" />日后重逢。</p>
+          <p className="auth-intro-description">读到的、想到的、还没想明白的，<br />都可以先留在这里。</p>
+        </aside>
+
+        <section className="auth-card" aria-labelledby="auth-heading">
+          <div className="auth-card-heading">
+            <div className="auth-card-kicker">{isSetup ? "从这里开始" : "欢迎回来"}</div>
+            <h1 id="auth-heading">{isSetup ? "初始化 Orbis" : "登录工作空间"}</h1>
+            <p>{isSetup ? "创建所有者账号，开启你的私人工作空间。" : "继续记录想法，整理和分享你的知识。"}</p>
+          </div>
+          <form className="auth-form" aria-labelledby="auth-heading" onSubmit={handleSubmit} noValidate>
+            {isSetup ? <TextInput label="显示名称" placeholder="你的名字" value={displayName} required onChange={(event) => setDisplayName(event.target.value)} autoComplete="name" /> : null}
+            <TextInput label="邮箱" type="email" placeholder="name@example.com" value={email} required onChange={(event) => setEmail(event.target.value)} autoComplete="email" />
+            <TextInput label="密码" type="password" placeholder={isSetup ? "至少 12 字节" : "输入密码"} value={password} required minLength={isSetup ? 12 : 1} onChange={(event) => setPassword(event.target.value)} autoComplete={isSetup ? "new-password" : "current-password"} />
+            <Button isPending={authMutation.isPending} type="submit" variant="primary" className="auth-submit" disabled={authMutation.isPending}>{authMutation.isPending ? "正在连接…" : isSetup ? "创建并进入工作空间" : "登录 Orbis"}<ArrowRight aria-hidden="true" size={16} /></Button>
+          </form>
+          <div className="auth-card-footer">{isSetup ? <>系统已初始化？ <Link to="/login">返回登录</Link></> : <>首次部署？ <Link to="/setup">初始化管理员账号</Link></>}</div>
+        </section>
+      </div>
       <footer className="auth-footer">记录 · 连接 · 生长</footer>
     </main>
   );

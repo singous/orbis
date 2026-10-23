@@ -1,0 +1,40 @@
+@layer components {
+  :root, .light, .default, [data-theme="light"], [data-theme="default"] {
+    --orbis-translucent-notice-background: #00000012;
+  }
+
+  .dark, [data-theme="dark"] {
+    --orbis-translucent-notice-background: #ffffff1a;
+  }
+
+  .orbis-translucent-notice {
+    --orbis-translucent-notice-blur: 20px;
+    padding: 16px 20px;
+    border: 0;
+    border-radius: 16px;
+    background: var(--orbis-translucent-notice-background);
+    color: var(--foreground);
+    -webkit-backdrop-filter: blur(var(--orbis-translucent-notice-blur));
+    backdrop-filter: blur(var(--orbis-translucent-notice-blur));
+    box-shadow: none;
+    overflow-wrap: anywhere;
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .orbis-translucent-notice {
+      background: var(--surface);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+  }
+
+  @media (forced-colors: active) {
+    .orbis-translucent-notice {
+      border: 1px solid CanvasText;
+      background: Canvas;
+      color: CanvasText;
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+  }
+}
