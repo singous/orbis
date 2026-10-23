@@ -45,7 +45,7 @@
 :root {
   --font-inter: "Inter Variable", "PingFang SC", "Microsoft YaHei", sans-serif;
   --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
-  --brand-mark: #23ad83;
+  --brand-mark: var(--text-primary);
   --avatar-background: #daf3f5;
   --avatar-foreground: #238d9d;
   --action-height: var(--orbis-control-default-height);
@@ -730,3 +730,5 @@ body {
 /* Compact shell search dimensions keep the InputGroup theme intact. */
 .orbis-compact-search { min-height: 0; }
 .orbis-compact-search [data-slot="input-group-input"] { min-width: 0; height: 100%; padding-block: 0; }
+
+.orbis-attribution { display: inline-flex; align-items: center; gap: 6px; }

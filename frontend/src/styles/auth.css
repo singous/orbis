@@ -24,16 +24,6 @@
   line-height: var(--orbis-text-section-leading);
 }
 
-.auth-brand-mark {
-  display: grid;
-  width: 35px;
-  height: 35px;
-  place-items: center;
-  border-radius: 10px;
-  background: var(--surface-inverse);
-  color: var(--text-oninverse);
-}
-
 .auth-header-caption {
   color: var(--text-secondary);
   font-size: var(--orbis-text-ui-size);

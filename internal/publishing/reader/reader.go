@@ -472,7 +472,7 @@ func tableRecords(w *writer, data publicview.TableRef) {
 // TableHTML provides bounded server-rendered pagination without requiring JavaScript.
 func TableHTML(page publishing.TablePage, number int, basePath string) ([]byte, error) {
 	var w writer
-	w.emit(`<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>` + escape(page.Title) + `</title><link rel="stylesheet" href="/api/v1/public/reader.css"></head><body><main class="article"><h1>` + escape(page.Title) + `</h1>`)
+	w.emit(`<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>` + escape(page.Title) + `</title>` + brandIcons + `<link rel="stylesheet" href="/api/v1/public/reader.css"></head><body><main class="article"><h1>` + escape(page.Title) + `</h1>`)
 	tableRecords(&w, publicview.TableRef{Title: page.Title, Fields: page.Fields, View: page.View, Items: page.Items, Groups: page.Groups, Total: page.Total})
 	w.emit(`<nav aria-label="表格分页">`)
 	link := func(target int, label string) {
@@ -505,7 +505,7 @@ func HTML(snapshot publishing.Snapshot, page publishing.Page, base string, searc
 	if snapshot.Branding.Theme != "system" {
 		w.emit(` data-theme="` + escape(snapshot.Branding.Theme) + `"`)
 	}
-	w.emit(`><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>` + escape(title) + `</title><meta name="description" content="` + escape(description) + `"><link rel="canonical" href="` + escape(canonical) + `"><meta property="og:title" content="` + escape(title) + `"><meta property="og:description" content="` + escape(description) + `"><meta property="og:url" content="` + escape(canonical) + `"><meta property="og:type" content="article"><link rel="stylesheet" href="/api/v1/public/reader.css"><script defer src="/api/v1/public/reader.js"></script></head><body style="--accent:` + escape(snapshot.AccentColor) + `"><a class="skip" href="#content">跳到正文</a><header><button type="button" class="site-menu" data-menu-toggle aria-controls="site-navigation" aria-expanded="false">目录</button><a class="brand" href="/s/` + escape(snapshot.Slug) + `">`)
+	w.emit(`><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>` + escape(title) + `</title>` + brandIcons + `<meta name="description" content="` + escape(description) + `"><link rel="canonical" href="` + escape(canonical) + `"><meta property="og:title" content="` + escape(title) + `"><meta property="og:description" content="` + escape(description) + `"><meta property="og:url" content="` + escape(canonical) + `"><meta property="og:type" content="article"><link rel="stylesheet" href="/api/v1/public/reader.css"><script defer src="/api/v1/public/reader.js"></script></head><body style="--accent:` + escape(snapshot.AccentColor) + `"><a class="skip" href="#content">跳到正文</a><header><button type="button" class="site-menu" data-menu-toggle aria-controls="site-navigation" aria-expanded="false">目录</button><a class="brand" href="/s/` + escape(snapshot.Slug) + `">`)
 	if snapshot.Branding.LogoURL != nil {
 		w.emit(`<img src="` + escape(*snapshot.Branding.LogoURL) + `" alt="">`)
 	}
@@ -581,11 +581,11 @@ func HTML(snapshot publishing.Snapshot, page publishing.Page, base string, searc
 	for _, link := range snapshot.Branding.FooterLinks {
 		w.emit(`<a href="` + escape(link.URL) + `" rel="noopener noreferrer">` + escape(link.Label) + `</a>`)
 	}
-	w.emit(`</footer></body></html>`)
+	w.emit(brandAttribution() + `</footer></body></html>`)
 	return w.Bytes(), w.err
 }
 func Error(code, message string) []byte {
-	return []byte(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>` + escape(message) + `</title><link rel="stylesheet" href="/api/v1/public/reader.css"><main class="error"><h1>` + escape(message) + `</h1><p>` + escape(code) + `</p></main></html>`)
+	return []byte(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>` + escape(message) + `</title>` + brandIcons + `<link rel="stylesheet" href="/api/v1/public/reader.css"><main class="error"><h1>` + escape(message) + `</h1><p>` + escape(code) + `</p></main></html>`)
 }
 func Sitemap(snapshot publishing.Snapshot, base string) ([]byte, error) {
 	type entry struct {

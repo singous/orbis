@@ -1,5 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
-import { ArrowRight, Orbit } from "../shared/ui/icons";
+import { OrbisLogo } from "../shared/ui/OrbisLogo";
+import { ArrowRight } from "../shared/ui/icons";
 import { type FormEvent, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
@@ -85,8 +86,7 @@ export function LoginPage({ mode }: { mode: "login" | "setup" }) {
     <main className="auth-layout">
       <header className="auth-header">
         <Link to="/login" className="auth-brand" aria-label="Orbis">
-          <span className="auth-brand-mark"><Orbit aria-hidden="true" size={24} strokeWidth={1.8} /></span>
-          <span>Orbis</span>
+          <OrbisLogo variant="horizontal" size={40} />
         </Link>
         <span className="auth-header-caption">你的知识工作空间</span>
       </header>
