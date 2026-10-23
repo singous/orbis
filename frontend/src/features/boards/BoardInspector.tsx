@@ -1,5 +1,5 @@
 import { reparentElement } from "./mindmap";
-import { reorderLane, transformBranch } from "./transforms";
+import { removeMember, reorderLane, transformBranch } from "./transforms";
 import { useEffect, useRef, useState } from "react";
 import { Plus, Trash2, Shapes, X } from "lucide-react";
 import { ActionButton } from "../../shared/ui/ActionButton";
@@ -450,14 +450,12 @@ export function BoardInspector({
                   <ActionButton
                     aria-label={"删除字段 " + member.name}
                     onClick={() =>
-                      patch({
-                        structure: {
-                          ...e.structure,
-                          members: e.structure.members.filter(
-                            (m) => m.id !== member.id,
-                          ),
+                      run(() => [
+                        {
+                          type: "elements.update",
+                          patches: removeMember(elements, e, member.id),
                         },
-                      })
+                      ])
                     }
                   >
                     <Trash2 size={14} />

@@ -1,9 +1,10 @@
-import ELK from "elkjs/lib/elk.bundled.js";
+import ELK from "elkjs/lib/elk-api";
+import elkWorkerURL from "elkjs/lib/elk-worker.min.js?url";
 import type { Element } from "./model";
-const elk = new ELK();
 self.onmessage = async (
   event: MessageEvent<{ elements: Element[]; direction: "RIGHT" | "DOWN" }>,
 ) => {
+  const elk = new ELK({ workerUrl: elkWorkerURL });
   try {
     const nodes = event.data.elements.filter(
       (e) => e.shape_type !== "connector" && !e.structure.parent_id,
@@ -35,6 +36,7 @@ self.onmessage = async (
         targets: [e.structure.end!.element_id!],
       })),
     });
+    elk.terminateWorker();
     self.postMessage({
       positions: (result.children ?? []).map((n) => ({
         id: n.id,
@@ -43,6 +45,7 @@ self.onmessage = async (
       })),
     });
   } catch (error) {
+    elk.terminateWorker();
     self.postMessage({ error: (error as Error).message });
   }
 };

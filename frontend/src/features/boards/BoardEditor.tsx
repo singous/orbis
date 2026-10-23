@@ -1,4 +1,4 @@
-import { selectionForCopy } from "./transforms";
+import { selectionForCopy, selectionForLayout } from "./transforms";
 import {
   lazy,
   Suspense,
@@ -221,7 +221,7 @@ export function BoardEditor({ id }: { id: string }) {
     layoutAbort.current = abort;
     try {
       const values = selection.size
-        ? [...selection].map((id) => state.elements.get(id)!).filter(Boolean)
+        ? selectionForLayout(state.elements, selection)
         : [...state.elements.values()];
       const patches = values.some((e) => e.shape_type.startsWith("mindmap."))
         ? mindmapLayout(values)

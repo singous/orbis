@@ -2,6 +2,7 @@ import {
   elementPatch,
   MAX_COMMAND_ELEMENTS,
   type Element,
+  type Endpoint,
   type Geometry,
   type Patch,
 } from "./model";
@@ -141,7 +142,7 @@ export function reorderLane(
   return patches;
 }
 
-export function selectionForCopy(
+function selectionClosure(
   scene: Map<string, Element>,
   selected: Set<string>,
 ): Element[] {
@@ -154,7 +155,64 @@ export function selectionForCopy(
     if (edge.shape_type === "connector" && a && b && ids.has(a) && ids.has(b))
       ids.add(edge.id);
   }
-  if (ids.size > MAX_COMMAND_ELEMENTS)
-    throw new Error("单次复制最多 500 个对象，请缩小选择范围。");
   return [...ids].map((id) => scene.get(id)).filter((e): e is Element => !!e);
+}
+
+export function selectionForCopy(
+  scene: Map<string, Element>,
+  selected: Set<string>,
+): Element[] {
+  const elements = selectionClosure(scene, selected);
+  if (elements.length > MAX_COMMAND_ELEMENTS)
+    throw new Error("单次复制最多 500 个对象，请缩小选择范围。");
+  return elements;
+}
+
+export function selectionForLayout(
+  scene: Map<string, Element>,
+  selected: Set<string>,
+): Element[] {
+  const elements = selectionClosure(scene, selected);
+  if (elements.length > MAX_COMMAND_ELEMENTS)
+    throw new Error("自动布局最多处理 500 个图元，请缩小选择范围。");
+  return elements;
+}
+
+export function removeMember(
+  scene: Map<string, Element>,
+  element: Element,
+  memberID: string,
+): Patch[] {
+  if (!element.structure.members.some((member) => member.id === memberID))
+    throw new Error("字段已经变化，请刷新后重试。");
+  const patches = [
+    elementPatch(element, {
+      structure: {
+        ...element.structure,
+        members: element.structure.members.filter(
+          (member) => member.id !== memberID,
+        ),
+      },
+    }),
+  ];
+  const rebind = (endpoint: Endpoint | null) => {
+    if (
+      endpoint?.element_id !== element.id ||
+      endpoint.port.split(":")[1] !== memberID
+    )
+      return endpoint;
+    return { ...endpoint, port: endpoint.port.split(":")[0] };
+  };
+  for (const edge of scene.values()) {
+    if (edge.shape_type !== "connector") continue;
+    const start = rebind(edge.structure.start),
+      end = rebind(edge.structure.end);
+    if (start !== edge.structure.start || end !== edge.structure.end)
+      patches.push(
+        elementPatch(edge, { structure: { ...edge.structure, start, end } }),
+      );
+  }
+  if (patches.length > MAX_COMMAND_ELEMENTS)
+    throw new Error("字段关联的连线过多，请先减少连线再删除字段。");
+  return patches;
 }

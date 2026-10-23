@@ -493,3 +493,141 @@ test("mind map keyboard editing and native document embeds preserve board refere
     ),
   ).toBe(true);
 });
+
+test("container layout and connected field deletion preserve the rest of the diagram", async ({
+  page,
+  request,
+}) => {
+  await page.setViewportSize({ width: 2048, height: 1157 });
+  const session = await ownerSession(request);
+  const collection = await createCollection(
+    request,
+    session,
+    "结构编辑 " + Date.now(),
+  );
+  await openWithSession(page, session, "/collections/" + collection.id);
+  await page.getByRole("button", { name: "新建画板", exact: true }).click();
+  await page.getByRole("button", { name: "三层应用", exact: true }).click();
+  await expect(page.locator(".board-save-state")).toHaveText("已保存");
+  const documentID = page.url().split("/documents/")[1]?.split("?")[0];
+  const document = await responseData(
+    await request.get(workspacePath(session, "/documents/" + documentID), {
+      headers: sessionHeaders(session),
+    }),
+  );
+  const snapshot = async () =>
+    responseData(
+      await request.get(
+        workspacePath(session, "/boards/" + document.board_id + "/snapshot"),
+        { headers: sessionHeaders(session) },
+      ),
+    );
+  await expect
+    .poll(async () =>
+      (await snapshot()).elements.some(
+        (element: any) => element.shape_type === "architecture.boundary",
+      ),
+    )
+    .toBe(true);
+  const before = await snapshot();
+  const root = before.elements.find(
+    (element: any) => element.shape_type === "architecture.boundary",
+  );
+  const children = before.elements.filter(
+    (element: any) =>
+      element.structure.parent_id === root.id &&
+      element.shape_type !== "connector",
+  );
+  expect(children.length).toBeGreaterThan(0);
+
+  await page.getByRole("button", { name: "页面与图层", exact: true }).click();
+  await page
+    .locator(".board-object-list")
+    .getByRole("listitem")
+    .filter({ hasText: root.text })
+    .click();
+  await page.getByRole("button", { name: "自动布局", exact: true }).click();
+  await expect
+    .poll(async () => {
+      const moved = (await snapshot()).elements.find(
+        (element: any) => element.id === root.id,
+      );
+      return (
+        moved.geometry.x !== root.geometry.x ||
+        moved.geometry.y !== root.geometry.y
+      );
+    })
+    .toBe(true);
+  const after = await snapshot(),
+    movedRoot = after.elements.find((element: any) => element.id === root.id);
+  for (const child of children) {
+    const moved = after.elements.find(
+      (element: any) => element.id === child.id,
+    );
+    expect(moved.geometry.x - movedRoot.geometry.x).toBeCloseTo(
+      child.geometry.x - root.geometry.x,
+    );
+    expect(moved.geometry.y - movedRoot.geometry.y).toBeCloseTo(
+      child.geometry.y - root.geometry.y,
+    );
+  }
+  await expect(page.locator(".board-save-state")).toHaveText("已保存");
+  await page.getByRole("tab", { name: "模板", exact: true }).click();
+  await page.getByRole("combobox", { name: "图类型" }).selectOption("er");
+  await page.getByRole("button", { name: /用户权限/ }).click();
+  await expect(page.locator(".board-save-state")).toHaveText("已保存");
+  await expect
+    .poll(async () =>
+      (await snapshot()).elements.some(
+        (element: any) => element.shape_type === "er.entity",
+      ),
+    )
+    .toBe(true);
+  const er = await snapshot();
+  const edge = er.elements.find(
+    (element: any) =>
+      element.shape_type === "connector" &&
+      element.structure.start?.port.includes(":"),
+  );
+  const endpoint = edge.structure.start;
+  const entity = er.elements.find(
+    (element: any) => element.id === endpoint.element_id,
+  );
+  const memberID = endpoint.port.split(":")[1];
+  const member = entity.structure.members.find(
+    (value: any) => value.id === memberID,
+  );
+  await page.getByRole("button", { name: "页面与图层", exact: true }).click();
+  await page
+    .locator(".board-object-list")
+    .getByRole("listitem")
+    .filter({ has: page.getByText(entity.text, { exact: true }) })
+    .click();
+  await page
+    .getByRole("button", { name: "删除字段 " + member.name, exact: true })
+    .click();
+  await expect
+    .poll(async () =>
+      (await snapshot()).elements
+        .find((element: any) => element.id === entity.id)
+        .structure.members.some((value: any) => value.id === memberID),
+    )
+    .toBe(false);
+  const removed = await snapshot();
+  expect(removed.elements.length).toBe(er.elements.length);
+  expect(
+    removed.elements.find((element: any) => element.id === edge.id).structure
+      .start.port,
+  ).toBe(endpoint.port.split(":")[0]);
+  await expect(page.locator(".board-save-state")).toHaveText("已保存");
+  await page.getByRole("button", { name: "撤销画板操作", exact: true }).click();
+  await expect
+    .poll(
+      async () =>
+        (await snapshot()).elements.find(
+          (element: any) => element.id === edge.id,
+        ).structure.start.port,
+    )
+    .toBe(endpoint.port);
+  await expect(page.locator(".board-save-state")).toHaveText("已保存");
+});

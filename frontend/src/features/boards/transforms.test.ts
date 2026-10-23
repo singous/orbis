@@ -1,8 +1,84 @@
 import { describe, expect, it } from "vitest";
 import { makeElement } from "./model";
-import { transformBranch, reorderLane } from "./transforms";
+import {
+  transformBranch,
+  reorderLane,
+  removeMember,
+  selectionForLayout,
+} from "./transforms";
 import { reparentElement } from "./mindmap";
 describe("diagram structural editing", () => {
+  it("retains nested container contents and internal edges in a layout selection", () => {
+    const page = crypto.randomUUID(),
+      root = makeElement("basic.group", page, 10, 20),
+      child = makeElement("basic.group", page, 30, 40),
+      grandchild = makeElement("flow.process", page, 50, 60),
+      outside = makeElement("flow.process", page, 500, 500),
+      edge = makeElement("connector", page, 0, 0);
+    child.structure.parent_id = root.id;
+    grandchild.structure.parent_id = child.id;
+    edge.structure.start = { element_id: child.id, port: "right", x: 0, y: 0 };
+    edge.structure.end = {
+      element_id: grandchild.id,
+      port: "left",
+      x: 0,
+      y: 0,
+    };
+    const scene = new Map(
+      [root, child, grandchild, outside, edge].map((element) => [
+        element.id,
+        element,
+      ]),
+    );
+    expect(
+      selectionForLayout(scene, new Set([root.id, child.id]))
+        .map((element) => element.id)
+        .sort(),
+    ).toEqual([root.id, child.id, grandchild.id, edge.id].sort());
+  });
+  it("removes a member while retaining its incident connectors on the entity boundary", () => {
+    const page = crypto.randomUUID(),
+      entity = makeElement("er.entity", page, 0, 0),
+      edge = makeElement("connector", page, 0, 0),
+      other = makeElement("connector", page, 0, 0);
+    const member = {
+      id: crypto.randomUUID(),
+      name: "id",
+      type: "uuid",
+      key: "primary" as const,
+    };
+    entity.structure.members = [member];
+    edge.structure.start = {
+      element_id: entity.id,
+      port: "right:" + member.id,
+      x: 0,
+      y: 0,
+    };
+    edge.structure.end = {
+      element_id: entity.id,
+      port: "left:" + member.id,
+      x: 0,
+      y: 0,
+    };
+    other.structure.start = { element_id: entity.id, port: "top", x: 0, y: 0 };
+    const patches = removeMember(
+      new Map([entity, edge, other].map((element) => [element.id, element])),
+      entity,
+      member.id,
+    );
+    expect(patches).toHaveLength(2);
+    expect(patches[0].structure?.members).toEqual([]);
+    expect(patches[1].structure?.start).toMatchObject({
+      element_id: entity.id,
+      port: "right",
+    });
+    expect(patches[1].structure?.end).toMatchObject({
+      element_id: entity.id,
+      port: "left",
+    });
+    expect(patches[1].expected).toEqual(edge.versions);
+    expect(entity.structure.members).toEqual([member]);
+  });
   it("resizes a container and descendants in one versioned command", () => {
     const page = crypto.randomUUID(),
       root = makeElement("basic.group", page, 0, 0);
