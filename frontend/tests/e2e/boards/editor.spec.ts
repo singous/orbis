@@ -26,6 +26,22 @@ test("native board templates persist and editing supports undo, deletion and rec
   await expect(
     page.getByRole("application", { name: "画板编辑区域" }),
   ).toBeVisible();
+  await expect(page.locator(".board-save-state")).toHaveText("已保存");
+  const keyboardWrites: string[] = [];
+  page.on("request", (request) => {
+    if (request.method() === "POST" && request.url().endsWith("/commands"))
+      keyboardWrites.push(request.url());
+  });
+  const canvas = page.getByRole("application", { name: "画板编辑区域" });
+  await canvas.focus();
+  for (const key of ["Delete", "Backspace", "ArrowUp", "ArrowRight"])
+    await canvas.press(key);
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
+  );
+  expect(keyboardWrites).toEqual([]);
+  await expect(page.locator(".board-save-state")).toHaveText("已保存");
   await page.getByRole("button", { name: "审批流程", exact: true }).click();
   await expect(page.locator(".board-save-state")).toHaveText("已保存");
   await expect(page.locator(".board-pages")).toContainText("12 个对象");
@@ -81,16 +97,43 @@ test("native board templates persist and editing supports undo, deletion and rec
       (await snapshot()).elements.some((e: any) => e.text === "核验资料与权限"),
     )
     .toBe(true);
+  await page
+    .getByRole("textbox", { name: "文字", exact: true })
+    .fill("第二次文字修改");
+  await page.getByRole("textbox", { name: "文字", exact: true }).press("Enter");
+  await expect(page.locator(".board-save-state")).toHaveText("已保存");
+  for (const text of ["核验资料与权限", "资料核验"]) {
+    await page
+      .getByRole("button", { name: "撤销画板操作", exact: true })
+      .click();
+    await expect
+      .poll(async () =>
+        (await snapshot()).elements.some((e: any) => e.text === text),
+      )
+      .toBe(true);
+    await expect(page.locator(".board-save-state")).toHaveText("已保存");
+  }
+  for (const text of ["核验资料与权限", "第二次文字修改"]) {
+    await page
+      .getByRole("button", { name: "重做画板操作", exact: true })
+      .click();
+    await expect
+      .poll(async () =>
+        (await snapshot()).elements.some((e: any) => e.text === text),
+      )
+      .toBe(true);
+    await expect(page.locator(".board-save-state")).toHaveText("已保存");
+  }
   await page.getByRole("button", { name: "撤销画板操作", exact: true }).click();
   await expect
     .poll(async () =>
-      (await snapshot()).elements.some((e: any) => e.text === "资料核验"),
+      (await snapshot()).elements.some((e: any) => e.text === "核验资料与权限"),
     )
     .toBe(true);
   await page.getByRole("button", { name: "重做画板操作", exact: true }).click();
   await expect
     .poll(async () =>
-      (await snapshot()).elements.some((e: any) => e.text === "核验资料与权限"),
+      (await snapshot()).elements.some((e: any) => e.text === "第二次文字修改"),
     )
     .toBe(true);
   await page.getByRole("button", { name: "删除所选对象", exact: true }).click();
@@ -118,6 +161,36 @@ test("native board templates persist and editing supports undo, deletion and rec
   ).toBeVisible();
   await page.getByRole("tab", { name: "页面 2", exact: true }).click();
   await expect(page.locator(".board-pages")).toContainText("0 个对象");
+  await page.locator(".board-pages").getByRole("tab").first().click();
+  await page.getByRole("button", { name: "页面与图层", exact: true }).click();
+  await page
+    .locator(".board-object-list")
+    .getByRole("listitem")
+    .filter({ hasText: "第二次文字修改" })
+    .click();
+  await page
+    .getByRole("textbox", { name: "文字", exact: true })
+    .fill("跨页修改");
+  await page.getByRole("textbox", { name: "文字", exact: true }).press("Enter");
+  await expect(page.locator(".board-save-state")).toHaveText("已保存");
+  await page.getByRole("tab", { name: "页面 2", exact: true }).click();
+  await page.getByRole("button", { name: "撤销画板操作", exact: true }).click();
+  await expect
+    .poll(async () =>
+      (await snapshot()).elements.some((e: any) => e.text === "第二次文字修改"),
+    )
+    .toBe(true);
+  await expect(
+    page.locator(".board-pages").getByRole("tab").first(),
+  ).toHaveAttribute("aria-selected", "true");
+  await page.getByRole("button", { name: "重做画板操作", exact: true }).click();
+  await expect
+    .poll(async () =>
+      (await snapshot()).elements.some((e: any) => e.text === "跨页修改"),
+    )
+    .toBe(true);
+  await expect.poll(async () => (await snapshot()).elements.length).toBe(13);
+  await page.getByRole("tab", { name: "页面 2", exact: true }).click();
   await page.getByRole("tab", { name: "模板", exact: true }).click();
   await page.getByRole("combobox", { name: "图类型" }).selectOption("er");
   await page.getByRole("button", { name: /用户权限/ }).click();
