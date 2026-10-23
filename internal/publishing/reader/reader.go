@@ -268,7 +268,7 @@ func blocks(w *writer, items []publicview.Block, anchors map[string]string) {
 			w.emit("</details>")
 		case "divider":
 			w.emit("<hr" + attrs + ">")
-		case "image", "drawing", "file", "audio", "video":
+		case "image", "file", "audio", "video":
 			media(w, b, attrs)
 		case "board":
 			if b.Board != nil && !b.Board.Restricted {
@@ -337,7 +337,7 @@ func media(w *writer, b publicview.Block, attrs string) {
 	}
 	w.emit(`<figure class="media"` + attrs + `>`)
 	switch b.Type {
-	case "image", "drawing":
+	case "image":
 		w.emit(`<img src="` + escape(target) + `" alt="` + escape(label) + `" loading="lazy" decoding="async" referrerpolicy="no-referrer">`)
 	case "audio", "video":
 		w.emit(`<` + b.Type + ` controls preload="metadata" src="` + escape(target) + `"><a href="` + escape(target) + `">` + escape(label) + `</a></` + b.Type + `>`)

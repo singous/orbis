@@ -17,3 +17,5 @@ docs
 **/test-results
 **/playwright-report
 bin
+
+frontend/public/drawing-assets

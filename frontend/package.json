@@ -13,14 +13,13 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "sync:document-blocks": "node scripts/sync-document-blocks.mjs",
     "check:document-blocks": "node scripts/sync-document-blocks.mjs --check",
-    "prebuild": "node scripts/sync-document-blocks.mjs --check && node scripts/sync-drawing-assets.mjs && node scripts/sync-board-assets.mjs && node scripts/sync-board-templates.mjs",
-    "predev": "node scripts/sync-drawing-assets.mjs && node scripts/sync-board-assets.mjs && node scripts/sync-board-templates.mjs",
+    "prebuild": "node scripts/sync-document-blocks.mjs --check && node scripts/clear-retired-assets.mjs && node scripts/sync-board-assets.mjs && node scripts/sync-board-templates.mjs",
+    "predev": "node scripts/clear-retired-assets.mjs && node scripts/sync-board-assets.mjs && node scripts/sync-board-templates.mjs",
     "sync:board-templates": "node scripts/sync-board-templates.mjs --write"
   },
   "dependencies": {
     "@dnd-kit/dom": "^0.5.0",
     "@dnd-kit/react": "^0.5.0",
-    "@excalidraw/excalidraw": "0.18.1",
     "@fontsource-variable/inter": "^5.3.0",
     "@heroui/react": "^3.2.6",
     "@heroui/styles": "^3.2.6",

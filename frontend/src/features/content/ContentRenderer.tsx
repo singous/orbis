@@ -1,6 +1,5 @@
 import { Fragment, createElement, lazy, Suspense, type ReactNode } from "react";
 import type { TableSnapshot } from "../data-tables/model";
-import { DrawingPreview } from "../drawing/DrawingPreview";
 import { CodeBlock } from "./CodeBlock";
 import { DocumentBlock } from "./DocumentBlock";
 import { ContentMedia, ManagedContentLink } from "./ContentMedia";
@@ -175,7 +174,7 @@ function renderBlock(value: unknown, path: number[], legacy: boolean, pageTitle?
     case "tableHeader": return <th scope="col" colSpan={Number(props.colspan) || undefined} rowSpan={Number(props.rowspan) || undefined}>{children}</th>;
     case "tableCell": return <td colSpan={Number(props.colspan) || undefined} rowSpan={Number(props.rowspan) || undefined}>{children}</td>;
     case "toggleListItem": return <details><summary>{content}</summary>{children}</details>;
-    case "drawing": return <DrawingPreview props={props} />;
+    case "drawing": return null;
     case "board": return <Suspense fallback={<p>正在读取画板…</p>}>{item.board_snapshot?<ReadBoardView view={item.board_snapshot as import("../boards/public-contract").BoardViewData}/>:<ReadBoardEmbed props={props}/>}</Suspense>;
     case "image":
     case "video":

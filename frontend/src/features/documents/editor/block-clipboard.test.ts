@@ -199,3 +199,12 @@ it.each(['/documents/../private','/documents/019abcde-0000-0000-0000-00000000000
 it('does not accept document routes as media URLs',()=>{
  const e=open([{...p('a'),type:'image',props:{url:'/documents/019abcde-0000-0000-0000-000000000000'}}]);expect(()=>serializeBlockClipboard(e,['a'])).toThrow('无法完整保留');
 });
+
+it('omits retired drawing payloads while copying or pasting surrounding blocks', () => {
+ const drawing: OrbisBlock = {...p('retired'),type:'drawing',props:{scene:'discarded scene',caption:'discarded caption'},content:[]};
+ const e=open([p('before'),drawing,p('after')]);
+ const value=serializeBlockClipboard(e,['before','retired','after']);
+ expect(value.payload.blocks.map(block=>block.id)).toEqual(['before','after']);
+ expect(value.structured).not.toContain('discarded');
+ expect(parseBlockClipboard(JSON.stringify({version:1,blocks:[p('before'),drawing,p('after')]}))?.blocks.map(block=>block.id)).toEqual(['before','after']);
+});

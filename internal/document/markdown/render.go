@@ -154,7 +154,7 @@ func (r *renderer) blocks(blocks []document.Block, prefix string) error {
 			body = fence + language + "\n" + value + "\n" + fence
 		case "divider":
 			body = "---"
-		case "image", "audio", "video", "file", "drawing":
+		case "image", "audio", "video", "file":
 			body = r.media(b)
 		case "card", "step", "tab":
 			title, _ := b.Props["title"].(string)
@@ -218,7 +218,7 @@ func (r *renderer) media(b document.Block) string {
 		return escapeText(label)
 	}
 	prefix := ""
-	if b.Type == "image" || b.Type == "drawing" {
+	if b.Type == "image" {
 		prefix = "!"
 	}
 	return prefix + "[" + escapeText(label) + "](" + destination(target) + ")"

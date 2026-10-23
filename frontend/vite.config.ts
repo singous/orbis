@@ -15,7 +15,6 @@ export default defineConfig({
   envDir: process.env.ORBIS_E2E_DIR || process.env.VITEST ? false : undefined,
   optimizeDeps: {
     entries: ["index.html"],
-    include: ["@excalidraw/excalidraw"],
   },
   build: {
     manifest: true,
