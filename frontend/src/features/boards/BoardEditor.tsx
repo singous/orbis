@@ -1,3 +1,4 @@
+import { newUUID } from "../../shared/ids";
 import { selectionForCopy, selectionForLayout } from "./transforms";
 import {
   lazy,
@@ -10,25 +11,18 @@ import {
 } from "react";
 import { useStore } from "zustand";
 import {
-  ArrowDownUp,
   Check,
   Copy,
   Download,
-  Hand,
   History,
-  LayoutDashboard,
   Maximize,
   Minus,
-  MousePointer2,
   Plus,
   Redo2,
   Settings2,
   Shapes,
   Trash2,
-  Type,
   Undo2,
-  Workflow,
-  Pencil,
   X,
   MessageSquare,
 } from "lucide-react";
@@ -36,7 +30,6 @@ import {
   RiCursorLine,
   RiHand,
   RiAddCircleFill,
-  RiStickyNoteAddLine,
   RiNodeTree,
   RiText,
   RiPencilLine,
@@ -58,7 +51,7 @@ import { BoardLibrary } from "./BoardLibrary";
 import { BoardInspector } from "./BoardInspector";
 import { MIN_ZOOM, MAX_ZOOM, BoardRenderer, type Camera } from "./renderer";
 import { elementBounds, unionBounds } from "./geometry";
-import { elementPatch, makeElement, type Element, type Command } from "./model";
+import { makeElement, type Element, type Command } from "./model";
 import { cloneElements, TEMPLATES, type Template } from "./templates";
 import { autoLayout, mindmapLayout } from "./layout";
 import { download, exportPNG, exportSVG } from "./export";
@@ -71,7 +64,7 @@ import {
   MAX_PORTABLE_BYTES,
 } from "./portable";
 import { BoardImages } from "./images";
-import { uploadManagedFile, parseFileReference } from "../files/managed-files";
+import { insertBoardImage } from "./image-import";
 import "./boards.css";
 
 const DocumentComments = lazy(() =>
@@ -117,7 +110,8 @@ export function BoardEditor({ id }: { id: string }) {
   const [history, setHistory] = useState<Array<{
       revision: number;
       created_at_ms: number;
-    }> | null>(null),
+    }>>([]),
+    [historyOpen, setHistoryOpen] = useState(false),
     [discard, setDiscard] = useState(false),
     [layoutBusy, setLayoutBusy] = useState(false);
   const [libraryTab, setLibraryTab] = useState<
@@ -130,6 +124,15 @@ export function BoardEditor({ id }: { id: string }) {
   const imageTarget = useRef<Element | null>(null);
   const imageInput = useRef<HTMLInputElement>(null),
     images = useRef<BoardImages | null>(null);
+  const imageImportOwner = useRef<{ session: BoardSession; abort: AbortController } | null>(null);
+  useEffect(() => {
+    const owner = { session, abort: new AbortController() };
+    imageImportOwner.current = owner;
+    return () => {
+      owner.abort.abort();
+      if (imageImportOwner.current === owner) imageImportOwner.current = null;
+    };
+  }, [session, state.pageID, state.status === "loading"]);
   useEffect(() => {
     const cache = new BoardImages(() => authRef.current);
     images.current = cache;
@@ -293,7 +296,7 @@ export function BoardEditor({ id }: { id: string }) {
   const openHistory = () =>
     void boardAPI(auth)
       .history(id)
-      .then((result) => setHistory(result.items))
+      .then((result) => { setHistory(result.items); setHistoryOpen(true); })
       .catch(fail);
   const actions = (
     <div className="board-header-actions">
@@ -310,12 +313,7 @@ export function BoardEditor({ id }: { id: string }) {
       </ActionButton>
       <ActionButton
         aria-label="画板历史"
-        onClick={() =>
-          void boardAPI(auth)
-            .history(id)
-            .then((result) => setHistory(result.items))
-            .catch(fail)
-        }
+        onClick={openHistory}
       >
         <History size={17} />
       </ActionButton>
@@ -729,7 +727,7 @@ export function BoardEditor({ id }: { id: string }) {
                 {
                   type: "pages.create",
                   page: {
-                    id: crypto.randomUUID(),
+                    id: newUUID(),
                     name: "页面 " + (board.pages.length + 1),
                     background: "#f2f4f7",
                     position: board.pages.length,
@@ -762,45 +760,18 @@ export function BoardEditor({ id }: { id: string }) {
           imageTarget.current = null;
           const targetPage = state.pageID,
             point = center();
-          void (async () => {
-            if (file.size > 20 * 1024 * 1024)
-              throw new Error("图片不能超过 20 MiB。");
-            const bitmap = await createImageBitmap(file).catch(() => {
-              throw new Error(
-                "图片无法解码，请选择有效的 PNG、JPEG、WebP 或 GIF 文件。",
-              );
-            });
-            let width = bitmap.width,
-              height = bitmap.height;
-            bitmap.close();
-            if (width * height > 40_000_000)
-              throw new Error("图片分辨率过高，请缩小至 4000 万像素以内。");
-            const reference = await uploadManagedFile(file, auth),
-              assetID = parseFileReference(reference);
-            if (!assetID) throw new Error("图片上传回执无效。");
-            const scale = Math.min(1, 640 / Math.max(width, height));
-            const e = makeElement("basic.image", targetPage, point.x, point.y);
-            e.text = "";
-            e.structure.asset_id = assetID;
-            e.geometry.width = Math.max(24, width * scale);
-            e.geometry.height = Math.max(24, height * scale);
-            if (replacing) {
-              await submit([
-                {
-                  type: "elements.update",
-                  patches: [
-                    elementPatch(replacing, {
-                      structure: { ...replacing.structure, asset_id: assetID },
-                    }),
-                  ],
-                },
-              ]);
-              setSelection(new Set([replacing.id]));
-            } else {
-              await submit([{ type: "elements.create", elements: [e] }]);
-              setSelection(new Set([e.id]));
-            }
-          })().catch(fail);
+          const owner = imageImportOwner.current;
+          if (!owner) return;
+          void insertBoardImage(file, {
+            auth, pageId: targetPage, point, replacing, signal: owner.abort.signal,
+            isCurrent: () => imageImportOwner.current === owner && session.getSnapshot().pageID === targetPage && session.getSnapshot().status !== "loading",
+            submit,
+          }).then(id => {
+            if (imageImportOwner.current === owner && !owner.abort.signal.aborted)
+              setSelection(new Set([id]));
+          }).catch(error => {
+            if (imageImportOwner.current?.session === session) fail(error);
+          });
           event.target.value = "";
         }}
       />
@@ -832,77 +803,71 @@ export function BoardEditor({ id }: { id: string }) {
           event.target.value = "";
         }}
       />
-      {discard ? (
-        <Dialog
-          open
-          onOpenChange={(open) => {
-            if (!open) setDiscard(false);
-          }}
-        >
-          <DialogContent title="放弃未同步修改">
-            <p>
-              将清除这张画板在本机尚未确认的操作，并重新读取服务器版本。可以先导出本机修改。
-            </p>
-            <Button onClick={() => setDiscard(false)}>继续保留</Button>
-            <Button
-              variant="danger"
-              onClick={() =>
-                void session
-                  .discardPending()
-                  .then(() => setDiscard(false))
-                  .catch(fail)
-              }
-            >
-              放弃并重新读取
-            </Button>
-          </DialogContent>
-        </Dialog>
-      ) : null}
-      {history ? (
-        <Dialog
-          open
-          onOpenChange={(open) => {
-            if (!open) setHistory(null);
-          }}
-        >
-          <DialogContent title="画板历史">
-            <div className="board-history-list">
-              {history.map((item) => (
-                <div key={item.revision}>
-                  <span>版本 {item.revision}</span>
-                  <time>
-                    {new Date(item.created_at_ms).toLocaleString("zh-CN", {
-                      timeZone: "Asia/Shanghai",
-                    })}
-                  </time>
-                  <ActionButton
-                    onClick={() =>
-                      void boardAPI(auth)
-                        .snapshot(id, item.revision)
-                        .then(async (snapshot) =>
-                          download(
-                            await portableFile(
-                              snapshot.board,
-                              snapshot.elements,
-                              auth,
-                            ),
-                            board.title +
-                              "-v" +
-                              item.revision +
-                              ".orbis-board.json",
+      <Dialog
+        open={discard}
+        onOpenChange={(open) => {
+          if (!open) setDiscard(false);
+        }}
+      >
+        <DialogContent title="放弃未同步修改">
+          <p>
+            将清除这张画板在本机尚未确认的操作，并重新读取服务器版本。可以先导出本机修改。
+          </p>
+          <Button onClick={() => setDiscard(false)}>继续保留</Button>
+          <Button
+            variant="danger"
+            onClick={() =>
+              void session
+                .discardPending()
+                .then(() => setDiscard(false))
+                .catch(fail)
+            }
+          >
+            放弃并重新读取
+          </Button>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+      >
+        <DialogContent title="画板历史">
+          <div className="board-history-list">
+            {history.map((item) => (
+              <div key={item.revision}>
+                <span>版本 {item.revision}</span>
+                <time>
+                  {new Date(item.created_at_ms).toLocaleString("zh-CN", {
+                    timeZone: "Asia/Shanghai",
+                  })}
+                </time>
+                <ActionButton
+                  onClick={() =>
+                    void boardAPI(auth)
+                      .snapshot(id, item.revision)
+                      .then(async (snapshot) =>
+                        download(
+                          await portableFile(
+                            snapshot.board,
+                            snapshot.elements,
+                            auth,
                           ),
-                        )
-                        .catch(fail)
-                    }
-                  >
-                    导出该版本
-                  </ActionButton>
-                </div>
-              ))}
-            </div>
-          </DialogContent>
-        </Dialog>
-      ) : null}
+                          board.title +
+                            "-v" +
+                            item.revision +
+                            ".orbis-board.json",
+                        ),
+                      )
+                      .catch(fail)
+                  }
+                >
+                  导出该版本
+                </ActionButton>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </BoardShell>
   );
 }

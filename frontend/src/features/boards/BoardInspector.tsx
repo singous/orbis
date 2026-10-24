@@ -1,3 +1,4 @@
+import { newUUID } from "../../shared/ids";
 import { reparentElement } from "./mindmap";
 import { removeMember, reorderLane, transformBranch } from "./transforms";
 import { useEffect, useRef, useState } from "react";
@@ -470,7 +471,7 @@ export function BoardInspector({
                       members: [
                         ...e.structure.members,
                         {
-                          id: crypto.randomUUID(),
+                          id: newUUID(),
                           name: "新字段",
                           type: "text",
                           key: "",

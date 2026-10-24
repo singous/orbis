@@ -35,6 +35,7 @@ export function BoardEmbed({
   const root = useRef<HTMLDivElement>(null),
     [visible, setVisible] = useState(false),
     [picker, setPicker] = useState(false),
+    [pickerSession, setPickerSession] = useState(0),
     [expanded, setExpanded] = useState(false),
     [url, setURL] = useState("");
   const id = typeof props.board_id === "string" ? props.board_id : "",
@@ -120,7 +121,7 @@ export function BoardEmbed({
           </Link>
         ) : null}
         {!readOnly && onBind ? (
-          <ActionButton onClick={() => setPicker(true)}>
+          <ActionButton onClick={() => { setPickerSession(value => value + 1); setPicker(true); }}>
             {id ? "更换引用" : "选择画板"}
           </ActionButton>
         ) : null}
@@ -145,8 +146,8 @@ export function BoardEmbed({
           )}
         </div>
       )}
-      {expanded && url ? (
-        <Dialog open onOpenChange={setExpanded}>
+      {url ? (
+        <Dialog open={expanded} onOpenChange={setExpanded}>
           <DialogContent
             title={meta.data?.title ?? "画板"}
             className="board-preview-dialog"
@@ -157,8 +158,10 @@ export function BoardEmbed({
           </DialogContent>
         </Dialog>
       ) : null}
-      {picker && auth && onBind ? (
+      {auth && onBind ? (
         <BoardPicker
+          key={pickerSession}
+          open={picker}
           onClose={() => setPicker(false)}
           onSelect={(binding) => {
             onBind(binding);
@@ -170,9 +173,11 @@ export function BoardEmbed({
   );
 }
 function BoardPicker({
+  open,
   onClose,
   onSelect,
 }: {
+  open: boolean;
   onClose: () => void;
   onSelect: (binding: BoardBinding) => void;
 }) {
@@ -181,14 +186,43 @@ function BoardPicker({
     [selected, setSelected] = useState<Board | null>(null),
     [pageID, setPageID] = useState(""),
     [mode, setMode] = useState<"live" | "snapshot">("live"),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [selecting, setSelecting] = useState<string | null>(null);
+  const selectionGeneration = useRef(0);
+  const selectionAbort = useRef<AbortController | null>(null);
+  useEffect(() => () => {
+    selectionGeneration.current++;
+    selectionAbort.current?.abort();
+  }, [open]);
   const query = useQuery({
     queryKey: ["board-picker", auth.workspaceId, page],
+    enabled: open,
     queryFn: ({ signal }) => boardAPI(auth).list(page, signal),
   });
+  async function selectBoard(id: string) {
+    const generation = ++selectionGeneration.current;
+    selectionAbort.current?.abort();
+    const abort = new AbortController();
+    selectionAbort.current = abort;
+    setSelecting(id);
+    setError("");
+    try {
+      const board = await boardAPI(auth).get(id, 0, abort.signal);
+      if (abort.signal.aborted || generation !== selectionGeneration.current) return;
+      if (!board.pages[0]) throw new Error("画板没有可引用的页面，请选择其他画板。");
+      setSelected(board);
+      setPageID(board.pages[0].id);
+    } catch (error) {
+      if (!abort.signal.aborted && generation === selectionGeneration.current)
+        setError(error instanceof Error ? error.message : "画板读取失败，请重试。");
+    } finally {
+      if (!abort.signal.aborted && generation === selectionGeneration.current)
+        setSelecting(null);
+    }
+  }
   return (
     <Dialog
-      open
+      open={open}
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
@@ -252,15 +286,8 @@ function BoardPicker({
               {query.data?.items.map((item) => (
                 <button
                   key={item.id}
-                  onClick={() =>
-                    void boardAPI(auth)
-                      .get(item.id)
-                      .then((board) => {
-                        setSelected(board);
-                        setPageID(board.pages[0].id);
-                      })
-                      .catch((e) => setError(e.message))
-                  }
+                  aria-busy={selecting === item.id}
+                  onClick={() => void selectBoard(item.id)}
                 >
                   <Shapes size={18} />
                   <span>{item.title}</span>

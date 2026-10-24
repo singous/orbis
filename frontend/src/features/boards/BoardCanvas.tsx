@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
-import { BoardRenderer, type Camera, type CanvasPointer } from "./renderer";
+import { BoardRenderer, type Camera } from "./renderer";
 import { elementBounds, portPosition, unionBounds } from "./geometry";
 import {
   elementPatch,

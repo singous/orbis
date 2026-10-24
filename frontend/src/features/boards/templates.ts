@@ -1,3 +1,4 @@
+import { newUUID } from "../../shared/ids";
 import { portPosition } from "./geometry";
 import { makeElement, type Element, type Member } from "./model";
 export type Template = {
@@ -54,7 +55,7 @@ function context(page: string): Context {
 }
 function members(names: Array<[string, string, string?]>): Member[] {
   return names.map(([name, type, key]) => ({
-    id: crypto.randomUUID(),
+    id: newUUID(),
     name,
     type,
     key: (key ?? "") as Member["key"],
@@ -569,7 +570,7 @@ export const TEMPLATES: Template[] = [
     ["orders", "订单商品", ["用户", "订单", "商品", "订单明细"]],
     ["content", "内容管理", ["作者", "文档", "标签", "文档标签"]],
     ["tasks", "项目任务", ["项目", "任务", "成员", "任务分配"]],
-  ].map(([id, name, labels]) => ({
+  ].map(([id, name]) => ({
     id: "er." + id,
     category: "er",
     name: name as string,
@@ -598,9 +599,9 @@ export function cloneElements(
 ): Element[] {
   const ids = new Map<string, string>();
   for (const e of elements) {
-    ids.set(e.id, crypto.randomUUID());
+    ids.set(e.id, newUUID());
     for (const member of e.structure.members)
-      ids.set(member.id, crypto.randomUUID());
+      ids.set(member.id, newUUID());
   }
   return elements.map((original) => {
     const e = structuredClone(original);

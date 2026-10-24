@@ -1119,18 +1119,60 @@
   }
 }
 @media (pointer: coarse) {
+  .board-shell {
+    /* Existing bars add 2px padding and a 1px border on each side. */
+    --board-touch-bar-height: calc(var(--orbis-control-touch-height) + 6px);
+  }
+  .board-shell button:not(.board-resize-handle) {
+    min-width: var(--orbis-control-touch-height);
+    min-height: var(--orbis-control-touch-height);
+  }
   .board-toolbar {
-    width: 48px;
+    width: calc(var(--orbis-control-touch-height) + var(--orbis-space-2));
   }
   .board-toolbar .orbis-action-button {
-    width: 38px;
-    height: 38px;
+    width: var(--orbis-control-touch-height);
+    height: var(--orbis-control-touch-height);
+  }
+  .board-zoom,
+  .board-history-controls,
+  .board-pages {
+    height: var(--board-touch-bar-height);
+  }
+  .board-minimap {
+    bottom: calc(var(--board-touch-bar-height) + var(--orbis-space-4) + var(--orbis-space-1));
   }
   .board-library {
     left: 68px;
   }
   .board-icon-row button {
-    height: 44px;
+    height: var(--orbis-control-touch-height);
+  }
+}
+
+/* Three separate rows keep the larger targets from overlapping on narrow canvases. */
+@media (pointer: coarse) and (max-width: 760px) {
+  .board-shell,
+  .board-shell.is-sidebar-collapsed {
+    grid-template-columns: calc(var(--orbis-control-touch-height) + var(--orbis-space-3)) minmax(0, 1fr);
+  }
+  .board-sidebar-header { padding-inline: var(--orbis-space-1); }
+  .board-sidebar-bottom { padding-inline: var(--orbis-space-1); }
+  .board-sidebar-nav { padding-inline: var(--orbis-space-1); }
+  .board-history-controls {
+    bottom: calc(var(--board-touch-bar-height) + 2 * var(--orbis-space-3));
+  }
+  .board-pages {
+    left: var(--orbis-space-3);
+    bottom: calc(2 * var(--board-touch-bar-height) + 3 * var(--orbis-space-3));
+    max-width: calc(100% - 2 * var(--orbis-space-3));
+  }
+  .board-toolbar {
+    --board-touch-toolbar-top: calc(var(--orbis-control-touch-height) + var(--orbis-space-4));
+    top: var(--board-touch-toolbar-top);
+    max-height: calc(100% - var(--board-touch-toolbar-top) - 3 * var(--board-touch-bar-height) - 4 * var(--orbis-space-3));
+    overflow-y: auto;
+    transform: none;
   }
 }
 
