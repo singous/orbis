@@ -465,8 +465,14 @@ describe("DocumentContextPanel", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText("2 篇文档")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("status", { name: "文档统计" })).toHaveTextContent("2 篇文档"));
     const main = screen.getByRole("region", { name: "主工作区" });
+    expect(within(main).getByRole("heading", { name: "欢迎来到笔记本" })).toBeInTheDocument();
+    await actor.click(within(main).getByRole("button", { name: "收藏笔记本" }));
+    expect(within(main).getByRole("button", { name: "取消收藏笔记本" })).toHaveAttribute("aria-pressed", "true");
+    expect(JSON.parse(localStorage.getItem("orbis.pinnedNotebooks.workspace-1")!)).toContain(rootNote.notebook_id);
+    await actor.click(within(main).getByRole("button", { name: "取消收藏笔记本" }));
+    expect(within(main).getByRole("button", { name: "收藏笔记本" })).toHaveAttribute("aria-pressed", "false");
     expect(within(main).getByRole("button", { name: "新建文档" })).toBeEnabled();
     expect(within(main).queryByRole("button", { name: "导出全部" })).not.toBeInTheDocument();
     await actor.click(within(main).getByRole("button", { name: "笔记本操作" }));
@@ -479,6 +485,7 @@ describe("DocumentContextPanel", () => {
     const tree = screen.getByRole("navigation", { name: "文档列表" });
     expect(tree).toHaveTextContent("产品计划");
     expect(tree).toHaveTextContent("发布范围");
+    expect(within(tree).getByRole("link", { name: "产品计划" }).querySelector("time")).toHaveAttribute("datetime", new Date(rootNote.updated_at_ms).toISOString());
   });
   it("retries the original rename UUID and observed version after an uncertain response",async()=>{
     mocks.updateNote.mockRejectedValueOnce(new ApiError(503,"重命名结果尚未确认","DOCUMENT_WRITE_RESULT_UNKNOWN"));

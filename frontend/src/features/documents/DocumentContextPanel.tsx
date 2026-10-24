@@ -15,7 +15,7 @@ import { useStore } from "zustand";
 
 import type { Note,NoteTreeItem } from "../../shared/api/schemas";
 import { authStore,getAuthSessionKey } from "../../shared/auth/auth-store";
-import { formatDate } from "../../shared/format/date";
+import { formatNotebookUpdateTime } from "./notebook-update-time";
 import { Button } from "../../shared/ui/Button";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { dismissToast, showToast } from "../../shared/ui/Toast";
@@ -187,7 +187,7 @@ function DocumentItem({ note, depth, parentId, activeNoteId, canEdit, reordering
       <DocumentLink noteId={note.id} to={`/documents/${note.id}`} draggable={false} aria-label={note.title} aria-current={note.id === activeNoteId ? "page" : undefined} className="document-main-link" onClick={onNavigate}>
         <span className="document-main-title" title={note.title}>{note.title}</span>
         <span className="document-main-leader" aria-hidden="true" />
-        <time>{formatDate(note.updated_at_ms)}</time>
+        <time dateTime={new Date(note.updated_at_ms).toISOString()} title={new Date(note.updated_at_ms).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })}>{formatNotebookUpdateTime(note.updated_at_ms)}</time>
       </DocumentLink>
       {actions}
     </div>
