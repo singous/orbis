@@ -9,6 +9,7 @@ import { type FormEvent, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
 
+import { AuthIllustration } from "../features/auth/AuthIllustration";
 import { ApiError } from "../shared/api/api-client";
 import { login, setup } from "../shared/auth/auth-api";
 import { authStore } from "../shared/auth/auth-store";
@@ -136,10 +137,7 @@ export function LoginPage({ mode }: { mode: "login" | "setup" }) {
           <h2>给好想法，<br />留个好位置。</h2>
           <p className="auth-showcase-description">课堂笔记、工作计划，<br />还有那些突然冒出来的灵感。</p>
         </div>
-        <div className="auth-showcase-art" aria-hidden="true">
-          <img src="/images/auth-orbit.webp" alt="" width={1254} height={1254} decoding="async" />
-        </div>
-        <p className="auth-showcase-footer">STUDY. WORK. YOUR WAY.</p>
+        <AuthIllustration />
       </aside>
     </main>
   );

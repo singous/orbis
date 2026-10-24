@@ -138,9 +138,53 @@
 .auth-showcase-eyebrow { margin: 0 0 18px; font-size: 11px; font-weight: 500; line-height: 18px; letter-spacing: .13em; }
 .auth-showcase-copy h2 { margin: 0; font-size: clamp(34px, 3.2vw, 48px); font-weight: 650; line-height: 1.25; letter-spacing: -.035em; }
 .auth-showcase-description { margin: 18px 0 0; font-size: 15px; line-height: 1.9; color: color-mix(in oklab, var(--auth-showcase-foreground) 70%, var(--auth-showcase-background)); }
-.auth-showcase-art { display: flex; flex: 1; min-height: 0; align-items: center; justify-content: center; margin: 8px -24px 0; }
-.auth-showcase-art img { display: block; width: 100%; height: 100%; min-height: 0; max-width: 680px; max-height: 620px; object-fit: contain; }
-.auth-showcase-footer { margin: 0; font-size: 11px; font-weight: 500; line-height: 18px; letter-spacing: .13em; color: color-mix(in oklab, var(--auth-showcase-foreground) 65%, var(--auth-showcase-background)); }
+.auth-showcase-art {
+  --auth-art-motion-duration: 6s;
+  --auth-art-motion-rise: -10px;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  margin: 8px -24px 0;
+}
+.auth-showcase-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-width: 680px;
+  max-height: 620px;
+  object-fit: contain;
+  animation: auth-orbit-drift var(--auth-art-motion-duration) ease-in-out infinite;
+}
+.auth-showcase-art[data-motion-paused="true"] img { animation-play-state: paused; }
+@keyframes auth-orbit-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(-.6deg) scale(1); }
+  50% { transform: translate3d(0, var(--auth-art-motion-rise), 0) rotate(.6deg) scale(1.015); }
+}
+.auth-showcase-footer {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 18px;
+  letter-spacing: .13em;
+  color: color-mix(in oklab, var(--auth-showcase-foreground) 65%, var(--auth-showcase-background));
+}
+.auth-motion-toggle {
+  flex: none;
+  border: 1px solid color-mix(in oklab, var(--auth-showcase-foreground) 16%, transparent);
+  border-radius: var(--radius-pill);
+  color: var(--auth-showcase-foreground);
+  font-size: var(--orbis-text-caption-size);
+  letter-spacing: normal;
+}
+.auth-motion-toggle svg { width: 14px; height: 14px; }
 
 @media (max-width: 1100px) {
   .auth-content { padding: 28px 32px 24px; }
@@ -155,6 +199,7 @@
   .auth-card { max-width: 400px; }
   .auth-header-caption { display: inline; }
   .auth-showcase { display: none; }
+  .auth-showcase-art img { animation: none; }
 }
 
 @media (max-width: 480px) {
@@ -170,4 +215,9 @@
   .auth-layout { grid-template-columns: minmax(0, 1fr); }
   .auth-showcase { display: none; }
   .auth-field .input-group { border-color: CanvasText; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-showcase-art img { animation: none; transform: none; }
+  .auth-motion-toggle { display: none; }
 }
