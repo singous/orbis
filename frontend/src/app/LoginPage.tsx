@@ -1,4 +1,8 @@
 import { useMutation } from "@tanstack/react-query";
+import { Envelope, Lock } from "@gravity-ui/icons";
+import { InputGroup } from "@heroui/react/input-group";
+import { Label } from "@heroui/react/label";
+import { TextField } from "@heroui/react/textfield";
 import { OrbisLogo } from "../shared/ui/OrbisLogo";
 import { ArrowRight } from "../shared/ui/icons";
 import { type FormEvent, useState } from "react";
@@ -106,8 +110,20 @@ export function LoginPage({ mode }: { mode: "login" | "setup" }) {
           </div>
           <form className="auth-form" aria-labelledby="auth-heading" onSubmit={handleSubmit} noValidate>
             {isSetup ? <TextInput label="显示名称" placeholder="你的名字" value={displayName} required onChange={(event) => setDisplayName(event.target.value)} autoComplete="name" /> : null}
-            <TextInput label="邮箱" type="email" placeholder="name@example.com" value={email} required onChange={(event) => setEmail(event.target.value)} autoComplete="email" />
-            <TextInput label="密码" type="password" placeholder={isSetup ? "至少 12 字节" : "输入密码"} value={password} required minLength={isSetup ? 12 : 1} onChange={(event) => setPassword(event.target.value)} autoComplete={isSetup ? "new-password" : "current-password"} />
+            <TextField className="auth-field" fullWidth type="email" value={email} onChange={setEmail} isRequired validationBehavior="aria">
+              <Label>邮箱</Label>
+              <InputGroup fullWidth>
+                <InputGroup.Prefix aria-hidden="true"><Envelope className="auth-input-icon" /></InputGroup.Prefix>
+                <InputGroup.Input placeholder="name@example.com" autoComplete="email" required />
+              </InputGroup>
+            </TextField>
+            <TextField className="auth-field" fullWidth type="password" value={password} onChange={setPassword} isRequired validationBehavior="aria">
+              <Label>密码</Label>
+              <InputGroup fullWidth>
+                <InputGroup.Prefix aria-hidden="true"><Lock className="auth-input-icon" /></InputGroup.Prefix>
+                <InputGroup.Input placeholder={isSetup ? "至少 12 字节" : "输入密码"} minLength={isSetup ? 12 : 1} autoComplete={isSetup ? "new-password" : "current-password"} required />
+              </InputGroup>
+            </TextField>
             <Button isPending={authMutation.isPending} type="submit" variant="primary" className="auth-submit" disabled={authMutation.isPending}>{authMutation.isPending ? "正在连接…" : isSetup ? "创建并进入工作空间" : "登录 Orbis"}<ArrowRight aria-hidden="true" size={16} /></Button>
           </form>
           <div className="auth-card-footer">{isSetup ? <>系统已初始化？ <Link to="/login">返回登录</Link></> : <>首次部署？ <Link to="/setup">初始化管理员账号</Link></>}</div>

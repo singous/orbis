@@ -144,6 +144,11 @@
 .auth-form { display: grid; gap: 22px; }
 .auth-form label { gap: 9px; }
 .auth-form input { height: var(--form-control-height); font-size: var(--orbis-text-ui-size); line-height: var(--orbis-text-ui-leading); }
+.auth-field { gap: 9px; }
+.auth-field > .label::after { content: none; }
+.auth-field .input-group { height: var(--form-control-height); }
+.auth-field [data-slot="input-group-input"] { min-width: 0; height: 100%; }
+.auth-input-icon { width: var(--orbis-icon-compact-size); height: var(--orbis-icon-compact-size); }
 .auth-submit { width: 100%; height: var(--form-control-height); margin-top: 6px; }
 .auth-submit svg { margin-left: auto; }
 .auth-card-footer { border-top: 1px solid var(--border-subtle); margin-top: 24px; padding-top: 20px; color: var(--text-secondary); font-size: var(--orbis-text-ui-size); line-height: var(--orbis-text-ui-leading); text-align: center; }
