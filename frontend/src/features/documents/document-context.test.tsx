@@ -312,9 +312,12 @@ describe("DocumentContextPanel", () => {
     renderPanel();
     expect(screen.queryByRole("button", { name: "重命名 产品计划" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "归档 产品计划" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /预览文档/ })).not.toBeInTheDocument();
     await actor.click(screen.getByRole("button", { name: "文档操作 产品计划" }));
     expect(screen.getByRole("menuitem", { name: "重命名" })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "归档" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "新建子文档" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "预览文档" })).not.toBeInTheDocument();
   });
 
   it("provides an explicit notebook home link beside the document tree", () => {
