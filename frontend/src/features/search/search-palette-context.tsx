@@ -31,6 +31,11 @@ class PaletteBoundary extends Component<{ children: ReactNode; isOpen: boolean; 
 
 /** Local overlay state preserves the background route and its editing session. */
 export function SearchPaletteProvider({ children }: { children: ReactNode }) {
+  const inherited = useContext(SearchPaletteContext);
+  return inherited ? <>{children}</> : <SearchPaletteScope>{children}</SearchPaletteScope>;
+}
+
+function SearchPaletteScope({ children }: { children: ReactNode }) {
   const sessionKey = useStore(authStore, getAuthSessionKey);
   const { key: locationKey } = useLocation();
   const returnContext = useRef<{ sessionKey: string | null; locationKey: string; restore: () => void } | null>(null);

@@ -6,7 +6,7 @@ import { DEFAULT_WORKSPACE_PATH } from "../features/workspace/workspace-areas";
 import { RequireAuth } from "../shared/auth/RequireAuth";
 import { LoginPage } from "./LoginPage";
 
-const WorkspaceLoadingPage = lazy(() => import("../features/workspace/WorkspaceLoadingPage").then(module => ({ default: module.WorkspaceLoadingPage })));
+const WorkspaceRoute = lazy(() => import("./WorkspaceRoute").then(module => ({ default: module.WorkspaceRoute })));
 const PublicSharePage = lazy(() => import("../features/sharing/PublicSharePage").then(module => ({ default: module.PublicSharePage })));
 
 const AccountSettingsPage = lazy(() => import("../features/account/AccountSettingsPage").then(module => ({ default: module.AccountSettingsPage })));
@@ -29,10 +29,8 @@ const SiteEditorPage = lazy(() => import("../features/sites/SiteEditorPage").the
 const PublicSitePage = lazy(() => import("../features/sites/PublicSitePage").then((module) => ({ default: module.PublicSitePage })));
 const SitePreviewPage = lazy(() => import("../features/sites/PublicSitePage").then((module) => ({ default: module.SitePreviewPage })));
 const siteFallback = <div className="site-reader-status"><LoadingState label="正在打开站点…" variant="editor" /></div>;
-const workspaceFallback = <Suspense fallback={<LoadingState label="正在打开工作空间…" variant="editor" />}><WorkspaceLoadingPage /></Suspense>;
-
 function workspacePage(children: ReactNode) {
-  return <RequireAuth><Suspense fallback={workspaceFallback}>{children}</Suspense></RequireAuth>;
+  return <RequireAuth><Suspense fallback={<LoadingState label="正在打开工作空间…" variant="editor" />}><WorkspaceRoute>{children}</WorkspaceRoute></Suspense></RequireAuth>;
 }
 
 function invitationPage(children: ReactNode) {
@@ -45,16 +43,16 @@ const SheetsHome = lazy(() => import("../features/sheets/SheetsHome").then(m => 
 const PublicSheetForm = lazy(() => import("../features/sheets/SheetForms").then(m => ({default:m.PublicSheetForm})));
 
 export const router = createBrowserRouter([
- {path:"/documents/quick-notes",element:<RequireAuth><Suspense fallback={workspaceFallback}><QuickNotesPage /></Suspense></RequireAuth>},
- {path:"/sheets",element:<RequireAuth><Suspense fallback={workspaceFallback}><SheetsHome /></Suspense></RequireAuth>},
- {path:"/sheets/:sheetId",element:<RequireAuth><Suspense fallback={workspaceFallback}><SheetPage /></Suspense></RequireAuth>},
+ {path:"/documents/quick-notes",element:workspacePage(<QuickNotesPage />)},
+ {path:"/sheets",element:workspacePage(<SheetsHome />)},
+ {path:"/sheets/:sheetId",element:workspacePage(<SheetPage />)},
  {path:"/forms/:token",element:<Suspense fallback={<LoadingState label="正在打开表单…" />}><PublicSheetForm /></Suspense>},
   { path: "/share/:shareToken/:noteId?", element: <Suspense fallback={<LoadingState label="正在打开分享…" variant="editor" />}><PublicSharePage /></Suspense> },
-  { path: "/search", element: <RequireAuth><Suspense fallback={workspaceFallback}><SearchPage /></Suspense></RequireAuth> },
-  { path: "/search/open", element: <RequireAuth><Suspense fallback={workspaceFallback}><SearchOpenPage /></Suspense></RequireAuth> },
+  { path: "/search", element: workspacePage(<SearchPage />) },
+  { path: "/search/open", element: workspacePage(<SearchOpenPage />) },
   { path: "/s/:slug/*", element: <Suspense fallback={siteFallback}><PublicSitePage /></Suspense> },
   { path: "/sites", element: workspacePage(<SitesPage />) },
-  { path: "/sites/:siteId", element: <RequireAuth><Suspense fallback={workspaceFallback}><SiteEditorPage /></Suspense></RequireAuth> },
+  { path: "/sites/:siteId", element: workspacePage(<SiteEditorPage />) },
   { path: "/sites/:siteId/preview/*", element: <RequireAuth><Suspense fallback={siteFallback}><SitePreviewPage /></Suspense></RequireAuth> },
   {
     path: "/",
