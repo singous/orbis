@@ -41,7 +41,6 @@
 /* Notebook identity has a dedicated row below the navigation controls. */
 .workspace-business-rail:has(.rail-create-entry) .rail-brand { margin-bottom: 16px; }
 .rail-create-entry { margin-bottom: 20px; }
-.rail-create-entry .rail-create-trigger { width: var(--orbis-control-default-height); height: var(--orbis-control-default-height); border-radius: 8px; }
 .workspace-sidebar-header > .notebook-menu-back { display: grid; place-items: center; width: var(--orbis-control-compact-height); height: var(--orbis-control-compact-height); flex: none; margin: 0; border-radius: var(--radius-control); }
 .workspace-sidebar-header > .notebook-menu-back:hover { background: var(--surface-hover); }
 .workspace-sidebar-heading .notebook-menu-title { display: flex; align-items: center; gap: var(--orbis-space-2); min-width: 0; min-height: var(--orbis-control-default-height); font-size: var(--orbis-text-section-size); font-weight: var(--orbis-weight-heading); line-height: var(--orbis-text-section-leading); }

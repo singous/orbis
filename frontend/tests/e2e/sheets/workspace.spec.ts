@@ -467,16 +467,17 @@ test("sheet controls follow the Orbis theme in light and dark appearances", asyn
       exact: true,
     });
 
-    // 主题切换存在颜色过渡，重读两处当前颜色，避免缓存切换前的值。
+    // 主操作跟随主题 accent；侧栏新建按钮是独立的中性控件。
     await expect
       .poll(async () => {
-        const brand = await page
-          .getByRole("button", { name: "新建资产", exact: true })
-          .evaluate((e) => getComputedStyle(e).backgroundColor);
-        return submit.evaluate(
-          (e, expected) => getComputedStyle(e).backgroundColor === expected,
-          brand,
-        );
+        return submit.evaluate((e) => {
+          const probe = document.createElement("span");
+          probe.style.backgroundColor = "var(--accent)";
+          e.appendChild(probe);
+          const matches = getComputedStyle(e).backgroundColor === getComputedStyle(probe).backgroundColor;
+          probe.remove();
+          return matches;
+        });
       })
       .toBe(true);
     const field = dialog.getByRole("textbox", {

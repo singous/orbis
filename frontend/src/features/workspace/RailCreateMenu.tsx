@@ -21,7 +21,7 @@ export function RailCreateMenu() {
   const [open, setOpen] = useState(false);
   const [notebookDialogOpen, setNotebookDialogOpen] = useState(false);
   return <>
-    <ActionButton type="button" className="rail-create-trigger" aria-label="新建资产" aria-haspopup="dialog" onClick={() => setOpen(true)}><Plus size={18} aria-hidden="true" /></ActionButton>
+    <ActionButton type="button" className="rail-create-trigger" aria-label="新建资产" aria-haspopup="dialog" aria-expanded={open || notebookDialogOpen} onClick={() => setOpen(true)}><Plus size={18} aria-hidden="true" /></ActionButton>
     {open || notebookDialogOpen ? <RailCreateActions open={open} onOpenChange={setOpen} notebookDialogOpen={notebookDialogOpen} onNotebookDialogChange={setNotebookDialogOpen} /> : null}
   </>;
 }

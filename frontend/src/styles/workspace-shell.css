@@ -27,11 +27,13 @@
 .workspace-route-content:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
 
 .workspace-shell {
-  --rail-width: max(58px, calc(var(--orbis-control-default-height) + 14px));
+  --rail-control-size: var(--orbis-control-compact-height);
+  --rail-logo-size: 28px;
+  --rail-width: max(52px, calc(var(--rail-control-size) + 14px));
   --sidebar-default-width: 232px;
   --sidebar-width: var(--sidebar-default-width);
   --topbar-height: max(46px, calc(var(--orbis-control-compact-height) + 12px));
-  --shell-gutter: 10px;
+  --shell-gutter: 6px;
   --workspace-outline: color-mix(in oklab, var(--foreground) 6%, var(--workspace-panel-background));
   --workspace-divider: color-mix(in oklab, var(--foreground) 3%, var(--workspace-panel-background));
   --workspace-hover-outline: color-mix(in oklab, var(--foreground) 10%, var(--workspace-panel-background));
@@ -58,11 +60,9 @@
 .workspace-main-navigation { display: flex; min-height: 0; min-width: 0; border: 1px solid var(--border-subtle); border-radius: var(--workspace-panel-radius); background: var(--workspace-panel-background); box-shadow: var(--workspace-panel-shadow); }
 .workspace-business-rail { overflow-y: auto; overflow-x: hidden; width: var(--rail-width); flex: none; min-height: 0; display: flex; flex-direction: column; align-items: center; padding: 16px 7px 10px; border-right: 1px solid var(--workspace-divider); }
 .sidebar-collapsed .workspace-business-rail { border: 0; }
-.rail-brand { width: var(--orbis-control-default-height); height: var(--orbis-control-default-height); display: grid; place-items: center; color: var(--brand-mark); margin-bottom: 36px; }
+.rail-brand { display: grid; place-items: center; margin-bottom: 36px; }
 .workspace-business-nav { display: flex; flex-direction: column; align-items: center; gap: var(--orbis-space-4); }
-.rail-action { width: var(--orbis-control-default-height); height: var(--orbis-control-default-height); display: grid; place-items: center; flex: none; color: var(--text-secondary); transition: background 140ms, color 140ms; }
-.rail-action:hover { background: var(--surface-hover); color: var(--text-primary); }
-.rail-action.is-active { background: var(--surface-active); color: var(--text-primary); }
+.rail-action { display: grid; place-items: center; flex: none; transition: background 140ms, color 140ms; }
 /* A permanent slot lets the rail move with the sidebar instead of jumping. */
 .rail-expand-slot { width: var(--orbis-control-compact-height); height: 0; flex: none; overflow: hidden; opacity: 0; transition: height var(--sidebar-transition-duration) var(--sidebar-transition-easing), opacity var(--sidebar-transition-duration) ease; }
 .rail-expand-slot[data-visible="true"] { height: var(--orbis-control-compact-height); opacity: 1; }
@@ -187,8 +187,7 @@
 .workspace-user-menu-item svg { width: var(--orbis-icon-default-size); height: var(--orbis-icon-default-size); }
 .workspace-appearance-dialog { width: min(320px, calc(100vw - 32px)); }
 .workspace-appearance-dialog [data-slot="radio-content"] { min-height: var(--orbis-control-form-height); gap: var(--orbis-space-3); }
-.rail-create-trigger { display: grid; place-items: center; width: var(--compact-control-height); height: var(--compact-control-height); color: var(--text-oninverse); background: var(--surface-inverse); border: 1px solid var(--accent); box-shadow: 0 1px 2px #0002; }
-.rail-create-trigger:hover { background: var(--surface-inverse-hover); }
+.rail-create-trigger { display: grid; place-items: center; }
 @media (max-width: 1199px) {
   .workspace-shell { --sidebar-default-width: 210px; }
   .workspace-main-area.has-context { grid-template-columns: minmax(0, 1fr) 230px; }
@@ -324,17 +323,56 @@ html.workspace-resizing, html.workspace-resizing * { cursor: col-resize !importa
 .workspace-shell[data-app-surface="web"] { --topbar-height: 0px; }
 .workspace-shell[data-app-surface="web"] .workspace-shell-grid { padding-top: max(var(--shell-gutter), env(safe-area-inset-top)); }
 .workspace-switcher--rail { flex: none; }
-.workspace-switcher-rail-trigger { background: transparent; padding: 0; border: 0; }
-.workspace-switcher-rail-trigger:hover,
-.workspace-switcher-rail-trigger[aria-expanded="true"] { background: var(--surface-hover); }
 .workspace-user-menu--rail { margin: 0; }
-.workspace-user-trigger--rail { width: var(--orbis-control-default-height); min-height: var(--orbis-control-default-height); padding: 0; }
-.workspace-user-trigger--rail:hover,
-.workspace-user-trigger--rail[aria-expanded="true"] { background: var(--surface-hover); }
 .workspace-user-trigger--rail .workspace-user-avatar { width: 30px; height: 30px; }
 /* The overlay engine positions portaled content; topbar offsets do not apply. */
 .workspace-switcher-popover--rail,
 .workspace-user-popover--rail { position: relative; inset: auto; width: min(268px, calc(100vw - 80px)); max-width: calc(100vw - 24px); }
 .workspace-user-popover--rail .workspace-user-profile > div { min-width: 0; overflow-wrap: anywhere; }
 .workspace-user-popover--rail .workspace-user-profile .workspace-user-avatar { flex: none; }
-.workspace-switcher-rail-trigger:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
+/* Rail controls share a compact shape; only an active area or open menu is inverted. */
+.workspace-business-rail :is(.rail-action, .rail-brand, .rail-create-trigger, .workspace-user-trigger--rail) {
+  --orbis-item-hover-bg: var(--surface-hover);
+  --orbis-item-foreground: var(--text-primary);
+  width: var(--rail-control-size);
+  height: var(--rail-control-size);
+  min-width: var(--rail-control-size);
+  min-height: var(--rail-control-size);
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: var(--surface-content);
+  color: var(--text-secondary);
+  box-shadow: none;
+}
+.workspace-business-rail .rail-brand { color: var(--brand-mark); }
+.workspace-business-rail .rail-create-trigger {
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--orbis-card-shadow);
+}
+.workspace-business-rail :is(.rail-action, .rail-brand, .rail-create-trigger, .workspace-user-trigger--rail):is(:hover, [data-hovered="true"]) {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+.workspace-business-rail :is(.rail-action, .rail-brand, .rail-create-trigger, .workspace-user-trigger--rail):is(.is-active, [aria-expanded="true"]) {
+  --orbis-item-hover-bg: var(--surface-inverse);
+  --orbis-item-foreground: var(--text-oninverse);
+  background: var(--surface-inverse);
+  color: var(--text-oninverse);
+}
+.workspace-business-rail :is(.rail-action, .rail-create-trigger) > svg {
+  width: var(--orbis-icon-default-size);
+  height: var(--orbis-icon-default-size);
+  margin: 0;
+}
+/* Logo artwork must not inherit the button's small icon dimensions. */
+.workspace-business-rail .rail-brand > .orbis-logo {
+  width: var(--rail-logo-size);
+  height: var(--rail-logo-size);
+  margin: 0;
+}
+.workspace-business-rail :is(.rail-action, .rail-brand, .rail-create-trigger, .workspace-user-trigger--rail):is(:focus-visible, [data-focus-visible="true"]) {
+  outline: 1px solid color-mix(in oklab, var(--foreground) 40%, transparent);
+  outline-offset: 2px;
+}

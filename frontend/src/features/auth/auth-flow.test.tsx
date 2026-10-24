@@ -39,8 +39,8 @@ describe("community auth flow", () => {
 
   it("defaults to login and exposes setup without public registration", () => {
     renderPage("login");
-    expect(screen.getByRole("heading", { name: "登录工作空间" })).toBeInTheDocument();
-    expect(screen.getByRole("form", { name: "登录工作空间" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "欢迎回到 Orbis" })).toBeInTheDocument();
+    expect(screen.getByRole("form", { name: "欢迎回到 Orbis" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /初始化管理员账号/ })).toHaveAttribute("href", "/setup");
     expect(screen.queryByText(/注册账号/)).not.toBeInTheDocument();
   });
@@ -68,7 +68,7 @@ describe("community auth flow", () => {
     expect(await screen.findByText("邮箱格式不正确，请检查后重试。")).toBeInTheDocument();
     expect(screen.queryByText(/密码至少需要 8 位/)).not.toBeInTheDocument();
     expect(screen.queryByText("无法继续")).not.toBeInTheDocument();
-    expect(screen.getByRole("form", { name: "登录工作空间" })).not.toHaveTextContent("邮箱格式不正确");
+    expect(screen.getByRole("form", { name: "欢迎回到 Orbis" })).not.toHaveTextContent("邮箱格式不正确");
   });
 
   it("does not claim a password length requirement for an unknown login validation error", async () => {
