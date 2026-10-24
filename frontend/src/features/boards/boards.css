@@ -641,14 +641,6 @@
 .board-page-list-container [data-slot="tabs-list"] { gap: 3px; padding: 0; }
 .board-page-list-container [data-slot="tabs-tab"] { height: 28px; min-height: 28px; padding: 0 10px; white-space: nowrap; font-size: 11px; }
 .board-page-actions small { display: block; white-space: nowrap; padding-inline: 10px; color: var(--board-muted); }
-.board-feedback {
-  position: absolute;
-  z-index: 28;
-  top: 52px;
-  left: 72px;
-  right: calc(var(--board-panel-offset) + 20px);
-}
-.board-feedback-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .board-tool-hint {
   position: absolute;
   left: 50%;

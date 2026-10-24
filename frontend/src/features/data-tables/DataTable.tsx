@@ -1,3 +1,4 @@
+import { ToastNotification } from "../../shared/ui/Toast";
 import { useContext, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { exportTable, createTable } from "./api";
@@ -422,7 +423,7 @@ function DataTableEditor({
         </div>
       </div>
       {table.error || actionError ? (
-        <div className="dt-notice" role="alert">
+        <ToastNotification title="表格修改尚未保存" tone="danger" timeout={0}>
           {table.error ?? actionError}
           <Button size="sm" onClick={save}>
             重试保存
@@ -438,15 +439,15 @@ function DataTableEditor({
           >
             以最新版本重新检查本地修改
           </Button>
-        </div>
+        </ToastNotification>
       ) : null}
       {table.storageError ? (
-        <p className="dt-notice" role="alert">
+        <ToastNotification tone="warning" title="表格草稿尚未持久保存" timeout={0}>
           {table.storageError}
-        </p>
+        </ToastNotification>
       ) : null}
       {table.candidates.length ? (
-        <div className="dt-notice">
+        <ToastNotification title="检测到保留的表格草稿" tone="warning" timeout={0}>
           <span>发现其他会话保留的表格草稿，恢复后原草稿仍会保留。</span>
           {table.candidates.map((candidate, index) => (
             <Button
@@ -458,15 +459,15 @@ function DataTableEditor({
               恢复表格草稿 {index + 1}
             </Button>
           ))}
-        </div>
+        </ToastNotification>
       ) : null}
       {table.dirty && !table.saving ? (
-        <div className="dt-draft-bar">
+        <ToastNotification title="本机修改待同步" tone="default" timeout={0}>
           <span>本机修改待同步</span>
           <Button size="sm" onClick={save}>
             保存修改
           </Button>
-        </div>
+        </ToastNotification>
       ) : null}
       {view.kind === "grid" || host.shareToken ? (
         <TableGrid

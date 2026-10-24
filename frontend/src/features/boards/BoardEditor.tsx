@@ -3,7 +3,7 @@ import { Label } from "@heroui/react/label";
 import { Tabs } from "@heroui/react/tabs";
 import { Toolbar } from "@heroui/react/toolbar";
 import { ToggleButton } from "@heroui/react/toggle-button";
-import { StatusMessage } from "../../shared/ui/StatusMessage";
+import { ToastNotification } from "../../shared/ui/Toast";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { Tooltip } from "../../shared/ui/Tooltip";
 import { newUUID } from "../../shared/ids";
@@ -120,6 +120,7 @@ export function BoardEditor({ id }: { id: string }) {
     [camera, setCamera] = useState<Camera>({ x: 80, y: 80, zoom: 1 }),
     [tool, setTool] = useState("select");
   const [error, setError] = useState(""),
+    [errorAttempt, setErrorAttempt] = useState(0),
     [library, setLibrary] = useState(false),
     [inspector, setInspector] = useState(false),
     [comments, setComments] = useState(false),
@@ -165,8 +166,10 @@ export function BoardEditor({ id }: { id: string }) {
     state.status !== "conflict" &&
     state.status !== "loading" &&
     state.status !== "error";
-  const fail = (error: unknown) =>
+  const fail = (error: unknown) => {
     setError(error instanceof Error ? error.message : String(error));
+    setErrorAttempt(attempt => attempt + 1);
+  };
   useEffect(() => {
     void session.start(new URLSearchParams(location.search).get("page") ?? "");
     return () => {
@@ -307,10 +310,10 @@ export function BoardEditor({ id }: { id: string }) {
       <DocumentShell>
         {state.error ? (
           <div className="board-loading">
-            <StatusMessage tone="error" role="alert" title="无法打开画板">
+            <ToastNotification tone="danger" title="无法打开画板" timeout={0}>
               {state.error}
               <Button onClick={() => void session.start()}>重试</Button>
-            </StatusMessage>
+            </ToastNotification>
           </div>
         ) : <LoadingState label="正在打开画板…" variant="editor" />}
       </DocumentShell>
@@ -754,28 +757,22 @@ export function BoardEditor({ id }: { id: string }) {
           </ActionButton>
         </Toolbar>
         {error || state.error ? (
-          <div className="board-feedback">
-            <StatusMessage tone="warning" role="alert" title={error || state.error || ""}>
-            <div className="board-feedback-actions">
+          <ToastNotification key={errorAttempt} title="画板操作未完成" tone="danger" timeout={state.pending ? 0 : undefined}>
+            <span>{error || state.error}</span>
             {state.pending ? (
-              <>
-                <ActionButton onClick={() => void session.retry().catch(fail)}>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button size="sm" onClick={() => void session.retry().catch(fail)}>
                   重试同步
-                </ActionButton>
-                <ActionButton onClick={() => void exportFile("json")}>
+                </Button>
+                <Button size="sm" onClick={() => void exportFile("json")}>
                   导出本机修改
-                </ActionButton>
-                <ActionButton onClick={() => setDiscard(true)}>
+                </Button>
+                <Button size="sm" onClick={() => setDiscard(true)}>
                   放弃未同步修改
-                </ActionButton>
-              </>
+                </Button>
+              </div>
             ) : null}
-            <ActionButton aria-label="关闭提示" onClick={() => setError("")}>
-              <X size={15} />
-            </ActionButton>
-            </div>
-            </StatusMessage>
-          </div>
+          </ToastNotification>
         ) : null}
 
         {comments ? (

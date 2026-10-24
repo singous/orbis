@@ -1,7 +1,7 @@
 import {nativeSnapshot,nativeCollection,nativeDocument} from "../documents/editor/editor.test-utils";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { toast as heroToast } from "@heroui/react/toast";
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { useState } from "react";
@@ -82,7 +82,7 @@ describe("restoring from the editor", () => {
     await user.clear(editor); await user.type(editor, "不能丢失的草稿");
     await openHistory(user);
     await user.click(screen.getByRole("button", { name: "恢复此版本" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(/保存|冲突/);
+    expect(await within(screen.getByRole("region", { name: "文档历史版本" })).findByRole("alert")).toHaveTextContent(/保存|冲突/);
     expect(requests.some((request) => request.path.endsWith("/restore"))).toBe(false);
     const saveCount = requests.filter((request) => request.path.endsWith("/operations")).length;
     await user.click(screen.getByRole("button", { name: "恢复此版本" }));
@@ -120,7 +120,7 @@ describe("restoring from the editor", () => {
     await user.clear(editor); await user.type(editor, "本地编辑");
     await openHistory(user);
     await user.click(screen.getByRole("button", { name: "恢复此版本" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(/冲突/);
+    expect(await within(screen.getByRole("region", { name: "文档历史版本" })).findByRole("alert")).toHaveTextContent(/冲突/);
     await user.click(screen.getByRole("button", { name: "恢复此版本" }));
     expect(requests.filter((request) => request.path.endsWith("/restore"))).toHaveLength(1);
     await user.click(screen.getByRole("button", { name: "关闭评论与历史" }));

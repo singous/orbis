@@ -1,4 +1,4 @@
-import {StatusMessage} from "../../shared/ui/StatusMessage";
+import { ToastNotification } from "../../shared/ui/Toast";
 import {ApiError} from "../../shared/api/api-client";
 import type { Notebook } from "../../shared/api/schemas";
 import { newUUID } from "../../shared/ids";
@@ -171,7 +171,7 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
               </Dropdown>
             </div>
           </header>
-          {pendingImportTitle?<StatusMessage tone="warning" title="导入结果尚未确认">原文件“{pendingImportTitle}”已保留，可以重试以确认结果。<Button disabled={importBusy} onClick={()=>void retryImport()}>重试导入</Button></StatusMessage>:null}
+          {pendingImportTitle?<ToastNotification tone="warning" title="导入结果尚未确认" timeout={0}>原文件“{pendingImportTitle}”已保留，可以重试以确认结果。<Button disabled={importBusy} onClick={()=>void retryImport()}>重试导入</Button></ToastNotification>:null}
           <section className="notebook-home-intro" aria-labelledby="notebook-welcome-heading">
             <Hand aria-hidden="true" size={20} className="notebook-home-welcome-icon" />
             <div>

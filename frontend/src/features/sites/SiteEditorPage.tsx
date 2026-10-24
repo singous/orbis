@@ -1,7 +1,7 @@
 import { newUUID } from "../../shared/ids";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { Tag } from "../../shared/ui/Tag";
-import { StatusMessage } from "../../shared/ui/StatusMessage";
+import { ToastNotification, showToast } from "../../shared/ui/Toast";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { ArrowLeft, ExternalLink, Eye, Globe, History, Rocket, RotateCcw } from "../../shared/ui/icons";
 import { useQueryClient } from "@tanstack/react-query";
@@ -16,7 +16,6 @@ import { ApiError } from "../../shared/api/api-client";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { Dialog, DialogContent } from "../../shared/ui/Dialog";
 import { PageContainer } from "../../shared/ui/PageContainer";
-import { showToast } from "../../shared/ui/Toast";
 import { canManageWorkspaceMembers, canMutateWorkspaceContent } from "../workspace/capabilities";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
 import { activateSiteRelease, getSiteSources, previewSite, publishSite, saveSite, unpublishSite } from "./api";
@@ -166,7 +165,7 @@ function SiteEditor({ site }: { site: Site }) {
   return <WorkspaceShell><PageContainer title={site.name} description="管理站点设置、内容来源与公开版本。" actions={<Tag tone={site.published_release_id ? "success" : "neutral"}>{site.published_release_id ? "已发布" : "尚未发布"}</Tag>}><div className="workbench-site-editor site-management">
     <Link className="workbench-back" to="/sites"><ArrowLeft aria-hidden="true" size={16} />所有站点</Link>
     <div className="site-publishing-bar"><span><Globe size={18} />{site.published_slug ? <Link to={`/s/${site.published_slug}`} target="_blank" rel="noopener noreferrer">查看公开站点<ExternalLink size={14} /></Link> : "站点将在发布后对外开放"}</span><div><ActionButton variant="secondary" type="button" className="mvp-button" disabled={busy} onClick={() => void openReaderPreview()}><Eye size={16} />预览</ActionButton>{canPublish ? <ActionButton variant="primary" type="button" className="mvp-button primary" disabled={busy || !canPreparePublish} onClick={() => void preparePublishPreview()}><Rocket size={16} />发布站点</ActionButton> : <span className="mvp-muted">由所有者或管理员发布</span>}</div></div>
-    {error ? <StatusMessage role="alert" tone="error" title="站点操作未完成">{error}</StatusMessage> : null}
+    {error ? <ToastNotification tone="danger" title="站点操作未完成">{error}</ToastNotification> : null}
     <form onSubmit={submit}>
       <div className="site-editor-layout">
         <section className="site-settings-section"><div className="site-section-heading"><div><h2>站点设置</h2><p>名称、场景、品牌与阅读外观。</p></div></div><SiteSettingsForm value={draft} onChange={setDraft} disabled={!canEdit || busy} /></section>
@@ -186,7 +185,7 @@ function SiteEditor({ site }: { site: Site }) {
     </section>
     <Dialog open={previewBundle !== null} onOpenChange={(open) => { if (!open && !busy) { setPreviewBundle(null); setPreviewError(""); } }}><DialogContent className="site-publish-dialog" title="确认发布站点" description="核对来源变化与冻结正文。确认后只会发布这里显示的版本。">{previewBundle ? <SitePublishPreview siteId={site.id} preview={previewBundle.preview} sources={previewBundle.sources} busy={busy} error={previewError} onConfirm={() => void confirmPublish()} onRefresh={() => void preparePublishPreview()} onCancel={() => { setPreviewBundle(null); setPreviewError(""); }} /> : null}</DialogContent></Dialog>
     <Dialog open={pendingAction !== null} onOpenChange={(open) => { if (!open && !busy) setPendingAction(null); }}><DialogContent title={pendingAction?.type === "unpublish" ? "确认撤回站点" : "切换公开版本"} description={pendingAction?.type === "unpublish" ? "公开链接将不再提供内容，内部文档和发布历史会保留。" : `将公开站点切换到版本 ${pendingAction?.type === "activate" ? pendingAction.number : ""}，内部草稿保持不变。`}>
-      {error ? <StatusMessage role="alert" tone="error" title="站点操作未完成">{error}</StatusMessage> : null}<div className="site-dialog-actions"><ActionButton variant="secondary" className="mvp-button" type="button" disabled={busy} onClick={() => setPendingAction(null)}>取消</ActionButton><ActionButton variant="primary" className="mvp-button primary" type="button" disabled={busy} onClick={() => void confirmReleaseAction()}>{busy ? "处理中…" : "确认操作"}</ActionButton></div>
+      <div className="site-dialog-actions"><ActionButton variant="secondary" className="mvp-button" type="button" disabled={busy} onClick={() => setPendingAction(null)}>取消</ActionButton><ActionButton variant="primary" className="mvp-button primary" type="button" disabled={busy} onClick={() => void confirmReleaseAction()}>{busy ? "处理中…" : "确认操作"}</ActionButton></div>
     </DialogContent></Dialog>
     <Dialog open={navigationBlocker.state === "blocked"} onOpenChange={(open) => { if (!open && !busy && navigationBlocker.state === "blocked") navigationBlocker.reset(); }}>
       <DialogContent title="站点设置尚未保存" description="离开前可以保存设置、放弃本次修改，或返回继续编辑。保存设置不会发布站点。">

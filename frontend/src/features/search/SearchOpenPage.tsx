@@ -8,7 +8,7 @@ import { authRequestOptions, useAuthRequest } from "../../shared/auth/use-auth-r
 import { Button } from "../../shared/ui/Button";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { PageContainer } from "../../shared/ui/PageContainer";
-import { StatusMessage } from "../../shared/ui/StatusMessage";
+import { ToastNotification } from "../../shared/ui/Toast";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
 import { lookupSearchResource, searchTypeSchema } from "./api";
 import { resultDestination } from "./search-state";
@@ -90,8 +90,8 @@ export function SearchOpenPage() {
 
   return <WorkspaceShell><PageContainer title={target.success && target.data.type === "file" ? filename : "打开搜索结果"}>
     <div className="global-search-open">
-      {!target.success ? <StatusMessage tone="error" title="搜索结果地址无效">请返回搜索页重新选择结果。</StatusMessage> : null}
-      {error ? <StatusMessage tone="error" title="无法打开内容">{error}</StatusMessage> : null}
+      {!target.success ? <ToastNotification tone="danger" title="搜索结果地址无效">请返回搜索页重新选择结果。</ToastNotification> : null}
+      {error ? <ToastNotification tone="danger" title="无法打开内容">{error}</ToastNotification> : null}
       {target.success && !ready && !error ? <LoadingState label="正在打开内容…" /> : null}
       {ready ? <><p>文件内容仅在下载时读取。</p><Button variant="primary" isPending={downloading} onClick={() => void download()}>下载文件</Button>{downloaded ? <p role="status">已开始下载。</p> : null}</> : null}
       <Link to="/search">返回全局搜索</Link>

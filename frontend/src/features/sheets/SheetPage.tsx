@@ -1,3 +1,5 @@
+import { Button } from "../../shared/ui/Button";
+import { ToastNotification } from "../../shared/ui/Toast";
 import { Dropdown } from "@heroui/react/dropdown";
 import { Label } from "@heroui/react/label";
 import { useQuery } from "@tanstack/react-query";
@@ -558,18 +560,18 @@ export function SheetWorkspace({
         )}
       </nav>
       {c.error && (
-        <div className="sheet-notice" role="alert">
+        <ToastNotification title="数据表操作未完成" tone="danger" timeout={c.hasPending ? 0 : undefined}>
           <span>{c.error}</span>
           {c.hasPending && (
-            <>
-              <ActionButton
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button
                 size="sm"
                 disabled={c.busy}
                 onClick={() => void c.change().catch(() => {})}
               >
                 重试保存
-              </ActionButton>
-              <ActionButton
+              </Button>
+              <Button
                 size="sm"
                 onClick={() => {
                   const blob = new Blob([c.exportDraft()], {
@@ -584,13 +586,13 @@ export function SheetWorkspace({
                 }}
               >
                 导出本机修改
-              </ActionButton>
-              <ActionButton size="sm" onClick={c.discard}>
+              </Button>
+              <Button size="sm" onClick={c.discard}>
                 放弃本次修改
-              </ActionButton>
-            </>
+              </Button>
+            </div>
           )}
-        </div>
+        </ToastNotification>
       )}
       {activeForm ? (
         <SheetForms

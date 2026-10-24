@@ -7,7 +7,7 @@ import { Button } from "../../shared/ui/Button";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { PageContainer } from "../../shared/ui/PageContainer";
-import { StatusMessage } from "../../shared/ui/StatusMessage";
+import { ToastNotification } from "../../shared/ui/Toast";
 import { Pin, Plus, BookOpen } from "../../shared/ui/icons";
 import type { Notebook } from "../../shared/api/schemas";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
@@ -54,7 +54,7 @@ export function DocumentOverviewPage() {
   return <DocumentShell>
     <div className="notebook-overview">
       <PageContainer title="在线文档" description={`${notebooks.length} 个笔记本`} actions={<>{canEdit ? <Button variant="primary" icon={<Plus size={16} />} onClick={() => setCreating(true)}>新建笔记本</Button> : null}<Link to="/documents/collections" className="workbench-more">管理笔记本</Link></>}>
-        {notebooksQuery.isError || groupsQuery.isError ? <StatusMessage tone="error" title="笔记本加载失败">请刷新页面重试。</StatusMessage> : null}
+        {notebooksQuery.isError || groupsQuery.isError ? <ToastNotification tone="danger" title="笔记本加载失败">请刷新页面重试。</ToastNotification> : null}
         {notebooksQuery.isLoading ? <LoadingState label="正在加载笔记本…" variant="cards" /> : null}
         {common.length ? <section className="notebook-overview-common" aria-label="快捷访问"><header className="workbench-section-heading"><h2>快捷访问</h2><ActionButton type="button" aria-expanded={!isCollapsed("common")} onClick={() => toggleGroup("common")}>{isCollapsed("common") ? "展开" : "收起"}</ActionButton></header>{!isCollapsed("common") ? <div className="notebook-overview-grid">{common.map((notebook) => card(notebook, true))}</div> : null}</section> : null}
         {grouped.map((group) => <section key={group.id} className="notebook-overview-group" aria-label={group.title}><header className="workbench-section-heading"><h2>{group.title}</h2></header><div className="notebook-overview-grid">{group.notebooks.map((notebook) => card(notebook))}</div></section>)}

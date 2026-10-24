@@ -18,7 +18,7 @@ vi.mock("../documents/queries", async importOriginal => ({
   useArchiveNotebook: () => ({ mutateAsync: mocks.restore, isPending: false }),
   useArchiveNote: () => ({ mutateAsync: mocks.restore, isPending: false }),
 }));
-vi.mock("../../shared/ui/Toast", () => ({ showToast: vi.fn() }));
+vi.mock("../../shared/ui/Toast", async importOriginal => ({ ...await importOriginal<typeof import("../../shared/ui/Toast")>(), showToast: vi.fn() }));
 const id = "018ff7c4-a5b6-7000-8000-000000000001";
 const workspaceId = "018ff7c4-a5b6-7000-8000-000000000002";
 function fetchTarget(type = "document") {

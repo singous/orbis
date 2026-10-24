@@ -1,3 +1,4 @@
+import { Toaster } from "../../shared/ui/Toast";
 import {nativeEditorServer} from "./editor/editor.test-utils";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
@@ -40,7 +41,7 @@ function showEditor() {
           <Route path="/elsewhere" element={<h1>其他页面</h1>} />
         </Routes>
       </MemoryRouter>
-    </QueryClientProvider>,
+    <Toaster /></QueryClientProvider>,
   );
 }
 
@@ -134,7 +135,7 @@ describe("archiving from the editor", () => {
     const editor = await screen.findByLabelText("编辑正文");
     fireEvent.change(editor, { target: { value: "已保存但未归档" } });
     await archiveFromMenu();
-    expect(await screen.findByRole("alert")).toHaveTextContent("归档请求失败");
+    expect(await screen.findByRole("alertdialog")).toHaveTextContent("归档请求失败");
     expect(stored.note.is_archived).toBe(false);
     expect(stored.content.plain_text).toBe("已保存但未归档");
     expect(editor).not.toHaveAttribute("readonly");

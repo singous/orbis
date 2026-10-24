@@ -16,8 +16,7 @@ import { useStore } from "zustand";
 
 import { authStore } from "../../shared/auth/auth-store";
 import { PageContainer } from "../../shared/ui/PageContainer";
-import { StatusMessage } from "../../shared/ui/StatusMessage";
-import { showToast } from "../../shared/ui/Toast";
+import { ToastNotification, showToast } from "../../shared/ui/Toast";
 import { DocumentShell } from "./DocumentShell";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { useSearchResource } from "../search/use-search-resource";
@@ -173,9 +172,9 @@ export function ArchivePage() {
       >
         {target ? <ArchiveSearchTarget id={target.id} type={target.type} canRestore={canRestore} /> : null}
         {groupsQuery.isError || notebooksQuery.isError || collectionDetails.some(query => query.isError) || notesQuery.isError ? (
-          <StatusMessage tone="error" title="回收站加载失败">
+          <ToastNotification tone="danger" title="回收站加载失败">
             请检查 API 服务后重试。
-          </StatusMessage>
+          </ToastNotification>
         ) : null}
         {groupsQuery.isLoading ||
         notebooksQuery.isLoading ||
@@ -263,12 +262,12 @@ function ArchiveSearchTarget({ id, type, canRestore }: { id: string; type: "docu
     }
   }
   if (query.isPending) return <LoadingState label="正在定位回收站内容…" />;
-  if (query.isError) return <StatusMessage tone="error" title="回收站内容定位失败"><Button onClick={() => void query.refetch()}>重试</Button></StatusMessage>;
-  if (!query.data) return <StatusMessage tone="info" title="该内容已不在回收站中">内容可能已恢复或当前已无权访问。</StatusMessage>;
+  if (query.isError) return <ToastNotification tone="danger" title="回收站内容定位失败" timeout={0}><Button onClick={() => void query.refetch()}>重试</Button></ToastNotification>;
+  if (!query.data) return <ToastNotification tone="default" title="该内容已不在回收站中">内容可能已恢复或当前已无权访问。</ToastNotification>;
   const Icon = type === "group" ? FolderKanban : type === "notebook" ? BookOpen : FilePlus2;
   return <div ref={target} tabIndex={-1} aria-label="搜索定位的回收站内容">
     {canRestore && info.isPending ? <LoadingState label="正在准备恢复…" compact /> : null}
-    {canRestore && info.isError ? <StatusMessage title="恢复信息加载失败" tone="error"><Button onClick={()=>void info.refetch()}>重试加载恢复信息</Button></StatusMessage> : null}
+    {canRestore && info.isError ? <ToastNotification title="恢复信息加载失败" tone="danger" timeout={0}><Button onClick={()=>void info.refetch()}>重试加载恢复信息</Button></ToastNotification> : null}
     <ArchiveSection title="搜索定位" icon={<Icon aria-hidden="true" size={18} />} resources={[{ id, label: query.data.title, parentLabel: query.data.location }]} canRestore={canRestore && info.data!==undefined && !info.isError} onRestore={() => void restore()} pendingId={action.isPending ? id : undefined} />
   </div>;
 }

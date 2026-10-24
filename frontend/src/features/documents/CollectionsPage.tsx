@@ -19,8 +19,7 @@ import { authStore } from "../../shared/auth/auth-store";
 import { formatDate } from "../../shared/format/date";
 import { Button } from "../../shared/ui/Button";
 import { PageContainer } from "../../shared/ui/PageContainer";
-import { StatusMessage } from "../../shared/ui/StatusMessage";
-import { showToast } from "../../shared/ui/Toast";
+import { ToastNotification, showToast } from "../../shared/ui/Toast";
 import { DocumentShell } from "./DocumentShell";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { usePinnedNotebooks } from "./pinned-notebooks";
@@ -178,9 +177,9 @@ export function CollectionsPage() {
         }
       >
         {groupsQuery.isError || notebooksQuery.isError || notesQuery.isError ? (
-          <StatusMessage tone="error" title="笔记本加载失败">
+          <ToastNotification tone="danger" title="笔记本加载失败">
             请检查 API 服务后重试。
-          </StatusMessage>
+          </ToastNotification>
         ) : null}
         <section className="workbench-section" aria-label="笔记本">
           {targetGroupId && !groupsQuery.isLoading && !groups.some(group => group.id === targetGroupId) ? <SearchGroupTarget id={targetGroupId} canCreate={canEdit} onCreate={() => setDialog({ kind: "notebook", groupId: targetGroupId })} /> : null}

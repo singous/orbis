@@ -119,7 +119,7 @@ it("keeps the source context after a failed save and allows a guarded retry", as
   const fetch = installApi();
   const view = renderSwitcher("rail", prepare);
   await chooseTarget(view);
-  expect(await screen.findByRole("alert")).toHaveTextContent("当前草稿保存失败");
+  expect(await screen.findByRole("alertdialog")).toHaveTextContent("当前草稿保存失败");
   expect(fetch.mock.calls.filter(([, init]) => init.method === "PUT")).toHaveLength(0);
   expect(authStore.getState().workspace?.id).toBe(SOURCE_ID);
   expect(view.path).toHaveTextContent(initialRoute);
@@ -147,7 +147,7 @@ it.each([false, true])("checks drafts again after a delayed switch response (lat
   await act(async () => { finishSwitch(response(switched.user)); });
   expect(savedDrafts).toEqual(["初始草稿", "请求期间的新草稿"]);
   if (lateSaveFails) {
-    expect(await screen.findByRole("alert")).toHaveTextContent("切换期间的新草稿未能保存");
+    expect(await screen.findByRole("alertdialog")).toHaveTextContent("切换期间的新草稿未能保存");
     expect(authStore.getState().workspace?.id).toBe(SOURCE_ID);
     expect(view.path).toHaveTextContent(initialRoute);
     expect(view.draft).toHaveValue(latestDraft);
@@ -196,7 +196,7 @@ it("keeps the active context if target membership is revoked after discovery", a
   installApi(async () => response(null, 403));
   const view = renderSwitcher();
   await chooseTarget(view);
-  expect(await screen.findByRole("alert")).toHaveTextContent("目标工作空间已不可用");
+  expect(await screen.findByRole("alertdialog")).toHaveTextContent("目标工作空间已不可用");
   expect(authStore.getState().workspace?.id).toBe(SOURCE_ID);
   expect(view.path).toHaveTextContent(initialRoute);
 });
@@ -221,7 +221,7 @@ it("retries membership discovery and aborts it when the selector closes", async 
   }));
   const view = renderSwitcher();
   await userEvent.click(view.trigger);
-  expect(await screen.findByRole("alert")).toHaveTextContent("工作空间加载失败");
+  expect(await screen.findByRole("alertdialog")).toHaveTextContent("工作空间加载失败");
   await userEvent.click(screen.getByRole("button", { name: "重新加载工作空间" }));
   await waitFor(() => expect(pendingSignal).toBeDefined());
   await userEvent.keyboard("{Escape}");

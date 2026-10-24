@@ -13,7 +13,7 @@ import { EmptyState } from "../../shared/ui/EmptyState";
 import { Plus, Table2 } from "../../shared/ui/icons";
 import { PageContainer } from "../../shared/ui/PageContainer";
 import { SelectField } from "../../shared/ui/SelectField";
-import { StatusMessage } from "../../shared/ui/StatusMessage";
+import { ToastNotification } from "../../shared/ui/Toast";
 import { TextInput } from "../../shared/ui/TextInput";
 import { DocumentShell } from "../documents/DocumentShell";
 import { useNotebooks } from "../documents/queries";
@@ -130,9 +130,9 @@ export function SheetsHome() {
             />
           </div>
           {list.error ? (
-            <StatusMessage role="alert" tone="error" title="无法读取数据表">
+            <ToastNotification tone="danger" title="无法读取数据表">
               {list.error.message}
-            </StatusMessage>
+            </ToastNotification>
           ) : items.length ? (
             <div className="sheet-home-list">
               {items.map((item) => (
@@ -220,9 +220,9 @@ export function SheetsHome() {
                 ))}
               </div>
               {error && (
-                <StatusMessage role="alert" tone="error" title="创建未完成">
+                <ToastNotification tone="danger" title="创建未完成">
                   {error}
-                </StatusMessage>
+                </ToastNotification>
               )}
             </div>
             <DialogFooter>

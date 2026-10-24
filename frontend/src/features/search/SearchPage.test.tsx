@@ -1,3 +1,4 @@
+import { Toaster } from "../../shared/ui/Toast";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -19,7 +20,7 @@ function response(payload: unknown, status = 200) { return new Response(JSON.str
 function CurrentPath() { const location = useLocation(); return <output aria-label="当前地址">{location.pathname}{location.search}</output>; }
 function renderSearch(entry = "/search") {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  const rendered = render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[entry]}><Routes><Route path="/search" element={<SearchPage />} /><Route path="/documents/search" element={<LegacyDocumentSearchRedirect />} /></Routes><CurrentPath /></MemoryRouter></QueryClientProvider>);
+  const rendered = render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[entry]}><Routes><Route path="/search" element={<SearchPage />} /><Route path="/documents/search" element={<LegacyDocumentSearchRedirect />} /></Routes><CurrentPath /></MemoryRouter><Toaster /></QueryClientProvider>);
   return { ...rendered, client };
 }
 beforeEach(() => { act(() => authStore.setState({ accessToken: "search-token", refreshToken: "refresh", user, workspace })); });
