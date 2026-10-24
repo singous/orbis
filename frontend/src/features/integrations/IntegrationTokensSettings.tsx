@@ -6,7 +6,7 @@ import { authRequestOptions, useAuthRequest } from "../../shared/auth/use-auth-r
 import { Button } from "../../shared/ui/Button";
 import { TextInput } from "../../shared/ui/TextInput";
 import { SelectField } from "../../shared/ui/SelectField";
-import { StatusMessage } from "../../shared/ui/StatusMessage";
+import { ToastNotification } from "../../shared/ui/Toast";
 
 type IntegrationToken = {
   id: string; name: string; permissions: string[]; secret_prefix: string;
@@ -85,7 +85,7 @@ function IntegrationTokensScope() {
   return <section className="workbench-settings-section" aria-labelledby="integration-tokens-title">
     <h2 id="integration-tokens-title">智能体与远程文档库</h2>
     <p>通过 Orbis CLI 将当前工作空间接入可以执行命令的智能体。令牌权限同时受你的当前成员角色约束，撤销后立即停止访问。</p>
-    {message ? <StatusMessage tone="error" title="集成令牌操作失败">{message}</StatusMessage> : null}
+    {message ? <ToastNotification tone="danger" title="集成令牌操作失败">{message}</ToastNotification> : null}
     <form className="profile-edit-form" onSubmit={create}>
       <TextInput label="令牌名称" required maxLength={120} value={name} disabled={pending} onChange={event => setName(event.target.value)} placeholder="例如：我的写作助手" />
       <SelectField label="权限" value={permission} disabled={pending} onChange={setPermission} options={[{ value: "read", label: "只读文档" }, ...(canWrite ? [{ value: "write", label: "读取与编辑文档" }] : [])]} />

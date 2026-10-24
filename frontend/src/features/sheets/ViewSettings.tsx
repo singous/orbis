@@ -3,7 +3,7 @@ import { ActionButton } from "../../shared/ui/ActionButton";
 import { Button } from "../../shared/ui/Button";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "../../shared/ui/icons";
 import { SelectField } from "../../shared/ui/SelectField";
-import { StatusMessage } from "../../shared/ui/StatusMessage";
+import { ToastNotification } from "../../shared/ui/Toast";
 import { ValueEditor } from "./Cell";
 import { FieldIcon } from "./FieldIcon";
 import { KINDS, type Field, type View } from "./model";
@@ -300,9 +300,9 @@ export function ViewSettings({
           </>
         )}
         {error && (
-          <StatusMessage role="alert" tone="error" title="无法应用设置">
+          <ToastNotification tone="danger" title="无法应用设置">
             {error}
-          </StatusMessage>
+          </ToastNotification>
         )}
         <footer>
           <Button size="sm" disabled={busy} onClick={onClose}>

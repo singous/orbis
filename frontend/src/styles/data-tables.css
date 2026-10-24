@@ -221,22 +221,6 @@
   border-radius: 8px;
   color: var(--text-secondary, #777);
 }
-.dt-notice,
-.dt-draft-bar {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
-  padding: 8px 16px;
-  font-size: 12px;
-  background: var(--surface-secondary, #f8f7f2);
-}
-.dt-notice {
-  color: var(--danger, #aa3e32);
-}
-.dt-draft-bar {
-  color: var(--dt-muted);
-}
 .dt-form {
   display: flex;
   flex-direction: column;

@@ -1,5 +1,5 @@
 import { LoadingState } from "../../shared/ui/LoadingState";
-import { StatusMessage } from "../../shared/ui/StatusMessage";
+import { ToastNotification, showToast } from "../../shared/ui/Toast";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { ArrowUpRight, ChevronRight, Globe, Plus } from "../../shared/ui/icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -13,7 +13,6 @@ import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { Button } from "../../shared/ui/Button";
 import { Dialog, DialogContent } from "../../shared/ui/Dialog";
 import { PageContainer } from "../../shared/ui/PageContainer";
-import { showToast } from "../../shared/ui/Toast";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
 import { createSite } from "./api";
@@ -68,7 +67,7 @@ export function SitesPage() {
         <section className="workbench-section" aria-label="文档站点">
           <header className="workbench-section-heading"><h2>全部站点</h2>{sites.data ? <span className="workbench-section-count">{sites.data.pagination.total} 个站点</span> : null}</header>
           {sites.isPending ? <LoadingState label="正在加载站点…" variant="cards" /> : sites.isError ? (
-            <StatusMessage role="alert" tone="error" title="无法加载站点"><ActionButton type="button" onClick={() => void sites.refetch()}>重新加载</ActionButton></StatusMessage>
+            <ToastNotification tone="danger" title="无法加载站点" timeout={0}><ActionButton type="button" onClick={() => void sites.refetch()}>重新加载</ActionButton></ToastNotification>
           ) : sites.data.items.length ? <>
             <div className="workbench-resource-grid">
               {sites.data.items.map((site) => (

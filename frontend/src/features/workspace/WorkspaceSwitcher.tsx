@@ -10,7 +10,7 @@ import { preparePendingNavigation } from "../../shared/navigation/pending-naviga
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Button } from "../../shared/ui/Button";
 import { LoadingState } from "../../shared/ui/LoadingState";
-import { StatusMessage } from "../../shared/ui/StatusMessage";
+import { ToastNotification } from "../../shared/ui/Toast";
 import { UserAvatar, identityColor } from "../../shared/ui/UserAvatar";
 import { OrbisLogo } from "../../shared/ui/OrbisLogo";
 import { Boxes, Check, ChevronDown } from "../../shared/ui/icons";
@@ -131,8 +131,8 @@ function WorkspaceChoices({ onClose }: { onClose: () => void }) {
       <span className="min-w-0 flex-1"><span className="workspace-switcher-name truncate">{user?.display_name || user?.email || "Orbis"}</span><span className="workspace-switcher-sub">选择当前工作空间</span></span>
     </div>
     {memberships.isPending ? <LoadingState label="正在加载工作空间…" compact /> : null}
-    {memberships.isError ? <StatusMessage tone="error" title="工作空间加载失败" role="alert"><Button size="sm" onClick={() => void memberships.refetch()}>重新加载工作空间</Button></StatusMessage> : null}
-    {error ? <StatusMessage tone="error" title="无法切换工作空间" role="alert">{error}</StatusMessage> : null}
+    {memberships.isError ? <ToastNotification tone="danger" title="工作空间加载失败" timeout={0}><Button size="sm" onClick={() => void memberships.refetch()}>重新加载工作空间</Button></ToastNotification> : null}
+    {error ? <ToastNotification tone="danger" title="无法切换工作空间">{error}</ToastNotification> : null}
     {memberships.isSuccess && workspace && !items.some(item => item.id === workspace.id) ? <p className="workspace-switcher-empty">当前工作空间不可用，请选择另一个空间。</p> : null}
     <ul className="workspace-switcher-list" aria-label="可用工作空间">
       {items.map(item => <li key={item.id}>

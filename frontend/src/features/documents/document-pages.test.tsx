@@ -1,3 +1,4 @@
+import { Toaster } from "../../shared/ui/Toast";
 import {QueryClient,QueryClientProvider} from "@tanstack/react-query";
 import {authStore} from "../../shared/auth/auth-store";
 import { transferableAbortController } from "node:util";
@@ -11,7 +12,7 @@ import { DocumentEditorPage } from "./editor/DocumentEditorPage";
 import { NotebookPage } from "./NotebookPage";
 import { ApiError } from "../../shared/api/api-client";
 
-function render(ui:React.ReactElement){return renderTestingLibrary(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}>{ui}</QueryClientProvider>);}
+function render(ui:React.ReactElement){return renderTestingLibrary(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}>{ui}<Toaster /></QueryClientProvider>);}
 
 const mocks = vi.hoisted(() => ({
   metadata:{} as Record<string,unknown>,
@@ -52,11 +53,11 @@ const mocks = vi.hoisted(() => ({
   }>,
 }));
 
-vi.mock("../../shared/ui/Toast", () => ({
+vi.mock("../../shared/ui/Toast", async importOriginal => ({
+  ...await importOriginal<typeof import("../../shared/ui/Toast")>(),
   showToast: mocks.toast,
   dismissToast: vi.fn(),
   useToast: () => ({ toast: mocks.toast }),
-  Toaster: () => null,
 }));
 
 vi.mock("./queries", () => {

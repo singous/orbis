@@ -17,8 +17,7 @@ import type { Note,NoteTreeItem } from "../../shared/api/schemas";
 import { authStore,getAuthSessionKey } from "../../shared/auth/auth-store";
 import { formatNotebookUpdateTime } from "./notebook-update-time";
 import { Button } from "../../shared/ui/Button";
-import { StatusMessage } from "../../shared/ui/StatusMessage";
-import { dismissToast, showToast } from "../../shared/ui/Toast";
+import { ToastNotification, dismissToast, showToast } from "../../shared/ui/Toast";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { ResourceDialog } from "./ResourceDialog";
 import { DocumentLink } from "./DocumentLink";
@@ -365,7 +364,7 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
           </div>
         </div>
       )}
-      {treeQuery.isError ? <StatusMessage tone="error" title="目录加载失败"><Button className="mt-3" variant="secondary" onClick={() => void treeQuery.refetch()}>重试加载目录</Button></StatusMessage> : null}
+      {treeQuery.isError ? <ToastNotification tone="danger" title="目录加载失败" timeout={0}><Button className="mt-3" variant="secondary" onClick={() => void treeQuery.refetch()}>重试加载目录</Button></ToastNotification> : null}
       {treeQuery.isLoading ? <LoadingState label="正在加载文档目录…" compact={!main} /> : null}
       {!treeQuery.isLoading && !treeQuery.isError && !treeItems.length ? (
         main ? (

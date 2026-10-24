@@ -1,3 +1,4 @@
+import { Toaster } from "../../src/shared/ui/Toast";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -25,7 +26,7 @@ afterEach(() => { cleanup(); authStore.getState().clearSession(); });
 it.each([408, 429])("retains the create operation after HTTP %s", async status => {
   api.create.mockRejectedValueOnce(new ApiError(status, "创建回执待确认")).mockResolvedValueOnce({ id: "sheet", document_id: "document", collection_id: "notebook" });
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  render(<QueryClientProvider client={client}><MemoryRouter><SheetsHome /></MemoryRouter></QueryClientProvider>);
+  render(<QueryClientProvider client={client}><MemoryRouter><SheetsHome /></MemoryRouter><Toaster /></QueryClientProvider>);
   fireEvent.click(screen.getAllByRole("button", { name: "新建数据表" })[0]);
   fireEvent.click(screen.getByRole("button", { name: "创建数据表" }));
   await screen.findByText("创建回执待确认");

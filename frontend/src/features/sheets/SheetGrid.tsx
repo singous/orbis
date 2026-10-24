@@ -1,3 +1,5 @@
+import { Button } from "../../shared/ui/Button";
+import { ToastNotification } from "../../shared/ui/Toast";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ChevronDown, Expand, Plus } from "lucide-react";
 import {
@@ -568,9 +570,9 @@ export function SheetGrid({
       }
     >
       {orphanDraft && (
-        <div className="sheet-notice" role="status">
+        <ToastNotification title="有未保存的单元格草稿" tone="warning" timeout={0}>
           <span>当前视图之外还有未保存的单元格草稿。</span>
-          <ActionButton
+          <Button
             size="sm"
             onClick={() => {
               const url = URL.createObjectURL(
@@ -586,8 +588,8 @@ export function SheetGrid({
             }}
           >
             导出草稿
-          </ActionButton>
-          <ActionButton
+          </Button>
+          <Button
             size="sm"
             onClick={() => {
               clearCellDraft(
@@ -601,8 +603,8 @@ export function SheetGrid({
             }}
           >
             放弃草稿
-          </ActionButton>
-        </div>
+          </Button>
+        </ToastNotification>
       )}
       {selected.size > 0 && (
         <div className="sheet-selection-bar">

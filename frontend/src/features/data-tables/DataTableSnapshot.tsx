@@ -1,3 +1,4 @@
+import { ToastNotification } from "../../shared/ui/Toast";
 import { z } from "zod";
 import { paginationSchema } from "../../shared/api/schemas";
 import { tableRows,publicRecordSchema } from "./public-contract";
@@ -75,9 +76,9 @@ export function DataTableSnapshot({ data }: { data: TableSnapshot }) {
         <span>{data.view}</span>
       </header>
       {error ? (
-        <p role="alert" className="dt-notice">
+        <ToastNotification tone="danger" title="表格快照加载失败">
           {error}
-        </p>
+        </ToastNotification>
       ) : null}
       <div className="dt-snapshot-scroll">
         <table>

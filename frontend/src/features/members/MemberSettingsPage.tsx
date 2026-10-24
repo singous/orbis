@@ -11,10 +11,10 @@ import { ApiError } from "../../shared/api/api-client";
 import { authStore } from "../../shared/auth/auth-store";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { Button } from "../../shared/ui/Button";
-import { StatusMessage } from "../../shared/ui/StatusMessage";
+import { ToastNotification, showToast } from "../../shared/ui/Toast";
 import { TextInput } from "../../shared/ui/TextInput";
 import { SelectField } from "../../shared/ui/SelectField";
-import { showToast } from "../../shared/ui/Toast";
+
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
 import { PageContainer } from "../../shared/ui/PageContainer";
 import {
@@ -99,8 +99,8 @@ export function MemberSettingsPage() {
   return (
     <WorkspaceShell>
       <PageContainer title="成员与权限" description="管理工作空间中的协作者与访问权限。">
-        {!canManage ? <StatusMessage tone="info" title="只读成员列表">你的角色不能邀请、移除或调整其他成员。</StatusMessage> : null}
-        {membersQuery.isError ? <div className="mb-5"><StatusMessage tone="error" title="成员列表加载失败">请刷新页面后重试。</StatusMessage></div> : null}
+        {!canManage ? <ToastNotification tone="default" title="只读成员列表">你的角色不能邀请、移除或调整其他成员。</ToastNotification> : null}
+        {membersQuery.isError ? <ToastNotification tone="danger" title="成员列表加载失败">请刷新页面后重试。</ToastNotification> : null}
 
         {canManage ? (
           <section className="workbench-member-invite">

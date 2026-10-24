@@ -4,7 +4,7 @@ import { ActionButton } from "../../shared/ui/ActionButton";
 import { Button } from "../../shared/ui/Button";
 import { ArrowDown, ArrowUp, GripVertical, Plus, Trash2 } from "../../shared/ui/icons";
 import { SelectField } from "../../shared/ui/SelectField";
-import { StatusMessage } from "../../shared/ui/StatusMessage";
+import { ToastNotification } from "../../shared/ui/Toast";
 import { TextInput } from "../../shared/ui/TextInput";
 import { ValueEditor } from "./Cell";
 import { COLORS, KINDS, type Field, type Kind } from "./model";
@@ -236,9 +236,9 @@ export function FieldSettings({
           </label>
         )}
         {error && (
-          <StatusMessage role="alert" tone="error" title="无法保存字段">
+          <ToastNotification tone="danger" title="无法保存字段">
             {error}
-          </StatusMessage>
+          </ToastNotification>
         )}
       </div>
       <div className="sheet-field-actions">

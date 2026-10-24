@@ -89,7 +89,7 @@ describe("site editing", () => {
     await userEvent.clear(input);
     await userEvent.type(input, "我的修改");
     await userEvent.click(screen.getByRole("button", { name: "保存设置" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("站点设置已被其他人修改");
+    expect(await screen.findByRole("alertdialog")).toHaveTextContent("站点设置已被其他人修改");
     expect(input).toHaveValue("我的修改");
   });
 

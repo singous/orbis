@@ -19,7 +19,7 @@ import { authStore } from "../../../shared/auth/auth-store";
 import { useOptionalAuthRequest } from "../../../shared/auth/use-auth-request";
 import { registerPendingNavigation } from "../../../shared/navigation/pending-navigation";
 import { Button } from "../../../shared/ui/Button";
-import { StatusMessage } from "../../../shared/ui/StatusMessage";
+import { ToastNotification } from "../../../shared/ui/Toast";
 import { v2ToMarkdown, type NoteBlocksV2 } from "../../content/model/blocks";
 import type { RestoreSavedRevision } from "../../collaboration/DocumentCollaborationPanel";
 import { canMutateWorkspaceContent } from "../../workspace/capabilities";
@@ -100,9 +100,9 @@ class EditorErrorBoundary extends Component<{ children: ReactNode }, { hasError:
   render() {
     if (this.state.hasError) {
       return (
-        <StatusMessage tone="error" title="编辑器加载失败">
+        <ToastNotification tone="danger" title="编辑器加载失败">
           文档内容暂时无法在编辑器中打开。请刷新重试，或返回文档中心。
-        </StatusMessage>
+        </ToastNotification>
       );
     }
     return this.props.children;
@@ -762,7 +762,7 @@ export function LegacyDocumentEditorPage() {
   }),[draftKey,noteId,workspace?.id,canEdit,tableWriters]);
 
   if (noteQuery.isError || contentQuery.isError) {
-    return <DocumentShell><div className="mx-auto max-w-3xl p-8"><StatusMessage tone="error" title="无法打开文档">文档可能已归档，或你没有访问权限。</StatusMessage><Link to="/documents" className="mt-4 inline-flex text-sm font-semibold">返回文档中心</Link></div></DocumentShell>;
+    return <DocumentShell><div className="mx-auto max-w-3xl p-8"><ToastNotification tone="danger" title="无法打开文档">文档可能已归档，或你没有访问权限。</ToastNotification><Link to="/documents" className="mt-4 inline-flex text-sm font-semibold">返回文档中心</Link></div></DocumentShell>;
   }
 
   const breadcrumb = (
@@ -795,9 +795,9 @@ export function LegacyDocumentEditorPage() {
 
   return (
     <DocumentShell editorLayout breadcrumb={breadcrumb} toolbar={toolbar} notebookId={noteQuery.data?.notebook_id} activeNoteId={noteId}>
-      {recoveryBlocked ? <div className="page-container"><StatusMessage tone="warning" title="本机草稿需要手动恢复">{recoveryBlocked.message}<div className="mt-3 flex flex-wrap gap-2"><Button onClick={()=>{
+      {recoveryBlocked ? <div className="page-container"><ToastNotification tone="warning" title="本机草稿需要手动恢复" timeout={0}>{recoveryBlocked.message}<div className="mt-3 flex flex-wrap gap-2"><Button onClick={()=>{
         const url=URL.createObjectURL(new Blob([JSON.stringify(recoveryBlocked.record)],{type:"application/json"}));const link=document.createElement("a");link.href=url;link.download=`orbis-local-draft-${noteId}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),0);
-      }}>下载本机草稿</Button><Button disabled={restoring} onClick={()=>void reloadServer()}>放弃本机恢复并载入服务端版本</Button></div></StatusMessage></div> : !draft || !noteQuery.data || hydratedNoteRef.current !== draftKey ? <div className="page-container"><LoadingState label="正在打开文档…" variant="editor" /></div> : (
+      }}>下载本机草稿</Button><Button disabled={restoring} onClick={()=>void reloadServer()}>放弃本机恢复并载入服务端版本</Button></div></ToastNotification></div> : !draft || !noteQuery.data || hydratedNoteRef.current !== draftKey ? <div className="page-container"><LoadingState label="正在打开文档…" variant="editor" /></div> : (
         <EditorLayout outlineStore={outlineStore}>
           <article className="editor-canvas">
             <HeroInput
@@ -810,13 +810,13 @@ export function LegacyDocumentEditorPage() {
             />
             <div className="mb-7 mt-2 flex items-center gap-2 text-xs text-[var(--muted-light)]"><span>{canEdit ? "停手后自动保存" : "只读访问"}</span></div>
 
-            {archiveError ? <div role="alert" className="mb-5"><StatusMessage tone="error" title="未能归档文档">{archiveError}</StatusMessage></div> : null}
-            {checkpoints.candidates.length ? <StatusMessage tone="warning" title="检测到其他会话保留的本机草稿">选择需要恢复的内容，原会话草稿会继续保留。<div className="mt-3 flex flex-wrap gap-2">{checkpoints.candidates.map(record => <Button key={record.scopeKey} size="sm" variant="secondary" disabled={autosaveState !== "saved"} onClick={() => void recoverLocalDraft(record)}>恢复“{record.current.title || "未命名文档"}”（基础版本 {record.saved.version}）</Button>)}<Button size="sm" variant="ghost" onClick={checkpoints.dismissCandidates}>稍后处理</Button></div></StatusMessage> : null}
-            {checkpoints.status.status === "failed" && autosaveState !== "saved" ? <StatusMessage tone="warning" title="本机草稿尚未持久保存">浏览器存储暂不可用，请保持页面打开并重试同步。<Button variant="ghost" onClick={() => void checkpoints.controller.flush().catch(() => {})}>重试保存到本机</Button></StatusMessage> : null}
-            {saveState === "conflict" ? <div className="mb-5"><StatusMessage tone="warning" title="检测到其他窗口的更新">本地草稿仍保留。建议先复制本地 Markdown，再载入服务端版本。
+            {archiveError ? <ToastNotification tone="danger" title="未能归档文档">{archiveError}</ToastNotification> : null}
+            {checkpoints.candidates.length ? <ToastNotification tone="warning" title="检测到其他会话保留的本机草稿" timeout={0}>选择需要恢复的内容，原会话草稿会继续保留。<div className="mt-3 flex flex-wrap gap-2">{checkpoints.candidates.map(record => <Button key={record.scopeKey} size="sm" variant="secondary" disabled={autosaveState !== "saved"} onClick={() => void recoverLocalDraft(record)}>恢复“{record.current.title || "未命名文档"}”（基础版本 {record.saved.version}）</Button>)}<Button size="sm" variant="ghost" onClick={checkpoints.dismissCandidates}>稍后处理</Button></div></ToastNotification> : null}
+            {checkpoints.status.status === "failed" && autosaveState !== "saved" ? <ToastNotification tone="warning" title="本机草稿尚未持久保存" timeout={0}>浏览器存储暂不可用，请保持页面打开并重试同步。<Button variant="ghost" onClick={() => void checkpoints.controller.flush().catch(() => {})}>重试保存到本机</Button></ToastNotification> : null}
+            {saveState === "conflict" ? <ToastNotification tone="warning" title="检测到其他窗口的更新" timeout={0}>本地草稿仍保留。建议先复制本地 Markdown，再载入服务端版本。
               <div className="mt-3 flex flex-wrap gap-2"><Button variant="secondary" icon={<Download aria-hidden="true" size={14} />} onClick={() => void loadCompleteContent().then(() => navigator.clipboard?.writeText(v2ToMarkdown((coordinatorRef.current?.current ?? draft).blocks.blocks))).catch(() => {})}>复制本地 Markdown</Button><Button variant="secondary" icon={<RotateCcw aria-hidden="true" size={14} />} onClick={reloadServer}>载入服务端版本</Button></div>
-            </StatusMessage></div> : null}
-            {saveState === "error" && !editorError ? <div className="mb-5"><StatusMessage tone="error" title="自动保存失败">网络恢复后可手动重试，本地草稿不会丢失。<div className="mt-3"><Button variant="secondary" icon={<RefreshCw aria-hidden="true" size={14} />} onClick={() => coordinatorRef.current?.retry()}>重试保存</Button></div></StatusMessage></div> : null}
+            </ToastNotification> : null}
+            {saveState === "error" && !editorError ? <ToastNotification tone="danger" title="自动保存失败" timeout={0}>网络恢复后可手动重试，本地草稿不会丢失。<div className="mt-3"><Button variant="secondary" icon={<RefreshCw aria-hidden="true" size={14} />} onClick={() => coordinatorRef.current?.retry()}>重试保存</Button></div></ToastNotification> : null}
 
             <DocumentCopyContext.Provider value={copyPort}><TableHostContext.Provider value={tableHost}><EditorErrorBoundary key={noteId}>
               <Suspense fallback={<LoadingState label="正在准备编辑…" variant="editor-body" delayMs={180} />}>
@@ -837,7 +837,7 @@ export function LegacyDocumentEditorPage() {
             </EditorErrorBoundary></TableHostContext.Provider></DocumentCopyContext.Provider>
             {hasMoreContent ? <div ref={loadMoreTarget} className="document-load-more" aria-live="polite">
               {loadingMore ? <LoadingState label="正在载入后续正文…" compact /> : null}
-              {loadMoreError ? <StatusMessage tone="error" title="后续正文未能载入">{loadMoreError}<Button variant="secondary" onClick={() => void loadMoreContent().catch(() => {})}>重试加载</Button></StatusMessage> : null}
+              {loadMoreError ? <ToastNotification tone="danger" title="后续正文未能载入" timeout={0}>{loadMoreError}<Button variant="secondary" onClick={() => void loadMoreContent().catch(() => {})}>重试加载</Button></ToastNotification> : null}
               {!loadingMore && !loadMoreError ? <Button variant="ghost" onClick={() => void loadMoreContent().catch(() => {})}>继续阅读</Button> : null}
             </div> : null}
           </article>
