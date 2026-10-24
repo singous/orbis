@@ -470,10 +470,12 @@
 }
 .sheet-option-edit {
   display: grid;
-  grid-template-columns: 16px minmax(0, 1fr) 100px 32px;
+  grid-template-columns: 16px minmax(0, 1fr) 88px auto;
   gap: 8px;
   align-items: center;
 }
+.sheet-option-actions { display: flex; align-items: center; gap: var(--orbis-space-1); }
+.sheet-option-actions > .orbis-action-button { min-width: var(--orbis-control-compact-height); padding-inline: var(--orbis-space-1); }
 .sheet-option-edit > svg {
   color: var(--text-tertiary);
   cursor: grab;
@@ -1184,8 +1186,9 @@
     opacity: 1;
   }
   .sheet-option-edit {
-    grid-template-columns: 16px minmax(0, 1fr) 88px 28px;
+    grid-template-columns: 16px minmax(0, 1fr) 88px;
   }
+  .sheet-option-actions { grid-column: 2 / -1; justify-content: flex-end; }
   .sheet-record-dialog {
     width: calc(100vw - 24px);
   }
@@ -1581,6 +1584,9 @@
   display: flex;
   align-items: center;
 }
+.sheet-card-cell > :not(.sheet-inline-editor) { min-width: 0; }
+.sheet-card-edit-trigger.orbis-action-button { flex: none; margin-left: auto; }
+.sheet-board-details.orbis-action-button { align-self: flex-end; }
 .sheet-card-cell:has(.sheet-inline-editor) {
   outline: 2px solid var(--accent);
 }
@@ -1667,7 +1673,8 @@ textarea.sheet-inline-input {
   .sheet-cell-picker-popover { width: 360px; }
   .sheet-option-edit { grid-template-columns: 16px minmax(0, 1fr) var(--orbis-control-touch-height); }
   .sheet-option-edit > .orbis-select-field { grid-column: 2; }
-  .sheet-option-edit > button { grid-column: 3; grid-row: auto; min-width: var(--orbis-control-touch-height); }
+  .sheet-option-edit > .sheet-option-actions { grid-column: 2 / -1; justify-content: flex-end; }
+  .sheet-option-actions > .orbis-action-button { min-width: var(--orbis-control-touch-height); min-height: var(--orbis-control-touch-height); }
 }
 
 @media (prefers-reduced-motion: reduce) { .sheet-popover { animation: none; } }
