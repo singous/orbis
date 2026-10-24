@@ -72,7 +72,7 @@ test("table, field menus, board and public collection share the same records", a
   await page.getByRole("menuitem", { name: "看板视图", exact: true }).click();
   await expect(page.locator(".sheet-board")).toBeVisible();
   await expect(
-    page.getByRole("button", { name: /准备产品演示/ }),
+    page.locator(".sheet-board").getByRole("article").filter({ hasText: "准备产品演示" }),
   ).toBeVisible();
   await page.getByRole("tab", { name: "表格视图", exact: true }).click();
   await page.getByRole("button", { name: "生成表单", exact: true }).click();
@@ -288,7 +288,7 @@ test("selection paste, duplicate highlighting, resize and filters operate on sto
   await page.evaluate(() =>
     navigator.clipboard.writeText("重复内容\n重复内容"),
   );
-  await page.keyboard.press("Control+V");
+  await page.keyboard.press("ControlOrMeta+V");
   await expect(page.getByText("2 条记录", { exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByRole("gridcell").first()).toContainText("重复内容");
