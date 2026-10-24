@@ -1,3 +1,4 @@
+import { newUUID } from "../../shared/ids";
 import { useRef, useState } from "react";
 import { ApiError } from "../../shared/api/api-client";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
@@ -22,7 +23,7 @@ export function QuickNoteTags({ open, onOpenChange, tags, onChanged }: { open: b
     if (lock.current) return;
     lock.current = true; setBusy(true); setError("");
     const target = remove ? removing : editing;
-    const action = pending ?? { id: target?.id ?? null, remove, body: { operation_id: crypto.randomUUID(), expected_version: target?.version ?? 0, ...(remove ? {} : { name: name.trim() }) } };
+    const action = pending ?? { id: target?.id ?? null, remove, body: { operation_id: newUUID(), expected_version: target?.version ?? 0, ...(remove ? {} : { name: name.trim() }) } };
     setPending(action);
     try { await writeQuickNoteTag(auth, action.id, action.body, action.remove); setPending(null); setEditing(null); setRemoving(null); setName(""); onChanged(); }
     catch (error) { setError(error instanceof Error ? error.message : "标签操作失败"); if (error instanceof ApiError && error.status < 500 && ![408, 429].includes(error.status)) setPending(null); }

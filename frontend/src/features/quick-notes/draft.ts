@@ -1,3 +1,4 @@
+import { newUUID } from "../../shared/ids";
 import { z } from "zod";
 import { nativeBlockSchema, type NativeBlock } from "../content/codecs/api-content";
 import type { NoteWrite, QuickNote } from "./api";
@@ -26,7 +27,7 @@ export function writeDraft(key: string, draft: QuickNoteDraft): boolean {
 }
 export function removeDraft(key: string): void { try { localStorage.removeItem(key); } catch { /* The submitted receipt still makes restoring this draft safe to retry. */ } }
 export function pendingWrite(draft: QuickNoteDraft): NoteWrite {
-  return draft.pending ?? { operation_id: crypto.randomUUID(), expected_version: draft.expected_version, blocks: draft.blocks, tag_ids: draft.tag_ids };
+  return draft.pending ?? { operation_id: newUUID(), expected_version: draft.expected_version, blocks: draft.blocks, tag_ids: draft.tag_ids };
 }
 export function hasNoteContent(blocks: NativeBlock[]): boolean {
   return blocks.some(block => block.content.some(run => run.text.trim()) || Boolean(block.props.source) || hasNoteContent(block.children));

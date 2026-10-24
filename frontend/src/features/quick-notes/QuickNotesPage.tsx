@@ -1,3 +1,4 @@
+import { newUUID } from "../../shared/ids";
 import { useEffect, useRef, useState } from "react";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useStore } from "zustand";
@@ -94,7 +95,7 @@ function QuickNotesWorkspace() {
           {notes.isError || tags.isError || summary.isError ? <div className="quick-note-error" role="alert">随手记加载失败，请重试。<Button onClick={refresh}>重新加载</Button></div> : null}
           {notes.isPending ? <LoadingState label="正在加载随手记…" variant="cards" /> : null}
           {!notes.isPending && !notes.isError && !items.length ? <div className="quick-notes-empty"><StickyNote size={36} /><h2>{filter.deleted ? "回收站是空的" : filter.q || filter.tag ? "没有找到匹配的记录" : "记下第一个想法"}</h2><p>{filter.deleted ? "移入回收站的记录可以在这里恢复。" : filter.q || filter.tag ? "试试其他关键词或标签。" : "一句灵感、一段代码、一张图片，都可以从这里开始。"}</p></div> : null}
-          <FileContentContext.Provider value={files}><div className={`quick-notes-records is-${view}`}>{items.map(note => <NoteCard key={note.id} note={note} tags={tagItems} canEdit={canEdit} disabled={Boolean(patch)} onEdit={() => setEditing(note)} onPatch={change => void runPatch({ id: note.id, body: { ...change, operation_id: crypto.randomUUID(), expected_version: note.version } })} />)}</div></FileContentContext.Provider>
+          <FileContentContext.Provider value={files}><div className={`quick-notes-records is-${view}`}>{items.map(note => <NoteCard key={note.id} note={note} tags={tagItems} canEdit={canEdit} disabled={Boolean(patch)} onEdit={() => setEditing(note)} onPatch={change => void runPatch({ id: note.id, body: { ...change, operation_id: newUUID(), expected_version: note.version } })} />)}</div></FileContentContext.Provider>
           {notes.hasNextPage ? <Button className="quick-notes-load-more" isPending={notes.isFetchingNextPage} onClick={() => void notes.fetchNextPage()}>加载更多</Button> : null}
         </section>
       </div>
