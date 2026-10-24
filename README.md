@@ -72,12 +72,12 @@ Orbis 将文集、块文档、多维表格和文档站放进同一个工作空�
 
 ### 自托管
 
-0.1.1 已在 `release/axian-0.1.1` 分支封版，暂未创建 tag，也未合入 `main`。本次提供封版源码和通用 Docker Compose 模板。你需要 Docker Engine、Compose V2 和 Git；运行构建后的镜像无需在宿主机安装 Go 或 Node.js。
+0.1.1 已在 `release/v0.1.1` 分支封版，暂未创建 tag，也未合入 `main`。本次提供封版源码和通用 Docker Compose 模板。你需要 Docker Engine、Compose V2 和 Git；运行构建后的镜像无需在宿主机安装 Go 或 Node.js。
 
 获取封版源码，构建服务端、前端和协同引擎镜像：
 
 ```bash
-git clone --branch release/axian-0.1.1 https://github.com/singous/orbis.git
+git clone --branch release/v0.1.1 https://github.com/singous/orbis.git
 cd orbis
 
 docker build --target server --build-arg ORBIS_VERSION=0.1.1 -t orbis-server:0.1.1 .
