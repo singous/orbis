@@ -119,7 +119,7 @@ test("the restored home keeps its rail while hiding the function sidebar", async
   await expect(page.getByRole("button", { name: "打开主导航", exact: true })).toBeFocused();
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/documents/search");
-  await expect(page.getByRole("button", { name: "搜索", exact: true })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByRole("navigation", { name: "业务板块", exact: true }).getByRole("button", { name: "搜索", exact: true })).toHaveAttribute("aria-current", "page");
   await expect(page.locator('.rail-action[aria-label="搜索"] .orbis-icon-solid')).toBeVisible();
   await page.goto("/sites");
   await expect(page.locator('.rail-action[aria-label="搜索"]')).not.toHaveAttribute("aria-current", "page");

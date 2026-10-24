@@ -3,7 +3,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useRef, useState } from "react";
 import { newUUID } from "../../shared/ids";
 import { ActionButton } from "../../shared/ui/ActionButton";
-import { Plus } from "../../shared/ui/icons";
+import { Eye, Pencil, Plus } from "../../shared/ui/icons";
 import { CellValue } from "./Cell";
 import { CellEditor } from "./CellEditor";
 import {
@@ -31,26 +31,29 @@ function BoardCell({
 }) {
   const [editing, setEditing] = useState(false),
     [value, setValue] = useState<Value>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const wasEditing = useRef(false);
+  const editable = !readOnly && !KINDS[field.kind].system;
+  useEffect(() => {
+    if (wasEditing.current && !editing) trigger.current?.focus({ preventScroll: true });
+    wasEditing.current = editing;
+  }, [editing]);
+  function edit() {
+    if (!editable || c.busy || editing) return;
+    if (field.kind === "checkbox") {
+      void c.change([{ id: row.id, version: row.version, values: { [field.id]: !row.values[field.id] } }]).catch(() => {});
+    } else {
+      setValue(row.values[field.id] ?? null);
+      setEditing(true);
+    }
+  }
   return (
     <div
       className={`sheet-card-field sheet-card-editable${primary ? " sheet-card-title" : ""}`}
       onClick={(e) => {
         e.stopPropagation();
-        if (readOnly || c.busy || editing || KINDS[field.kind].system) return;
-        if (field.kind === "checkbox")
-          void c
-            .change([
-              {
-                id: row.id,
-                version: row.version,
-                values: { [field.id]: !row.values[field.id] },
-              },
-            ])
-            .catch(() => {});
-        else {
-          setValue(row.values[field.id] ?? null);
-          setEditing(true);
-        }
+        if ((e.target as HTMLElement).closest("button,a,textarea,select")) return;
+        edit();
       }}
     >
       {!primary && <small>{field.name}</small>}
@@ -95,6 +98,15 @@ function BoardCell({
             {primary ? "未命名记录" : "点击填写"}
           </span>
         )}
+        {editable && !editing ? <ActionButton
+          ref={trigger}
+          size="sm"
+          className="sheet-card-edit-trigger"
+          aria-label={`${field.kind === "checkbox" ? "切换" : "编辑"}${field.name}`}
+          aria-pressed={field.kind === "checkbox" ? Boolean(row.values[field.id]) : undefined}
+          disabled={c.busy}
+          onClick={event => { event.stopPropagation(); edit(); }}
+        ><Pencil size={14} /></ActionButton> : null}
       </div>
     </div>
   );
@@ -175,8 +187,6 @@ function ColumnRecords({
                 style={{ transform: `translateY(${item.start}px)` }}
               >
                 <article
-                  role="button"
-                  tabIndex={0}
                   className="sheet-board-card"
                   draggable={!readOnly && !c.busy}
                   onDragStart={(e) =>
@@ -190,17 +200,8 @@ function ColumnRecords({
                     )
                   }
                   onClick={(e) => {
-                    if (!(e.target as HTMLElement).closest("button,a,input"))
+                    if (!(e.target as HTMLElement).closest("button,a,input,textarea,select"))
                       onRecord(row);
-                  }}
-                  onKeyDown={(e) => {
-                    if (
-                      e.target === e.currentTarget &&
-                      (e.key === "Enter" || e.key === " ")
-                    ) {
-                      e.preventDefault();
-                      onRecord(row);
-                    }
                   }}
                 >
                   {fields.slice(0, 5).map((field, index) => (
@@ -213,6 +214,7 @@ function ColumnRecords({
                       primary={index === 0}
                     />
                   ))}
+                  <ActionButton size="sm" className="sheet-board-details" aria-label="查看记录详情" onClick={event => { event.stopPropagation(); onRecord(row); }}><Eye size={14} />查看详情</ActionButton>
                 </article>
               </div>
             );

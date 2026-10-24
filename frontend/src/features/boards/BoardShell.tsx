@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 import {
   ArrowLeft,
   BookOpen,
-  ChevronLeft,
   ChevronRight,
   CircleHelp,
   History,
@@ -156,30 +155,28 @@ export function BoardShell({
         </header>
         {children}
       </section>
-      {help ? (
-        <Dialog open onOpenChange={setHelp}>
-          <DialogContent title="画板快捷键">
-            <dl className="board-shortcuts">
-              <dt>空格 + 拖动</dt>
-              <dd>平移画布</dd>
-              <dt>Ctrl / ⌘ + 滚轮</dt>
-              <dd>缩放画布</dd>
-              <dt>Ctrl / ⌘ + Z</dt>
-              <dd>撤销</dd>
-              <dt>Ctrl / ⌘ + Shift + Z</dt>
-              <dd>重做</dd>
-              <dt>Ctrl / ⌘ + C / V</dt>
-              <dd>复制 / 粘贴对象</dd>
-              <dt>方向键</dt>
-              <dd>微调位置，Shift 加速</dd>
-              <dt>双击对象</dt>
-              <dd>编辑文字</dd>
-              <dt>Escape</dt>
-              <dd>结束工具并取消选择</dd>
-            </dl>
-          </DialogContent>
-        </Dialog>
-      ) : null}
+      <Dialog open={help} onOpenChange={setHelp}>
+        <DialogContent title="画板快捷键">
+          <dl className="board-shortcuts">
+            <dt>空格 + 拖动</dt>
+            <dd>平移画布</dd>
+            <dt>Ctrl / ⌘ + 滚轮</dt>
+            <dd>缩放画布</dd>
+            <dt>Ctrl / ⌘ + Z</dt>
+            <dd>撤销</dd>
+            <dt>Ctrl / ⌘ + Shift + Z</dt>
+            <dd>重做</dd>
+            <dt>Ctrl / ⌘ + C / V</dt>
+            <dd>复制 / 粘贴对象</dd>
+            <dt>方向键</dt>
+            <dd>微调位置，Shift 加速</dd>
+            <dt>双击对象</dt>
+            <dd>编辑文字</dd>
+            <dt>Escape</dt>
+            <dd>结束工具并取消选择</dd>
+          </dl>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

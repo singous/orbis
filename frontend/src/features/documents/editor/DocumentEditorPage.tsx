@@ -75,7 +75,6 @@ import {
   useNote,
   useNoteContent,
   useSaveNoteContent,
-  useUpdateNote,
 } from "../queries";
 import { isUnavailableResourceError } from "../resource-errors";
 
@@ -147,7 +146,9 @@ export function LegacyDocumentEditorPage() {
   const editorErrorRef = useRef<string | null>(null);
   const [autosaveState, setSaveState] = useState<AutosaveState>("saved");
   const [collaborationOpen, setCollaborationOpen] = useState(Boolean(commentId));
-  useEffect(() => { setCollaborationOpen(Boolean(commentId)); }, [noteId, commentId]);
+  const [collaborationMounted, setCollaborationMounted] = useState(Boolean(commentId));
+  const [collaborationSession, setCollaborationSession] = useState(0);
+  useEffect(() => { setCollaborationOpen(Boolean(commentId)); if (commentId) setCollaborationMounted(true); }, [noteId, commentId]);
   const [restoring, setRestoring] = useState(false);
   const [archiving, setArchiving] = useState(false);
   const [archiveError, setArchiveError] = useState<string | null>(null);
@@ -780,7 +781,7 @@ export function LegacyDocumentEditorPage() {
       </span>
       <span className="document-header-divider" aria-hidden="true" />
       {canEdit && noteQuery.data ? <ShareButton notebookId={noteQuery.data.notebook_id!} noteId={noteId} title={draft?.title || noteQuery.data.title} /> : null}
-      <ActionButton ref={collaborationTriggerRef} type="button" className="document-comment-trigger" aria-label="评论与历史" aria-haspopup="dialog" aria-expanded={collaborationOpen} disabled={!draft || archiving} onClick={() => setCollaborationOpen(true)}><MessageSquare aria-hidden="true" size={16} /><span>评论</span></ActionButton>
+      <ActionButton ref={collaborationTriggerRef} type="button" className="document-comment-trigger" aria-label="评论与历史" aria-haspopup="dialog" aria-expanded={collaborationOpen} disabled={!draft || archiving} onClick={() => { setCollaborationMounted(true); setCollaborationSession(value => value + 1); setCollaborationOpen(true); }}><MessageSquare aria-hidden="true" size={16} /><span>评论</span></ActionButton>
       {canEdit ? <Dropdown>
         <ActionButton type="button" className="icon-button" aria-label="更多文档操作" disabled={!draft || editorBusy}><MoreHorizontal aria-hidden="true" size={18} /></ActionButton>
         <Dropdown.Popover placement="bottom end" className="document-actions-popover" offset={6}>
@@ -842,7 +843,7 @@ export function LegacyDocumentEditorPage() {
           </article>
         </EditorLayout>
       )}
-      {collaborationOpen ? <Suspense fallback={<LoadingState label="正在加载评论与历史…" compact />}><DocumentCollaborationPanel key={noteId} noteId={noteId} currentUserId={currentUserId} canManage={canEdit} onClose={closeCollaboration} onRestore={restoreSavedRevision} onPrepareVersion={async () => { const coordinator = coordinatorRef.current; if (!coordinator || !canEdit || restoringRef.current || archivingRef.current) throw new Error("当前草稿尚未准备好。"); return (await flushCurrentDraft(coordinator)).version; }} /></Suspense> : null}
+      {collaborationMounted ? <Suspense fallback={collaborationOpen ? <LoadingState label="正在加载评论与历史…" compact /> : null}><DocumentCollaborationPanel key={`${noteId}:${collaborationSession}`} open={collaborationOpen} noteId={noteId} currentUserId={currentUserId} canManage={canEdit} onClose={closeCollaboration} onRestore={restoreSavedRevision} onPrepareVersion={async () => { const coordinator = coordinatorRef.current; if (!coordinator || !canEdit || restoringRef.current || archivingRef.current) throw new Error("当前草稿尚未准备好。"); return (await flushCurrentDraft(coordinator)).version; }} /></Suspense> : null}
     </DocumentShell>
   );
 }

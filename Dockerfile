@@ -72,6 +72,8 @@ COPY --chmod=644 api/editor-prosemirror-schema.json /app/api/editor-prosemirror-
 RUN mkdir -p node_modules/.vite && chown 1000:1000 . node_modules/.vite
 
 FROM frontend-source AS frontend-test
+RUN install -d -m 755 /app/internal/publishing/reader
+COPY --chmod=644 internal/publishing/reader/reader.js /app/internal/publishing/reader/reader.js
 CMD ["npm", "run", "test:run"]
 
 FROM frontend-source AS frontend-build

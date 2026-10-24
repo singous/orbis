@@ -665,17 +665,6 @@ export function SheetGrid({
             busy
           )
             return;
-          if (editing) {
-            clearCellDraft(
-              cellDraftKey,
-              editing.row.id,
-              editing.field.id,
-              editing.value,
-            );
-            queuedCommit.current = null;
-            latest.current.editing = null;
-            setEditing(null);
-          }
           e.preventDefault();
           try {
             const data = decodeCells(clipboard);
@@ -694,6 +683,18 @@ export function SheetGrid({
                 ),
               };
             });
+            // 先校验粘贴内容；无效输入必须保留当前编辑器和本机草稿。
+            if (editing) {
+              clearCellDraft(
+                cellDraftKey,
+                editing.row.id,
+                editing.field.id,
+                editing.value,
+              );
+              queuedCommit.current = null;
+              latest.current.editing = null;
+              setEditing(null);
+            }
             void onChange(patches).catch((e) => onError(e.message));
           } catch (err) {
             onError((err as Error).message);
@@ -738,10 +739,13 @@ export function SheetGrid({
                   role="separator"
                   aria-label={`调整${field.name}列宽`}
                   aria-orientation="vertical"
-                  tabIndex={0}
+                  tabIndex={readOnly ? -1 : 0}
+                  aria-disabled={readOnly || undefined}
                   className="sheet-resize"
                   onKeyDown={(e) => {
-                    if (["ArrowLeft", "ArrowRight"].includes(e.key))
+                    if (readOnly) return;
+                    if (["ArrowLeft", "ArrowRight"].includes(e.key)) {
+                      e.preventDefault();
                       onWidth(
                         field.id,
                         Math.max(
@@ -752,6 +756,7 @@ export function SheetGrid({
                           ),
                         ),
                       );
+                    }
                   }}
                   onPointerDown={(e) => {
                     if (readOnly) return;

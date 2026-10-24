@@ -1,0 +1,62 @@
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { SheetBoard } from "../../src/features/sheets/SheetBoard";
+import { newField, newView, type Row, type Sheet } from "../../src/features/sheets/model";
+import type { SheetController } from "../../src/features/sheets/use-sheet";
+
+const query = vi.hoisted(() => ({ rows: [] as Row[] }));
+vi.mock("@tanstack/react-query", () => ({ useQuery: () => ({ data: { items: query.rows, next_cursor: "" }, error: null, isFetching: false }) }));
+vi.mock("@tanstack/react-virtual", () => ({ useVirtualizer: (options: { count: number }) => ({ getTotalSize: () => options.count * 200, getVirtualItems: () => Array.from({ length: options.count }, (_, index) => ({ index, key: index, start: index * 200 })), measureElement: () => {} }) }));
+const name = { ...newField("text"), id: "name", name: "名称" };
+const flag = { ...newField("checkbox"), id: "flag", name: "已完成" };
+const group = { ...newField("select"), id: "group", name: "状态", options: [] };
+const row: Row = { id: "row", version: 2, position: 0, values: { name: "记录正文", flag: false }, created_at_ms: 1, updated_at_ms: 1, created_by: null, updated_by: null };
+const view = { ...newView({ definition: { fields: [name, flag] } } as Sheet, "kanban"), group_field_id: group.id };
+beforeEach(() => { query.rows = [row]; vi.stubGlobal("IntersectionObserver", undefined); Object.defineProperty(HTMLElement.prototype, "scrollTo", { configurable: true, value: vi.fn() }); });
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+function mount(readOnly = false) {
+  const change = vi.fn().mockResolvedValue({ records: [{ ...row, version: 3 }] });
+  const onRecord = vi.fn();
+  const controller = { auth: { accessToken: "a", refreshToken: null, workspaceId: "workspace", onTokenRefresh: () => {}, onUnauthorized: () => {} }, view, busy: false, search: "", api: { records: vi.fn() }, meta: { data: { id: "sheet", version: 1 } }, stats: { data: { groups: [] } }, change } as unknown as SheetController;
+  render(<SheetBoard controller={controller} fields={[name, flag, group]} readOnly={readOnly} onRecord={onRecord} />);
+  return { change, onRecord };
+}
+it("opens, cancels and saves a card field using keyboard without opening record details", async () => {
+  const { change, onRecord } = mount();
+  const user = userEvent.setup();
+  const edit = screen.getByRole("button", { name: "编辑名称" });
+  act(() => edit.focus());
+  await user.keyboard("{Enter}");
+  const input = screen.getByRole("textbox", { name: "名称" });
+  expect(input).toHaveFocus();
+  await user.keyboard("{Escape}");
+  await waitFor(() => expect(screen.getByRole("button", { name: "编辑名称" })).toHaveFocus());
+  expect(onRecord).not.toHaveBeenCalled();
+  await user.keyboard("{Enter}");
+  fireEvent.change(screen.getByRole("textbox", { name: "名称" }), { target: { value: "键盘修改" } });
+  await user.keyboard("{Enter}");
+  await waitFor(() => expect(change).toHaveBeenCalledWith([{ id: row.id, version: row.version, values: { name: "键盘修改" } }]));
+  expect(onRecord).not.toHaveBeenCalled();
+  const details = screen.getByRole("button", { name: "查看记录详情" });
+  act(() => details.focus());
+  await user.keyboard(" ");
+  expect(onRecord).toHaveBeenCalledWith(row);
+  expect(document.querySelector("button button")).toBeNull();
+  expect(edit.closest('[role="button"]')).toBeNull();
+});
+it("toggles checkbox fields by keyboard and keeps read-only cards limited to details", async () => {
+  const { change, onRecord } = mount();
+  const user = userEvent.setup();
+  act(() => screen.getByRole("button", { name: "切换已完成" }).focus());
+  await user.keyboard(" ");
+  expect(change).toHaveBeenCalledWith([{ id: row.id, version: row.version, values: { flag: true } }]);
+  expect(onRecord).not.toHaveBeenCalled();
+  cleanup();
+  const readonly = mount(true);
+  expect(screen.queryByRole("button", { name: "编辑名称" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "切换已完成" })).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "查看记录详情" }));
+  expect(readonly.onRecord).toHaveBeenCalledWith(row);
+  expect(readonly.change).not.toHaveBeenCalled();
+});

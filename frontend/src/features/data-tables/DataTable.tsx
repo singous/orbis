@@ -152,8 +152,8 @@ function DataTableEditor({
         <Table2 size={22} />
         <span>{table.error ?? "正在读取数据表…"}</span>
         {table.error ? (
-          <Button size="sm" onClick={() => void table.refresh()}>
-            重试
+          <Button size="sm" disabled={table.loading} onClick={() => void table.retry()}>
+            {table.loading ? "正在重试…" : "重试"}
           </Button>
         ) : null}
       </section>

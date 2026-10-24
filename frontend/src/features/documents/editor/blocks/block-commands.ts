@@ -244,7 +244,12 @@ export function executeBlockCommand(editor: Editor, ids: string[], action: Block
     return { ok: true, selectedIds: next.selectedIds };
   } catch (error) {
     if(!dispatched)staged?.rollback();
-    console.warn("Block command rejected an invalid document transformation", error instanceof Error ? error.name : "UnknownError");
+    console.warn("块操作转换或派发失败", {
+      stage: "block-command",
+      operation: action.type,
+      block_ids: ids,
+      error,
+    });
     return { ok: false, selectedIds: ids, message: "此操作无法保留有效的块结构，原内容已保留" };
   }
 }

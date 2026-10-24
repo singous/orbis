@@ -212,6 +212,17 @@
   .site-reader-page-footer { margin-top: 20px; }
 }
 
+/* Keep the compact desktop geometry while giving touch controls full hit areas. */
+@media (pointer: coarse) {
+  .site-reader-icon-button,
+  .site-reader-search-trigger,
+  .site-reader-search-field button,
+  .site-reader-copy-actions button {
+    min-width: var(--orbis-control-touch-height);
+    min-height: var(--orbis-control-touch-height);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .site-reader *, .site-reader *::before, .site-reader *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }

@@ -81,13 +81,11 @@ export function BoardView({ view }: { view: BoardViewData }) {
       </header>
       {error ? <p role="alert">{error}</p> : null}
       {content}
-      {open ? (
-        <Dialog open onOpenChange={setOpen}>
-          <DialogContent title={view.title} className="board-preview-dialog">
-            <div className="board-expanded-preview">{content}</div>
-          </DialogContent>
-        </Dialog>
-      ) : null}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent title={view.title} className="board-preview-dialog">
+          <div className="board-expanded-preview">{content}</div>
+        </DialogContent>
+      </Dialog>
     </figure>
   );
 }

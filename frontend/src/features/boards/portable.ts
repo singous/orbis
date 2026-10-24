@@ -1,3 +1,4 @@
+import { newUUID } from "../../shared/ids";
 import { z } from "zod";
 import { apiBlobRequest, workspacePath } from "../../shared/api/api-client";
 import {
@@ -178,7 +179,7 @@ export async function importCommands(
   for (const [index, original] of file.board.pages.entries()) {
     const page = pageSchema.parse({
       ...original,
-      id: crypto.randomUUID(),
+      id: newUUID(),
       version: 0,
       position: existingPages + index,
     });

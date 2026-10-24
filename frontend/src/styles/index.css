@@ -656,42 +656,6 @@ body {
 }
 
 
-/* Pin button on notebook cards (top-right) */
-.notebook-pin {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 5;
-  display: grid;
-  width: var(--orbis-control-compact-height);
-  height: var(--orbis-control-compact-height);
-  place-items: center;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: var(--surface-content);
-  color: var(--muted);
-  opacity: 0;
-  transition: opacity 120ms ease;
-}
-
-.collection-card:hover .notebook-pin,
-.notebook-pin.is-on {
-  opacity: 1;
-}
-
-.notebook-pin:hover {
-  color: var(--text);
-  background: var(--surface-hover);
-}
-
-.notebook-pin.is-on {
-  color: var(--accent-strong);
-  border-color: var(--accent-border);
-  background: var(--accent-soft);
-}
-
-
-
 @media (max-width: 1023px) {
   .page-container { padding: 32px 28px 60px; }
   .editor-layout, .editor-layout.outline-open { grid-template-columns: minmax(0, 1fr); padding: 24px 16px 60px; }
@@ -722,7 +686,7 @@ body {
 .orbis-field-description { color: var(--text-secondary); font-size: var(--orbis-text-caption-size); line-height: var(--orbis-text-caption-leading); font-weight: var(--orbis-weight-body); }
 .orbis-field-label, .site-settings-fields .orbis-select-field > label { font-size: var(--orbis-text-ui-size); font-weight: var(--orbis-weight-action); line-height: var(--orbis-text-ui-leading); }
 .orbis-color-field { display: grid; align-content: start; min-width: 0; gap: 8px; }
-.orbis-color-field [data-slot="color-picker-trigger"] { display: flex; gap: 10px; align-items: center; min-height: 36px; font-size: var(--orbis-text-ui-size); line-height: var(--orbis-text-ui-leading); }
+.orbis-color-field [data-slot="color-picker-trigger"] { display: flex; gap: 10px; align-items: center; min-height: var(--orbis-control-default-height); font-size: var(--orbis-text-ui-size); line-height: var(--orbis-text-ui-leading); }
 .orbis-color-popover { width: 260px; max-width: calc(100vw - 24px); display: grid; gap: 16px; padding: 16px; }
 .orbis-color-popover [data-slot="color-area"] { width: 100%; height: 160px; }
 .member-role-select { min-width: 120px; }

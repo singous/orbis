@@ -130,6 +130,50 @@ describe("board durable save", () => {
     expect(await readJournal(key)).toHaveLength(1);
     expect(s.getSnapshot().elements.get(e.id)?.text).toBe(e.text);
   });
+  it.each([403, 409])("retains an uncertain operation after a retry receives HTTP %s", async (status) => {
+    const { s, key } = session();
+    await s.start();
+    const e = makeElement("flow.process", metadata.pages[0].id, 0, 0);
+    mock.change.mockRejectedValueOnce(new TypeError("response lost"));
+    await s.submit([{ type: "elements.create", elements: [e] }]);
+    await vi.waitFor(() => expect(s.getSnapshot().status).toBe("offline"));
+    const pending = await readJournal(key);
+    mock.change.mockRejectedValueOnce(new ApiError(status, "Retry rejected", "BOARD_ACCESS_CHANGED"));
+    await s.retry();
+    await expect(s.discardPending()).rejects.toThrow("尚未确认");
+    expect(await readJournal(key)).toEqual(pending);
+
+    mock.change.mockImplementationOnce(async (_id, input) => {
+      expect(input.operation_id).toBe(pending[0].input.operation_id);
+      return ack(input);
+    });
+    await s.retry();
+    expect(s.getSnapshot().status).toBe("saved");
+    expect(await readJournal(key)).toEqual([]);
+  });
+  it("keeps a recovered operation uncertain when replay is rejected", async () => {
+    const { s, key } = session();
+    await s.start();
+    mock.change.mockRejectedValueOnce(new TypeError("response lost"));
+    await s.submit([{ type: "elements.create", elements: [makeElement("flow.process", metadata.pages[0].id, 0, 0)] }]);
+    await vi.waitFor(() => expect(s.getSnapshot().status).toBe("offline"));
+    s.dispose();
+    mock.change.mockRejectedValue(new ApiError(403, "Permission changed", "FORBIDDEN"));
+    const reopened = session(key).s;
+    await reopened.start();
+    await vi.waitFor(() => expect(reopened.getSnapshot().status).toBe("conflict"));
+    await expect(reopened.discardPending()).rejects.toThrow("尚未确认");
+    expect(await readJournal(key)).toHaveLength(1);
+  });
+  it("allows discarding an operation definitively rejected on its first attempt", async () => {
+    const { s, key } = session();
+    await s.start();
+    mock.change.mockRejectedValue(new ApiError(409, "Conflict", "BOARD_ELEMENT_CONFLICT"));
+    await s.submit([{ type: "elements.create", elements: [makeElement("flow.process", metadata.pages[0].id, 0, 0)] }]);
+    await vi.waitFor(() => expect(s.getSnapshot().status).toBe("conflict"));
+    await s.discardPending();
+    expect(await readJournal(key)).toEqual([]);
+  });
   it("does not apply a response from a disposed session after StrictMode restarts it", async () => {
     const { s } = session();
     let resolve!: (value: Board) => void;

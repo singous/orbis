@@ -2,7 +2,7 @@ import { useState } from "react";
 import { newUUID } from "../../shared/ids";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Button } from "../../shared/ui/Button";
-import { GripVertical, Plus, Trash2 } from "../../shared/ui/icons";
+import { ArrowDown, ArrowUp, GripVertical, Plus, Trash2 } from "../../shared/ui/icons";
 import { SelectField } from "../../shared/ui/SelectField";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { TextInput } from "../../shared/ui/TextInput";
@@ -34,6 +34,15 @@ export function FieldSettings({
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const hasOptions = draft.kind === "select" || draft.kind === "multi_select";
+  function moveOption(from: number, to: number) {
+    if (busy) return;
+    setDraft(current => {
+      if (from < 0 || to < 0 || from >= current.options.length || to >= current.options.length || from === to) return current;
+      const options = [...current.options];
+      options.splice(to, 0, options.splice(from, 1)[0]);
+      return { ...current, options };
+    });
+  }
   async function save() {
     if (!draft.name.trim()) {
       setError("请填写字段名称");
@@ -85,7 +94,7 @@ export function FieldSettings({
           <section className="sheet-field-options">
             <div className="sheet-section-label">
               <span>选项</span>
-              <span className="sheet-muted">拖动调整顺序</span>
+              <span className="sheet-muted">拖动或使用箭头调整顺序</span>
             </div>
             {draft.options.map((option, index) => (
               <div
@@ -111,9 +120,8 @@ export function FieldSettings({
                     from >= draft.options.length
                   )
                     return;
-                  const options = [...draft.options];
-                  options.splice(index, 0, options.splice(from, 1)[0]);
-                  setDraft({ ...draft, options });
+                  event.preventDefault();
+                  moveOption(from, index);
                 }}
               >
                 <GripVertical size={16} />
@@ -150,19 +158,23 @@ export function FieldSettings({
                     })
                   }
                 />
-                <ActionButton
-                  size="sm"
-                  aria-label={`删除选项 ${index + 1}`}
-                  disabled={busy}
-                  onClick={() =>
-                    setDraft({
-                      ...draft,
-                      options: draft.options.filter((o) => o.id !== option.id),
-                    })
-                  }
-                >
-                  <Trash2 size={15} />
-                </ActionButton>
+                <div className="sheet-option-actions" role="group" aria-label={`选项 ${index + 1} 操作`}>
+                  <ActionButton size="sm" aria-label={`上移选项 ${index + 1} ${option.label}`} disabled={busy || index === 0} onClick={() => moveOption(index, index - 1)}><ArrowUp size={15} /></ActionButton>
+                  <ActionButton size="sm" aria-label={`下移选项 ${index + 1} ${option.label}`} disabled={busy || index === draft.options.length - 1} onClick={() => moveOption(index, index + 1)}><ArrowDown size={15} /></ActionButton>
+                  <ActionButton
+                    size="sm"
+                    aria-label={`删除选项 ${index + 1}`}
+                    disabled={busy}
+                    onClick={() =>
+                      setDraft({
+                        ...draft,
+                        options: draft.options.filter((o) => o.id !== option.id),
+                      })
+                    }
+                  >
+                    <Trash2 size={15} />
+                  </ActionButton>
+                </div>
               </div>
             ))}
             <Button

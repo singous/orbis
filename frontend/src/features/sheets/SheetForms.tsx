@@ -179,7 +179,7 @@ export function SheetForms({
             <ActionButton
               size="sm"
               variant={draft.enabled ? "secondary" : "primary"}
-              onClick={(e) => {
+              onClick={() => {
                 if (!draft.enabled)
                   void save(true)
                     .then(() => setShare(true))
@@ -444,6 +444,11 @@ export function SheetForms({
 }
 export function PublicSheetForm() {
   const { token = "" } = useParams();
+  return <PublicSheetFormSession key={token} token={token} />;
+}
+
+/** 每个公开表单链接独立持有答案、提交凭据与成功状态。 */
+function PublicSheetFormSession({ token }: { token: string }) {
   const query = useQuery({
     queryKey: ["public-sheet-form", token],
     queryFn: ({ signal }) => readPublicForm(token, signal),
@@ -524,7 +529,7 @@ export function PublicSheetForm() {
       sessionStorage.removeItem(submissionKey);
       setDone(true);
     } catch (e) {
-      if (e instanceof ApiError && e.status >= 400 && e.status < 500) {
+      if (e instanceof ApiError && e.status >= 400 && e.status < 500 && ![408, 429].includes(e.status)) {
         pending.current = null;
         sessionStorage.removeItem(submissionKey);
       }

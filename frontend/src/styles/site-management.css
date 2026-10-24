@@ -557,3 +557,9 @@
     grid-column: auto;
   }
 }
+
+@media (pointer: coarse) and (min-width: 721px) {
+  .site-branding-link-list > div {
+    grid-template-columns: minmax(90px, .65fr) minmax(140px, 1.35fr) var(--orbis-control-touch-height);
+  }
+}

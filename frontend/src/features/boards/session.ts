@@ -1,3 +1,4 @@
+import { newUUID } from "../../shared/ids";
 import { connectBoard } from "./sync";
 import { ApiError } from "../../shared/api/api-client";
 import type { AuthRequestOptions } from "../../shared/auth/use-auth-request";
@@ -248,7 +249,7 @@ export class BoardSession {
         if (this.pending.length >= 64)
           throw new Error("未同步操作过多，请先恢复网络。");
         const input: Mutation = {
-          operation_id: crypto.randomUUID(),
+          operation_id: newUUID(),
           schema_version: BOARD_SCHEMA_VERSION,
           commands,
         };
@@ -340,9 +341,11 @@ export class BoardSession {
     if (this.sending || this.halted || this.controller.signal.aborted) return;
     this.sending = true;
     const signal = this.controller.signal;
+    let previouslyUncertain = false;
     try {
       while (this.pending.length && !signal.aborted && !this.halted) {
         const operation = this.pending[0];
+        previouslyUncertain = this.uncertain;
         this.uncertain = true;
         const change = await boardAPI(this.auth()).change(
           this.id,
@@ -396,7 +399,9 @@ export class BoardSession {
         error instanceof ApiError &&
         [400, 401, 403, 404, 409, 413, 422].includes(error.status);
       this.halted = permanent;
-      this.uncertain = !permanent;
+      // A rejected replay cannot establish whether an earlier request committed.
+      // Only an acknowledgement of the original operation resolves that uncertainty.
+      this.uncertain = previouslyUncertain || !permanent;
       this.emit({
         status: permanent ? "conflict" : "offline",
         error: (error as Error).message,

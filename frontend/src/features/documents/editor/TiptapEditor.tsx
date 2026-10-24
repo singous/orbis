@@ -7,7 +7,7 @@ import { BlockControls, requestBlockMenu } from "./blocks/BlockControls";
 import { OrbisBlockSelection, blockSelectionKey, setBlockSelection } from "./blocks/block-selection";
 import { executeBlockCommand, locateEditorBlocks } from "./blocks/block-commands";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
-import { Extension, Node as TiptapNode, type Attributes, type GlobalAttributes, type Editor, type JSONContent } from "@tiptap/core";
+import { Extension, Node as TiptapNode, type Attributes, type GlobalAttributes, type Editor } from "@tiptap/core";
 import Collaboration from "@tiptap/extension-collaboration";
 import type * as Y from "yjs";
 import { yUndoPluginKey } from "y-prosemirror";

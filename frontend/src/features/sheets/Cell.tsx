@@ -21,6 +21,7 @@ import { KINDS, cellText, type Field, type Value } from "./model";
 const MAX_CELL_ATTACHMENTS = 3;
 const MAX_AUTOMATIC_IMAGE_BYTES = 1 << 20;
 const ATTACHMENT_EDITOR_PAGE_SIZE = 8;
+const MAX_FIELD_ATTACHMENTS = 100;
 
 const PERSON_COLORS = ["blue", "green", "amber", "purple", "pink"] as const;
 function personColor(id: string) {
@@ -261,6 +262,10 @@ export function ValueEditor({
   publicUpload?: (file: File) => Promise<string>;
 }) {
   const fileInput = useRef<HTMLInputElement>(null);
+  const activeUpload = useRef<symbol | null>(null);
+  const current = useRef({ field, value, onChange, workspaceId: auth?.workspaceId });
+  current.current = { field, value, onChange, workspaceId: auth?.workspaceId };
+  useEffect(() => () => { activeUpload.current = null; }, []);
   const [attachmentLimit, setAttachmentLimit] = useState(
     ATTACHMENT_EDITOR_PAGE_SIZE,
   );
@@ -376,24 +381,37 @@ export function ValueEditor({
           onChange={async (e) => {
             const files = Array.from(e.target.files ?? []);
             e.target.value = "";
-            if (!auth && !publicUpload) return;
+            if ((!auth && !publicUpload) || activeUpload.current) return;
+            const upload = Symbol("attachment-upload");
+            activeUpload.current = upload;
+            const isCurrent = () => activeUpload.current === upload &&
+              current.current.field.id === field.id && current.current.field.kind === field.kind &&
+              current.current.workspaceId === auth?.workspaceId;
             setUploading(true);
+            setError("");
             try {
-              const ids = [...(Array.isArray(value) ? value : [])];
-              if (ids.length + files.length > 100)
-                throw new Error("每个字段最多 100 个附件");
+              const existing = Array.isArray(value) ? value : [];
+              if (existing.length + files.length > MAX_FIELD_ATTACHMENTS)
+                throw new Error(`每个字段最多 ${MAX_FIELD_ATTACHMENTS} 个附件`);
               for (const file of files) {
                 const id = publicUpload
                   ? await publicUpload(file)
                   : parseFileReference(await uploadManagedFile(file, auth!))!;
-                ids.push(id);
+                // 已关闭的编辑器不能将上传结果写入另一个正在编辑的单元格。
+                if (!isCurrent()) return;
+                const latest = current.current;
+                const ids = [...(Array.isArray(latest.value) ? latest.value : []), id];
+                latest.value = ids;
                 setFileNames((old) => ({ ...old, [id]: file.name }));
-                onChange([...ids]);
+                latest.onChange(ids);
               }
             } catch (err) {
-              setError((err as Error).message);
+              if (isCurrent()) setError(err instanceof Error ? err.message : "附件上传失败，请重试");
             } finally {
-              setUploading(false);
+              if (activeUpload.current === upload) {
+                activeUpload.current = null;
+                setUploading(false);
+              }
             }
           }}
         />
@@ -432,7 +450,7 @@ export function ValueEditor({
     );
   const date = field.kind === "datetime";
   const formatted =
-    date && value
+    date && value != null
       ? new Date(Number(value) + 8 * 3600000)
           .toISOString()
           .slice(0, field.include_time ? 16 : 10)

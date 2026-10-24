@@ -1,3 +1,4 @@
+import { newUUID } from "../../shared/ids";
 import { z } from "zod";
 import catalog from "../../../../api/board-catalog.json";
 
@@ -174,7 +175,7 @@ export function makeElement(
   const shape = SHAPES.get(shapeType);
   const container = shape?.container ?? false;
   return {
-    id: crypto.randomUUID(),
+    id: newUUID(),
     page_id: pageID,
     shape_type: shapeType,
     shape_version: 1,

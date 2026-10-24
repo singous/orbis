@@ -1,6 +1,6 @@
 import { Dropdown } from "@heroui/react/dropdown";
 import { Label } from "@heroui/react/label";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   AlignVerticalSpaceAround,
   Archive,
@@ -34,12 +34,8 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import { useStore } from "zustand";
-import { apiRequest, workspacePath } from "../../shared/api/api-client";
 import { authStore } from "../../shared/auth/auth-store";
-import {
-  authRequestOptions,
-  useAuthRequest,
-} from "../../shared/auth/use-auth-request";
+import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { newUUID } from "../../shared/ids";
 import { preparePendingNavigation } from "../../shared/navigation/pending-navigation";
 import { ActionButton } from "../../shared/ui/ActionButton";
@@ -48,6 +44,7 @@ import { DocumentShell } from "../documents/DocumentShell";
 import { createNotebookSidebar } from "../documents/NotebookSectionMenu";
 import { getNotebook } from "../documents/api";
 import { useArchiveNote, useNotebook } from "../documents/queries";
+import { listMemberChoices } from "../members/api";
 import { ShareButton } from "../sharing/ShareButton";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
@@ -125,7 +122,6 @@ export function SheetWorkspace({
     [search, setSearch] = useState(""),
     [query, setQuery] = useState("");
   const selectedView = embedded ? localView : (params.get("view") ?? "");
-  const client = useQueryClient();
   const c = useSheet(id, selectedView, query),
     canEdit =
       !readOnly &&
@@ -146,22 +142,12 @@ export function SheetWorkspace({
     [title, setTitle] = useState("");
   const members = useQuery({
     queryKey: ["sheet-members", c.auth.workspaceId],
-    queryFn: ({ signal }) =>
-      apiRequest(workspacePath(c.auth, "/members?page=1&page_size=100"), {
-        ...authRequestOptions(c.auth),
-        signal,
-      }) as Promise<{
-        items: Array<{
-          user_id: string;
-          display_name: string;
-          user?: { id: string; display_name: string };
-        }>;
-      }>,
+    queryFn: ({ signal }) => listMemberChoices(c.auth, signal),
     staleTime: 60000,
   });
   const people = (members.data?.items ?? []).map((m) => ({
-    id: m.user_id ?? m.user?.id,
-    label: m.display_name ?? m.user?.display_name ?? "成员",
+    id: m.user_id,
+    label: m.display_name || m.email,
     color: "gray",
   }));
   useEffect(() => {

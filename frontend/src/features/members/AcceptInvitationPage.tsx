@@ -1,11 +1,11 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Check, UserPlus } from "../../shared/ui/icons";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { ApiError } from "../../shared/api/api-client";
 import { useOptionalAuthRequest } from "../../shared/auth/use-auth-request";
-import { Button } from "../../shared/ui/Button";
+import { Button, buttonVariants } from "../../shared/ui/Button";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { TextInput } from "../../shared/ui/TextInput";
 import { authStore } from "../../shared/auth/auth-store";
@@ -17,8 +17,15 @@ export function AcceptInvitationPage() {
   const { token = "" } = useParams();
   const [searchParams] = useSearchParams();
   const location = useLocation();
-  const navigate = useNavigate();
   const invitationToken = new URLSearchParams(location.hash.slice(1)).get("token") || token || searchParams.get("token") || "";
+  return <InvitationSession key={invitationToken} invitationToken={invitationToken} />;
+}
+
+function InvitationSession({ invitationToken }: { invitationToken: string }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const active = useRef(true);
+  useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
   const auth = useOptionalAuthRequest();
   const inspection = useQuery({ queryKey: ["invitation-inspection", location.key], queryFn: () => inspectInvitation(invitationToken), enabled: Boolean(invitationToken), retry: false });
   const [displayName, setDisplayName] = useState("");
@@ -31,7 +38,7 @@ export function AcceptInvitationPage() {
     },
     onSuccess: async ({ result, generation }) => {
       let current = authStore.getState();
-      if (current.sessionGeneration !== generation) return;
+      if (!active.current || current.sessionGeneration !== generation) return;
       const credentials = result.session ? { accessToken: result.session.access_token, refreshToken: result.session.refresh_token }
         : current.accessToken && current.refreshToken ? { accessToken: current.accessToken, refreshToken: current.refreshToken } : null;
       if (!credentials) return;
@@ -39,9 +46,9 @@ export function AcceptInvitationPage() {
       try {
         const choices = await listWorkspaces({ ...credentials, onTokenRefresh: (accessToken, refreshToken) => { credentials.accessToken = accessToken; credentials.refreshToken = refreshToken; }, onUnauthorized: () => {} });
         workspace = choices.items.find(item => item.id === result.member.workspace_id) ?? null;
-      } catch { showToast({ title: "已加入工作空间", description: "空间列表暂时不可用，登录后可重新选择。", tone: "success" }); }
+      } catch { if (active.current) showToast({ title: "已加入工作空间", description: "空间列表暂时不可用，登录后可重新选择。", tone: "success" }); }
       current = authStore.getState();
-      if (current.sessionGeneration !== generation) return;
+      if (!active.current || current.sessionGeneration !== generation) return;
       current.setSession({ ...credentials, user: result.user, workspace });
       navigate("/documents", { replace: true });
     },
@@ -63,7 +70,7 @@ export function AcceptInvitationPage() {
           <>
             <h1 className="text-2xl font-semibold tracking-[-0.035em]">已加入工作空间</h1>
             <p className="mt-3 text-sm leading-6 text-[var(--muted)]">成员身份已激活。请登录后进入 Orbis 云文档。</p>
-            <Link to={auth ? "/documents" : "/login"}><Button className="mt-6 w-full" variant="primary">{auth ? "进入文档中心" : "前往登录"}</Button></Link>
+            <Link to={auth ? "/documents" : "/login"} className={`${buttonVariants({ variant: "primary" })} mt-6 w-full`}>{auth ? "进入文档中心" : "前往登录"}</Link>
           </>
         ) : (
           <>

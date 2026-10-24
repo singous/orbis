@@ -15,7 +15,7 @@ import { DocumentVersions } from "./DocumentVersions";
 import type { DocumentComment } from "./schemas";
 
 export type RestoreSavedRevision = (expectedVersion: number) => Promise<NoteContent>;
-type Props = { noteId: string; currentUserId: string; canManage: boolean; onClose: () => void; onRestore: (restore: RestoreSavedRevision) => Promise<void>; onPrepareVersion?: () => Promise<number> };
+type Props = { noteId: string; currentUserId: string; canManage: boolean; open?: boolean; onClose: () => void; onRestore: (restore: RestoreSavedRevision) => Promise<void>; onPrepareVersion?: () => Promise<number> };
 const MAX_COMMENT_LENGTH = 10_000;
 const timestamp = new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Shanghai" });
 function errorText(error: unknown) { return error instanceof ApiError ? error.message : error instanceof Error ? error.message : "操作失败，请稍后重试。"; }
@@ -129,7 +129,7 @@ export function DocumentCollaborationPanel(props: Props) {
   const [busy, setBusy] = useState(false);
   const [legacy, setLegacy] = useState(false);
   const [tab, setTab] = useState<"comments" | "revisions">("comments");
-  return <Drawer.Backdrop isOpen isDismissable={!busy} isKeyboardDismissDisabled={busy} onOpenChange={(open) => { if (!open && !busy) props.onClose(); }} className="collaboration-overlay">
+  return <Drawer.Backdrop isOpen={props.open ?? true} isDismissable={!busy} isKeyboardDismissDisabled={busy} onOpenChange={(open) => { if (!open && !busy) props.onClose(); }} className="collaboration-overlay">
     <Drawer.Content placement="right" className="collaboration-drawer"><Drawer.Dialog className="collaboration-panel" aria-describedby="collaboration-description">
       <header className="collaboration-panel-header"><div><Drawer.Heading>评论与历史</Drawer.Heading><p id="collaboration-description">讨论文档，查看和恢复已保存的正文。</p></div><ActionButton className="icon-button" type="button" aria-label="关闭评论与历史" disabled={busy} onClick={props.onClose}><X size={18} aria-hidden="true" /></ActionButton></header>
       <Tabs className="collaboration-tabs-root" selectedKey={tab} onSelectionChange={(key) => { if (key === "comments" || key === "revisions") setTab(key); }}>

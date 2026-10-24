@@ -93,6 +93,11 @@
 
 /* Native iOS fields need 16px text to avoid focus zoom; other UI keeps its role. */
 @media (pointer: coarse) {
+  /* Grid row height remains a view setting; its inline editors keep that geometry. */
+  :is(.ui-button, .orbis-action-button):not(:where(.sheet-cell *, .dt-grid-cell *)) {
+    min-width: var(--orbis-control-touch-height);
+    min-height: var(--orbis-control-touch-height);
+  }
   :is(input, textarea, [data-slot="select-trigger"]):not(.editor-title) {
     font-size: var(--orbis-text-section-size);
   }

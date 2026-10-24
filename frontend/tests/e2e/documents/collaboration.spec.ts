@@ -32,7 +32,23 @@ async function openPair(browser: Browser, session: TestSession, id: string) {
 }
 async function append(page: Page, id: string, value: string) {
   const block = page.locator(`.ProseMirror [data-orbis-block-id="${id}"]`).first();
-  await block.click(); await page.keyboard.press("End"); await page.keyboard.type(value);
+  await block.click(); await lineBoundary(page, "end"); await page.keyboard.type(value);
+}
+async function lineBoundary(page: Page, edge: "start" | "end") {
+  const apple = await page.evaluate(() => /Mac|iPhone|iPad/.test(navigator.platform));
+  await page.keyboard.press(apple ? edge === "start" ? "Meta+ArrowLeft" : "Meta+ArrowRight" : edge === "start" ? "Home" : "End");
+}
+async function pastePlainText(page: Page) {
+  const apple = await page.evaluate(() => /Mac|iPhone|iPad/.test(navigator.platform));
+  if (!apple) { await page.keyboard.press("ControlOrMeta+Shift+V"); return; }
+  // Playwright's macEditingCommands maps Meta+KeyV, but omits Shift+Meta+KeyV.
+  // Ask Chromium to perform the real native edit command; its trusted paste
+  // event still reads the actual system clipboard and enters the editor path.
+  const cdp = await page.context().newCDPSession(page);
+  try {
+    await cdp.send("Input.dispatchKeyEvent", { type: "rawKeyDown", modifiers: 12, key: "V", code: "KeyV", windowsVirtualKeyCode: 86, commands: ["pasteAndMatchStyle"] });
+    await cdp.send("Input.dispatchKeyEvent", { type: "keyUp", modifiers: 0, key: "V", code: "KeyV", windowsVirtualKeyCode: 86 });
+  } finally { await cdp.detach(); }
 }
 async function caret(page: Page) {
   // Native arrow keys update the DOM before the selectionchange observer has
@@ -117,7 +133,7 @@ test("same-paragraph offline text and formatting converge in two real editors", 
     await Promise.all([pair.first.setOffline(true), pair.second.setOffline(true)]);
     await append(pair.a, blocks[0].id, " A-tail");
     await pair.b.locator(`.ProseMirror [data-orbis-block-id="${blocks[0].id}"]`).click();
-    await pair.b.keyboard.press("Home"); await pair.b.keyboard.press("Control+B"); await pair.b.keyboard.type("B-bold "); await pair.b.keyboard.press("Control+B");
+    await lineBoundary(pair.b, "start"); await pair.b.keyboard.press("ControlOrMeta+B"); await pair.b.keyboard.type("B-bold "); await pair.b.keyboard.press("ControlOrMeta+B");
     await expect(pair.b.locator(".ProseMirror strong")).toHaveText("B-bold ");
     await Promise.all([pair.first.setOffline(false), pair.second.setOffline(false)]);
     await expect.poll(async () => text((await content(request, session, document.id)).blocks[0]), { timeout: 30000 }).toBe("B-bold Shared base A-tail");
@@ -161,7 +177,7 @@ test("two first-open editors create one paragraph in a blank document", async ({
     expect((await content(request, session, document.id)).blocks).toHaveLength(0);
     await pair.a.locator(".ProseMirror").click(); await pair.a.keyboard.type("First paragraph");
     await expect(pair.b.locator(".ProseMirror")).toContainText("First paragraph");
-    await pair.b.locator(".ProseMirror").click(); await pair.b.keyboard.press("End"); await pair.b.keyboard.type(" from peer");
+    await pair.b.locator(".ProseMirror").click(); await lineBoundary(pair.b, "end"); await pair.b.keyboard.type(" from peer");
     await expect.poll(async () => (await content(request, session, document.id)).blocks.map(text)).toEqual(["First paragraph from peer"]);
     await expect(pair.a.locator(".ProseMirror p")).toHaveCount(1);
     await expect(pair.b.locator(".ProseMirror p")).toHaveCount(1);
@@ -176,7 +192,7 @@ test("a 5,500-block Markdown paste renders, saves completely and undoes once", a
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   const markdown = '# Long document\n\n| Key | Value |\n| --- | --- |\n| A | B |\n\n- First\n- Second\n\n```go\nfmt.Println("hello")\n```\n\n' + Array.from({ length: 5495 }, (_, index) => `Paragraph ${index} with **marked text**.`).join("\n\n");
   await page.evaluate(value => navigator.clipboard.writeText(value), markdown);
-  await page.locator(".ProseMirror").click(); await page.keyboard.press("Control+V");
+  await page.locator(".ProseMirror").click(); await page.keyboard.press("ControlOrMeta+V");
   await expect(page.locator(".ProseMirror h1")).toHaveText("Long document");
   await expect(page.locator(".ProseMirror table")).toHaveCount(1);
   await expect(page.locator(".ProseMirror pre code")).toContainText('fmt.Println("hello")');
@@ -202,7 +218,10 @@ test("paste as plain text preserves inline Markdown markers through save and und
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   const source = "**Literal bold** with `literal code`";
   await page.evaluate(value => navigator.clipboard.writeText(value), source);
-  await page.locator(".ProseMirror").click(); await page.keyboard.press("Control+Shift+V");
+  const editor = page.locator(".ProseMirror");
+  await editor.evaluate(element => element.addEventListener("paste", event => element.setAttribute("data-native-paste-trusted", String(event.isTrusted)), { once: true }));
+  await editor.click(); await pastePlainText(page);
+  await expect(editor).toHaveAttribute("data-native-paste-trusted", "true");
   await expect(page.locator(".ProseMirror")).toHaveText(source);
   await expect(page.locator(".ProseMirror strong, .ProseMirror code")).toHaveCount(0);
   await expect.poll(async () => (await content(request, session, document.id)).blocks.map(text)).toEqual([source]);
@@ -367,7 +386,7 @@ test("paragraph split undo redo and continued typing retain stable saved blocks"
   await openWithSession(page, session, `/documents/${document.id}`);
   await expect(page.locator(".ProseMirror")).toBeVisible();
   await page.locator(`.ProseMirror [data-orbis-block-id="${blocks[0].id}"]`).click();
-  await page.keyboard.press("Home");
+  await lineBoundary(page, "start");
   await expect.poll(() => caret(page)).toEqual({ dom: 0, editor: 0 });
   for (let index = 0; index < 5; index += 1) await page.keyboard.press("ArrowRight");
   await expect.poll(() => caret(page)).toEqual({ dom: 5, editor: 5 });
@@ -381,7 +400,7 @@ test("paragraph split undo redo and continued typing retain stable saved blocks"
   expect(split.blocks[0].id).toBe(blocks[0].id);
   expect(split.blocks[1].id).not.toBe(blocks[0].id);
   await page.locator(`.ProseMirror [data-orbis-block-id="${split.blocks[1].id}"]`).click();
-  await page.keyboard.press("Home"); await page.keyboard.type("Next ");
+  await lineBoundary(page, "start"); await page.keyboard.type("Next ");
   await expect.poll(async () => (await content(request, session, document.id)).blocks.map(text)).toEqual(["Split", "Next Here"]);
   await expect(page.locator(".document-save-state")).toHaveText("已保存");
   await page.reload();

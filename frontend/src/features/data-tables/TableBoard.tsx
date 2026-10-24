@@ -4,6 +4,7 @@ import { readTable } from "./api";
 import type { TableHost } from "./context";
 import {
   cellText,
+  TABLE_PAGE_SIZE,
   type TableDefinition,
   type TablePage,
   type TableRecord,
@@ -64,6 +65,7 @@ function BoardColumn({
       signal: abort.signal,
     })
       .then((value) => {
+        if (abort.signal.aborted) return;
         setPage(value);
         setError(null);
       })
@@ -84,9 +86,9 @@ function BoardColumn({
     offset,
     visible,
   ]);
-  const fields = definition.fields.filter((field) =>
-    view.field_ids.includes(field.id),
-  );
+  const fields = view.field_ids.length
+    ? view.field_ids.flatMap(id => definition.fields.find(field => field.id === id) ?? [])
+    : definition.fields;
   return (
     <section
       ref={element}
@@ -145,7 +147,7 @@ function BoardColumn({
           <Button
             size="sm"
             disabled={offset === 0 || loading}
-            onClick={() => setOffset(Math.max(0, offset - 100))}
+            onClick={() => setOffset(Math.max(0, offset - TABLE_PAGE_SIZE))}
           >
             上一页
           </Button>
@@ -183,7 +185,7 @@ export function TableBoard(props: {
     <div className="dt-board">
       {props.page.groups.map((group) => (
         <BoardColumn
-          key={group.id ?? "empty"}
+          key={`${props.view.id}:${group.id ?? "empty"}`}
           host={props.host}
           tableId={props.page.table_id}
           definition={props.definition}

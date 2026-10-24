@@ -1,4 +1,3 @@
-import {documentWriteResultSchema as resultSchema} from "./document-operations-api";
 export {saveNoteBlockChanges} from "./document-operations-api";
 import { z } from "zod";
 import { ApiError,apiRequest,workspacePath } from "../../shared/api/api-client";
@@ -6,7 +5,6 @@ import { noteChildrenPageSchema,noteContentSchema,type NoteBlocks,type NoteConte
 import { authRequestOptions,type AuthRequestOptions } from "../../shared/auth/use-auth-request";
 import { toV2 } from "../content/model/blocks";
 import { editorBlock,editorPayload,nativeBlock,nativeBlockSchema,nativePayloadSchema } from "../content/codecs/api-content";
-import type { DocumentCommand } from "./document-commands";
 import { getNote } from "./catalog-api";
 
 const MAX_PAGE_SIZE=100;

@@ -6,7 +6,7 @@ import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { DocumentEditorPage } from "./DocumentEditorPage";
 import type { NoteBlocksV2 } from "../../content/model/blocks";
-import { NOTE_ID, NOTEBOOK_ID, USER_ID, WORKSPACE_ID, blocks, content, http, page, response, session } from "../../collaboration/collaboration.test-utils";
+import { NOTE_ID, blocks, session } from "../../collaboration/collaboration.test-utils";
 import { authStore } from "../../../shared/auth/auth-store";
 import { preparePendingNavigation } from "../../../shared/navigation/pending-navigation";
 

@@ -79,7 +79,7 @@ function safeBranding(branding: SiteBranding | undefined, preview: boolean): Sit
 }
 
 function formatDate(timestamp?: number | null): string | null {
-  return timestamp ? new Date(timestamp).toLocaleDateString("zh-CN", { timeZone: "Asia/Shanghai", year: "numeric", month: "long", day: "numeric" }) : null;
+  return timestamp != null ? new Date(timestamp).toLocaleDateString("zh-CN", { timeZone: "Asia/Shanghai", year: "numeric", month: "long", day: "numeric" }) : null;
 }
 
 export function SiteReader({ snapshot, basePath, pageSlug, preview = false, loadSearch, loadMarkdown, contentState, canonicalBasePath }: {
@@ -204,12 +204,12 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false, load
             {currentIndex > 0 ? <Link to={pageHref(basePath, snapshot.pages[currentIndex - 1].slug)}><ArrowLeft aria-hidden="true" size={18} /><span><small>上一篇</small>{snapshot.pages[currentIndex - 1].title}</span></Link> : <span />}
             {currentIndex < snapshot.pages.length - 1 ? <Link to={pageHref(basePath, snapshot.pages[currentIndex + 1].slug)}><span><small>下一篇</small>{snapshot.pages[currentIndex + 1].title}</span><ArrowRight aria-hidden="true" size={18} /></Link> : null}
           </nav>
-          {updatedAt ? <footer className="site-reader-page-footer">最后更新于 {formatDate(updatedAt)}</footer> : null}
+          {updatedAt != null ? <footer className="site-reader-page-footer">最后更新于 {formatDate(updatedAt)}</footer> : null}
         </> : <div className="site-reader-empty"><BookOpen aria-hidden="true" size={30} /><h1>{snapshot.pages.length ? "页面不存在" : "还没有文档"}</h1><p>{snapshot.pages.length ? "这个地址可能已经变更，请从目录查找文档。" : "选择一些文档，开始建立你的站点。"}</p><Link to={basePath}>返回文档首页</Link></div>}
       </main>
       {current && !compactOutline ? <Outline items={outline} /> : null}
     </div>
-    {searchOpen ? <SearchDialog pages={snapshot.pages} basePath={basePath} close={closeSearch} loadPages={loadSearch} /> : null}
+    <SearchDialog open={searchOpen} pages={snapshot.pages} basePath={basePath} close={closeSearch} loadPages={loadSearch} />
   </div>;
   return preview ? <SitePreviewLinks siteSlug={snapshot.slug} basePath={basePath}>{reader}</SitePreviewLinks> : reader;
 }

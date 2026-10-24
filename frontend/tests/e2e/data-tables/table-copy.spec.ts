@@ -84,7 +84,7 @@ test("an initialized table duplicates atomically after a lost response and edits
   await page.goto(`/documents/${destination.id}`);
   await expect(page.locator(".ProseMirror")).toBeVisible();
   await page.locator(".ProseMirror").click();
-  await page.keyboard.press("Control+V");
+  await page.keyboard.press("ControlOrMeta+V");
   await expect(page.getByRole("textbox",{name:"标题",exact:true})).toHaveValue("复制前尚未自动保存的内容");
   const pasted=await responseData(await request.get(workspacePath(session,`/documents/${destination.id}/content`),{headers}));
   const pastedTable=pasted.blocks.find((block:any)=>block.type==="data_table");

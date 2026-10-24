@@ -10,7 +10,7 @@ import { authStore } from "../../shared/auth/auth-store";
 import { Toaster } from "../../shared/ui/Toast";
 import type { NoteBlocksV2 } from "../content/model/blocks";
 import { DocumentEditorPage } from "../documents/editor/DocumentEditorPage";
-import { NOTE_ID, NOTEBOOK_ID, REVISION_ID, WORKSPACE_ID, USER_ID, blocks, content, http, page, response, revision, session } from "./collaboration.test-utils";
+import { NOTE_ID, NOTEBOOK_ID, USER_ID, blocks, http, page, response, revision, session } from "./collaboration.test-utils";
 
 vi.mock("../documents/DocumentShell", () => ({ DocumentShell: ({ toolbar, children }: { toolbar: React.ReactNode; children: React.ReactNode }) => <main>{toolbar}{children}</main> }));
 vi.mock("../documents/editor/TiptapEditor", () => ({ TiptapEditor: ({ blocks: value, onChange, readOnly }: { blocks: NoteBlocksV2; onChange: (next: { blocks: ReturnType<typeof blocks> }) => void; readOnly: boolean }) => {

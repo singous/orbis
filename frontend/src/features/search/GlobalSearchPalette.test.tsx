@@ -67,6 +67,28 @@ beforeEach(() => {
 afterEach(() => { cleanup(); act(() => authStore.getState().clearSession()); vi.restoreAllMocks(); });
 
 describe("global search palette", () => {
+  it("keeps the closing dialog mounted through its exit animation and restores focus and scrolling afterwards", async () => {
+    let finishExit!: () => void;
+    const finished = new Promise<void>(resolve => { finishExit = resolve; });
+    vi.spyOn(Element.prototype, "getAnimations").mockImplementation(function (this: Element) {
+      return this.matches(".search-palette-backdrop[data-exiting]") ? [{ finished } as unknown as Animation] : [];
+    });
+    const view = renderPalette();
+    view.container.scrollTop = 72;
+    await openPalette(view);
+    await userEvent.click(screen.getByRole("button", { name: "关闭搜索" }));
+    const closing = document.querySelector(".search-palette-backdrop");
+    expect(closing).toBeInTheDocument();
+    expect(closing).toHaveAttribute("data-exiting");
+    view.container.scrollTop = 0;
+    await act(async () => { finishExit(); });
+    await waitFor(() => expect(document.querySelector(".search-palette-backdrop")).not.toBeInTheDocument());
+    await waitFor(() => expect(view.trigger).toHaveFocus());
+    await waitFor(() => expect(view.container.scrollTop).toBe(72));
+    await openPalette(view);
+    expect(screen.getByRole("combobox", { name: "搜索任何内容" })).toHaveValue("检索");
+  });
+
   it.each(["escape", "close button"])("opens and closes with %s without saving, changing route or discarding the background draft", async (method) => {
     const prepare = vi.fn(async () => undefined);
     const view = renderPalette({ initialFilters: {}, prepare });

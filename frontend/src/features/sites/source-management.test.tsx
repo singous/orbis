@@ -1,12 +1,13 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { authStore } from "../../shared/auth/auth-store";
 import { NotebookPage } from "../documents/NotebookPage";
 import { SiteEditorPage } from "./SiteEditorPage";
+import { BrowserRequest } from "../../../tests/sites/browser-request";
 import { SitesPage } from "./SitesPage";
 import type { wireSiteConfig } from "./site-codec";
 
@@ -164,14 +165,13 @@ function renderRoute(route: string, element: React.ReactNode, pattern: string) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={[route]}>
-        <Routes><Route path={pattern} element={element} /></Routes>
-      </MemoryRouter>
+      <RouterProvider router={createMemoryRouter([{ path: pattern, element }], { initialEntries: [route] })} />
     </QueryClientProvider>,
   );
 }
 
 beforeEach(() => {
+  vi.stubGlobal("Request", BrowserRequest);
   requests = [];
   siteResponse = baseSite;
   publishConflict = false;

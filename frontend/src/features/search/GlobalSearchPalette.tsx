@@ -1,5 +1,5 @@
 import { Modal } from "@heroui/react/modal";
-import { useEffect, useId, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
 import { authStore, getAuthSessionKey } from "../../shared/auth/auth-store";
@@ -12,6 +12,7 @@ import { BookOpen, FileText, Folder, Globe, Paperclip, Search, X } from "../../s
 import type { SearchFilters, SearchResult } from "./api";
 import { resultHref, SEARCH_MAX_LENGTH, SEARCH_TYPE_LABELS } from "./search-state";
 import { matchPaletteCategories, parsePaletteInput, SEARCH_PALETTE_CATEGORIES, type SearchPaletteCategory } from "./search-palette-model";
+import { PalettePresenceObserver } from "./palette-presence";
 import { usePaletteSearch } from "./use-palette-search";
 import "./search-palette.css";
 
@@ -25,7 +26,7 @@ function initialInput(filters: Partial<SearchFilters>) {
   return category ? `${category.alias} ${filters.q ?? ""}` : filters.q ?? "";
 }
 
-export function GlobalSearchPalette({ initialFilters, onClose }: { initialFilters: Partial<SearchFilters>; onClose: () => void }) {
+export function GlobalSearchPalette({ initialFilters, onClose, isOpen = true, onExited = () => {} }: { initialFilters: Partial<SearchFilters>; onClose: () => void; isOpen?: boolean; onExited?: () => void }) {
   const navigate = useNavigate();
   const sessionKey = useStore(authStore, getAuthSessionKey);
   const [input, setInput] = useState(() => initialInput(initialFilters));
@@ -43,7 +44,7 @@ export function GlobalSearchPalette({ initialFilters, onClose }: { initialFilter
   const categories = matchPaletteCategories(input);
   const categoryMode = !input.trim() || (!parsed.hasPrefix && /^@\S*$/.test(input.trim()) && categories.length > 0);
   const filters: SearchFilters = { q: categoryMode ? "" : parsed.q, type: parsed.type, status, page };
-  const { results, pendingInput } = usePaletteSearch(filters, { enabled: true, composing });
+  const { results, pendingInput } = usePaletteSearch(filters, { enabled: isOpen, composing });
   const resultItems = !pendingInput && !results.isError && filters.q ? results.data?.items ?? [] : [];
   const options = categoryMode ? categories.map(item => item.type) : resultItems.map(resultKey);
   const selectedIndex = Math.max(0, selected ? options.indexOf(selected) : 0);
@@ -54,6 +55,7 @@ export function GlobalSearchPalette({ initialFilters, onClose }: { initialFilter
 
   useEffect(() => { setSelected(null); setOpenError(null); }, [input, status, page]);
   useEffect(() => () => { openingRequest.current?.abort(); }, []);
+  useLayoutEffect(() => { if (!isOpen) openingRequest.current?.abort(); }, [isOpen]);
 
   function close() {
     openingRequest.current?.abort();
@@ -132,9 +134,10 @@ export function GlobalSearchPalette({ initialFilters, onClose }: { initialFilter
   }
 
 
-  return <Modal.Backdrop className="orbis-modal-backdrop search-palette-backdrop" isOpen onOpenChange={open => { if (!open) close(); }}>
+  return <Modal.Backdrop className="orbis-modal-backdrop search-palette-backdrop" isOpen={isOpen} onOpenChange={open => { if (!open) close(); }}>
     <Modal.Container className="orbis-modal-container search-palette-container">
-      <Modal.Dialog className="orbis-modal-dialog search-palette">
+      <Modal.Dialog className="orbis-modal-dialog search-palette" inert={!isOpen ? true : undefined}>
+        <PalettePresenceObserver onExited={onExited} />
         <Modal.Heading className="sr-only">全局搜索</Modal.Heading>
         <div className="search-palette-input-row">
           <Search aria-hidden="true" size={20} />

@@ -25,8 +25,24 @@ export type Member = z.infer<typeof memberSchema>;
 export type Invitation = z.infer<typeof invitationSchema>;
 export type OwnershipTransfer = z.infer<typeof ownershipSchema>;
 
+const MEMBER_CHOICES_PAGE_SIZE = 100;
+
+async function memberPage(auth: MemberAuth, page: number, pageSize: number, signal?: AbortSignal) {
+  return pageDataSchema(memberSchema).parse(await apiRequest(workspacePath(auth, `/members?page=${page}&page_size=${pageSize}`), { ...authOptions(auth), signal }));
+}
+
 export async function listMembers(auth: MemberAuth, page = 1) {
-  return pageDataSchema(memberSchema).parse(await apiRequest(workspacePath(auth, `/members?page=${page}&page_size=20`), authOptions(auth)));
+  return memberPage(auth, page, 20);
+}
+
+/** 人员字段加载完整成员列表，避免遗漏成员管理分页之外的选项。 */
+export async function listMemberChoices(auth: MemberAuth, signal?: AbortSignal) {
+  const items: Member[] = [];
+  for (let page = 1; ; page += 1) {
+    const result = await memberPage(auth, page, MEMBER_CHOICES_PAGE_SIZE, signal);
+    items.push(...result.items);
+    if (!result.pagination.has_next) return { items };
+  }
 }
 
 export async function listInvitations(auth: MemberAuth, page = 1) {

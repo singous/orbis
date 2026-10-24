@@ -95,7 +95,7 @@ export function SheetsHome() {
       });
       navigate(`/documents/${sheet.document_id}`);
     } catch (e) {
-      if (e instanceof ApiError && e.status >= 400 && e.status < 500)
+      if (e instanceof ApiError && e.status >= 400 && e.status < 500 && ![408, 429].includes(e.status))
         intent.current = null;
       setError((e as Error).message);
     } finally {
