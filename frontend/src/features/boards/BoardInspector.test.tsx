@@ -2,7 +2,8 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import { BoardInspector } from "./BoardInspector";
-import { makeElement, type BoardPage } from "./model";
+import { makeElement, type BoardPage, type Command, type Element } from "./model";
+import { appendTopic, createMindmap, hiddenElements, isMindmapTopic, toggleTopicCollapsed } from "./mindmap";
 
 afterEach(cleanup);
 function mount(readOnly = false, parent = false) {
@@ -78,4 +79,67 @@ it("disables input, selection, checkbox and color controls for readers", async (
   expect(bold).toBeDisabled();
   await user.click(bold);
   expect(submit).not.toHaveBeenCalled();
+});
+
+it("expands a compacted mindmap branch from its checkbox with one atomic layout update", async () => {
+  const page: BoardPage = { id: crypto.randomUUID(), name: "思维导图", background: "#ffffff", position: 0, version: 1 };
+  const tree = createMindmap(page.id, { x: 120, y: 220 });
+  const elements = new Map(tree.elements.map(element => [element.id, element]));
+  function apply(commands: Command[]) {
+    for (const command of commands) {
+      if (command.type === "elements.create")
+        for (const element of command.elements) elements.set(element.id, element);
+      if (command.type === "elements.update")
+        for (const patch of command.patches) {
+          const previous = elements.get(patch.id)!;
+          elements.set(patch.id, {
+            ...previous,
+            ...(patch.geometry ? { geometry: patch.geometry } : {}),
+            ...(patch.structure ? { structure: patch.structure } : {}),
+          });
+        }
+    }
+  }
+  const first = tree.elements.find(element => element.shape_type === "mindmap.topic")!;
+  apply(toggleTopicCollapsed(first, elements));
+  apply(appendTopic(elements.get(first.id)!, elements, true).commands);
+  const before = new Map(elements);
+  const source = JSON.stringify([...elements.values()]);
+  const submit = vi.fn<(commands: Command[]) => Promise<void>>().mockResolvedValue(undefined);
+  render(<BoardInspector elements={elements} selection={new Set([first.id])} page={page} submit={submit} readOnly={false} onError={vi.fn()} />);
+  const collapsed = screen.getByRole("checkbox", { name: "折叠子主题" });
+  expect(collapsed).toBeChecked();
+  await userEvent.setup().click(collapsed);
+
+  expect(submit).toHaveBeenCalledOnce();
+  const commands = submit.mock.calls[0][0];
+  expect(commands).toHaveLength(1);
+  const update = commands[0];
+  if (update.type !== "elements.update") throw new Error("Expansion must be an atomic element update");
+  expect(new Set(update.patches.map(patch => patch.id)).size).toBe(update.patches.length);
+  expect(update.patches.find(patch => patch.id === first.id)).toMatchObject({
+    expected: before.get(first.id)!.versions,
+    structure: { ...before.get(first.id)!.structure, collapsed: false },
+  });
+  for (const patch of update.patches) {
+    expect(patch.expected).toEqual(before.get(patch.id)!.versions);
+    expect(patch.style).toBeUndefined();
+    expect(patch.text).toBeUndefined();
+  }
+  expect(JSON.stringify([...elements.values()])).toBe(source);
+  apply(commands);
+  expect(elements.get(tree.rootID)!.geometry).toEqual(before.get(tree.rootID)!.geometry);
+  expect(elements.get(first.id)!.structure.collapsed).toBe(false);
+  const hidden = hiddenElements(elements);
+  const topics = [...elements.values()].filter(element => isMindmapTopic(element) && !hidden.has(element.id));
+  const leaves = topics.filter(element => !topics.some(child => child.structure.parent_id === element.id));
+  function overlaps(a: Element, b: Element) {
+    return a.geometry.x < b.geometry.x + b.geometry.width &&
+      a.geometry.x + a.geometry.width > b.geometry.x &&
+      a.geometry.y < b.geometry.y + b.geometry.height &&
+      a.geometry.y + a.geometry.height > b.geometry.y;
+  }
+  for (let i = 0; i < leaves.length; i++)
+    for (let j = i + 1; j < leaves.length; j++)
+      expect(overlaps(leaves[i], leaves[j]), `${leaves[i].text} and ${leaves[j].text} must not overlap`).toBe(false);
 });

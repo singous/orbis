@@ -1,5 +1,5 @@
 import { newUUID } from "../../shared/ids";
-import { reparentElement } from "./mindmap";
+import { isMindmapTopic, reparentElement, toggleTopicCollapsed } from "./mindmap";
 import { removeMember, reorderLane, transformBranch } from "./transforms";
 import { useEffect, useRef, useState } from "react";
 import { Plus, Trash2, Shapes, X, ArrowUp, ArrowDown } from "lucide-react";
@@ -265,7 +265,11 @@ export function BoardInspector({
               {e.shape_type.startsWith("mindmap.") ? (
                 <fieldset disabled={readOnly}>
                   <legend>主题分支</legend>
-                  <Checkbox className="board-check" isDisabled={readOnly} isSelected={e.structure.collapsed} onChange={value => patch({ structure: { ...e.structure, collapsed: value } })}>
+                  <Checkbox className="board-check" isDisabled={readOnly} isSelected={e.structure.collapsed} onChange={value => {
+                    if (value === e.structure.collapsed) return;
+                    if (isMindmapTopic(e)) run(() => toggleTopicCollapsed(e, elements));
+                    else patch({ structure: { ...e.structure, collapsed: value } });
+                  }}>
                     <Checkbox.Content><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control>折叠子主题</Checkbox.Content>
                   </Checkbox>
                   <small>在画布中按 Tab 添加子主题，Enter 添加同级主题。</small>

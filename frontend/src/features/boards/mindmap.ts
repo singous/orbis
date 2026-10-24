@@ -47,6 +47,18 @@ function topicEdge(parent: Element, child: Element): Element {
   edge.style.stroke = child.style.stroke;
   return edge;
 }
+function topicRoot(node: Element, scene: ReadonlyMap<string, Element>): Element {
+  let root = node;
+  const trail = new Set<string>();
+  while (root.structure.parent_id) {
+    if (trail.has(root.id) || trail.size > MAX_TOPIC_DEPTH) throw new Error("思维导图层级存在循环或超出限制。");
+    trail.add(root.id);
+    const ancestor = scene.get(root.structure.parent_id);
+    if (!ancestor || !isMindmapTopic(ancestor) || ancestor.page_id !== node.page_id) break;
+    root = ancestor;
+  }
+  return root;
+}
 export function createMindmap(pageID: string, point: Point): { elements: Element[]; rootID: string } {
   const root = topicElement("mindmap.root", pageID, point);
   root.text = "中心主题";
@@ -91,15 +103,7 @@ export function appendTopic(selected: Element, scene: Map<string, Element>, sibl
     commands.push({ type: "elements.create", elements: [node, topicEdge(parent, node)] });
     return { commands, id: node.id };
   }
-  let root = parent;
-  const trail = new Set<string>();
-  while (root.structure.parent_id) {
-    if (trail.has(root.id) || trail.size > MAX_TOPIC_DEPTH) throw new Error("思维导图层级存在循环或超出限制。");
-    trail.add(root.id);
-    const ancestor = scene.get(root.structure.parent_id);
-    if (!ancestor || !isMindmapTopic(ancestor) || ancestor.page_id !== parent.page_id) break;
-    root = ancestor;
-  }
+  const root = topicRoot(parent, scene);
   const children = [...scene.values()].filter(node => isMindmapTopic(node) && node.structure.parent_id === parent.id && node.page_id === parent.page_id);
   const node = topicElement(parent.shape_type === "mindmap.root" ? "mindmap.topic" : "mindmap.subtopic", parent.page_id, { x: parent.geometry.x + parent.geometry.width + 64, y: parent.geometry.y }, parent.shape_type === "mindmap.root" ? BRANCH_STROKE : parent.style.stroke);
   node.text = "新主题";
@@ -130,7 +134,17 @@ export function appendTopic(selected: Element, scene: Map<string, Element>, sibl
 export function toggleTopicCollapsed(node: Element, scene: ReadonlyMap<string, Element>): Command[] {
   const current = scene.get(node.id);
   if (!current || !isMindmapTopic(current) || !mindmapDescendants(scene, current.id).length) return [];
-  return [{ type: "elements.update", patches: [elementPatch(current, { structure: { ...current.structure, collapsed: !current.structure.collapsed } })] }];
+  const structure = { ...current.structure, collapsed: !current.structure.collapsed };
+  if (structure.collapsed) return [{ type: "elements.update", patches: [elementPatch(current, { structure })] }];
+  // 展开时按当前可见子树重新分配空间；结构与位置合成一次更新，保持版本校验和撤销的原子性。
+  const expanded = { ...current, structure };
+  const layoutScene = new Map(scene).set(current.id, expanded);
+  const root = topicRoot(expanded, layoutScene);
+  const patches = mindmapLayout([root, ...mindmapDescendants(layoutScene, root.id)]);
+  const ownPatch = patches.find(patch => patch.id === current.id);
+  if (ownPatch) ownPatch.structure = structure;
+  else patches.push(elementPatch(current, { structure }));
+  return [{ type: "elements.update", patches }];
 }
 
 export function hiddenElements(scene: Map<string, Element>): Set<string> {

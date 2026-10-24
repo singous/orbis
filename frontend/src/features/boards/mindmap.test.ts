@@ -114,3 +114,73 @@ it.each(["mindmap.boundary", "basic.frame"])("keeps Enter creating a sibling und
   expect(creation.elements[0].structure.parent_id).toBe(parent.id);
   expect(creation.elements[0].geometry.y).toBe(child.geometry.y + child.geometry.height + 30);
 });
+
+function visibleOverlaps(scene: Map<string, Element>) {
+  const hidden = hiddenElements(scene);
+  const topics = [...scene.values()].filter(node => isMindmapTopic(node) && !hidden.has(node.id));
+  return topics.flatMap((a, index) => topics.slice(index + 1).filter(b =>
+    a.geometry.x < b.geometry.x + b.geometry.width && a.geometry.x + a.geometry.width > b.geometry.x &&
+    a.geometry.y < b.geometry.y + b.geometry.height && a.geometry.y + a.geometry.height > b.geometry.y,
+  ).map(b => [a.id, b.id]));
+}
+
+it.each(["sibling", "neighbor child"])("reflows expansion after adding a %s while retaining data and other trees", operation => {
+  const tree = createMindmap(crypto.randomUUID(), { x: 120, y: 220 });
+  const otherTree = createMindmap(tree.elements[0].page_id, { x: 1700, y: 900 });
+  const annotation = makeElement("flow.process", tree.elements[0].page_id, 3000, 1200);
+  const scene = new Map([...tree.elements, ...otherTree.elements, annotation].map(node => [node.id, node]));
+  const branches = tree.elements.filter(node => node.shape_type === "mindmap.topic");
+  apply(scene, toggleTopicCollapsed(branches[0], scene));
+  const added = operation === "sibling" ? appendTopic(scene.get(branches[0].id)!, scene, true) : appendTopic(scene.get(branches[1].id)!, scene, false);
+  apply(scene, added.commands);
+  for (const [index, node] of [...scene.values()].entries()) scene.set(node.id, { ...node, versions: { geometry: index + 11, structure: index + 21, text: index + 31, style: index + 41 } });
+  const before = JSON.stringify([...scene.values()]);
+  const rootGeometry = scene.get(tree.rootID)!.geometry;
+  const commands = toggleTopicCollapsed(scene.get(branches[0].id)!, scene);
+  expect(JSON.stringify([...scene.values()])).toBe(before);
+  expect(commands).toHaveLength(1);
+  const update = commands[0];
+  if (update.type !== "elements.update") throw Error("expected atomic expansion");
+  expect(new Set(update.patches.map(patch => patch.id)).size).toBe(update.patches.length);
+  expect(update.patches.some(patch => patch.geometry)).toBe(true);
+  for (const patch of update.patches) {
+    expect(patch.expected).toEqual(scene.get(patch.id)!.versions);
+    expect(patch.style).toBeUndefined();
+    expect(patch.text).toBeUndefined();
+    expect(tree.elements.some(node => node.id === patch.id) || patch.id === added.id).toBe(true);
+  }
+  const originals = new Map(scene);
+  apply(scene, commands);
+  expect(visibleOverlaps(scene)).toEqual([]);
+  expect(scene.get(tree.rootID)!.geometry).toEqual(rootGeometry);
+  expect(scene.get(branches[0].id)!.structure.collapsed).toBe(false);
+  expect(scene.has(added.id)).toBe(true);
+  expect(scene.size).toBe(originals.size);
+  for (const [id, original] of originals) {
+    const node = scene.get(id)!;
+    expect(node.style).toEqual(original.style);
+    expect(node.text).toBe(original.text);
+    expect(node.structure).toEqual(id === branches[0].id ? { ...original.structure, collapsed: false } : original.structure);
+  }
+  for (const node of [...otherTree.elements, annotation]) expect(scene.get(node.id)).toEqual(originals.get(node.id));
+});
+
+it("keeps nested collapsed branches and their hidden descendants intact when reflowing an expansion", () => {
+  const tree = createMindmap(crypto.randomUUID(), { x: 80, y: 120 });
+  const scene = new Map(tree.elements.map(node => [node.id, node]));
+  const branch = tree.elements.find(node => node.shape_type === "mindmap.topic")!;
+  const nested = tree.elements.find(node => node.shape_type === "mindmap.subtopic" && node.structure.parent_id === branch.id)!;
+  const grandchild = appendTopic(nested, scene, false);
+  apply(scene, grandchild.commands);
+  apply(scene, toggleTopicCollapsed(scene.get(nested.id)!, scene));
+  apply(scene, toggleTopicCollapsed(scene.get(branch.id)!, scene));
+  apply(scene, appendTopic(scene.get(branch.id)!, scene, true).commands);
+  const hiddenBefore = scene.get(grandchild.id)!;
+  const commands = toggleTopicCollapsed(scene.get(branch.id)!, scene);
+  apply(scene, commands);
+  expect(scene.get(nested.id)!.structure.collapsed).toBe(true);
+  expect(hiddenElements(scene).has(nested.id)).toBe(false);
+  expect(hiddenElements(scene).has(grandchild.id)).toBe(true);
+  expect(scene.get(grandchild.id)).toEqual(hiddenBefore);
+  expect(visibleOverlaps(scene)).toEqual([]);
+});

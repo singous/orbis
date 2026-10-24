@@ -61,7 +61,10 @@ export function BoardMindmapControls(props: Props) {
       const label = node.text || "主题";
       return <div key={node.id} className="board-mindmap-node-controls" style={{ left, top }}>
         {descendants.length ? <Tooltip label={node.structure.collapsed ? `展开 ${descendants.length} 个子主题` : "收起子主题"}>
-          <ActionButton className="board-mindmap-toggle" aria-label={`${node.structure.collapsed ? "展开" : "收起"}“${label}”的子主题`} aria-expanded={!node.structure.collapsed} isDisabled={pending === node.id} onPointerDown={event => event.stopPropagation()} onKeyDown={event => event.stopPropagation()} onKeyUp={event => event.stopPropagation()} onPress={() => void submit(node, toggleTopicCollapsed(node, live.current.elements))}>
+          <ActionButton className="board-mindmap-toggle" aria-label={`${node.structure.collapsed ? "展开" : "收起"}“${label}”的子主题`} aria-expanded={!node.structure.collapsed} isDisabled={pending === node.id} onPointerDown={event => event.stopPropagation()} onKeyDown={event => event.stopPropagation()} onKeyUp={event => event.stopPropagation()} onPress={() => {
+            try { void submit(node, toggleTopicCollapsed(node, live.current.elements)); }
+            catch (error) { live.current.onError(error); }
+          }}>
             {node.structure.collapsed ? <><ChevronRight size={12} /><span>{descendants.length}</span></> : <ChevronDown size={14} />}
           </ActionButton>
         </Tooltip> : null}
