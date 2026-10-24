@@ -1,6 +1,9 @@
 import { registerRetiredBlockCleanup } from "./tiptap-retired";
 import { ActionButton } from "../../../shared/ui/ActionButton";
 import { SelectField } from "../../../shared/ui/SelectField";
+import { Toolbar } from "@heroui/react/toolbar";
+import { ToggleButton } from "@heroui/react/toggle-button";
+import { ToggleButtonGroup } from "@heroui/react/toggle-button-group";
 import { createPortal } from "react-dom";
 import { useEditorToolbarHost } from "./EditorToolbarHost";
 import { BlockControls, requestBlockMenu } from "./blocks/BlockControls";
@@ -37,6 +40,13 @@ import "../../../styles/tiptap-editor.css";
 
 type EditorChange = { blocks: NoteBlocksV2 };
 type Command = { label: string; keywords: string; icon: ReactNode; run: (editor: Editor) => void };
+
+const TEXT_MARK_TOOLS = [
+  { mark: "bold", label: "粗体", Icon: Bold },
+  { mark: "italic", label: "斜体", Icon: Italic },
+  { mark: "underline", label: "下划线", Icon: Underline },
+  { mark: "strike", label: "删除线", Icon: Strikethrough },
+] as const;
 
 function insertBlock(editor: Editor, value: OrbisBlock) {
   const node = toTiptapDocumentForSchema({ schema_version: 2, editor: "blocknote", blocks: [value] }, editor.schema).content?.[0];
@@ -93,7 +103,7 @@ const COMMANDS: Command[] = [
 ];
 
 function Tool({ title, active, onClick, children }: { title: string; active?: boolean; onClick: () => void; children: ReactNode }) {
-  return <ActionButton className={["重做", "斜体", "下划线", "删除线", "链接", "表格", "上传媒体或附件"].includes(title) ? "editor-secondary-tool" : undefined} type="button" title={title} aria-label={title} aria-pressed={active} onMouseDown={(event) => event.preventDefault()} onClick={onClick}>{children}</ActionButton>;
+  return <ActionButton className={["重做", "链接", "表格", "上传媒体或附件"].includes(title) ? "editor-secondary-tool" : undefined} type="button" title={title} aria-label={title} aria-pressed={active} onMouseDown={(event) => event.preventDefault()} onClick={onClick}>{children}</ActionButton>;
 }
 
 function inlineLink(editor: Editor) {
@@ -456,16 +466,35 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
     editor.view.dispatch(tr); editor.view.focus();
   }
 
-  const formatToolbar = !readOnly && editor ? <div className="orbis-tiptap-toolbar" role="toolbar" aria-label="文档格式">
+  const formatToolbar = !readOnly && editor ? <Toolbar className="orbis-tiptap-toolbar" aria-label="文档格式">
       <SelectField density="compact" aria-label="段落类型" className="editor-block-type" value={active?.h1 ? "heading:1" : active?.h2 ? "heading:2" : active?.h3 ? "heading:3" : active?.bulletList ? "bulletListItem" : active?.orderedList ? "numberedListItem" : active?.taskList ? "checkListItem" : active?.quote ? "quote" : active?.codeBlock ? "codeBlock" : "paragraph"} options={[{value:"paragraph",label:"正文"},{value:"heading:1",label:"标题 1"},{value:"heading:2",label:"标题 2"},{value:"heading:3",label:"标题 3"},{value:"bulletListItem",label:"无序列表"},{value:"numberedListItem",label:"有序列表"},{value:"checkListItem",label:"任务清单"},{value:"quote",label:"引用"},{value:"codeBlock",label:"代码块"}]} onChange={setParagraphType} />
       <span className="orbis-tiptap-toolbar-divider" />
       <Tool title="撤销" onClick={() => editor.chain().focus().undo().run()}><Undo2 size={16} /></Tool>
       <Tool title="重做" onClick={() => editor.chain().focus().redo().run()}><Redo2 size={16} /></Tool>
       <span className="orbis-tiptap-toolbar-divider" />
-      <Tool title="粗体" active={active?.bold} onClick={() => toggleMark("bold")}><Bold size={16} /></Tool>
-      <Tool title="斜体" active={active?.italic} onClick={() => toggleMark("italic")}><Italic size={16} /></Tool>
-      <Tool title="下划线" active={active?.underline} onClick={() => toggleMark("underline")}><Underline size={16} /></Tool>
-      <Tool title="删除线" active={active?.strike} onClick={() => toggleMark("strike")}><Strikethrough size={16} /></Tool>
+      <ToggleButtonGroup
+        className="editor-text-style-tools"
+        aria-label="文字样式"
+        isDetached
+        size="sm"
+        selectionMode="multiple"
+        selectedKeys={TEXT_MARK_TOOLS.filter(({ mark }) => active?.[mark]).map(({ mark }) => mark)}
+        onSelectionChange={(keys) => {
+          const changed = TEXT_MARK_TOOLS.find(({ mark }) => keys.has(mark) !== Boolean(active?.[mark]));
+          if (changed) toggleMark(changed.mark);
+        }}
+      >
+        {TEXT_MARK_TOOLS.map(({ mark, label, Icon }) => <ToggleButton
+          key={mark}
+          id={mark}
+          isIconOnly
+          variant="ghost"
+          aria-label={label}
+          render={(domProps) => <button {...domProps} title={label} />}
+          className={mark === "bold" ? undefined : "editor-secondary-tool"}
+          onMouseDown={(event) => event.preventDefault()}
+        ><Icon size={16} /></ToggleButton>)}
+      </ToggleButtonGroup>
       <Tool title="链接" active={active?.link} onClick={() => inlineLink(editor)}><Link2 size={16} /></Tool>
       <span className="orbis-tiptap-toolbar-divider" />
       <Tool title="表格" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}><Table2 size={16} /></Tool>
@@ -473,7 +502,7 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
       <ActionButton ref={moreButtonRef} className="editor-more-tools" aria-label="更多格式" aria-expanded={moreOpen} onClick={() => { setMenuOpen(false); setSlash(null); setMoreOpen(value => !value); }}><MoreHorizontal size={17}/></ActionButton>
       <ActionButton ref={insertButtonRef} type="button" className="orbis-tiptap-insert" aria-label="插入内容" aria-expanded={menuOpen} onClick={() => { setMoreOpen(false); setActiveCommand(0); setMenuOpen((value) => !value); }}><Plus size={15} />插入</ActionButton>
       <input ref={inputRef} type="file" aria-label="选择上传文件" hidden onChange={(event) => void upload(event)} />
-    </div> : null;
+    </Toolbar> : null;
 
   const visible = slash ? COMMANDS.filter((item) => `${item.label} ${item.keywords}`.toLocaleLowerCase().includes(slash.query)) : COMMANDS;
   return <EditorReadOnlyContext.Provider value={readOnly}><FileContentContext.Provider value={files}><div className="orbis-tiptap document-prose" data-testid="orbis-tiptap-editor" onKeyDownCapture={(event) => {
