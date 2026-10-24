@@ -8,7 +8,6 @@ import { ShareButton } from "./ShareButton";
 import { PublicSharePage } from "./PublicSharePage";
 import {
   hydratedSharedBlocks,
-  sharedNoteLink,
 } from "./share-content-model";
 import type {
   PublicShare,
@@ -324,68 +323,36 @@ it("discloses live future scope before creating a link and supports revocation",
   client.clear();
 });
 
-it("rewrites only in-scope note links while assembling paged nested blocks", () => {
-  const allowed = new Set([rootId, childId]);
-  expect(
-    sharedNoteLink(
-      `orbis-note:${childId}`,
-      token,
-      allowed,
-      "https://orbis.example",
-    ),
-  ).toBe(`https://orbis.example/share/${token}/${childId}`);
-  expect(
-    sharedNoteLink(
-      `orbis-note:${bookId}`,
-      token,
-      allowed,
-      "https://orbis.example",
-    ),
-  ).toBe("");
+it("assembles server-projected paged nested blocks", () => {
   const root = page("");
-  expect(
-    sharedNoteLink(
-      `/documents/${childId}`,
-      token,
-      allowed,
-      "https://orbis.example",
-    ),
-  ).toBe(`https://orbis.example/share/${token}/${childId}`);
-  expect(
-    sharedNoteLink(
-      `https://orbis.example/documents/${childId}`,
-      token,
-      allowed,
-      "https://orbis.example",
-    ),
-  ).toBe(`https://orbis.example/share/${token}/${childId}`);
-  expect(
-    sharedNoteLink(
-      `https://orbis.example/documents/${bookId}`,
-      token,
-      allowed,
-      "https://orbis.example",
-    ),
-  ).toBe("");
-  expect(
-    sharedNoteLink(
-      `https://external.example/documents/${childId}`,
-      token,
-      allowed,
-      "https://orbis.example",
-    ),
-  ).toBe(`https://external.example/documents/${childId}`);
   root.blocks.blocks = [
     { id: containerId, type: "quote", props: {}, content: "", children: [] },
   ];
   const child = { ...page("Nested"), parent_id: containerId };
   const blocks = hydratedSharedBlocks(
     [root, child],
-    manifest,
-    token,
-    "https://orbis.example",
   );
   expect(blocks.blocks[0].children).toEqual([
     expect.objectContaining({ content: "Nested" }),
   ]);
+});
+
+
+it("ignores clipboard completion from a closed share dialog session", async () => {
+  const client = queryClient();
+  const user = userEvent.setup();
+  authStore.setState({ accessToken: "owner-token", refreshToken: null, workspace: { id: bookId, name: "工作空间", role: "owner", created_at_ms: 1, updated_at_ms: 1 } });
+  const share = { id: shareId, collection_id: bookId, root_document_id: rootId, version: 1, expires_at_ms: null, created_at_ms: 1, revoked_at_ms: null, path: `/share/${token}` };
+  vi.stubGlobal("fetch", vi.fn(async () => response({ items: [share], pagination: { page: 1, page_size: 20, total: 1, total_pages: 1, has_next: false, has_previous: false } })));
+  let finish!: () => void;
+  vi.spyOn(navigator.clipboard, "writeText").mockImplementation(() => new Promise<void>(resolve => { finish = resolve; }));
+  render(<QueryClientProvider client={client}><ShareButton notebookId={bookId} noteId={rootId} title="文档" /></QueryClientProvider>);
+  await user.click(screen.getByRole("button", { name: "分享" }));
+  await user.click(await screen.findByRole("button", { name: "复制已有分享链接" }));
+  await user.click(screen.getByRole("button", { name: "关闭" }));
+  await user.click(screen.getByRole("button", { name: "分享" }));
+  await screen.findByRole("button", { name: "复制已有分享链接" });
+  await act(async () => { finish(); });
+  expect(screen.queryByText("链接已复制。")).not.toBeInTheDocument();
+  client.clear();
 });

@@ -3,7 +3,6 @@ import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { BookOpen, RefreshCw } from "lucide-react";
-import { ApiError } from "../../shared/api/api-client";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { useReaderMetadata } from "../sites/reader/head-metadata";
 import { readPublicShare,readSharedDocument } from "./api";
@@ -83,7 +82,6 @@ export function PublicSharePage() {
               key={`${shareToken}:${selected.data.id}`}
               token={shareToken}
               noteId={selected.data.id}
-              manifest={manifest.data}
             />
           ) : selectedId ? (
             <ShareStatus

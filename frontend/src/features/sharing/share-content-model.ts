@@ -1,4 +1,4 @@
-import type { PublicShare, SharedContentPage } from "./api";
+import type { SharedContentPage } from "./api";
 
 const BLOCK_LABELS: Record<string, string> = {
   paragraph: "段落",
@@ -18,55 +18,10 @@ const BLOCK_LABELS: Record<string, string> = {
   checkListItem: "待办事项",
 };
 
-export function sharedNoteLink(
-  value: string,
-  token: string,
-  allowed: Set<string>,
-  origin: string,
-): string {
-  let candidate = value;
-  let privateDocumentPath = false;
-  if (!value.startsWith("orbis-note:")) {
-    try {
-      const url = new URL(value, origin);
-      if (
-        url.origin === new URL(origin).origin &&
-        url.pathname.startsWith("/documents/")
-      ) {
-        privateDocumentPath = true;
-        candidate = url.pathname + url.search + url.hash;
-      }
-    } catch {
-      /* Non-URL text is not a document reference. */
-    }
-  }
-  const match =
-    /^(?:orbis-note:|\/documents\/)([0-9a-f-]{36})\/?(#[A-Za-z0-9_-]+)?$/i.exec(
-      candidate,
-    );
-  if (!match)
-    return privateDocumentPath ||
-      value.startsWith("orbis-note:") ||
-      value.startsWith("/documents/")
-      ? ""
-      : value;
-  const noteId = match[1].toLowerCase();
-  return allowed.has(noteId)
-    ? new URL(
-        `/share/${encodeURIComponent(token)}/${noteId}${match[2] ?? ""}`,
-        origin,
-      ).href
-    : "";
-}
-
 export function hydratedSharedBlocks(
   pages: SharedContentPage[],
-  manifest: PublicShare,
-  token: string,
-  origin: string,
 ) {
   const byParent = new Map<string | null, Record<string, unknown>[]>();
-  const allowed = new Set(manifest.items.map((item) => item.id));
   for (const page of pages) {
     const siblings = byParent.get(page.parent_id) ?? [];
     siblings.push(...page.blocks.blocks);

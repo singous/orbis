@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link2, Share2 } from "lucide-react";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
@@ -19,21 +19,23 @@ export function ShareButton(target: ShareTarget) {
       >
         分享
       </Button>
-      {open ? <ShareDialog {...target} onClose={() => setOpen(false)} /> : null}
+      <ShareDialog {...target} open={open} onClose={() => setOpen(false)} />
     </>
   );
 }
 
 export function ShareDialog({
+  open = true,
   onClose,
   ...target
-}: ShareTarget & { onClose: () => void }) {
+}: ShareTarget & { open?: boolean; onClose: () => void }) {
   const auth = useAuthRequest();
   const client = useQueryClient();
   const [created, setCreated] = useState<{ id: string; url: string } | null>(
     null,
   );
   const [feedback, setFeedback] = useState<string | null>(null);
+  const sessionGeneration = useRef(0);
   const key = [
     "document-shares",
     auth.workspaceId,
@@ -45,6 +47,7 @@ export function ShareDialog({
     queryFn: () => listShares(target, auth),
     retry: false,
     staleTime: 0,
+    enabled: open,
   });
   const create = useMutation({
     mutationFn: () => createShare(target, auth),
@@ -66,23 +69,29 @@ export function ShareDialog({
     },
   });
   useEffect(() => {
+    sessionGeneration.current += 1;
+    if (!open) return;
     setCreated(null);
     setFeedback(null);
-  }, [target.notebookId, target.noteId, auth.workspaceId]);
+    create.reset();
+    revoke.reset();
+    return () => { sessionGeneration.current += 1; };
+  }, [open, target.notebookId, target.noteId, auth.workspaceId]);
   const error = create.error ?? revoke.error ?? query.error;
   async function copy(url: string) {
+    const generation = sessionGeneration.current;
     try {
       await navigator.clipboard.writeText(url);
-      setFeedback("链接已复制。");
+      if (generation === sessionGeneration.current) setFeedback("链接已复制。");
     } catch {
-      setFeedback("复制失败，请手动选择并复制链接。");
+      if (generation === sessionGeneration.current) setFeedback("复制失败，请手动选择并复制链接。");
     }
   }
   return (
     <Dialog
-      open
+      open={open}
       onOpenChange={(value) => {
-        if (!value) onClose();
+        if (!value && !create.isPending && !revoke.isPending) onClose();
       }}
     >
       <DialogContent

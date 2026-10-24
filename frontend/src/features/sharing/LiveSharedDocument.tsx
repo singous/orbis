@@ -7,7 +7,6 @@ import { TableHostContext } from "../data-tables/context";
 import {
   readSharedBlock,
   readSharedContent,
-  type PublicShare,
   type SharedBlock,
   type SharedContentPage,
 } from "./api";
@@ -22,11 +21,9 @@ import { LIVE_REFRESH_INTERVAL_MS } from "./sharing-config";
 export function LiveSharedDocument({
   token,
   noteId,
-  manifest,
 }: {
   token: string;
   noteId: string;
-  manifest: PublicShare;
 }) {
   const first = useQuery({
     queryKey: ["public-share-content", token, noteId],
@@ -168,10 +165,7 @@ export function LiveSharedDocument({
     );
   const blocks = hydratedSharedBlocks(
     pages,
-    manifest,
-    token,
-    window.location.origin,
-  );
+    );
   return (
     <article className="public-share-document">
       <header>
