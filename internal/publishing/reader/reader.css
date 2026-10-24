@@ -5,3 +5,5 @@
 .native-board{margin:20px 0;padding:12px;border:1px solid var(--border);border-radius:8px;overflow:auto}.native-board>svg{display:block;width:100%;height:auto;max-height:650px}.native-board>figcaption{margin-top:10px;font-size:12px;color:var(--muted)}
 
 .orbis-attribution{display:inline-flex;align-items:center;gap:6px;color:var(--muted)}.orbis-attribution svg{width:20px;height:20px;flex:none;color:var(--fg)}
+
+@media(pointer:coarse){:root{--reader-touch-target:2.75rem}button,input:not([type=checkbox]):not([type=radio]),.cta{min-width:var(--reader-touch-target);min-height:var(--reader-touch-target)}}
