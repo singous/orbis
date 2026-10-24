@@ -3,7 +3,7 @@ import { Check, Crown } from "../../shared/ui/icons";
 import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
 
 import { ApiError } from "../../shared/api/api-client";
-import { Button } from "../../shared/ui/Button";
+import { Button, buttonVariants } from "../../shared/ui/Button";
 import { StatusMessage } from "../../shared/ui/StatusMessage";
 import { confirmOwnershipTransfer } from "./api";
 
@@ -12,6 +12,10 @@ export function ConfirmOwnershipPage() {
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const transferToken = new URLSearchParams(location.hash.slice(1)).get("token") || token || searchParams.get("token") || "";
+  return <OwnershipConfirmationSession key={transferToken} transferToken={transferToken} />;
+}
+
+function OwnershipConfirmationSession({ transferToken }: { transferToken: string }) {
   const confirm = useMutation({ mutationFn: () => confirmOwnershipTransfer(transferToken) });
   const error = confirm.error as ApiError | null;
 
@@ -23,7 +27,7 @@ export function ConfirmOwnershipPage() {
           <>
             <h1 className="text-2xl font-semibold tracking-[-0.035em]">所有权已完成转让</h1>
             <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">指定管理员已成为工作空间的唯一所有者，原所有者已降为管理员。</p>
-            <Link to="/login"><Button variant="primary" className="mt-6 w-full">重新登录</Button></Link>
+            <Link to="/login" className={`${buttonVariants({ variant: "primary" })} mt-6 w-full`}>重新登录</Link>
           </>
         ) : (
           <>
