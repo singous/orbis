@@ -260,10 +260,10 @@ test("images survive portable export/import and PNG export", async ({
       ),
     );
   await expect.poll(async () => (await snapshot()).elements.length).toBe(1);
-  await page.locator(".board-export-menu summary").click();
+  await page.getByRole("button", { name: "导入与导出画板", exact: true }).click();
   const exported = page.waitForEvent("download");
   await page
-    .getByRole("button", { name: "当前页可编辑文件", exact: true })
+    .getByRole("menuitem", { name: "当前页可编辑文件", exact: true })
     .click();
   const path = await (await exported).path();
   const { readFile } = await import("node:fs/promises");
@@ -283,7 +283,8 @@ test("images survive portable export/import and PNG export", async ({
   const latest = await snapshot();
   expect(new Set(latest.elements.map((e: any) => e.id)).size).toBe(2);
   const pngDownload = page.waitForEvent("download");
-  await page.getByRole("button", { name: "PNG", exact: true }).click();
+  await page.getByRole("button", { name: "导入与导出画板", exact: true }).click();
+  await page.getByRole("menuitem", { name: "PNG", exact: true }).click();
   expect(
     (await readFile((await (await pngDownload).path())!))
       .subarray(1, 4)
