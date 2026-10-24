@@ -1,7 +1,9 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { toast as heroToast } from "@heroui/react/toast";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { authStore } from "../../shared/auth/auth-store";
+import { Toaster } from "../../shared/ui/Toast";
 import type { Board } from "./model";
 import type { SessionState } from "./session";
 import { BoardEditor } from "./BoardEditor";
@@ -45,7 +47,24 @@ vi.mock("./session", async () => {
 beforeEach(() => {
   authStore.setState({ workspace: { id: "workspace", name: "验收空间", role: "owner", created_at_ms: 1, updated_at_ms: 1 } });
 });
-afterEach(() => { cleanup(); authStore.getState().clearSession(); });
+afterEach(() => { cleanup(); heroToast.clear(); authStore.getState().clearSession(); });
+
+it("reports another identical import failure after its notification was dismissed", async () => {
+  const view = render(<><BoardEditor id="board" /><Toaster /></>);
+  const input = view.container.querySelector<HTMLInputElement>('input[accept=".json,.orbis-board.json"]')!;
+  const file = new File(["{}"], "large.orbis-board.json", { type: "application/json" });
+  Object.defineProperty(file, "size", { value: 32 * 1024 * 1024 + 1 });
+
+  fireEvent.change(input, { target: { files: [file] } });
+  expect(await screen.findByRole("alertdialog")).toHaveTextContent("文件超过 32 MiB 导入限制。");
+  act(() => heroToast.close(heroToast.getQueue().visibleToasts[0].key));
+  await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+
+  fireEvent.click(screen.getByRole("button", { name: "选中测试对象" }));
+  expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  fireEvent.change(input, { target: { files: [file] } });
+  expect(await screen.findByRole("alertdialog")).toHaveTextContent("文件超过 32 MiB 导入限制。");
+});
 
 it("keeps each page tab linked to the live canvas panel after keyboard switches", async () => {
   render(<BoardEditor id="board" />);

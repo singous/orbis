@@ -120,6 +120,7 @@ export function BoardEditor({ id }: { id: string }) {
     [camera, setCamera] = useState<Camera>({ x: 80, y: 80, zoom: 1 }),
     [tool, setTool] = useState("select");
   const [error, setError] = useState(""),
+    [errorAttempt, setErrorAttempt] = useState(0),
     [library, setLibrary] = useState(false),
     [inspector, setInspector] = useState(false),
     [comments, setComments] = useState(false),
@@ -165,8 +166,10 @@ export function BoardEditor({ id }: { id: string }) {
     state.status !== "conflict" &&
     state.status !== "loading" &&
     state.status !== "error";
-  const fail = (error: unknown) =>
+  const fail = (error: unknown) => {
     setError(error instanceof Error ? error.message : String(error));
+    setErrorAttempt(attempt => attempt + 1);
+  };
   useEffect(() => {
     void session.start(new URLSearchParams(location.search).get("page") ?? "");
     return () => {
@@ -754,7 +757,7 @@ export function BoardEditor({ id }: { id: string }) {
           </ActionButton>
         </Toolbar>
         {error || state.error ? (
-          <ToastNotification title="画板操作未完成" tone="danger" timeout={state.pending ? 0 : undefined}>
+          <ToastNotification key={errorAttempt} title="画板操作未完成" tone="danger" timeout={state.pending ? 0 : undefined}>
             <span>{error || state.error}</span>
             {state.pending ? (
               <div className="mt-3 flex flex-wrap gap-2">
