@@ -89,5 +89,5 @@ export function ToastNotification({ title, children, tone = "default", timeout }
 
 export function Toaster() {
   useEffect(() => () => heroToast.clear(), []);
-  return <HeroToast.Provider placement="bottom end" width={360} aria-label="通知" />;
+  return <HeroToast.Provider isExpanded placement="bottom end" width={360} aria-label="通知" />;
 }
