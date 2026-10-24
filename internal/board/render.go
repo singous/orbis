@@ -81,6 +81,9 @@ func Port(e Element, port string) Point {
 			}
 		}
 	}
+	if isMindmapBranch(e) && (parts[0] == "left" || parts[0] == "right") {
+		p.Y = g.Y + g.Height
+	}
 	if len(parts) == 2 && parts[0] != "time" {
 		for index, member := range e.Structure.Members {
 			if member.ID == parts[1] {
@@ -92,6 +95,9 @@ func Port(e Element, port string) Point {
 	cx, cy := g.X+g.Width/2, g.Y+g.Height/2
 	x, y := p.X-cx, p.Y-cy
 	return Point{X: cx + x*math.Cos(g.Rotation) - y*math.Sin(g.Rotation), Y: cy + x*math.Sin(g.Rotation) + y*math.Cos(g.Rotation)}
+}
+func isMindmapBranch(e Element) bool {
+	return e.ShapeType == "mindmap.topic" || e.ShapeType == "mindmap.subtopic"
 }
 func endpointPoint(endpoint *Endpoint, elements map[string]Element) Point {
 	if endpoint == nil {
@@ -192,7 +198,7 @@ func (r *Renderer) SVG(ctx context.Context, elements []Element, background strin
 	}
 	width, height := math.Max(1, maxX-minX)+80, math.Max(1, maxY-minY)+80
 	var out bytes.Buffer
-	fmt.Fprintf(&out, `<svg xmlns="http://www.w3.org/2000/svg" role="img" width="%s" height="%s" viewBox="%s %s %s %s" font-family="%s"><rect x="%s" y="%s" width="%s" height="%s" fill="%s"/>`, coordinate(width), coordinate(height), coordinate(minX-40), coordinate(minY-40), coordinate(width), coordinate(height), BoardFont, coordinate(minX-40), coordinate(minY-40), coordinate(width), coordinate(height), xmlText(background))
+	fmt.Fprintf(&out, `<svg xmlns="http://www.w3.org/2000/svg" role="img" width="%s" height="%s" viewBox="%s %s %s %s" font-family="%s" stroke-linejoin="round" stroke-linecap="round"><rect x="%s" y="%s" width="%s" height="%s" fill="%s"/>`, coordinate(width), coordinate(height), coordinate(minX-40), coordinate(minY-40), coordinate(width), coordinate(height), BoardFont, coordinate(minX-40), coordinate(minY-40), coordinate(width), coordinate(height), xmlText(background))
 	ordered := append([]Element{}, elements...)
 	sort.SliceStable(ordered, func(i, j int) bool {
 		a, b := r.catalog.Shapes[ordered[i].ShapeType].Container, r.catalog.Shapes[ordered[j].ShapeType].Container
@@ -214,6 +220,10 @@ func (r *Renderer) SVG(ctx context.Context, elements []Element, background strin
 			return "", Limit()
 		}
 		s, g, shape := e.Style, e.Geometry, r.catalog.Shapes[e.ShapeType]
+		branch := isMindmapBranch(e)
+		if branch && strings.EqualFold(s.Fill, "#ffffff") {
+			s.Fill = "transparent"
+		}
 		stroke := fmt.Sprintf(`stroke="%s" stroke-width="%s"`, xmlText(s.Stroke), coordinate(s.StrokeWidth))
 		if s.Dashed {
 			stroke += ` stroke-dasharray="6 4"`
@@ -244,6 +254,13 @@ func (r *Renderer) SVG(ctx context.Context, elements []Element, background strin
 			path = pointPath(e.Structure.Points)
 		}
 		fill := s.Fill
+		if branch {
+			if fill != "transparent" {
+				fmt.Fprintf(&out, `<rect width="%s" height="%s" rx="6" fill="%s"/>`,
+					coordinate(g.Width), coordinate(g.Height), xmlText(fill))
+			}
+			fill = "none"
+		}
 		if shape.Primitive == "initial" || shape.Primitive == "fork" {
 			fill = s.Stroke
 		}

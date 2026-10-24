@@ -43,6 +43,79 @@ func TestSVGPreservesLabelsWithoutExecutingMarkup(t *testing.T) {
 		}
 	}
 }
+
+func TestMindmapPortsFollowBranchUnderlines(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name     string
+		shape    string
+		rotation float64
+		want     board.Point
+	}{
+		{name: "root center", shape: "mindmap.root", want: board.Point{X: 180, Y: 60}},
+		{name: "topic underline", shape: "mindmap.topic", want: board.Point{X: 180, Y: 80}},
+		{name: "subtopic underline", shape: "mindmap.subtopic", want: board.Point{X: 180, Y: 80}},
+		{name: "rotated topic", shape: "mindmap.topic", rotation: math.Pi / 2, want: board.Point{X: 80, Y: 140}},
+	}
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			node := element(tt.shape, uuid.NewString())
+			node.Geometry = board.Geometry{X: 20, Y: 40, Width: 160, Height: 40, Rotation: tt.rotation}
+			got := board.Port(node, "right")
+			if math.Abs(got.X-tt.want.X) > .001 || math.Abs(got.Y-tt.want.Y) > .001 {
+				t.Fatalf("right port = %+v, want %+v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSVGPreservesMindmapCardsUnderlinesAndCustomColors(t *testing.T) {
+	t.Parallel()
+	catalog, err := board.ParseCatalog(api.BoardCatalog)
+	if err != nil {
+		t.Fatal(err)
+	}
+	renderer, err := board.NewRenderer(catalog, api.BoardIcons)
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := element("mindmap.root", uuid.NewString())
+	root.Style.Fill = "#7162b6"
+	root.Style.TextColor = "#ffffff"
+	root.Text = "Root"
+	branch := element("mindmap.topic", root.PageID)
+	branch.Geometry.X = 250
+	branch.Text = "Branch"
+	custom := element("mindmap.subtopic", root.PageID)
+	custom.Geometry.X = 500
+	custom.Style.Fill = "#dbeafe"
+	custom.Style.TextColor = "#5b21b6"
+	custom.Text = "Custom"
+	svg, err := renderer.SVG(t.Context(), []board.Element{root, branch, custom}, "#ffffff", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Count(svg, `d="M0 100H100"`) != 2 {
+		t.Fatal("mindmap branches did not render as underlines")
+	}
+	for _, expected := range []string{
+		`stroke-linejoin="round"`,
+		`fill="#7162b6"`,
+		`<rect width="180.000" height="80.000" rx="6" fill="#dbeafe"/>`,
+		`fill="#5b21b6"`,
+	} {
+		if !strings.Contains(svg, expected) {
+			t.Fatalf("SVG is missing %s", expected)
+		}
+	}
+	if strings.Contains(svg, `fill="#ffffff" stroke=`) {
+		t.Fatal("legacy default white branch cards should be transparent")
+	}
+	if branch.Style.Fill != "#ffffff" {
+		t.Fatal("rendering changed authored branch data")
+	}
+}
+
 func TestFrameProjectionExcludesRotatedOutsideNodesAndEdges(t *testing.T) {
 	page := uuid.NewString()
 	frame := element("basic.frame", page)

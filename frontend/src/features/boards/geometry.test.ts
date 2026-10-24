@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   connectorPoints,
   elementBounds,
+  elementShapePath,
   portPosition,
   SpatialIndex,
 } from "./geometry";
@@ -75,5 +76,23 @@ describe("board geometry", () => {
     };
     expect(portPosition(node, "right").x).toBeCloseTo(50);
     expect(portPosition(node, "right").y).toBeCloseTo(100);
+  });
+  it("attaches mindmap branch sides to their underline while keeping root ports centered", () => {
+    const page = crypto.randomUUID();
+    for (const shape of ["mindmap.topic", "mindmap.subtopic"]) {
+      const node = makeElement(shape, page, 20, 40);
+      node.geometry.width = 160;
+      node.geometry.height = 40;
+      expect(portPosition(node, "left")).toEqual({ x: 20, y: 80 });
+      expect(portPosition(node, "right")).toEqual({ x: 180, y: 80 });
+      node.geometry.rotation_rad = Math.PI / 2;
+      expect(portPosition(node, "right").x).toBeCloseTo(80);
+      expect(portPosition(node, "right").y).toBeCloseTo(140);
+      expect(elementShapePath(node)).toBe("M0 100H100");
+    }
+    const root = makeElement("mindmap.root", page, 20, 40);
+    expect(portPosition(root, "right").y).toBe(80);
+    expect(elementShapePath(root)).toContain("Q");
+    expect(elementShapePath(root)).not.toBe(elementShapePath(makeElement("flow.start", page, 20, 40)));
   });
 });

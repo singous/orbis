@@ -7,13 +7,16 @@ import {
   connectorPath,
   connectorPoints,
   elementBounds,
+  elementShapePath,
   isContainer,
   isMemberShape,
-  shapePath,
+  isMindmapBranch,
   unionBounds,
   wrapText,
 } from "./geometry";
 import { iconData } from "./icons";
+import { boardElementStyle } from "./board-appearance";
+import { DEFAULT_STYLE } from "./model";
 const MAX_EXPORT_PIXELS = 16_000_000;
 const escape = (value: string) =>
   value.replace(
@@ -48,9 +51,9 @@ export async function exportSVG(
     );
   for (const e of sorted) {
     const g = e.geometry,
-      s = e.style,
+      s = boardElementStyle(e, DEFAULT_STYLE.text_color),
       primitive = SHAPES.get(e.shape_type)?.primitive ?? "rect";
-    const stroke = `stroke="${escape(s.stroke)}" stroke-width="${s.stroke_width}" ${s.dashed ? 'stroke-dasharray="6 4"' : ""}`;
+    const stroke = `stroke="${escape(s.stroke)}" stroke-width="${s.stroke_width}" stroke-linejoin="round" stroke-linecap="round" ${s.dashed ? 'stroke-dasharray="6 4"' : ""}`;
     if (e.shape_type === "connector") {
       parts.push(
         `<path d="${connectorPath(e, scene)}" fill="none" ${stroke}/>`,
@@ -91,10 +94,12 @@ export async function exportSVG(
         ? e.structure.points
             .map((p, i) => `${i ? "L" : "M"}${p.x},${p.y}`)
             .join(" ")
-        : shapePath(primitive);
+        : elementShapePath(e);
+    if (isMindmapBranch(e) && s.fill !== "transparent")
+      parts.push(`<rect width="${g.width}" height="${g.height}" rx="6" fill="${escape(s.fill)}"/>`);
     if (path)
       parts.push(
-        `<path d="${path}" transform="scale(${g.width / 100} ${g.height / 100})" fill="${["actor", "annotation", "line", "search"].includes(primitive) ? "none" : escape(primitive === "initial" || primitive === "fork" ? s.stroke : s.fill)}" ${stroke} vector-effect="non-scaling-stroke"/>`,
+        `<path d="${path}" transform="scale(${g.width / 100} ${g.height / 100})" fill="${isMindmapBranch(e) || ["actor", "annotation", "line", "search"].includes(primitive) ? "none" : escape(primitive === "initial" || primitive === "fork" ? s.stroke : s.fill)}" ${stroke} vector-effect="non-scaling-stroke"/>`,
       );
     if (e.structure.asset_id) {
       if (!assetURL) throw new Error("图片资源未准备完成。");

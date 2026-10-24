@@ -1,3 +1,4 @@
+import { ActionButton } from "../../shared/ui/ActionButton";
 import { hiddenElements } from "./mindmap";
 import { useEffect, useMemo, useRef } from "react";
 import { unionBounds } from "./geometry";
@@ -62,14 +63,16 @@ export function BoardMinimap({
       }
     : null;
   return (
-    <button
+    <ActionButton
       className="board-minimap"
       aria-label="画板小地图，点击定位"
       onClick={(event) => {
         if (!renderer) return;
         const rect = event.currentTarget.getBoundingClientRect();
-        const x = (event.clientX - rect.left - offsetX) / scale + bounds.x,
-          y = (event.clientY - rect.top - offsetY) / scale + bounds.y;
+        const screenX = event.detail === 0 ? WIDTH / 2 : event.clientX - rect.left,
+          screenY = event.detail === 0 ? HEIGHT / 2 : event.clientY - rect.top;
+        const x = (screenX - offsetX) / scale + bounds.x,
+          y = (screenY - offsetY) / scale + bounds.y;
         onCamera({
           ...camera,
           x: renderer.stage.width() / 2 - x * camera.zoom,
@@ -81,6 +84,6 @@ export function BoardMinimap({
       {viewport ? (
         <span className="board-minimap-viewport" style={viewport} />
       ) : null}
-    </button>
+    </ActionButton>
   );
 }

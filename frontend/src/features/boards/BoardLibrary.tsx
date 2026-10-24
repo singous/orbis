@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Search, Shapes, Smile, LayoutTemplate, Layers, X } from "lucide-react";
+import { Tabs } from "@heroui/react/tabs";
+import { TextInput } from "../../shared/ui/TextInput";
+import { SelectField } from "../../shared/ui/SelectField";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { BOARD_CATALOG, SHAPES, type Element } from "./model";
 import { shapePath } from "./geometry";
 import { iconImage, iconIndex, type IconEntry } from "./icons";
 import { TemplatePreview } from "./TemplatePreview";
 import { TEMPLATES, type Template } from "./templates";
+export type BoardLibraryTab = "shapes" | "icons" | "templates" | "layers";
 type Props = {
   elements: Map<string, Element>;
   selection: Set<string>;
@@ -15,7 +19,8 @@ type Props = {
   onIcon: (icon: string) => void;
   onTemplate: (template: Template) => void;
   readOnly: boolean;
-  initialTab?: "shapes" | "icons" | "templates" | "layers";
+  tab: BoardLibraryTab;
+  onTab: (tab: BoardLibraryTab) => void;
   onClose?: () => void;
 };
 export function ShapeSymbol({ type }: { type: string }) {
@@ -33,12 +38,35 @@ export function ShapeSymbol({ type }: { type: string }) {
   );
 }
 export function BoardLibrary(props: Props) {
-  const [tab, setTab] = useState<"shapes" | "icons" | "templates" | "layers">(
-      props.initialTab ?? "shapes",
-    ),
-    [query, setQuery] = useState(""),
-    [category, setCategory] = useState("flow");
+  const { tab } = props;
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState(tab === "shapes" ? "basic" : "");
+  useEffect(() => {
+    setQuery("");
+    setCategory(tab === "shapes" ? "basic" : "");
+  }, [tab]);
   const normalized = query.trim().toLocaleLowerCase();
+  const filters = (
+    <>
+        <label className="board-search">
+          <Search size={15} />
+          <TextInput
+            aria-label="搜索画板素材"
+            placeholder={
+              tab === "icons"
+                ? "搜索图标，支持中文或英文"
+                : "搜索图形、模板或对象"
+            }
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </label>
+        {tab !== "icons" && tab !== "layers" ? (
+          <SelectField className="board-category" density="compact" aria-label="图类型" value={category}
+            onChange={setCategory} options={[{ value: "", label: "全部类别" }, ...BOARD_CATALOG.categories.filter(c => tab !== "shapes" || c.id !== "mindmap").map(c => ({ value: c.id, label: c.name }))]} />
+        ) : null}
+    </>
+  );
   return (
     <aside className="board-library" aria-label="画板素材">
       <header className="board-floating-panel-header">
@@ -47,145 +75,118 @@ export function BoardLibrary(props: Props) {
           <X size={16} />
         </ActionButton>
       </header>
-      <div className="board-library-tabs" role="tablist" aria-label="素材分类">
-        {(
-          [
-            { id: "shapes", name: "图形", Icon: Shapes },
-            { id: "icons", name: "图标", Icon: Smile },
-            { id: "templates", name: "模板", Icon: LayoutTemplate },
-            { id: "layers", name: "图层", Icon: Layers },
-          ] as const
-        ).map(({ id, name, Icon }) => (
-          <ActionButton
-            role="tab"
-            aria-selected={tab === id}
-            key={id}
-            onClick={() => {
-              setTab(id);
-              setQuery("");
-            }}
-          >
-            <Icon size={17} />
-            <span>{name}</span>
-          </ActionButton>
-        ))}
-      </div>
-      <label className="board-search">
-        <Search size={15} />
-        <input
-          aria-label="搜索画板素材"
-          placeholder={
-            tab === "icons"
-              ? "搜索图标，支持中文或英文"
-              : "搜索图形、模板或对象"
-          }
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-      </label>
-      {tab !== "icons" && tab !== "layers" ? (
-        <select
-          className="board-category"
-          aria-label="图类型"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-        >
-          <option value="">全部类别</option>
-          {BOARD_CATALOG.categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-      ) : null}
-      {tab === "shapes" ? (
-        <div className="board-shape-grid">
-          {BOARD_CATALOG.shapes
-            .filter(
-              (s) =>
-                (!category || s.category === category) &&
-                (!normalized ||
-                  s.keywords.join(" ").toLowerCase().includes(normalized)),
-            )
-            .map((shape) => (
-              <button
-                key={shape.id}
-                draggable={!props.readOnly}
-                disabled={props.readOnly}
-                onDragStart={(e) =>
-                  e.dataTransfer.setData("application/x-orbis-shape", shape.id)
-                }
-                onClick={() => props.onShape(shape.id)}
-                title={shape.name}
-              >
-                <ShapeSymbol type={shape.id} />
-                <span>{shape.name}</span>
-              </button>
+      <Tabs selectedKey={tab} onSelectionChange={key => props.onTab(key as BoardLibraryTab)} className="board-library-content">
+        <Tabs.ListContainer>
+          <Tabs.List className="board-library-tabs" aria-label="素材分类">
+            {([
+              { id: "shapes", name: "图形", Icon: Shapes },
+              { id: "icons", name: "图标", Icon: Smile },
+              { id: "templates", name: "模板", Icon: LayoutTemplate },
+              { id: "layers", name: "图层", Icon: Layers },
+            ] as const).map(({ id, name, Icon }) => (
+              <Tabs.Tab id={id} key={id}><Icon size={17} aria-hidden="true" /><span>{name}</span><Tabs.Indicator /></Tabs.Tab>
             ))}
-        </div>
-      ) : null}
-      {tab === "icons" ? (
-        <IconBrowser
-          query={normalized}
-          onSelect={props.onIcon}
-          readOnly={props.readOnly}
-        />
-      ) : null}
-      {tab === "templates" ? (
-        <div className="board-template-list">
-          {TEMPLATES.filter(
-            (t) =>
-              (!category || t.category === category) &&
-              (!normalized ||
-                (t.name + " " + t.description).includes(normalized)),
-          ).map((template) => (
-            <button
-              key={template.id}
-              disabled={props.readOnly}
-              onClick={() => props.onTemplate(template)}
-            >
-              <div className={"board-template-art is-" + template.category}>
-                <TemplatePreview template={template} />
-                <span>
-                  {
-                    BOARD_CATALOG.categories.find(
-                      (c) => c.id === template.category,
-                    )?.name
-                  }
-                </span>
-              </div>
-              <strong>{template.name}</strong>
-              <small>{template.description}</small>
-            </button>
-          ))}
-        </div>
-      ) : null}
-      {tab === "layers" ? (
-        <div className="board-object-list" role="list" aria-label="画板对象树">
-          {[...props.elements.values()]
-            .filter(
-              (e) => !normalized || e.text.toLowerCase().includes(normalized),
-            )
-            .sort((a, b) => b.structure.order - a.structure.order)
-            .slice(0, 500)
-            .map((e) => (
-              <button
-                role="listitem"
-                key={e.id}
-                className={props.selection.has(e.id) ? "is-selected" : ""}
-                onClick={() => props.onSelect(e.id)}
-              >
-                <ShapeSymbol type={e.shape_type} />
-                <span>
-                  {e.text || SHAPES.get(e.shape_type)?.name || "连接线"}
-                </span>
-              </button>
-            ))}
-          {props.elements.size > 500 ? (
-            <small>显示前 500 个对象，可搜索定位更多内容。</small>
+          </Tabs.List>
+        </Tabs.ListContainer>
+        <Tabs.Panel id="shapes" className="board-library-panel">
+          {tab === "shapes" ? filters : null}
+          {tab === "shapes" ? (
+            <div className="board-shape-grid">
+              {BOARD_CATALOG.shapes
+                .filter(
+                  (s) =>
+                    s.category !== "mindmap" &&
+                    (!category || s.category === category) &&
+                    (!normalized ||
+                      s.keywords.join(" ").toLowerCase().includes(normalized)),
+                )
+                .map((shape) => (
+                  <div key={shape.id} draggable={!props.readOnly} onDragStart={event => event.dataTransfer.setData("application/x-orbis-shape", shape.id)}>
+                    <ActionButton
+                      disabled={props.readOnly}
+                      onClick={() => props.onShape(shape.id)}
+                      title={shape.name}
+                    >
+                      <ShapeSymbol type={shape.id} />
+                      <span>{shape.name}</span>
+                    </ActionButton>
+                  </div>
+                ))}
+            </div>
           ) : null}
-        </div>
-      ) : null}
+        </Tabs.Panel>
+        <Tabs.Panel id="icons" className="board-library-panel">
+          {tab === "icons" ? filters : null}
+          {tab === "icons" ? (
+            <IconBrowser
+              query={normalized}
+              onSelect={props.onIcon}
+              readOnly={props.readOnly}
+            />
+          ) : null}
+        </Tabs.Panel>
+        <Tabs.Panel id="templates" className="board-library-panel">
+          {tab === "templates" ? filters : null}
+          {tab === "templates" ? (
+            <div className="board-template-list">
+              {TEMPLATES.filter(
+                (t) =>
+                  (!category || t.category === category) &&
+                  (!normalized ||
+                    (t.name + " " + t.description).includes(normalized)),
+              ).map((template) => (
+                <ActionButton
+                  key={template.id}
+                  disabled={props.readOnly}
+                  onClick={() => props.onTemplate(template)}
+                >
+                  <div className={"board-template-art is-" + template.category}>
+                    <TemplatePreview template={template} />
+                    <span>
+                      {
+                        BOARD_CATALOG.categories.find(
+                          (c) => c.id === template.category,
+                        )?.name
+                      }
+                    </span>
+                  </div>
+                  <strong>{template.name}</strong>
+                  <small>{template.description}</small>
+                </ActionButton>
+              ))}
+            </div>
+          ) : null}
+        </Tabs.Panel>
+        <Tabs.Panel id="layers" className="board-library-panel">
+          {tab === "layers" ? filters : null}
+          {tab === "layers" ? (
+            <div className="board-object-list" role="list" aria-label="画板对象树">
+              {[...props.elements.values()]
+                .filter(
+                  (e) => !normalized || e.text.toLowerCase().includes(normalized),
+                )
+                .sort((a, b) => b.structure.order - a.structure.order)
+                .slice(0, 500)
+                .map((e) => (
+                  <div role="listitem" key={e.id}>
+                    <ActionButton
+                      className={props.selection.has(e.id) ? "is-selected" : ""}
+                      onClick={() => props.onSelect(e.id)}
+                    >
+                      <ShapeSymbol type={e.shape_type} />
+                      <span>
+                        {e.text || SHAPES.get(e.shape_type)?.name || "连接线"}
+                      </span>
+                    </ActionButton>
+                  </div>
+                ))}
+              {props.elements.size > 500 ? (
+                <small>显示前 500 个对象，可搜索定位更多内容。</small>
+              ) : null}
+            </div>
+          ) : null}
+        </Tabs.Panel>
+      </Tabs>
       <footer className="board-library-footer">选择图形后点击画布放置</footer>
     </aside>
   );
@@ -270,7 +271,7 @@ function IconBrowser({
               }}
             >
               {filtered.slice(row.index * 4, row.index * 4 + 4).map((icon) => (
-                <button
+                <ActionButton
                   key={icon.id}
                   title={icon.id}
                   aria-label={"插入图标 " + icon.id}
@@ -278,7 +279,7 @@ function IconBrowser({
                   onClick={() => onSelect(icon.id)}
                 >
                   <IconThumbnail id={icon.id} />
-                </button>
+                </ActionButton>
               ))}
             </div>
           ))}
