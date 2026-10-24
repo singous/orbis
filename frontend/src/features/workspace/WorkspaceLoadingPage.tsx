@@ -4,5 +4,5 @@ import { WorkspaceShell } from "./WorkspaceShell";
 
 /** Lazy routes keep the same workspace frame while their code is arriving. */
 export function WorkspaceLoadingPage() {
-  return <WorkspaceShell><PageContainer title="站点" description="正在打开站点…"><LoadingState label="正在打开站点…" variant="cards" /></PageContainer></WorkspaceShell>;
+  return <WorkspaceShell><PageContainer title="工作空间" description="正在打开工作空间…"><LoadingState label="正在打开工作空间…" variant="cards" /></PageContainer></WorkspaceShell>;
 }
