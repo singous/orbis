@@ -16,7 +16,7 @@ FROM server-source AS server-test
 CMD ["go", "test", "./..."]
 
 FROM server-source AS server-build
-ARG ORBIS_VERSION=0.1.0-dev
+ARG ORBIS_VERSION=0.1.1
 RUN CGO_ENABLED=0 go build -trimpath -buildvcs=false \
     -ldflags="-s -w -X main.version=${ORBIS_VERSION}" \
     -o /out/orbis-server ./cmd/server

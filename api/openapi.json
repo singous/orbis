@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Orbis Go API",
-    "version": "0.1.0-dev",
+    "version": "0.1.1",
     "description": "Go 后端阶段性实现：账号、资料与头像、成员和邀请、所有权转移、分组/目录/归档、评论、私有文件、丰富内容、绘图、版本化数据表、工作空间搜索和 Markdown 文档导入导出。尚未完成发布、分享和 Agent API、旧库转换及客户端适配。时间点统一 Unix 毫秒。"
   },
   "servers": [

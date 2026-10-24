@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-const Version = "0.1.0"
+const Version = "0.1.1"
 const MaxResponseBytes = 12 * 1024 * 1024
 const MaxFileBytes = 20 * 1024 * 1024
 
