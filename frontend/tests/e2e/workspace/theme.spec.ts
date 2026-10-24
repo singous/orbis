@@ -4,6 +4,7 @@ test("the supplied theme reaches rendered fields in both color schemes", async (
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/login");
   const email = page.getByLabel("邮箱", { exact: true });
+  const emailGroup = page.locator('[data-slot="input-group"]').filter({ has: email });
   for (const mode of ["light", "dark"] as const) {
     await page.evaluate((theme) => { document.documentElement.dataset.theme = theme; }, mode);
     await email.focus();
@@ -11,6 +12,10 @@ test("the supplied theme reaches rendered fields in both color schemes", async (
     const rendered = await email.evaluate(async (element) => {
       await document.fonts.ready;
       const field = getComputedStyle(element);
+      const group = element.closest('[data-slot="input-group"]')!;
+      const groupStyle = getComputedStyle(group);
+      const button = document.querySelector(".auth-submit")!;
+      const buttonStyle = getComputedStyle(button);
       // Compare resolved colors; production CSS may serialize tokens differently.
       const probe = document.createElement("span");
       probe.style.color = field.getPropertyValue("--focus");
@@ -21,11 +26,16 @@ test("the supplied theme reaches rendered fields in both color schemes", async (
       probe.remove();
       return {
         background: getComputedStyle(document.body).backgroundColor,
-        fieldBackground: field.backgroundColor,
-        radius: field.borderRadius,
-        buttonRadius: getComputedStyle(document.querySelector(".auth-submit")!).borderRadius,
-        buttonBackground: getComputedStyle(document.querySelector(".auth-submit")!).backgroundColor,
-        buttonForeground: getComputedStyle(document.querySelector(".auth-submit")!).color,
+        // Autofill can override color while HeroUI keeps the painted text themed.
+        fieldForeground: field.getPropertyValue("-webkit-text-fill-color") || field.color,
+        groupBackground: groupStyle.backgroundColor,
+        groupRadius: parseFloat(groupStyle.borderRadius),
+        groupHeight: group.getBoundingClientRect().height,
+        groupFocusShadow: groupStyle.boxShadow,
+        buttonRadius: parseFloat(buttonStyle.borderRadius),
+        buttonHeight: button.getBoundingClientRect().height,
+        buttonBackground: buttonStyle.backgroundColor,
+        buttonForeground: buttonStyle.color,
         focus,
         fieldBorder,
         outline: field.outlineStyle,
@@ -34,9 +44,13 @@ test("the supplied theme reaches rendered fields in both color schemes", async (
       };
     });
     expect(rendered.background).toBe(mode === "light" ? "oklch(0.9702 0 0)" : "oklch(0.12 0 0)");
-    expect(rendered.fieldBackground).toBe(mode === "light" ? "oklch(1 0 0)" : "oklch(0.2103 0 0)");
-    expect(rendered.radius).toBe("8px");
-    expect(rendered.buttonRadius).toBe("12px");
+    expect(rendered.fieldForeground).toBe(mode === "light" ? "oklch(0.2103 0 0)" : "oklch(0.9911 0 0)");
+    expect(rendered.groupBackground).toBe(mode === "light" ? "oklch(1 0 0)" : "oklch(0.2103 0 0)");
+    expect(rendered.groupHeight).toBe(52);
+    expect(rendered.groupRadius).toBeGreaterThanOrEqual(rendered.groupHeight / 2);
+    expect(rendered.groupFocusShadow).not.toBe("none");
+    expect(rendered.buttonHeight).toBe(rendered.groupHeight);
+    expect(rendered.buttonRadius).toBeGreaterThanOrEqual(rendered.buttonHeight / 2);
     expect(rendered.buttonBackground).toBe(mode === "light" ? "oklch(0 0 0)" : "oklch(0.9848 0 0)");
     expect(rendered.buttonForeground).toBe(mode === "light" ? "oklch(0.9911 0 0)" : "oklch(0.15 0 0)");
     expect(rendered.focus).toBe(mode === "light" ? "oklch(0 0 0)" : "oklch(0.9848 0 0)");
@@ -44,6 +58,9 @@ test("the supplied theme reaches rendered fields in both color schemes", async (
     expect(rendered.outline).toBe("none");
     expect(rendered.font).toContain("Inter Variable");
     expect(rendered.loadedInter).toBe(true);
+    await page.getByRole("heading", { name: "欢迎回到 Orbis", exact: true }).click();
+    await page.mouse.move(0, 0);
+    await expect.poll(() => emailGroup.evaluate(element => getComputedStyle(element).backgroundColor)).toBe(mode === "light" ? "oklch(0.9524 0 0)" : "oklch(0.257 0 0)");
   }
 });
 

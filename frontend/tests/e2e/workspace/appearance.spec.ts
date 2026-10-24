@@ -59,7 +59,9 @@ for (const surface of ["web", "desktop"] as const) for (const width of [1440, 39
     await expect(page).toHaveURL(/\/login$/);
     await page.emulateMedia({ colorScheme: "dark" });
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-    await expect.poll(() => page.getByLabel("邮箱", { exact: true }).evaluate(element => getComputedStyle(element).backgroundColor)).toBe("oklch(0.2103 0 0)");
+    await page.mouse.move(0, 0);
+    const emailGroup = page.locator('[data-slot="input-group"]').filter({ has: page.getByLabel("邮箱", { exact: true }) });
+    await expect.poll(() => emailGroup.evaluate(element => getComputedStyle(element).backgroundColor)).toBe("oklch(0.257 0 0)");
   });
 }
 

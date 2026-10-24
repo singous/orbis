@@ -9,6 +9,7 @@ async function sampleToggle(page: Page, label: string) {
     const navigation = document.querySelector(".workspace-main-navigation")!;
     const button = Array.from(navigation.querySelectorAll("button")).find(item => item.getAttribute("aria-label") === name)!;
     const rail = navigation.querySelector(".workspace-business-nav")!;
+    const railWidth = navigation.querySelector(".workspace-business-rail")!.getBoundingClientRect().width;
     const startRailTop = rail.getBoundingClientRect().top;
     const startWidth = navigation.getBoundingClientRect().width;
     const widths: number[] = [];
@@ -30,7 +31,7 @@ async function sampleToggle(page: Page, label: string) {
     const railHigh = Math.max(startRailTop, endRailTop) - 1;
     const low = Math.min(startWidth, endWidth) + 1;
     const high = Math.max(startWidth, endWidth) - 1;
-    return { startWidth, endWidth, startRailTop, endRailTop, railIntermediateFrames: railTops.filter(top => top > railLow && top < railHigh).length, intermediateFrames: widths.filter(width => width > low && width < high).length, transitions: Array.from(transitions) };
+    return { startWidth, endWidth, railWidth, startRailTop, endRailTop, railIntermediateFrames: railTops.filter(top => top > railLow && top < railHigh).length, intermediateFrames: widths.filter(width => width > low && width < high).length, transitions: Array.from(transitions) };
   }, label);
 }
 
@@ -65,7 +66,7 @@ test("ordinary menus and notebook trees share local collapse motion, focus and r
     expect(collapse.transitions).toContain("height:420");
     if (ordinaryWidth === undefined) ordinaryWidth = collapse.startWidth;
     else expect(collapse.startWidth).toBeCloseTo(ordinaryWidth, 0);
-    expect(collapse.endWidth).toBeCloseTo(58, 0);
+    expect(collapse.endWidth).toBeCloseTo(collapse.railWidth, 0);
     await expect(page.getByRole("button", { name: entry.expand, exact: true })).toBeFocused();
     await expect(page.locator(".workspace-main-navigation .workspace-sidebar")).toHaveAttribute("inert", "");
     expect(await page.evaluate(key => localStorage.getItem(key), entry.key)).toBeNull();
@@ -198,29 +199,29 @@ test("tab changes, history and reload start expanded while saved widths remain i
     await expect(page.getByRole("button", { name: label, exact: true })).toBeVisible();
     await expect(page.locator(".workspace-shell")).not.toHaveClass(/sidebar-collapsed/);
     await expect(page.locator(".workspace-sidebar")).not.toHaveAttribute("inert", "");
-    await expect.poll(() => frame.evaluate(element => element.getBoundingClientRect().width)).toBeCloseTo(width, 0);
+    await expect.poll(() => frame.evaluate(element => element.getBoundingClientRect().width - element.querySelector(".workspace-business-rail")!.getBoundingClientRect().width)).toBeCloseTo(width, 0);
   }
   await page.goto("/sites");
-  await expectOpen("收起侧栏", 358);
+  await expectOpen("收起侧栏", 300);
   await page.getByRole("button", { name: "收起侧栏", exact: true }).click();
   await rail.getByRole("button", { name: "打开用户菜单", exact: true }).click();
   await page.getByRole("menuitem", { name: "账号", exact: true }).click();
   await expect(page).toHaveURL(/\/settings\/account$/);
-  await expectOpen("收起侧栏", 358);
+  await expectOpen("收起侧栏", 300);
   await page.getByRole("button", { name: "收起侧栏", exact: true }).click();
   await rail.getByRole("link", { name: "站点", exact: true }).click();
-  await expectOpen("收起侧栏", 358);
+  await expectOpen("收起侧栏", 300);
   await page.goBack();
-  await expectOpen("收起侧栏", 358);
+  await expectOpen("收起侧栏", 300);
   await page.goto(notebookPath);
-  await expectOpen("收起笔记本目录", 378);
+  await expectOpen("收起笔记本目录", 320);
   await page.getByRole("button", { name: "收起笔记本目录", exact: true }).click();
   await rail.getByRole("link", { name: "站点", exact: true }).click();
-  await expectOpen("收起侧栏", 358);
+  await expectOpen("收起侧栏", 300);
   await page.goBack();
-  await expectOpen("收起笔记本目录", 378);
+  await expectOpen("收起笔记本目录", 320);
   await page.getByRole("button", { name: "收起笔记本目录", exact: true }).click();
   await page.reload();
-  await expectOpen("收起笔记本目录", 378);
+  await expectOpen("收起笔记本目录", 320);
   expect(await page.evaluate(() => [localStorage.getItem("orbis.sidebarWidth"), localStorage.getItem("orbis.notebookDirectoryWidth")])).toEqual(["300", "320"]);
 });
