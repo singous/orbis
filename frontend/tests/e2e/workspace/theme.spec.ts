@@ -12,6 +12,17 @@ test("the supplied theme reaches rendered fields in both color schemes", async (
     const rendered = await email.evaluate(async (element) => {
       await document.fonts.ready;
       const field = getComputedStyle(element);
+      // CSS transitions may serialize the same color as oklab or oklch.
+      const channels = (color: string) => {
+        const canvas = document.createElement("canvas");
+        canvas.width = canvas.height = 1;
+        const context = canvas.getContext("2d")!;
+        context.fillStyle = color;
+        context.fillRect(0, 0, 1, 1);
+        return Array.from(context.getImageData(0, 0, 1, 1).data);
+      };
+      const foreground = field.getPropertyValue("-webkit-text-fill-color") || field.color;
+      const expectedForeground = field.getPropertyValue("--field-foreground");
       const group = element.closest('[data-slot="input-group"]')!;
       const groupStyle = getComputedStyle(group);
       const button = document.querySelector(".auth-submit")!;
@@ -27,7 +38,9 @@ test("the supplied theme reaches rendered fields in both color schemes", async (
       return {
         background: getComputedStyle(document.body).backgroundColor,
         // Autofill can override color while HeroUI keeps the painted text themed.
-        fieldForeground: field.getPropertyValue("-webkit-text-fill-color") || field.color,
+        fieldForeground: channels(foreground),
+        expectedForeground: channels(expectedForeground),
+        validForegroundToken: CSS.supports("color", expectedForeground),
         groupBackground: groupStyle.backgroundColor,
         groupRadius: parseFloat(groupStyle.borderRadius),
         groupHeight: group.getBoundingClientRect().height,
@@ -44,7 +57,8 @@ test("the supplied theme reaches rendered fields in both color schemes", async (
       };
     });
     expect(rendered.background).toBe(mode === "light" ? "oklch(0.9702 0 0)" : "oklch(0.12 0 0)");
-    expect(rendered.fieldForeground).toBe(mode === "light" ? "oklch(0.2103 0 0)" : "oklch(0.9911 0 0)");
+    expect(rendered.validForegroundToken).toBe(true);
+    expect(rendered.fieldForeground).toEqual(rendered.expectedForeground);
     expect(rendered.groupBackground).toBe(mode === "light" ? "oklch(1 0 0)" : "oklch(0.2103 0 0)");
     expect(rendered.groupHeight).toBe(52);
     expect(rendered.groupRadius).toBeGreaterThanOrEqual(rendered.groupHeight / 2);
