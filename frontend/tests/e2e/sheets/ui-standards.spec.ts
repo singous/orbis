@@ -46,6 +46,56 @@ test("sheet menus restore focus and reposition after resizing and changing field
   await expect(trigger).toBeFocused();
 });
 
+for (const kind of ["field", "view"] as const) {
+  test(`${kind} settings keep unsaved changes through toast dismissal and repeated save failures`, async ({ page, request }) => {
+    await openSheet(page, request);
+    let attempts = 0;
+    await page.route("**/api/v1/workspaces/*/sheets/*", async route => {
+      if (route.request().method() !== "PUT") { await route.continue(); return; }
+      attempts += 1;
+      await route.fulfill({
+        status: 422,
+        json: { code: "VALIDATION_ERROR", message: "保存设置失败，请重试", request_id: `settings-toast-${attempts}`, data: null },
+      });
+    });
+    if (kind === "field") {
+      await page.getByRole("button", { name: "状态列菜单", exact: true }).click();
+      await page.getByRole("menuitem", { name: "编辑列", exact: true }).click();
+    } else {
+      await page.getByRole("button", { name: "字段管理", exact: true }).click();
+    }
+    const popover = page.getByRole("dialog", { name: kind === "field" ? "字段设置" : "字段管理", exact: true });
+    if (kind === "field") {
+      await popover.getByRole("textbox", { name: "字段名称", exact: true }).fill("未保存的状态列");
+    } else {
+      await popover.getByRole("checkbox", { name: "日期", exact: true }).uncheck();
+    }
+    const save = popover.getByRole("button", { name: kind === "field" ? "保存字段" : "应用", exact: true });
+    const notification = page.getByRole("alertdialog", { name: kind === "field" ? "无法保存字段" : "无法应用设置", exact: true });
+    const expectDraft = async () => {
+      await expect(popover).toBeVisible();
+      if (kind === "field") await expect(popover.getByRole("textbox", { name: "字段名称", exact: true })).toHaveValue("未保存的状态列");
+      else await expect(popover.getByRole("checkbox", { name: "日期", exact: true })).not.toBeChecked();
+    };
+    await save.click();
+    await expect(notification).toContainText("保存设置失败，请重试");
+    await notification.hover();
+    await notification.getByRole("button", { name: "Close", exact: true }).click();
+    await expect(notification).toHaveCount(0);
+    await expectDraft();
+    await save.click();
+    await expect(notification).toContainText("保存设置失败，请重试");
+    await page.mouse.move(0, 0);
+    await expect(notification).toHaveCount(0);
+    await expectDraft();
+    await save.click();
+    await expect(notification).toContainText("保存设置失败，请重试");
+    expect(attempts).toBe(3);
+    await popover.getByRole("button", { name: "取消", exact: true }).click();
+    await expect(popover).toHaveCount(0);
+  });
+}
+
 test.describe("touch sheet controls", () => {
   test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
 

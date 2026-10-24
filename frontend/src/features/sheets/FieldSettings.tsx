@@ -4,7 +4,7 @@ import { ActionButton } from "../../shared/ui/ActionButton";
 import { Button } from "../../shared/ui/Button";
 import { ArrowDown, ArrowUp, GripVertical, Plus, Trash2 } from "../../shared/ui/icons";
 import { SelectField } from "../../shared/ui/SelectField";
-import { ToastNotification } from "../../shared/ui/Toast";
+import { showToast } from "../../shared/ui/Toast";
 import { TextInput } from "../../shared/ui/TextInput";
 import { ValueEditor } from "./Cell";
 import { COLORS, KINDS, type Field, type Kind } from "./model";
@@ -31,8 +31,7 @@ export function FieldSettings({
   onClose: () => void;
 }) {
   const [draft, setDraft] = useState(structuredClone(field)),
-    [busy, setBusy] = useState(false),
-    [error, setError] = useState("");
+    [busy, setBusy] = useState(false);
   const hasOptions = draft.kind === "select" || draft.kind === "multi_select";
   function moveOption(from: number, to: number) {
     if (busy) return;
@@ -45,7 +44,7 @@ export function FieldSettings({
   }
   async function save() {
     if (!draft.name.trim()) {
-      setError("请填写字段名称");
+      showToast({ title: "无法保存字段", description: "请填写字段名称", tone: "danger" });
       return;
     }
     setBusy(true);
@@ -53,7 +52,7 @@ export function FieldSettings({
       await onSave({ ...draft, options: hasOptions ? draft.options : [] });
       onClose();
     } catch (e) {
-      setError((e as Error).message);
+      showToast({ title: "无法保存字段", description: e instanceof Error ? e.message : String(e), tone: "danger" });
     } finally {
       setBusy(false);
     }
@@ -234,11 +233,6 @@ export function FieldSettings({
               onChange={(value) => setDraft({ ...draft, default: value })}
             />
           </label>
-        )}
-        {error && (
-          <ToastNotification tone="danger" title="无法保存字段">
-            {error}
-          </ToastNotification>
         )}
       </div>
       <div className="sheet-field-actions">

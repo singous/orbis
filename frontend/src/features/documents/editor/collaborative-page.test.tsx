@@ -231,7 +231,7 @@ it("keeps a conflicting local title until the user explicitly loads the server t
   expect(await within(view.container).findByText("标题版本冲突", {}, { timeout: 3000 })).toBeInTheDocument();
   expect(within(view.container).getByRole("textbox", { name: "文档标题" })).toHaveValue("本机待保存标题");
   expect(requests.filter(request => request.path.endsWith("/operations"))).toHaveLength(0);
-  fireEvent.click(screen.getByRole("button", { name: "载入服务端标题" }));
+  fireEvent.click(await screen.findByRole("button", { name: "载入服务端标题" }));
   await waitFor(() => expect(within(view.container).getByRole("textbox", { name: "文档标题" })).toHaveValue("已提交的远端标题"));
   expect(requests.filter(request => request.path.endsWith("/operations"))).toHaveLength(0);
 });
@@ -249,7 +249,7 @@ it("does not overwrite a peer title when its socket version arrives before metad
   expect(input).toHaveValue("本机待保存标题");
   expect(server.title).toBe("另一位作者已保存");
   expect(requests.filter(request => request.path.endsWith("/operations"))).toHaveLength(0);
-  fireEvent.click(screen.getByRole("button", { name: "载入服务端标题" }));
+  fireEvent.click(await screen.findByRole("button", { name: "载入服务端标题" }));
   await waitFor(() => expect(input).toHaveValue(server.title));
 });
 

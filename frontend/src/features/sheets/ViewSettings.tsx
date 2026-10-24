@@ -3,7 +3,7 @@ import { ActionButton } from "../../shared/ui/ActionButton";
 import { Button } from "../../shared/ui/Button";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "../../shared/ui/icons";
 import { SelectField } from "../../shared/ui/SelectField";
-import { ToastNotification } from "../../shared/ui/Toast";
+import { showToast } from "../../shared/ui/Toast";
 import { ValueEditor } from "./Cell";
 import { FieldIcon } from "./FieldIcon";
 import { KINDS, type Field, type View } from "./model";
@@ -32,7 +32,6 @@ export function ViewSettings({
   onClose: () => void;
 }) {
   const [draft, setDraft] = useState(structuredClone(view)),
-    [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
   const sortable = fields.filter((f) => !KINDS[f.kind].multiple),
     filterable = sortable.filter((f) => !KINDS[f.kind].system);
@@ -44,7 +43,7 @@ export function ViewSettings({
       await onSave(draft);
       onClose();
     } catch (e) {
-      setError((e as Error).message);
+      showToast({ title: "无法应用设置", description: e instanceof Error ? e.message : String(e), tone: "danger" });
     } finally {
       setBusy(false);
     }
@@ -298,11 +297,6 @@ export function ViewSettings({
               添加筛选条件
             </Button>
           </>
-        )}
-        {error && (
-          <ToastNotification tone="danger" title="无法应用设置">
-            {error}
-          </ToastNotification>
         )}
         <footer>
           <Button size="sm" disabled={busy} onClick={onClose}>

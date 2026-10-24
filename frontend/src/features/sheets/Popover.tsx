@@ -17,7 +17,8 @@ const FOCUSABLE = [
   "a[href]",
   '[tabindex]:not([tabindex="-1"])',
 ].join(", ");
-const NESTED_OVERLAY = ".orbis-select-popover, .orbis-color-popover";
+// Toast 位于独立门户中，其交互不应关闭当前设置或丢失草稿。
+const NESTED_OVERLAY = '.orbis-select-popover, .orbis-color-popover, [data-slot="toast-region"]';
 
 export type Anchor = { left: number; top: number; element?: HTMLElement };
 export function anchorAt(element: Element): Anchor {
