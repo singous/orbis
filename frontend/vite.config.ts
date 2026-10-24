@@ -4,7 +4,7 @@ import { configDefaults, defineConfig } from "vitest/config";
 
 const apiTarget = process.env.ORBIS_DEV_API_TARGET || "http://127.0.0.1:9202";
 const proxy = {
-  "/api": { target: apiTarget, changeOrigin: false, ws: true },
+  "/api": { target: apiTarget, changeOrigin: true, ws: true },
   "/public/sites": { target: apiTarget, changeOrigin: true },
   "^/s(?:/|$)": { target: apiTarget, changeOrigin: true },
   "^/robots\\.txt$": { target: apiTarget, changeOrigin: true },
