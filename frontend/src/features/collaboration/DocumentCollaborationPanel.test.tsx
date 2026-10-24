@@ -4,11 +4,12 @@ import { toast as heroToast } from "@heroui/react/toast";
 import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { useState } from "react";
 import type { NoteContent } from "../../shared/api/schemas";
 import { authStore } from "../../shared/auth/auth-store";
 import { Toaster } from "../../shared/ui/Toast";
 import { DocumentCollaborationPanel } from "./DocumentCollaborationPanel";
-import { COMMENT_ID, NEXT_ID, NOTE_ID, OTHER_ID, REVISION_ID, USER_ID, blocks, comment, content, http, page, response, revision, session } from "./collaboration.test-utils";
+import { COMMENT_ID, NEXT_ID, NOTE_ID, OTHER_ID, USER_ID, comment, content, http, page, response, revision, session } from "./collaboration.test-utils";
 
 const clients: QueryClient[] = [];
 function showPanel({ canManage = true, onClose = () => {}, onRestore = async (restore: (version: number) => Promise<NoteContent>) => { await restore(4); } } = {}) {
@@ -22,6 +23,28 @@ beforeEach(() => { act(() => authStore.getState().setSession(session)); });
 afterEach(() => { act(() => heroToast.clear()); cleanup(); clients.forEach((client) => client.clear()); clients.length = 0; vi.unstubAllGlobals(); act(() => authStore.getState().clearSession()); });
 
 describe("document collaboration", () => {
+  it("keeps closed drawers offscreen without queries and restores focus after a controlled close", async () => {
+    const requests = http(() => response(page([])));
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    clients.push(client);
+    function ControlledPanel() {
+      const [open, setOpen] = useState(false);
+      return <><button onClick={() => setOpen(true)}>打开协作面板</button><DocumentCollaborationPanel open={open} noteId={NOTE_ID} currentUserId={USER_ID} canManage onClose={() => setOpen(false)} onRestore={async () => {}} /></>;
+    }
+    render(<QueryClientProvider client={client}><ControlledPanel /></QueryClientProvider>);
+    expect(screen.queryByLabelText("新评论")).not.toBeInTheDocument();
+    expect(requests).toHaveLength(0);
+    const trigger = screen.getByRole("button", { name: "打开协作面板" });
+    await userEvent.click(trigger);
+    expect(await screen.findByLabelText("新评论")).toBeVisible();
+    await waitFor(() => expect(requests).toHaveLength(1));
+    await userEvent.click(screen.getByRole("button", { name: "关闭评论与历史" }));
+    await waitFor(() => expect(screen.queryByLabelText("新评论")).not.toBeInTheDocument());
+    await waitFor(() => expect(trigger).toHaveFocus());
+    expect(client.getQueryCache().find({ queryKey: ["collaboration", NOTE_ID, "comments"] })?.getObserversCount()).toBe(0);
+    await userEvent.click(trigger);
+    expect(await screen.findByLabelText("新评论")).toBeVisible();
+  });
   it("blocks dismissal while restoring and allows Escape after the operation finishes", async () => {
     http((url) => response(url.pathname.endsWith("/content")
       ? nativeSnapshot(2,"历史正文")
@@ -46,7 +69,7 @@ describe("document collaboration", () => {
 
   it("submits a comment and reply, then edits and resolves through the real query cache", async () => {
     let comments = [comment()];
-    const requests = http((url, init) => {
+    const requests = http((_url, init) => {
       if (init.method === "POST") {
         const input = JSON.parse(String(init.body));
         const created = { ...comment(input.body), id: comments.length === 1 ? NEXT_ID : OTHER_ID, parent_id: input.parent_id ?? null };

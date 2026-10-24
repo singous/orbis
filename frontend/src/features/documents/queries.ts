@@ -1,7 +1,7 @@
 import {cacheDocumentCommit} from "./document-cache";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import type { Note, NoteContent, NoteChildrenPage, Notebook, NotebookIconValue, NoteTreeItem, PageData } from "../../shared/api/schemas";
+import type { NoteContent, NoteChildrenPage, Notebook, NotebookIconValue, NoteTreeItem, PageData } from "../../shared/api/schemas";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import {
   createDocumentGroup,

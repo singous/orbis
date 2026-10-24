@@ -139,6 +139,22 @@ export function useDataTable(
   const refreshRef = useRef(refresh);
   refreshRef.current = refresh;
 
+  async function retry() {
+    setLoading(true);
+    setError(null);
+    const task = refresh();
+    const requestGeneration = generation.current;
+    try {
+      await task;
+    } catch (error) {
+      if (mounted.current && requestGeneration === generation.current)
+        setError(error instanceof Error ? error.message : "数据表读取失败，请重试。");
+    } finally {
+      if (mounted.current && requestGeneration === generation.current)
+        setLoading(false);
+    }
+  }
+
   useEffect(() => {
     const abort = new AbortController();
     generation.current++;
@@ -414,6 +430,7 @@ export function useDataTable(
     stage,
     save,
     refresh,
+    retry,
     reapply,
     travel,
     canUndo: Boolean(undo.current.length),

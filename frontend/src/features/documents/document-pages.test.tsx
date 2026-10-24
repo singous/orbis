@@ -3,7 +3,7 @@ import {authStore} from "../../shared/auth/auth-store";
 import { transferableAbortController } from "node:util";
 import { render as renderTestingLibrary, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Route, RouterProvider, Routes, useLocation } from "react-router-dom";
+import { MemoryRouter, Route, RouterProvider, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CollectionsPage } from "./CollectionsPage";
@@ -257,7 +257,7 @@ vi.mock("./queries", () => {
           : (mocks.activeNotebooks ?? notebooks),
       );
     },
-    useDocumentIndex: (status="active",options?:{page?:number}) => result(status==="archived"?archivedNotes:mocks.activeNotes??notes),
+    useDocumentIndex: (status="active") => result(status==="archived"?archivedNotes:mocks.activeNotes??notes),
     useNoteTree: () => result([]),
     useNote: () =>
       mocks.noteQueryResult ?? {

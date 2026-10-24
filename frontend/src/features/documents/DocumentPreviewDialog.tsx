@@ -1,4 +1,4 @@
-import { Component, lazy, Suspense, type ReactNode } from "react";
+import { Component, lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useStore } from "zustand";
@@ -41,10 +41,16 @@ export type DocumentPreviewDialogProps = {
 
 /** Preview snapshots have their own cache so failures never change a live editor's query state. */
 export function DocumentPreviewDialog({ noteId, title, onClose }: DocumentPreviewDialogProps) {
-  if (!noteId) return null;
-  return <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+  const [retained, setRetained] = useState({ noteId, title });
+  useEffect(() => {
+    if (noteId) setRetained({ noteId, title });
+  }, [noteId, title]);
+  // 保留最近一次预览内容，交由 Modal 的退场生命周期卸载只读查询。
+  const previewId = noteId ?? retained.noteId;
+  if (!previewId) return null;
+  return <Dialog open={Boolean(noteId)} onOpenChange={(open) => { if (!open) onClose(); }}>
     <DialogContent title="文档预览" description="预览已保存的内容" className="document-preview-dialog">
-      <SavedDocumentPreview key={noteId} noteId={noteId} title={title} onClose={onClose} />
+      <SavedDocumentPreview key={previewId} noteId={previewId} title={noteId ? title : retained.title} onClose={onClose} />
     </DialogContent>
   </Dialog>;
 }

@@ -162,7 +162,7 @@ const OrbisComponent = Node.create({
   addNodeView() { return ReactNodeViewRenderer(ComponentNodeView); },
 });
 
-function MediaView({ node, editor, updateAttributes }: NodeViewProps) {
+function MediaView({ node, updateAttributes }: NodeViewProps) {
   const readOnly = useContext(EditorReadOnlyContext);
   const kind = node.attrs.kind as "image" | "video" | "audio" | "file";
   const props = (node.attrs.orbisProps ?? {}) as Record<string, unknown>;
@@ -212,7 +212,7 @@ const OrbisContainer = Node.create({
   renderHTML({ node, HTMLAttributes }) { return ["div", mergeAttributes(HTMLAttributes, { "data-orbis-container": node.attrs.kind }), 0]; },
 });
 
-function CodeView({ node, editor, updateAttributes }: NodeViewProps) {
+function CodeView({ node, updateAttributes }: NodeViewProps) {
   const readOnly = useContext(EditorReadOnlyContext);
   const language = String(node.attrs.language ?? "text");
   return <NodeViewWrapper as="div" data-orbis-block-id={node.attrs.orbisOwn ? undefined : node.attrs.orbisId} className="orbis-code">
