@@ -42,6 +42,8 @@ export function portPosition(element: Element, port: string): Point {
   if (side === "bottom") y += g.height / 2;
   if (side === "left") x = g.x;
   if (side === "right") x += g.width / 2;
+  if (isMindmapBranch(element) && ["left", "right"].includes(side))
+    y = g.y + g.height;
   if (member && side !== "time") {
     const index = element.structure.members.findIndex(
       (row) => row.id === member,
@@ -139,6 +141,12 @@ export function shapePath(primitive: string): string {
     [...SHAPES.values()].find((shape) => shape.primitive === primitive)?.path ??
     "M0 0H100V100H0Z"
   );
+}
+export function elementShapePath(element: Element): string {
+  return SHAPES.get(element.shape_type)?.path ?? "M0 0H100V100H0Z";
+}
+export function isMindmapBranch(element: Element): boolean {
+  return ["mindmap.topic", "mindmap.subtopic"].includes(element.shape_type);
 }
 export function isMemberShape(element: Element): boolean {
   return ["entity", "weak-entity", "class"].includes(

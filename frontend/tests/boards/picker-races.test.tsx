@@ -67,3 +67,17 @@ it("cancels a pending choice on close and starts a fresh picker session when reo
   expect(await screen.findByRole("button", { name: "A" })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "插入画板" })).not.toBeInTheDocument();
 });
+
+it("preserves the chosen page and snapshot revision through shared selection controls", async () => {
+  mocks.get.mockResolvedValue({ ...board("B"), pages: [{ id: "B-page", name: "首页" }, { id: "B-details", name: "细节页" }] });
+  const onBind = show();
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "选择画板" }));
+  await user.click(await screen.findByRole("button", { name: "B" }));
+  await user.click(await screen.findByRole("button", { name: /引用页面/ }));
+  await user.click(screen.getByRole("option", { name: "细节页" }));
+  await user.click(screen.getByRole("button", { name: /引用方式/ }));
+  await user.click(screen.getByRole("option", { name: "固定快照" }));
+  await user.click(screen.getByRole("button", { name: "插入画板" }));
+  expect(onBind).toHaveBeenCalledWith({ board_id: "B", page_id: "B-details", mode: "snapshot", revision: 1, frame_id: null });
+});

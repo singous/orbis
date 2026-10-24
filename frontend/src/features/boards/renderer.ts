@@ -6,7 +6,8 @@ import { hiddenElements } from "./mindmap";
 import Konva from "konva";
 import { iconImage } from "./icons";
 import type { KonvaEventObject } from "konva/lib/Node";
-import { SHAPES, type Element, type Point } from "./model";
+import { DEFAULT_STYLE, SHAPES, type Element, type Point } from "./model";
+import { boardElementStyle } from "./board-appearance";
 import {
   CANVAS_FONT,
   MEMBER_HEADER_HEIGHT,
@@ -15,9 +16,10 @@ import {
   connectorPath,
   connectorPoints,
   elementBounds,
+  elementShapePath,
   isContainer,
   isMemberShape,
-  shapePath,
+  isMindmapBranch,
   unionBounds,
   type Bounds,
 } from "./geometry";
@@ -44,9 +46,11 @@ function drawNode(
   elements: ReadonlyMap<string, Element>,
   detailed: boolean,
   resolveImage?: (id: string) => Promise<HTMLCanvasElement>,
+  canvasTextColor = DEFAULT_STYLE.text_color,
 ): Konva.Group {
   const group = new Konva.Group({ id: element.id, name: "board-element" });
-  const { geometry: g, style: s, structure } = element;
+  const { geometry: g, structure } = element;
+  const s = boardElementStyle(element, canvasTextColor);
   const primitive = SHAPES.get(element.shape_type)?.primitive ?? "rect";
   const line = element.shape_type === "connector";
   const fill =
@@ -59,6 +63,8 @@ function drawNode(
     dash: s.dashed ? [6, 4] : undefined,
     opacity: s.opacity,
     perfectDrawEnabled: false,
+    lineJoin: "round" as const,
+    lineCap: "round" as const,
   };
   if (line) {
     group.add(
@@ -130,12 +136,22 @@ function drawNode(
   group.position({ x: g.x + g.width / 2, y: g.y + g.height / 2 });
   group.offset({ x: g.width / 2, y: g.height / 2 });
   group.rotation((g.rotation_rad * 180) / Math.PI);
+  // 透明分支的文字不参与命中，保留完整点击区域供悬浮、拖动和编辑使用。
+  if (isMindmapBranch(element))
+    group.add(new Konva.Rect({
+      width: g.width,
+      height: g.height,
+      cornerRadius: 6,
+      fill: s.fill,
+      opacity: s.opacity,
+      name: "mindmap-branch-hit-area",
+    }));
   const path =
     primitive === "line" && structure.points.length
       ? structure.points
           .map((p, i) => `${i ? "L" : "M"}${p.x},${p.y}`)
           .join(" ")
-      : shapePath(primitive);
+      : elementShapePath(element);
   if (path)
     group.add(
       new Konva.Path({
@@ -143,7 +159,7 @@ function drawNode(
         scaleX: g.width / 100,
         scaleY: g.height / 100,
         ...props,
-        fill: ["actor", "annotation", "line", "search"].includes(primitive)
+        fill: isMindmapBranch(element) || ["actor", "annotation", "line", "search"].includes(primitive)
           ? undefined
           : fill,
       }),
@@ -305,10 +321,13 @@ export class BoardRenderer {
     { node: Konva.Group; element: Element; detailed: boolean }
   >();
   private selection = new Set<string>();
+  private canvasTextColor = DEFAULT_STYLE.text_color;
+  private invalidated = new Set<string>();
   private camera: Camera = { x: 0, y: 0, zoom: 1 };
   private frame = 0;
   private qualityTimer: ReturnType<typeof setTimeout> | null = null;
   private resolution = Math.min(window.devicePixelRatio || 1, 2);
+  private renderedResolution: number | null = null;
   private destroyed = false;
   private preview = new Map<string, Element>();
   private overview: Konva.Image | null = null;
@@ -415,8 +434,8 @@ export class BoardRenderer {
       }
     this.elements = elements;
     this.hidden = hiddenElements(elements);
-    this.rendered = new Map(elements);
-    this.preview.clear();
+    // 外部刷新不能丢掉正在拖动的草稿；草稿由交互所有者在提交或取消时显式清除。
+    this.rendered = new Map([...elements, ...this.preview]);
     this.overviewDirty = true;
     this.incident.clear();
     for (const [id, element] of elements)
@@ -437,14 +456,19 @@ export class BoardRenderer {
             changed.has(element.structure.end?.element_id ?? "")))
       ) {
         this.index.set(id, elementBounds(element, elements));
-        this.nodes.get(id)?.node.destroy();
-        this.nodes.delete(id);
+        this.invalidated.add(id);
       }
     }
     this.schedule();
   }
   setSelection(selection: Set<string>) {
     this.selection = selection;
+    this.schedule();
+  }
+  setCanvasTextColor(color: string) {
+    if (color === this.canvasTextColor) return;
+    this.canvasTextColor = color;
+    for (const id of this.nodes.keys()) this.invalidated.add(id);
     this.schedule();
   }
   setPreview(elements: Element[]) {
@@ -455,13 +479,11 @@ export class BoardRenderer {
       this.rendered.set(element.id, element);
     }
     for (const element of elements) {
-      this.nodes.get(element.id)?.node.destroy();
-      this.nodes.delete(element.id);
+      this.invalidated.add(element.id);
     }
     for (const element of elements)
       for (const id of this.incident.get(element.id) ?? []) {
-        this.nodes.get(id)?.node.destroy();
-        this.nodes.delete(id);
+        this.invalidated.add(id);
       }
     this.schedule();
   }
@@ -472,8 +494,7 @@ export class BoardRenderer {
       if (original) this.rendered.set(id, original);
       else this.rendered.delete(id);
       for (const target of [id, ...(this.incident.get(id) ?? [])]) {
-        this.nodes.get(target)?.node.destroy();
-        this.nodes.delete(target);
+        this.invalidated.add(target);
       }
     }
     this.preview.clear();
@@ -507,14 +528,12 @@ export class BoardRenderer {
   private motionQuality() {
     if (this.qualityTimer) clearTimeout(this.qualityTimer);
     if (this.resolution !== 1) {
-      this.content.getCanvas().setPixelRatio(1);
       this.resolution = 1;
     }
     this.qualityTimer = setTimeout(() => {
       this.qualityTimer = null;
       if (this.destroyed) return;
       this.resolution = Math.min(window.devicePixelRatio || 1, 2);
-      this.content.getCanvas().setPixelRatio(this.resolution);
       this.schedule();
     }, 160);
   }
@@ -568,32 +587,39 @@ export class BoardRenderer {
       );
       for (const element of elements) {
         if (this.hidden.has(element.id)) continue;
-        const s = element.style,
+        const s = boardElementStyle(element, this.canvasTextColor),
           g = element.geometry;
         context.save();
         context.strokeStyle = s.stroke;
         context.fillStyle = s.fill;
         context.globalAlpha = s.opacity;
+        context.lineJoin = "round";
+        context.lineCap = "round";
         if (element.shape_type === "connector") {
           context.lineWidth = Math.max(s.stroke_width, 0.7 / scale);
           context.stroke(new Path2D(connectorPath(element, scene)));
         } else {
           const primitive = SHAPES.get(element.shape_type)?.primitive ?? "rect";
-          const data = shapePath(primitive);
+          const data = elementShapePath(element);
           if (data) {
-            let path = paths.get(primitive);
+            let path = paths.get(element.shape_type);
             if (!path) {
               path = new Path2D(data);
-              paths.set(primitive, path);
+              paths.set(element.shape_type, path);
             }
             context.translate(g.x + g.width / 2, g.y + g.height / 2);
             context.rotate(g.rotation_rad);
             context.translate(-g.width / 2, -g.height / 2);
+            if (isMindmapBranch(element) && s.fill !== "transparent") {
+              context.beginPath();
+              context.roundRect(0, 0, g.width, g.height, 6);
+              context.fill();
+            }
             context.scale(g.width / 100, g.height / 100);
             context.lineWidth =
               Math.max(s.stroke_width, 0.6 / scale) /
               Math.max(g.width / 100, g.height / 100);
-            if (!["actor", "annotation", "line", "search"].includes(primitive))
+            if (!isMindmapBranch(element) && !["actor", "annotation", "line", "search"].includes(primitive))
               context.fill(path);
             context.stroke(path);
           }
@@ -614,6 +640,11 @@ export class BoardRenderer {
     this.overview.show();
   }
   private draw() {
+    // 调整像素比与重建节点必须和实际绘制在同一帧完成，避免拖拽中出现空帧。
+    if (this.renderedResolution !== this.resolution) {
+      this.content.getCanvas().setPixelRatio(this.resolution);
+      this.renderedResolution = this.resolution;
+    }
     const { x, y, zoom } = this.camera;
     const viewport = {
       x: (-x - VIEWPORT_MARGIN) / zoom,
@@ -654,10 +685,11 @@ export class BoardRenderer {
       if (
         !cached ||
         cached.element !== element ||
-        cached.detailed !== detailed
+        cached.detailed !== detailed ||
+        this.invalidated.has(element.id)
       ) {
         cached?.node.destroy();
-        const node = drawNode(element, scene, detailed, this.resolveImage);
+        const node = drawNode(element, scene, detailed, this.resolveImage, this.canvasTextColor);
         this.world.add(node);
         cached = { node, element, detailed };
         this.nodes.set(element.id, cached);
@@ -665,6 +697,7 @@ export class BoardRenderer {
       const z = position + (this.overview ? 1 : 0);
       if (cached.node.zIndex() !== z) cached.node.zIndex(z);
     });
+    this.invalidated.clear();
     this.adornments.destroyChildren();
     for (const id of this.selection) {
       const element = scene.get(id);
@@ -679,8 +712,8 @@ export class BoardRenderer {
         }),
       );
     }
-    this.content.batchDraw();
-    this.overlay.batchDraw();
+    this.content.draw();
+    this.overlay.draw();
   }
   stats() {
     return {
@@ -697,6 +730,7 @@ export class BoardRenderer {
     this.resizeObserver.disconnect();
     this.stage.destroy();
     this.nodes.clear();
-    this.elements.clear();
+    // 场景集合由会话持有；销毁渲染器只解除引用，不能清空调用方的页面快照。
+    this.elements = new Map();
   }
 }

@@ -9,6 +9,7 @@ import {
   authRequestOptions,
   useOptionalAuthRequest,
 } from "../../shared/auth/use-auth-request";
+import { SelectField } from "../../shared/ui/SelectField";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Dialog, DialogContent } from "../../shared/ui/Dialog";
 import { boardAPI } from "./api";
@@ -237,31 +238,10 @@ function BoardPicker({
         {selected ? (
           <div className="board-picker-settings">
             <strong>{selected.title}</strong>
-            <label>
-              页面
-              <select
-                aria-label="引用页面"
-                value={pageID}
-                onChange={(e) => setPageID(e.target.value)}
-              >
-                {selected.pages.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              引用方式
-              <select
-                aria-label="引用方式"
-                value={mode}
-                onChange={(e) => setMode(e.target.value as "live" | "snapshot")}
-              >
-                <option value="live">实时引用</option>
-                <option value="snapshot">固定快照</option>
-              </select>
-            </label>
+            <SelectField label="引用页面" value={pageID} onChange={setPageID}
+              options={selected.pages.map(p => ({ value: p.id, label: p.name }))} />
+            <SelectField label="引用方式" value={mode} onChange={value => setMode(value === "snapshot" ? "snapshot" : "live")}
+              options={[{ value: "live", label: "实时引用" }, { value: "snapshot", label: "固定快照" }]} />
             <ActionButton onClick={() => setSelected(null)}>
               重新选择
             </ActionButton>
@@ -284,14 +264,14 @@ function BoardPicker({
           <>
             <div className="board-picker-list">
               {query.data?.items.map((item) => (
-                <button
+                <ActionButton
                   key={item.id}
                   aria-busy={selecting === item.id}
                   onClick={() => void selectBoard(item.id)}
                 >
                   <Shapes size={18} />
                   <span>{item.title}</span>
-                </button>
+                </ActionButton>
               ))}
               {query.data && !query.data.items.length ? (
                 <p>工作空间还没有画板。可以先在文集目录中新建画板。</p>

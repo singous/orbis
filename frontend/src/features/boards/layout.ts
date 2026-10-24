@@ -87,45 +87,60 @@ export async function autoLayout(
     worker.postMessage({ elements, direction });
   });
 }
+const MINDMAP_HORIZONTAL_GAP = 64;
+const MINDMAP_VERTICAL_GAP = 20;
+const MINDMAP_MAX_DEPTH = 32;
+
+/** 根主题保留当前位置；分支按实际尺寸及可见子树高度向右排布。 */
 export function mindmapLayout(elements: Element[]): Patch[] {
-  const topics = elements.filter(
-      (e) =>
-        e.shape_type.startsWith("mindmap.") &&
-        e.shape_type !== "mindmap.relationship",
-    ),
-    byParent = new Map<string, Element[]>();
-  const ids = new Set(topics.map((e) => e.id));
+  const topics = elements.filter(element => ["mindmap.root", "mindmap.topic", "mindmap.subtopic"].includes(element.shape_type));
+  const nodes = new Map(topics.map(element => [element.id, element]));
+  const byParent = new Map<string, Element[]>();
   for (const topic of topics) {
-    const parent = topic.structure.parent_id ?? "";
-    const siblings = byParent.get(parent) ?? [];
+    const parent = topic.structure.parent_id ? nodes.get(topic.structure.parent_id) : undefined;
+    if (!parent || parent.page_id !== topic.page_id) continue;
+    const siblings = byParent.get(parent.id) ?? [];
     siblings.push(topic);
-    byParent.set(parent, siblings);
+    byParent.set(parent.id, siblings);
+  }
+  for (const siblings of byParent.values()) siblings.sort((a, b) => a.structure.order - b.structure.order || a.id.localeCompare(b.id));
+  // 折叠不能掩盖非法父级环；先验证完整主题关系，再仅布局可见节点。
+  for (const topic of topics) {
+    let current: Element | undefined = topic;
+    const trail = new Set<string>();
+    while (current) {
+      if (trail.has(current.id) || trail.size > MINDMAP_MAX_DEPTH) throw new Error("思维导图层级存在循环或超出限制。");
+      trail.add(current.id);
+      const parent: Element | undefined = current.structure.parent_id ? nodes.get(current.structure.parent_id) : undefined;
+      current = parent?.page_id === topic.page_id ? parent : undefined;
+    }
+  }
+  const heights = new Map<string, number>();
+  function height(node: Element): number {
+    const children = node.structure.collapsed ? [] : byParent.get(node.id) ?? [];
+    const value = Math.max(node.geometry.height, children.reduce((sum, child) => sum + height(child), 0) + Math.max(0, children.length - 1) * MINDMAP_VERTICAL_GAP);
+    heights.set(node.id, value);
+    return value;
   }
   const patches: Patch[] = [];
-  let y = 80;
-  const seen = new Set<string>();
-  function place(node: Element, depth: number): number {
-    if (seen.has(node.id) || depth > 32)
-      throw new Error("思维导图层级存在循环或超出限制。");
-    seen.add(node.id);
-    const children = (byParent.get(node.id) ?? []).sort(
-      (a, b) => a.structure.order - b.structure.order,
-    );
-    const positions = children.map((child) => place(child, depth + 1));
-    const center = positions.length
-      ? (positions[0] + positions.at(-1)!) / 2
-      : y;
-    if (!positions.length) y += Math.max(110, node.geometry.height + 30);
-    patches.push(
-      elementPatch(node, {
-        geometry: { ...node.geometry, x: 80 + depth * 280, y: center },
-      }),
-    );
-    return center;
+  function place(node: Element, x: number, centerY: number) {
+    const y = centerY - node.geometry.height / 2;
+    if (x !== node.geometry.x || y !== node.geometry.y) patches.push(elementPatch(node, { geometry: { ...node.geometry, x, y } }));
+    const children = node.structure.collapsed ? [] : byParent.get(node.id) ?? [];
+    const total = children.reduce((sum, child) => sum + heights.get(child.id)!, 0) + Math.max(0, children.length - 1) * MINDMAP_VERTICAL_GAP;
+    let top = centerY - total / 2;
+    for (const child of children) {
+      const childHeight = heights.get(child.id)!;
+      place(child, x + node.geometry.width + MINDMAP_HORIZONTAL_GAP, top + childHeight / 2);
+      top += childHeight + MINDMAP_VERTICAL_GAP;
+    }
   }
-  for (const root of topics.filter(
-    (e) => !e.structure.parent_id || !ids.has(e.structure.parent_id),
-  ))
-    place(root, 0);
+  for (const root of topics.filter(topic => {
+    const parent = topic.structure.parent_id ? nodes.get(topic.structure.parent_id) : undefined;
+    return !parent || parent.page_id !== topic.page_id;
+  })) {
+    height(root);
+    place(root, root.geometry.x, root.geometry.y + root.geometry.height / 2);
+  }
   return patches;
 }

@@ -1,4 +1,9 @@
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { TextArea } from "@heroui/react/textarea";
+import { useEffect, useRef, useState, type RefObject, type ReactNode } from "react";
+import { BoardSelectionToolbar } from "./BoardSelectionToolbar";
+import { BoardConnectionPorts } from "./BoardConnectionPorts";
+import { BoardMindmapControls } from "./BoardMindmapControls";
+import { selectedBounds } from "./selection-geometry";
 import { BoardRenderer, type Camera } from "./renderer";
 import { elementBounds, portPosition, unionBounds } from "./geometry";
 import {
@@ -10,10 +15,11 @@ import {
 } from "./model";
 import { elementSchema } from "./model";
 import { selectionForCopy, transformBranch } from "./transforms";
-import { appendTopic } from "./mindmap";
+import { appendTopic, createMindmap, isMindmapTopic } from "./mindmap";
 import { cloneElements } from "./templates";
 
 export type BoardTool = "select" | "pan" | "connect" | "draw" | string;
+const MINDMAP_CONTROL_HOVER = { before: 14, after: 110, vertical: 24 };
 type Props = {
   elements: Map<string, Element>;
   pageID: string;
@@ -30,6 +36,7 @@ type Props = {
   onUndo: () => void;
   onRedo: () => void;
   resolveImage?: (id: string) => Promise<HTMLCanvasElement>;
+  selectionActions?: ReactNode;
 };
 function descendants(elements: Map<string, Element>, selection: Set<string>) {
   const ids = new Set(selection);
@@ -80,6 +87,7 @@ function nearestPort(element: Element, point: Point): string {
 }
 export function BoardCanvas(props: Props) {
   const container = useRef<HTMLDivElement>(null),
+    surface = useRef<HTMLDivElement>(null),
     live = useRef(props);
   live.current = props;
   const gesture = useRef<{
@@ -91,6 +99,11 @@ export function BoardCanvas(props: Props) {
     points: Point[];
   } | null>(null);
   const connect = useRef<{ element: Element; port: string } | null>(null);
+  const previewOwner = useRef(0);
+  const [interactionPreview, setInteractionPreview] = useState<Element[]>([]);
+  const [hoveredID, setHoveredID] = useState<string | null>(null);
+  const [interacting, setInteracting] = useState(false);
+  useEffect(() => { connect.current = null; }, [props.tool, props.pageID]);
   const [editing, setEditing] = useState<Element | null>(null),
     [text, setText] = useState("");
   const [box, setBox] = useState<{
@@ -103,10 +116,12 @@ export function BoardCanvas(props: Props) {
     clipboard = useRef<Element[]>([]);
   useEffect(() => {
     const renderer = new BoardRenderer(
-      container.current!,
+      surface.current!,
       {
         down(event) {
           const p = live.current;
+          setInteracting(true);
+          setHoveredID(null);
           container.current?.focus();
           const hit = event.id ? p.elements.get(event.id) : null;
           if (p.tool === "pan" || space.current || event.event.button === 1) {
@@ -121,6 +136,14 @@ export function BoardCanvas(props: Props) {
             return;
           }
           if (event.event.button !== 0) return;
+          if (p.tool === "mindmap" && !p.readOnly) {
+            const result = createMindmap(p.pageID, event.point);
+            void p.submit([{ type: "elements.create", elements: result.elements }]).then(() => {
+              if (live.current.pageID === p.pageID && live.current.rendererRef.current === renderer) p.onSelection(new Set([result.rootID]));
+            }).catch(p.onError);
+            p.onTool("select");
+            return;
+          }
           if (p.tool === "connect" && !p.readOnly) {
             if (!hit || hit.shape_type === "connector") return;
             const port = nearestPort(hit, event.point);
@@ -194,7 +217,8 @@ export function BoardCanvas(props: Props) {
               selection.add(hit.id);
             }
             p.onSelection(selection);
-            if (!p.readOnly)
+            if (!p.readOnly) {
+              previewOwner.current++;
               gesture.current = {
                 kind: "move",
                 start: event.point,
@@ -203,6 +227,7 @@ export function BoardCanvas(props: Props) {
                 elements: descendants(p.elements, selection),
                 points: [],
               };
+            }
           } else {
             if (!event.event.shiftKey) p.onSelection(new Set());
             gesture.current = {
@@ -218,7 +243,21 @@ export function BoardCanvas(props: Props) {
         move(event) {
           const g = gesture.current,
             p = live.current;
-          if (!g) return;
+          if (!g) {
+            const hit = event.id ? p.elements.get(event.id) : undefined;
+            setHoveredID(current => {
+              if (hit && hit.shape_type !== "connector") return hit.id;
+              const previous = current ? p.elements.get(current) : undefined;
+              if (previous && isMindmapTopic(previous)) {
+                const right = portPosition(previous, "right");
+                const x = right.x * p.camera.zoom + p.camera.x, y = right.y * p.camera.zoom + p.camera.y;
+                // 保留通往分支操作按钮的短走廊，避免鼠标经过主题与按钮间隙时按钮消失。
+                if (event.screen.x >= x - MINDMAP_CONTROL_HOVER.before && event.screen.x <= x + MINDMAP_CONTROL_HOVER.after && Math.abs(event.screen.y - y) <= MINDMAP_CONTROL_HOVER.vertical) return current;
+              }
+              return null;
+            });
+            return;
+          }
           if (g.kind === "pan") {
             p.onCamera({
               ...g.camera,
@@ -230,16 +269,12 @@ export function BoardCanvas(props: Props) {
           if (g.kind === "move") {
             const dx = Math.round((event.point.x - g.start.x) / 4) * 4,
               dy = Math.round((event.point.y - g.start.y) / 4) * 4;
-            renderer.setPreview(
-              g.elements.map((element) => ({
-                ...element,
-                geometry: {
-                  ...element.geometry,
-                  x: element.geometry.x + dx,
-                  y: element.geometry.y + dy,
-                },
-              })),
-            );
+            const preview = g.elements.map(element => ({
+              ...element,
+              geometry: { ...element.geometry, x: element.geometry.x + dx, y: element.geometry.y + dy },
+            }));
+            renderer.setPreview(preview);
+            setInteractionPreview(preview);
             return;
           }
           if (g.kind === "select") {
@@ -267,17 +302,25 @@ export function BoardCanvas(props: Props) {
           const g = gesture.current,
             p = live.current;
           gesture.current = null;
+          setInteracting(false);
           if (event.event.type === "pointercancel") {
+            previewOwner.current++;
+            setInteractionPreview([]);
             renderer.clearPreview();
             setBox(null);
             return;
           }
           if (!g) return;
-          renderer.clearPreview();
           if (g.kind === "move") {
             const dx = Math.round((event.point.x - g.start.x) / 4) * 4,
               dy = Math.round((event.point.y - g.start.y) / 4) * 4;
-            if (dx || dy)
+            const owner = previewOwner.current;
+            const clear = () => {
+              if (owner !== previewOwner.current) return;
+              renderer.clearPreview();
+              setInteractionPreview([]);
+            };
+            if (dx || dy) {
               void p
                 .submit([
                   {
@@ -293,8 +336,12 @@ export function BoardCanvas(props: Props) {
                     ),
                   },
                 ])
-                .catch(p.onError);
+                .catch(p.onError)
+                .finally(clear);
+            } else clear();
+            return;
           }
+          renderer.clearPreview();
           if (g.kind === "draw" && g.points.length > 1) {
             const e = stroke(g.elements[0], g.points);
             void p
@@ -344,7 +391,17 @@ export function BoardCanvas(props: Props) {
     props.rendererRef.current = renderer;
     renderer.setCamera(live.current.camera);
     renderer.setElements(live.current.elements);
+    const syncCanvasText = () => {
+      const color = getComputedStyle(container.current!).getPropertyValue("--board-canvas-text").trim();
+      if (color) renderer.setCanvasTextColor(color);
+    };
+    const appearanceObserver = new MutationObserver(syncCanvasText);
+    appearanceObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    if (container.current?.parentElement) appearanceObserver.observe(container.current.parentElement, { attributes: true, attributeFilter: ["style"] });
+    syncCanvasText();
     return () => {
+      previewOwner.current++;
+      appearanceObserver.disconnect();
       renderer.destroy();
       props.rendererRef.current = null;
     };
@@ -363,6 +420,10 @@ export function BoardCanvas(props: Props) {
   );
   useEffect(() => {
     if (props.readOnly) {
+      previewOwner.current++;
+      setInteractionPreview([]);
+      setHoveredID(null);
+      setInteracting(false);
       gesture.current = null;
       connect.current = null;
       setEditing(null);
@@ -403,29 +464,40 @@ export function BoardCanvas(props: Props) {
     await p.submit([{ type: "elements.create", elements: copies }]);
     p.onSelection(new Set(copies.map((e) => e.id)));
   }
+  const bounds = selectedBounds(props.elements, props.selection, interactionPreview);
   return (
+    <>
     <div
       className={"board-canvas " + (props.tool === "pan" ? "is-panning" : "")}
       ref={container}
       tabIndex={0}
       role="application"
       aria-label="画板编辑区域"
+      onPointerLeave={() => setHoveredID(null)}
+      onPointerDownCapture={event => {
+        if (event.target instanceof globalThis.Element && event.target.closest(".board-connection-port,.board-resize-handle")) previewOwner.current++;
+      }}
       onKeyDown={(event) => {
         if (
           event.nativeEvent.isComposing ||
           (event.target instanceof HTMLElement &&
-            event.target.closest("input,textarea,[contenteditable=true]"))
+            event.target.closest("input,textarea,button,[contenteditable=true]"))
         )
           return;
         const command = event.metaKey || event.ctrlKey;
         if (event.code === "Space") {
           event.preventDefault();
           space.current = true;
+          setInteracting(true);
           return;
         }
         if (event.key === "Escape") {
           connect.current = null;
           gesture.current = null;
+          setInteracting(false);
+          setHoveredID(null);
+          previewOwner.current++;
+          setInteractionPreview([]);
           props.rendererRef.current?.clearPreview();
           setBox(null);
           props.onTool("select");
@@ -436,6 +508,18 @@ export function BoardCanvas(props: Props) {
           event.preventDefault();
           props.onSelection(new Set(props.elements.keys()));
           return;
+        }
+        if (!command && !event.altKey) {
+          const shortcuts: Record<string, string> = {
+            v: "select", h: "pan", t: "basic.text", p: "draw", c: "connect", m: "mindmap",
+          };
+          const nextTool = shortcuts[event.key.toLowerCase()];
+          if (nextTool && (!props.readOnly || nextTool === "select" || nextTool === "pan")) {
+            event.preventDefault();
+            connect.current = null;
+            props.onTool(nextTool);
+            return;
+          }
         }
         if (props.readOnly) return;
         const selected =
@@ -448,15 +532,10 @@ export function BoardCanvas(props: Props) {
           ["Tab", "Enter"].includes(event.key)
         ) {
           event.preventDefault();
-          const result = appendTopic(
-            selected,
-            props.elements,
-            event.key === "Enter",
-          );
-          void props
-            .submit(result.commands)
-            .then(() => props.onSelection(new Set([result.id])))
-            .catch(props.onError);
+          try {
+            const result = appendTopic(selected, props.elements, event.key === "Enter");
+            void props.submit(result.commands).then(() => props.onSelection(new Set([result.id]))).catch(props.onError);
+          } catch (error) { props.onError(error); }
           return;
         }
         if (event.key === "Enter" && selected) {
@@ -570,12 +649,40 @@ export function BoardCanvas(props: Props) {
         }
       }}
       onKeyUp={(event) => {
-        if (event.code === "Space") space.current = false;
+        if (event.code === "Space") { space.current = false; setInteracting(false); }
       }}
       onBlur={() => {
         space.current = false;
+        setInteracting(false);
       }}
     >
+      <div className="board-render-surface" ref={surface} />
+      <BoardConnectionPorts
+        key={`${props.pageID}:${props.tool}`}
+        elements={props.elements}
+        pageID={props.pageID}
+        camera={props.camera}
+        hoveredID={hoveredID}
+        selection={props.selection}
+        enabled={!props.readOnly && !editing && !interacting && !space.current && ["select", "connect"].includes(props.tool)}
+        viewport={container}
+        renderer={props.rendererRef}
+        submit={props.submit}
+        onSelection={props.onSelection}
+        onTool={props.onTool}
+        onError={props.onError}
+      />
+      <BoardMindmapControls
+        key={props.pageID}
+        elements={props.elements}
+        selection={props.selection}
+        hoveredID={hoveredID}
+        camera={props.camera}
+        readOnly={props.readOnly || !!editing || interacting}
+        submit={props.submit}
+        onSelection={props.onSelection}
+        onError={props.onError}
+      />
       {box ? (
         <div
           className="board-selection-box"
@@ -588,7 +695,7 @@ export function BoardCanvas(props: Props) {
         />
       ) : null}
       {editing ? (
-        <textarea
+        <TextArea
           autoFocus
           className="board-inline-text"
           aria-label="编辑图元文字"
@@ -621,7 +728,7 @@ export function BoardCanvas(props: Props) {
       {!editing && props.selection.size === 1 && !props.readOnly ? (
         <ResizeHandle
           elements={props.elements}
-          element={props.elements.get([...props.selection][0])}
+          element={interactionPreview.find(element => props.selection.has(element.id)) ?? props.elements.get([...props.selection][0])}
           camera={props.camera}
           renderer={props.rendererRef.current}
           submit={props.submit}
@@ -629,6 +736,10 @@ export function BoardCanvas(props: Props) {
         />
       ) : null}
     </div>
+    {bounds && props.selectionActions ? <BoardSelectionToolbar bounds={bounds} camera={props.camera} viewport={container}>
+      {props.selectionActions}
+    </BoardSelectionToolbar> : null}
+    </>
   );
 }
 function stroke(element: Element, points: Point[]): Element {
