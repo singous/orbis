@@ -6,7 +6,7 @@ import { ActionButton } from "../../shared/ui/ActionButton";
 import { ArrowLeft, ExternalLink, Eye, Globe, History, Rocket, RotateCcw } from "../../shared/ui/icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useBlocker, useNavigate, useParams } from "react-router-dom";
 import { useStore } from "zustand";
 import "../../styles/site-management.css";
 
@@ -19,7 +19,7 @@ import { PageContainer } from "../../shared/ui/PageContainer";
 import { showToast } from "../../shared/ui/Toast";
 import { canManageWorkspaceMembers, canMutateWorkspaceContent } from "../workspace/capabilities";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
-import { activateSiteRelease, getSite, getSiteSources, previewSite, publishSite, saveSite, unpublishSite } from "./api";
+import { activateSiteRelease, getSiteSources, previewSite, publishSite, saveSite, unpublishSite } from "./api";
 import { useSite, useSiteReleases, useSiteSources } from "./queries";
 import { siteConfigSchema, type Site, type SiteConfig, type SitePreview, type SiteSources } from "./schemas";
 import { sourceOrManual } from "./source-model";
@@ -57,6 +57,18 @@ function SiteEditor({ site }: { site: Site }) {
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
   const navigationStateRef = useRef({ dirty, busy });
   navigationStateRef.current = { dirty, busy };
+  const navigationBlocker = useBlocker(({ currentLocation, nextLocation }) =>
+    navigationStateRef.current.dirty && currentLocation.pathname !== nextLocation.pathname,
+  );
+  useEffect(() => {
+    if (!dirty && !busy) return;
+    const warnBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warnBeforeUnload);
+    return () => window.removeEventListener("beforeunload", warnBeforeUnload);
+  }, [dirty, busy]);
   useEffect(() => registerPendingNavigation(async () => {
     if (navigationStateRef.current.dirty) throw new Error("请先保存站点设置，再打开其他内容。");
     if (navigationStateRef.current.busy) throw new Error("站点操作尚未完成，请稍后再打开其他内容。");
@@ -82,6 +94,7 @@ function SiteEditor({ site }: { site: Site }) {
     setSaved(config);
     observedVersion(next.config_version);
     setSavedAtMs(next.updated_at_ms);
+    navigationStateRef.current.dirty = false;
     await updateCache(next);
     return config;
   }
@@ -175,6 +188,15 @@ function SiteEditor({ site }: { site: Site }) {
     <Dialog open={pendingAction !== null} onOpenChange={(open) => { if (!open && !busy) setPendingAction(null); }}><DialogContent title={pendingAction?.type === "unpublish" ? "确认撤回站点" : "切换公开版本"} description={pendingAction?.type === "unpublish" ? "公开链接将不再提供内容，内部文档和发布历史会保留。" : `将公开站点切换到版本 ${pendingAction?.type === "activate" ? pendingAction.number : ""}，内部草稿保持不变。`}>
       {error ? <StatusMessage role="alert" tone="error" title="站点操作未完成">{error}</StatusMessage> : null}<div className="site-dialog-actions"><ActionButton variant="secondary" className="mvp-button" type="button" disabled={busy} onClick={() => setPendingAction(null)}>取消</ActionButton><ActionButton variant="primary" className="mvp-button primary" type="button" disabled={busy} onClick={() => void confirmReleaseAction()}>{busy ? "处理中…" : "确认操作"}</ActionButton></div>
     </DialogContent></Dialog>
+    <Dialog open={navigationBlocker.state === "blocked"} onOpenChange={(open) => { if (!open && !busy && navigationBlocker.state === "blocked") navigationBlocker.reset(); }}>
+      <DialogContent title="站点设置尚未保存" description="离开前可以保存设置、放弃本次修改，或返回继续编辑。保存设置不会发布站点。">
+        <div className="site-dialog-actions">
+          <ActionButton type="button" disabled={busy} onClick={() => { if (navigationBlocker.state === "blocked") navigationBlocker.reset(); }}>继续编辑</ActionButton>
+          <ActionButton type="button" disabled={busy} onClick={() => { if (navigationBlocker.state === "blocked") navigationBlocker.proceed(); }}>放弃修改并离开</ActionButton>
+          <ActionButton type="button" variant="primary" isPending={busy} disabled={busy} onClick={() => void perform(async () => { await saveCurrent(); if (navigationBlocker.state === "blocked") navigationBlocker.proceed(); })}>保存并离开</ActionButton>
+        </div>
+      </DialogContent>
+    </Dialog>
   </div></PageContainer></WorkspaceShell>;
 }
 

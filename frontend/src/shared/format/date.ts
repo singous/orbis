@@ -5,6 +5,7 @@
  */
 
 const shortDate = new Intl.DateTimeFormat("zh-CN", {
+  timeZone: "Asia/Shanghai",
   month: "short",
   day: "numeric",
 });

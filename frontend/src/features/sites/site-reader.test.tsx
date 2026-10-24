@@ -55,3 +55,10 @@ describe("SiteReader", () => {
     expect(container.querySelector(".site-reader")).toHaveAttribute("data-theme", "dark");
   });
 });
+
+
+it("keeps a valid Unix epoch update timestamp visible", () => {
+  const snapshot = { ...readerSnapshot, published_at_ms: 0 };
+  render(<MemoryRouter><SiteReader snapshot={snapshot} basePath="/s/orbis-guide" /></MemoryRouter>);
+  expect(screen.getByText("最后更新于 1970年1月1日")).toBeInTheDocument();
+});
