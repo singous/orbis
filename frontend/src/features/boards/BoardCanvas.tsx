@@ -217,14 +217,15 @@ export function BoardCanvas(props: Props) {
               selection.add(hit.id);
             }
             p.onSelection(selection);
-            if (!p.readOnly) {
+            const movable = descendants(p.elements, selection);
+            if (!p.readOnly && movable.length) {
               previewOwner.current++;
               gesture.current = {
                 kind: "move",
                 start: event.point,
                 screen: event.screen,
                 camera: p.camera,
-                elements: descendants(p.elements, selection),
+                elements: movable,
                 points: [],
               };
             }

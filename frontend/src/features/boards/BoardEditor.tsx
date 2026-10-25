@@ -62,6 +62,7 @@ import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { DocumentShell } from "../documents/DocumentShell";
 import { ShareButton } from "../sharing/ShareButton";
 import { BoardSession } from "./session";
+import { boardErrorMessage } from "./errors";
 import { BoardCanvas } from "./BoardCanvas";
 import { BoardLibrary, type BoardLibraryTab } from "./BoardLibrary";
 import { BoardInspector } from "./BoardInspector";
@@ -120,6 +121,7 @@ export function BoardEditor({ id }: { id: string }) {
     [camera, setCamera] = useState<Camera>({ x: 80, y: 80, zoom: 1 }),
     [tool, setTool] = useState("select");
   const [error, setError] = useState(""),
+    [recoveryError, setRecoveryError] = useState(""),
     [errorAttempt, setErrorAttempt] = useState(0),
     [library, setLibrary] = useState(false),
     [inspector, setInspector] = useState(false),
@@ -167,9 +169,25 @@ export function BoardEditor({ id }: { id: string }) {
     state.status !== "loading" &&
     state.status !== "error";
   const fail = (error: unknown) => {
-    setError(error instanceof Error ? error.message : String(error));
+    setError(boardErrorMessage(error));
     setErrorAttempt(attempt => attempt + 1);
   };
+  const recover = async (action: () => Promise<void>) => {
+    setRecoveryError("");
+    try {
+      await action();
+    } catch (error) {
+      setRecoveryError(boardErrorMessage(error));
+      setErrorAttempt(attempt => attempt + 1);
+    }
+  };
+  useEffect(() => {
+    if (!state.pending) {
+      setRecoveryError("");
+      setDiscard(false);
+    }
+  }, [state.pending]);
+  const feedback = [...new Set([state.error, recoveryError, error].filter(Boolean))].join("；");
   useEffect(() => {
     void session.start(new URLSearchParams(location.search).get("page") ?? "");
     return () => {
@@ -756,20 +774,20 @@ export function BoardEditor({ id }: { id: string }) {
             <RiFunctionAddLine size={16} />
           </ActionButton>
         </Toolbar>
-        {error || state.error ? (
+        {feedback ? (
           <ToastNotification key={errorAttempt} title="画板操作未完成" tone="danger" timeout={state.pending ? 0 : undefined}>
-            <span>{error || state.error}</span>
+            <span>{feedback}</span>
             {state.pending ? (
               <div className="mt-3 flex flex-wrap gap-2">
-                <Button size="sm" onClick={() => void session.retry().catch(fail)}>
+                <Button size="sm" disabled={state.status === "saving" || state.status === "loading"} onClick={() => void recover(() => session.retry())}>
                   重试同步
                 </Button>
                 <Button size="sm" onClick={() => void exportFile("json")}>
                   导出本机修改
                 </Button>
-                <Button size="sm" onClick={() => setDiscard(true)}>
+                {state.canDiscard ? <Button size="sm" onClick={() => { setRecoveryError(""); setDiscard(true); }}>
                   放弃未同步修改
-                </Button>
+                </Button> : null}
               </div>
             ) : null}
           </ToastNotification>
@@ -861,16 +879,17 @@ export function BoardEditor({ id }: { id: string }) {
       >
         <DialogContent title="放弃未同步修改">
           <p>
-            将清除这张画板在本机尚未确认的操作，并重新读取服务器版本。可以先导出本机修改。
+            将放弃这张画板未保存的本机修改，并重新读取服务器版本。可以先导出本机修改。
           </p>
           <Button onClick={() => setDiscard(false)}>继续保留</Button>
           <Button
             variant="danger"
+            disabled={!state.canDiscard}
             onClick={() =>
-              void session
-                .discardPending()
-                .then(() => setDiscard(false))
-                .catch(fail)
+              void recover(async () => {
+                await session.discardPending();
+                setDiscard(false);
+              })
             }
           >
             放弃并重新读取

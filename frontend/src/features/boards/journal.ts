@@ -5,6 +5,9 @@ export type PendingOperation = {
   before_pages: BoardPage[];
   page_id: string;
   history_mode: "normal" | "undo" | "redo";
+  // 旧记录缺少该字段，恢复时必须按结果未知处理。
+  delivery?: "queued" | "unconfirmed" | "rejected";
+  rejection?: string;
 };
 const DATABASE = "orbis-board-drafts",
   STORE = "pending",
@@ -53,7 +56,9 @@ export async function writeJournal(
           saved.length !== expected.length ||
           saved.some(
             (entry, index) =>
-              entry.input.operation_id !== expected[index].input.operation_id,
+              entry.input.operation_id !== expected[index].input.operation_id ||
+              entry.delivery !== expected[index].delivery ||
+              entry.rejection !== expected[index].rejection,
           )
         ) {
           reject(

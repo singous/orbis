@@ -8,6 +8,13 @@ import type { Board } from "./model";
 import type { SessionState } from "./session";
 import { BoardEditor } from "./BoardEditor";
 
+const sessionControl = vi.hoisted(() => ({
+  initial: {} as Partial<SessionState>,
+  current: null as { publish: (update: Partial<SessionState>) => void } | null,
+  retry: vi.fn(),
+  discard: vi.fn(),
+}));
+
 vi.mock("../../shared/auth/use-auth-request", () => ({ useAuthRequest: () => ({ workspaceId: "workspace", accessToken: "test" }) }));
 vi.mock("../sharing/ShareButton", () => ({ ShareButton: () => <button>分享</button> }));
 vi.mock("./BoardShell", () => ({ BoardShell: ({ children }: { children: React.ReactNode }) => <main>{children}</main> }));
@@ -32,8 +39,15 @@ vi.mock("./session", async () => {
           { id: "second", name: "页面 2", background: "#fff", position: 1, version: 1 },
         ],
       } satisfies Board,
-      elements: new Map([["sample", { ...makeElement("flow.process", "first", 0, 0), id: "sample" }]]), pageID: "first", status: "saved", error: null, pending: 0, canUndo: false, canRedo: false,
+      elements: new Map([["sample", { ...makeElement("flow.process", "first", 0, 0), id: "sample" }]]), pageID: "first", status: "saved", error: null, pending: 0, canUndo: false, canRedo: false, canDiscard: false,
     };
+    constructor() { this.state = { ...this.state, ...sessionControl.initial }; sessionControl.current = this; }
+    publish = (update: Partial<SessionState>) => {
+      this.state = { ...this.state, ...update };
+      for (const listener of this.listeners) listener();
+    };
+    retry = sessionControl.retry;
+    discardPending = sessionControl.discard;
     start = vi.fn().mockResolvedValue(undefined);
     dispose = vi.fn();
     getSnapshot = () => this.state;
@@ -45,9 +59,50 @@ vi.mock("./session", async () => {
   },
 }; });
 beforeEach(() => {
+  sessionControl.initial = {};
+  sessionControl.current = null;
+  sessionControl.retry.mockReset();
+  sessionControl.discard.mockReset();
   authStore.setState({ workspace: { id: "workspace", name: "验收空间", role: "owner", created_at_ms: 1, updated_at_ms: 1 } });
 });
 afterEach(() => { cleanup(); heroToast.clear(); authStore.getState().clearSession(); });
+
+it("only offers discard when the session can safely discard its pending operations", async () => {
+  sessionControl.initial = { status: "conflict", pending: 1, error: "保存结果尚未确认", canDiscard: false };
+  render(<><BoardEditor id="board" /><Toaster /></>);
+  expect(await screen.findByRole("button", { name: "重试同步" })).toBeEnabled();
+  expect(screen.queryByRole("button", { name: "放弃未同步修改" })).not.toBeInTheDocument();
+  act(() => sessionControl.current!.publish({ canDiscard: true }));
+  expect(await screen.findByRole("button", { name: "放弃未同步修改" })).toBeEnabled();
+});
+
+it("preserves the server reason after discard fails and clears recovery feedback when retry succeeds", async () => {
+  sessionControl.initial = { status: "conflict", pending: 1, error: "服务器拒绝：图元尺寸无效", canDiscard: true };
+  sessionControl.discard.mockRejectedValue(new Error("重新读取服务器失败"));
+  sessionControl.retry.mockImplementation(async () => {
+    sessionControl.current!.publish({ status: "saved", pending: 0, error: null, canDiscard: false });
+  });
+  render(<><BoardEditor id="board" /><Toaster /></>);
+  fireEvent.click(await screen.findByRole("button", { name: "放弃未同步修改" }));
+  fireEvent.click(screen.getByRole("button", { name: "放弃并重新读取" }));
+  await waitFor(() => expect(screen.getByRole("alertdialog")).toHaveTextContent("重新读取服务器失败"));
+  expect(screen.getByRole("alertdialog")).toHaveTextContent("服务器拒绝：图元尺寸无效");
+  fireEvent.click(screen.getByRole("button", { name: "继续保留" }));
+  fireEvent.click(screen.getByRole("button", { name: "重试同步" }));
+  await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+});
+
+it("clears failed discard feedback when background synchronization resolves the operation", async () => {
+  sessionControl.initial = { status: "conflict", pending: 1, error: "保存失败", canDiscard: true };
+  sessionControl.discard.mockRejectedValue(new Error("正在确认操作结果"));
+  render(<><BoardEditor id="board" /><Toaster /></>);
+  fireEvent.click(await screen.findByRole("button", { name: "放弃未同步修改" }));
+  fireEvent.click(screen.getByRole("button", { name: "放弃并重新读取" }));
+  await waitFor(() => expect(screen.getByRole("alertdialog")).toHaveTextContent("正在确认操作结果"));
+  act(() => sessionControl.current!.publish({ status: "saved", pending: 0, error: null, canDiscard: false }));
+  await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+  expect(screen.queryByRole("button", { name: "放弃并重新读取" })).not.toBeInTheDocument();
+});
 
 it("reports another identical import failure after its notification was dismissed", async () => {
   const view = render(<><BoardEditor id="board" /><Toaster /></>);
