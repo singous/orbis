@@ -360,7 +360,7 @@ export class BoardSession {
     }
   }
   private async flush() {
-    if (this.sending || this.discarding || this.halted || this.controller.signal.aborted) return;
+    if (!this.pending.length || this.sending || this.discarding || this.halted || this.controller.signal.aborted) return;
     this.sending = true;
     this.emit();
     const signal = this.controller.signal;

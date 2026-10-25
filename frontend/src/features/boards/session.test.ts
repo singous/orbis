@@ -85,6 +85,15 @@ function ack(input: Mutation): Change {
   };
 }
 describe("board durable save", () => {
+  it("does not notify the editor during idle polling without pending operations", async () => {
+    const { s } = session();
+    await s.start();
+    const listener = vi.fn();
+    const unsubscribe = s.subscribe(listener);
+    await vi.waitFor(() => expect(mock.changes).toHaveBeenCalled(), { timeout: 1500 });
+    expect(listener).not.toHaveBeenCalled();
+    unsubscribe();
+  });
   it("ignores empty commands before persistence and preserves valid commands in the same submission", async () => {
     const { s, key } = session();
     await s.start();
