@@ -55,6 +55,7 @@ import { Button } from "../../shared/ui/Button";
 import { Dialog, DialogContent } from "../../shared/ui/Dialog";
 import { boardCanvasBackground, boardCanvasTextColor, DEFAULT_BOARD_BACKGROUND } from "./board-appearance";
 import { TemplatePreview } from "./TemplatePreview";
+import { PREVIEW_ZOOMS } from "./BoardPreviewViewport";
 import { zoomAt } from "./viewport";
 import { BoardShell } from "./BoardShell";
 import { BoardMinimap } from "./BoardMinimap";
@@ -98,7 +99,7 @@ const STATUS = {
   conflict: "有修改需要处理",
   error: "读取失败",
 };
-export function BoardEditor({ id }: { id: string }) {
+export function BoardEditor({ id, embed }: { id: string; embed?: { pageID: string; frameID?: string; readOnly: boolean } }) {
   const auth = useAuthRequest(),
     authRef = useRef(auth);
   authRef.current = auth;
@@ -163,8 +164,16 @@ export function BoardEditor({ id }: { id: string }) {
       images.current = null;
     };
   }, [credential, auth.workspaceId]);
+  useEffect(() => {
+    if (!embed) return;
+    setSelection(new Set());
+    setInspector(false);
+    setLibrary(false);
+    setComments(false);
+    setTool(embed.readOnly ? "pan" : "select");
+  }, [embed?.readOnly]);
   const canEdit =
-    canMutateWorkspaceContent(identity.workspace) &&
+    !embed?.readOnly && canMutateWorkspaceContent(identity.workspace) &&
     state.status !== "conflict" &&
     state.status !== "loading" &&
     state.status !== "error";
@@ -189,12 +198,24 @@ export function BoardEditor({ id }: { id: string }) {
   }, [state.pending]);
   const feedback = [...new Set([state.error, recoveryError, error].filter(Boolean))].join("；");
   useEffect(() => {
-    void session.start(new URLSearchParams(location.search).get("page") ?? "");
+    void session.start(embed?.pageID ?? new URLSearchParams(location.search).get("page") ?? "");
     return () => {
       session.dispose();
       layoutAbort.current?.abort();
     };
-  }, [session]);
+  }, [session, embed?.pageID]);
+  const fittedPage = useRef("");
+  useEffect(() => {
+    if (!embed || state.status === "loading" || !state.board || fittedPage.current === state.pageID) return;
+    const frame = requestAnimationFrame(() => {
+      if (!renderer.current) return;
+      const target = embed.frameID ? state.elements.get(embed.frameID) : undefined;
+      const bounds = target ? elementBounds(target, state.elements) : unionBounds([...state.elements.values()].map(e => elementBounds(e, state.elements)));
+      setCamera(renderer.current.fit(bounds));
+      fittedPage.current = state.pageID;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [embed, state.status, state.pageID, state.board, state.elements]);
   useEffect(() => {
     if (state.pageID !== lastPage.current) {
       lastPage.current = state.pageID;
@@ -215,7 +236,8 @@ export function BoardEditor({ id }: { id: string }) {
   }, [session]);
   const submit = (commands: Command[]) => session.submit(commands);
   function fit() {
-    const bounds = unionBounds(
+    const frame = embed?.frameID ? state.elements.get(embed.frameID) : undefined;
+    const bounds = frame ? elementBounds(frame, state.elements) : unionBounds(
       [...state.elements.values()].map((e) => elementBounds(e, state.elements)),
     );
     if (renderer.current) setCamera(renderer.current.fit(bounds));
@@ -323,9 +345,11 @@ export function BoardEditor({ id }: { id: string }) {
       setExporting(false);
     }
   }
+  const LoadingShell = embed ? "div" : DocumentShell;
+  if (embed && state.board && state.pageID !== embed.pageID) return <div className="board-preview-empty" role="alert">引用的画板页面已不存在，请重新选择引用页面。</div>;
   if (!state.board)
     return (
-      <DocumentShell>
+      <LoadingShell>
         {state.error ? (
           <div className="board-loading">
             <ToastNotification tone="danger" title="无法打开画板" timeout={0}>
@@ -334,7 +358,7 @@ export function BoardEditor({ id }: { id: string }) {
             </ToastNotification>
           </div>
         ) : <LoadingState label="正在打开画板…" variant="editor" />}
-      </DocumentShell>
+      </LoadingShell>
     );
   const board = state.board,
     page = board.pages.find((p) => p.id === state.pageID) ?? board.pages[0];
@@ -474,18 +498,19 @@ export function BoardEditor({ id }: { id: string }) {
   return (
     <BoardShell
       board={board}
+      embedded={!!embed}
       status={saveState}
       actions={actions}
     >
-      <section className={"board-workspace" + (inspector || comments ? " has-inspector" : "")}>
+      <section className={"board-workspace" + (inspector || comments ? " has-inspector" : "") + (embed?.readOnly ? " is-embed-reading" : "")}>
         <Tabs className="board-page-host"
         selectedKey={state.pageID}
-        onSelectionChange={key => { if (typeof key === "string") void session.switchPage(key).catch(fail); }}
+        onSelectionChange={key => { if (!embed && typeof key === "string") void session.switchPage(key).catch(fail); }}
         keyboardActivation="manual"
       >
           <Tabs.ListContainer className="board-page-list-container">
             <Tabs.List aria-label="画板页面">
-              {board.pages.map(p => <Tabs.Tab id={p.id} key={p.id}>{p.name}<Tabs.Indicator /></Tabs.Tab>)}
+              {board.pages.filter(p => !embed || p.id === state.pageID).map(p => <Tabs.Tab id={p.id} key={p.id}>{p.name}<Tabs.Indicator /></Tabs.Tab>)}
             </Tabs.List>
           </Tabs.ListContainer>
         <Tabs.Panel key={state.pageID} id={state.pageID} className="board-main">
@@ -606,15 +631,12 @@ export function BoardEditor({ id }: { id: string }) {
               >
                 <Minus size={15} />
               </ActionButton>
-              <ActionButton
-                onClick={() => zoom(1)}
-                aria-label="恢复百分之百缩放"
-              >
-                {(camera.zoom * 100).toFixed(
-                  camera.zoom < 0.01 ? 3 : camera.zoom < 0.1 ? 1 : 0,
-                )}
-                %
-              </ActionButton>
+              <Dropdown>
+                <ActionButton aria-label={`缩放比例 ${Math.round(camera.zoom * 100)}%`}>{Math.round(camera.zoom * 100)}%</ActionButton>
+                <Dropdown.Popover placement="bottom end"><Dropdown.Menu aria-label="画板缩放比例" onAction={key => zoom(Number(key))}>
+                  {PREVIEW_ZOOMS.map(value => <Dropdown.Item key={value} id={String(value)} textValue={`${value * 100}%`}>{value * 100}%</Dropdown.Item>)}
+                </Dropdown.Menu></Dropdown.Popover>
+              </Dropdown>
               <ActionButton
                 aria-label="放大画板"
                 title="放大画板"
@@ -677,7 +699,7 @@ export function BoardEditor({ id }: { id: string }) {
 
           <ActionButton
             aria-label="添加画板页面"
-            disabled={!canEdit || board.pages.length >= 20}
+            disabled={!!embed || !canEdit || board.pages.length >= 20}
             onClick={() =>
               void submit([
                 {

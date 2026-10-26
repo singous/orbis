@@ -482,7 +482,7 @@ export function BoardCanvas(props: Props) {
         if (
           event.nativeEvent.isComposing ||
           (event.target instanceof HTMLElement &&
-            event.target.closest("input,textarea,button,[contenteditable=true]"))
+            (event.target.closest("input,textarea,button") || event.target.closest("[contenteditable]")?.getAttribute("contenteditable") === "true"))
         )
           return;
         const command = event.metaKey || event.ctrlKey;
@@ -493,6 +493,7 @@ export function BoardCanvas(props: Props) {
           return;
         }
         if (event.key === "Escape") {
+          if (connect.current || gesture.current || props.selection.size || (props.tool !== "select" && props.tool !== "pan")) event.preventDefault();
           connect.current = null;
           gesture.current = null;
           setInteracting(false);

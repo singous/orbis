@@ -6,7 +6,7 @@ import { MemoryRouter } from "react-router-dom";
 import { BoardEmbed } from "../../src/features/boards/BoardEmbed";
 import type { Board } from "../../src/features/boards/model";
 
-const mocks = vi.hoisted(() => ({ get: vi.fn(), list: vi.fn() }));
+const mocks = vi.hoisted(() => ({ get: vi.fn(), list: vi.fn(), elements: vi.fn() }));
 vi.mock("../../src/features/boards/api", () => ({ boardAPI: () => mocks }));
 vi.mock("../../src/shared/auth/use-auth-request", () => ({
   useOptionalAuthRequest: () => ({ workspaceId: "workspace", accessToken: "test" }),
@@ -25,6 +25,7 @@ function show() {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  mocks.elements.mockResolvedValue({ items: [], has_more: false, next_cursor: null });
   mocks.list.mockResolvedValue({ items: [board("A"), board("B")], pagination: { page: 1, page_size: 20, total: 2 } });
 });
 afterEach(() => { cleanup(); clients.forEach(client => client.clear()); clients.length = 0; });
@@ -80,4 +81,17 @@ it("preserves the chosen page and snapshot revision through shared selection con
   await user.click(screen.getByRole("option", { name: "固定快照" }));
   await user.click(screen.getByRole("button", { name: "插入画板" }));
   expect(onBind).toHaveBeenCalledWith({ board_id: "B", page_id: "B-details", mode: "snapshot", revision: 1, frame_id: null });
+});
+
+it("binds the selected frame without changing the board reference mode", async () => {
+  mocks.get.mockResolvedValue({ ...board("B"), revision: 5, pages: [{ id: "B-page", name: "首页" }, { id: "B-details", name: "细节页" }] });
+  mocks.elements.mockResolvedValue({ items: [{ id: "frame", shape_type: "basic.frame", text: "重点流程" }], has_more: false, next_cursor: null });
+  const bind = show();
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "选择画板" }));
+  await user.click(await screen.findByRole("button", { name: "B" }));
+  await user.click(await screen.findByRole("button", { name: /展示范围/ }));
+  await user.click(await screen.findByRole("option", { name: "重点流程" }));
+  await user.click(screen.getByRole("button", { name: "插入画板" }));
+  expect(bind).toHaveBeenCalledWith(expect.objectContaining({ board_id: "B", page_id: "B-page", frame_id: "frame" }));
 });

@@ -472,7 +472,7 @@ test("mind map keyboard editing and native document embeds preserve board refere
   );
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/documents/" + doc.id);
-  const embedded = page.locator(".board-embed img").first();
+  const embedded = page.locator(".embed-board img").first();
   await expect(embedded).toBeVisible();
   await expect
     .poll(() =>
@@ -486,7 +486,7 @@ test("mind map keyboard editing and native document embeds preserve board refere
     animations: "disabled",
   });
   await page.reload();
-  await expect(page.locator(".board-embed img").first()).toBeVisible();
+  await expect(page.locator(".embed-board img").first()).toBeVisible();
   expect(
     (
       await responseData(

@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useStore } from "zustand";
-import { ExternalLink, Shapes } from "lucide-react";
+import { ExternalLink, Pencil, Shapes } from "lucide-react";
 import { Link } from "react-router-dom";
 import { apiBlobRequest, workspacePath } from "../../shared/api/api-client";
 import { authStore } from "../../shared/auth/auth-store";
@@ -13,8 +13,12 @@ import { SelectField } from "../../shared/ui/SelectField";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Dialog, DialogContent } from "../../shared/ui/Dialog";
 import { boardAPI } from "./api";
-import type { Board } from "./model";
+import { SHAPES, type Board, type Element } from "./model";
+import { EmbeddedSurface } from "../../shared/ui/EmbeddedSurface";
+import { BoardPreviewViewport } from "./BoardPreviewViewport";
+import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import "./board-preview.css";
+const BoardEditor = lazy(() => import("./BoardEditor").then(module => ({ default: module.BoardEditor })));
 export type BoardBinding = {
   board_id: string | null;
   page_id: string | null;
@@ -26,8 +30,10 @@ export function BoardEmbed({
   props,
   readOnly = true,
   onBind,
+  blockId = "",
 }: {
   props: Record<string, unknown>;
+  blockId?: string;
   readOnly?: boolean;
   onBind?: (binding: BoardBinding) => void;
 }) {
@@ -37,7 +43,8 @@ export function BoardEmbed({
     [visible, setVisible] = useState(false),
     [picker, setPicker] = useState(false),
     [pickerSession, setPickerSession] = useState(0),
-    [expanded, setExpanded] = useState(false),
+    [editorLoaded, setEditorLoaded] = useState(false),
+    [editing, setEditing] = useState(false),
     [url, setURL] = useState("");
   const id = typeof props.board_id === "string" ? props.board_id : "",
     page = typeof props.page_id === "string" ? props.page_id : "",
@@ -70,7 +77,7 @@ export function BoardEmbed({
       revision,
       props.frame_id,
     ],
-    enabled: !!auth && !!id && !!page && visible,
+    enabled: !!auth && !!id && !!page && visible && !editorLoaded,
     queryFn: ({ signal }) =>
       apiBlobRequest(
         workspacePath(
@@ -100,65 +107,35 @@ export function BoardEmbed({
     return () => URL.revokeObjectURL(value);
   }, [query.data]);
   const meta = useQuery({
-    queryKey: ["board-link", credential, auth?.workspaceId, id],
+    queryKey: ["board-link", credential, auth?.workspaceId, id, revision],
     enabled: !!auth && !!id && visible,
-    queryFn: ({ signal }) => boardAPI(auth!).get(id, 0, signal),
+    queryFn: ({ signal }) => boardAPI(auth!).get(id, revision, signal),
   });
+  const workspace = useStore(authStore, state => state.workspace);
+  const canEdit = !readOnly && props.mode !== "snapshot" && canMutateWorkspaceContent(workspace);
   return (
-    <div ref={root} className="board-embed">
-      <header>
-        <Shapes size={17} />
-        <strong>{meta.data?.title ?? "画板"}</strong>
-        <span className="board-embed-spacer" />
-        {id && url ? (
-          <ActionButton onClick={() => setExpanded(true)}>
-            放大查看
-          </ActionButton>
-        ) : null}
-        {meta.data ? (
-          <Link to={"/documents/" + meta.data.document_id}>
-            <ExternalLink size={14} />
-            打开画板
-          </Link>
-        ) : null}
-        {!readOnly && onBind ? (
-          <ActionButton onClick={() => { setPickerSession(value => value + 1); setPicker(true); }}>
-            {id ? "更换引用" : "选择画板"}
-          </ActionButton>
-        ) : null}
-      </header>
-      {url ? (
-        <img src={url} alt={meta.data?.title ?? "画板预览"} loading="lazy" />
-      ) : (
-        <div className="board-preview-empty">
-          {query.error ? (
-            <p role="alert">{query.error.message}</p>
-          ) : !id ? (
-            <>
-              <Shapes size={30} />
-              <p>
-                {readOnly
-                  ? "尚未选择画板"
-                  : "选择已有画板，将内容嵌入当前文档。"}
-              </p>
-            </>
-          ) : (
-            <p>{auth ? "正在读取画板预览…" : "请登录工作空间查看画板。"}</p>
-          )}
-        </div>
-      )}
-      {url ? (
-        <Dialog open={expanded} onOpenChange={setExpanded}>
-          <DialogContent
-            title={meta.data?.title ?? "画板"}
-            className="board-preview-dialog"
-          >
-            <div className="board-expanded-preview">
-              <img src={url} alt={meta.data?.title ?? "画板"} />
-            </div>
-          </DialogContent>
-        </Dialog>
-      ) : null}
+    <div ref={root}>
+      <EmbeddedSurface kind="board" label={meta.data?.title ?? "画板"}
+        surfaceKey={`${credential}:${auth?.workspaceId}:${blockId || id}:${page}:${revision}`}
+        actions={<>
+          <span className="board-reference-mode">{props.mode === "snapshot" ? `快照 · v${revision}` : "实时引用"}</span>
+          {meta.data && <Link className="board-embed-source" to={"/documents/" + meta.data.document_id + "?page=" + encodeURIComponent(page)} aria-label="打开画板"><ExternalLink size={14} /><span>源画板</span></Link>}
+          {id && page && canEdit && <ActionButton aria-pressed={editing} onPress={() => { setEditorLoaded(true); setEditing(value => !value); }}><Pencil size={14} />{editing ? "结束编辑" : "编辑画板"}</ActionButton>}
+          {!readOnly && onBind && <ActionButton onPress={() => { setPickerSession(value => value + 1); setPicker(true); }}>{id ? "更换引用" : "选择画板"}</ActionButton>}
+        </>}
+      >
+        {editorLoaded && props.mode !== "snapshot" && auth ? (
+          <Suspense fallback={<div className="board-embed-start">正在打开画板…</div>}>
+            <BoardEditor key={`${credential}:${auth.workspaceId}:${id}:${page}`} id={id} embed={{ pageID: page, frameID: typeof props.frame_id === "string" ? props.frame_id : undefined, readOnly: !canEdit || !editing }} />
+          </Suspense>
+        ) : url ? (
+          <BoardPreviewViewport key={`${id}:${page}:${revision}:${String(props.frame_id ?? "")}`}><img src={url} alt={meta.data?.title ?? "画板预览"} draggable={false} /></BoardPreviewViewport>
+        ) : (
+          <div className="board-preview-empty">
+            {query.error ? <><p role="alert">{query.error.message}</p><ActionButton onPress={() => void query.refetch()}>重试读取画板</ActionButton></> : !id ? <><Shapes size={30} /><p>{readOnly ? "尚未选择画板" : "选择已有画板，将内容嵌入当前文档。"}</p></> : <p>{auth ? "正在读取画板预览…" : "请登录工作空间查看画板。"}</p>}
+          </div>
+        )}
+      </EmbeddedSurface>
       {auth && onBind ? (
         <BoardPicker
           key={pickerSession}
@@ -166,6 +143,8 @@ export function BoardEmbed({
           onClose={() => setPicker(false)}
           onSelect={(binding) => {
             onBind(binding);
+            setEditing(false);
+            setEditorLoaded(false);
             setPicker(false);
           }}
         />
@@ -186,6 +165,7 @@ function BoardPicker({
     [page, setPage] = useState(1),
     [selected, setSelected] = useState<Board | null>(null),
     [pageID, setPageID] = useState(""),
+    [frameID, setFrameID] = useState(""),
     [mode, setMode] = useState<"live" | "snapshot">("live"),
     [error, setError] = useState(""),
     [selecting, setSelecting] = useState<string | null>(null);
@@ -200,6 +180,20 @@ function BoardPicker({
     enabled: open,
     queryFn: ({ signal }) => boardAPI(auth).list(page, signal),
   });
+  const frames = useQuery({
+    queryKey: ["board-picker-frames", auth.workspaceId, selected?.id, selected?.revision, pageID],
+    enabled: open && !!selected && !!pageID,
+    queryFn: async ({ signal }) => {
+      const values: Element[] = [];
+      let cursor = "";
+      do {
+        const result = await boardAPI(auth).elements(selected!.id, pageID, selected!.revision, cursor, signal);
+        values.push(...result.items.filter(element => SHAPES.get(element.shape_type)?.primitive === "frame"));
+        cursor = result.has_more ? result.next_cursor ?? "" : "";
+      } while (cursor);
+      return values;
+    },
+  });
   async function selectBoard(id: string) {
     const generation = ++selectionGeneration.current;
     selectionAbort.current?.abort();
@@ -212,6 +206,7 @@ function BoardPicker({
       if (abort.signal.aborted || generation !== selectionGeneration.current) return;
       if (!board.pages[0]) throw new Error("画板没有可引用的页面，请选择其他画板。");
       setSelected(board);
+      setFrameID("");
       setPageID(board.pages[0].id);
     } catch (error) {
       if (!abort.signal.aborted && generation === selectionGeneration.current)
@@ -238,10 +233,14 @@ function BoardPicker({
         {selected ? (
           <div className="board-picker-settings">
             <strong>{selected.title}</strong>
-            <SelectField label="引用页面" value={pageID} onChange={setPageID}
+            <SelectField label="引用页面" value={pageID} onChange={value => { setFrameID(""); setPageID(value); }}
               options={selected.pages.map(p => ({ value: p.id, label: p.name }))} />
             <SelectField label="引用方式" value={mode} onChange={value => setMode(value === "snapshot" ? "snapshot" : "live")}
               options={[{ value: "live", label: "实时引用" }, { value: "snapshot", label: "固定快照" }]} />
+            <SelectField label="展示范围" value={frameID} onChange={setFrameID}
+              options={[{ value: "", label: "整页画板" }, ...(frames.data ?? []).map(frame => ({ value: frame.id, label: frame.text || "未命名画框" }))]} />
+            {frames.isFetching && <p role="status">正在读取可选画框…</p>}
+            {frames.error && <p role="alert">画框读取失败：{frames.error.message} <ActionButton onPress={() => void frames.refetch()}>重试</ActionButton></p>}
             <ActionButton onClick={() => setSelected(null)}>
               重新选择
             </ActionButton>
@@ -253,7 +252,7 @@ function BoardPicker({
                   page_id: pageID,
                   mode,
                   revision: mode === "snapshot" ? selected.revision : null,
-                  frame_id: null,
+                  frame_id: frameID || null,
                 })
               }
             >

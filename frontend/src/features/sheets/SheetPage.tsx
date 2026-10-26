@@ -41,6 +41,8 @@ import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { newUUID } from "../../shared/ids";
 import { preparePendingNavigation } from "../../shared/navigation/pending-navigation";
 import { ActionButton } from "../../shared/ui/ActionButton";
+import { EmbeddedSurface } from "../../shared/ui/EmbeddedSurface";
+import { Tooltip } from "../../shared/ui/Tooltip";
 import { TextInput } from "../../shared/ui/TextInput";
 import { DocumentShell } from "../documents/DocumentShell";
 import { createNotebookSidebar } from "../documents/NotebookSectionMenu";
@@ -112,9 +114,11 @@ export function SheetWorkspace({
   initialView = "",
   readOnly = false,
   onViewChange,
+  embedKey,
 }: {
   id: string;
   embedded?: boolean;
+  embedKey?: string;
   initialView?: string;
   readOnly?: boolean;
   onViewChange?: (id: string) => void;
@@ -173,9 +177,10 @@ export function SheetWorkspace({
       ) ?? [],
     [sheet, members.data],
   );
+  const LoadingShell = embedded ? "div" : DocumentShell;
   if (!sheet || !view)
     return (
-      <DocumentShell>
+      <LoadingShell>
         <div className="sheet-empty">
           {c.meta.error ? (
             <>
@@ -188,7 +193,7 @@ export function SheetWorkspace({
             "正在打开数据表…"
           )}
         </div>
-      </DocumentShell>
+      </LoadingShell>
     );
   const activeForm = c.forms.data?.find((f) => f.id === selectedView);
   const fail = (e: unknown) =>
@@ -558,6 +563,7 @@ export function SheetWorkspace({
             <Plus size={16} />
           </ActionButton>
         )}
+        {embedded && <span className="sheet-embed-save" role="status">{!canEdit ? "只读" : c.error ? "保存失败" : c.busy ? "保存中…" : c.hasPending || cellDirty ? "待保存" : "已保存"}</span>}
       </nav>
       {c.error && (
         <ToastNotification title="数据表操作未完成" tone="danger" timeout={c.hasPending ? 0 : undefined}>
@@ -618,9 +624,9 @@ export function SheetWorkspace({
                 },
               ] as const
             ).map(({ mode, icon: Icon, label }) => (
-              <ActionButton
+              <Tooltip key={mode} label={label}><ActionButton
                 size="sm"
-                key={mode}
+                aria-label={label}
                 disabled={!canEdit || c.busy}
                 className={
                   (mode === "filter" && view.filters.length) ||
@@ -634,8 +640,8 @@ export function SheetWorkspace({
                 }
               >
                 <Icon size={14} />
-                {label}
-              </ActionButton>
+                <span className="sheet-tool-label">{label}</span>
+              </ActionButton></Tooltip>
             ))}
             <label className="sheet-search">
               <Search size={14} />
@@ -654,9 +660,9 @@ export function SheetWorkspace({
             )}
             <span className="sheet-toolbar-spacer" />
             {canEdit && (
-              <ActionButton size="sm" onClick={() => void addView("form")}>
+              <ActionButton size="sm" aria-label="生成表单" title="生成表单" onClick={() => void addView("form")}>
                 <FileInput size={14} />
-                生成表单
+                <span className="sheet-tool-label">生成表单</span>
               </ActionButton>
             )}
           </div>
@@ -942,7 +948,11 @@ export function SheetWorkspace({
       )}
     </div>
   );
-  if (embedded) return content;
+  if (embedded) return <EmbeddedSurface kind="table" label={sheet.title}
+    surfaceKey={`${c.auth.workspaceId}:${embedKey || id}`}
+    defaultHeight={view.kind === "grid" ? Math.min(520, 150 + Math.max(3, c.rows.length) * view.row_height) : 460}>
+    {content}
+  </EmbeddedSurface>;
   return (
     <WorkspaceShell
       sidebar={createNotebookSidebar(sheet.collection_id, sheet.document_id)}

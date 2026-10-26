@@ -1,6 +1,6 @@
 import { ToastNotification } from "../../shared/ui/Toast";
 import { useContext, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { EmbeddedSurface } from "../../shared/ui/EmbeddedSurface";
 import { exportTable, createTable } from "./api";
 import { TableHostContext, type TableHost } from "./context";
 import { useDataTable } from "./use-table";
@@ -18,8 +18,6 @@ import {
 import { Button } from "../../shared/ui/Button";
 import { Dialog, DialogContent } from "../../shared/ui/Dialog";
 import {
-  ArrowLeft,
-  ArrowUpRight,
   Layers as Columns3,
   Download,
   Layers as LayoutGrid,
@@ -122,7 +120,6 @@ function DataTableEditor({
   const [actionError, setActionError] = useState<string | null>(null);
   const [titleEditing, setTitleEditing] = useState(false),
     [title, setTitle] = useState("");
-  const container = useRef<HTMLElement>(null);
   useEffect(() => {
     const update = () =>
       setExpanded(
@@ -142,9 +139,6 @@ function DataTableEditor({
     }
     history.pushState({}, "", url);
     setExpanded(value);
-    requestAnimationFrame(() =>
-      container.current?.querySelector<HTMLButtonElement>("button")?.focus(),
-    );
   }
   const definition = table.definition;
   if (!definition || !table.page || table.recovering)
@@ -205,8 +199,7 @@ function DataTableEditor({
     : null;
   const content = (
     <section
-      ref={container}
-      className={`data-table ${expanded ? "dt-expanded" : ""}`}
+      className="data-table"
       contentEditable={false}
       aria-label={definition.title}
       onKeyDown={(event) => {
@@ -219,29 +212,13 @@ function DataTableEditor({
           event.preventDefault();
           void table.travel(event.shiftKey ? "redo" : "undo");
         }
-        if (
-          event.key === "Escape" &&
-          expanded &&
-          !settings &&
-          field === undefined &&
-          !record
-        )
-          expand(false);
+        if (event.key === "Escape" && expanded && !event.defaultPrevented &&
+          !settings && field === undefined && !record &&
+          !(event.target instanceof HTMLElement && event.target.closest("input,textarea"))) expand(false);
       }}
     >
       <header className="dt-heading">
-        {expanded ? (
-          <button
-            type="button"
-            className="dt-back"
-            onClick={() => expand(false)}
-          >
-            <ArrowLeft size={16} />
-            返回文档
-          </button>
-        ) : (
-          <Table2 size={18} />
-        )}
+        <Table2 size={18} />
         <div className="dt-title-area">
           {titleEditing ? (
             <input
@@ -283,16 +260,6 @@ function DataTableEditor({
                     : "已保存"}
           </span>
         </div>
-        {!expanded ? (
-          <Button
-            size="sm"
-            variant="ghost"
-            icon={<ArrowUpRight size={16} />}
-            onClick={() => expand(true)}
-          >
-            展开
-          </Button>
-        ) : null}
       </header>
       <div className="dt-toolbar">
         <div className="dt-view-tabs" role="tablist" aria-label="表格视图">
@@ -653,5 +620,7 @@ function DataTableEditor({
       ) : null}
     </section>
   );
-  return expanded ? createPortal(content, document.body) : content;
+  return <EmbeddedSurface kind="table" label={definition.title}
+    surfaceKey={`${host.noteId}:${blockId}`} expanded={expanded} onExpandedChange={expand}
+    defaultHeight={Math.min(520, 150 + Math.max(3, table.rows.length) * 36)}>{content}</EmbeddedSurface>;
 }

@@ -890,3 +890,19 @@
   .board-mindmap-controls { --board-mindmap-control-spacing: 48px; }
   .board-shell .board-mindmap-controls .orbis-action-button { width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
 }
+
+.board-embedded-shell { height: 100%; }
+.board-embedded-status { position: absolute; top: 12px; left: 12px; z-index: 20; pointer-events: none; }
+.board-embedded-status .board-save-state { padding: 4px 7px; border-radius: 5px; background: var(--surface); }
+.board-embedded-shell .board-zoom { top: 8px; bottom: auto; right: 12px; }
+.board-embedded-shell .board-history-controls { top: auto; bottom: 38px; left: 12px; }
+.board-embedded-shell .board-page-actions > button { display: none; }
+.board-embedded-shell .board-minimap { display: none; }
+.board-embedded-shell .board-stage-wrap { background-image: none; }
+.is-embed-reading .board-toolbar,
+.is-embed-reading .board-history-controls,
+.is-embed-reading .board-selection-toolbar,
+.is-embed-reading .board-page-actions,
+.is-embed-reading .board-page-list-container { display: none; }
+
+.board-embedded-shell .board-toolbar { top: 52px; bottom: 60px; height: fit-content; max-height: calc(100% - 112px); overflow-y: auto; transform: none; scrollbar-width: thin; }

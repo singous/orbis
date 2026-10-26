@@ -236,7 +236,9 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
   const end=()=>{clearDrag();scrollFrame=0;};
   const resize=(event:Event)=>{
    positionHandle(activeRef.current);
-   if(menuOpenRef.current && !(event.target instanceof Node && menuRef.current?.contains(event.target)))setOpen(false);
+   // 表格内部滚动不改变块菜单锚点；单元格保存后的滚动恢复也不能关闭菜单。
+   const insideEmbed=event.type==='scroll'&&event.target instanceof Element&&event.target.closest('[data-orbis-embedded-editor]');
+   if(menuOpenRef.current && !insideEmbed && !(event.target instanceof Node && menuRef.current?.contains(event.target)))setOpen(false);
   };
   const openRequested=()=>{
    const id=blockSelectionKey.getState(editor.state)?.ids[0]??ownedOrbisBlock(editor.state.doc,editor.state.selection.from)?.id;
@@ -262,7 +264,7 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
   if(!open)return;const rect=handleRef.current?.getBoundingClientRect();if(!rect)return;
   const height=Math.min(500,window.innerHeight-40);
   setMenuPoint({left:Math.max(12,Math.min(rect.left,window.innerWidth-260)),top:Math.max(12,Math.min(rect.bottom+5,window.innerHeight-height-12))});
-  menuRef.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus();
+  menuRef.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus({preventScroll:true});
  },[open]);
  useEffect(()=>{
   if(!noteId)return;
