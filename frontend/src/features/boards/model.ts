@@ -145,6 +145,21 @@ export type Mutation = {
   schema_version: number;
   commands: Command[];
 };
+/** 空目标命令没有编辑内容，不应进入持久化和网络提交队列。 */
+export function commandHasTargets(command: Command): boolean {
+  switch (command.type) {
+    case "elements.create":
+      return command.elements.length > 0;
+    case "elements.update":
+    case "layout.apply":
+      return command.patches.length > 0;
+    case "elements.delete":
+    case "elements.restore":
+      return command.targets.length > 0;
+    default:
+      return true;
+  }
+}
 export const changeSchema = z.object({
   operation_id: z.string().uuid(),
   revision: z.number().int(),
