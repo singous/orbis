@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { IDBFactory } from "fake-indexeddb";
 import * as Y from "yjs";
 import { DocumentCollaborationProvider, decodeCollaborationUpdate, encodeCollaborationUpdate, type CollaborationState, type CollaborationProviderOptions, type CollaborationNetwork } from "./collaboration-provider";
-import { ApiError } from "../../../shared/api/api-client";
+import { ApiError, apiRequest } from "../../../shared/api/api-client";
 import { collaborationScope, createCollaborationPersistence } from "./collaboration-persistence";
 import { fingerprintElement } from "../../content/codecs/collaboration-fingerprint";
 import type { DraftLaneOptions } from "./draft-lanes";
@@ -589,6 +589,33 @@ describe("durable collaboration provider", () => {
     const { provider, server } = await setup({ refreshToken: async () => { throw new ApiError(401, "登录已失效", "AUTH_REQUIRED"); } });
     server.sockets[0].message({ type: "error", status: 401 });
     await vi.waitFor(() => expect(provider.getSnapshot()).toMatchObject({ status: "read_only", readOnly: true }));
+  });
+
+  it.each(["network", "status-zero"])("resumes the original pending write after a transient %s authentication probe failure", async kind => {
+    const network = new FakeNetwork();
+    const fetchProbe = vi.spyOn(globalThis, "fetch")
+      .mockRejectedValueOnce(kind === "network" ? new TypeError("Failed to fetch") : new ApiError(0, "网络不可用"))
+      .mockResolvedValue(new Response(JSON.stringify({ code: "OK", message: "ok", request_id: "probe", data: {} }), { headers: { "Content-Type": "application/json" } }));
+    try {
+      const refreshToken = vi.fn(async () => { await apiRequest("/v1/auth-probe", { feedback: { error: false } }); return "refreshed"; });
+      const { provider, server } = await setup({ network, refreshToken, reconnectDelayMs: 100000 });
+      server.acknowledge = false;
+      provider.doc.getText("text").insert(0, "retained ");
+      await expect(provider.flush({ timeoutMs: 5 })).rejects.toThrow();
+      const original = server.updates()[0];
+      server.requiredToken = "refreshed";
+      server.sockets[0].message({ type: "error", status: 401 });
+      await vi.waitFor(() => expect(provider.getSnapshot()).toMatchObject({ status: "offline", readOnly: false, pendingCount: 1 }));
+      expect(refreshToken).toHaveBeenCalledTimes(1);
+      network.set(false);
+      server.acknowledge = true;
+      network.set(true);
+      await provider.flush();
+      expect(refreshToken).toHaveBeenCalledTimes(2);
+      expect(server.updates()[1]).toEqual(original);
+      expect(server.doc.getText("text").toString()).toBe("retained server");
+      expect(provider.getSnapshot()).toMatchObject({ status: "online", readOnly: false, isSaved: true });
+    } finally { fetchProbe.mockRestore(); }
   });
 });
 

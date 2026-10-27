@@ -124,7 +124,8 @@ async function request<T>(path: string, options: ApiRequestOptions, parse: (resp
     return await parse(response, captured);
   } catch (cause) {
     if (captured.signal?.aborted || isRequestCancelled(cause)) { markErrorHandled(cause); throw cause; }
-    const error = cause instanceof TypeError ? new ApiError(0, "网络异常，请稍后重试", "NETWORK_ERROR", "", null, { cause }) : cause;
+    // 网络中断没有 HTTP 状态，保留 TypeError 分类，避免业务层将其当成已被服务器拒绝的请求。
+    const error = cause instanceof TypeError ? new TypeError("网络异常，请稍后重试", { cause }) : cause;
     const allowed = captured.canNotify?.() !== false;
     const unauthorized = error instanceof ApiError && error.status === 401;
     if (unauthorized) captured.onUnauthorized?.();

@@ -42,7 +42,10 @@ it("handles business errors and invalid responses through the same boundary", as
 it("uses a network fallback and never notifies cancelled requests", async () => {
   const cause = new TypeError("Failed to fetch");
   vi.stubGlobal("fetch", vi.fn().mockRejectedValueOnce(cause).mockRejectedValueOnce(new DOMException("cancelled", "AbortError")));
-  await expect(apiRequest("/v1/items")).rejects.toMatchObject({ code: "NETWORK_ERROR", cause });
+  const failure = await apiRequest("/v1/items").catch(error => error);
+  expect(failure).toBeInstanceOf(TypeError);
+  expect(failure).not.toBeInstanceOf(ApiError);
+  expect(failure).toMatchObject({ message: "网络异常，请稍后重试", cause });
   await expect(apiRequest("/v1/items")).rejects.toMatchObject({ name: "AbortError" });
   expect(notify).toHaveBeenCalledExactlyOnceWith({ title: "网络异常，请稍后重试", tone: "danger" });
 });

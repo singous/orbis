@@ -481,7 +481,7 @@ export class DocumentCollaborationProvider {
     } catch (error) {
       if (this.disposed) return;
       if (error instanceof ApiError && [401, 403, 404].includes(error.status)) this.stop("read_only", "登录状态无法验证，请重新登录。本机草稿仍已保留。");
-      else if (error instanceof ApiError && error.status < 500 && ![408, 429].includes(error.status)) this.stop("error", error);
+      else if (error instanceof ApiError && error.status >= 400 && error.status < 500 && ![408, 429].includes(error.status)) this.stop("error", error);
       else {
         this.authRefreshAttempted = false;
         this.refreshing = false;
