@@ -11,15 +11,30 @@ export type BoardRemovalRequest = { transaction: Transaction; blockIds: string[]
 const confirmed = new Set<string>();
 const requested = new WeakSet<Transaction>();
 
+type SiblingOrder = { ids: string[]; index: number };
+type BoardPosition = { path: string; order: SiblingOrder[] };
 function boardPaths(doc: PMNode, pending: Set<string>) {
-  const present = new Map<string, string>();
-  function visit(node: PMNode, path: string[]) {
-    if (node.type.name === "orbisBoard" && pending.has(node.attrs.orbisId)) present.set(node.attrs.orbisId, JSON.stringify(path));
+  const present = new Map<string, BoardPosition>();
+  function visit(node: PMNode, path: string[], order: SiblingOrder[]) {
+    if (node.type.name === "orbisBoard" && pending.has(node.attrs.orbisId)) present.set(node.attrs.orbisId, { path: JSON.stringify(path), order });
     const next = [...path, node.type.name, String(node.attrs.orbisId ?? ""), String(node.attrs.kind ?? "")];
-    node.forEach(child => visit(child, next));
+    const children: PMNode[] = [];
+    node.forEach(child => children.push(child));
+    const ids = children.map((child, index) => String(child.attrs.orbisId ?? `${child.type.name}:${index}`));
+    children.forEach((child, index) => visit(child, next, [...order, { ids, index }]));
   }
-  if (pending.size) visit(doc, []);
+  if (pending.size) visit(doc, [], []);
   return present;
+}
+function samePosition(before: BoardPosition, after: BoardPosition): boolean {
+  if (before.path !== after.path || before.order.length !== after.order.length) return false;
+  return before.order.every((old, index) => {
+    const next = after.order[index];
+    // 新增或删除其他兄弟块不会换序；已有兄弟从一侧移到另一侧才可能销毁当前视图。
+    const preceding = new Set(next.ids.slice(0, next.index));
+    const following = new Set(next.ids.slice(next.index + 1));
+    return !old.ids.slice(0, old.index).some(id => following.has(id)) && !old.ids.slice(old.index + 1).some(id => preceding.has(id));
+  });
 }
 function pendingBoards(doc: PMNode) { return boardPaths(doc, boardNavigation.pendingBlockIds()); }
 
@@ -29,7 +44,7 @@ export function allowBoardRemoval(editor: Editor, transaction: Transaction): boo
   const removed = pendingBoards(transaction.before);
   if (!removed.size) return true;
   const retained = boardPaths(transaction.doc, new Set(removed.keys()));
-  for (const [id, path] of retained) if (removed.get(id) === path) removed.delete(id);
+  for (const [id, position] of retained) if (samePosition(removed.get(id)!, position)) removed.delete(id);
   if (![...removed.keys()].some(id => !confirmed.has(id))) return true;
   if (!requested.has(transaction)) {
     requested.add(transaction);
