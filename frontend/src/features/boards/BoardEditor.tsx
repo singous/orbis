@@ -50,6 +50,7 @@ import {
 } from "@remixicon/react";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { authStore } from "../../shared/auth/auth-store";
+import { registerPendingNavigation } from "../../shared/navigation/pending-navigation";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Button } from "../../shared/ui/Button";
 import { Dialog, DialogContent } from "../../shared/ui/Dialog";
@@ -95,7 +96,7 @@ const STATUS = {
   loading: "正在读取…",
   saved: "已保存",
   saving: "正在同步…",
-  offline: "离线，修改保存在本机",
+  save_failed: "保存失败",
   conflict: "有修改需要处理",
   error: "读取失败",
 };
@@ -111,7 +112,6 @@ export function BoardEditor({ id, embed }: { id: string; embed?: { pageID: strin
     () =>
       new BoardSession(
         id,
-        `${identity.credential}:${auth.workspaceId}:${id}`,
         () => authRef.current,
       ),
     [id, identity.credential, auth.workspaceId],
@@ -175,6 +175,7 @@ export function BoardEditor({ id, embed }: { id: string; embed?: { pageID: strin
   const canEdit =
     !embed?.readOnly && canMutateWorkspaceContent(identity.workspace) &&
     state.status !== "conflict" &&
+    state.status !== "save_failed" &&
     state.status !== "loading" &&
     state.status !== "error";
   const fail = (error: unknown) => {
@@ -224,6 +225,9 @@ export function BoardEditor({ id, embed }: { id: string; embed?: { pageID: strin
       setCamera({ x: 80, y: 80, zoom: 1 });
     }
   }, [state.pageID]);
+  useEffect(() => registerPendingNavigation(async () => {
+    if (session.getSnapshot().pending) throw new Error("画板尚未保存，请先重试保存或处理未保存的修改。");
+  }), [session]);
   useEffect(() => {
     const beforeUnload = (e: BeforeUnloadEvent) => {
       if (session.getSnapshot().pending) {
@@ -363,10 +367,13 @@ export function BoardEditor({ id, embed }: { id: string; embed?: { pageID: strin
   const board = state.board,
     page = board.pages.find((p) => p.id === state.pageID) ?? board.pages[0];
   const saveState = (
+    <>
     <span className={"board-save-state is-" + state.status} role="status">
       {state.status === "saved" ? <Check size={13} /> : null}
       {STATUS[state.status]}
     </span>
+    {state.pending > 0 && (state.status === "save_failed" || state.status === "conflict") && <ActionButton size="sm" onPress={() => void recover(() => session.retry())}>重试保存</ActionButton>}
+    </>
   );
   const openHistory = () =>
     void boardAPI(auth)
@@ -799,17 +806,11 @@ export function BoardEditor({ id, embed }: { id: string; embed?: { pageID: strin
         {feedback ? (
           <ToastNotification key={errorAttempt} title="画板操作未完成" tone="danger" timeout={state.pending ? 0 : undefined}>
             <span>{feedback}</span>
-            {state.pending ? (
+            {state.canDiscard ? (
               <div className="mt-3 flex flex-wrap gap-2">
-                <Button size="sm" disabled={state.status === "saving" || state.status === "loading"} onClick={() => void recover(() => session.retry())}>
-                  重试同步
+                <Button size="sm" onClick={() => { setRecoveryError(""); setDiscard(true); }}>
+                  放弃未保存修改
                 </Button>
-                <Button size="sm" onClick={() => void exportFile("json")}>
-                  导出本机修改
-                </Button>
-                {state.canDiscard ? <Button size="sm" onClick={() => { setRecoveryError(""); setDiscard(true); }}>
-                  放弃未同步修改
-                </Button> : null}
               </div>
             ) : null}
           </ToastNotification>
@@ -899,9 +900,9 @@ export function BoardEditor({ id, embed }: { id: string; embed?: { pageID: strin
           if (!open) setDiscard(false);
         }}
       >
-        <DialogContent title="放弃未同步修改">
+        <DialogContent title="放弃未保存修改">
           <p>
-            将放弃这张画板未保存的本机修改，并重新读取服务器版本。可以先导出本机修改。
+            将放弃当前页面中尚未保存的画板修改，并重新读取服务器版本。
           </p>
           <Button onClick={() => setDiscard(false)}>继续保留</Button>
           <Button

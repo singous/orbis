@@ -31,8 +31,9 @@ export function EmbeddedSurface({
   const [host] = useState(() => document.createElement("div"));
   const [localExpanded, setLocalExpanded] = useState(false);
   const expanded = controlledExpanded ?? localExpanded;
-  const storageKey = `orbis.embed-height:${surfaceKey}`;
+  const storageKey = kind === "table" ? `orbis.embed-height:${surfaceKey}` : null;
   const [customHeight, setCustomHeight] = useState<number | null>(() => {
+    if (!storageKey) return null;
     try {
       const value = Number(sessionStorage.getItem(storageKey));
       return value >= MIN_HEIGHT && value <= MAX_HEIGHT ? value : null;
@@ -41,6 +42,7 @@ export function EmbeddedSurface({
   const height = customHeight ?? clampHeight(defaultHeight);
   function changeHeight(value: number | null) {
     setCustomHeight(value === null ? null : clampHeight(value));
+    if (!storageKey) return;
     try {
       if (value === null) sessionStorage.removeItem(storageKey);
       else sessionStorage.setItem(storageKey, String(clampHeight(value)));

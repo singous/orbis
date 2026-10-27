@@ -45,7 +45,7 @@
 .board-save-state.is-error {
   color: #c03939;
 }
-.board-save-state.is-offline {
+.board-save-state.is-save_failed {
   color: #a36c16;
 }
 .board-header-actions {
@@ -906,3 +906,6 @@
 .is-embed-reading .board-page-list-container { display: none; }
 
 .board-embedded-shell .board-toolbar { top: 52px; bottom: 60px; height: fit-content; max-height: calc(100% - 112px); overflow-y: auto; transform: none; scrollbar-width: thin; }
+
+.board-embedded-status { display: flex; align-items: center; gap: 6px; }
+.board-embedded-status .orbis-action-button { pointer-events: auto; background: var(--surface); }

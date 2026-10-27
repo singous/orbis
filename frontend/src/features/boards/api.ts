@@ -111,15 +111,6 @@ export function boardAPI(auth: AuthRequestOptions) {
             signal,
           ),
         ),
-    receipt: async (id: string, operation: string, signal?: AbortSignal) =>
-      changeSchema.parse(
-        await request(
-          `/${id}/operations/${operation}`,
-          "GET",
-          undefined,
-          signal,
-        ),
-      ),
     history: async (id: string, signal?: AbortSignal) =>
       z
         .object({

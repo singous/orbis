@@ -5,13 +5,14 @@ to `renderer.ts`; persisted data, operations, templates and geometry have no Kon
 identities. Styling can be replaced independently of the board format.
 
 - `model.ts` validates the public v1 contract and uses the shared shape catalog.
-- `session.ts` owns optimistic state, durable IndexedDB operations and bounded undo.
-  The journal is written before transmission. Retries preserve original operation
-  IDs and payloads. A stream notification is never treated as a save receipt.
-  Compare-and-swap journal writes prevent another window's pending edits being
-  overwritten. Unknown outcomes must be resolved before discarding a draft.
+- `session.ts` owns optimistic state, in-memory pending operations and bounded undo.
+  Failed saves stop submission until the user retries; retries preserve the original
+  operation IDs and payloads. A stream notification is never treated as a save receipt.
+  Boards do not read or write browser draft storage. Reloading opens server content
+  without restoring or replaying unsaved operations. Each editor owns its temporary
+  state, so multiple references do not compete for a shared browser-storage key.
 - `sync.ts` resumes committed changes over an authenticated WebSocket; bounded REST
-  polling is a fallback. Connection failure does not replace the durable queue.
+  polling is a fallback. Connection failure leaves unsaved operations in the current editor only.
 - `geometry.ts` provides world-space hit candidates, ports and paths.
   `transforms.ts` moves/scales descendants atomically. `mindmap.ts` owns topic
   relationships and collapsed visibility; `templates.ts` builds complete scenes.

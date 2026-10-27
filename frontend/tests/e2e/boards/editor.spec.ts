@@ -301,7 +301,7 @@ test("images survive portable export/import and PNG export", async ({
   expect(await preview.text()).toContain("data:image/png;base64,");
 });
 
-test("a lost save response is recovered after reload with the original operation id", async ({
+test("a lost save response waits for manual retry with the original operation id", async ({
   page,
   request,
 }) => {
@@ -343,7 +343,7 @@ test("a lost save response is recovered after reload with the original operation
   await openWithSession(page, session, "/documents/" + board.document_id);
   await page.getByRole("button", { name: "审批流程", exact: true }).click();
   await expect(page.locator(".board-save-state")).toHaveText(
-    "离线，修改保存在本机",
+    "保存失败",
   );
   const snapshot = async () =>
     responseData(
@@ -354,7 +354,7 @@ test("a lost save response is recovered after reload with the original operation
     );
   await expect.poll(async () => (await snapshot()).elements.length).toBe(12);
   online = true;
-  await page.reload();
+  await page.getByRole("button", { name: "重试保存", exact: true }).click();
   await expect(page.locator(".board-save-state")).toHaveText("已保存");
   expect(operations.size).toBe(1);
   expect((await snapshot()).elements).toHaveLength(12);
