@@ -1,4 +1,4 @@
-import { showToast } from "../ui/Toast";
+import { showToast, type ToastInput } from "../ui/Toast";
 
 const handledErrors = new WeakSet<object>();
 type OperationFeedback = {
@@ -69,14 +69,19 @@ export function requestFailed(context: FeedbackContext, error: unknown, allowed:
 }
 
 /** 一次业务请求可能检查回执或重试；只报告最终结果，不把中间探测当成失败。 */
-export async function withRequestFeedback<T, C extends FeedbackContext>(context: C, run: (context: C) => Promise<T>): Promise<T> {
+export async function withRequestFeedback<T, C extends FeedbackContext>(
+  context: C,
+  run: (context: C) => Promise<T>,
+  resultFeedback?: (value: T, message: string) => ToastInput | null,
+): Promise<T> {
   if (context.feedback?.operation) return run(context);
   const operation: OperationFeedback = { errors: new Set() };
   const scoped = { ...context, feedback: { ...context.feedback, operation } };
   try {
     const value = await run(scoped);
     if (context.feedback?.success && context.canNotify?.() !== false && operation.message) {
-      showToast({ title: operation.message, tone: "success" });
+      const notice = resultFeedback ? resultFeedback(value, operation.message) : { title: operation.message, tone: "success" as const };
+      if (notice) showToast(notice);
     }
     return value;
   } catch (error) {

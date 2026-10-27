@@ -130,7 +130,7 @@ export function MemberSettingsPage() {
           </div>
           <div className="collaboration-actions"><Button size="sm" disabled={memberPage <= 1 || membersQuery.isFetching} onClick={() => setMemberPage(value => value - 1)}>上一页成员</Button><span>第 {memberPage} 页</span><Button size="sm" disabled={!membersQuery.data?.pagination.has_next || membersQuery.isFetching} onClick={() => setMemberPage(value => value + 1)}>下一页成员</Button></div>
         </section>
-        {workspace?.role === "owner" && ownershipQuery.data?.status === "pending" ? <section aria-label="待确认所有权转让"><h2>所有权转让待确认</h2><p>请通过发送给当前所有者的邮件确认，完成后目标管理员成为所有者。</p><Button disabled={resendTransfer.isPending} onClick={() => resendTransfer.mutate(ownershipQuery.data!.id)}>重发所有权确认邮件</Button><Button disabled={cancelTransfer.isPending} onClick={() => cancelTransfer.mutate(ownershipQuery.data!.id)}>取消所有权转让</Button></section> : null}
+        {workspace?.role === "owner" && ownershipQuery.data?.status === "pending" ? <section aria-label="待确认所有权转让"><h2>所有权转让待确认</h2><p>当前所有者通过邮件确认后，目标管理员成为所有者。</p><dl><dt>确认邮件</dt><dd>{ownershipQuery.data.email_sent ? "已发送" : "未发送"}</dd></dl><Button disabled={resendTransfer.isPending} onClick={() => resendTransfer.mutate(ownershipQuery.data!.id)}>重发所有权确认邮件</Button><Button disabled={cancelTransfer.isPending} onClick={() => cancelTransfer.mutate(ownershipQuery.data!.id)}>取消所有权转让</Button></section> : null}
         {canManage && (pendingInvitations.length || (invitesQuery.data?.pagination.total ?? 0) > 0) ? (
           <section>
             <div className="section-heading"><div><h2>待处理邀请</h2><p>过期后需要重新发送</p></div></div>

@@ -1,5 +1,5 @@
 import { showToast } from "../../../shared/ui/Toast";
-import { reportError } from "../../../shared/api/request-feedback";
+import { reportError, reportRequestError } from "../../../shared/api/request-feedback";
 import { registerRetiredBlockCleanup } from "./tiptap-retired";
 import { ActionButton } from "../../../shared/ui/ActionButton";
 import { SelectField } from "../../../shared/ui/SelectField";
@@ -182,7 +182,6 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
   const [activeCommand, setActiveCommand] = useState(0);
   const [slash, setSlash] = useState<{ query: string; from: number; to: number } | null>(null);
 
-  const setClipboardNotice = (message: string | null) => { if (message) showToast({ title: message }); };
   onChangeRef.current = onChange;
   readOnlyRef.current = readOnly;
 
@@ -216,7 +215,6 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
           const selectAll = pendingSelection.current === "all";
           const action = fullActionRef.current;
           const cut = event.key.toLowerCase() === "x";
-          setClipboardNotice("正在读取完整内容并" + (cut ? "剪切" : "复制") + "…");
           clipboardQueue.current = clipboardQueue.current.catch(() => {}).then(async () => {
             if (!ready) throw new Error("完整读取尚未准备好，请重试复制。");
             await ready;
@@ -225,8 +223,12 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
             if (!selectAll) throw new Error("当前没有完整选区，请重新选择后复制。");
             const ids = locateEditorBlocks(current.state.doc).filter(entry => entry.parentId === null).map(entry => entry.id);
             const result = await copyBlocks(current, ids, cut);
-            setClipboardNotice(result.message ?? (result.ok ? "已复制完整内容" : "复制失败，原内容已保留"));
-          }).catch(error => setClipboardNotice(error instanceof Error ? error.message : "复制失败，原内容已保留。"));
+            if (currentEditorRef.current !== current || current.isDestroyed || fullActionRef.current !== action) return;
+            if (result.ok) showToast({ title: result.message ?? "已复制完整内容" });
+            else reportError(result.error ?? result.message ?? "复制失败，原内容已保留");
+          }).catch(error => {
+            if (currentEditorRef.current && !currentEditorRef.current.isDestroyed && fullActionRef.current === action) reportError(error);
+          });
           return true;
         }
         if (!moreContentRef.current || !completeRef.current) return false;
@@ -243,7 +245,9 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
           else editor.chain().focus().setTextSelection(editor.state.doc.content.size - 1).scrollIntoView().run();
         });
         pendingFullPromise.current = ready;
-        void ready.catch(error => setClipboardNotice(error instanceof Error ? error.message : "完整读取失败，请重试。")).finally(() => {
+        void ready.catch(error => {
+          if (currentEditorRef.current && !currentEditorRef.current.isDestroyed && fullActionRef.current === action) reportRequestError(error);
+        }).finally(() => {
           if (pendingFullPromise.current === ready) { pendingFullAction.current = false; pendingFullPromise.current = null; pendingSelection.current = null; }
         });
         return true;

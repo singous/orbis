@@ -5,7 +5,7 @@ import { ActionButton } from "../../shared/ui/ActionButton";
 import { Button } from "../../shared/ui/Button";
 import { Dialog, DialogContent } from "../../shared/ui/Dialog";
 
-import { useToast } from "../../shared/ui/Toast";
+import { reportError } from "../../shared/api/request-feedback";
 import { NotebookDialog } from "../documents/NotebookDialog";
 import type { NotebookIconValue } from "../documents/notebook-icons";
 import {
@@ -28,7 +28,6 @@ export function RailCreateMenu() {
 
 function RailCreateActions({ open, onOpenChange, notebookDialogOpen, onNotebookDialogChange }: { open: boolean; onOpenChange: (open: boolean) => void; notebookDialogOpen: boolean; onNotebookDialogChange: (open: boolean) => void }) {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const groupsQuery = useDocumentGroups();
   const notebooksQuery = useNotebooks();
   const createNote = useCreateNote();
@@ -73,7 +72,7 @@ function RailCreateActions({ open, onOpenChange, notebookDialogOpen, onNotebookD
       <Dialog open={open} onOpenChange={(next) => { if (!createNote.isPending) onOpenChange(next); }}>
         <DialogContent title="新建资产" description="选择要创建的内容。">
           <div className="grid gap-3">
-            <Button icon={<FilePlus2 aria-hidden="true" size={18} />} isPending={createNote.isPending} disabled={notebooksQuery.isLoading || notebooksQuery.isError || Boolean(targetNotebook && !treeQuery.isSuccess)} onClick={() => void createDocument().catch(error => toast({ title: "文档创建失败，请重试", description: error instanceof Error ? error.message : "请稍后重试。", tone: "danger" }))}>文档</Button>
+            <Button icon={<FilePlus2 aria-hidden="true" size={18} />} isPending={createNote.isPending} disabled={notebooksQuery.isLoading || notebooksQuery.isError || Boolean(targetNotebook && !treeQuery.isSuccess)} onClick={() => void createDocument().catch(reportError)}>文档</Button>
             <Button icon={<BookOpen aria-hidden="true" size={18} />} onClick={() => { onNotebookDialogChange(true); onOpenChange(false); }}>笔记本</Button>
           </div>
         </DialogContent>

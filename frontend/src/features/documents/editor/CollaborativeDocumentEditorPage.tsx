@@ -314,6 +314,7 @@ export default function CollaborativeDocumentEditorPage() {
       setTitleStatus("saved"); setError(null);
     }).catch(cause => {
       if (sessionRef.current === identity) {
+        reportRequestError(cause);
         if (titlePending.current) titlePending.current.uncertain ||= !(cause instanceof ApiError) || cause.status >= 500;
         setTitleStatus(cause instanceof ApiError && cause.isConflict ? "conflict" : "error");
         setError(message(cause, "标题尚未保存，本机草稿仍保留。"));

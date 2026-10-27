@@ -149,8 +149,10 @@ export function useDataTable(
     try {
       await task;
     } catch (error) {
-      if (mounted.current && requestGeneration === generation.current)
+      if (mounted.current && requestGeneration === generation.current) {
+        reportError(error);
         setError(error instanceof Error ? error.message : "数据表读取失败，请重试。");
+      }
     } finally {
       if (mounted.current && requestGeneration === generation.current)
         setLoading(false);
@@ -165,7 +167,7 @@ export function useDataTable(
     if (id)
       void refresh(abort.signal)
         .catch((error) => {
-          if (!abort.signal.aborted) setError(error.message);
+          if (!abort.signal.aborted) { reportError(error); setError(error.message); }
         })
         .finally(() => {
           if (!abort.signal.aborted) setLoading(false);

@@ -26,11 +26,16 @@ export function QuickNoteComposer({ userId, workspaceId, note, tags, onSaved, on
 
   const [conflict, setConflict] = useState(false);
   const [persisted, setPersisted] = useState(true);
+  const storageFailed = useRef(false);
   const [saved, setSaved] = useState(false);
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   function update(next: QuickNoteDraft) {
-    current.current = next; setDraft(next); setPersisted(writeDraft(key, next));
+    current.current = next; setDraft(next);
+    const stored = writeDraft(key, next);
+    if (!stored && !storageFailed.current) reportError("本机草稿保存失败，请保留页面并提交记录");
+    storageFailed.current = !stored;
+    setPersisted(stored);
     setSaved(value => value && !hasNoteContent(next.blocks) && next.tag_ids.length === 0);
   }
   const locked = !canEdit || saving || Boolean(draft.pending);
@@ -54,6 +59,7 @@ export function QuickNoteComposer({ userId, workspaceId, note, tags, onSaved, on
       try { if (localStorage.getItem(key) === JSON.stringify(submitting)) removeDraft(key); } catch { /* A successful server receipt remains recoverable. */ }
       if (!mounted.current) return;
       const next = freshDraft(); current.current = next; setDraft(next); setEditorKey(value => value + 1);
+      storageFailed.current = false;
       setPersisted(true); setConflict(false); setSaved(true); onSaved(result);
     } catch (error) {
       if (!mounted.current) return;
@@ -66,7 +72,7 @@ export function QuickNoteComposer({ userId, workspaceId, note, tags, onSaved, on
   const hasContent = hasNoteContent(draft.blocks);
   return <section className={`quick-note-composer${expanded ? " is-expanded" : ""}`} aria-label={note ? "编辑随手记" : "快速记录"}>
     <header className="quick-note-composer-heading"><span>{note ? "编辑记录" : "快速记录"}</span>{onToggleExpanded ? <ActionButton type="button" title={expanded ? "退出全屏" : "展开编辑区"} aria-label={expanded ? "退出全屏" : "展开编辑区"} onClick={onToggleExpanded}>{expanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}</ActionButton> : null}</header>
-    <QuickNoteEditor key={editorKey} initialValue={draft.blocks} disabled={locked} onBusy={setUploading} onError={reportError} onChange={blocks => update({ ...current.current, blocks })} onSubmit={() => void submit()} />
+    <QuickNoteEditor key={editorKey} initialValue={draft.blocks} disabled={locked} onBusy={setUploading} onError={reportError} onChange={blocks => update({ ...current.current, blocks })} onSubmit={() => void submit(conflict)} />
     <div className="quick-note-composer-tags">
       {draft.tag_ids.map(id => <span className="quick-note-selected-tag" key={id}><Tag>{tags.find(tag => tag.id === id)?.name ?? "已移除标签"}</Tag><ActionButton type="button" disabled={locked} aria-label={`移除标签 ${tags.find(tag => tag.id === id)?.name ?? "已移除标签"}`} onClick={() => update({ ...draft, tag_ids: draft.tag_ids.filter(tag => tag !== id) })}><X size={12} /></ActionButton></span>)}
       <details className="quick-note-tag-picker"><summary aria-label="添加标签"><Plus size={14} />添加标签</summary><div className="quick-note-tag-options">

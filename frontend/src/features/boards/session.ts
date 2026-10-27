@@ -32,6 +32,10 @@ export type SessionState = {
   canDiscard: boolean;
 };
 const MAX_HISTORY_BYTES = 16 * 1024 * 1024;
+function syncErrorKey(error: unknown): string {
+  return error instanceof ApiError ? JSON.stringify([error.status, error.code, error.message])
+    : error instanceof Error ? JSON.stringify([error.name, error.message]) : String(error);
+}
 type History = {
   bytes: number;
   pageID: string;
@@ -118,6 +122,7 @@ export class BoardSession {
   private timer: ReturnType<typeof setTimeout> | null = null;
   private work: Promise<void> = Promise.resolve();
   private sending = false;
+  private reportedSyncError: string | null = null;
   private discarding = false;
   private halted = false;
   private get uncertain() {
@@ -164,6 +169,7 @@ export class BoardSession {
     for (const listener of this.listeners) listener();
   }
   async start(page = "") {
+    this.reportedSyncError = null;
     const boot = ++this.bootGeneration;
     if (this.controller.signal.aborted) this.controller = new AbortController();
     const signal = this.controller.signal;
@@ -303,6 +309,7 @@ export class BoardSession {
         await writeJournal(this.key, queue, this.pending);
         if (this.controller.signal.aborted) return;
         this.pending = queue;
+        this.reportedSyncError = null;
         if (historySource)
           this.historySources.set(input.operation_id, historySource);
         if (historyMode === "normal") this.redoStack = [];
@@ -380,7 +387,10 @@ export class BoardSession {
         await this.persistDelivery(operationID, "unconfirmed");
         if (signal.aborted) return;
         stage = "request";
-        const change = await boardAPI(this.auth()).change(
+        const auth = this.auth();
+        const change = await boardAPI({ ...auth, feedback: { ...auth.feedback, error: error =>
+          syncErrorKey(error) !== this.reportedSyncError && (typeof auth.feedback?.error === "function" ? auth.feedback.error(error) : auth.feedback?.error !== false),
+        } }).change(
           this.id,
           operation.input,
           signal,
@@ -397,6 +407,7 @@ export class BoardSession {
             await writeJournal(this.key, remaining, this.pending);
             if (signal.aborted) return;
             this.pending = remaining;
+            this.reportedSyncError = null;
             this.observedPending.delete(operation.input.operation_id);
             this.accept(change);
             const source = this.historySources.get(
@@ -428,6 +439,7 @@ export class BoardSession {
       }
     } catch (error) {
       if (signal.aborted) return;
+      this.reportSyncError(error);
       const permanent =
         error instanceof ApiError &&
         [400, 401, 403, 404, 409, 413, 422].includes(error.status);
@@ -445,6 +457,7 @@ export class BoardSession {
         try {
           await this.persistDelivery(operationID, "rejected", message);
         } catch (storageError) {
+          if (!signal.aborted) this.reportSyncError(storageError);
           message += `；拒绝结果未能保存在本机：${boardErrorMessage(storageError)}`;
           console.error("画板拒绝结果持久化失败", {
             board_id: this.id, operation_id: operationID, stage: "journal",
@@ -462,6 +475,12 @@ export class BoardSession {
       this.sending = false;
       if (!signal.aborted) this.emit();
     }
+  }
+  private reportSyncError(error: unknown) {
+    const key = syncErrorKey(error);
+    if (key === this.reportedSyncError) return;
+    this.reportedSyncError = key;
+    reportError(error);
   }
   private persistDelivery(operationID: string, delivery: PendingOperation["delivery"], rejection?: string) {
     const signal = this.controller.signal;
@@ -706,6 +725,7 @@ export class BoardSession {
   }
   async retry() {
     if (this.discarding || this.sending || this.state.status === "loading") return;
+    this.reportedSyncError = null;
     this.halted = false;
     this.emit({ status: "saving", error: null });
     await this.flush();

@@ -11,11 +11,12 @@ import { NOTE_ID, NOTEBOOK_ID, http, page, response, session } from "../../colla
 import { nativeCollection, nativeDocument, nativeSnapshot } from "./editor.test-utils";
 import { LegacyDocumentEditorPage } from "./DocumentEditorPage";
 import type { EditorContentHandle } from "./editor-content-handle";
+import { reportRequestError } from "../../../shared/api/request-feedback";
 
 const notify = vi.hoisted(() => vi.fn());
 vi.mock("../../../shared/ui/Toast", () => ({ showToast: notify }));
 vi.mock("../DocumentShell", () => ({ DocumentShell: ({ toolbar, children }: { toolbar: ReactNode; children: ReactNode }) => <main>{toolbar}{children}</main> }));
-vi.mock("./TiptapEditor", () => ({ TiptapEditor: ({ blocks, onContentReady }: { blocks: NoteBlocksV2; onContentReady: (handle: EditorContentHandle | null) => void }) => {
+vi.mock("./TiptapEditor", () => ({ TiptapEditor: ({ blocks, onContentReady, ensureComplete }: { ensureComplete?: () => Promise<void>; blocks: NoteBlocksV2; onContentReady: (handle: EditorContentHandle | null) => void }) => {
   const content = useRef(blocks);
   const [live, setLive] = useState(blocks);
   useEffect(() => {
@@ -32,12 +33,12 @@ vi.mock("./TiptapEditor", () => ({ TiptapEditor: ({ blocks, onContentReady }: { 
     });
     return () => onContentReady(null);
   }, []);
-  return <article aria-label="正文">{live.blocks.map(block => <p key={block.id}>{(block.content as { text: string }[]).map(run => run.text).join("")}</p>)}</article>;
+  return <article aria-label="正文"><button onClick={() => void ensureComplete?.().catch(reportRequestError)}>复制完整正文</button>{live.blocks.map(block => <p key={block.id}>{(block.content as { text: string }[]).map(run => run.text).join("")}</p>)}</article>;
 } }));
 
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); authStore.getState().clearSession(); });
+afterEach(() => { notify.mockClear(); cleanup(); vi.unstubAllGlobals(); authStore.getState().clearSession(); });
 
-it("keeps Continue reading usable after a failed page load and appends the retried page once", async () => {
+it.each(["http", "schema"])("keeps Continue reading usable after a %s page failure and reports once across readers", async failure => {
   vi.stubGlobal("IntersectionObserver", class { observe() {} unobserve() {} disconnect() {} });
   act(() => authStore.setState(session));
   const user = userEvent.setup();
@@ -48,7 +49,7 @@ it("keeps Continue reading usable after a failed page load and appends the retri
     if (url.pathname.endsWith(`/documents/${NOTE_ID}`)) return response(nativeDocument);
     if (url.pathname.endsWith("/children")) {
       const next = url.searchParams.has("cursor");
-      if (next && ++subsequentAttempts === 1) return response(null, 503, "后续正文暂时不可用");
+      if (next && ++subsequentAttempts === 1) return failure === "http" ? response(null, 503, "后续正文暂时不可用") : response({ version: "invalid", items: [] });
       const block = nativeSnapshot(4, next ? "后续内容" : "先前内容").blocks[0];
       return response({ version: 4, items: [{
         id: next ? "018ff7c4-a5b6-7000-8000-000000000010" : block.id, parent_id: null, position: next ? 1 : 0,
@@ -60,8 +61,8 @@ it("keeps Continue reading usable after a failed page load and appends the retri
   });
   render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[`/documents/${NOTE_ID}`]}><Routes><Route path="/documents/:noteId" element={<LegacyDocumentEditorPage />} /></Routes></MemoryRouter></QueryClientProvider>);
   await screen.findByText("先前内容");
-  await user.click(screen.getByRole("button", { name: "继续阅读" }));
-  await waitFor(() => expect(notify).toHaveBeenCalledExactlyOnceWith({ title: "后续正文暂时不可用", tone: "danger" }));
+  await user.click(screen.getByRole("button", { name: "复制完整正文" }));
+  await waitFor(() => expect(notify).toHaveBeenCalledExactlyOnceWith({ title: failure === "http" ? "后续正文暂时不可用" : "服务返回的数据不完整，请刷新重试", tone: "danger" }));
   expect(screen.getByText("先前内容")).toBeVisible();
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   await user.click(await screen.findByRole("button", { name: "继续阅读" }));

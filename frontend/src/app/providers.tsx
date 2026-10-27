@@ -7,12 +7,18 @@ import { AUTH_STORAGE_KEY, authStore, getAuthSessionKey } from "../shared/auth/a
 import { markErrorHandled, reportRequestError } from "../shared/api/request-feedback";
 
 function SessionProviders({ children }: { children: ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient({
+  const [queryClient] = useState(() => {
+    const owner = getAuthSessionKey(authStore.getState());
+    const report = (error: unknown) => {
+      if (getAuthSessionKey(authStore.getState()) === owner) reportRequestError(error);
+      else markErrorHandled(error);
+    };
+    return new QueryClient({
     queryCache: new QueryCache({ onError: (error, query) => {
       if (query.meta?.silent === true) markErrorHandled(error);
-      else reportRequestError(error);
+      else report(error);
     } }),
-    mutationCache: new MutationCache({ onError: reportRequestError }),
+    mutationCache: new MutationCache({ onError: report }),
     defaultOptions: {
       queries: {
         retry: false,
@@ -20,7 +26,8 @@ function SessionProviders({ children }: { children: ReactNode }) {
         staleTime: 15_000,
       },
     },
-  }));
+    });
+  });
   useEffect(() => () => queryClient.clear(), [queryClient]);
   return (
     <QueryClientProvider client={queryClient}>

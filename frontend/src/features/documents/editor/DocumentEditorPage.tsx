@@ -1,5 +1,5 @@
 import { ConfirmAction } from "../../../shared/ui/ConfirmAction";
-import { reportError } from "../../../shared/api/request-feedback";
+import { markErrorHandled, reportError, reportRequestError } from "../../../shared/api/request-feedback";
 import { DraftActions } from "../../../shared/ui/DraftActions";
 import {cacheDocumentCommit} from "../document-cache";
 import {annotateTableCopies,resolveTableCopies,type TableCopyIntent} from "./table-copy";
@@ -394,8 +394,11 @@ export function LegacyDocumentEditorPage() {
     })();
     loadingRequest.current = task;
     try { await task; }
-    catch (error) { reportError(error);
-      if (!abort.signal.aborted && contentWindow.current === window) setLoadMoreError(error instanceof Error ? error.message : "后续正文加载失败，请重试。");
+    catch (error) {
+      if (!abort.signal.aborted && contentWindow.current === window) {
+        reportRequestError(error);
+        setLoadMoreError(error instanceof Error ? error.message : "后续正文加载失败，请重试。");
+      } else markErrorHandled(error);
       throw error;
     } finally {
       if (loadingRequest.current === task) { loadingRequest.current = null; setLoadingMore(false); }
@@ -457,7 +460,10 @@ export function LegacyDocumentEditorPage() {
     childRequests.current.set(id, task);
     try { await task; }
     catch (error) {
-      if (!abort.signal.aborted && coordinatorRef.current === coordinator) mark({ error: error instanceof Error ? error.message : "子内容加载失败，请重试。" });
+      if (!abort.signal.aborted && coordinatorRef.current === coordinator) {
+        reportRequestError(error);
+        mark({ error: error instanceof Error ? error.message : "子内容加载失败，请重试。" });
+      } else markErrorHandled(error);
       throw error;
     } finally {
       if (childRequests.current.get(id) === task) childRequests.current.delete(id);

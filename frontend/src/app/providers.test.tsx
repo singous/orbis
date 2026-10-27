@@ -1,10 +1,14 @@
 import { MutationObserver, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { StrictMode, useState } from "react";
-import { afterEach, beforeEach, expect, it } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { authStore, type AuthSession } from "../shared/auth/auth-store";
 import { AppProviders } from "./providers";
+import { z } from "zod";
+import { reportError } from "../shared/api/request-feedback";
+const notify = vi.hoisted(() => vi.fn());
+vi.mock("../shared/ui/Toast", async original => ({ ...await original<typeof import("../shared/ui/Toast")>(), showToast: notify }));
 
 const session: AuthSession = {
   accessToken: "account-a-access", refreshToken: "account-a-refresh",
@@ -13,7 +17,7 @@ const session: AuthSession = {
 };
 const privateKey = ["note-content", "private-note"];
 
-beforeEach(() => authStore.getState().setSession(session));
+beforeEach(() => { notify.mockClear(); authStore.getState().setSession(session); });
 afterEach(() => { cleanup(); authStore.getState().clearSession(); });
 
 it.each([
@@ -89,4 +93,27 @@ it("keeps successful queries in the active cache under StrictMode", async () => 
   }), { wrapper: ({ children }) => <StrictMode><AppProviders>{children}</AppProviders></StrictMode> });
   await waitFor(() => expect(result.current.query.data).toBe("Current session content"));
   expect(result.current.client.getQueryData(privateKey)).toBe("Current session content");
+});
+
+it.each([
+  ["workspace", () => authStore.setState({ workspace: { ...session.workspace!, id: "workspace-b" } })],
+  ["account", () => authStore.setState({ user: { ...session.user, id: "account-b" } })],
+  ["logout", () => authStore.getState().clearSession()],
+] as const)("does not announce a late response-validation failure after %s changes", async (_label, switchSession) => {
+  const { result } = renderHook(() => useQueryClient(), { wrapper: AppProviders });
+  let finish!: () => void;
+  const response = new Promise<void>(resolve => { finish = resolve; });
+  const observer = new MutationObserver(result.current, { mutationFn: async () => { await response; return z.object({ id: z.string() }).parse({ id: 17 }); } });
+  let pending!: Promise<unknown>;
+  await act(async () => { pending = observer.mutate().catch(reportError); });
+  act(switchSession);
+  await act(async () => { finish(); await pending; });
+  expect(notify).not.toHaveBeenCalled();
+});
+
+it("reports current-session validation errors once across cache and caller fallbacks", async () => {
+  const { result } = renderHook(() => useQueryClient(), { wrapper: AppProviders });
+  const observer = new MutationObserver(result.current, { mutationFn: async () => z.object({ id: z.string() }).parse({ id: 17 }) });
+  await act(async () => { await observer.mutate().catch(reportError); });
+  expect(notify).toHaveBeenCalledExactlyOnceWith({ title: "服务返回的数据不完整，请刷新重试", tone: "danger" });
 });

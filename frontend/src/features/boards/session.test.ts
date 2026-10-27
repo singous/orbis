@@ -122,6 +122,37 @@ describe("board durable save", () => {
     expect(mock.get).not.toHaveBeenCalled();
   });
 
+  it.each(["before request", "after acknowledgement"])("reports a journal failure %s and preserves the pending operation for retry", async stage => {
+    const { s, key } = session();
+    await s.start();
+    const persist = journal.writeJournal;
+    const error = new Error("浏览器存储空间不足");
+    const write = vi.spyOn(journal, "writeJournal").mockImplementation((key, queue, expected) => {
+      const fail = stage === "before request" ? queue.some(item => item.delivery === "unconfirmed") : queue.length === 0 && expected.length > 0;
+      return fail ? Promise.reject(error) : persist(key, queue, expected);
+    });
+    mock.change.mockImplementation(async (_id, input) => ack(input));
+    const element = makeElement("flow.process", metadata.pages[0].id, 0, 0);
+    await s.submit([{ type: "elements.create", elements: [element] }]);
+    await vi.waitFor(() => expect(s.getSnapshot()).toMatchObject({ status: "offline", pending: 1 }));
+    expect(notify).toHaveBeenCalledExactlyOnceWith({ title: error.message, tone: "danger" });
+    const pending = await readJournal(key);
+    expect(pending).toHaveLength(1);
+    expect(pending[0].input.commands).toEqual([{ type: "elements.create", elements: [element] }]);
+    const original = pending[0].input;
+    const beforePolling = write.mock.calls.length;
+    await vi.waitFor(() => expect(write.mock.calls.length).toBeGreaterThan(beforePolling), { timeout: 2000 });
+    expect(notify).toHaveBeenCalledTimes(1);
+    await s.retry();
+    expect(notify).toHaveBeenCalledTimes(2);
+    write.mockRestore();
+    await s.retry();
+    await vi.waitFor(() => expect(s.getSnapshot()).toMatchObject({ status: "saved", pending: 0 }));
+    expect(mock.change.mock.calls.every(([, input]) => JSON.stringify(input) === JSON.stringify(original))).toBe(true);
+    expect(await readJournal(key)).toEqual([]);
+    expect(notify).toHaveBeenCalledTimes(2);
+  });
+
   it("does not notify the editor during idle polling without pending operations", async () => {
     const { s } = session();
     await s.start();

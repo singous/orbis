@@ -230,6 +230,8 @@ it("keeps a conflicting local title until the user explicitly loads the server t
   server.version += 1; server.title = "已提交的远端标题";
   expect(await within(view.container).findByText("标题版本冲突", {}, { timeout: 3000 })).toBeInTheDocument();
   expect(within(view.container).getByRole("textbox", { name: "文档标题" })).toHaveValue("本机待保存标题");
+  expect(await screen.findByRole("alertdialog", { name: "标题已被其他作者修改，本机标题仍保留。请载入服务端标题后再编辑。" })).toBeVisible();
+  expect(screen.getAllByRole("alertdialog")).toHaveLength(1);
   expect(requests.filter(request => request.path.endsWith("/operations"))).toHaveLength(0);
   fireEvent.click(await screen.findByRole("button", { name: "本机修改" }));
   fireEvent.click(await screen.findByRole("button", { name: "载入服务端标题" }));
