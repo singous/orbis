@@ -1,4 +1,6 @@
 import { Node } from "@tiptap/core";
+import { Plugin } from "@tiptap/pm/state";
+import { allowBoardRemoval } from "./blocks/board-removal";
 import {
   NodeViewWrapper,
   ReactNodeViewRenderer,
@@ -23,6 +25,8 @@ function View({ node, updateAttributes }: NodeViewProps) {
     >
       <Suspense fallback={<p>正在读取画板…</p>}>
         <BoardEmbed
+          key={`${node.attrs.orbisProps?.board_id ?? ""}:${node.attrs.orbisProps?.page_id ?? ""}:${node.attrs.orbisProps?.revision ?? ""}:${node.attrs.orbisProps?.mode ?? ""}:${node.attrs.orbisProps?.frame_id ?? ""}`}
+          blockId={String(node.attrs.orbisId)}
           props={node.attrs.orbisProps ?? {}}
           readOnly={readOnly}
           onBind={(binding) => updateAttributes({ orbisProps: binding })}
@@ -34,6 +38,12 @@ function View({ node, updateAttributes }: NodeViewProps) {
 const hidden = { default: null, parseHTML: () => null, renderHTML: () => ({}) };
 export const OrbisBoard = Node.create({
   name: "orbisBoard",
+  addProseMirrorPlugins() {
+    const editor = this.editor;
+    return [new Plugin({
+      filterTransaction: transaction => allowBoardRemoval(editor, transaction),
+    })];
+  },
   group: "block",
   atom: true,
   selectable: true,

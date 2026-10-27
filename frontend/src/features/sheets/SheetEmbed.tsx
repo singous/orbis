@@ -88,6 +88,7 @@ export function SheetEmbed({
         key={id}
         id={id}
         initialView={viewId}
+        embedKey={blockId}
         embedded
         readOnly={readOnly || host?.readOnly}
         onViewChange={

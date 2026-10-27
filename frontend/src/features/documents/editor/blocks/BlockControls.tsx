@@ -1,3 +1,5 @@
+import { BOARD_REMOVAL_EVENT, confirmBoardRemoval, type BoardRemovalRequest } from "./board-removal";
+import { BoardDiscardDialog } from "../../../boards/BoardDiscardDialog";
 import { showToast } from "../../../../shared/ui/Toast";
 import { reportError } from "../../../../shared/api/request-feedback";
 import {DocumentCopyContext,registerDocumentCopy,prepareTableCopy,selectedTableBlocks} from "./block-copy-context";
@@ -45,6 +47,14 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
  const [activeId,commitActiveId]=useState<string|null>(null);
  const [point,setPoint]=useState<{top:number;left:number}|null>(null);
  const [open,setOpen]=useState(false);
+ const [removal,setRemoval]=useState<BoardRemovalRequest|null>(null);
+ useLayoutEffect(()=>{
+  setRemoval(null);
+  const request=(event:Event)=>{setNotice('');setOpen(false);setRemoval((event as CustomEvent<BoardRemovalRequest>).detail);};
+  const dom=editor.view.dom;
+  dom.addEventListener(BOARD_REMOVAL_EVENT,request);
+  return()=>dom.removeEventListener(BOARD_REMOVAL_EVENT,request);
+ },[editor]);
  const [menuPoint,setMenuPoint]=useState({top:0,left:0});
  const setNotice = (message: string) => { if (message) showToast({ title: message }); };
  const [drop,setDrop]=useState<DropTarget|null>(null);
@@ -244,7 +254,9 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
   const end=()=>{clearDrag();scrollFrame=0;};
   const resize=(event:Event)=>{
    positionHandle(activeRef.current);
-   if(menuOpenRef.current && !(event.target instanceof Node && menuRef.current?.contains(event.target)))setOpen(false);
+   // 表格内部滚动不改变块菜单锚点；单元格保存后的滚动恢复也不能关闭菜单。
+   const insideEmbed=event.type==='scroll'&&event.target instanceof Element&&event.target.closest('[data-orbis-embedded-editor]');
+   if(menuOpenRef.current && !insideEmbed && !(event.target instanceof Node && menuRef.current?.contains(event.target)))setOpen(false);
   };
   const openRequested=()=>{
    const id=blockSelectionKey.getState(editor.state)?.ids[0]??ownedOrbisBlock(editor.state.doc,editor.state.selection.from)?.id;
@@ -270,7 +282,7 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
   if(!open)return;const rect=handleRef.current?.getBoundingClientRect();if(!rect)return;
   const height=Math.min(500,window.innerHeight-40);
   setMenuPoint({left:Math.max(12,Math.min(rect.left,window.innerWidth-260)),top:Math.max(12,Math.min(rect.bottom+5,window.innerHeight-height-12))});
-  menuRef.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus();
+  menuRef.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus({preventScroll:true});
  },[open]);
  useEffect(()=>{
   if(!noteId)return;
@@ -357,6 +369,12 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
    </>:null}
   </div>,document.body):null}
   {drop?createPortal(<div className={`orbis-block-drop ${drop.placement==='inside'?'is-inside':''} ${drop.ok?'':'is-invalid'}`} style={{top:drop.placement==='after'?drop.rect.top+drop.rect.height:drop.rect.top,left:drop.rect.left,width:drop.rect.width,height:drop.placement==='inside'?drop.rect.height:3}}><span>{drop.ok?(drop.placement==='inside'?'放入此块':drop.placement==='before'?'移动到上方':'移动到下方'):drop.message}</span></div>,document.body):null}
-
- </>;
+ <BoardDiscardDialog open={removal!==null}
+   description="这个操作会结束当前画板编辑，未保存的修改不会恢复。可以保留当前内容重试保存，或放弃修改后继续。"
+   cancelLabel="保留画板块" discardLabel="放弃并继续" onCancel={()=>setRemoval(null)}
+   onDiscard={()=>{
+      const request=removal;setRemoval(null);
+      if(request&&!confirmBoardRemoval(editor,request))setNotice('文档状态已变化，请重新执行操作。');
+   }}
+ /></>;
 }

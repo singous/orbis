@@ -5,6 +5,7 @@ import { LoadingState } from "../shared/ui/LoadingState";
 import { DEFAULT_WORKSPACE_PATH } from "../features/workspace/workspace-areas";
 import { RequireAuth } from "../shared/auth/RequireAuth";
 import { LoginPage } from "./LoginPage";
+import { BoardNavigationGuard } from "../features/boards/BoardNavigationGuard";
 
 const WorkspaceRoute = lazy(() => import("./WorkspaceRoute").then(module => ({ default: module.WorkspaceRoute })));
 const PublicSharePage = lazy(() => import("../features/sharing/PublicSharePage").then(module => ({ default: module.PublicSharePage })));
@@ -30,7 +31,7 @@ const PublicSitePage = lazy(() => import("../features/sites/PublicSitePage").the
 const SitePreviewPage = lazy(() => import("../features/sites/PublicSitePage").then((module) => ({ default: module.SitePreviewPage })));
 const siteFallback = <div className="site-reader-status"><LoadingState label="正在打开站点…" variant="editor" /></div>;
 function workspacePage(children: ReactNode) {
-  return <RequireAuth><Suspense fallback={<LoadingState label="正在打开工作空间…" variant="editor" />}><WorkspaceRoute>{children}</WorkspaceRoute></Suspense></RequireAuth>;
+  return <RequireAuth><Suspense fallback={<LoadingState label="正在打开工作空间…" variant="editor" />}><BoardNavigationGuard /><WorkspaceRoute>{children}</WorkspaceRoute></Suspense></RequireAuth>;
 }
 
 function invitationPage(children: ReactNode) {

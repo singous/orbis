@@ -5,7 +5,6 @@ import { reportError } from "../../shared/api/request-feedback";
 import type { AuthRequestOptions } from "../../shared/auth/use-auth-request";
 import { boardAPI } from "./api";
 import { boardErrorMessage, boardValidationErrors } from "./errors";
-import { readJournal, writeJournal, type PendingOperation } from "./journal";
 import {
   BOARD_SCHEMA_VERSION,
   MAX_COMMAND_ELEMENTS,
@@ -19,7 +18,7 @@ import {
   type Patch,
 } from "./model";
 
-type Status = "loading" | "saved" | "saving" | "offline" | "conflict" | "error";
+type Status = "loading" | "saved" | "saving" | "save_failed" | "conflict" | "error";
 export type SessionState = {
   board: Board | null;
   pageID: string;
@@ -31,6 +30,15 @@ export type SessionState = {
   canRedo: boolean;
   canDiscard: boolean;
 };
+type PendingOperation = {
+  input: Mutation;
+  before: Element[];
+  beforePages: BoardPage[];
+  pageID: string;
+  historyMode: "normal" | "undo" | "redo";
+  delivery: "queued" | "unconfirmed" | "rejected";
+};
+const MAX_PENDING_OPERATIONS = 64;
 const MAX_HISTORY_BYTES = 16 * 1024 * 1024;
 function syncErrorKey(error: unknown): string {
   return error instanceof ApiError ? JSON.stringify([error.status, error.code, error.message])
@@ -95,7 +103,7 @@ function preview(
   }
   return next;
 }
-/** One owner serializes persistence, acknowledgments and polling for an open board. */
+/** 当前编辑器仅在内存中串行提交操作；失败后保留原请求，等待用户重试。 */
 export class BoardSession {
   private state: SessionState = {
     board: null,
@@ -127,7 +135,7 @@ export class BoardSession {
   private halted = false;
   private get uncertain() {
     const head = this.pending[0];
-    return !!head && (head.delivery === undefined || head.delivery === "unconfirmed");
+    return head?.delivery === "unconfirmed";
   }
   private idlePolls = 0;
   private closeFeed: (() => void) | null = null;
@@ -138,7 +146,6 @@ export class BoardSession {
   private bootGeneration = 0;
   constructor(
     private id: string,
-    private key: string,
     private auth: () => AuthRequestOptions,
   ) {}
   subscribe = (listener: () => void) => {
@@ -174,23 +181,8 @@ export class BoardSession {
     if (this.controller.signal.aborted) this.controller = new AbortController();
     const signal = this.controller.signal;
     try {
-      const recovered = await readJournal(this.key);
-      if (signal.aborted || boot !== this.bootGeneration) return;
-      // 只移除完全没有编辑内容的旧操作；真实操作的编号和原始请求不可改写。
-      const pending = recovered.filter(operation =>
-        operation.input.schema_version !== BOARD_SCHEMA_VERSION || operation.input.commands.some(commandHasTargets),
-      );
-      if (pending.length !== recovered.length) await writeJournal(this.key, pending, recovered);
-      if (signal.aborted || boot !== this.bootGeneration) return;
-      this.pending = pending;
-      this.halted = pending[0]?.delivery === "rejected";
       await this.loadPage(page);
       if (signal.aborted || boot !== this.bootGeneration) return;
-      this.emit({
-        status: this.halted ? "conflict" : this.pending.length ? "saving" : "saved",
-        error: this.halted ? this.pending[0].rejection ?? "服务器已拒绝该操作，本机修改仍保留。" : null,
-      });
-      void this.flush();
       this.schedulePoll();
     } catch (error) {
       if (!signal.aborted && boot === this.bootGeneration) {
@@ -232,21 +224,6 @@ export class BoardSession {
     this.appliedPages.clear();
     this.observedPending.clear();
     this.after = board.revision;
-    const uncertain = this.pending[0];
-    if (uncertain) {
-      try {
-        const receipt = await api.receipt(
-          this.id,
-          uncertain.input.operation_id,
-          signal,
-        );
-        if (signal.aborted || generation !== this.generation) return;
-        if (receipt.revision <= board.revision)
-          this.observedPending.add(receipt.operation_id);
-      } catch (error) {
-        if (!(error instanceof ApiError && error.status === 404)) throw error;
-      }
-    }
     this.emit({
       board,
       pageID: selected,
@@ -264,20 +241,22 @@ export class BoardSession {
     historyMode: "normal" | "undo" | "redo" = "normal",
     historySource?: History,
   ): Promise<void> {
+    const signal = this.controller.signal;
     this.work = this.work
       .catch(() => {})
-      .then(async () => {
+      .then(() => {
+        if (signal.aborted) return;
         commands = commands.filter(commandHasTargets);
         if (!commands.length) return;
-        if (this.halted) throw new Error("请先处理未同步的冲突，再继续修改。");
+        if (this.halted) throw new Error("画板尚未保存，请先重试保存或处理冲突。");
         if (
           this.controller.signal.aborted ||
           !this.state.board ||
           this.state.status === "loading"
         )
           throw new Error("画板尚未准备好。");
-        if (this.pending.length >= 64)
-          throw new Error("未同步操作过多，请先恢复网络。");
+        if (this.pending.length >= MAX_PENDING_OPERATIONS)
+          throw new Error("待保存操作过多，请稍后再编辑。");
         const input: Mutation = {
           operation_id: newUUID(),
           schema_version: BOARD_SCHEMA_VERSION,
@@ -300,15 +279,12 @@ export class BoardSession {
         const pending: PendingOperation = {
           input,
           before,
-          before_pages: this.state.board.pages,
-          page_id: this.state.pageID,
-          history_mode: historyMode,
+          beforePages: this.state.board.pages,
+          pageID: this.state.pageID,
+          historyMode,
           delivery: "queued",
         };
-        const queue = [...this.pending, pending];
-        await writeJournal(this.key, queue, this.pending);
-        if (this.controller.signal.aborted) return;
-        this.pending = queue;
+        this.pending.push(pending);
         this.reportedSyncError = null;
         if (historySource)
           this.historySources.set(input.operation_id, historySource);
@@ -376,16 +352,14 @@ export class BoardSession {
     const signal = this.controller.signal;
     let previouslyUncertain = false;
     let operationID = "";
-    let stage = "journal";
+    let stage = "request";
     try {
       while (this.pending.length && !signal.aborted && !this.halted) {
         const operation = this.pending[0];
         operationID = operation.input.operation_id;
         previouslyUncertain = this.uncertain;
-        // 必须在发请求前落盘，避免重试中断后沿用旧的“明确拒绝”记录。
-        stage = "journal";
-        await this.persistDelivery(operationID, "unconfirmed");
-        if (signal.aborted) return;
+        // 请求结果未知时，重试必须使用相同的编号和内容，避免重复执行。
+        operation.delivery = "unconfirmed";
         stage = "request";
         const auth = this.auth();
         const change = await boardAPI({ ...auth, feedback: { ...auth.feedback, error: error =>
@@ -397,15 +371,14 @@ export class BoardSession {
         );
         if (signal.aborted) return;
         stage = "acknowledgement";
-        // Queue writes and acknowledgments share the same serialization chain.
+        // 新操作和保存回执共用串行链，避免回执丢掉期间追加的操作。
         this.work = this.work
           .catch(() => {})
-          .then(async () => {
+          .then(() => {
+            if (signal.aborted) return;
             const remaining = this.pending.filter(
               (p) => p.input.operation_id !== operation.input.operation_id,
             );
-            await writeJournal(this.key, remaining, this.pending);
-            if (signal.aborted) return;
             this.pending = remaining;
             this.reportedSyncError = null;
             this.observedPending.delete(operation.input.operation_id);
@@ -416,10 +389,10 @@ export class BoardSession {
             if (source) this.advanceHistory(source, operation, change);
             this.historySources.delete(operation.input.operation_id);
             const historyData = {
-              pageID: operation.page_id,
+              pageID: operation.pageID,
               input: operation.input,
               before: operation.before,
-              beforePages: operation.before_pages,
+              beforePages: operation.beforePages,
               change,
             };
             const history = {
@@ -427,7 +400,7 @@ export class BoardSession {
               bytes: new TextEncoder().encode(JSON.stringify(historyData))
                 .byteLength,
             };
-            if (operation.history_mode === "undo") this.redoStack.push(history);
+            if (operation.historyMode === "undo") this.redoStack.push(history);
             else this.undoStack.push(history);
             this.trimHistory();
             this.emit({
@@ -443,8 +416,8 @@ export class BoardSession {
       const permanent =
         error instanceof ApiError &&
         [400, 401, 403, 404, 409, 413, 422].includes(error.status);
-      this.halted = permanent;
-      let message = boardErrorMessage(error);
+      this.halted = true;
+      const message = boardErrorMessage(error);
       console.error("画板操作同步失败", {
         board_id: this.id, operation_id: operationID, stage,
         exception_type: error instanceof Error ? error.name : typeof error,
@@ -452,28 +425,21 @@ export class BoardSession {
         validation_errors: boardValidationErrors(error),
         ...(error instanceof ApiError ? { status: error.status, code: error.code, request_id: error.requestId } : {}),
       });
-      // 重放被拒绝不能证明之前没有成功；只记录首次确定收到的拒绝结果。
+      // 首次明确拒绝可放弃；丢失过回执的请求仍须重试确认结果。
       if (permanent && !previouslyUncertain) {
-        try {
-          await this.persistDelivery(operationID, "rejected", message);
-        } catch (storageError) {
-          if (!signal.aborted) this.reportSyncError(storageError);
-          message += `；拒绝结果未能保存在本机：${boardErrorMessage(storageError)}`;
-          console.error("画板拒绝结果持久化失败", {
-            board_id: this.id, operation_id: operationID, stage: "journal",
-            exception_type: storageError instanceof Error ? storageError.name : typeof storageError,
-            reason: boardErrorMessage(storageError),
-          });
-        }
+        const operation = this.pending.find(item => item.input.operation_id === operationID);
+        if (operation) operation.delivery = "rejected";
       }
       if (signal.aborted) return;
       this.emit({
-        status: permanent ? "conflict" : "offline",
+        status: permanent ? "conflict" : "save_failed",
         error: message,
       });
     } finally {
-      this.sending = false;
-      if (!signal.aborted) this.emit();
+      if (signal === this.controller.signal) {
+        this.sending = false;
+        if (!signal.aborted) this.emit();
+      }
     }
   }
   private reportSyncError(error: unknown) {
@@ -481,18 +447,6 @@ export class BoardSession {
     if (key === this.reportedSyncError) return;
     this.reportedSyncError = key;
     reportError(error);
-  }
-  private persistDelivery(operationID: string, delivery: PendingOperation["delivery"], rejection?: string) {
-    const signal = this.controller.signal;
-    this.work = this.work.catch(() => {}).then(async () => {
-      if (signal.aborted) return;
-      const queue = this.pending.map(operation => operation.input.operation_id === operationID
-        ? { ...operation, delivery, rejection }
-        : operation);
-      await writeJournal(this.key, queue, this.pending);
-      if (!signal.aborted) this.pending = queue;
-    });
-    return this.work;
   }
   private trimHistory() {
     let bytes = [...this.undoStack, ...this.redoStack].reduce(
@@ -669,10 +623,7 @@ export class BoardSession {
             this.feedReady = false;
             return;
           }
-          if (this.feedReady) {
-            if (!this.halted) void this.flush();
-            return;
-          }
+          if (this.feedReady) return;
           if (this.state.status !== "loading") this.openFeed();
           if (this.state.board && this.state.status !== "loading") {
             const changes = await boardAPI(this.auth()).changes(
@@ -689,7 +640,7 @@ export class BoardSession {
               if (change.revision <= this.after) continue;
               if (change.revision !== this.after + 1)
                 throw new Error(
-                  "画板增量存在缺口，请重新打开；本机修改仍保留。",
+                  "画板增量存在缺口，请先处理当前页面未保存的修改，再重新打开。",
                 );
               this.accept(change);
               this.advance(change.revision);
@@ -702,7 +653,6 @@ export class BoardSession {
               )
                 await this.loadPage("");
             }
-            if (!this.halted) void this.flush();
           }
         } catch (error) {
           if (
@@ -713,7 +663,7 @@ export class BoardSession {
             this.halted = true;
             this.emit({
               status: "conflict",
-              error: "画板已关闭或权限已变化，本机草稿仍保留。",
+              error: "画板已关闭或权限已变化，当前页面的修改尚未保存。",
             });
           }
         } finally {
@@ -724,7 +674,7 @@ export class BoardSession {
     );
   }
   async retry() {
-    if (this.discarding || this.sending || this.state.status === "loading") return;
+    if (!this.pending.length || this.discarding || this.sending || this.state.status === "loading") return;
     this.reportedSyncError = null;
     this.halted = false;
     this.emit({ status: "saving", error: null });
@@ -736,7 +686,7 @@ export class BoardSession {
     if (this.discarding) return;
     if (this.uncertain)
       throw new Error(
-        "有操作的保存结果尚未确认，请先重试同步；确认结果前会保留本机修改。",
+        "有操作的保存结果尚未确认，请先重试保存。",
       );
     const wasHalted = this.halted;
     const previousError = this.state.error;
@@ -744,27 +694,18 @@ export class BoardSession {
     this.halted = true;
     try {
       await this.loadPage(this.state.pageID);
-      await writeJournal(this.key, [], this.pending);
       this.pending = [];
       this.historySources.clear();
       this.halted = false;
     } catch (error) {
       this.halted = wasHalted;
-      this.emit({ status: wasHalted ? "conflict" : "offline", error: previousError });
+      this.emit({ status: wasHalted ? "conflict" : "save_failed", error: previousError });
       throw error;
     } finally {
       this.discarding = false;
       this.emit();
     }
     this.emit({ status: "saved", error: null });
-  }
-  draft() {
-    return {
-      schema_version: BOARD_SCHEMA_VERSION,
-      board: this.state.board,
-      elements: [...this.state.elements.values()],
-      pending: this.pending.map((p) => p.input),
-    };
   }
   private inverse(entry: History): Command[] {
     const before = new Map(entry.before.map((e) => [e.id, e])),
@@ -800,7 +741,7 @@ export class BoardSession {
         targets: entry.change.deleted.map((id) => {
           const old = before.get(id);
           if (!old)
-            throw new Error("本机历史缺少删除前的数据，请从画板历史恢复。");
+            throw new Error("当前会话缺少删除前的数据，请从画板历史恢复。");
           return { id, version: old.version };
         }),
       });
@@ -814,7 +755,7 @@ export class BoardSession {
     }
     for (const id of entry.change.deleted_pages) {
       const page = entry.beforePages.find((p) => p.id === id);
-      if (!page) throw new Error("本机缺少删除前的页面记录。");
+      if (!page) throw new Error("当前会话缺少删除前的页面记录。");
       commands.unshift({ type: "pages.restore", page });
     }
     if (!commands.length) throw new Error("该操作没有可恢复的内容。");
@@ -851,6 +792,13 @@ export class BoardSession {
     this.feedReady = false;
     this.controller.abort();
     if (this.timer) clearTimeout(this.timer);
+    this.pending = [];
+    this.undoStack = [];
+    this.redoStack = [];
+    this.historySources.clear();
+    this.halted = false;
+    this.sending = false;
+    this.work = Promise.resolve();
     this.listeners.clear();
   }
 }

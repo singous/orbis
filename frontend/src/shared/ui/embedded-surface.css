@@ -1,0 +1,39 @@
+.embed-placeholder { position: relative; min-width: 0; margin: 16px 0; }
+.embed-surface {
+  display: flex; flex-direction: column; position: relative; min-width: 0;
+  border: 1px solid var(--border-subtle); border-radius: 6px;
+  background: var(--surface); color: var(--text-primary); font-size: var(--orbis-text-ui-size);
+}
+.embed-surface:focus-within { border-color: var(--focus); }
+.embed-surface.is-expanded {
+  position: fixed; inset: 0; z-index: calc(var(--layer-dialog) - 1); height: 100dvh;
+  border: 0; border-radius: 0; isolation: isolate;
+}
+.embed-heading { display: flex; flex: none; align-items: center; gap: 12px; min-height: 36px; padding: 4px 10px; }
+.embed-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); font-size: 12px; }
+.embed-actions { margin-left: auto; display: flex; align-items: center; gap: 6px; flex: none; }
+.embed-actions .orbis-action-button, .embed-back { min-height: 28px; padding: 3px 7px; gap: 6px; font-size: 12px; }
+.embed-content { position: relative; flex: 1; min-width: 0; min-height: 0; overflow: hidden; }
+.embed-resize-bar { position: relative; height: 10px; flex: none; }
+.embed-resize-handle { position: absolute; inset: -3px 32px -3px; cursor: ns-resize; touch-action: none; display: grid; place-items: center; }
+.embed-resize-handle span { width: 48px; height: 4px; border-radius: 4px; background: var(--border-subtle); }
+.embed-resize-handle:focus-visible { outline: 2px solid var(--focus); }
+.embed-resize-handle:hover span { background: var(--text-tertiary); }
+.embed-resize-bar > .orbis-action-button { position: absolute; bottom: 0; right: 2px; min-height: 20px; padding: 2px; }
+.embed-table:not(.is-expanded) > .embed-heading { height: 0; min-height: 0; padding: 0; }
+.embed-table:not(.is-expanded) > .embed-heading .embed-label { display: none; }
+.embed-table:not(.is-expanded) > .embed-heading .embed-actions { position: absolute; top: 6px; right: 6px; z-index: 21; }
+.is-expanded > .embed-heading { min-height: 48px; border-bottom: 1px solid var(--border-subtle); }
+.embed-content > .sheet-workspace { height: 100%; min-height: 0; }
+.embed-table:not(.is-expanded) .sheet-view-tabs { padding-right: 48px; }
+.embed-content > .data-table { height: 100%; margin: 0; border: 0; border-radius: 0; display: flex; flex-direction: column; }
+.embed-content > .data-table .dt-grid-scroll { flex: 1; min-height: 0; max-height: none; }
+.embed-content > .data-table .dt-heading { padding-right: 48px; }
+.embed-content > .data-table .dt-board { flex: 1; min-height: 0; overflow: auto; }
+@media (max-width: 640px) {
+  .embed-heading { gap: 6px; padding-inline: 6px; }
+  .embed-actions { gap: 2px; }
+}
+
+.embed-actions .orbis-action-button, .embed-back { display: inline-flex; align-items: center; white-space: nowrap; }
+@media (max-width: 640px) { .board-reference-mode, .board-embed-source > span { display: none; } }

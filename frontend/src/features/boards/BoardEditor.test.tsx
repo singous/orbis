@@ -3,10 +3,11 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-libra
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { authStore } from "../../shared/auth/auth-store";
-import { Toaster } from "../../shared/ui/Toast";
+import { showToast, Toaster } from "../../shared/ui/Toast";
 import type { Board } from "./model";
 import type { SessionState } from "./session";
 import { BoardEditor } from "./BoardEditor";
+import { preparePendingNavigation } from "../../shared/navigation/pending-navigation";
 
 const sessionControl = vi.hoisted(() => ({
   initial: {} as Partial<SessionState>,
@@ -72,9 +73,9 @@ it("only offers discard when the session can safely discard its pending operatio
   render(<><BoardEditor id="board" /><Toaster /></>);
   fireEvent.click(await screen.findByRole("button", { name: "本机修改" }));
   expect(await screen.findByRole("button", { name: "重试同步" })).toBeEnabled();
-  expect(screen.queryByRole("button", { name: "放弃未同步修改" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "放弃未保存修改" })).not.toBeInTheDocument();
   act(() => sessionControl.current!.publish({ canDiscard: true }));
-  expect(await screen.findByRole("button", { name: "放弃未同步修改" })).toBeEnabled();
+  expect(await screen.findByRole("button", { name: "放弃未保存修改" })).toBeEnabled();
 });
 
 it("preserves the server reason after discard fails and clears recovery feedback when retry succeeds", async () => {
@@ -85,7 +86,7 @@ it("preserves the server reason after discard fails and clears recovery feedback
   });
   render(<><BoardEditor id="board" /><Toaster /></>);
   fireEvent.click(await screen.findByRole("button", { name: "本机修改" }));
-  fireEvent.click(await screen.findByRole("button", { name: "放弃未同步修改" }));
+  fireEvent.click(await screen.findByRole("button", { name: "放弃未保存修改" }));
   fireEvent.click(screen.getByRole("button", { name: "放弃并重新读取" }));
   await waitFor(() => expect(screen.getByRole("alertdialog", { name: "重新读取服务器失败" })).toHaveTextContent("重新读取服务器失败"));
   expect(sessionControl.current!.state.error).toBe("服务器拒绝：图元尺寸无效");
@@ -99,7 +100,7 @@ it("clears failed discard feedback when background synchronization resolves the 
   sessionControl.discard.mockRejectedValue(new Error("正在确认操作结果"));
   render(<><BoardEditor id="board" /><Toaster /></>);
   fireEvent.click(await screen.findByRole("button", { name: "本机修改" }));
-  fireEvent.click(await screen.findByRole("button", { name: "放弃未同步修改" }));
+  fireEvent.click(await screen.findByRole("button", { name: "放弃未保存修改" }));
   fireEvent.click(screen.getByRole("button", { name: "放弃并重新读取" }));
   await waitFor(() => expect(screen.getByRole("alertdialog", { name: "正在确认操作结果" })).toHaveTextContent("正在确认操作结果"));
   act(() => sessionControl.current!.publish({ status: "saved", pending: 0, error: null, canDiscard: false }));
@@ -171,4 +172,20 @@ it("offers mind maps as a primary drawing tool with placement guidance", async (
   await user.click(mindmap);
   expect(mindmap).toHaveAttribute("aria-pressed", "true");
   expect(screen.getByText("点击画布创建思维导图，Tab 添加子主题，Enter 添加同级主题。")).toBeVisible();
+});
+
+
+it("keeps retry available after dismissing the error and prevents guarded navigation from dropping an unsaved edit", async () => {
+  sessionControl.initial = { status: "save_failed", pending: 1, error: "连接失败", canDiscard: false };
+  const view = render(<><BoardEditor id="board" /><Toaster /></>);
+  act(() => showToast({ title: "连接失败", tone: "danger" }));
+  const notice = await screen.findByRole("alertdialog");
+  fireEvent.click(notice.querySelector('button[aria-label="Close"]')!);
+  expect(screen.getByRole("button", { name: "重试保存" })).toBeVisible();
+  await expect(preparePendingNavigation()).rejects.toThrow("画板尚未保存");
+  expect(sessionControl.retry).not.toHaveBeenCalled();
+  act(() => sessionControl.current!.publish({ pending: 0, status: "saved", error: null }));
+  await expect(preparePendingNavigation()).resolves.toBeUndefined();
+  view.unmount();
+  await expect(preparePendingNavigation()).resolves.toBeUndefined();
 });

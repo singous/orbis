@@ -215,3 +215,14 @@ it("keeps mindmap controls reachable across the gap beside a hovered topic", () 
   act(() => drawing.events!.move(move(null, 700, 500)));
   expect(screen.queryByRole("button", { name: "收起“中心主题”的子主题" })).toBeNull();
 });
+
+
+it("handles canvas shortcuts inside a noneditable embed nested in the document editor", () => {
+  const element = makeElement("flow.process", "page", 0, 0);
+  const onSelection = vi.fn();
+  render(<div contentEditable suppressContentEditableWarning><div contentEditable={false}>
+    <BoardCanvas elements={new Map([[element.id, element]])} pageID="page" selection={new Set()} onSelection={onSelection} camera={{ x: 0, y: 0, zoom: 1 }} onCamera={vi.fn()} tool="select" onTool={vi.fn()} submit={vi.fn().mockResolvedValue(undefined)} readOnly={false} rendererRef={{ current: null }} onError={vi.fn()} onUndo={vi.fn()} onRedo={vi.fn()} />
+  </div></div>);
+  fireEvent.keyDown(screen.getByRole("application", { name: "画板编辑区域" }), { key: "a", ctrlKey: true });
+  expect(onSelection).toHaveBeenCalledWith(new Set([element.id]));
+});

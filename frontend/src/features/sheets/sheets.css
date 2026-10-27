@@ -1673,3 +1673,14 @@ textarea.sheet-inline-input {
 }
 
 @media (prefers-reduced-motion: reduce) { .sheet-popover { animation: none; } }
+
+/* 内嵌表格使用外层可调整的视窗；表头、工具和记录仍共享独立页面的组件。 */
+.sheet-embed-editor { background: transparent; border: 0; margin: 0; overflow: visible; }
+.sheet-embedded-workspace { height: 100%; min-height: 0; }
+.sheet-embedded-workspace .sheet-tool-label { display: none; }
+.sheet-embedded-workspace .sheet-toolbar .orbis-action-button { padding-inline: 7px; min-width: 30px; }
+.sheet-embedded-workspace .sheet-toolbar { flex-wrap: wrap; overflow: visible; }
+.sheet-embedded-workspace .sheet-search { margin-left: 0; min-width: 80px; flex: 1; }
+.sheet-embed-save { margin-left: auto; padding-inline: 8px; color: var(--text-tertiary); font-size: 11px; white-space: nowrap; }
+.embed-surface.is-expanded .sheet-tool-label { display: inline; }
+.sheet-embedded-workspace .sheet-record-panel { position: absolute; inset: 0 0 0 auto; max-width: min(400px, 100%); z-index: 25; overflow: auto; background: var(--surface); }

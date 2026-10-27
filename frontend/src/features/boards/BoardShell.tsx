@@ -11,11 +11,16 @@ type Props = {
   children: ReactNode;
   actions: ReactNode;
   status: ReactNode;
+  embedded?: boolean;
 };
 
 /** 画板复用笔记本目录；绘图状态和工具仍由画板编辑器管理。 */
-export function BoardShell({ board, children, actions, status }: Props) {
+export function BoardShell({ board, children, actions, status, embedded }: Props) {
   const [help, setHelp] = useState(false);
+  if (embedded) return <section className="board-shell board-embedded-shell" aria-label="嵌入画板工作区">
+    <div className="board-embedded-status">{status}</div>
+    {children}
+  </section>;
   return (
     <WorkspaceShell
       sidebar={createNotebookSidebar(board.collection_id, board.document_id)}

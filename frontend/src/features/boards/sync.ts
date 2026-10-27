@@ -21,7 +21,7 @@ const wire = z.discriminatedUnion("type", [
 const CONNECTION_TIMEOUT_MS = 10_000;
 const MAX_FRAME_BYTES = 4 * 1024 * 1024 + 64 * 1024;
 
-/** A resumable notification transport; durable operation writes remain in BoardSession. */
+/** A resumable notification transport; operation submission remains in BoardSession. */
 export function connectBoard(
   id: string,
   after: number,

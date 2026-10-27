@@ -99,6 +99,15 @@ it('reopens its menu on the current content and refreshes structural changes and
  await waitFor(()=>expect(screen.getByRole('menu',{name:'块操作'})).toHaveTextContent('段落'));
 });
 
+it('keeps the block menu open during embedded scrolling but closes it on document scrolling', async () => {
+ const {container}=render(<><TiptapEditor blocks={blocks} onChange={()=>{}}/><div data-orbis-embedded-editor><div data-testid="embedded-scroll"/></div></>);
+ await screen.findByText('First');await menu(container);
+ fireEvent.scroll(screen.getByTestId('embedded-scroll'));
+ expect(screen.getByRole('menu',{name:'块操作'})).toBeVisible();
+ fireEvent.scroll(document);
+ expect(screen.queryByRole('menu',{name:'块操作'})).toBeNull();
+});
+
 it('reports a failed complete-block copy request once without losing the original body', async () => {
  const {apiRequest}=await import('../../../shared/api/api-client');
  const {registerBlockActionReader}=await import('./blocks/block-action-read');
