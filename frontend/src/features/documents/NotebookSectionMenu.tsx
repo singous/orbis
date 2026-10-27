@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
@@ -12,7 +13,6 @@ import { useStore } from "zustand";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { authStore } from "../../shared/auth/auth-store";
 import { ActionButton } from "../../shared/ui/ActionButton";
-import { showToast } from "../../shared/ui/Toast";
 import { ArrowLeft, FilePlus2, Home, MoreHorizontal, Pin, Plus } from "../../shared/ui/icons";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { usePinnedNotebooks } from "./pinned-notebooks";
@@ -91,7 +91,7 @@ function NotebookCreateAction({ notebookId }: { notebookId: string }) {
       await client.invalidateQueries({ queryKey: ["notebooks"] });
       navigate(`/documents/${board.document_id}`);
     } catch (error) {
-      showToast({ title: "创建画板失败", description: error instanceof Error ? error.message : "请稍后重试。", tone: "danger" });
+      reportError(error);
     } finally {
       setCreatingBoard(false);
     }
@@ -112,11 +112,7 @@ function NotebookCreateAction({ notebookId }: { notebookId: string }) {
       await client.invalidateQueries({ queryKey: ["notebooks"] });
       navigate(`/documents/${table.document_id}`);
     } catch (error) {
-      showToast({
-        title: "创建数据表失败",
-        description: (error as Error).message,
-        tone: "danger",
-      });
+      reportError(error);
     } finally {
       setCreatingTable(false);
     }
@@ -132,11 +128,7 @@ function NotebookCreateAction({ notebookId }: { notebookId: string }) {
       });
       navigate(`/documents/${note.id}`);
     } catch (error) {
-      showToast({
-        title: "创建文档失败",
-        description: error instanceof Error ? error.message : "请稍后重试。",
-        tone: "danger",
-      });
+      reportError(error);
     }
   }
 

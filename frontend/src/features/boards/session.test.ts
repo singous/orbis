@@ -4,6 +4,11 @@ import { BoardSession } from "./session";
 import { readJournal, writeJournal, type PendingOperation } from "./journal";
 import { makeElement, type Board, type Change, type Mutation } from "./model";
 import { ApiError } from "../../shared/api/api-client";
+import { reportRequestError } from "../../shared/api/request-feedback";
+import * as journal from "./journal";
+
+const notify = vi.hoisted(() => vi.fn());
+vi.mock("../../shared/ui/Toast", () => ({ showToast: notify }));
 
 const mock = vi.hoisted(() => ({
   get: vi.fn(),
@@ -85,6 +90,69 @@ function ack(input: Mutation): Change {
   };
 }
 describe("board durable save", () => {
+  it("reports a local journal startup failure before any HTTP request and permits a new attempt", async () => {
+    const error = new Error("无法打开本机画板草稿，请检查浏览器存储权限。");
+    vi.spyOn(journal, "readJournal").mockRejectedValue(error);
+    const { s } = session();
+    await s.start();
+    expect(s.getSnapshot()).toMatchObject({ status: "error", board: null, error: error.message });
+    expect(mock.get).not.toHaveBeenCalled();
+    expect(notify).toHaveBeenCalledExactlyOnceWith({ title: error.message, tone: "danger" });
+    await s.start();
+    expect(notify).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not repeat a startup error already reported by the request layer", async () => {
+    const error = new ApiError(403, "无权访问此画板");
+    mock.get.mockImplementation(async () => { reportRequestError(error); throw error; });
+    const { s } = session();
+    await s.start();
+    expect(notify).toHaveBeenCalledExactlyOnceWith({ title: error.message, tone: "danger" });
+  });
+
+  it("ignores a journal failure after the board is closed", async () => {
+    let reject!: (error: Error) => void;
+    vi.spyOn(journal, "readJournal").mockImplementation(() => new Promise((_, fail) => { reject = fail; }));
+    const { s } = session();
+    const opening = s.start();
+    s.dispose();
+    reject(new Error("本机存储不可用"));
+    await opening;
+    expect(notify).not.toHaveBeenCalled();
+    expect(mock.get).not.toHaveBeenCalled();
+  });
+
+  it.each(["before request", "after acknowledgement"])("reports a journal failure %s and preserves the pending operation for retry", async stage => {
+    const { s, key } = session();
+    await s.start();
+    const persist = journal.writeJournal;
+    const error = new Error("浏览器存储空间不足");
+    const write = vi.spyOn(journal, "writeJournal").mockImplementation((key, queue, expected) => {
+      const fail = stage === "before request" ? queue.some(item => item.delivery === "unconfirmed") : queue.length === 0 && expected.length > 0;
+      return fail ? Promise.reject(error) : persist(key, queue, expected);
+    });
+    mock.change.mockImplementation(async (_id, input) => ack(input));
+    const element = makeElement("flow.process", metadata.pages[0].id, 0, 0);
+    await s.submit([{ type: "elements.create", elements: [element] }]);
+    await vi.waitFor(() => expect(s.getSnapshot()).toMatchObject({ status: "offline", pending: 1 }));
+    expect(notify).toHaveBeenCalledExactlyOnceWith({ title: error.message, tone: "danger" });
+    const pending = await readJournal(key);
+    expect(pending).toHaveLength(1);
+    expect(pending[0].input.commands).toEqual([{ type: "elements.create", elements: [element] }]);
+    const original = pending[0].input;
+    const beforePolling = write.mock.calls.length;
+    await vi.waitFor(() => expect(write.mock.calls.length).toBeGreaterThan(beforePolling), { timeout: 2000 });
+    expect(notify).toHaveBeenCalledTimes(1);
+    await s.retry();
+    expect(notify).toHaveBeenCalledTimes(2);
+    write.mockRestore();
+    await s.retry();
+    await vi.waitFor(() => expect(s.getSnapshot()).toMatchObject({ status: "saved", pending: 0 }));
+    expect(mock.change.mock.calls.every(([, input]) => JSON.stringify(input) === JSON.stringify(original))).toBe(true);
+    expect(await readJournal(key)).toEqual([]);
+    expect(notify).toHaveBeenCalledTimes(2);
+  });
+
   it("does not notify the editor during idle polling without pending operations", async () => {
     const { s } = session();
     await s.start();

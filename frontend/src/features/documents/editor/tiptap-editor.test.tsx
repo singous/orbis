@@ -1,3 +1,4 @@
+import { Toaster } from "../../../shared/ui/Toast";
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
@@ -88,7 +89,7 @@ it("selects insertion commands with the keyboard and dismisses the menu", async 
 it("reports conversion failures and retries the retained live document", async () => {
   const changed = vi.fn();
   const failed = vi.fn();
-  render(<TiptapEditor blocks={initial} onChange={changed} onError={failed} />);
+  render(<><TiptapEditor blocks={initial} onChange={changed} onError={failed} /><Toaster /></>);
   await screen.findByText("已有正文");
   vi.spyOn(model, "fromTiptapDocument").mockImplementationOnce(() => { throw new Error("Conversion failure"); });
   await userEvent.click(screen.getByRole("button", { name: /段落类型/ }));
@@ -96,7 +97,8 @@ it("reports conversion failures and retries the retained live document", async (
   expect(await screen.findByRole("alert")).toHaveTextContent("正文暂未保存");
   expect(changed).not.toHaveBeenCalled();
   expect(failed).toHaveBeenCalledWith(expect.stringContaining("正文暂未保存"));
-  await userEvent.click(screen.getByRole("button", { name: "重试保存正文" }));
+  await userEvent.click(screen.getByRole("button", { name: /段落类型/ }));
+  await userEvent.click(screen.getByRole("option", { name: "标题 2" }));
   expect(changed.mock.calls[0][0].blocks.blocks[0]).toMatchObject({ type: "heading", content: [{ type: "text", text: "已有正文" }] });
   expect(failed).toHaveBeenLastCalledWith(null);
 });

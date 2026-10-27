@@ -1,8 +1,10 @@
+import { withRequestFeedback } from "../../shared/api/request-feedback";
 import { z } from "zod";
 
 import { ApiError, apiRequest, workspacePath } from "../../shared/api/api-client";
 import { authTokensSchema, pageDataSchema, userSchema } from "../../shared/api/schemas";
 import { authRequestOptions as authOptions, type AuthRequestOptions } from "../../shared/auth/use-auth-request";
+import type { ToastInput } from "../../shared/ui/Toast";
 
 export type MemberAuth = AuthRequestOptions;
 
@@ -24,6 +26,13 @@ const mailStatusSchema = z.object({ enabled: z.boolean() });
 export type Member = z.infer<typeof memberSchema>;
 export type Invitation = z.infer<typeof invitationSchema>;
 export type OwnershipTransfer = z.infer<typeof ownershipSchema>;
+
+// 操作创建成功不等于邮件已投递，按后端投递结果选择本次唯一的提示。
+function mailFeedback(result: Pick<Invitation, "email_sent" | "email_error_summary">, message: string): ToastInput {
+  return result.email_sent
+    ? { title: message, tone: "success" }
+    : { title: result.email_error_summary || "邮件尚未发送，请稍后重试", tone: "warning" };
+}
 
 const MEMBER_CHOICES_PAGE_SIZE = 100;
 
@@ -54,23 +63,43 @@ export async function getMailStatus(auth: MemberAuth) {
 }
 
 export async function inviteMember(payload: { email: string; role: "admin" | "editor" | "viewer" }, auth: MemberAuth) {
+  return withRequestFeedback({ ...auth, feedback: { ...auth.feedback, success: true } }, async auth => {
+
   return invitationSchema.parse(await apiRequest(workspacePath(auth, "/invitations"), { method: "POST", body: payload, ...authOptions(auth) }));
+
+  }, mailFeedback);
 }
 
 export async function revokeInvitation(id: string, auth: MemberAuth) {
+  return withRequestFeedback({ ...auth, feedback: { ...auth.feedback, success: true } }, async auth => {
+
   await apiRequest(workspacePath(auth, `/invitations/${id}/revoke`), { method: "POST", ...authOptions(auth) });
+
+  });
 }
 
 export async function resendInvitation(id: string, auth: MemberAuth) {
+  return withRequestFeedback({ ...auth, feedback: { ...auth.feedback, success: true } }, async auth => {
+
   return invitationSchema.parse(await apiRequest(workspacePath(auth, `/invitations/${id}/resend`), { method: "POST", ...authOptions(auth) }));
+
+  }, mailFeedback);
 }
 
 export async function updateMemberRole(id: string, role: "admin" | "editor" | "viewer", expectedVersion: number, auth: MemberAuth) {
+  return withRequestFeedback({ ...auth, feedback: { ...auth.feedback, success: true } }, async auth => {
+
   return memberSchema.parse(await apiRequest(workspacePath(auth, `/members/${id}`), { method: "PATCH", body: { role, expected_version: expectedVersion }, ...authOptions(auth) }));
+
+  });
 }
 
 export async function removeMember(id: string, expectedVersion: number, auth: MemberAuth) {
+  return withRequestFeedback({ ...auth, feedback: { ...auth.feedback, success: true } }, async auth => {
+
   await apiRequest(workspacePath(auth, `/members/${id}`), { method: "DELETE", body: { expected_version: expectedVersion }, ...authOptions(auth) });
+
+  });
 }
 
 export async function acceptInvitation(payload: { token: string; password?: string; display_name?: string }, auth?: MemberAuth | null) {
@@ -78,7 +107,11 @@ export async function acceptInvitation(payload: { token: string; password?: stri
 }
 
 export async function startOwnershipTransfer(targetUserId: string, auth: MemberAuth) {
+  return withRequestFeedback({ ...auth, feedback: { ...auth.feedback, success: true } }, async auth => {
+
   return ownershipSchema.parse(await apiRequest(workspacePath(auth, "/ownership-transfers"), { method: "POST", body: { target_user_id: targetUserId }, ...authOptions(auth) }));
+
+  }, mailFeedback);
 }
 
 export async function confirmOwnershipTransfer(token: string) {
@@ -89,12 +122,20 @@ export async function inspectInvitation(token: string) {
   return z.object({ workspace_name: z.string(), email: z.string(), role: z.string(), account_exists: z.boolean(), expires_at_ms: z.number().int() }).parse(await apiRequest("/v1/invitations/inspect", { method: "POST", body: { token } }));
 }
 export async function currentOwnership(auth: MemberAuth) {
-  try { return ownershipSchema.parse(await apiRequest(workspacePath(auth, "/ownership-transfers/current"), authOptions(auth))); }
+  try { return ownershipSchema.parse(await apiRequest(workspacePath(auth, "/ownership-transfers/current"), authOptions({ ...auth, feedback: { ...auth.feedback, error: error => !(error instanceof ApiError && error.status === 404) } }))); }
   catch (error) { if (error instanceof ApiError && error.status === 404) return null; throw error; }
 }
 export async function resendOwnership(id: string, auth: MemberAuth) {
+  return withRequestFeedback({ ...auth, feedback: { ...auth.feedback, success: true } }, async auth => {
+
   return ownershipSchema.parse(await apiRequest(workspacePath(auth, `/ownership-transfers/${id}/resend`), { ...authOptions(auth), method: "POST" }));
+
+  }, mailFeedback);
 }
 export async function cancelOwnership(id: string, auth: MemberAuth) {
+  return withRequestFeedback({ ...auth, feedback: { ...auth.feedback, success: true } }, async auth => {
+
   return ownershipSchema.parse(await apiRequest(workspacePath(auth, `/ownership-transfers/${id}/cancel`), { ...authOptions(auth), method: "POST" }));
+
+  });
 }

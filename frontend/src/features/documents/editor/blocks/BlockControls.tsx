@@ -1,3 +1,5 @@
+import { showToast } from "../../../../shared/ui/Toast";
+import { reportError } from "../../../../shared/api/request-feedback";
 import {DocumentCopyContext,registerDocumentCopy,prepareTableCopy,selectedTableBlocks} from "./block-copy-context";
 import type { Editor } from '@tiptap/core';
 import type { Transaction } from '@tiptap/pm/state';
@@ -44,7 +46,7 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
  const [point,setPoint]=useState<{top:number;left:number}|null>(null);
  const [open,setOpen]=useState(false);
  const [menuPoint,setMenuPoint]=useState({top:0,left:0});
- const [notice,setNotice]=useState('');
+ const setNotice = (message: string) => { if (message) showToast({ title: message }); };
  const [drop,setDrop]=useState<DropTarget|null>(null);
  const [dragToken]=useState(newBlockId);
  const handleRef=useRef<HTMLButtonElement>(null);
@@ -62,6 +64,11 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
  const actionContext=useMemo(()=>createBlockActionContext(source,ids,index),[source,index,selection?.ids,activeId]);
  const idsRef=useRef(ids);idsRef.current=ids;
  const readonlyRef=useRef(readOnly);readonlyRef.current=readOnly;
+ const activeEditor = useRef<typeof editor | null>(editor);
+ useEffect(() => {
+  activeEditor.current = editor;
+  return () => { if (activeEditor.current === editor) activeEditor.current = null; };
+ }, [editor]);
  const menuOpenRef=useRef(open);menuOpenRef.current=open;
 
  function setActiveId(id:string|null) {
@@ -71,15 +78,17 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
  }
 
  function receive(result:BlockClipboardResult) {
+  if (activeEditor.current !== editor || editor.isDestroyed) return;
   if(result.ok && result.selectedIds) {
    setBlockSelection(editor,result.selectedIds);
    setActiveId(result.selectedIds[0]??null);
   }
-  setNotice(result.message??(result.ok?'已复制块':''));
+  if (result.ok) { if (result.message) setNotice(result.message); }
+  else reportError(result.error ?? result.message ?? '复制失败，原内容已保留');
  }
  function copySelected(cut=false) {
   const chosen=[...idsRef.current];
-  if(blockActionNeedsRead(editor,chosen))setNotice('正在读取所选块的完整子内容…');
+
   void copyBlocks(editor,chosen,cut).then(receive);
   setOpen(false);
  }
@@ -87,8 +96,8 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
   if(readonlyRef.current)return;
   const chosen=[...idsRef.current];
   if (action.type==='duplicate'&&selectedTableBlocks(editor,chosen)||['duplicate','ungroup'].includes(action.type) && blockActionNeedsRead(editor,chosen)) {
-   setOpen(false);setNotice('正在读取所选块的完整子内容…');
-   void (action.type==='duplicate'?prepareTableCopy(editor,chosen):prepareBlockAction(editor,chosen)).then(()=>perform(action,chosen)).catch(error=>setNotice(error instanceof Error?error.message:'读取失败，操作已取消，原内容已保留。'));
+   setOpen(false);
+   void (action.type==='duplicate'?prepareTableCopy(editor,chosen):prepareBlockAction(editor,chosen)).then(()=>perform(action,chosen)).catch(reportError);
    return;
   }
   perform(action,chosen);
@@ -97,8 +106,7 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
   if(editor.isDestroyed||readonlyRef.current)return;
   const result=executeBlockCommand(editor,chosen,action);
   setOpen(false);
-  if(!result.ok){setNotice(result.message??'无法完成此操作');return;}
-  setNotice('');
+  if(!result.ok){reportError(result.message??'无法完成此操作');return;}
   setBlockSelection(editor,action.type==='insert'?[]:result.selectedIds);
   setActiveId(result.selectedIds[0]??null);
   editor.view.focus();
@@ -230,8 +238,8 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
    const selected=dragRef.current;const target=dropRef.current;
    const trusted=e.dataTransfer?.getData(DRAG_MIME)===dragToken;
    clearDrag();scrollFrame=0;
-   if(trusted&&target?.ok&&!readonlyRef.current){const result=executeBlockCommand(editor,selected,{type:'move',targetId:target.id,placement:target.placement});receive(result);setNotice(result.ok?'':result.message??'移动失败');editor.view.focus();}
-   else if(target&&!target.ok)setNotice(target.message??'此位置不能放置所选块');
+   if(trusted&&target?.ok&&!readonlyRef.current){const result=executeBlockCommand(editor,selected,{type:'move',targetId:target.id,placement:target.placement});receive(result);editor.view.focus();}
+   else if(target&&!target.ok)reportError(target.message??'此位置不能放置所选块');
   };
   const end=()=>{clearDrag();scrollFrame=0;};
   const resize=(event:Event)=>{
@@ -272,7 +280,7 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
    const hash=window.location.hash;if(!hash.startsWith('#block-'))return;
    let id:string;try{id=decodeURIComponent(hash.slice(7));}catch{return;}
    const entry=locateEditorBlocks(editor.state.doc).find(item=>item.id===id);
-   if(!entry){setNotice('目标块已不存在或无法访问');return;}
+   if(!entry){reportError('目标块已不存在或无法访问');return;}
    const node=editor.view.nodeDOM(entry.pos);if(!(node instanceof HTMLElement))return;
    for(let parent=node.parentElement;parent;parent=parent.parentElement) {
     if(parent instanceof HTMLDetailsElement)parent.open=true;
@@ -294,7 +302,7 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
   const url=new URL(`/documents/${noteId}`,window.location.origin);url.hash=`block-${encodeURIComponent(activeId)}`;
   try{await navigator.clipboard.writeText(url.href);setNotice('块链接已复制');}catch{
    const input=document.createElement('textarea');input.value=url.href;input.style.cssText='position:fixed;left:-9999px';document.body.append(input);input.select();
-   try{if(!document.execCommand('copy'))throw Error('Copy failed');setNotice('块链接已复制');}catch{setNotice('无法写入剪贴板，请使用浏览器复制功能');}finally{input.remove();editor.view.focus();}
+   try{if(!document.execCommand('copy'))throw Error('Copy failed');setNotice('块链接已复制');}catch{reportError('无法写入剪贴板，请使用浏览器复制功能');}finally{input.remove();editor.view.focus();}
   }setOpen(false);
  }
  const availability=(action:BlockAction)=>blockActionAvailability(source,ids,action,actionContext);
@@ -349,6 +357,6 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
    </>:null}
   </div>,document.body):null}
   {drop?createPortal(<div className={`orbis-block-drop ${drop.placement==='inside'?'is-inside':''} ${drop.ok?'':'is-invalid'}`} style={{top:drop.placement==='after'?drop.rect.top+drop.rect.height:drop.rect.top,left:drop.rect.left,width:drop.rect.width,height:drop.placement==='inside'?drop.rect.height:3}}><span>{drop.ok?(drop.placement==='inside'?'放入此块':drop.placement==='before'?'移动到上方':'移动到下方'):drop.message}</span></div>,document.body):null}
-  {notice?createPortal(<div role="status" className="orbis-block-notice">{notice}<button aria-label="关闭块操作提示" onClick={()=>setNotice('')}>×</button></div>,document.body):null}
+
  </>;
 }

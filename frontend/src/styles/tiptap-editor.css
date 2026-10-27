@@ -37,8 +37,7 @@
 .orbis-tiptap-menu { position: relative; z-index: 5; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); max-height: 230px; overflow-y: auto; gap: 3px; margin: -12px 0 14px; padding: 8px; border: 1px solid var(--border-subtle); border-radius: 8px; background: var(--surface-overlay); box-shadow: var(--shadow-pop); }
 .orbis-tiptap-menu button { display: flex; gap: 8px; align-items: center; padding: 8px 9px; border: 0; border-radius: 5px; background: transparent; color: var(--text-primary); text-align: left; font-size: var(--orbis-text-ui-size); cursor: pointer; line-height: var(--orbis-text-ui-leading); }
 .orbis-tiptap-menu button:hover { background: var(--surface-hover); }
-.orbis-tiptap-menu p, .orbis-tiptap-error { margin: 4px 8px; color: var(--text-secondary); font-size: var(--orbis-text-caption-size); line-height: var(--orbis-text-caption-leading); }
-.orbis-tiptap-error { color: var(--error, #b42318); }
+.orbis-tiptap-menu p { margin: 4px 8px; color: var(--text-secondary); font-size: var(--orbis-text-caption-size); line-height: var(--orbis-text-caption-leading); }
 @media (max-width: 700px) { .orbis-tiptap-toolbar { position: static; margin-inline: 0; }.orbis-tiptap .ProseMirror { min-height: 45vh; padding-bottom: 40px; }.orbis-tiptap-menu { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 .orbis-tiptap .ProseMirror li > p, .orbis-tiptap .ProseMirror li > div > p:first-child { margin: 0; }
@@ -48,8 +47,6 @@
 .orbis-tiptap .orbis-code [data-node-view-content], .orbis-tiptap .orbis-code [data-node-view-content-react] { white-space: pre; }
 .orbis-tiptap .orbis-code pre { overflow-x: auto; max-width: 100%; }
 .orbis-tiptap .orbis-tiptap-toolbar { box-shadow: 0 3px 14px #0000000a; }
-.orbis-tiptap-error { padding: 12px; border: 1px solid currentColor; border-radius: 6px; }
-.orbis-tiptap-error button { padding: 5px 10px; text-decoration: underline; cursor: pointer; }
 @media (max-width: 700px) { .orbis-tiptap-toolbar { flex-wrap: wrap; overflow: visible; gap: 3px; } }
 
 .orbis-tiptap .content-table-scroll { overflow-x: auto; max-width: 100%; margin: 24px 0; }

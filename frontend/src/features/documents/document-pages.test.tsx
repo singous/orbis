@@ -480,8 +480,7 @@ describe("document function pages", () => {
 
     expect(await screen.findByRole("heading", { name: "我的笔记本" })).toBeVisible();
     await waitFor(() => expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({
-      title: "无法打开资源",
-      description: expect.stringContaining("无法打开笔记本"),
+      title: expect.stringContaining("无法打开笔记本"),
       tone: "danger",
     })));
     expect(screen.queryByRole("button", { name: "关闭提示" })).not.toBeInTheDocument();
@@ -506,8 +505,7 @@ describe("document function pages", () => {
 
     expect(await screen.findByRole("heading", { name: "我的笔记本" })).toBeVisible();
     await waitFor(() => expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({
-      title: "无法打开资源",
-      description: expect.stringContaining("无法打开文档"),
+      title: expect.stringContaining("无法打开文档"),
       tone: "danger",
     })));
   });
@@ -522,7 +520,7 @@ describe("document function pages", () => {
     };
     await renderRoute("/documents/018ff7c4-a5b6-7000-8000-000000000099");
 
-    expect(await screen.findByText("无法打开文档")).toBeVisible();
+    expect(await screen.findByRole("link", { name: "返回文档中心" })).toBeVisible();
     expect(screen.queryByRole("heading", { name: "我的笔记本" })).not.toBeInTheDocument();
   });
 
@@ -626,8 +624,7 @@ describe("document function pages", () => {
     await renderRoute("/documents/archive");
     await actor.click(await screen.findByRole("button", { name: "恢复 活跃笔记本中的已归档文档" }));
     await waitFor(() => expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({
-      title: "恢复失败",
-      description: error.message,
+      title: error.message,
       tone: "danger",
     })));
   });

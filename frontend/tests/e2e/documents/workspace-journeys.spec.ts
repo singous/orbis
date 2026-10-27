@@ -44,7 +44,8 @@ test("Document writing, comments and anonymous live sharing work through the app
   await expect(reader.getByRole("heading",{name:"Go 原生文档验收",exact:true})).toBeVisible();
   await expect(reader.getByText("经 Go 接口保存的正文。",{exact:true})).toBeVisible();
   await page.getByRole("button",{name:"撤销链接"}).click();
-  await expect(page.getByText("链接已撤销，后续访问立即失效。")).toBeVisible();
+  await expect(page.getByRole("alertdialog", { name: "请求成功", exact: true })).toBeVisible();
+  await expect(page.getByText("已撤销", { exact: true })).toBeVisible();
   await reader.reload();
   await expect(reader.getByRole("heading",{name:"分享已失效或文档不可访问"})).toBeVisible();
   await anonymous.close();
@@ -85,7 +86,8 @@ test("Recent document pages and a lost Markdown import response preserve the ori
   const listPath=workspacePath(session,`/collections/${collection.id}/documents?page=1&page_size=20`),headers=sessionHeaders(session);
   const before=await responseData(await request.get(listPath,{headers}));
   await page.locator('input[type="file"]').setInputFiles({name:"恢复导入.md",mimeType:"text/markdown",buffer:Buffer.from("# Markdown 重试回执\n\n同一文件只应创建一份文档。")});
-  await expect(page.getByText("导入结果尚未确认",{exact:true})).toBeVisible();
+  await expect(page.getByRole("alertdialog", { name: "网络异常，请稍后重试", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "导入操作", exact: true }).click();
   await page.getByRole("button",{name:"重试导入",exact:true}).click();
   await expect(page).toHaveURL(/\/documents\/[0-9a-f-]+$/);
   await expect(page.getByText("同一文件只应创建一份文档。",{exact:true})).toBeVisible();

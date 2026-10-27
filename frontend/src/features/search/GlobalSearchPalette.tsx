@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { Modal } from "@heroui/react/modal";
 import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -35,7 +36,7 @@ export function GlobalSearchPalette({ initialFilters, onClose, isOpen = true, on
   const [composing, setComposing] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [opening, setOpening] = useState(false);
-  const [openError, setOpenError] = useState<string | null>(null);
+
   const openingRequest = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -53,7 +54,7 @@ export function GlobalSearchPalette({ initialFilters, onClose, isOpen = true, on
   const waiting = Boolean(filters.q && (pendingInput || results.isPending));
   const shortcut = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘ K" : "Ctrl K";
 
-  useEffect(() => { setSelected(null); setOpenError(null); }, [input, status, page]);
+  useEffect(() => { setSelected(null);  }, [input, status, page]);
   useEffect(() => () => { openingRequest.current?.abort(); }, []);
   useLayoutEffect(() => { if (!isOpen) openingRequest.current?.abort(); }, [isOpen]);
 
@@ -66,7 +67,7 @@ export function GlobalSearchPalette({ initialFilters, onClose, isOpen = true, on
     openingRequest.current?.abort();
     openingRequest.current = null;
     setOpening(false);
-    setOpenError(null);
+
   }
 
   function changeInput(value: string) {
@@ -85,7 +86,7 @@ export function GlobalSearchPalette({ initialFilters, onClose, isOpen = true, on
     const controller = new AbortController();
     openingRequest.current = controller;
     setOpening(true);
-    setOpenError(null);
+
     const sourceSession = sessionKey;
     try {
       await preparePendingNavigation(controller.signal);
@@ -95,7 +96,7 @@ export function GlobalSearchPalette({ initialFilters, onClose, isOpen = true, on
       navigate(href);
     } catch (error) {
       if (!controller.signal.aborted && !(error instanceof DOMException && error.name === "AbortError")) {
-        setOpenError(error instanceof Error ? error.message : "请关闭搜索，检查当前内容后重试。");
+        reportError(error);
       }
     } finally {
       if (openingRequest.current === controller) openingRequest.current = null;
@@ -133,7 +134,6 @@ export function GlobalSearchPalette({ initialFilters, onClose, isOpen = true, on
     listRef.current?.querySelectorAll<HTMLElement>('[role="option"]')[next]?.scrollIntoView?.({ block: "nearest" });
   }
 
-
   return <Modal.Backdrop className="orbis-modal-backdrop search-palette-backdrop" isOpen={isOpen} onOpenChange={open => { if (!open) close(); }}>
     <Modal.Container className="orbis-modal-container search-palette-container">
       <Modal.Dialog className="orbis-modal-dialog search-palette" inert={!isOpen ? true : undefined}>
@@ -150,11 +150,11 @@ export function GlobalSearchPalette({ initialFilters, onClose, isOpen = true, on
           {parsed.category ? <ActionButton className="search-palette-type" aria-label="清除类型筛选" onClick={() => { changeInput(parsed.q); inputRef.current?.focus(); }}>{parsed.category.label}<X size={12} /></ActionButton> : null}
         </div>
         <div className="search-palette-content">
-          {openError ? <div className="search-palette-error" role="alert">{openError}</div> : null}
+
           {categoryMode ? <p className="search-palette-heading">选择搜索内容</p> : null}
           {!categoryMode && !filters.q ? <p className="search-palette-empty">输入关键词，搜索{parsed.category?.label ?? "全部内容"}。</p> : null}
           {waiting ? <LoadingState label="正在搜索…" compact /> : null}
-          {!pendingInput && filters.q && results.isError ? <div className="search-palette-error" role="alert">{results.error instanceof Error ? results.error.message : "搜索失败，请重试。"}<ActionButton onClick={() => void results.refetch()}>重试搜索</ActionButton></div> : null}
+
           {!waiting && filters.q && !results.isError && results.data ? <p className="search-palette-heading" role="status">找到 {results.data.pagination.total} 条结果</p> : null}
           {!waiting && filters.q && !results.isError && results.data && !resultItems.length ? <p className="search-palette-empty">没有匹配的内容。试试其他关键词。</p> : null}
           <div ref={listRef} id={listId} role="listbox" aria-label={categoryMode ? "搜索内容类型" : "搜索结果"} aria-busy={waiting || opening} className={categoryMode ? "search-palette-categories" : "search-palette-results"}>

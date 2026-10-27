@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "../../shared/ui/Button";
 import { readTable } from "./api";
@@ -31,7 +32,6 @@ function BoardColumn({
   onRecord: (record: TableRecord) => void;
 }) {
   const [page, setPage] = useState<TablePage | null>(null),
-    [error, setError] = useState<string | null>(null),
     [loading, setLoading] = useState(false);
   const [offset, setOffset] = useState(0);
   const element = useRef<HTMLElement>(null);
@@ -67,10 +67,10 @@ function BoardColumn({
       .then((value) => {
         if (abort.signal.aborted) return;
         setPage(value);
-        setError(null);
+
       })
       .catch((error) => {
-        if (!abort.signal.aborted) setError(error.message);
+        if (!abort.signal.aborted) reportError(error);
       })
       .finally(() => {
         if (!abort.signal.aborted) setLoading(false);
@@ -111,7 +111,7 @@ function BoardColumn({
         <strong>{group.name}</strong>
         <span>{group.count}</span>
       </header>
-      {error ? <p role="alert">{error}</p> : null}
+
       <div className="dt-board-cards" aria-busy={loading}>
         {page?.records.map((record) => (
           <button

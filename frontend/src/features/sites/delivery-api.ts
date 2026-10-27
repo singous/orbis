@@ -1,5 +1,5 @@
 import {z} from "zod";
-import {ApiError,apiRequest} from "../../shared/api/api-client";
+import {ApiError,apiRequest,publicMarkdownRequest} from "../../shared/api/api-client";
 import {paginationSchema} from "../../shared/api/schemas";
 import {siteManifestSchema} from "./delivery-schemas";
 import {nativeManifest,nativePage} from "./site-codec";
@@ -22,8 +22,5 @@ export async function getPublicSearch(slug:string,releaseId:string|null,query:st
   throw new Error("搜索结果超过站点页面上限。");
 }
 export async function getPublicMarkdown(slug:string,pageSlug:string,releaseId:string|null):Promise<string>{
-  const response=await fetch(`/s/${encodeURIComponent(slug)}/pages/${encodedPagePath(pageSlug)}.md${expectedRelease(releaseId)}`,{cache:"no-store",redirect:"error"});
-  if(!response.ok)throw new ApiError(response.status,response.status===409?"发布版本已变化，请刷新后再复制。":"无法读取页面 Markdown，请重试。",response.status===409?"SITE_RELEASE_CHANGED":"SITE_EXPORT_FAILED");
-  if(!/^text\/(markdown|plain)(?:;|$)/i.test(response.headers.get("Content-Type")??""))throw new Error("未收到有效的页面 Markdown");
-  return response.text();
+  return publicMarkdownRequest(`/s/${encodeURIComponent(slug)}/pages/${encodedPagePath(pageSlug)}.md${expectedRelease(releaseId)}`);
 }

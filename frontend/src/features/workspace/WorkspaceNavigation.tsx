@@ -46,7 +46,7 @@ function DocumentNavigation() {
     </div>
     <div id={notebooksId} className="document-notebooks-list" hidden={!expanded}>
       {notebooks.isLoading ? <span className="document-notebooks-status" role="status">正在加载笔记本…</span> : null}
-      {notebooks.isError ? <div className="document-notebooks-status" role="alert">笔记本加载失败<ActionButton type="button" onClick={() => void notebooks.refetch()}>重试</ActionButton></div> : null}
+
       {!notebooks.isLoading && !notebooks.isError && !items.length ? <NavLink to="/documents/collections" className={navClass}><BookOpen size={18} aria-hidden="true" />创建第一个笔记本</NavLink> : null}
       {items.map((notebook) => <NavLink key={notebook.id} to={`/collections/${notebook.id}`} className={navClass}><NotebookIcon icon={notebook.icon} size="sm" /><span className="truncate">{notebook.title}</span>{isPinned(notebook.id) ? <Pin className="document-notebook-pin" size={13} aria-hidden="true" /> : null}</NavLink>)}
     </div>

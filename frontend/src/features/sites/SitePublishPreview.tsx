@@ -13,7 +13,6 @@ export function SitePublishPreview({
   preview,
   sources,
   busy,
-  error,
   onConfirm,
   onRefresh,
   onCancel,
@@ -22,7 +21,6 @@ export function SitePublishPreview({
   preview: SitePreview;
   sources: SiteSources;
   busy: boolean;
-  error: string;
   onConfirm: () => void;
   onRefresh: () => void;
   onCancel: () => void;
@@ -36,9 +34,8 @@ export function SitePublishPreview({
       <nav aria-label="预览页面"><ul>{preview.pages.map((page) => <li key={page.slug}><ActionButton type="button" className={page.slug === selectedPage?.slug ? "active" : ""} onClick={() => setSelectedSlug(page.slug)}>{page.title}<small>/{page.slug}</small></ActionButton></li>)}</ul></nav>
       <article className="site-preview-page">{selectedPage ? <><header><span>冻结正文</span><h3>{selectedPage.title}</h3>{selectedPage.description ? <p>{selectedPage.description}</p> : null}</header><AuthenticatedFileContent><SitePreviewLinks siteSlug={preview.slug} basePath={`/sites/${siteId}/preview`} onNavigate={setSelectedSlug}><ContentRenderer blocks={selectedPage.blocks} pageTitle={selectedPage.title} /></SitePreviewLinks></AuthenticatedFileContent></> : null}</article>
     </div> : <div className="site-preview-empty"><AlertTriangle size={18} /><div><strong>来源中没有可发布页面</strong><p>请返回来源配置，确认笔记本中有文档且没有全部排除。</p></div></div>}
-    {error ? <div className="site-preview-error" role="alert"><AlertTriangle size={16} /><span>{error}</span></div> : null}
     <div className="site-dialog-actions">
-      {error ? <ActionButton variant="secondary" className="mvp-button" type="button" disabled={busy} onClick={onRefresh}><RotateCw size={14} />重新预览</ActionButton> : null}
+      <ActionButton variant="secondary" className="mvp-button" type="button" disabled={busy} onClick={onRefresh}><RotateCw size={14} />重新预览</ActionButton>
       <ActionButton variant="secondary" className="mvp-button" type="button" disabled={busy} onClick={onCancel}>取消</ActionButton>
       <ActionButton variant="primary" className="mvp-button primary" type="button" disabled={busy || !preview.pages.length} onClick={onConfirm}>{busy ? "发布中…" : "确认发布"}</ActionButton>
     </div>

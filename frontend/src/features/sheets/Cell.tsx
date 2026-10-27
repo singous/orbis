@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { Paperclip, Star, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -14,7 +15,6 @@ import { ActionButton } from "../../shared/ui/ActionButton";
 import { Button } from "../../shared/ui/Button";
 import { SelectField } from "../../shared/ui/SelectField";
 import { TextInput } from "../../shared/ui/TextInput";
-import { showToast } from "../../shared/ui/Toast";
 import { parseFileReference, uploadManagedFile } from "../files/managed-files";
 import { KINDS, cellText, type Field, type Value } from "./model";
 
@@ -109,11 +109,7 @@ export function Attachment({
       className="sheet-file"
       onClick={() =>
         void download().catch((e) =>
-          showToast({
-            title: "无法打开附件",
-            description: e.message,
-            tone: "danger",
-          }),
+          reportError(e),
         )
       }
       title={file?.filename ?? "附件"}
@@ -269,8 +265,7 @@ export function ValueEditor({
   const [attachmentLimit, setAttachmentLimit] = useState(
     ATTACHMENT_EDITOR_PAGE_SIZE,
   );
-  const [error, setError] = useState(""),
-    [uploading, setUploading] = useState(false),
+  const [uploading, setUploading] = useState(false),
     [fileNames, setFileNames] = useState<Record<string, string>>({});
   if (KINDS[field.kind].system)
     return <CellValue field={field} value={value} />;
@@ -388,7 +383,7 @@ export function ValueEditor({
               current.current.field.id === field.id && current.current.field.kind === field.kind &&
               current.current.workspaceId === auth?.workspaceId;
             setUploading(true);
-            setError("");
+
             try {
               const existing = Array.isArray(value) ? value : [];
               if (existing.length + files.length > MAX_FIELD_ATTACHMENTS)
@@ -406,7 +401,7 @@ export function ValueEditor({
                 latest.onChange(ids);
               }
             } catch (err) {
-              if (isCurrent()) setError(err instanceof Error ? err.message : "附件上传失败，请重试");
+              if (isCurrent()) reportError(err);
             } finally {
               if (activeUpload.current === upload) {
                 activeUpload.current = null;
@@ -415,7 +410,7 @@ export function ValueEditor({
             }
           }}
         />
-        {error && <p role="alert">{error}</p>}
+
       </div>
     );
   if (field.kind === "checkbox")

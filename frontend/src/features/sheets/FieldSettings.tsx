@@ -1,10 +1,10 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { useState } from "react";
 import { newUUID } from "../../shared/ids";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Button } from "../../shared/ui/Button";
 import { ArrowDown, ArrowUp, GripVertical, Plus, Trash2 } from "../../shared/ui/icons";
 import { SelectField } from "../../shared/ui/SelectField";
-import { showToast } from "../../shared/ui/Toast";
 import { TextInput } from "../../shared/ui/TextInput";
 import { ValueEditor } from "./Cell";
 import { COLORS, KINDS, type Field, type Kind } from "./model";
@@ -44,7 +44,7 @@ export function FieldSettings({
   }
   async function save() {
     if (!draft.name.trim()) {
-      showToast({ title: "无法保存字段", description: "请填写字段名称", tone: "danger" });
+      reportError("请填写字段名称");
       return;
     }
     setBusy(true);
@@ -52,7 +52,7 @@ export function FieldSettings({
       await onSave({ ...draft, options: hasOptions ? draft.options : [] });
       onClose();
     } catch (e) {
-      showToast({ title: "无法保存字段", description: e instanceof Error ? e.message : String(e), tone: "danger" });
+      reportError(e);
     } finally {
       setBusy(false);
     }

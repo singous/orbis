@@ -11,8 +11,8 @@ import { Toaster } from "../../src/shared/ui/Toast";
 
 type SettingsKind = "field" | "view";
 const settings = [
-  { kind: "field", dialog: "字段设置", submit: "保存字段", title: "无法保存字段" },
-  { kind: "view", dialog: "字段管理", submit: "应用", title: "无法应用设置" },
+  { kind: "field", dialog: "字段设置", submit: "保存字段", title: "保存请求失败" },
+  { kind: "view", dialog: "字段管理", submit: "应用", title: "保存请求失败" },
 ] as const;
 
 function SettingsHarness({ kind, onSave, onClose }: {
@@ -106,12 +106,12 @@ for (const dismissal of ["timeout", "keyboard"] as const) {
     render(<SettingsHarness kind="field" onSave={onSave} onClose={vi.fn()} />);
     await user.clear(screen.getByRole("textbox", { name: "字段名称" }));
     await user.click(screen.getByRole("button", { name: "保存字段" }));
-    const notification = screen.getByRole("alertdialog", { name: "无法保存字段" });
+    const notification = screen.getByRole("alertdialog", { name: "请填写字段名称" });
     expect(notification).toHaveTextContent("请填写字段名称");
     await dismissNotification(notification, dismissal, user);
-    expect(screen.queryByRole("alertdialog", { name: "无法保存字段" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("alertdialog", { name: "请填写字段名称" })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "保存字段" }));
-    expect(screen.getByRole("alertdialog", { name: "无法保存字段" })).toHaveTextContent("请填写字段名称");
+    expect(screen.getByRole("alertdialog", { name: "请填写字段名称" })).toHaveTextContent("请填写字段名称");
     expect(onSave).not.toHaveBeenCalled();
   }, DEFAULT_TOAST_TIMEOUT * 3);
 }

@@ -9,7 +9,7 @@ test("capture, organize, edit and recover a personal note", async ({ page, reque
   const text = `会议灵感 ${randomUUID().slice(0, 8)}`;
   const composer = page.getByRole("region", { name: "快速记录" });
   await composer.getByRole("textbox", { name: "随手记正文" }).fill(text);
-  await expect(composer.getByText("草稿已保存在本机")).toBeVisible();
+  await expect(composer.getByText("未保存", { exact: true })).toBeVisible();
   await page.reload();
   await expect(composer.getByRole("textbox", { name: "随手记正文" })).toContainText(text);
   await page.getByRole("button", { name: "管理标签", exact: true }).click();

@@ -43,6 +43,23 @@ export function createOwnedDraftCheckpoints(options: {
       return controller.schedule(source);
     },
     async checkpoint(source?: DraftCheckpointSource) { return (await initialize()).checkpoint(source); },
+    async startFresh() {
+      const previous = await initialize();
+      await previous.flush();
+      // 保留旧记录，后续写入使用新通道，避免覆盖无法自动恢复的内容。
+      const claim = await resolveDraftLane(options.scopeKey, {
+        signal: initialization.signal,
+        storage: { getItem: () => null, setItem: (key, value) => globalThis.sessionStorage?.setItem(key, value) },
+      });
+      if (disposed) { claim.release(); throw new DOMException("The draft session changed", "AbortError"); }
+      try { await previous.dispose(); }
+      catch (error) { claim.release(); throw error; }
+      if (disposed) { claim.release(); throw new DOMException("The draft session changed", "AbortError"); }
+      lane?.release();
+      lane = claim;
+      controller = createDraftCheckpointController({ scopeKey: withDraftLane(options.scopeKey, claim.laneId), onStatus: options.onStatus });
+      ready = Promise.resolve(controller);
+    },
     async acknowledge(sequence: number) { return (await initialize()).acknowledge(sequence); },
     async flush() { if (ready) return (await ready).flush(); },
     async dispose() {

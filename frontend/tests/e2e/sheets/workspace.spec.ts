@@ -850,9 +850,10 @@ test("inline edits preserve newer typing through a lost save response and retry"
   const input = page.getByRole("textbox", { name: "文本", exact: true });
   await input.fill("第一次保存");
   await input.press("Enter");
-  const retry = page.getByRole("button", { name: "重试保存", exact: true });
-  await expect(retry).toBeVisible();
+  await expect(page.getByRole("alertdialog", { name: "网络异常，请稍后重试", exact: true })).toBeVisible();
   await input.fill("继续输入的新内容");
+  await page.getByRole("button", { name: "本机修改", exact: true }).click();
+  const retry = page.getByRole("dialog", { name: "本机修改", exact: true }).getByRole("button", { name: "重试保存", exact: true });
   await retry.click();
   await expect(retry).toHaveCount(0);
   await input.press("Enter");

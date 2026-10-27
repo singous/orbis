@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useStore } from "zustand";
@@ -87,7 +88,7 @@ export function BoardEmbed({
         { ...authRequestOptions(auth!), signal },
       ),
     staleTime: 10_000,
-    refetchInterval: revision ? false : 15_000,
+    refetchInterval: query => revision || query.state.status === "error" ? false : 15_000,
     retry: false,
   });
   useEffect(() => {
@@ -132,7 +133,7 @@ export function BoardEmbed({
       ) : (
         <div className="board-preview-empty">
           {query.error ? (
-            <p role="alert">{query.error.message}</p>
+            null
           ) : !id ? (
             <>
               <Shapes size={30} />
@@ -187,7 +188,6 @@ function BoardPicker({
     [selected, setSelected] = useState<Board | null>(null),
     [pageID, setPageID] = useState(""),
     [mode, setMode] = useState<"live" | "snapshot">("live"),
-    [error, setError] = useState(""),
     [selecting, setSelecting] = useState<string | null>(null);
   const selectionGeneration = useRef(0);
   const selectionAbort = useRef<AbortController | null>(null);
@@ -206,7 +206,7 @@ function BoardPicker({
     const abort = new AbortController();
     selectionAbort.current = abort;
     setSelecting(id);
-    setError("");
+
     try {
       const board = await boardAPI(auth).get(id, 0, abort.signal);
       if (abort.signal.aborted || generation !== selectionGeneration.current) return;
@@ -215,7 +215,7 @@ function BoardPicker({
       setPageID(board.pages[0].id);
     } catch (error) {
       if (!abort.signal.aborted && generation === selectionGeneration.current)
-        setError(error instanceof Error ? error.message : "画板读取失败，请重试。");
+        reportError(error);
     } finally {
       if (!abort.signal.aborted && generation === selectionGeneration.current)
         setSelecting(null);
@@ -232,9 +232,7 @@ function BoardPicker({
         title="插入画板引用"
         description="画板内容保持独立。实时引用会随原画板更新，固定快照保留当前版本。"
       >
-        {error || query.error ? (
-          <p role="alert">{error || query.error?.message}</p>
-        ) : null}
+
         {selected ? (
           <div className="board-picker-settings">
             <strong>{selected.title}</strong>

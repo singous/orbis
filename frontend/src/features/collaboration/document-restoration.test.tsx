@@ -1,7 +1,7 @@
 import {nativeSnapshot,nativeCollection,nativeDocument} from "../documents/editor/editor.test-utils";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { toast as heroToast } from "@heroui/react/toast";
-import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { useState } from "react";
@@ -66,7 +66,7 @@ describe("restoring from the editor", () => {
     expect(screen.getByRole("button", { name: "关闭评论与历史" })).toBeDisabled();
     expect(screen.getByRole("tab", { name: "评论" })).toHaveAttribute("aria-disabled", "true");
     await act(async () => { finishSave(response(commandResult(5))); });
-    await screen.findByText("历史版本已恢复");
+    await screen.findByRole("alertdialog", { name: "ok" });
     expect(requests.find(request=>request.path.endsWith("/operations"))?.body).toMatchObject({expected_version:4,operation_id:expect.any(String),operations:[{type:"update_block",block:{content:[{text:"恢复前草稿"}]}}]});
     expect(requests.find((request) => request.path.endsWith("/restore"))?.body).toEqual({ expected_version: 5,source_version:2,operation_id:expect.any(String) });
     await user.click(screen.getByRole("button", { name: "关闭评论与历史" }));
@@ -82,7 +82,7 @@ describe("restoring from the editor", () => {
     await user.clear(editor); await user.type(editor, "不能丢失的草稿");
     await openHistory(user);
     await user.click(screen.getByRole("button", { name: "恢复此版本" }));
-    expect(await within(screen.getByRole("region", { name: "文档历史版本" })).findByRole("alert")).toHaveTextContent(/保存|冲突/);
+    expect(await screen.findByRole("alertdialog", { name: status === 409 ? "版本冲突" : "网络错误" })).toHaveTextContent(/网络错误|版本冲突/);
     expect(requests.some((request) => request.path.endsWith("/restore"))).toBe(false);
     const saveCount = requests.filter((request) => request.path.endsWith("/operations")).length;
     await user.click(screen.getByRole("button", { name: "恢复此版本" }));
@@ -120,12 +120,13 @@ describe("restoring from the editor", () => {
     await user.clear(editor); await user.type(editor, "本地编辑");
     await openHistory(user);
     await user.click(screen.getByRole("button", { name: "恢复此版本" }));
-    expect(await within(screen.getByRole("region", { name: "文档历史版本" })).findByRole("alert")).toHaveTextContent(/冲突/);
+    expect(await screen.findByRole("alertdialog", { name: "版本已更新" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "恢复此版本" }));
     expect(requests.filter((request) => request.path.endsWith("/restore"))).toHaveLength(1);
     await user.click(screen.getByRole("button", { name: "关闭评论与历史" }));
     expect(screen.getByLabelText("编辑正文")).toHaveValue("本地编辑");
-    expect(screen.getByText("检测到其他窗口的更新")).toBeInTheDocument();
+    expect(screen.getByText("版本冲突")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "本机修改" }));
     expect(screen.getByRole("button", { name: "复制本地 Markdown" })).toBeInTheDocument();
   });
 

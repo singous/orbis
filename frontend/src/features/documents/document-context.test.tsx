@@ -363,14 +363,11 @@ describe("DocumentContextPanel", () => {
     expect(screen.queryByRole("button", { name: "归档 发布范围" })).not.toBeInTheDocument();
   });
 
-  it("keeps tree failure recovery inside the context panel", async () => {
+  it("keeps tree failures free of persistent retry notices", () => {
     treeState = { data: undefined, isLoading: false, isError: true, refetch: mocks.refetchTree };
-    const actor = userEvent.setup();
     renderPanel();
-
-    await actor.click(screen.getByRole("button", { name: "重试加载目录" }));
-
-    expect(mocks.refetchTree).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("button", { name: "重试加载目录" })).not.toBeInTheDocument();
+    expect(mocks.refetchTree).not.toHaveBeenCalled();
   });
 
   it("closes mobile navigation after following a document link", async () => {
@@ -399,16 +396,16 @@ describe("DocumentContextPanel", () => {
     expect(mocks.archiveNote).toHaveBeenCalledWith({ id: rootNote.children[0].id, archived: true,expected_directory_version:7 });
   });
 
-  it("offers to restore a document archived from the collection tree", async () => {
+  it("archives a document without adding an undo action to its toast", async () => {
     const actor = userEvent.setup();
     renderPanel({ activeNoteId: undefined });
 
     await actor.click(screen.getByRole("button", { name: "文档操作 产品计划" }));
     await actor.click(screen.getByRole("menuitem", { name: "归档" }));
-    await actor.click(await screen.findByRole("button", { name: "撤销" }));
+    expect(screen.queryByRole("button", { name: "撤销" })).not.toBeInTheDocument();
 
     expect(mocks.archiveNote).toHaveBeenNthCalledWith(1, { id: rootNote.id, archived: true,expected_directory_version:7 });
-    expect(mocks.archiveNote).toHaveBeenNthCalledWith(2, { id: rootNote.id, archived: false,expected_directory_version:8 });
+    expect(mocks.archiveNote).toHaveBeenCalledOnce();
     await waitFor(() => expect(screen.queryByRole("button", { name: "撤销" })).not.toBeInTheDocument());
   });
 
@@ -421,7 +418,7 @@ describe("DocumentContextPanel", () => {
     );
 
     expect(await screen.findByText("编辑器仍可用")).toBeInTheDocument();
-    expect(screen.getByText("目录加载失败")).toBeInTheDocument();
+    expect(screen.queryByText("目录加载失败")).not.toBeInTheDocument();
   });
 
   it("returns unavailable direct notes to the collections function", async () => {
@@ -499,7 +496,7 @@ describe("DocumentContextPanel", () => {
     const title=within(dialog).getByRole("textbox",{name:"文档标题"});
     await userEvent.clear(title);await userEvent.type(title,"新标题");
     await userEvent.click(within(dialog).getByRole("button",{name:"保存"}));
-    expect(await within(dialog).findByRole("alert")).toHaveTextContent("重命名结果尚未确认");
+    expect(await screen.findByRole("alertdialog")).toHaveTextContent("重命名结果尚未确认");
     const first=mocks.updateNote.mock.calls[0][0];
     expect(first).toEqual({id:rootNote.id,title:"新标题",expected_version:4,operation_id:expect.any(String)});
     await userEvent.click(within(dialog).getByRole("button",{name:"保存"}));

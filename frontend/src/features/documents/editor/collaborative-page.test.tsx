@@ -230,8 +230,14 @@ it("keeps a conflicting local title until the user explicitly loads the server t
   server.version += 1; server.title = "已提交的远端标题";
   expect(await within(view.container).findByText("标题版本冲突", {}, { timeout: 3000 })).toBeInTheDocument();
   expect(within(view.container).getByRole("textbox", { name: "文档标题" })).toHaveValue("本机待保存标题");
+  expect(await screen.findByRole("alertdialog", { name: "标题已被其他作者修改，本机标题仍保留。请载入服务端标题后再编辑。" })).toBeVisible();
+  expect(screen.getAllByRole("alertdialog")).toHaveLength(1);
   expect(requests.filter(request => request.path.endsWith("/operations"))).toHaveLength(0);
+  fireEvent.click(await screen.findByRole("button", { name: "本机修改" }));
   fireEvent.click(await screen.findByRole("button", { name: "载入服务端标题" }));
+  fireEvent.click(screen.getByRole("button", { name: "替换本地标题" }));
+  await waitFor(() => expect(screen.queryByRole("alertdialog", { name: "载入服务端标题" })).not.toBeInTheDocument());
+  if (screen.queryByRole("dialog", { name: "本机修改" })) fireEvent.click(screen.getByRole("button", { name: /^关闭$/ }));
   await waitFor(() => expect(within(view.container).getByRole("textbox", { name: "文档标题" })).toHaveValue("已提交的远端标题"));
   expect(requests.filter(request => request.path.endsWith("/operations"))).toHaveLength(0);
 });
@@ -249,7 +255,11 @@ it("does not overwrite a peer title when its socket version arrives before metad
   expect(input).toHaveValue("本机待保存标题");
   expect(server.title).toBe("另一位作者已保存");
   expect(requests.filter(request => request.path.endsWith("/operations"))).toHaveLength(0);
+  fireEvent.click(await screen.findByRole("button", { name: "本机修改" }));
   fireEvent.click(await screen.findByRole("button", { name: "载入服务端标题" }));
+  fireEvent.click(screen.getByRole("button", { name: "替换本地标题" }));
+  await waitFor(() => expect(screen.queryByRole("alertdialog", { name: "载入服务端标题" })).not.toBeInTheDocument());
+  if (screen.queryByRole("dialog", { name: "本机修改" })) fireEvent.click(screen.getByRole("button", { name: /^关闭$/ }));
   await waitFor(() => expect(input).toHaveValue(server.title));
 });
 
@@ -258,8 +268,7 @@ it.each([false, true])("replays an uncertain title receipt before checking a new
   await within(view.container).findByRole("button", { name: "模拟协作编辑" });
   server.loseTitleResponse = true;
   fireEvent.change(within(view.container).getByRole("textbox", { name: "文档标题" }), { target: { value: "结果不确定的标题" } });
-  const notification = await screen.findByRole("alertdialog", { name: "文档尚未完成保存" }, { timeout: 3000 });
-  expect(within(notification).getByText("上次保存结果尚未确认，请重试原来的保存。草稿仍保留。")).toBeInTheDocument();
+  await screen.findByRole("alertdialog", { name: "网络异常，请稍后重试" }, { timeout: 3000 });
   if (laterInput) fireEvent.change(within(view.container).getByRole("textbox", { name: "文档标题" }), { target: { value: "更晚的本机输入" } });
   act(() => {
     server.title = "随后提交的标题"; server.version += 1;
@@ -267,7 +276,9 @@ it.each([false, true])("replays an uncertain title receipt before checking a new
     for (const socket of server.sockets) socket.message({ type: "state", data: server.state() });
   });
   expect(within(view.container).getByRole("textbox", { name: "文档标题" })).toHaveValue(laterInput ? "更晚的本机输入" : "结果不确定的标题");
+  fireEvent.click(await screen.findByRole("button", { name: "本机修改" }));
   fireEvent.click(screen.getByRole("button", { name: "重试保存" }));
+  if (screen.queryByRole("dialog", { name: "本机修改" })) fireEvent.click(screen.getByRole("button", { name: /^关闭$/ }));
   await waitFor(() => expect(requests.filter(request => request.path.endsWith("/operations"))).toHaveLength(2));
   const attempts = requests.filter(request => request.path.endsWith("/operations"));
   expect(attempts[1].body).toEqual(attempts[0].body);
@@ -291,6 +302,7 @@ it("offers old JSON drafts without automatic writes and replays their original o
   };
   const adapter = createIndexedDbDraftAdapter(); await adapter.put(record);
   open();
+  fireEvent.click(await screen.findByRole("button", { name: "本机修改" }));
   const restore = await screen.findByRole("button", { name: "恢复草稿" });
   expect(requests.some(request => request.path.endsWith("/operations"))).toBe(false);
   expect(await adapter.read(record.scopeKey)).not.toBeNull();
@@ -305,14 +317,17 @@ it("keeps rejected binary work exportable while opening a fresh editable server 
   const view = open();
   await within(view.container).findByRole("button", { name: "模拟协作编辑" });
   fireEvent.click(within(view.container).getByRole("button", { name: "模拟协作编辑" }));
+  fireEvent.click(await screen.findByRole("button", { name: "本机修改" }));
   const load = await screen.findByRole("button", { name: "保留本机草稿并载入服务端" });
   expect(within(view.container).getByLabelText("正文")).toHaveTextContent("local 当前正文");
   expect(server.version).toBe(4);
   server.rejectUpdates = false;
   fireEvent.click(load);
   await waitFor(() => expect(within(view.container).getByLabelText("正文")).not.toHaveTextContent("local"));
+  if (screen.queryByRole("dialog", { name: "本机修改" })) fireEvent.click(screen.getByRole("button", { name: /^关闭$/ }));
   await waitFor(() => expect(within(view.container).getByRole("button", { name: "模拟协作编辑" })).toBeEnabled());
-  const markdown = screen.getByRole("button", { name: /下载草稿 Markdown/ });
+  fireEvent.click(await screen.findByRole("button", { name: "本机修改" }));
+  const markdown = await screen.findByRole("button", { name: /下载草稿 Markdown/ });
   const written: Blob[] = [], NativeURL = URL;
   vi.stubGlobal("URL", class extends NativeURL { static createObjectURL(blob: Blob) { written.push(blob); return "blob:test"; } static revokeObjectURL() {} });
   vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
@@ -320,7 +335,9 @@ it("keeps rejected binary work exportable while opening a fresh editable server 
   expect(written).toHaveLength(1);
   const recovered = await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(reader.error); reader.readAsText(written[0]); });
   expect(recovered).toContain("local 当前正文");
+  fireEvent.click(screen.getByRole("button", { name: /^关闭$/ }));
   fireEvent.click(within(view.container).getByRole("button", { name: "模拟协作编辑" }));
   await waitFor(() => expect(server.version).toBe(5));
+  fireEvent.click(await screen.findByRole("button", { name: "本机修改" }));
   expect(screen.getByRole("button", { name: /下载草稿 Markdown/ })).toBeInTheDocument();
 });

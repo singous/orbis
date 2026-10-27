@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { EditorContent, useEditor, useEditorState, type Editor } from "@tiptap/react";
 import { Bold, Code, Image, Italic, Link2, List, ListChecks, Paperclip } from "../../shared/ui/icons";
@@ -22,7 +23,7 @@ export function editorBlocks(blocks: NativeBlock[]): NoteBlocksV2 {
 
 export function QuickNoteEditor({ initialValue, onChange, onSubmit, onError, onBusy, disabled = false }: {
   initialValue: NativeBlock[]; onChange: (blocks: NativeBlock[]) => void; onSubmit: () => void;
-  onError: (message: string) => void; onBusy: (busy: boolean) => void; disabled?: boolean;
+  onError: (error: unknown) => void; onBusy: (busy: boolean) => void; disabled?: boolean;
 }) {
   const files = useManagedFiles("/quick-note-assets");
   const callbacks = useRef({ onChange, onSubmit, onError, onBusy });
@@ -31,7 +32,7 @@ export function QuickNoteEditor({ initialValue, onChange, onSubmit, onError, onB
   const uploadLock = useRef(false);
   const [linkOpen, setLinkOpen] = useState(false);
   const [link, setLink] = useState("");
-  const [linkError, setLinkError] = useState("");
+
   const uploadInput = useRef<HTMLInputElement>(null);
   const imageInput = useRef<HTMLInputElement>(null);
   const mounted = useRef(true);
@@ -56,7 +57,7 @@ export function QuickNoteEditor({ initialValue, onChange, onSubmit, onError, onB
     },
     onUpdate: ({ editor }) => {
       try { callbacks.current.onChange(fromTiptapDocument(editor.getJSON()).blocks.map(nativeBlock)); }
-      catch (error) { callbacks.current.onError(error instanceof Error ? error.message : "正文暂时无法保存，请保留当前页面"); }
+      catch (error) { callbacks.current.onError(error); }
     },
   });
   useEffect(() => { editor?.setEditable(!disabled && !uploading, false); }, [editor, disabled, uploading]);
@@ -72,7 +73,7 @@ export function QuickNoteEditor({ initialValue, onChange, onSubmit, onError, onB
       const block = { id: newBlockId(), type: kind, props: { url: reference, name: file.name }, content: [], children: [] };
       const node = toTiptapDocumentForSchema({ schema_version: 2, editor: "blocknote", blocks: [block] }, editor.schema).content?.[0];
       if (node) editor.chain().focus().insertContent(node).run();
-    } catch (error) { if (mounted.current) callbacks.current.onError(error instanceof Error ? error.message : "附件上传失败，请重试"); }
+    } catch (error) { if (mounted.current) callbacks.current.onError(error); }
     finally { uploadLock.current = false; if (mounted.current) { setUploading(false); callbacks.current.onBusy(false); } }
   }
   function tool(label: string, icon: ReactNode, run: (editor: Editor) => void, pressed?: boolean) {
@@ -83,7 +84,7 @@ export function QuickNoteEditor({ initialValue, onChange, onSubmit, onError, onB
       <div className="quick-note-tools" role="toolbar" aria-label="随手记格式">
         {tool("插入图片", <Image size={17} />, () => imageInput.current?.click())}
         {tool("待办清单", <ListChecks size={17} />, editor => editor.chain().focus().toggleTaskList().run(), active?.task)}
-        {tool("插入链接", <Link2 size={17} />, editor => { setLink(String(editor.getAttributes("link").href ?? "")); setLinkError(""); setLinkOpen(true); })}
+        {tool("插入链接", <Link2 size={17} />, editor => { setLink(String(editor.getAttributes("link").href ?? ""));  setLinkOpen(true); })}
         {tool("添加附件", <Paperclip size={17} />, () => uploadInput.current?.click())}
         <span className="quick-note-tool-divider" />
         {tool("加粗", <Bold size={17} />, editor => editor.chain().focus().toggleBold().run(), active?.bold)}
@@ -97,9 +98,9 @@ export function QuickNoteEditor({ initialValue, onChange, onSubmit, onError, onB
       {uploading ? <p role="status" className="quick-note-hint">正在上传附件…</p> : null}
     </div>
     <Dialog open={linkOpen} onOpenChange={setLinkOpen}><DialogContent title="插入链接">
-      <form onSubmit={event => { event.preventDefault(); const url = link.trim(); if (url && !safeContentUrl(url)) { setLinkError("请输入有效的 HTTP(S)、邮件或锚点链接"); return; } if (url) editor?.chain().focus().extendMarkRange("link").setLink({ href: url }).run(); else editor?.chain().focus().unsetLink().run(); setLinkOpen(false); }}>
+      <form onSubmit={event => { event.preventDefault(); const url = link.trim(); if (url && !safeContentUrl(url)) { reportError("请输入有效的 HTTP(S)、邮件或锚点链接"); return; } if (url) editor?.chain().focus().extendMarkRange("link").setLink({ href: url }).run(); else editor?.chain().focus().unsetLink().run(); setLinkOpen(false); }}>
         <TextInput label="链接地址" value={link} onChange={event => setLink(event.target.value)} autoFocus placeholder="https://" />
-        {linkError ? <p role="alert">{linkError}</p> : null}
+
         <DialogFooter><Button type="submit" variant="primary">确定</Button></DialogFooter>
       </form>
     </DialogContent></Dialog>

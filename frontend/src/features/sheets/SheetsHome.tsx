@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -13,7 +14,7 @@ import { EmptyState } from "../../shared/ui/EmptyState";
 import { Plus, Table2 } from "../../shared/ui/icons";
 import { PageContainer } from "../../shared/ui/PageContainer";
 import { SelectField } from "../../shared/ui/SelectField";
-import { ToastNotification } from "../../shared/ui/Toast";
+
 import { TextInput } from "../../shared/ui/TextInput";
 import { DocumentShell } from "../documents/DocumentShell";
 import { useNotebooks } from "../documents/queries";
@@ -39,8 +40,7 @@ export function SheetsHome() {
     [creating, setCreating] = useState(false),
     [template, setTemplate] = useState(""),
     [title, setTitle] = useState("未命名数据表"),
-    [busy, setBusy] = useState(false),
-    [error, setError] = useState("");
+    [busy, setBusy] = useState(false);
   const intent = useRef<{
     id: string;
     collection_id: string;
@@ -64,17 +64,15 @@ export function SheetsHome() {
     if (!target && notebookOptions[0]) setTarget(notebookOptions[0].value);
   }, [notebooks.data, target]);
   function openCreate() {
-    setError("");
     if (collection) setTarget(collection);
     setCreating(true);
   }
   async function create() {
     if (!target || !title.trim()) {
-      setError("请填写名称并选择所属笔记本");
+      reportError("请填写名称并选择所属笔记本");
       return;
     }
     setBusy(true);
-    setError("");
     intent.current ??= {
       id: newUUID(),
       collection_id: target,
@@ -94,10 +92,9 @@ export function SheetsHome() {
         queryKey: ["note-tree", sheet.collection_id],
       });
       navigate(`/documents/${sheet.document_id}`);
-    } catch (e) {
+    } catch (e) { reportError(e);
       if (e instanceof ApiError && e.status >= 400 && e.status < 500 && ![408, 429].includes(e.status))
         intent.current = null;
-      setError((e as Error).message);
     } finally {
       setBusy(false);
     }
@@ -130,9 +127,7 @@ export function SheetsHome() {
             />
           </div>
           {list.error ? (
-            <ToastNotification tone="danger" title="无法读取数据表">
-              {list.error.message}
-            </ToastNotification>
+            null
           ) : items.length ? (
             <div className="sheet-home-list">
               {items.map((item) => (
@@ -219,11 +214,6 @@ export function SheetsHome() {
                   </ActionButton>
                 ))}
               </div>
-              {error && (
-                <ToastNotification tone="danger" title="创建未完成">
-                  {error}
-                </ToastNotification>
-              )}
             </div>
             <DialogFooter>
               <Button disabled={busy} onClick={() => setCreating(false)}>
