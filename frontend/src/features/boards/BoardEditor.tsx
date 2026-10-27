@@ -12,12 +12,14 @@ import {
   lazy,
   Suspense,
   useEffect,
+  useLayoutEffect,
   useId,
   useMemo,
   useRef,
   useState,
   useSyncExternalStore,
   type CSSProperties,
+  type RefObject,
 } from "react";
 import { useStore } from "zustand";
 import {
@@ -100,7 +102,13 @@ const STATUS = {
   conflict: "有修改需要处理",
   error: "读取失败",
 };
-export function BoardEditor({ id, embed }: { id: string; embed?: { pageID: string; frameID?: string; readOnly: boolean } }) {
+type EmbeddedBoardOptions = {
+  pageID: string;
+  frameID?: string;
+  readOnly: boolean;
+  sessionRef?: RefObject<Pick<BoardSession, "getSnapshot"> | null>;
+};
+export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOptions }) {
   const auth = useAuthRequest(),
     authRef = useRef(auth);
   authRef.current = auth;
@@ -118,6 +126,12 @@ export function BoardEditor({ id, embed }: { id: string; embed?: { pageID: strin
   );
   const state = useSyncExternalStore(session.subscribe, session.getSnapshot),
     renderer = useRef<BoardRenderer | null>(null);
+  useLayoutEffect(() => {
+    const target = embed?.sessionRef;
+    if (!target) return;
+    target.current = session;
+    return () => { if (target.current === session) target.current = null; };
+  }, [session, embed?.sessionRef]);
   const [selection, setSelection] = useState<Set<string>>(new Set()),
     [camera, setCamera] = useState<Camera>({ x: 80, y: 80, zoom: 1 }),
     [tool, setTool] = useState("select");

@@ -17,6 +17,7 @@ import { SHAPES, type Board, type Element } from "./model";
 import { EmbeddedSurface } from "../../shared/ui/EmbeddedSurface";
 import { BoardPreviewViewport } from "./BoardPreviewViewport";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
+import type { BoardSession } from "./session";
 import "./board-preview.css";
 const BoardEditor = lazy(() => import("./BoardEditor").then(module => ({ default: module.BoardEditor })));
 export type BoardBinding = {
@@ -45,7 +46,9 @@ export function BoardEmbed({
     [pickerSession, setPickerSession] = useState(0),
     [editorLoaded, setEditorLoaded] = useState(false),
     [editing, setEditing] = useState(false),
+    [replacement, setReplacement] = useState<BoardBinding | null>(null),
     [url, setURL] = useState("");
+  const session = useRef<Pick<BoardSession, "getSnapshot"> | null>(null);
   const id = typeof props.board_id === "string" ? props.board_id : "",
     page = typeof props.page_id === "string" ? props.page_id : "",
     revision = props.mode === "snapshot" ? Number(props.revision) : 0;
@@ -113,6 +116,13 @@ export function BoardEmbed({
   });
   const workspace = useStore(authStore, state => state.workspace);
   const canEdit = !readOnly && props.mode !== "snapshot" && canMutateWorkspaceContent(workspace);
+  function bind(binding: BoardBinding) {
+    onBind?.(binding);
+    setEditing(false);
+    setEditorLoaded(false);
+    setReplacement(null);
+    setPicker(false);
+  }
   return (
     <div ref={root}>
       <EmbeddedSurface kind="board" label={meta.data?.title ?? "画板"}
@@ -126,7 +136,7 @@ export function BoardEmbed({
       >
         {editorLoaded && props.mode !== "snapshot" && auth ? (
           <Suspense fallback={<div className="board-embed-start">正在打开画板…</div>}>
-            <BoardEditor key={`${credential}:${auth.workspaceId}:${id}:${page}`} id={id} embed={{ pageID: page, frameID: typeof props.frame_id === "string" ? props.frame_id : undefined, readOnly: !canEdit || !editing }} />
+            <BoardEditor key={`${credential}:${auth.workspaceId}:${id}:${page}`} id={id} embed={{ pageID: page, frameID: typeof props.frame_id === "string" ? props.frame_id : undefined, readOnly: !canEdit || !editing, sessionRef: session }} />
           </Suspense>
         ) : url ? (
           <BoardPreviewViewport key={`${id}:${page}:${revision}:${String(props.frame_id ?? "")}`}><img src={url} alt={meta.data?.title ?? "画板预览"} draggable={false} /></BoardPreviewViewport>
@@ -142,13 +152,22 @@ export function BoardEmbed({
           open={picker}
           onClose={() => setPicker(false)}
           onSelect={(binding) => {
-            onBind(binding);
-            setEditing(false);
-            setEditorLoaded(false);
-            setPicker(false);
+            if (session.current?.getSnapshot().pending) {
+              setPicker(false);
+              setReplacement(binding);
+            } else bind(binding);
           }}
         />
       ) : null}
+      <Dialog open={replacement !== null} onOpenChange={open => { if (!open) setReplacement(null); }}>
+        <DialogContent title="画板尚未保存">
+          <p>更换引用后，当前画板未保存的修改不会恢复。可以保留当前画板重试保存，或放弃修改后更换。</p>
+          <div className="mt-4 flex justify-end gap-2">
+            <ActionButton onPress={() => setReplacement(null)}>保留当前画板</ActionButton>
+            <ActionButton variant="danger" disabled={readOnly || !onBind} onPress={() => { if (replacement) bind(replacement); }}>放弃并更换</ActionButton>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
