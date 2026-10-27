@@ -1,4 +1,4 @@
-import { reportError } from "../../shared/api/request-feedback";
+import { markErrorHandled, reportError, reportRequestError } from "../../shared/api/request-feedback";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError } from "../../shared/api/api-client";
 import type { TableHost } from "./context";
@@ -321,7 +321,7 @@ export function useDataTable(
         await refreshRef.current(undefined, true);
         return result;
       } catch (error) {
-        if(!mounted.current||current.current.scope!==owner)throw error;
+        if(!mounted.current||current.current.scope!==owner) { markErrorHandled(error); throw error; }
         let failure=error;
         if(draft.current.request){
           const rejected=error instanceof ApiError&&error.status>=400&&error.status<500;
@@ -333,7 +333,10 @@ export function useDataTable(
           }
           persist();
         }
-        if(current.current.scope===owner)setError(failure instanceof Error?failure.message:"表格保存失败，本机修改仍保留");
+        if(current.current.scope===owner) {
+          reportRequestError(failure);
+          setError(failure instanceof Error?failure.message:"表格保存失败，本机修改仍保留");
+        }
         throw failure;
       } finally {
         if (current.current.scope === owner) setSaving(false);

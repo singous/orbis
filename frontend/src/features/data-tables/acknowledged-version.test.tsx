@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
-import { expect, it, vi } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import { useDataTable } from "./use-table";
 import {
   readTable,
@@ -8,6 +8,11 @@ import {
 } from "./api";
 import type { TableHost,PendingTableWriter } from "./context";
 import type { TablePage } from "./model";
+import { reportError } from "../../shared/api/request-feedback";
+
+const notify = vi.hoisted(() => vi.fn());
+vi.mock("../../shared/ui/Toast", () => ({ showToast: notify }));
+afterEach(() => notify.mockClear());
 
 vi.mock("./api", () => ({
   readTable: vi.fn(),
@@ -169,5 +174,36 @@ it("reapplies a definitively rejected table intent with all later visible edits"
   const sent=vi.mocked(mutateTable).mock.calls[1][2];
   expect(sent.operation_id).not.toBe(original);
   expect(sent).toMatchObject({expected_document_version:3,expected_table_revision:3,upserts:[{id:"row",values:{title:"after",flag:false,number:0}}]});
+  view.unmount();
+});
+
+it.each(["automatic", "manual"])("reports a pre-request %s save failure once and retains the table edit for retry", async mode => {
+  vi.mocked(readTable).mockReset();
+  vi.mocked(mutateTable).mockReset();
+  vi.mocked(readTable).mockResolvedValue(mutablePage(1));
+  vi.mocked(mutateTable).mockResolvedValue(receipt(2));
+  const prepare = vi.fn<() => Promise<void>>(async () => { throw new Error("等待正文保存确认超时"); });
+  const host: TableHost = {
+    noteId: "note", draftScope: `pre-request-${mode}`, readOnly: false,
+    auth: { accessToken: "test", refreshToken: null, onTokenRefresh: () => {}, onUnauthorized: () => {} },
+    transact: async perform => { await prepare(); return perform(1); },
+  };
+  const view = renderHook(() => useDataTable(host, "table", 1, "block"));
+  await waitFor(() => expect(view.result.current.recovering).toBe(false));
+  await waitFor(() => expect(view.result.current.page?.revision).toBe(1));
+  act(() => view.result.current.stage({ upserts: [{ id: "row", values: { title: "必须保留的修改", count: 0, flag: false } }] }));
+  if (mode === "manual") await act(async () => { await view.result.current.save().catch(reportError); });
+  await waitFor(() => expect(notify).toHaveBeenCalledExactlyOnceWith({ title: "等待正文保存确认超时", tone: "danger" }), { timeout: 2000 });
+  expect(mutateTable).not.toHaveBeenCalled();
+  expect(view.result.current.pending.upserts?.[0].values).toEqual({ title: "必须保留的修改", count: 0, flag: false });
+  await act(async () => { await view.result.current.save().catch(reportError); });
+  expect(notify).toHaveBeenCalledTimes(2);
+  prepare.mockResolvedValue(undefined);
+  vi.mocked(readTable).mockResolvedValue(mutablePage(2));
+  await act(async () => { await view.result.current.save(); });
+  expect(mutateTable).toHaveBeenCalledOnce();
+  expect(vi.mocked(mutateTable).mock.calls[0][2].upserts).toEqual([{ id: "row", values: { title: "必须保留的修改", count: 0, flag: false } }]);
+  expect(view.result.current.dirty).toBe(false);
+  expect(notify).toHaveBeenCalledTimes(2);
   view.unmount();
 });
