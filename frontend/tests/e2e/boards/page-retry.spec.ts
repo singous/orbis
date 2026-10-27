@@ -27,7 +27,7 @@ test("retrying an embedded load keeps the referenced second board page", async (
   await page.route(`**/boards/${board.id}`, async route => {
     if (failNext && route.request().method() === "GET") {
       failNext = false;
-      await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ code: "TEMPORARY_ERROR", message: "读取暂时失败", request_id: "page-retry-test" }) });
+      await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ code: "TEMPORARY_ERROR", message: "读取暂时失败", request_id: "page-retry-test", data: null }) });
     } else await route.continue();
   });
   await page.getByRole("button", { name: "编辑画板", exact: true }).click();
