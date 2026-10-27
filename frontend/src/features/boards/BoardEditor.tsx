@@ -375,7 +375,7 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
           <div className="board-loading">
             <ToastNotification tone="danger" title="无法打开画板" timeout={0}>
               {state.error}
-              <Button onClick={() => void session.start()}>重试</Button>
+              <Button onClick={() => void session.start(embed?.pageID ?? new URLSearchParams(location.search).get("page") ?? "")}>重试</Button>
             </ToastNotification>
           </div>
         ) : <LoadingState label="正在打开画板…" variant="editor" />}
