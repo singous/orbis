@@ -1,3 +1,5 @@
+import { isEmbeddedInput } from "./blocks/block-selection";
+import { blockBoardHistory } from "./blocks/board-removal";
 import { registerRetiredBlockCleanup } from "./tiptap-retired";
 import { ActionButton } from "../../../shared/ui/ActionButton";
 import { SelectField } from "../../../shared/ui/SelectField";
@@ -209,6 +211,10 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
     editorProps: {
       handleKeyDown: (_view, event) => {
         if (!(event.ctrlKey || event.metaKey)) return false;
+        const historyEditor = currentEditorRef.current;
+        if (!readOnly && !event.isComposing && historyEditor && !isEmbeddedInput(event.target) && ["z", "y"].includes(event.key.toLowerCase()) && blockBoardHistory(historyEditor)) {
+          event.preventDefault(); return true;
+        }
         if (pendingFullAction.current && ["c", "x"].includes(event.key.toLowerCase())) {
           event.preventDefault();
           const ready = pendingFullPromise.current;
@@ -469,8 +475,8 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
   const formatToolbar = !readOnly && editor ? <Toolbar className="orbis-tiptap-toolbar" aria-label="文档格式">
       <SelectField density="compact" aria-label="段落类型" className="editor-block-type" value={active?.h1 ? "heading:1" : active?.h2 ? "heading:2" : active?.h3 ? "heading:3" : active?.bulletList ? "bulletListItem" : active?.orderedList ? "numberedListItem" : active?.taskList ? "checkListItem" : active?.quote ? "quote" : active?.codeBlock ? "codeBlock" : "paragraph"} options={[{value:"paragraph",label:"正文"},{value:"heading:1",label:"标题 1"},{value:"heading:2",label:"标题 2"},{value:"heading:3",label:"标题 3"},{value:"bulletListItem",label:"无序列表"},{value:"numberedListItem",label:"有序列表"},{value:"checkListItem",label:"任务清单"},{value:"quote",label:"引用"},{value:"codeBlock",label:"代码块"}]} onChange={setParagraphType} />
       <span className="orbis-tiptap-toolbar-divider" />
-      <Tool title="撤销" onClick={() => editor.chain().focus().undo().run()}><Undo2 size={16} /></Tool>
-      <Tool title="重做" onClick={() => editor.chain().focus().redo().run()}><Redo2 size={16} /></Tool>
+      <Tool title="撤销" onClick={() => { if (!blockBoardHistory(editor)) editor.chain().focus().undo().run(); }}><Undo2 size={16} /></Tool>
+      <Tool title="重做" onClick={() => { if (!blockBoardHistory(editor)) editor.chain().focus().redo().run(); }}><Redo2 size={16} /></Tool>
       <span className="orbis-tiptap-toolbar-divider" />
       <ToggleButtonGroup
         className="editor-text-style-tools"
@@ -524,7 +530,7 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
       {label:"当前块操作", run:()=>requestBlockMenu(editor)},
       {label:"斜体", run:()=>toggleMark("italic")}, {label:"下划线", run:()=>toggleMark("underline")},
       {label:"删除线", run:()=>toggleMark("strike")}, {label:"链接", run:()=>inlineLink(editor)},
-      {label:"重做", run:()=>editor.chain().focus().redo().run()},
+      {label:"重做", run:()=>{if(!blockBoardHistory(editor))editor.chain().focus().redo().run();}},
       {label:"表格", run:()=>editor.chain().focus().insertTable({rows:3,cols:3,withHeaderRow:true}).run()},
       {label:"上传媒体或附件", run:()=>inputRef.current?.click()},
     ].map(item=><ActionButton key={item.label} role="menuitem" onMouseDown={event=>event.preventDefault()} onClick={()=>{item.run();setMoreOpen(false);}}>{item.label}</ActionButton>)}</div>,document.body) : null}

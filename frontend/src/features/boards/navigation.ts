@@ -1,6 +1,7 @@
 import { registerPendingNavigation } from "../../shared/navigation/pending-navigation";
 
 type SaveSession = {
+  blockId?: string;
   subscribe: (listener: () => void) => () => void;
   getSnapshot: () => { pending: number };
 };
@@ -15,6 +16,7 @@ export const boardNavigation = {
     return () => { listeners.delete(listener); };
   },
   hasPending: () => [...sessions].some(session => session.getSnapshot().pending > 0),
+  pendingBlockIds: () => new Set([...sessions].flatMap(session => session.blockId && session.getSnapshot().pending > 0 ? [session.blockId] : [])),
 };
 
 export function registerBoardNavigation(session: SaveSession) {

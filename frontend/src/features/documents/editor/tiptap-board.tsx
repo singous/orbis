@@ -1,4 +1,6 @@
 import { Node } from "@tiptap/core";
+import { Plugin } from "@tiptap/pm/state";
+import { allowBoardRemoval } from "./blocks/board-removal";
 import {
   NodeViewWrapper,
   ReactNodeViewRenderer,
@@ -36,6 +38,12 @@ function View({ node, updateAttributes }: NodeViewProps) {
 const hidden = { default: null, parseHTML: () => null, renderHTML: () => ({}) };
 export const OrbisBoard = Node.create({
   name: "orbisBoard",
+  addProseMirrorPlugins() {
+    const editor = this.editor;
+    return [new Plugin({
+      filterTransaction: transaction => allowBoardRemoval(editor, transaction),
+    })];
+  },
   group: "block",
   atom: true,
   selectable: true,

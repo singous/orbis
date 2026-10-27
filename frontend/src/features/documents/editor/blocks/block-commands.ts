@@ -1,3 +1,4 @@
+import { allowBoardRemoval } from "./board-removal";
 import {stageTableCopies} from "./block-copy-context";
 import type { Editor } from "@tiptap/core";
 import { Fragment, type Node as PMNode } from "@tiptap/pm/model";
@@ -13,7 +14,7 @@ import { cloneBlockTree, editBlockChildren, emptyParagraph, indexBlocks, mapBloc
 export type { BlockAction } from "./block-tree";
 export type BlockCommandResult = { ok: boolean; selectedIds: string[]; message?: string };
 export type EditorBlockAddress = { id: string; pos: number; node: PMNode; parentId: string | null };
-const OWNED_NODES = new Set(["paragraph", "heading", "codeBlock", "horizontalRule", "blockquote", "listItem", "taskItem", "table", "orbisComponent", "orbisMedia", "orbisDrawing", "orbisToggle", "orbisContainer"]);
+const OWNED_NODES = new Set(["paragraph", "heading", "codeBlock", "horizontalRule", "blockquote", "listItem", "taskItem", "table", "orbisComponent", "orbisMedia", "orbisDrawing", "orbisBoard", "orbisToggle", "orbisContainer"]);
 const OWN_CONTENT_PARENTS = new Set(["orbisComponent", "orbisToggle", "blockquote"]);
 
 const addressCache = new WeakMap<PMNode, EditorBlockAddress[]>();
@@ -228,13 +229,14 @@ export function executeBlockCommand(editor: Editor, ids: string[], action: Block
       }
       tr.setSelection(Selection.near(tr.doc.resolve(Math.min(position, tr.doc.content.size))));
     }
+    tr.setMeta("orbisBlockCommand", action.type);
+    if (!allowBoardRemoval(editor, tr)) return { ok: false, selectedIds: ids, message: "请确认是否放弃未保存的画板修改。" };
     if(action.type==="duplicate"||action.type==="paste"&&!action.preserveIds){
       const currentIndex=indexBlocks(current);
       const roots=action.type==="paste"?action.blocks:normalizeBlockSelection(current,ids).map(id=>currentIndex.get(id)!.block);
       const nextIndex=indexBlocks(next.blocks);
       staged=stageTableCopies(editor,roots,next.selectedIds.map(id=>nextIndex.get(id)!.block),action.type==="paste"?action.origin:undefined);
     }
-    tr.setMeta("orbisBlockCommand", action.type);
     if(action.type==="paste"&&action.preventAutolink)tr.setMeta("preventAutolink",true);
     editor.view.dispatch(tr);
     dispatched=true;

@@ -104,6 +104,7 @@ const STATUS = {
 };
 type EmbeddedBoardOptions = {
   pageID: string;
+  blockID?: string;
   frameID?: string;
   readOnly: boolean;
   sessionRef?: RefObject<Pick<BoardSession, "getSnapshot"> | null>;
@@ -239,7 +240,11 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
       setCamera({ x: 80, y: 80, zoom: 1 });
     }
   }, [state.pageID]);
-  useEffect(() => registerBoardNavigation(session), [session]);
+  useEffect(() => registerBoardNavigation({
+    blockId: embed?.blockID,
+    subscribe: session.subscribe,
+    getSnapshot: session.getSnapshot,
+  }), [session, embed?.blockID]);
   useEffect(() => {
     const beforeUnload = (e: BeforeUnloadEvent) => {
       if (session.getSnapshot().pending) {

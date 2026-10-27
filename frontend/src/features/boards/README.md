@@ -14,6 +14,9 @@ identities. Styling can be replaced independently of the board format.
 - `navigation.ts` tracks pending edits for one route-level blocker. Same-tab navigation
   requires saving or explicitly leaving without the unsaved changes. Replacing an
   inline reference checks that editor's pending state and requires explicit discard.
+  Removing pending board blocks (including parent groups and native range deletion)
+  and reparenting their blocks require confirmation; stale confirmations do not
+  overwrite later document edits. Document undo/redo waits for pending board saves.
 - `sync.ts` resumes committed changes over an authenticated WebSocket; bounded REST
   polling is a fallback. Connection failure leaves unsaved operations in the current editor only.
 - `geometry.ts` provides world-space hit candidates, ports and paths.

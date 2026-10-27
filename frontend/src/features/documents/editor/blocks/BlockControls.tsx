@@ -1,3 +1,5 @@
+import { BOARD_REMOVAL_EVENT, confirmBoardRemoval, type BoardRemovalRequest } from "./board-removal";
+import { Dialog, DialogContent } from "../../../../shared/ui/Dialog";
 import {DocumentCopyContext,registerDocumentCopy,prepareTableCopy,selectedTableBlocks} from "./block-copy-context";
 import type { Editor } from '@tiptap/core';
 import type { Transaction } from '@tiptap/pm/state';
@@ -43,6 +45,14 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
  const [activeId,commitActiveId]=useState<string|null>(null);
  const [point,setPoint]=useState<{top:number;left:number}|null>(null);
  const [open,setOpen]=useState(false);
+ const [removal,setRemoval]=useState<BoardRemovalRequest|null>(null);
+ useLayoutEffect(()=>{
+  setRemoval(null);
+  const request=(event:Event)=>{setNotice('');setOpen(false);setRemoval((event as CustomEvent<BoardRemovalRequest>).detail);};
+  const dom=editor.view.dom;
+  dom.addEventListener(BOARD_REMOVAL_EVENT,request);
+  return()=>dom.removeEventListener(BOARD_REMOVAL_EVENT,request);
+ },[editor]);
  const [menuPoint,setMenuPoint]=useState({top:0,left:0});
  const [notice,setNotice]=useState('');
  const [drop,setDrop]=useState<DropTarget|null>(null);
@@ -352,5 +362,16 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
   </div>,document.body):null}
   {drop?createPortal(<div className={`orbis-block-drop ${drop.placement==='inside'?'is-inside':''} ${drop.ok?'':'is-invalid'}`} style={{top:drop.placement==='after'?drop.rect.top+drop.rect.height:drop.rect.top,left:drop.rect.left,width:drop.rect.width,height:drop.placement==='inside'?drop.rect.height:3}}><span>{drop.ok?(drop.placement==='inside'?'放入此块':drop.placement==='before'?'移动到上方':'移动到下方'):drop.message}</span></div>,document.body):null}
   {notice?createPortal(<div role="status" className="orbis-block-notice">{notice}<button aria-label="关闭块操作提示" onClick={()=>setNotice('')}>×</button></div>,document.body):null}
- </>;
+ <Dialog open={removal!==null} onOpenChange={open=>{if(!open)setRemoval(null);}}>
+   <DialogContent title="画板尚未保存">
+    <p>这个操作会结束当前画板编辑，未保存的修改不会恢复。可以保留当前内容重试保存，或放弃修改后继续。</p>
+    <div className="mt-4 flex justify-end gap-2">
+     <ActionButton onPress={()=>setRemoval(null)}>保留画板块</ActionButton>
+     <ActionButton variant="danger" onPress={()=>{
+      const request=removal;setRemoval(null);
+      if(request&&!confirmBoardRemoval(editor,request))setNotice('文档状态已变化，请重新执行操作。');
+     }}>放弃并继续</ActionButton>
+    </div>
+   </DialogContent>
+  </Dialog></>;
 }

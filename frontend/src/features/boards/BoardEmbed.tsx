@@ -136,7 +136,7 @@ export function BoardEmbed({
       >
         {editorLoaded && props.mode !== "snapshot" && auth ? (
           <Suspense fallback={<div className="board-embed-start">正在打开画板…</div>}>
-            <BoardEditor key={`${credential}:${auth.workspaceId}:${id}:${page}`} id={id} embed={{ pageID: page, frameID: typeof props.frame_id === "string" ? props.frame_id : undefined, readOnly: !canEdit || !editing, sessionRef: session }} />
+            <BoardEditor key={`${credential}:${auth.workspaceId}:${id}:${page}`} id={id} embed={{ pageID: page, blockID: blockId, frameID: typeof props.frame_id === "string" ? props.frame_id : undefined, readOnly: !canEdit || !editing, sessionRef: session }} />
           </Suspense>
         ) : url ? (
           <BoardPreviewViewport key={`${id}:${page}:${revision}:${String(props.frame_id ?? "")}`}><img src={url} alt={meta.data?.title ?? "画板预览"} draggable={false} /></BoardPreviewViewport>
