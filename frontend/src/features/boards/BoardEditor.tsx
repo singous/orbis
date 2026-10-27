@@ -50,7 +50,7 @@ import {
 } from "@remixicon/react";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { authStore } from "../../shared/auth/auth-store";
-import { registerPendingNavigation } from "../../shared/navigation/pending-navigation";
+import { registerBoardNavigation } from "./navigation";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Button } from "../../shared/ui/Button";
 import { Dialog, DialogContent } from "../../shared/ui/Dialog";
@@ -225,9 +225,7 @@ export function BoardEditor({ id, embed }: { id: string; embed?: { pageID: strin
       setCamera({ x: 80, y: 80, zoom: 1 });
     }
   }, [state.pageID]);
-  useEffect(() => registerPendingNavigation(async () => {
-    if (session.getSnapshot().pending) throw new Error("画板尚未保存，请先重试保存或处理未保存的修改。");
-  }), [session]);
+  useEffect(() => registerBoardNavigation(session), [session]);
   useEffect(() => {
     const beforeUnload = (e: BeforeUnloadEvent) => {
       if (session.getSnapshot().pending) {

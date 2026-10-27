@@ -11,6 +11,8 @@ identities. Styling can be replaced independently of the board format.
   Boards do not read or write browser draft storage. Reloading opens server content
   without restoring or replaying unsaved operations. Each editor owns its temporary
   state, so multiple references do not compete for a shared browser-storage key.
+- `navigation.ts` tracks pending edits for one route-level blocker. Same-tab navigation
+  requires saving or explicitly leaving without the unsaved changes.
 - `sync.ts` resumes committed changes over an authenticated WebSocket; bounded REST
   polling is a fallback. Connection failure leaves unsaved operations in the current editor only.
 - `geometry.ts` provides world-space hit candidates, ports and paths.
