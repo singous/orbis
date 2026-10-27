@@ -21,8 +21,6 @@
 .orbis-block-drop.is-inside { background:color-mix(in srgb,var(--accent) 8%,transparent);border:2px solid var(--accent); }
 .orbis-block-drop.is-invalid { background:var(--danger,#bf4545);border-color:var(--danger,#bf4545); }
 .orbis-block-drop span { position:absolute;left:0;bottom:100%;padding:3px 6px;font-size:var(--orbis-text-caption-size);white-space:nowrap;background:var(--surface-overlay);border:1px solid var(--border-subtle);border-radius:4px;color:var(--text-secondary);line-height: var(--orbis-text-caption-leading); }
-.orbis-block-notice { display:flex;align-items:center;gap:16px;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:80;padding:10px 16px;max-width:calc(100vw - 32px);border:1px solid var(--border-subtle);border-radius:8px;box-shadow:var(--shadow-pop);background:var(--surface-overlay);font-size:var(--orbis-text-caption-size);color:var(--text-primary);line-height: var(--orbis-text-caption-leading); }
-.orbis-block-notice button { border:0;background:transparent;font-size:var(--orbis-text-section-size);cursor:pointer;line-height: var(--orbis-text-section-leading); }
 @media(max-width:700px){.orbis-block-controls .block-add,.orbis-block-controls .block-grip {width:var(--orbis-control-compact-height);min-height:var(--orbis-control-compact-height);}.block-selection-count{display:none;}}
 .orbis-block-target { outline: 2px solid color-mix(in srgb,var(--accent) 50%,transparent); outline-offset:4px; background:color-mix(in srgb,var(--accent) 8%,transparent); }
 /* Reserve the gutter on touch layouts; controls must never cover the first glyph. */
