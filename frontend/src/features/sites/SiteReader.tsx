@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { ArrowLeft, ArrowRight, BookOpen, Check, Copy, Link2 } from "../../shared/ui/icons";
@@ -144,7 +145,7 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false, load
   async function writeClipboard(action: CopyFeedback["action"], value: string) {
     if (!navigator.clipboard?.writeText) {
       setCopyFeedback({ action, status: "error" });
-      showToast({ title: "无法复制", description: action === "link" ? "请从地址栏手动复制。" : "请手动选择页面正文。", tone: "danger" });
+      reportError(action === "link" ? "请从地址栏手动复制。" : "请手动选择页面正文。");
       return;
     }
     try {
@@ -153,7 +154,7 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false, load
       showToast({ title: action === "link" ? "链接已复制" : "页面 Markdown 已复制", tone: "success" });
     } catch {
       setCopyFeedback({ action, status: "error" });
-      showToast({ title: "复制失败", description: "请检查浏览器权限后重试。", tone: "danger" });
+      reportError("请检查浏览器权限后重试。");
     }
   }
 
@@ -167,9 +168,9 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false, load
     if (!current) return;
     try {
       await writeClipboard("page", loadMarkdown ? await loadMarkdown(current.slug) : await pageMarkdown(current));
-    } catch {
+    } catch (error) {
       setCopyFeedback({ action: "page", status: "error" });
-      showToast({ title: "无法生成页面 Markdown", description: "请稍后重试。", tone: "danger" });
+      reportError(error);
     }
   }
 
@@ -199,7 +200,7 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false, load
             </div>
           </div>
           {compactOutline ? <Outline items={outline} mobile /> : null}
-          {contentState?.loading ? <LoadingState label="正在加载正文…" variant="editor" /> : contentState?.error ? <div role="alert" className="site-reader-body-status"><p>{contentState.error}</p><ActionButton type="button" onClick={contentState.retry}>重新加载正文</ActionButton></div> : <ContentRenderer blocks={current.blocks} pageTitle={current.title} />}
+          {contentState?.loading ? <LoadingState label="正在加载正文…" variant="editor" /> : contentState?.error ? null : <ContentRenderer blocks={current.blocks} pageTitle={current.title} />}
           <nav className="site-reader-pagination" aria-label="相邻文档">
             {currentIndex > 0 ? <Link to={pageHref(basePath, snapshot.pages[currentIndex - 1].slug)}><ArrowLeft aria-hidden="true" size={18} /><span><small>上一篇</small>{snapshot.pages[currentIndex - 1].title}</span></Link> : <span />}
             {currentIndex < snapshot.pages.length - 1 ? <Link to={pageHref(basePath, snapshot.pages[currentIndex + 1].slug)}><span><small>下一篇</small>{snapshot.pages[currentIndex + 1].title}</span><ArrowRight aria-hidden="true" size={18} /></Link> : null}

@@ -6,7 +6,9 @@ import { requestBlockMenu } from './blocks/BlockControls';
 import { TiptapEditor } from './TiptapEditor';
 import type { NoteBlocksV2 } from '../../content/model/blocks';
 const blocks:NoteBlocksV2={schema_version:2,editor:'blocknote',blocks:['First','Second'].map((text,index)=>({id:`b${index}`,type:'paragraph',props:{},content:[{type:'text',text}],children:[]}))};
-afterEach(()=>{cleanup();vi.restoreAllMocks();});
+const notify = vi.hoisted(() => vi.fn());
+vi.mock("../../../shared/ui/Toast", async original => ({ ...await original<typeof import("../../../shared/ui/Toast")>(), showToast: notify }));
+afterEach(()=>{cleanup();vi.restoreAllMocks();vi.unstubAllGlobals();notify.mockClear();});
 async function menu(container:HTMLElement,index=0) {
  const paragraph=container.querySelectorAll('.ProseMirror > p')[index];
  fireEvent.pointerMove(paragraph,{clientX:100,clientY:100});
@@ -104,4 +106,51 @@ it('keeps the block menu open during embedded scrolling but closes it on documen
  expect(screen.getByRole('menu',{name:'块操作'})).toBeVisible();
  fireEvent.scroll(document);
  expect(screen.queryByRole('menu',{name:'块操作'})).toBeNull();
+});
+
+it('reports a failed complete-block copy request once without losing the original body', async () => {
+ const {apiRequest}=await import('../../../shared/api/api-client');
+ const {registerBlockActionReader}=await import('./blocks/block-action-read');
+ vi.stubGlobal('fetch',vi.fn(async()=>new Response(JSON.stringify({code:'READ_FAILED',message:'服务端拒绝读取此块',request_id:'copy',data:null}),{status:503,headers:{'Content-Type':'application/json'}})));
+ const {container}=render(<TiptapEditor blocks={blocks} onChange={()=>{}}/>);
+ await screen.findByText('First');
+ const editor=(container.querySelector('.ProseMirror') as HTMLElement&{editor:import('@tiptap/core').Editor}).editor;
+ const unregister=registerBlockActionReader(editor,{needsRead:()=>true,ensure:async()=>{await apiRequest('/v1/test/block');}});
+ await menu(container);
+ fireEvent.click(screen.getByRole('menuitem',{name:'复制块'}));
+ await waitFor(()=>expect(notify).toHaveBeenCalledExactlyOnceWith({title:'服务端拒绝读取此块',tone:'danger'}));
+ expect(editor.state.doc.textContent).toBe('FirstSecond');
+ unregister();
+});
+
+it('does not add progress or duplicate error toasts when complete-reading and keyboard copy share a request', async () => {
+ const {apiRequest}=await import('../../../shared/api/api-client');
+ let finish!:(response:Response)=>void;
+ vi.stubGlobal('fetch',vi.fn(()=>new Promise<Response>(resolve=>{finish=resolve;})));
+ const {container}=render(<TiptapEditor blocks={blocks} hasMoreContent ensureComplete={async()=>{await apiRequest('/v1/test/content');}} onChange={()=>{}}/>);
+ await screen.findByText('First');
+ const editable=container.querySelector('.ProseMirror')!;
+ fireEvent.keyDown(editable,{ctrlKey:true,key:'a'});
+ fireEvent.keyDown(editable,{ctrlKey:true,key:'c'});
+ expect(notify).not.toHaveBeenCalled();
+ await act(async()=>{finish(new Response(JSON.stringify({code:'READ_FAILED',message:'后续正文读取失败',request_id:'copy-all',data:null}),{status:503,headers:{'Content-Type':'application/json'}}));});
+ await waitFor(()=>expect(notify).toHaveBeenCalledExactlyOnceWith({title:'后续正文读取失败',tone:'danger'}));
+ expect(editable.textContent).toBe('FirstSecond');
+});
+
+it.each(['menu','keyboard'])('ignores a delayed clipboard read failure after leaving the editor (%s)',async mode=>{
+ const {registerBlockActionReader}=await import('./blocks/block-action-read');
+ let fail!:(error:Error)=>void;
+ const reading=new Promise<void>((_resolve,reject)=>{fail=reject;});
+ const view=render(<TiptapEditor blocks={blocks} hasMoreContent ensureComplete={()=>reading} onChange={()=>{}}/>);
+ await screen.findByText('First');
+ const editable=view.container.querySelector('.ProseMirror')!;
+ const editor=(editable as HTMLElement&{editor:import('@tiptap/core').Editor}).editor;
+ if(mode==='menu') {
+  registerBlockActionReader(editor,{needsRead:()=>true,ensure:()=>reading});
+  await menu(view.container);fireEvent.click(screen.getByRole('menuitem',{name:'复制块'}));
+ } else {fireEvent.keyDown(editable,{ctrlKey:true,key:'a'});fireEvent.keyDown(editable,{ctrlKey:true,key:'c'});}
+ view.unmount();
+ await act(async()=>{fail(new Error('上一份文档的读取失败'));});
+ expect(notify).not.toHaveBeenCalled();
 });

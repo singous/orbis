@@ -1,5 +1,7 @@
+import { ConfirmAction } from "../../shared/ui/ConfirmAction";
+import { DraftActions } from "../../shared/ui/DraftActions";
 import { Button } from "../../shared/ui/Button";
-import { ToastNotification } from "../../shared/ui/Toast";
+
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ChevronDown, Expand, Plus } from "lucide-react";
 import {
@@ -94,7 +96,7 @@ export function SheetGrid({
   loading: boolean;
   onMore: () => Promise<unknown>;
   onRefresh: () => void;
-  onError: (message: string) => void;
+  onError: (error: unknown) => void;
 }) {
   const scroller = useRef<HTMLDivElement>(null),
     dragging = useRef(false);
@@ -274,7 +276,7 @@ export function SheetGrid({
     try {
       await onMore();
     } catch (e) {
-      onError((e as Error).message);
+      onError(e);
     }
   }
   useLayoutEffect(() => {
@@ -469,7 +471,7 @@ export function SheetGrid({
         }
         return true;
       } catch (e) {
-        onError((e as Error).message);
+        onError(e);
         return false;
       } finally {
         saving.current = null;
@@ -556,7 +558,7 @@ export function SheetGrid({
       }
       if (patches.length > MAX_BATCH)
         onError("每次最多修改 200 条记录，请缩小选区");
-      else void onChange(patches).catch((e) => onError(e.message));
+      else void onChange(patches).catch((e) => onError(e));
     } else if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
       e.preventDefault();
       edit(p, e.key);
@@ -570,9 +572,7 @@ export function SheetGrid({
       }
     >
       {orphanDraft && (
-        <ToastNotification title="有未保存的单元格草稿" tone="warning" timeout={0}>
-          <span>当前视图之外还有未保存的单元格草稿。</span>
-          <Button
+        <DraftActions label="单元格草稿"><Button
             size="sm"
             onClick={() => {
               const url = URL.createObjectURL(
@@ -589,9 +589,7 @@ export function SheetGrid({
           >
             导出草稿
           </Button>
-          <Button
-            size="sm"
-            onClick={() => {
+<ConfirmAction title="放弃单元格草稿" description="这份尚未保存的单元格内容将被清除。需要保留时，请先导出草稿。" confirmLabel="确认放弃" onConfirm={() => {
               clearCellDraft(
                 cellDraftKey,
                 orphanDraft.row.id,
@@ -600,11 +598,9 @@ export function SheetGrid({
               );
               setOrphanDraft(null);
               restored.current = true;
-            }}
-          >
-            放弃草稿
-          </Button>
-        </ToastNotification>
+            }}>
+            <Button size="sm">放弃草稿</Button>
+          </ConfirmAction></DraftActions>
       )}
       {selected.size > 0 && (
         <div className="sheet-selection-bar">
@@ -623,7 +619,7 @@ export function SheetGrid({
                   .map((r) => ({ id: r.id, version: r.version, delete: true })),
               )
                 .then(() => setSelected(new Set()))
-                .catch((e) => onError(e.message));
+                .catch((e) => onError(e));
             }}
           >
             删除记录
@@ -697,9 +693,9 @@ export function SheetGrid({
               latest.current.editing = null;
               setEditing(null);
             }
-            void onChange(patches).catch((e) => onError(e.message));
+            void onChange(patches).catch((e) => onError(e));
           } catch (err) {
-            onError((err as Error).message);
+            onError(err);
           }
         }}
       >
@@ -944,7 +940,7 @@ export function SheetGrid({
                               version: row.version,
                               values: { [field.id]: !row.values[field.id] },
                             },
-                          ]).catch((e) => onError(e.message));
+                          ]).catch((e) => onError(e));
                         } else {
                           select({ row: virtual.index, col: col.index }, false);
                           edit({ row: virtual.index, col: col.index });

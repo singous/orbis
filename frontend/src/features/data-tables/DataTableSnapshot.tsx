@@ -1,4 +1,5 @@
-import { ToastNotification } from "../../shared/ui/Toast";
+import { reportError } from "../../shared/api/request-feedback";
+
 import { z } from "zod";
 import { paginationSchema } from "../../shared/api/schemas";
 import { tableRows,publicRecordSchema } from "./public-contract";
@@ -33,7 +34,6 @@ export function DataTableSnapshot({ data }: { data: TableSnapshot }) {
   const auth = useOptionalAuthRequest();
   const [offset, setOffset] = useState(0),
     [loaded, setLoaded] = useState<TableSnapshot | null>(null),
-    [error, setError] = useState<string | null>(null),
     [loading, setLoading] = useState(false);
   useEffect(() => {
     setOffset(0);
@@ -46,21 +46,21 @@ export function DataTableSnapshot({ data }: { data: TableSnapshot }) {
     }
     const abort = new AbortController();
     setLoading(true);
-    setError(null);
+
     let target:ReturnType<typeof recordsRequest>;
     try{
       if(!data.records_url||!data.fields)throw new Error("表格分页信息不完整");
       target=recordsRequest(data.records_url,auth?.workspaceId);
       target.url.searchParams.set("page",String(offset/TABLE_PAGE_SIZE+1));
       target.url.searchParams.set("page_size",String(TABLE_PAGE_SIZE));
-    }catch(error){setError(error instanceof Error?error.message:"表格分页地址无效");setLoading(false);return;}
+    }catch(error){ reportError(error);setLoading(false);return;}
     const path=target.url.pathname.slice(4)+target.url.search;
     void apiRequest(path,{
       ...(target.privateRead&&auth?authRequestOptions(auth):{}),signal:abort.signal,
     }).then(raw=>{
       const result=z.object({title:z.string(),items:z.array(publicRecordSchema),pagination:paginationSchema}).passthrough().parse(raw);
       if(!abort.signal.aborted)setLoaded({...data,rows:tableRows(data.fields!,result.items),offset:(result.pagination.page-1)*result.pagination.page_size,total:result.pagination.total});
-    }).catch(error=>{if(!abort.signal.aborted)setError(error.message);}).finally(()=>{if(!abort.signal.aborted)setLoading(false);});
+    }).catch(error=>{if(!abort.signal.aborted)reportError(error);}).finally(()=>{if(!abort.signal.aborted)setLoading(false);});
     return () => abort.abort();
   }, [data.snapshot_id, data.records_url, data.offset, offset, auth]);
   const rows = !data.records_url ? data.rows.slice(offset,offset+TABLE_PAGE_SIZE) : data.snapshot_id
@@ -75,11 +75,7 @@ export function DataTableSnapshot({ data }: { data: TableSnapshot }) {
         <strong>{data.title}</strong>
         <span>{data.view}</span>
       </header>
-      {error ? (
-        <ToastNotification tone="danger" title="表格快照加载失败">
-          {error}
-        </ToastNotification>
-      ) : null}
+
       <div className="dt-snapshot-scroll">
         <table>
           <thead>

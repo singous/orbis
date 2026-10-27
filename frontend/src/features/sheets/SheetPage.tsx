@@ -1,5 +1,7 @@
+import { ConfirmAction } from "../../shared/ui/ConfirmAction";
+import { DraftActions } from "../../shared/ui/DraftActions";
 import { Button } from "../../shared/ui/Button";
-import { ToastNotification } from "../../shared/ui/Toast";
+
 import { Dropdown } from "@heroui/react/dropdown";
 import { Label } from "@heroui/react/label";
 import { useQuery } from "@tanstack/react-query";
@@ -184,7 +186,7 @@ export function SheetWorkspace({
         <div className="sheet-empty">
           {c.meta.error ? (
             <>
-              <p role="alert">{c.meta.error.message}</p>
+
               <ActionButton size="sm" onClick={() => void c.meta.refetch()}>
                 重试
               </ActionButton>
@@ -196,8 +198,10 @@ export function SheetWorkspace({
       </LoadingShell>
     );
   const activeForm = c.forms.data?.find((f) => f.id === selectedView);
-  const fail = (e: unknown) =>
-    c.setError(e instanceof Error ? e.message : String(e));
+  const fail = (error: unknown) => {
+    reportError(error);
+    c.setError(error instanceof Error ? error.message : String(error));
+  };
   function choose(id: string) {
     void preparePendingNavigation()
       .then(() => {
@@ -291,7 +295,7 @@ export function SheetWorkspace({
     }
   }
   function addRecord() {
-    void c.change([{ id: newUUID(), version: 0, values: {} }]).catch(() => {});
+    void c.change([{ id: newUUID(), version: 0, values: {} }]).catch(fail);
   }
   function openRecord(row: Row) {
     setRecord(row);
@@ -396,7 +400,36 @@ export function SheetWorkspace({
     </nav>
   );
   const actions = (
-    <div className="document-header-actions">
+    <div className="document-header-actions">{c.hasPending ? <DraftActions><section><h3 className="mb-2 text-sm font-semibold">当前修改</h3>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                disabled={c.busy}
+                onClick={() => void c.change().catch(fail)}
+              >
+                重试保存
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  const blob = new Blob([c.exportDraft()], {
+                    type: "application/json",
+                  });
+                  const url = URL.createObjectURL(blob),
+                    a = document.createElement("a");
+                  a.href = url;
+                  a.download = "table-draft.json";
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+              >
+                导出本机修改
+              </Button>
+              <ConfirmAction title="放弃本次修改" description="未保存的表格修改将被清除。需要保留时，请先导出本机修改。" confirmLabel="确认放弃" disabled={c.busy} onConfirm={c.discard}>
+                <Button size="sm" disabled={c.busy}>放弃本次修改</Button>
+              </ConfirmAction>
+            </div>
+          </section></DraftActions> : null}
       <span className="sheet-save-state">
         {c.busy ? (
           "保存中…"
@@ -565,41 +598,6 @@ export function SheetWorkspace({
         )}
         {embedded && <span className="sheet-embed-save" role="status">{!canEdit ? "只读" : c.error ? "保存失败" : c.busy ? "保存中…" : c.hasPending || cellDirty ? "待保存" : "已保存"}</span>}
       </nav>
-      {c.error && (
-        <ToastNotification title="数据表操作未完成" tone="danger" timeout={c.hasPending ? 0 : undefined}>
-          <span>{c.error}</span>
-          {c.hasPending && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                disabled={c.busy}
-                onClick={() => void c.change().catch(() => {})}
-              >
-                重试保存
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => {
-                  const blob = new Blob([c.exportDraft()], {
-                    type: "application/json",
-                  });
-                  const url = URL.createObjectURL(blob),
-                    a = document.createElement("a");
-                  a.href = url;
-                  a.download = "table-draft.json";
-                  a.click();
-                  URL.revokeObjectURL(url);
-                }}
-              >
-                导出本机修改
-              </Button>
-              <Button size="sm" onClick={c.discard}>
-                放弃本次修改
-              </Button>
-            </div>
-          )}
-        </ToastNotification>
-      )}
       {activeForm ? (
         <SheetForms
           key={activeForm.id}
@@ -666,14 +664,7 @@ export function SheetWorkspace({
               </ActionButton>
             )}
           </div>
-          {c.pages.error && (
-            <p className="sheet-error" role="alert">
-              {c.pages.error.message}
-              <ActionButton size="sm" onClick={() => void c.pages.refetch()}>
-                重试
-              </ActionButton>
-            </p>
-          )}
+
           {view.kind === "grid" ? (
             <SheetGrid
               duplicates={Object.fromEntries(
@@ -726,7 +717,7 @@ export function SheetWorkspace({
               loading={c.pages.isFetching}
               onMore={() => c.pages.fetchNextPage()}
               onRefresh={c.refresh}
-              onError={c.setError}
+              onError={fail}
             />
           ) : (
             <SheetBoard

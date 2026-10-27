@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { useEffect, useRef, useState } from "react";
 import { Shapes } from "lucide-react";
 import { type BoardViewData } from "./public-contract";
@@ -16,11 +17,11 @@ export function BoardView({ view }: { view: BoardViewData }) {
     source: string;
     svg: string;
   } | null>(null);
-  const [error, setError] = useState("");
+
   const needsAssets = Array.from(view.svg.matchAll(privateImage));
   useEffect(() => {
     const matches = Array.from(view.svg.matchAll(privateImage));
-    setError("");
+
     if (!matches.length) return;
     const files = createManagedFiles(() => authRef.current);
     let active = true;
@@ -41,7 +42,7 @@ export function BoardView({ view }: { view: BoardViewData }) {
         });
     })().catch((error: unknown) => {
       if (active)
-        setError(error instanceof Error ? error.message : "图片读取失败。");
+        reportError(error);
     });
     return () => {
       active = false;
@@ -72,7 +73,6 @@ export function BoardView({ view }: { view: BoardViewData }) {
   );
   return (
     <EmbeddedSurface kind="board" label={view.title} surfaceKey={`public:${view.title}`}>
-      {error ? <p role="alert">{error}</p> : null}
       <BoardPreviewViewport>{content}</BoardPreviewViewport>
     </EmbeddedSurface>
   );

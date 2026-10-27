@@ -102,7 +102,7 @@ describe("global search", () => {
   it("preserves legacy query/filter bookmarks and distinguishes permission failures from no matches", async () => {
     vi.stubGlobal("fetch", vi.fn(async (input: string) => new URL(input, "http://orbis.test").searchParams.get("q") ? response(null, 403) : response(data())));
     renderSearch("/documents/search?q=设计&status=archived");
-    expect(await screen.findByText("无权搜索内容")).toBeVisible();
+    expect(await screen.findByText("无权访问该工作空间")).toBeVisible();
     expect(screen.getByRole("status", { name: "当前地址" })).toHaveTextContent("/search?q=%E8%AE%BE%E8%AE%A1&status=archived&type=document");
     expect(screen.queryByText(/没有匹配的内容/)).not.toBeInTheDocument();
   });

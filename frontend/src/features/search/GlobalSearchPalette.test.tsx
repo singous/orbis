@@ -1,3 +1,4 @@
+import { Toaster } from "../../shared/ui/Toast";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useEffect } from "react";
@@ -46,7 +47,7 @@ function Background({ initialFilters, prepare, captureNavigate }: { initialFilte
 function renderPalette({ initialFilters = { q: "检索" }, prepare }: { initialFilters?: Partial<SearchFilters>; prepare?: () => Promise<void> } = {}) {
   let navigate!: (path: string) => void;
   const captureNavigate = (next: (path: string) => void) => { navigate = next; };
-  const view = render(<MemoryRouter initialEntries={[editingRoute]}><SearchPaletteProvider><Background initialFilters={initialFilters} prepare={prepare} captureNavigate={captureNavigate} /></SearchPaletteProvider></MemoryRouter>);
+  const view = render(<MemoryRouter initialEntries={[editingRoute]}><SearchPaletteProvider><Background initialFilters={initialFilters} prepare={prepare} captureNavigate={captureNavigate} /></SearchPaletteProvider><Toaster /></MemoryRouter>);
   const trigger = screen.getByRole("button", { name: "打开全局搜索" });
   const draft = screen.getByRole("textbox", { name: "当前编辑草稿" });
   const route = screen.getByRole("status", { name: "当前页面" });

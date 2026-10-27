@@ -1,3 +1,4 @@
+import { withRequestFeedback } from "../../shared/api/request-feedback";
 import { z } from "zod";
 import { apiRequest, ApiError, workspacePath } from "../../shared/api/api-client";
 import { authRequestOptions, type AuthRequestOptions } from "../../shared/auth/use-auth-request";
@@ -45,13 +46,22 @@ export async function readDocumentVersion(id: string, versionId: string, auth: A
   return { version: result.version, dependencies: result.dependencies, blocks: { schema_version: 2 as const, editor: "blocknote" as const, blocks: result.content.blocks.map(editorBlock) } };
 }
 export async function saveDocumentVersion(id: string, input: SaveVersionInput, operationId: string, auth: AuthRequestOptions) {
+  return withRequestFeedback({ ...auth, feedback: { ...auth.feedback, success: true } }, async auth => {
+
   return documentVersionSchema.parse(await apiRequest(versionsPath(id, auth), { ...authRequestOptions(auth), method: "POST", body: { ...input, operation_id: operationId } }));
+
+  });
 }
 export async function editDocumentVersion(id: string, input: EditVersionInput, operationId: string, auth: AuthRequestOptions) {
+  return withRequestFeedback({ ...auth, feedback: { ...auth.feedback, success: true } }, async auth => {
+
   const { id: versionId, ...body } = input;
   return documentVersionSchema.parse(await apiRequest(`${versionsPath(id, auth)}/${encodeURIComponent(versionId)}`, { ...authRequestOptions(auth), method: "PUT", body: { ...body, operation_id: operationId } }));
+
+  });
 }
 export async function restoreDocumentVersion(id: string, input: RestoreVersionInput, operationId: string, auth: AuthRequestOptions) {
+  return withRequestFeedback({ ...auth, feedback: { ...auth.feedback, success: true } }, async auth => {
   const body = { operation_id: operationId, expected_revision: input.expected_revision };
   let unknown = false;
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -63,10 +73,12 @@ export async function restoreDocumentVersion(id: string, input: RestoreVersionIn
       const definitive = error instanceof ApiError && error.status >= 400 && error.status < 500;
       if (definitive && !unknown) throw error;
       unknown = true;
-      if (attempt === 1 || definitive) throw new ApiError(503, "恢复结果尚未确认，请重试原操作。", "DOCUMENT_WRITE_RESULT_UNKNOWN");
+      if (attempt === 1 || definitive) throw new ApiError(503, "恢复结果尚未确认，请重试原操作。", "DOCUMENT_WRITE_RESULT_UNKNOWN", "", null, { cause: error });
     }
   }
   throw new Error("Unreachable version restore state");
+
+  });
 }
 export async function compareDocumentVersions(id: string, from: string, to: string, cursor: string | null, auth: AuthRequestOptions, signal?: AbortSignal) {
   const params = new URLSearchParams({ from_id: from, page_size: "20" });

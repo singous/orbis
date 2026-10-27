@@ -1,9 +1,9 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { useState } from "react";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Button } from "../../shared/ui/Button";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "../../shared/ui/icons";
 import { SelectField } from "../../shared/ui/SelectField";
-import { showToast } from "../../shared/ui/Toast";
 import { ValueEditor } from "./Cell";
 import { FieldIcon } from "./FieldIcon";
 import { KINDS, type Field, type View } from "./model";
@@ -43,7 +43,7 @@ export function ViewSettings({
       await onSave(draft);
       onClose();
     } catch (e) {
-      showToast({ title: "无法应用设置", description: e instanceof Error ? e.message : String(e), tone: "danger" });
+      reportError(e);
     } finally {
       setBusy(false);
     }

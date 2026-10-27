@@ -7,11 +7,11 @@ import {readPublicShare,type PublicShare} from "./api";
 import {LIVE_REFRESH_INTERVAL_MS} from "./sharing-config";
 type Props={manifest:PublicShare;token:string;selectedId?:string};
 function Branch({manifest,token,selectedId,parentId}:{parentId?:string}&Props){
-  const query=useInfiniteQuery({queryKey:["share-directory-branch",token,manifest.directory_version,parentId??null],initialPageParam:1,queryFn:({pageParam,signal})=>readPublicShare(token,signal,{parentId,page:pageParam,directoryVersion:manifest.directory_version}),getNextPageParam:last=>last.pagination.has_next?last.pagination.page+1:undefined,initialData:parentId?undefined:{pages:[manifest],pageParams:[1]},retry:false,refetchInterval:LIVE_REFRESH_INTERVAL_MS});
+  const query=useInfiniteQuery({queryKey:["share-directory-branch",token,manifest.directory_version,parentId??null],initialPageParam:1,queryFn:({pageParam,signal})=>readPublicShare(token,signal,{parentId,page:pageParam,directoryVersion:manifest.directory_version}),getNextPageParam:last=>last.pagination.has_next?last.pagination.page+1:undefined,initialData:parentId?undefined:{pages:[manifest],pageParams:[1]},retry:false,refetchInterval: query => query.state.status === "error" ? false : LIVE_REFRESH_INTERVAL_MS});
   const pages=parentId?query.data?.pages??[]:[manifest,...query.data?.pages.slice(1)??[]];
   return <><ul>{pages.flatMap(page=>page.items).map(item=><Row key={item.id} item={item} manifest={manifest} token={token} selectedId={selectedId}/>)}</ul>
     {query.isPending?<p role="status">正在读取子目录…</p>:null}
-    {query.isError?<p role="alert">目录已变化或暂时不可用。<Button size="sm" variant="ghost" onPress={()=>void query.refetch()}>重试</Button></p>:null}
+
     {query.hasNextPage?<Button size="sm" variant="ghost" isPending={query.isFetchingNextPage} onPress={()=>void query.fetchNextPage()}>加载更多目录</Button>:null}
   </>;
 }

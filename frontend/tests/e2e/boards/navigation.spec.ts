@@ -48,10 +48,10 @@ test("source-board navigation stays blocked while another embed has unsaved chan
   await first.getByRole("button", { name: "审批流程", exact: true }).click();
   await expect(first.locator(".board-save-state")).toHaveText("保存失败");
   await first.getByRole("link", { name: "打开画板", exact: true }).click();
-  await expect(page.getByRole("dialog", { name: "画板尚未保存" })).toBeVisible();
+  await expect(page.getByRole("alertdialog", { name: "画板尚未保存" })).toBeVisible();
   await expect(page).toHaveURL(new RegExp(`/documents/${doc.id}$`));
   await page.getByRole("button", { name: "留在当前页", exact: true }).click();
-  await expect(page.getByRole("dialog", { name: "画板尚未保存" })).toHaveCount(0);
+  await expect(page.getByRole("alertdialog", { name: "画板尚未保存" })).toHaveCount(0);
   await expect(first.locator(".board-save-state")).toHaveText("保存失败");
   await second.getByRole("button", { name: "审批流程", exact: true }).click();
   await expect(second.locator(".board-save-state")).toHaveText("已保存");
@@ -73,7 +73,7 @@ test("same-tab sidebar navigation requires an explicit discard before leaving a 
   await page.getByRole("button", { name: "审批流程", exact: true }).click();
   await expect(page.locator(".board-save-state")).toHaveText("保存失败");
   await page.getByRole("link", { name: "首页", exact: true }).click();
-  await expect(page.getByRole("dialog", { name: "画板尚未保存" })).toBeVisible();
+  await expect(page.getByRole("alertdialog", { name: "画板尚未保存" })).toBeVisible();
   await expect(page).toHaveURL(new RegExp(`/documents/${board.document_id}$`));
   await page.getByRole("button", { name: "放弃并离开", exact: true }).click();
   await expect(page).toHaveURL(/\/home$/);

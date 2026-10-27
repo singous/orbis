@@ -28,7 +28,7 @@ for (const grouped of [false, true]) test(`same-parent movement of ${grouped ? "
     await page.getByRole("button", { name: "块操作：画板", exact: true }).click();
     if (grouped) await page.getByRole("menuitem", { name: /^选择父块：/ }).click();
     await page.getByRole("menuitem", { name: "下移", exact: true }).click();
-    await expect(page.getByRole("dialog", { name: "画板尚未保存", exact: true })).toBeVisible();
+    await expect(page.getByRole("alertdialog", { name: "画板尚未保存", exact: true })).toBeVisible();
   }
   await moveDown();
   await page.getByRole("button", { name: "保留画板块", exact: true }).click();

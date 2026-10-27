@@ -103,7 +103,7 @@ describe("archiving from the editor", () => {
     const editor = await screen.findByLabelText("编辑正文");
     fireEvent.change(editor, { target: { value: "需要保留的草稿" } });
     await archiveFromMenu();
-    await screen.findByText(saveStatus === 409 ? "检测到其他窗口的更新" : "自动保存失败");
+    await screen.findByRole("alertdialog", { name: "保存失败" });
     expect(stored.note.is_archived).toBe(false);
     expect(screen.getByLabelText("编辑正文")).toHaveValue("需要保留的草稿");
     expect(screen.getByLabelText("编辑正文")).not.toHaveAttribute("readonly");
@@ -135,7 +135,7 @@ describe("archiving from the editor", () => {
     const editor = await screen.findByLabelText("编辑正文");
     fireEvent.change(editor, { target: { value: "已保存但未归档" } });
     await archiveFromMenu();
-    expect(await screen.findByRole("alertdialog")).toHaveTextContent("归档请求失败");
+    expect(await screen.findByRole("alertdialog", { name: "归档请求失败" })).toBeInTheDocument();
     expect(stored.note.is_archived).toBe(false);
     expect(stored.content.plain_text).toBe("已保存但未归档");
     expect(editor).not.toHaveAttribute("readonly");

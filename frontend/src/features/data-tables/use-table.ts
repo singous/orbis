@@ -1,3 +1,4 @@
+import { markErrorHandled, reportError, reportRequestError } from "../../shared/api/request-feedback";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError } from "../../shared/api/api-client";
 import type { TableHost } from "./context";
@@ -21,6 +22,7 @@ export function useDataTable(
   const [pending, setPending] = useState<TableChanges>({});
   const [error, setError] = useState<string | null>(null);
   const [storageError, setStorageError] = useState<string | null>(null);
+  useEffect(() => { if (storageError) reportError(storageError); }, [storageError]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const canRecover=host.canRecoverDraft??!host.readOnly;
@@ -147,8 +149,10 @@ export function useDataTable(
     try {
       await task;
     } catch (error) {
-      if (mounted.current && requestGeneration === generation.current)
+      if (mounted.current && requestGeneration === generation.current) {
+        reportError(error);
         setError(error instanceof Error ? error.message : "数据表读取失败，请重试。");
+      }
     } finally {
       if (mounted.current && requestGeneration === generation.current)
         setLoading(false);
@@ -163,7 +167,7 @@ export function useDataTable(
     if (id)
       void refresh(abort.signal)
         .catch((error) => {
-          if (!abort.signal.aborted) setError(error.message);
+          if (!abort.signal.aborted) { reportError(error); setError(error.message); }
         })
         .finally(() => {
           if (!abort.signal.aborted) setLoading(false);
@@ -317,7 +321,7 @@ export function useDataTable(
         await refreshRef.current(undefined, true);
         return result;
       } catch (error) {
-        if(!mounted.current||current.current.scope!==owner)throw error;
+        if(!mounted.current||current.current.scope!==owner) { markErrorHandled(error); throw error; }
         let failure=error;
         if(draft.current.request){
           const rejected=error instanceof ApiError&&error.status>=400&&error.status<500;
@@ -325,11 +329,14 @@ export function useDataTable(
             draft.current=error.status===422?{...draft.current,request:null,requestRejected:undefined,prepared:undefined}:{...draft.current,requestRejected:true};
           }else{
             draft.current={...draft.current,requestRejected:false};
-            if(rejected)failure=new ApiError(503,"上次表格保存结果尚未确认，请重试原操作。本机修改仍保留。","TABLE_WRITE_RESULT_UNKNOWN");
+            if(rejected)failure=new ApiError(503, "上次表格保存结果尚未确认，请重试原操作。本机修改仍保留。", "TABLE_WRITE_RESULT_UNKNOWN", "", null, { cause: error });
           }
           persist();
         }
-        if(current.current.scope===owner)setError(failure instanceof Error?failure.message:"表格保存失败，本机修改仍保留");
+        if(current.current.scope===owner) {
+          reportRequestError(failure);
+          setError(failure instanceof Error?failure.message:"表格保存失败，本机修改仍保留");
+        }
         throw failure;
       } finally {
         if (current.current.scope === owner) setSaving(false);

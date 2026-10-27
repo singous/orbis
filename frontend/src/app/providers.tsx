@@ -1,29 +1,45 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
 import { useStore } from "zustand";
 
-import { Toaster } from "../shared/ui/Toast";
+import { clearToasts, Toaster } from "../shared/ui/Toast";
 import { AUTH_STORAGE_KEY, authStore, getAuthSessionKey } from "../shared/auth/auth-store";
+import { markErrorHandled, reportRequestError } from "../shared/api/request-feedback";
 
 function SessionProviders({ children }: { children: ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient({
+  const [queryClient] = useState(() => {
+    const owner = getAuthSessionKey(authStore.getState());
+    const report = (error: unknown) => {
+      if (getAuthSessionKey(authStore.getState()) === owner) reportRequestError(error);
+      else markErrorHandled(error);
+    };
+    return new QueryClient({
+    queryCache: new QueryCache({ onError: (error, query) => {
+      if (query.meta?.silent === true) markErrorHandled(error);
+      else report(error);
+    } }),
+    mutationCache: new MutationCache({ onError: report }),
     defaultOptions: {
       queries: {
-        retry: 1,
+        retry: false,
+        refetchOnWindowFocus: query => query.state.status !== "error",
         staleTime: 15_000,
       },
     },
-  }));
+    });
+  });
   useEffect(() => () => queryClient.clear(), [queryClient]);
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      <Toaster />
     </QueryClientProvider>
   );
 }
 
 export function AppProviders({ children }: { children: ReactNode }) {
+  useEffect(() => authStore.subscribe((next, previous) => {
+    if (getAuthSessionKey(next) !== getAuthSessionKey(previous)) clearToasts();
+  }), []);
   useEffect(() => {
     const sync = (event: StorageEvent) => { if (event.key === AUTH_STORAGE_KEY || event.key === null) authStore.getState().syncSession(); };
     window.addEventListener("storage", sync);
@@ -31,5 +47,5 @@ export function AppProviders({ children }: { children: ReactNode }) {
   }, []);
   const sessionKey = useStore(authStore, getAuthSessionKey);
   // Remount observers too: pending mutations retain the client of their session.
-  return <SessionProviders key={sessionKey}>{children}</SessionProviders>;
+  return <><SessionProviders key={sessionKey}>{children}</SessionProviders><Toaster /></>;
 }

@@ -1,11 +1,13 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { acceptInvitation, cancelOwnership, listInvitations, listMembers, removeMember, resendOwnership, revokeInvitation, startOwnershipTransfer, updateMemberRole, type MemberAuth } from "./api";
+import { acceptInvitation, cancelOwnership, inviteMember, resendInvitation, listInvitations, listMembers, removeMember, resendOwnership, revokeInvitation, startOwnershipTransfer, updateMemberRole, type MemberAuth } from "./api";
 const wid = "00000000-0000-4000-8000-000000000001", uid = "00000000-0000-4000-8000-000000000002", action = "00000000-0000-4000-8000-000000000003";
 const auth: MemberAuth = { accessToken: "access-token", refreshToken: null, workspaceId: wid, onTokenRefresh: vi.fn(), onUnauthorized: vi.fn() };
 function response(data: unknown) { return new Response(JSON.stringify({ code: "OK", message: "成功", request_id: "request", data }), { headers: { "Content-Type": "application/json" } }); }
 const member = { workspace_id: wid, user_id: uid, email: "member@example.test", display_name: "成员", role: "viewer", version: 4, created_at_ms: 1, updated_at_ms: 1 };
 const ownership = { id: action, from_user_id: uid, target_user_id: uid, status: "pending", expires_at_ms: 100, email_sent: false, email_error_summary: null, confirmed_at_ms: null, cancelled_at_ms: null, created_at_ms: 1, updated_at_ms: 1 };
-afterEach(() => vi.unstubAllGlobals());
+const notify = vi.hoisted(() => vi.fn());
+vi.mock("../../shared/ui/Toast", () => ({ showToast: notify }));
+afterEach(() => { vi.unstubAllGlobals(); notify.mockClear(); });
 it("uses explicit workspace paths and native page numbers", async () => {
   const fetchMock = vi.fn().mockResolvedValueOnce(response({ items: [member], pagination: { page: 2, page_size: 20, total: 24 } })).mockResolvedValueOnce(response({ items: [], pagination: { page: 1, page_size: 20, total: 0 } }));
   vi.stubGlobal("fetch", fetchMock);
@@ -39,4 +41,26 @@ it("accepts the nullable native session returned for an already authenticated in
   expect((await acceptInvitation({ token: "synthetic-capability" }, auth)).session).toBeNull();
   expect(fetchMock.mock.calls[0][0]).toBe("/api/v1/invitations/accept");
   expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ token: "synthetic-capability" });
+});
+
+const emailActions = [
+  ["invite", () => inviteMember({ email: "member@example.test", role: "viewer" }, auth), { id: action, email: "member@example.test", role: "viewer", status: "pending", expires_at_ms: 100, email_sent: false, email_error_summary: null, created_at_ms: 1, updated_at_ms: 1 }],
+  ["resend invitation", () => resendInvitation(action, auth), { id: action, email: "member@example.test", role: "viewer", status: "pending", expires_at_ms: 100, email_sent: false, email_error_summary: null, created_at_ms: 1, updated_at_ms: 1 }],
+  ["transfer ownership", () => startOwnershipTransfer(uid, auth), ownership],
+  ["resend ownership", () => resendOwnership(action, auth), ownership],
+] as const;
+it.each(emailActions)("reports a failed %s email without claiming success or losing the created result", async (_label, perform, item) => {
+  vi.stubGlobal("fetch", vi.fn(async () => response({ ...item, email_sent: false, email_error_summary: "邮件服务拒绝发送" })));
+  expect(await perform()).toMatchObject({ id: action, status: "pending", email_sent: false });
+  expect(notify).toHaveBeenCalledExactlyOnceWith({ title: "邮件服务拒绝发送", tone: "warning" });
+});
+it.each(emailActions)("uses the backend success message after %s email delivery", async (_label, perform, item) => {
+  vi.stubGlobal("fetch", vi.fn(async () => response({ ...item, email_sent: true })));
+  await perform();
+  expect(notify).toHaveBeenCalledExactlyOnceWith({ title: "成功", tone: "success" });
+});
+it("keeps partial-success email feedback scoped to the originating session", async () => {
+  vi.stubGlobal("fetch", vi.fn(async () => response({ ...ownership, email_error_summary: "邮件服务拒绝发送" })));
+  await startOwnershipTransfer(uid, { ...auth, canNotify: () => false });
+  expect(notify).not.toHaveBeenCalled();
 });

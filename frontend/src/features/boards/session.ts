@@ -1,6 +1,7 @@
 import { newUUID } from "../../shared/ids";
 import { connectBoard } from "./sync";
 import { ApiError } from "../../shared/api/api-client";
+import { reportError } from "../../shared/api/request-feedback";
 import type { AuthRequestOptions } from "../../shared/auth/use-auth-request";
 import { boardAPI } from "./api";
 import { boardErrorMessage, boardValidationErrors } from "./errors";
@@ -39,6 +40,10 @@ type PendingOperation = {
 };
 const MAX_PENDING_OPERATIONS = 64;
 const MAX_HISTORY_BYTES = 16 * 1024 * 1024;
+function syncErrorKey(error: unknown): string {
+  return error instanceof ApiError ? JSON.stringify([error.status, error.code, error.message])
+    : error instanceof Error ? JSON.stringify([error.name, error.message]) : String(error);
+}
 type History = {
   bytes: number;
   pageID: string;
@@ -125,6 +130,7 @@ export class BoardSession {
   private timer: ReturnType<typeof setTimeout> | null = null;
   private work: Promise<void> = Promise.resolve();
   private sending = false;
+  private reportedSyncError: string | null = null;
   private discarding = false;
   private halted = false;
   private get uncertain() {
@@ -170,6 +176,7 @@ export class BoardSession {
     for (const listener of this.listeners) listener();
   }
   async start(page = "") {
+    this.reportedSyncError = null;
     const boot = ++this.bootGeneration;
     if (this.controller.signal.aborted) this.controller = new AbortController();
     const signal = this.controller.signal;
@@ -178,8 +185,10 @@ export class BoardSession {
       if (signal.aborted || boot !== this.bootGeneration) return;
       this.schedulePoll();
     } catch (error) {
-      if (!signal.aborted && boot === this.bootGeneration)
+      if (!signal.aborted && boot === this.bootGeneration) {
+        reportError(error);
         this.emit({ status: "error", error: (error as Error).message });
+      }
     }
   }
   async loadPage(page: string) {
@@ -276,6 +285,7 @@ export class BoardSession {
           delivery: "queued",
         };
         this.pending.push(pending);
+        this.reportedSyncError = null;
         if (historySource)
           this.historySources.set(input.operation_id, historySource);
         if (historyMode === "normal") this.redoStack = [];
@@ -351,7 +361,10 @@ export class BoardSession {
         // 请求结果未知时，重试必须使用相同的编号和内容，避免重复执行。
         operation.delivery = "unconfirmed";
         stage = "request";
-        const change = await boardAPI(this.auth()).change(
+        const auth = this.auth();
+        const change = await boardAPI({ ...auth, feedback: { ...auth.feedback, error: error =>
+          syncErrorKey(error) !== this.reportedSyncError && (typeof auth.feedback?.error === "function" ? auth.feedback.error(error) : auth.feedback?.error !== false),
+        } }).change(
           this.id,
           operation.input,
           signal,
@@ -367,6 +380,7 @@ export class BoardSession {
               (p) => p.input.operation_id !== operation.input.operation_id,
             );
             this.pending = remaining;
+            this.reportedSyncError = null;
             this.observedPending.delete(operation.input.operation_id);
             this.accept(change);
             const source = this.historySources.get(
@@ -398,6 +412,7 @@ export class BoardSession {
       }
     } catch (error) {
       if (signal.aborted) return;
+      this.reportSyncError(error);
       const permanent =
         error instanceof ApiError &&
         [400, 401, 403, 404, 409, 413, 422].includes(error.status);
@@ -426,6 +441,12 @@ export class BoardSession {
         if (!signal.aborted) this.emit();
       }
     }
+  }
+  private reportSyncError(error: unknown) {
+    const key = syncErrorKey(error);
+    if (key === this.reportedSyncError) return;
+    this.reportedSyncError = key;
+    reportError(error);
   }
   private trimHistory() {
     let bytes = [...this.undoStack, ...this.redoStack].reduce(
@@ -654,6 +675,7 @@ export class BoardSession {
   }
   async retry() {
     if (!this.pending.length || this.discarding || this.sending || this.state.status === "loading") return;
+    this.reportedSyncError = null;
     this.halted = false;
     this.emit({ status: "saving", error: null });
     await this.flush();

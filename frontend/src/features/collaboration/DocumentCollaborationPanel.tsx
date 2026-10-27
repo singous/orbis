@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { Tag } from "../../shared/ui/Tag";
 import { Tabs } from "@heroui/react/tabs";
@@ -6,8 +7,6 @@ import { ActionButton } from "../../shared/ui/ActionButton";
 import { Drawer } from "@heroui/react/drawer";
 import { History, MessageSquare, X } from "../../shared/ui/icons";
 import { useState, type FormEvent } from "react";
-import { ApiError } from "../../shared/api/api-client";
-import { showToast } from "../../shared/ui/Toast";
 import type { NoteContent } from "../../shared/api/schemas";
 import { RevisionContent } from "./RevisionContent";
 import { useComments, useCreateComment, useRevision, useRevisions, useRestoreRevision, useUpdateComment } from "./queries";
@@ -18,8 +17,6 @@ export type RestoreSavedRevision = (expectedVersion: number) => Promise<NoteCont
 type Props = { noteId: string; currentUserId: string; canManage: boolean; open?: boolean; onClose: () => void; onRestore: (restore: RestoreSavedRevision) => Promise<void>; onPrepareVersion?: () => Promise<number> };
 const MAX_COMMENT_LENGTH = 10_000;
 const timestamp = new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Shanghai" });
-function errorText(error: unknown) { return error instanceof ApiError ? error.message : error instanceof Error ? error.message : "操作失败，请稍后重试。"; }
-function ErrorNotice({ error }: { error: unknown }) { return error ? <p className="collaboration-error" role="alert">{errorText(error)}</p> : null; }
 
 function CommentForm({ label, submitLabel, initialBody = "", onSubmit, onCancel }: { label: string; submitLabel: string; initialBody?: string; onSubmit: (body: string) => Promise<void>; onCancel?: () => void }) {
   const [body, setBody] = useState(initialBody);
@@ -29,7 +26,7 @@ function CommentForm({ label, submitLabel, initialBody = "", onSubmit, onCancel 
     if (!body.trim() || pending) return;
     setPending(true);
     try { await onSubmit(body.trim()); setBody(""); }
-    catch (cause) { showToast({ title: "评论未保存", description: errorText(cause), tone: "danger" }); }
+    catch (cause) { reportError(cause); }
     finally { setPending(false); }
   }
   return <form className="collaboration-form" onSubmit={submit}>
@@ -46,7 +43,7 @@ function CommentItem({ comment, parent, canManage, currentUserId, onChanged }: {
   const isAuthor = currentUserId === comment.author_id;
   async function toggleResolved() {
     try { onChanged(await update.mutateAsync({ commentId: comment.id,expected_version:comment.version, is_resolved: !comment.is_resolved })); }
-    catch (cause) { showToast({ title: "讨论状态未更新", description: errorText(cause), tone: "danger" }); }
+    catch (cause) { reportError(cause); }
   }
   return <article className={`collaboration-comment${comment.parent_id ? " is-reply" : ""}${comment.is_resolved ? " is-resolved" : ""}`}>
     {comment.parent_id ? <div className="collaboration-reply-context">回复 {parent?.author_name ?? "讨论"}{parent ? `：${parent.body.slice(0, 60)}` : "（原评论尚未加载）"}</div> : null}
@@ -78,7 +75,7 @@ export function DocumentComments({ noteId, canManage, currentUserId }: Pick<Prop
     <p className="collaboration-hint">在这里讨论整篇文档，所有空间成员都可参与。</p>
     <CommentForm label="新评论" submitLabel="发表评论" onSubmit={async (body) => { rememberComment(await create.mutateAsync({ body })); }} />
     {query.isPending ? <LoadingState label="正在加载评论…" compact /> : null}
-    <ErrorNotice error={query.error} />
+
     {query.isError ? <ActionButton variant="secondary" type="button" className="mvp-button secondary" onClick={() => void query.refetch()}>重试加载评论</ActionButton> : null}
     {!query.isPending && !query.isError && comments.length === 0 ? <p className="collaboration-empty">暂无评论，写下第一条想法。</p> : null}
     <div className="collaboration-comments">{comments.map((comment) => <CommentItem key={comment.id} comment={comment} parent={comment.parent_id ? byId.get(comment.parent_id) : undefined} canManage={canManage} currentUserId={currentUserId} onChanged={rememberComment} />)}</div>
@@ -92,17 +89,14 @@ function Revisions({ noteId, canManage, onRestore, onBusyChange }: Pick<Props, "
   const detail = useRevision(noteId, selectedId);
   const restore = useRestoreRevision(noteId);
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<unknown>(null);
+
   async function restoreSelected() {
     if (!selectedId || pending || !canManage) return;
-    setPending(true); onBusyChange(true); setError(null);
+    setPending(true); onBusyChange(true);
     try {
       await onRestore((expectedVersion) => restore.mutateAsync({ revisionId: selectedId, expectedVersion }));
-      showToast({ title: "历史版本已恢复", description: "原正文可在历史中找回。", tone: "success" });
-    } catch (cause) {
-      setError(cause instanceof ApiError && cause.isConflict
-        ? new Error("文档已在其他位置更新。当前正文仍保留，请先关闭面板处理版本冲突后再恢复。")
-        : cause);
+
+    } catch (cause) { reportError(cause);
     }
     finally { setPending(false); onBusyChange(false); }
   }
@@ -110,17 +104,17 @@ function Revisions({ noteId, canManage, onRestore, onBusyChange }: Pick<Props, "
     <p className="collaboration-hint">这里保留了逐次保存记录，可用于查找较早的内容。</p>
     {!canManage ? <p className="collaboration-hint">只读成员可以查看历史，恢复需要编辑权限。</p> : null}
     {query.isPending ? <LoadingState label="正在加载历史…" compact /> : null}
-    <ErrorNotice error={query.error} />
+
     {query.isError ? <ActionButton variant="secondary" type="button" className="mvp-button secondary" onClick={() => void query.refetch()}>重试加载历史</ActionButton> : null}
     {query.data?.pages[0].items.length === 0 ? <p className="collaboration-empty">暂无历史版本，首次保存正文后会在这里显示。</p> : null}
-    <div className="collaboration-revisions">{query.data?.pages.flatMap((page) => page.items).map((revision) => <ActionButton type="button" className="collaboration-revision" key={revision.id} aria-label={`查看保存记录 ${revision.content_version}`} aria-pressed={selectedId === revision.id} disabled={pending} onClick={() => { setSelectedId(revision.id); setError(null); }}><span>{timestamp.format(revision.created_at_ms)}</span><small>{revision.author_name} · {timestamp.format(revision.created_at_ms)}</small></ActionButton>)}</div>
+    <div className="collaboration-revisions">{query.data?.pages.flatMap((page) => page.items).map((revision) => <ActionButton type="button" className="collaboration-revision" key={revision.id} aria-label={`查看保存记录 ${revision.content_version}`} aria-pressed={selectedId === revision.id} disabled={pending} onClick={() => { setSelectedId(revision.id);  }}><span>{timestamp.format(revision.created_at_ms)}</span><small>{revision.author_name} · {timestamp.format(revision.created_at_ms)}</small></ActionButton>)}</div>
     {query.hasNextPage ? <ActionButton variant="secondary" type="button" className="mvp-button secondary" isPending={query.isFetchingNextPage} disabled={query.isFetchingNextPage || pending} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? "正在加载…" : "加载更多版本"}</ActionButton> : null}
     {selectedId ? <div className="collaboration-preview">
       {detail.isPending ? <LoadingState label="正在加载版本正文…" variant="editor" /> : null}
-      <ErrorNotice error={detail.error} />
+
       {detail.isError ? <ActionButton variant="secondary" type="button" className="mvp-button secondary" onClick={() => void detail.refetch()}>重试加载正文</ActionButton> : null}
       {detail.data ? <><h3>保存记录预览</h3><RevisionContent noteId={noteId} version={detail.data.content_version} blocks={detail.data.blocks}/>{canManage ? <div className="collaboration-restore"><p className="collaboration-hint">恢复会先保存当前草稿，再将此正文保存为新版本。标题也会恢复至该版本；未记录标题的旧版本保留当前标题。</p><ActionButton variant="primary" className="mvp-button primary" type="button" onClick={restoreSelected} disabled={pending}>{pending ? "正在保存草稿并恢复…" : "恢复此版本"}</ActionButton></div> : null}</> : null}
-      <ErrorNotice error={error} />
+
     </div> : null}
   </section>;
 }

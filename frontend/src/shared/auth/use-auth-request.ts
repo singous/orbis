@@ -1,4 +1,4 @@
-import type { SessionTokens } from "../api/api-client";
+import type { ApiRequestOptions, SessionTokens } from "../api/api-client";
 import { useMemo } from "react";
 import { useStore } from "zustand";
 
@@ -8,13 +8,15 @@ export type AuthRequestOptions = {
   accessToken: string;
   refreshToken: string | null;
   workspaceId?: string | null;
+  feedback?: ApiRequestOptions["feedback"];
+  canNotify?: () => boolean;
   onTokenRefresh: (accessToken: string, refreshToken: string) => void;
   onUnauthorized: () => void;
   refreshCoordinator?: (refresh: () => Promise<SessionTokens | null>) => Promise<SessionTokens | null>;
 };
 
 export function authRequestOptions(auth: AuthRequestOptions) {
-  return { token: auth.accessToken, refreshToken: auth.refreshToken, workspaceId: auth.workspaceId, onTokenRefresh: auth.onTokenRefresh, onUnauthorized: auth.onUnauthorized, refreshCoordinator: auth.refreshCoordinator };
+  return { token: auth.accessToken, refreshToken: auth.refreshToken, workspaceId: auth.workspaceId, onTokenRefresh: auth.onTokenRefresh, onUnauthorized: auth.onUnauthorized, refreshCoordinator: auth.refreshCoordinator, feedback: auth.feedback, canNotify: auth.canNotify };
 }
 
 export function useOptionalAuthRequest(): AuthRequestOptions | null {
@@ -26,6 +28,7 @@ export function useOptionalAuthRequest(): AuthRequestOptions | null {
       accessToken: state.accessToken,
       refreshToken: state.refreshToken,
       workspaceId: state.workspace?.id ?? null,
+      canNotify: () => getAuthSessionKey(authStore.getState()) === sessionKey,
       refreshCoordinator: (refresh: () => Promise<SessionTokens | null>) => state.refreshSession(state.credentialID, state.refreshToken!, refresh),
       onTokenRefresh: (accessToken: string, refreshToken: string) => {
         if (authStore.getState().credentialID === state.credentialID) {

@@ -1,4 +1,6 @@
-import { ToastNotification } from "../../shared/ui/Toast";
+import { reportError } from "../../shared/api/request-feedback";
+import { DraftActions } from "../../shared/ui/DraftActions";
+
 import { useContext, useEffect, useRef, useState } from "react";
 import { EmbeddedSurface } from "../../shared/ui/EmbeddedSurface";
 import { exportTable, createTable } from "./api";
@@ -39,8 +41,7 @@ export function DataTableBlock({
   readOnly?: boolean;
 }) {
   const host = useContext(TableHostContext);
-  const [error, setError] = useState<string | null>(null),
-    [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState(false);
   const operation = useRef<string | null>(null);
   if (!host)
     return (
@@ -64,7 +65,7 @@ export function DataTableBlock({
             onClick={() => {
               if (!host.transact || !host.auth) return;
               setCreating(true);
-              setError(null);
+
               operation.current ??= tableId();
               void host
                 .transact((version) =>
@@ -78,14 +79,14 @@ export function DataTableBlock({
                     host.auth!,
                   ),
                 )
-                .catch((error) => setError(error.message))
+                .catch((error) => reportError(error))
                 .finally(() => setCreating(false));
             }}
           >
             {creating ? "正在创建…" : "创建表格"}
           </Button>
         ) : null}
-        {error ? <p role="alert">{error}</p> : null}
+
       </div>
     );
   return (
@@ -185,7 +186,7 @@ function DataTableEditor({
         link.click();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
       })
-      .catch((error) => setActionError(error.message));
+      .catch((error) => { reportError(error); setActionError(error.message); });
   }
   const selectedRecord = record
     ? (table.rows.find((item) => item.id === record.id) ?? {
@@ -217,7 +218,31 @@ function DataTableEditor({
           !(event.target instanceof HTMLElement && event.target.closest("input,textarea"))) expand(false);
       }}
     >
-      <header className="dt-heading">
+      <header className="dt-heading">{(table.error || actionError) || (table.candidates.length) || (table.dirty && !table.saving) ? <DraftActions label="表格本机修改">{table.error || actionError ? <section><h3 className="mb-2 text-sm font-semibold">保存修改</h3><Button size="sm" onClick={save}>
+            重试保存
+          </Button>
+<Button
+            size="sm"
+            variant="ghost"
+            onClick={() =>
+              void table
+                .reapply()
+                .catch((error) => { reportError(error); setActionError(error.message); })
+            }
+          >
+            以最新版本重新检查本地修改
+          </Button></section> : null}{table.candidates.length ? <section><h3 className="mb-2 text-sm font-semibold">其他草稿</h3>{table.candidates.map((candidate, index) => (
+            <Button
+              size="sm"
+              key={candidate.scope}
+              disabled={table.dirty || table.saving}
+              onClick={() => table.recover(candidate)}
+            >
+              恢复表格草稿 {index + 1}
+            </Button>
+          ))}</section> : null}{table.dirty && !table.saving ? <section><h3 className="mb-2 text-sm font-semibold">当前修改</h3><Button size="sm" onClick={save}>
+            保存修改
+          </Button></section> : null}</DraftActions> : null}
         <Table2 size={18} />
         <div className="dt-title-area">
           {titleEditing ? (
@@ -389,53 +414,7 @@ function DataTableEditor({
           </details>
         </div>
       </div>
-      {table.error || actionError ? (
-        <ToastNotification title="表格修改尚未保存" tone="danger" timeout={0}>
-          {table.error ?? actionError}
-          <Button size="sm" onClick={save}>
-            重试保存
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() =>
-              void table
-                .reapply()
-                .catch((error) => setActionError(error.message))
-            }
-          >
-            以最新版本重新检查本地修改
-          </Button>
-        </ToastNotification>
-      ) : null}
-      {table.storageError ? (
-        <ToastNotification tone="warning" title="表格草稿尚未持久保存" timeout={0}>
-          {table.storageError}
-        </ToastNotification>
-      ) : null}
-      {table.candidates.length ? (
-        <ToastNotification title="检测到保留的表格草稿" tone="warning" timeout={0}>
-          <span>发现其他会话保留的表格草稿，恢复后原草稿仍会保留。</span>
-          {table.candidates.map((candidate, index) => (
-            <Button
-              size="sm"
-              key={candidate.scope}
-              disabled={table.dirty || table.saving}
-              onClick={() => table.recover(candidate)}
-            >
-              恢复表格草稿 {index + 1}
-            </Button>
-          ))}
-        </ToastNotification>
-      ) : null}
-      {table.dirty && !table.saving ? (
-        <ToastNotification title="本机修改待同步" tone="default" timeout={0}>
-          <span>本机修改待同步</span>
-          <Button size="sm" onClick={save}>
-            保存修改
-          </Button>
-        </ToastNotification>
-      ) : null}
+
       {view.kind === "grid" || host.shareToken ? (
         <TableGrid
           definition={definition}

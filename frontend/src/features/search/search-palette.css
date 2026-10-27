@@ -142,7 +142,6 @@
 .search-palette-result-copy .search-palette-snippet { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; white-space: normal; overflow-wrap: anywhere; }
 .search-palette-result-type { flex: none; padding-top: 2px; color: var(--text-tertiary); font-size: var(--orbis-text-caption-size); line-height: var(--orbis-text-caption-leading); }
 .search-palette-empty { padding: var(--orbis-space-8) var(--orbis-space-4); margin: 0; text-align: center; color: var(--text-secondary); font-size: var(--orbis-text-ui-size); line-height: var(--orbis-text-ui-leading); }
-.search-palette-error { display: flex; align-items: center; flex-wrap: wrap; gap: var(--orbis-space-2); padding: var(--orbis-space-3); margin-bottom: var(--orbis-space-3); border-radius: 8px; background: var(--danger-soft); color: var(--danger); font-size: var(--orbis-text-ui-size); line-height: var(--orbis-text-ui-leading); }
 .search-palette-pagination { display: flex; justify-content: center; align-items: center; gap: var(--orbis-space-3); margin-top: var(--orbis-space-4); color: var(--text-secondary); font-size: var(--orbis-text-caption-size); }
 
 .search-palette-footer { display: flex; align-items: center; flex: none; gap: var(--orbis-space-4); min-height: var(--orbis-control-form-height); padding: var(--orbis-space-1) var(--orbis-space-4); border-top: 1px solid var(--border-subtle); color: var(--text-tertiary); font-size: var(--orbis-text-caption-size); line-height: var(--orbis-text-caption-leading); }

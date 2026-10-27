@@ -1,3 +1,4 @@
+import { Toaster } from "../../src/shared/ui/Toast";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useNavigate } from "react-router-dom";
@@ -16,7 +17,7 @@ const form = (token: string) => ({ id: token, version: token === "a" ? 1 : 2, co
 function Navigation() { const navigate = useNavigate(); return <button onClick={() => navigate("/forms/b")}>打开 B</button>; }
 function mount() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
-  render(<QueryClientProvider client={client}><MemoryRouter initialEntries={["/forms/a"]}><Navigation /><Routes><Route path="/forms/:token" element={<PublicSheetForm />} /></Routes></MemoryRouter></QueryClientProvider>);
+  render(<QueryClientProvider client={client}><MemoryRouter initialEntries={["/forms/a"]}><Navigation /><Routes><Route path="/forms/:token" element={<PublicSheetForm />} /></Routes></MemoryRouter><Toaster /></QueryClientProvider>);
   return client;
 }
 beforeEach(() => { vi.resetAllMocks(); sessionStorage.clear(); vi.mocked(readPublicForm).mockImplementation(async token => form(token)); });

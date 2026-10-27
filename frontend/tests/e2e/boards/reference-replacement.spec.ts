@@ -30,7 +30,7 @@ test("replacing a live reference keeps failed edits until the user explicitly di
     await page.getByRole("button", { name: "更换引用", exact: true }).click();
     await page.getByRole("button", { name: "替换目标画板", exact: true }).click();
     await page.getByRole("button", { name: "插入画板", exact: true }).click();
-    await expect(page.getByRole("dialog", { name: "画板尚未保存", exact: true })).toBeVisible();
+    await expect(page.getByRole("alertdialog", { name: "画板尚未保存", exact: true })).toBeVisible();
   }
   await selectReplacement();
   expect(await boardID()).toBe(original.id);

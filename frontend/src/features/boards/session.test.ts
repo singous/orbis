@@ -2,6 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BoardSession } from "./session";
 import { makeElement, type Board, type Change, type Mutation } from "./model";
 import { ApiError } from "../../shared/api/api-client";
+import { reportRequestError } from "../../shared/api/request-feedback";
+
+const notify = vi.hoisted(() => vi.fn());
+vi.mock("../../shared/ui/Toast", () => ({ showToast: notify }));
 
 const mock = vi.hoisted(() => ({
   get: vi.fn(),
@@ -81,6 +85,33 @@ function ack(input: Mutation): Change {
   };
 }
 describe("board in-memory saving", () => {
+  it("reports a local startup validation failure and allows retrying the referenced page", async () => {
+    const { s } = session();
+    mock.get.mockResolvedValueOnce({ ...metadata, pages: [] });
+    await s.start(metadata.pages[0].id);
+    expect(s.getSnapshot().status).toBe("error");
+    expect(notify).toHaveBeenCalledExactlyOnceWith({ title: "画板没有可读取的页面。", tone: "danger" });
+    await s.start(metadata.pages[0].id);
+    expect(s.getSnapshot()).toMatchObject({ status: "saved", pageID: metadata.pages[0].id });
+  });
+
+  it("reports each explicit save retry once and retains the original request", async () => {
+    const { s } = session();
+    await s.start();
+    mock.change.mockImplementation(async () => {
+      const failure = new ApiError(503, "保存暂时失败", "TEMPORARY_ERROR");
+      reportRequestError(failure);
+      throw failure;
+    });
+    await s.submit([{ type: "elements.create", elements: [makeElement("flow.process", metadata.pages[0].id, 0, 0)] }]);
+    await vi.waitFor(() => expect(s.getSnapshot().status).toBe("save_failed"));
+    expect(notify).toHaveBeenCalledTimes(1);
+    await s.retry();
+    expect(notify).toHaveBeenCalledTimes(2);
+    expect(mock.change.mock.calls[1][1]).toEqual(mock.change.mock.calls[0][1]);
+    expect(s.getSnapshot().pending).toBe(1);
+  });
+
   it("opens and saves without accessing browser storage", async () => {
     const open = vi.fn(() => { throw new Error("Storage is unavailable"); });
     vi.stubGlobal("indexedDB", { open });

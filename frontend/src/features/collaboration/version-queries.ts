@@ -11,7 +11,7 @@ export const versionKeys = {
 };
 export function useDocumentVersions(id: string) {
   const auth = useAuthRequest();
-  return useInfiniteQuery({ queryKey: versionKeys.list(id), initialPageParam: null as string | null, queryFn: ({ pageParam, signal }) => listDocumentVersions(id, pageParam, auth, signal), getNextPageParam: page => page.pagination.has_more ? page.pagination.next_cursor : undefined, refetchInterval: 15_000 });
+  return useInfiniteQuery({ queryKey: versionKeys.list(id), initialPageParam: null as string | null, queryFn: ({ pageParam, signal }) => listDocumentVersions(id, pageParam, auth, signal), getNextPageParam: page => page.pagination.has_more ? page.pagination.next_cursor : undefined, refetchInterval: query => query.state.status === "error" ? false : 15_000 });
 }
 export function useDocumentVersion(id: string, version: string | null) {
   const auth = useAuthRequest();
@@ -36,7 +36,7 @@ function useVersionWrite<Input, Result>(id: string, write: (id: string, input: I
       catch (error) {
         const definitive = error instanceof ApiError && error.status >= 400 && error.status < 500;
         if (!definitive) pending.current.uncertain = true;
-        if (pending.current.uncertain) throw new ApiError(503, "操作结果尚未确认，请重试原操作。", "DOCUMENT_WRITE_RESULT_UNKNOWN");
+        if (pending.current.uncertain) throw new ApiError(503, "操作结果尚未确认，请重试原操作。", "DOCUMENT_WRITE_RESULT_UNKNOWN", "", null, { cause: error });
         pending.current = null;
         throw error;
       }

@@ -1,3 +1,4 @@
+import { withRequestFeedback } from "../../shared/api/request-feedback";
 import { z } from "zod";
 import { ApiError,apiRequest,workspacePath } from "../../shared/api/api-client";
 import { authRequestOptions,type AuthRequestOptions } from "../../shared/auth/use-auth-request";
@@ -27,6 +28,7 @@ export async function getRevision(id:string,revisionId:string,auth:AuthRequestOp
   return revisionSchema.parse({...raw.revision,blocks:{schema_version:2,editor:"blocknote",blocks:raw.blocks.map(editorBlock)}});
 }
 export async function restoreRevision(id:string,revisionId:string,expectedVersion:number,operationId:string,auth:AuthRequestOptions){
+  return withRequestFeedback({ ...auth, feedback: { ...auth.feedback, success: true } }, async auth => {
   const body={operation_id:operationId,expected_version:expectedVersion,source_version:Number(revisionId)};
   let uncertain=false;
   for(let attempt=0;attempt<2;attempt+=1){
@@ -39,8 +41,10 @@ export async function restoreRevision(id:string,revisionId:string,expectedVersio
       const definitive=error instanceof ApiError&&error.status>=400&&error.status<500;
       if(definitive&&!uncertain)throw error;
       uncertain=true;
-      if(attempt===1||definitive)throw new ApiError(503,"恢复结果尚未确认，请重试原来的恢复操作。当前草稿仍保留。","DOCUMENT_WRITE_RESULT_UNKNOWN","",{operation_id:operationId});
+      if(attempt===1||definitive)throw new ApiError(503, "恢复结果尚未确认，请重试原来的恢复操作。当前草稿仍保留。", "DOCUMENT_WRITE_RESULT_UNKNOWN", "", {operation_id:operationId}, { cause: error });
     }
   }
   throw new Error("Unreachable revision restore recovery");
+
+  });
 }

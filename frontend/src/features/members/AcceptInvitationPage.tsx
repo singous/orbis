@@ -3,10 +3,8 @@ import { Check, UserPlus } from "../../shared/ui/icons";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
-import { ApiError } from "../../shared/api/api-client";
 import { useOptionalAuthRequest } from "../../shared/auth/use-auth-request";
 import { Button, buttonVariants } from "../../shared/ui/Button";
-import { ToastNotification, showToast } from "../../shared/ui/Toast";
 import { TextInput } from "../../shared/ui/TextInput";
 import { authStore } from "../../shared/auth/auth-store";
 import { listWorkspaces } from "../workspace/api";
@@ -46,14 +44,13 @@ function InvitationSession({ invitationToken }: { invitationToken: string }) {
       try {
         const choices = await listWorkspaces({ ...credentials, onTokenRefresh: (accessToken, refreshToken) => { credentials.accessToken = accessToken; credentials.refreshToken = refreshToken; }, onUnauthorized: () => {} });
         workspace = choices.items.find(item => item.id === result.member.workspace_id) ?? null;
-      } catch { if (active.current) showToast({ title: "已加入工作空间", description: "空间列表暂时不可用，登录后可重新选择。", tone: "success" }); }
+      } catch { /* 加入已完成，空间列表可在进入后重新读取。 */ }
       current = authStore.getState();
       if (!active.current || current.sessionGeneration !== generation) return;
       current.setSession({ ...credentials, user: result.user, workspace });
       navigate("/documents", { replace: true });
     },
   });
-  const error = accept.error as ApiError | null;
 
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -78,10 +75,10 @@ function InvitationSession({ invitationToken }: { invitationToken: string }) {
             <p className="mt-3 text-sm leading-6 text-[var(--muted)]">{auth ? "使用当前登录账号确认加入受邀工作空间。" : "首次加入需要设置显示名称和密码。已有账号请先登录，再重新打开邀请链接。"}</p>
             <form className="mt-6 grid gap-4" onSubmit={submit}>
               {inspection.data ? <p>工作空间：{inspection.data.workspace_name} · {inspection.data.email}</p> : null}
-              {inspection.isError ? <ToastNotification tone="danger" title="邀请不可用">{inspection.error.message}</ToastNotification> : null}
+
               {!auth && !inspection.data?.account_exists ? <><TextInput label="显示名称" value={displayName} required onChange={(event) => setDisplayName(event.target.value)} /><TextInput label="设置密码" type="password" minLength={1} value={password} required onChange={(event) => setPassword(event.target.value)} /></> : null}
               {!auth && inspection.data?.account_exists ? <Link to="/login" state={{ from: location.pathname + location.search + location.hash }}>登录受邀账号后继续</Link> : null}
-              {error ? <ToastNotification tone="danger" title="无法接受邀请">{error.code === "INVITATION_ACCOUNT_AUTHENTICATION_REQUIRED" ? "该邮箱已有账号，请先登录对应账号。" : error.message}</ToastNotification> : null}
+
               <Button type="submit" variant="primary" className="mt-2 w-full" disabled={!invitationToken || inspection.isPending || inspection.isError || (!auth && Boolean(inspection.data?.account_exists)) || accept.isPending}>确认加入</Button>
             </form>
             <div className="mt-5 text-center text-xs text-[var(--muted)]"><Link className="font-semibold text-[var(--text-primary)]" to="/login">返回登录</Link></div>

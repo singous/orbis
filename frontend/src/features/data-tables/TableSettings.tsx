@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { useState } from "react";
 import { Button } from "../../shared/ui/Button";
 import { Dialog, DialogContent } from "../../shared/ui/Dialog";
@@ -28,10 +29,10 @@ export function FieldDialog({
   const [options, setOptions] = useState(
     field?.options.map((option) => option.label).join("\n") ?? "",
   );
-  const [error, setError] = useState("");
+
   function submit() {
     if (!name.trim()) {
-      setError("请填写字段名称");
+      reportError("请填写字段名称");
       return;
     }
     const labels = options
@@ -53,7 +54,7 @@ export function FieldDialog({
         : [],
     };
     if (field && next.options.length < field.options.length) {
-      setError("已有选项需要保留；可以重命名或追加选项");
+      reportError("已有选项需要保留；可以重命名或追加选项");
       return;
     }
     onSave({
@@ -76,18 +77,14 @@ export function FieldDialog({
       (id) => id !== field.id,
     );
     if (!publicFields.length) {
-      setError(
-        "这是唯一公开字段，请先在视图设置中明确选择其他公开字段，再删除。",
-      );
+      reportError("这是唯一公开字段，请先在视图设置中明确选择其他公开字段，再删除。");
       return;
     }
     const publicView = definition.views.find(
       (view) => view.id === definition.public_view_id,
     )!;
     if (publicView.filters.some((filter) => filter.field_id === field.id)) {
-      setError(
-        "公开视图正在使用此字段筛选记录，请先调整公开筛选，再删除字段。",
-      );
+      reportError("公开视图正在使用此字段筛选记录，请先调整公开筛选，再删除字段。");
       return;
     }
     const fields = definition.fields.filter((item) => item.id !== field.id);
@@ -155,7 +152,7 @@ export function FieldDialog({
               />
             </label>
           ) : null}
-          {error ? <p role="alert">{error}</p> : null}
+
           <div className="dt-form-actions">
             {field ? (
               <Button
@@ -190,7 +187,7 @@ export function ViewDialog({
   const [draft, setDraft] = useState(() => structuredClone(view));
   const [publicFields, setPublicFields] = useState(definition.public_field_ids);
   const [publicView, setPublicView] = useState(definition.public_view_id);
-  const [error, setError] = useState("");
+
   const setFilter = (index: number, change: Partial<TableFilter>) =>
     setDraft((old) => ({
       ...old,
@@ -552,7 +549,7 @@ export function ViewDialog({
               </label>
             ))}
           </fieldset>
-          {error ? <p role="alert">{error}</p> : null}
+
           <div className="dt-form-actions">
             <Button
               variant="primary"
@@ -562,7 +559,7 @@ export function ViewDialog({
                   !draft.field_ids.length ||
                   !publicFields.length
                 ) {
-                  setError("请填写视图名称，至少保留一个显示字段和公开字段");
+                  reportError("请填写视图名称，至少保留一个显示字段和公开字段");
                   return;
                 }
                 onSave({

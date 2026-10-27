@@ -41,7 +41,7 @@ it("keeps unsaved edits when cancelling a plain Link navigation and proceeds onl
   const user = userEvent.setup();
   const { router } = show(saveSession());
   await user.click(await screen.findByRole('link', { name: '源画板' }));
-  expect(screen.getByRole('dialog', { name: '画板尚未保存' })).toBeVisible();
+  expect(screen.getByRole('alertdialog', { name: '画板尚未保存' })).toBeVisible();
   expect(router.state.location.pathname).toBe('/board');
   await user.click(screen.getByRole('button', { name: '留在当前页' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
@@ -59,7 +59,7 @@ it.each(['back', 'programmatic'])("blocks %s navigation while any one of multipl
   await screen.findByText('画板编辑页');
   if (kind === 'back') await act(async () => { await router.navigate(-1); });
   else await user.click(screen.getByRole('button', { name: '程序跳转' }));
-  expect(await screen.findByRole('dialog', { name: '画板尚未保存' })).toBeVisible();
+  expect(await screen.findByRole('alertdialog', { name: '画板尚未保存' })).toBeVisible();
   expect(router.state.location.pathname).toBe('/board');
   act(() => first.publish(0));
   expect(await screen.findByRole('heading', { name: '源画板页' })).toBeVisible();

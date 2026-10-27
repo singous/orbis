@@ -28,7 +28,8 @@ function StoredImageIcon({ fileId, size, className }: { fileId: string; size: No
   const sessionKey = useStore(authStore, getAuthSessionKey);
   const image = useQuery({
     queryKey: ["notebook-icon", sessionKey, fileId],
-    queryFn: () => getNotebookIcon(fileId, auth!),
+    queryFn: () => getNotebookIcon(fileId, { ...auth!, feedback: { error: false } }),
+    meta: { silent: true },
     enabled: Boolean(auth),
     staleTime: 5 * 60 * 1000,
     retry: false,

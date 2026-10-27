@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useStore } from "zustand";
@@ -16,6 +17,7 @@ import { boardAPI } from "./api";
 import { SHAPES, type Board, type Element } from "./model";
 import { EmbeddedSurface } from "../../shared/ui/EmbeddedSurface";
 import { BoardPreviewViewport } from "./BoardPreviewViewport";
+import { BoardDiscardDialog } from "./BoardDiscardDialog";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import type { BoardSession } from "./session";
 import "./board-preview.css";
@@ -97,7 +99,7 @@ export function BoardEmbed({
         { ...authRequestOptions(auth!), signal },
       ),
     staleTime: 10_000,
-    refetchInterval: revision ? false : 15_000,
+    refetchInterval: query => revision || query.state.status === "error" ? false : 15_000,
     retry: false,
   });
   useEffect(() => {
@@ -142,7 +144,7 @@ export function BoardEmbed({
           <BoardPreviewViewport key={`${id}:${page}:${revision}:${String(props.frame_id ?? "")}`}><img src={url} alt={meta.data?.title ?? "画板预览"} draggable={false} /></BoardPreviewViewport>
         ) : (
           <div className="board-preview-empty">
-            {query.error ? <><p role="alert">{query.error.message}</p><ActionButton onPress={() => void query.refetch()}>重试读取画板</ActionButton></> : !id ? <><Shapes size={30} /><p>{readOnly ? "尚未选择画板" : "选择已有画板，将内容嵌入当前文档。"}</p></> : <p>{auth ? "正在读取画板预览…" : "请登录工作空间查看画板。"}</p>}
+            {query.error ? <><ActionButton onPress={() => void query.refetch()}>重试读取画板</ActionButton></> : !id ? <><Shapes size={30} /><p>{readOnly ? "尚未选择画板" : "选择已有画板，将内容嵌入当前文档。"}</p></> : <p>{auth ? "正在读取画板预览…" : "请登录工作空间查看画板。"}</p>}
           </div>
         )}
       </EmbeddedSurface>
@@ -159,15 +161,11 @@ export function BoardEmbed({
           }}
         />
       ) : null}
-      <Dialog open={replacement !== null} onOpenChange={open => { if (!open) setReplacement(null); }}>
-        <DialogContent title="画板尚未保存">
-          <p>更换引用后，当前画板未保存的修改不会恢复。可以保留当前画板重试保存，或放弃修改后更换。</p>
-          <div className="mt-4 flex justify-end gap-2">
-            <ActionButton onPress={() => setReplacement(null)}>保留当前画板</ActionButton>
-            <ActionButton variant="danger" disabled={readOnly || !onBind} onPress={() => { if (replacement) bind(replacement); }}>放弃并更换</ActionButton>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <BoardDiscardDialog open={replacement !== null}
+        description="更换引用后，当前画板未保存的修改不会恢复。可以保留当前画板重试保存，或放弃修改后更换。"
+        cancelLabel="保留当前画板" discardLabel="放弃并更换" disabled={readOnly || !onBind}
+        onCancel={() => setReplacement(null)} onDiscard={() => { if (replacement) bind(replacement); }}
+      />
     </div>
   );
 }
@@ -186,7 +184,6 @@ function BoardPicker({
     [pageID, setPageID] = useState(""),
     [frameID, setFrameID] = useState(""),
     [mode, setMode] = useState<"live" | "snapshot">("live"),
-    [error, setError] = useState(""),
     [selecting, setSelecting] = useState<string | null>(null);
   const selectionGeneration = useRef(0);
   const selectionAbort = useRef<AbortController | null>(null);
@@ -219,7 +216,7 @@ function BoardPicker({
     const abort = new AbortController();
     selectionAbort.current = abort;
     setSelecting(id);
-    setError("");
+
     try {
       const board = await boardAPI(auth).get(id, 0, abort.signal);
       if (abort.signal.aborted || generation !== selectionGeneration.current) return;
@@ -229,7 +226,7 @@ function BoardPicker({
       setPageID(board.pages[0].id);
     } catch (error) {
       if (!abort.signal.aborted && generation === selectionGeneration.current)
-        setError(error instanceof Error ? error.message : "画板读取失败，请重试。");
+        reportError(error);
     } finally {
       if (!abort.signal.aborted && generation === selectionGeneration.current)
         setSelecting(null);
@@ -246,9 +243,7 @@ function BoardPicker({
         title="插入画板引用"
         description="画板内容保持独立。实时引用会随原画板更新，固定快照保留当前版本。"
       >
-        {error || query.error ? (
-          <p role="alert">{error || query.error?.message}</p>
-        ) : null}
+
         {selected ? (
           <div className="board-picker-settings">
             <strong>{selected.title}</strong>

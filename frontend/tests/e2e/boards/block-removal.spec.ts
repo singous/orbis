@@ -35,7 +35,7 @@ for (const mode of ["menu", "range", "group"] as const) test(`pending board edit
       await page.getByRole('button', { name: '块操作：画板', exact: true }).click();
       await page.getByRole('menuitem', { name: mode === 'group' ? '组合' : '删除', exact: true }).click();
     }
-    await expect(page.getByRole('dialog', { name: '画板尚未保存', exact: true })).toBeVisible();
+    await expect(page.getByRole('alertdialog', { name: '画板尚未保存', exact: true })).toBeVisible();
   }
   await remove();
   expect((await responseData(await request.get(path, { headers }))).blocks).toEqual(before);

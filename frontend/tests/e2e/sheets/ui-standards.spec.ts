@@ -71,7 +71,7 @@ for (const kind of ["field", "view"] as const) {
       await popover.getByRole("checkbox", { name: "日期", exact: true }).uncheck();
     }
     const save = popover.getByRole("button", { name: kind === "field" ? "保存字段" : "应用", exact: true });
-    const notification = page.getByRole("alertdialog", { name: kind === "field" ? "无法保存字段" : "无法应用设置", exact: true });
+    const notification = page.getByRole("alertdialog", { name: "保存设置失败，请重试", exact: true });
     const expectDraft = async () => {
       await expect(popover).toBeVisible();
       if (kind === "field") await expect(popover.getByRole("textbox", { name: "字段名称", exact: true })).toHaveValue("未保存的状态列");
@@ -79,6 +79,8 @@ for (const kind of ["field", "view"] as const) {
     };
     await save.click();
     await expect(notification).toContainText("保存设置失败，请重试");
+    await expect(page.getByRole("alertdialog")).toHaveCount(1);
+    await expect(notification.getByRole("button")).toHaveCount(1);
     await notification.hover();
     await notification.getByRole("button", { name: "Close", exact: true }).click();
     await expect(notification).toHaveCount(0);

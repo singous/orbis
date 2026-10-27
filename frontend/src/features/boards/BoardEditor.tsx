@@ -1,9 +1,12 @@
+import { ConfirmAction } from "../../shared/ui/ConfirmAction";
+import { reportError } from "../../shared/api/request-feedback";
+import { DraftActions } from "../../shared/ui/DraftActions";
 import { Dropdown } from "@heroui/react/dropdown";
 import { Label } from "@heroui/react/label";
 import { Tabs } from "@heroui/react/tabs";
 import { Toolbar } from "@heroui/react/toolbar";
 import { ToggleButton } from "@heroui/react/toggle-button";
-import { ToastNotification } from "../../shared/ui/Toast";
+
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { Tooltip } from "../../shared/ui/Tooltip";
 import { newUUID } from "../../shared/ids";
@@ -66,7 +69,6 @@ import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { DocumentShell } from "../documents/DocumentShell";
 import { ShareButton } from "../sharing/ShareButton";
 import { BoardSession } from "./session";
-import { boardErrorMessage } from "./errors";
 import { BoardCanvas } from "./BoardCanvas";
 import { BoardLibrary, type BoardLibraryTab } from "./BoardLibrary";
 import { BoardInspector } from "./BoardInspector";
@@ -136,9 +138,7 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
   const [selection, setSelection] = useState<Set<string>>(new Set()),
     [camera, setCamera] = useState<Camera>({ x: 80, y: 80, zoom: 1 }),
     [tool, setTool] = useState("select");
-  const [error, setError] = useState(""),
-    [recoveryError, setRecoveryError] = useState(""),
-    [errorAttempt, setErrorAttempt] = useState(0),
+  const
     [library, setLibrary] = useState(false),
     [inspector, setInspector] = useState(false),
     [comments, setComments] = useState(false),
@@ -148,7 +148,6 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
       created_at_ms: number;
     }>>([]),
     [historyOpen, setHistoryOpen] = useState(false),
-    [discard, setDiscard] = useState(false),
     [layoutBusy, setLayoutBusy] = useState(false);
   const [libraryTab, setLibraryTab] = useState<BoardLibraryTab>("shapes");
   const inspectorID = useId();
@@ -194,25 +193,15 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
     state.status !== "loading" &&
     state.status !== "error";
   const fail = (error: unknown) => {
-    setError(boardErrorMessage(error));
-    setErrorAttempt(attempt => attempt + 1);
+    reportError(error);
   };
   const recover = async (action: () => Promise<void>) => {
-    setRecoveryError("");
     try {
       await action();
     } catch (error) {
-      setRecoveryError(boardErrorMessage(error));
-      setErrorAttempt(attempt => attempt + 1);
+      reportError(error);
     }
   };
-  useEffect(() => {
-    if (!state.pending) {
-      setRecoveryError("");
-      setDiscard(false);
-    }
-  }, [state.pending]);
-  const feedback = [...new Set([state.error, recoveryError, error].filter(Boolean))].join("；");
   useEffect(() => {
     void session.start(embed?.pageID ?? new URLSearchParams(location.search).get("page") ?? "");
     return () => {
@@ -311,7 +300,6 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
   }
   async function arrange() {
     setLayoutBusy(true);
-    setError("");
     layoutAbort.current?.abort();
     const abort = new AbortController();
     layoutAbort.current = abort;
@@ -373,22 +361,36 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
       <LoadingShell>
         {state.error ? (
           <div className="board-loading">
-            <ToastNotification tone="danger" title="无法打开画板" timeout={0}>
-              {state.error}
-              <Button onClick={() => void session.start(embed?.pageID ?? new URLSearchParams(location.search).get("page") ?? "")}>重试</Button>
-            </ToastNotification>
+            <Button onClick={() => void session.start(embed?.pageID ?? new URLSearchParams(location.search).get("page") ?? "")}>重试</Button>
           </div>
         ) : <LoadingState label="正在打开画板…" variant="editor" />}
       </LoadingShell>
     );
   const board = state.board,
     page = board.pages.find((p) => p.id === state.pageID) ?? board.pages[0];
+  const pendingActions = state.pending ? (
+    <DraftActions>
+      <section>
+        <h3 className="mb-2 text-sm font-semibold">当前修改</h3>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button size="sm" disabled={state.status === "saving" || state.status === "loading"} onClick={() => void recover(() => session.retry())}>重试同步</Button>
+          <Button size="sm" onClick={() => void exportFile("json")}>导出当前画板</Button>
+          {state.canDiscard ? (
+            <ConfirmAction title="放弃未保存修改" description="将放弃当前页面未保存的画板修改，并重新读取服务器版本。可以先导出当前画板。" confirmLabel="放弃并重新读取" disabled={!state.canDiscard} onConfirm={() => session.discardPending()}>
+              <Button size="sm">放弃未保存修改</Button>
+            </ConfirmAction>
+          ) : null}
+        </div>
+      </section>
+    </DraftActions>
+  ) : null;
   const saveState = (
     <>
     <span className={"board-save-state is-" + state.status} role="status">
       {state.status === "saved" ? <Check size={13} /> : null}
       {STATUS[state.status]}
     </span>
+    {embed ? pendingActions : null}
     {state.pending > 0 && (state.status === "save_failed" || state.status === "conflict") && <ActionButton size="sm" onPress={() => void recover(() => session.retry())}>重试保存</ActionButton>}
     </>
   );
@@ -399,6 +401,7 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
       .catch(fail);
   const actions = (
     <>
+      {!embed ? pendingActions : null}
       <ShareButton
         notebookId={board.collection_id}
         noteId={board.document_id}
@@ -820,18 +823,6 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
             <RiFunctionAddLine size={16} />
           </ActionButton>
         </Toolbar>
-        {feedback ? (
-          <ToastNotification key={errorAttempt} title="画板操作未完成" tone="danger" timeout={state.pending ? 0 : undefined}>
-            <span>{feedback}</span>
-            {state.canDiscard ? (
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button size="sm" onClick={() => { setRecoveryError(""); setDiscard(true); }}>
-                  放弃未保存修改
-                </Button>
-              </div>
-            ) : null}
-          </ToastNotification>
-        ) : null}
 
         {comments ? (
           <section className="board-comments">
@@ -911,31 +902,6 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
           event.target.value = "";
         }}
       />
-      <Dialog
-        open={discard}
-        onOpenChange={(open) => {
-          if (!open) setDiscard(false);
-        }}
-      >
-        <DialogContent title="放弃未保存修改">
-          <p>
-            将放弃当前页面中尚未保存的画板修改，并重新读取服务器版本。
-          </p>
-          <Button onClick={() => setDiscard(false)}>继续保留</Button>
-          <Button
-            variant="danger"
-            disabled={!state.canDiscard}
-            onClick={() =>
-              void recover(async () => {
-                await session.discardPending();
-                setDiscard(false);
-              })
-            }
-          >
-            放弃并重新读取
-          </Button>
-        </DialogContent>
-      </Dialog>
       <Dialog
         open={historyOpen}
         onOpenChange={setHistoryOpen}

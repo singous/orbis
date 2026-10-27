@@ -31,7 +31,7 @@ test("retrying an embedded load keeps the referenced second board page", async (
     } else await route.continue();
   });
   await page.getByRole("button", { name: "编辑画板", exact: true }).click();
-  await expect(page.getByRole("alertdialog", { name: "无法打开画板", exact: true })).toBeVisible();
+  await expect(page.getByRole("alertdialog", { name: "读取暂时失败", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "重试", exact: true }).click();
   await expect(page.getByRole("tab", { name: "第二页", exact: true })).toBeVisible();
   await expect(page.locator(".board-save-state")).toHaveText("已保存");
