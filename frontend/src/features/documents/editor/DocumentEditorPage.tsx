@@ -841,7 +841,7 @@ export function LegacyDocumentEditorPage() {
             {hasMoreContent ? <div ref={loadMoreTarget} className="document-load-more" aria-live="polite">
               {loadingMore ? <LoadingState label="正在载入后续正文…" compact /> : null}
 
-              {!loadingMore && !loadMoreError ? <Button variant="ghost" onClick={() => void loadMoreContent().catch(() => {})}>继续阅读</Button> : null}
+              {!loadingMore ? <Button variant="ghost" onClick={() => void loadMoreContent().catch(() => {})}>继续阅读</Button> : null}
             </div> : null}
           </article>
         </EditorLayout>

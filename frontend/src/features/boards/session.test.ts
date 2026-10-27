@@ -4,6 +4,11 @@ import { BoardSession } from "./session";
 import { readJournal, writeJournal, type PendingOperation } from "./journal";
 import { makeElement, type Board, type Change, type Mutation } from "./model";
 import { ApiError } from "../../shared/api/api-client";
+import { reportRequestError } from "../../shared/api/request-feedback";
+import * as journal from "./journal";
+
+const notify = vi.hoisted(() => vi.fn());
+vi.mock("../../shared/ui/Toast", () => ({ showToast: notify }));
 
 const mock = vi.hoisted(() => ({
   get: vi.fn(),
@@ -85,6 +90,38 @@ function ack(input: Mutation): Change {
   };
 }
 describe("board durable save", () => {
+  it("reports a local journal startup failure before any HTTP request and permits a new attempt", async () => {
+    const error = new Error("无法打开本机画板草稿，请检查浏览器存储权限。");
+    vi.spyOn(journal, "readJournal").mockRejectedValue(error);
+    const { s } = session();
+    await s.start();
+    expect(s.getSnapshot()).toMatchObject({ status: "error", board: null, error: error.message });
+    expect(mock.get).not.toHaveBeenCalled();
+    expect(notify).toHaveBeenCalledExactlyOnceWith({ title: error.message, tone: "danger" });
+    await s.start();
+    expect(notify).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not repeat a startup error already reported by the request layer", async () => {
+    const error = new ApiError(403, "无权访问此画板");
+    mock.get.mockImplementation(async () => { reportRequestError(error); throw error; });
+    const { s } = session();
+    await s.start();
+    expect(notify).toHaveBeenCalledExactlyOnceWith({ title: error.message, tone: "danger" });
+  });
+
+  it("ignores a journal failure after the board is closed", async () => {
+    let reject!: (error: Error) => void;
+    vi.spyOn(journal, "readJournal").mockImplementation(() => new Promise((_, fail) => { reject = fail; }));
+    const { s } = session();
+    const opening = s.start();
+    s.dispose();
+    reject(new Error("本机存储不可用"));
+    await opening;
+    expect(notify).not.toHaveBeenCalled();
+    expect(mock.get).not.toHaveBeenCalled();
+  });
+
   it("does not notify the editor during idle polling without pending operations", async () => {
     const { s } = session();
     await s.start();

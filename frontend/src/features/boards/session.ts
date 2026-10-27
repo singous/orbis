@@ -1,6 +1,7 @@
 import { newUUID } from "../../shared/ids";
 import { connectBoard } from "./sync";
 import { ApiError } from "../../shared/api/api-client";
+import { reportError } from "../../shared/api/request-feedback";
 import type { AuthRequestOptions } from "../../shared/auth/use-auth-request";
 import { boardAPI } from "./api";
 import { boardErrorMessage, boardValidationErrors } from "./errors";
@@ -186,8 +187,10 @@ export class BoardSession {
       void this.flush();
       this.schedulePoll();
     } catch (error) {
-      if (!signal.aborted && boot === this.bootGeneration)
+      if (!signal.aborted && boot === this.bootGeneration) {
+        reportError(error);
         this.emit({ status: "error", error: (error as Error).message });
+      }
     }
   }
   async loadPage(page: string) {
