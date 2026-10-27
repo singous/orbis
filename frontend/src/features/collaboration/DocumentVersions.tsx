@@ -1,5 +1,5 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { useRef, useState, type FormEvent } from "react";
-import { ZodError } from "zod";
 import { TextArea } from "@heroui/react/textarea";
 import { ApiError } from "../../shared/api/api-client";
 import { ActionButton } from "../../shared/ui/ActionButton";
@@ -7,16 +7,14 @@ import { Button } from "../../shared/ui/Button";
 import { TextInput } from "../../shared/ui/TextInput";
 import { SelectField } from "../../shared/ui/SelectField";
 import { LoadingState } from "../../shared/ui/LoadingState";
-import { showToast } from "../../shared/ui/Toast";
 import { documentVersionLabel, type DocumentVersion, type SaveVersionInput } from "./version-api";
 import { useDocumentVersion, useDocumentVersionComparison, useDocumentVersions, useEditDocumentVersion, useRestoreDocumentVersion, useSaveDocumentVersion } from "./version-queries";
 import { RevisionContent } from "./RevisionContent";
 import type { RestoreSavedRevision } from "./DocumentCollaborationPanel";
 
 const formatTime = new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Shanghai" });
-const errorMessage = (error: unknown) => error instanceof ZodError ? "版本响应不完整，请刷新后重试。" : error instanceof Error ? error.message : "操作未完成，请重试。";
+
 const uncertain = (error: unknown) => error instanceof ApiError && error.code === "DOCUMENT_WRITE_RESULT_UNKNOWN";
-function ErrorNotice({ error }: { error: unknown }) { return error ? <p role="alert" className="collaboration-error">{errorMessage(error)}</p> : null; }
 
 type Props = {
   noteId: string;
@@ -39,7 +37,7 @@ function VersionMetadata({ version, noteId, onBusyChange }: { version: DocumentV
     try {
       await update.mutateAsync({ id: version.id, name: name.trim() || null, description, expected_metadata_version: baseVersion });
       setEditing(false);
-      showToast({ title: "版本信息已更新", tone: "success" });
+
     } catch { /* The mutation exposes the actionable error without discarding input. */ }
     finally { onBusyChange(false); }
   }
@@ -47,7 +45,7 @@ function VersionMetadata({ version, noteId, onBusyChange }: { version: DocumentV
   return <form className="collaboration-form" onSubmit={submit}>
     <TextInput label="版本名称" value={name} maxLength={120} disabled={update.isPending || uncertain(update.error)} onChange={event => setName(event.target.value)} />
     <label><span>版本说明</span><TextArea value={description} maxLength={2000} disabled={update.isPending || uncertain(update.error)} onChange={event => setDescription(event.target.value)} /></label>
-    <ErrorNotice error={update.error} />
+
     <div className="collaboration-actions"><Button type="submit" variant="primary" disabled={update.isPending}>{update.isPending ? "正在更新…" : uncertain(update.error) ? "重试更新信息" : "更新版本信息"}</Button><Button type="button" variant="secondary" disabled={update.isPending || uncertain(update.error)} onClick={() => setEditing(false)}>取消</Button></div>
   </form>;
 }
@@ -59,7 +57,7 @@ function VersionComparison({ noteId, from, to }: { noteId: string; from: string;
   return <section className="collaboration-version-diff" aria-label="版本差异">
     <h4>内容差异</h4>
     {comparison.isPending ? <LoadingState label="正在比较版本…" compact /> : null}
-    <ErrorNotice error={comparison.error} />
+
     {comparison.isError ? <Button type="button" variant="secondary" onClick={() => void comparison.refetch()}>重试比较版本</Button> : null}
     {result && result.from.title !== result.to.title ? <p>标题：<del>{result.from.title}</del> → <ins>{result.to.title}</ins></p> : null}
     {result && result.items.length === 0 ? <p className="collaboration-hint">正文内容与结构相同。</p> : null}
@@ -81,7 +79,7 @@ export function DocumentVersions({ noteId, canManage, onPrepare, onRestore, onBu
   const [creating, setCreating] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [metadataBusy, setMetadataBusy] = useState(false);
-  const [error, setError] = useState<unknown>(null);
+
   const pendingSave = useRef<SaveVersionInput | null>(null);
   const pendingRestore = useRef<{ id: string; expected_revision: number } | null>(null);
   const save = useSaveDocumentVersion(noteId);
@@ -95,28 +93,28 @@ export function DocumentVersions({ noteId, canManage, onPrepare, onRestore, onBu
   async function saveVersion(event: FormEvent) {
     event.preventDefault();
     if (!onPrepare || busy) return;
-    setPreparing(true); onBusyChange(true); setError(null);
+    setPreparing(true); onBusyChange(true);
     try {
       pendingSave.current ??= { name: name.trim(), description, source_revision: await onPrepare() };
       const version = await save.mutateAsync(pendingSave.current);
       pendingSave.current = null; setName(""); setDescription(""); setSelectedId(version.id); setCreating(false);
-      showToast({ title: "版本已保存", description: "此版本的内容已固定，可随时查看和恢复。", tone: "success" });
+
     } catch (cause) {
       if (!uncertain(cause)) pendingSave.current = null;
-      setError(cause);
+      reportError(cause);
     } finally { setPreparing(false); onBusyChange(false); }
   }
   async function restoreSelected() {
     if (!selectedId || busy) return;
-    onBusyChange(true); setError(null);
+    onBusyChange(true);
     try {
       await onRestore(expected => {
         pendingRestore.current ??= { id: selectedId, expected_revision: expected };
         return restore.mutateAsync(pendingRestore.current);
       });
       pendingRestore.current = null;
-      showToast({ title: "历史版本已恢复", description: "恢复前的内容已保存在历史中。", tone: "success" });
-    } catch (cause) { if (!uncertain(cause)) pendingRestore.current = null; setError(cause); }
+
+    } catch (cause) {   if (!uncertain(cause)) pendingRestore.current = null; reportError(cause); }
     finally { onBusyChange(false); }
   }
 
@@ -131,19 +129,19 @@ export function DocumentVersions({ noteId, canManage, onPrepare, onRestore, onBu
       <Button type="submit" variant="primary" disabled={busy || restoreUncertain || !name.trim()}>{busy ? "正在保存版本…" : saveUncertain ? "重试保存版本" : "保存命名版本"}</Button>
       <Button type="button" variant="secondary" disabled={busy || saveUncertain} onClick={() => setCreating(false)}>取消新建版本</Button>
     </form> : null}
-    <ErrorNotice error={error} />
+
     {list.isPending ? <LoadingState label="正在加载版本…" compact /> : null}
-    <ErrorNotice error={list.error} />
+
     {list.isError ? <Button type="button" variant="secondary" onClick={() => void list.refetch()}>重试加载版本</Button> : null}
     {list.isSuccess && versions.length === 0 ? <p className="collaboration-empty">暂无版本。可以保存命名版本，或在停笔后查看自动历史。</p> : null}
-    <div className="collaboration-revisions">{versions.map(version => <ActionButton type="button" className="collaboration-revision" key={version.id} aria-label={`查看版本 ${documentVersionLabel(version)}`} aria-pressed={selectedId === version.id} disabled={busy || saveUncertain || restoreUncertain} onClick={() => { setSelectedId(version.id); setCompareFrom(""); setError(null); }}>
+    <div className="collaboration-revisions">{versions.map(version => <ActionButton type="button" className="collaboration-revision" key={version.id} aria-label={`查看版本 ${documentVersionLabel(version)}`} aria-pressed={selectedId === version.id} disabled={busy || saveUncertain || restoreUncertain} onClick={() => { setSelectedId(version.id); setCompareFrom("");  }}>
       <span>{documentVersionLabel(version)}</span><small>{version.author_name || "历史作者"} · {formatTime.format(version.captured_at_ms)}</small>
       {version.description ? <small>{version.description}</small> : null}
     </ActionButton>)}</div>
     {list.hasNextPage ? <Button type="button" variant="secondary" disabled={busy || list.isFetchingNextPage} onClick={() => void list.fetchNextPage()}>加载更多版本</Button> : null}
     {selectedId ? <div className="collaboration-preview">
       {detail.isPending ? <LoadingState label="正在加载版本正文…" compact /> : null}
-      <ErrorNotice error={detail.error} />
+
       {detail.isError ? <Button type="button" variant="secondary" onClick={() => void detail.refetch()}>重试加载正文</Button> : null}
       {detail.data ? <>
         <h3>{documentVersionLabel(detail.data.version)}</h3>

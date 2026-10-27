@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { newUUID } from "../../shared/ids";
 import { useEffect, useRef, useState } from "react";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -64,8 +65,7 @@ function QuickNotesWorkspace() {
   const [patch, setPatch] = useState<PendingPatch | null>(null);
   const [patching, setPatching] = useState(false);
   const patchLock = useRef(false);
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
+
   useEffect(() => { const timer = setTimeout(() => setFilter(value => ({ ...value, q: search })), 250); return () => clearTimeout(timer); }, [search]);
   useEffect(() => { if (!expanded) return; const close = (event: KeyboardEvent) => { if (event.key === "Escape") setExpanded(false); }; window.addEventListener("keydown", close); return () => window.removeEventListener("keydown", close); }, [expanded]);
   const notes = useInfiniteQuery({ queryKey: [...prefix, "list", filter], queryFn: ({ pageParam, signal }) => listQuickNotes(auth, filter, pageParam, signal), initialPageParam: 1, getNextPageParam: last => last.pagination.page * last.pagination.page_size < last.pagination.total ? last.pagination.page + 1 : undefined });
@@ -76,23 +76,21 @@ function QuickNotesWorkspace() {
   const refresh = () => { void queryClient.invalidateQueries({ queryKey: prefix }); };
   async function runPatch(next: PendingPatch) {
     if (patchLock.current) return;
-    patchLock.current = true; setPatch(next); setPatching(true); setError("");
-    try { await patchQuickNote(auth, next.id, next.body); setPatch(null); setMessage(next.body.is_deleted === true ? "已移入回收站，可随时恢复" : next.body.is_deleted === false ? "记录已恢复" : "置顶状态已更新"); refresh(); }
-    catch (error) { setError(error instanceof Error ? error.message : "操作失败，请重试"); if (error instanceof ApiError && error.status < 500 && ![408, 429].includes(error.status)) { setPatch(null); refresh(); } }
+    patchLock.current = true; setPatch(next); setPatching(true);
+    try { await patchQuickNote({ ...auth, feedback: { success: true } }, next.id, next.body); setPatch(null);  refresh(); }
+    catch (error) { reportError(error); if (error instanceof ApiError && error.status < 500 && ![408, 429].includes(error.status)) { setPatch(null); refresh(); } }
     finally { patchLock.current = false; setPatching(false); }
   }
   function chooseTag(tag: string) { setFilter(value => ({ ...value, tag })); }
   return <DocumentShell>
     <div className={`quick-notes-page${expanded ? " composer-expanded" : ""}`}>
-      <header className="quick-notes-heading"><div><h1>随手记</h1><span>把零散的想法，留在这里</span></div><div className="quick-notes-view" role="group" aria-label="记录展示方式"><ActionButton type="button" title="列表视图" aria-label="列表视图" aria-pressed={view === "list"} onClick={() => setView("list")}><List size={17} /></ActionButton><ActionButton type="button" title="卡片视图" aria-label="卡片视图" aria-pressed={view === "cards"} onClick={() => setView("cards")}><LayoutGrid size={17} /></ActionButton></div></header>
+      <header className="quick-notes-heading"><div><h1>随手记</h1><span>把零散的想法，留在这里</span></div><div className="quick-notes-view" role="group" aria-label="记录展示方式">{patch && !patching ? <Button onClick={() => void runPatch(patch)}>重试操作</Button> : null}<ActionButton type="button" title="列表视图" aria-label="列表视图" aria-pressed={view === "list"} onClick={() => setView("list")}><List size={17} /></ActionButton><ActionButton type="button" title="卡片视图" aria-label="卡片视图" aria-pressed={view === "cards"} onClick={() => setView("cards")}><LayoutGrid size={17} /></ActionButton></div></header>
       <div className="quick-notes-layout">
         <QuickNoteComposer userId={user.id} workspaceId={workspace.id} tags={tagItems} canEdit={canEdit} expanded={expanded} onToggleExpanded={() => setExpanded(value => !value)} onManageTags={() => setTagManager(true)} onSaved={() => { refresh(); setFilter(value => ({ ...value, q: "", tag: "", deleted: false })); setSearch(""); }} />
         <section className="quick-notes-feed" aria-label="历史记录">
           <div className="quick-notes-filters"><div className="quick-notes-search"><Search size={16} aria-hidden="true" /><TextInput aria-label="搜索随手记" placeholder="搜索记录…" maxLength={200} value={search} onChange={event => setSearch(event.target.value)} /></div><SelectField aria-label="记录排序" density="compact" value={filter.sort} options={[{ value: "updated", label: "最近更新" }, { value: "created", label: "最近创建" }]} onChange={value => setFilter(current => ({ ...current, sort: value as NoteFilter["sort"] }))} /><ActionButton type="button" aria-label={filter.deleted ? "返回全部记录" : "查看回收站"} title={filter.deleted ? "返回全部记录" : "查看回收站"} aria-pressed={filter.deleted} onClick={() => setFilter(current => ({ ...current, deleted: !current.deleted, tag: "" }))}><Trash2 size={17} /></ActionButton></div>
           <div className="quick-notes-tag-filters" aria-label="按标签筛选"><ActionButton type="button" aria-pressed={!filter.tag} onClick={() => chooseTag("")}>{filter.deleted ? "回收站" : "全部"} {summary.data ? `(${filter.deleted ? summary.data.deleted : summary.data.total})` : ""}</ActionButton>{!filter.deleted ? <><ActionButton type="button" aria-pressed={filter.tag === "untagged"} onClick={() => chooseTag("untagged")}>无标签 {summary.data ? `(${summary.data.untagged})` : ""}</ActionButton>{tagItems.map(tag => <ActionButton key={tag.id} type="button" aria-pressed={filter.tag === tag.id} onClick={() => chooseTag(tag.id)}>{tag.name} ({tag.count})</ActionButton>)}</> : null}{canEdit ? <ActionButton type="button" aria-label="管理标签" title="管理标签" onClick={() => setTagManager(true)}><Tags size={16} /></ActionButton> : null}</div>
-          <div className="quick-note-feedback" role="status">{message}</div>
-          {error ? <div className="quick-note-error" role="alert">{error}{patch && !patching ? <Button onClick={() => void runPatch(patch)}>重试操作</Button> : null}</div> : null}
-          {notes.isError || tags.isError || summary.isError ? <div className="quick-note-error" role="alert">随手记加载失败，请重试。<Button onClick={refresh}>重新加载</Button></div> : null}
+
           {notes.isPending ? <LoadingState label="正在加载随手记…" variant="cards" /> : null}
           {!notes.isPending && !notes.isError && !items.length ? <div className="quick-notes-empty"><StickyNote size={36} /><h2>{filter.deleted ? "回收站是空的" : filter.q || filter.tag ? "没有找到匹配的记录" : "记下第一个想法"}</h2><p>{filter.deleted ? "移入回收站的记录可以在这里恢复。" : filter.q || filter.tag ? "试试其他关键词或标签。" : "一句灵感、一段代码、一张图片，都可以从这里开始。"}</p></div> : null}
           <FileContentContext.Provider value={files}><div className={`quick-notes-records is-${view}`}>{items.map(note => <NoteCard key={note.id} note={note} tags={tagItems} canEdit={canEdit} disabled={Boolean(patch)} onEdit={() => setEditing(note)} onPatch={change => void runPatch({ id: note.id, body: { ...change, operation_id: newUUID(), expected_version: note.version } })} />)}</div></FileContentContext.Provider>

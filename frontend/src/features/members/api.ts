@@ -1,3 +1,4 @@
+import { withRequestFeedback } from "../../shared/api/request-feedback";
 import { z } from "zod";
 
 import { ApiError, apiRequest, workspacePath } from "../../shared/api/api-client";
@@ -54,23 +55,43 @@ export async function getMailStatus(auth: MemberAuth) {
 }
 
 export async function inviteMember(payload: { email: string; role: "admin" | "editor" | "viewer" }, auth: MemberAuth) {
+  return withRequestFeedback({ ...auth, feedback: { ...auth.feedback, success: true } }, async auth => {
+
   return invitationSchema.parse(await apiRequest(workspacePath(auth, "/invitations"), { method: "POST", body: payload, ...authOptions(auth) }));
+
+  });
 }
 
 export async function revokeInvitation(id: string, auth: MemberAuth) {
+  return withRequestFeedback({ ...auth, feedback: { ...auth.feedback, success: true } }, async auth => {
+
   await apiRequest(workspacePath(auth, `/invitations/${id}/revoke`), { method: "POST", ...authOptions(auth) });
+
+  });
 }
 
 export async function resendInvitation(id: string, auth: MemberAuth) {
+  return withRequestFeedback({ ...auth, feedback: { ...auth.feedback, success: true } }, async auth => {
+
   return invitationSchema.parse(await apiRequest(workspacePath(auth, `/invitations/${id}/resend`), { method: "POST", ...authOptions(auth) }));
+
+  });
 }
 
 export async function updateMemberRole(id: string, role: "admin" | "editor" | "viewer", expectedVersion: number, auth: MemberAuth) {
+  return withRequestFeedback({ ...auth, feedback: { ...auth.feedback, success: true } }, async auth => {
+
   return memberSchema.parse(await apiRequest(workspacePath(auth, `/members/${id}`), { method: "PATCH", body: { role, expected_version: expectedVersion }, ...authOptions(auth) }));
+
+  });
 }
 
 export async function removeMember(id: string, expectedVersion: number, auth: MemberAuth) {
+  return withRequestFeedback({ ...auth, feedback: { ...auth.feedback, success: true } }, async auth => {
+
   await apiRequest(workspacePath(auth, `/members/${id}`), { method: "DELETE", body: { expected_version: expectedVersion }, ...authOptions(auth) });
+
+  });
 }
 
 export async function acceptInvitation(payload: { token: string; password?: string; display_name?: string }, auth?: MemberAuth | null) {
@@ -78,7 +99,11 @@ export async function acceptInvitation(payload: { token: string; password?: stri
 }
 
 export async function startOwnershipTransfer(targetUserId: string, auth: MemberAuth) {
+  return withRequestFeedback({ ...auth, feedback: { ...auth.feedback, success: true } }, async auth => {
+
   return ownershipSchema.parse(await apiRequest(workspacePath(auth, "/ownership-transfers"), { method: "POST", body: { target_user_id: targetUserId }, ...authOptions(auth) }));
+
+  });
 }
 
 export async function confirmOwnershipTransfer(token: string) {
@@ -89,12 +114,20 @@ export async function inspectInvitation(token: string) {
   return z.object({ workspace_name: z.string(), email: z.string(), role: z.string(), account_exists: z.boolean(), expires_at_ms: z.number().int() }).parse(await apiRequest("/v1/invitations/inspect", { method: "POST", body: { token } }));
 }
 export async function currentOwnership(auth: MemberAuth) {
-  try { return ownershipSchema.parse(await apiRequest(workspacePath(auth, "/ownership-transfers/current"), authOptions(auth))); }
+  try { return ownershipSchema.parse(await apiRequest(workspacePath(auth, "/ownership-transfers/current"), authOptions({ ...auth, feedback: { ...auth.feedback, error: error => !(error instanceof ApiError && error.status === 404) } }))); }
   catch (error) { if (error instanceof ApiError && error.status === 404) return null; throw error; }
 }
 export async function resendOwnership(id: string, auth: MemberAuth) {
+  return withRequestFeedback({ ...auth, feedback: { ...auth.feedback, success: true } }, async auth => {
+
   return ownershipSchema.parse(await apiRequest(workspacePath(auth, `/ownership-transfers/${id}/resend`), { ...authOptions(auth), method: "POST" }));
+
+  });
 }
 export async function cancelOwnership(id: string, auth: MemberAuth) {
+  return withRequestFeedback({ ...auth, feedback: { ...auth.feedback, success: true } }, async auth => {
+
   return ownershipSchema.parse(await apiRequest(workspacePath(auth, `/ownership-transfers/${id}/cancel`), { ...authOptions(auth), method: "POST" }));
+
+  });
 }

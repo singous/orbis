@@ -1,6 +1,5 @@
 import { z } from "zod";
 import {
-  ApiError,
   apiRequest,
   workspacePath,
 } from "../../shared/api/api-client";
@@ -38,25 +37,6 @@ export function sheetAPI(auth: AuthRequestOptions) {
       method,
       body: body as Record<string, unknown>,
       signal,
-    }).catch((error: unknown) => {
-      if (error instanceof ApiError) {
-        const details = error.data as {
-          errors?: Array<{ message?: string }>;
-        } | null;
-        const message = details?.errors
-          ?.map((e) => e.message)
-          .filter(Boolean)
-          .join("；");
-        if (message)
-          throw new ApiError(
-            error.status,
-            message,
-            error.code,
-            error.requestId,
-            error.data,
-          );
-      }
-      throw error;
     });
   return {
     list: async (collection = "", cursor = "", signal?: AbortSignal) =>

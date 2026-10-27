@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import {preparePendingNavigation} from "../../shared/navigation/pending-navigation";
 import {newUUID} from "../../shared/ids";
 import {ApiError} from "../../shared/api/api-client";
@@ -17,7 +18,6 @@ import type { Note,NoteTreeItem } from "../../shared/api/schemas";
 import { authStore,getAuthSessionKey } from "../../shared/auth/auth-store";
 import { formatNotebookUpdateTime } from "./notebook-update-time";
 import { Button } from "../../shared/ui/Button";
-import { ToastNotification, dismissToast, showToast } from "../../shared/ui/Toast";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { ResourceDialog } from "./ResourceDialog";
 import { DocumentLink } from "./DocumentLink";
@@ -296,27 +296,8 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
     await preparePendingNavigation();
     if(!panelOwner.active)return;
     if (!treeQuery.data?.directory_version) throw new Error("目录版本尚未载入，请重新载入。");
-    const archived = await archiveNote.mutateAsync({ id: note.id, archived: true,expected_directory_version:treeQuery.data.directory_version });
+    await archiveNote.mutateAsync({ id: note.id, archived: true,expected_directory_version:treeQuery.data.directory_version });
     if(!panelOwner.active)return;
-    let undoPending = false;
-    const toastId = showToast({
-      title: "文档已归档",
-      description: note.title,
-      tone: "success",
-      timeout: 0,
-      action: {
-        label: "撤销",
-        onPress: () => {
-          if (undoPending) return;
-          if(getAuthSessionKey(authStore.getState())!==sessionKey){dismissToast(toastId);return;}
-          undoPending = true;
-          void archiveNote.mutateAsync({ id: note.id, archived: false,expected_directory_version:archived.directory_version })
-            .then(() => dismissToast(toastId))
-            .catch((error) => showToast({ title: "恢复文档失败", description: error instanceof Error ? error.message : "请稍后重试。", tone: "danger" }))
-            .finally(() => { undoPending = false; });
-        },
-      },
-    });
     if (note.id === activeNoteId) navigate(`/collections/${notebookId}`, { replace: true });
   }
 
@@ -334,7 +315,7 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
       await reorderNotes.mutateAsync({ parent_id: group.parentId,expected_directory_version:treeQuery.data!.directory_version, expected_note_ids: currentIds, note_ids: noteIds });
       setSortAnnouncement(`已将 ${findNote(treeItems, noteId)?.title ?? "文档"} 移至同级第 ${targetIndex + 1} 位`);
     } catch (error) {
-      showToast({ title: "排序未保存", description: error instanceof Error ? error.message : "请刷新后重试。", tone: "danger" });
+      reportError(error);
     } finally {
       const focusMayBeRestored = document.activeElement === focusLink || document.activeElement === document.body;
       if (focusLink && focusMayBeRestored) {
@@ -364,7 +345,7 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
           </div>
         </div>
       )}
-      {treeQuery.isError ? <ToastNotification tone="danger" title="目录加载失败" timeout={0}><Button className="mt-3" variant="secondary" onClick={() => void treeQuery.refetch()}>重试加载目录</Button></ToastNotification> : null}
+
       {treeQuery.isLoading ? <LoadingState label="正在加载文档目录…" compact={!main} /> : null}
       {!treeQuery.isLoading && !treeQuery.isError && !treeItems.length ? (
         main ? (
@@ -383,7 +364,7 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
         const source = event.operation.source;
         if (event.canceled || !isSortable(source) || source.initialGroup !== source.group || source.initialIndex === source.index) return;
         void handleReorder(String(source.id), source.index);
-      }}><nav ref={treeRef} className={main ? "document-main-list" : "document-context-tree"} aria-label={main ? "文档列表" : "笔记本文档"}><DocumentTree items={treeItems} depth={0} parentId={null} activeNoteId={activeNoteId} canEdit={canEdit} reordering={reordering} main={main} onNavigate={mobile ? onNavigate : undefined} onCreateChild={setCreateParent} onRename={note=>{void openRename(note).catch(error=>{if(panelOwner.active)showToast({title:"无法重命名文档",description:error instanceof Error?error.message:"请稍后重试。",tone:"danger"});});}} onArchive={(note) => void handleArchive(note).catch((error) => showToast({ title: "归档失败", description: error instanceof Error ? error.message : "请稍后重试。", tone: "danger" }))} onKeyboardMove={(noteId, delta, link) => void handleReorder(noteId, (findSiblingGroup(treeItems, noteId)?.items.findIndex((item) => item.id === noteId) ?? -1) + delta, link)} dragInstructionsId={dragInstructionsId} isExpanded={isExpanded} onToggle={toggle} /></nav></DragDropProvider> : null}
+      }}><nav ref={treeRef} className={main ? "document-main-list" : "document-context-tree"} aria-label={main ? "文档列表" : "笔记本文档"}><DocumentTree items={treeItems} depth={0} parentId={null} activeNoteId={activeNoteId} canEdit={canEdit} reordering={reordering} main={main} onNavigate={mobile ? onNavigate : undefined} onCreateChild={setCreateParent} onRename={note=>{void openRename(note).catch(error=>{if(panelOwner.active)reportError(error);});}} onArchive={(note) => void handleArchive(note).catch((error) => reportError(error))} onKeyboardMove={(noteId, delta, link) => void handleReorder(noteId, (findSiblingGroup(treeItems, noteId)?.items.findIndex((item) => item.id === noteId) ?? -1) + delta, link)} dragInstructionsId={dragInstructionsId} isExpanded={isExpanded} onToggle={toggle} /></nav></DragDropProvider> : null}
       <ResourceDialog open={createParent !== undefined} title={createParent ? "新建子文档" : "新建文档"} label="文档标题" placeholder="未命名文档" submitLabel="创建并打开" pending={createNote.isPending} onClose={() => setCreateParent(undefined)} onSubmit={handleCreate} />
       <ResourceDialog open={Boolean(renameTarget)} title="重命名文档" label="文档标题" placeholder="文档标题" initialValue={renameTarget?.title ?? ""} submitLabel="保存" pending={updateNote.isPending} onClose={() => {renameIntent.current=null;setRenameTarget(null);}} onSubmit={handleRename} />
     </section>

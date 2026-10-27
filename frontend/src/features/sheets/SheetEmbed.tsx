@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { useQuery } from "@tanstack/react-query";
 import { useContext, useEffect, useRef, useState } from "react";
 import { useOptionalAuthRequest } from "../../shared/auth/use-auth-request";
@@ -49,7 +50,7 @@ export function SheetEmbed({
       });
       if (mounted.current)
         binding.current?.(sheet.id, sheet.definition.views[0].id);
-    } catch (e) {
+    } catch (e) { reportError(e);
       if (mounted.current) setError((e as Error).message);
     } finally {
       running.current = false;
@@ -71,7 +72,7 @@ export function SheetEmbed({
       <div className="sheet-embed" contentEditable={false}>
         {error || owner.error?.message ? (
           <>
-            <p role="alert">{error || owner.error?.message}</p>
+
             <ActionButton size="sm" onClick={() => void create()}>
               重试创建数据表
             </ActionButton>

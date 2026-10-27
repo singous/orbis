@@ -25,7 +25,7 @@ export function SearchDialog({ open = true, pages, basePath, close, loadPages }:
   const dialogRef = useRef<HTMLDivElement>(null);
   const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(null);
   const navigate = useNavigate();
-  const [attempt, setAttempt] = useState(0);
+  const attempt = 0;
   const [loaded, setLoaded] = useState<{ loader: typeof loadPages; attempt: number; query:string; pages: PublishedPage[]; error: string | null } | null>(null);
   const current = loaded?.loader === loadPages && loaded?.attempt === attempt && loaded.query===query.trim() ? loaded : null;
   const loading = Boolean(loadPages && query.trim() && !composing && !current);
@@ -79,7 +79,7 @@ export function SearchDialog({ open = true, pages, basePath, close, loadPages }:
       }} /><InputGroup.Suffix><ActionButton type="button" aria-label="关闭搜索" onClick={close}><X aria-hidden="true" size={18} /></ActionButton></InputGroup.Suffix></InputGroup>
       <div id="site-reader-search-results" className="site-reader-search-results" role="listbox">
         {/* Search options retain active-descendant focus on the combobox input. */}
-        {loading ? <LoadingState label="正在加载搜索索引…" compact /> : current?.error ? <div className="site-reader-search-empty" role="alert"><p>{current.error}</p><ActionButton type="button" onClick={() => setAttempt((value) => value + 1)}>重新加载搜索</ActionButton></div> : !query.trim() ? <div className="site-reader-search-hint"><Search aria-hidden="true" size={20} /><p>输入关键词搜索当前发布版本</p><span>仅显示读者可见的文档</span></div> : results.length ? results.map((result, index) => <button id={`site-search-${index}`} key={result.page.slug} type="button" role="option" aria-label={`${result.page.title} ${result.path} ${result.excerpt}`} aria-selected={activeIndex === index} className={activeIndex === index ? "is-active" : ""} onMouseMove={() => setActiveIndex(index)} onClick={() => choose(index)}>
+        {loading ? <LoadingState label="正在加载搜索索引…" compact /> : current?.error ? null : !query.trim() ? <div className="site-reader-search-hint"><Search aria-hidden="true" size={20} /><p>输入关键词搜索当前发布版本</p><span>仅显示读者可见的文档</span></div> : results.length ? results.map((result, index) => <button id={`site-search-${index}`} key={result.page.slug} type="button" role="option" aria-label={`${result.page.title} ${result.path} ${result.excerpt}`} aria-selected={activeIndex === index} className={activeIndex === index ? "is-active" : ""} onMouseMove={() => setActiveIndex(index)} onClick={() => choose(index)}>
           <FileText aria-hidden="true" size={18} />
           <span><strong><Highlight text={result.page.title} query={query} /></strong><small>{result.path}</small><span><Highlight text={result.excerpt} query={query} /></span></span>
         </button>) : <div className="site-reader-search-empty"><Search aria-hidden="true" size={22} /><strong>没有找到相关内容</strong><p>请尝试更短的关键词或浏览左侧目录。</p></div>}

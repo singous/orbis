@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, Copy, Plus, Send, Trash2 } from "lucide-react";
 import QRCode from "qrcode";
@@ -53,7 +54,6 @@ export function SheetForms({
   const [draft, setDraft] = useState(structuredClone(form)),
     [preview, setPreview] = useState(false),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState(""),
     [share, setShare] = useState(false),
     [copied, setCopied] = useState(false);
   const [values, setValues] = useState<Record<string, Value>>({});
@@ -68,7 +68,7 @@ export function SheetForms({
   }, [dirty]);
   async function save(enabled = draft.enabled) {
     setBusy(true);
-    setError("");
+
     try {
       const saved = await c.api.saveForm(c.meta.data!.id, {
         ...draft,
@@ -77,8 +77,7 @@ export function SheetForms({
       setDraft(saved);
       await c.forms.refetch();
       return saved;
-    } catch (e) {
-      setError((e as Error).message);
+    } catch (e) { reportError(e);
       throw e;
     } finally {
       setBusy(false);
@@ -127,8 +126,7 @@ export function SheetForms({
           ],
         },
       }));
-    } catch (e) {
-      setError((e as Error).message);
+    } catch (e) { reportError(e);
     } finally {
       setBusy(false);
     }
@@ -194,11 +192,7 @@ export function SheetForms({
           </>
         )}
       </div>
-      {error && (
-        <p className="sheet-error" role="alert">
-          {error}
-        </p>
-      )}
+
       <div className="sheet-form-body">
         {!preview && !readOnly && (
           <aside className="sheet-form-palette">
@@ -424,7 +418,7 @@ export function SheetForms({
                     void navigator.clipboard
                       .writeText(link)
                       .then(() => setCopied(true))
-                      .catch(() => setError("复制失败，请选中链接手动复制"));
+                      .catch(() => reportError("复制失败，请选中链接手动复制"));
                   }}
                 >
                   <Copy size={14} />
@@ -456,7 +450,6 @@ function PublicSheetFormSession({ token }: { token: string }) {
   });
   const [values, setValues] = useState<Record<string, Value>>({}),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState(""),
     [done, setDone] = useState(false);
   const pending = useRef<{
     operation_id: string;
@@ -481,7 +474,7 @@ function PublicSheetFormSession({ token }: { token: string }) {
         }
       }
     } catch {
-      setError("无法恢复上次填写内容");
+      reportError("无法恢复上次填写内容");
     }
   }, [submissionKey]);
   if (query.error)
@@ -499,16 +492,14 @@ function PublicSheetFormSession({ token }: { token: string }) {
   if (!query.data) return <main className="sheet-public">正在加载表单…</main>;
   const form = query.data;
   async function submit() {
-    setError("");
+
     for (const ff of form.config.fields) {
       const v = values[ff.field_id];
       if (
         ff.required &&
         (v == null || v === "" || (Array.isArray(v) && !v.length))
       ) {
-        setError(
-          `请填写${form.fields.find((f) => f.id === ff.field_id)?.name}`,
-        );
+        reportError(`请填写${form.fields.find((f) => f.id === ff.field_id)?.name}`);
         return;
       }
     }
@@ -520,7 +511,7 @@ function PublicSheetFormSession({ token }: { token: string }) {
     try {
       sessionStorage.setItem(submissionKey, JSON.stringify(pending.current));
     } catch {
-      setError("无法保存提交凭据，请允许浏览器存储后重试");
+      reportError("无法保存提交凭据，请允许浏览器存储后重试");
       return;
     }
     setBusy(true);
@@ -533,7 +524,7 @@ function PublicSheetFormSession({ token }: { token: string }) {
         pending.current = null;
         sessionStorage.removeItem(submissionKey);
       }
-      setError((e as Error).message);
+      reportError(e);
     } finally {
       setBusy(false);
     }
@@ -580,11 +571,7 @@ function PublicSheetFormSession({ token }: { token: string }) {
                 </section>
               ) : null;
             })}
-            {error && (
-              <p className="sheet-error" role="alert">
-                {error}
-              </p>
-            )}
+
             <ActionButton
               size="sm"
               type="submit"

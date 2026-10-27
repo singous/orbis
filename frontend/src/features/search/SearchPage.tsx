@@ -2,14 +2,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useStore } from "zustand";
-import { ApiError } from "../../shared/api/api-client";
 import { authStore, getAuthSessionKey } from "../../shared/auth/auth-store";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { Button } from "../../shared/ui/Button";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { PageContainer } from "../../shared/ui/PageContainer";
 import { SelectField } from "../../shared/ui/SelectField";
-import { ToastNotification } from "../../shared/ui/Toast";
+
 import { TextInput } from "../../shared/ui/TextInput";
 import { BookOpen, FileText, Folder, Globe, Paperclip } from "../../shared/ui/icons";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
@@ -71,7 +70,7 @@ export function SearchPage() {
       </div>
       <p className="global-search-help">文件与附件支持名称和已有元数据检索。</p>
     </form>
-    {error && !pendingInput ? <ToastNotification tone="danger" title={error instanceof ApiError && error.status === 403 ? "无权搜索内容" : "搜索失败"} timeout={0}>{error instanceof Error ? error.message : "请稍后重试。"}<Button onClick={() => void results.refetch()}>重试</Button></ToastNotification> : null}
+
     {!filters.q.trim() && !pendingInput ? <p className="global-search-empty">输入关键词，查找文档、评论或文件。</p> : null}
     {loading ? <LoadingState label="正在搜索…" /> : null}
     {!loading && !pendingInput && !error && filters.q.trim() && data ? <>

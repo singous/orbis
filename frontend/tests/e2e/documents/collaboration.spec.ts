@@ -117,7 +117,7 @@ test("named document versions fix content and restore into an editable collabora
   await page.screenshot({ path: testInfo.outputPath("document-versions-mobile.png"), fullPage: true });
   await page.getByRole("button", { name: "查看版本 评审稿", exact: true }).click();
   await page.getByRole("button", { name: "恢复此版本", exact: true }).click();
-  await expect(page.getByText("历史版本已恢复", { exact: true })).toBeVisible();
+  await expect(page.getByRole("alertdialog", { name: "请求成功", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "关闭评论与历史", exact: true }).click();
   await expect(page.locator(".ProseMirror")).toHaveText("Version baseline");
   await append(page, blocks[0].id, " after restore");
@@ -270,7 +270,7 @@ test("explicit history restore opens the new epoch and remains editable", async 
   await page.getByRole("button", { name: "查看全部保存记录", exact: true }).click();
   await page.getByRole("button", { name: `查看保存记录 ${source.revision.version}`, exact: true }).click();
   await page.getByRole("button", { name: "恢复此版本", exact: true }).click();
-  await expect(page.getByText("历史版本已恢复", { exact: true })).toBeVisible();
+  await expect(page.getByRole("alertdialog", { name: "请求成功", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "关闭评论与历史", exact: true }).click();
   await expect(page.locator(".ProseMirror")).toHaveText("Historical body");
   await append(page, blocks[0].id, " after restore");
@@ -292,7 +292,8 @@ test("an external restore preserves offline edits for explicit recovery across r
     const latest = await content(request, session, document.id);
     await responseData(await request.post(workspacePath(session, `/documents/${document.id}/restore`), { headers: sessionHeaders(session), data: { operation_id: crypto.randomUUID(), expected_version: latest.revision.version, source_version: source.revision.version } }));
     await pair.second.setOffline(false);
-    await expect(pair.b.getByText("本机协作草稿需要手动恢复", { exact: true })).toBeVisible({ timeout: 30000 });
+    await expect(pair.b.getByRole("button", { name: "本机修改", exact: true })).toBeVisible({ timeout: 30000 });
+    await pair.b.getByRole("button", { name: "本机修改", exact: true }).click();
     await expect(pair.b.locator(".ProseMirror")).toContainText("offline-preserved");
     const download = pair.b.waitForEvent("download");
     await pair.b.getByRole("button", { name: "下载本机草稿", exact: true }).click();
@@ -302,7 +303,7 @@ test("an external restore preserves offline edits for explicit recovery across r
     const exported = JSON.parse(Buffer.concat(chunks).toString());
     expect(exported.pending.length + exported.previous_epochs.reduce((count: number, entry: { pending: unknown[] }) => count + entry.pending.length, 0)).toBeGreaterThan(0);
     await pair.b.reload();
-    await expect(pair.b.getByText("本机协作草稿需要手动恢复", { exact: true })).toBeVisible();
+    await expect(pair.b.getByRole("button", { name: "本机修改", exact: true })).toBeVisible();
     await expect(pair.b.locator(".ProseMirror")).toHaveText("Original");
     expect(text((await content(request, session, document.id)).blocks[0])).toBe("Original");
   } finally { await pair.close(); }
@@ -362,21 +363,28 @@ test("a rejected target edit stays exportable after opening a fresh server lane"
     operations: [{ type: "delete_block", block_id: blocks[0].id, delete_subtree: true }],
   } }));
   online = true;
+  await expect(page.locator(".document-save-state")).toHaveText("本机草稿需要恢复", { timeout: 30000 });
+  await page.getByRole("button", { name: "本机修改", exact: true }).click();
   await expect(page.getByRole("button", { name: "保留本机草稿并载入服务端", exact: true })).toBeVisible({ timeout: 30000 });
   await expect(page.locator(".ProseMirror")).toContainText("Target original retained");
   await page.getByRole("button", { name: "保留本机草稿并载入服务端", exact: true }).click();
   await expect(page.locator(".ProseMirror")).toHaveText("Other block");
+  const draftModal = page.getByRole("dialog", { name: "本机修改", exact: true });
+  if (await draftModal.isVisible()) await draftModal.getByRole("button", { name: "关闭", exact: true }).click();
+  await page.getByRole("button", { name: "本机修改", exact: true }).click();
   const markdown = page.getByRole("button", { name: /下载草稿 Markdown/ }).first();
   await expect(markdown).toBeVisible();
   const download = page.waitForEvent("download"); await markdown.click();
   const stream = await (await download).createReadStream();
   const chunks: Buffer[] = []; for await (const chunk of stream!) chunks.push(Buffer.from(chunk));
   expect(Buffer.concat(chunks).toString()).toContain("Target original retained");
+  await page.getByRole("dialog", { name: "本机修改", exact: true }).getByRole("button", { name: "关闭", exact: true }).click();
   await append(page, blocks[1].id, " continued");
   await expect.poll(async () => (await content(request, session, document.id)).blocks.map(text)).toEqual(["Other block continued"]);
   await expect(page.locator(".document-save-state")).toHaveText("已保存");
   await page.reload();
   await expect(page.locator(".ProseMirror")).toHaveText("Other block continued");
+  await page.getByRole("button", { name: "本机修改", exact: true }).click();
   await expect(page.getByRole("button", { name: /下载草稿 Markdown/ }).first()).toBeVisible();
   await expect(page.getByRole("button", { name: "保留本机草稿并载入服务端", exact: true })).not.toBeVisible();
 });

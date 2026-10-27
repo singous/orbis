@@ -1,3 +1,4 @@
+import { withRequestFeedback } from "../../shared/api/request-feedback";
 export {saveNoteBlockChanges} from "./document-operations-api";
 import { z } from "zod";
 import { ApiError,apiRequest,workspacePath } from "../../shared/api/api-client";
@@ -63,6 +64,7 @@ export async function getNoteContentOutline(noteId:string,version:number,auth:Au
 function uncertain(error:unknown) { return !(error instanceof ApiError) || error.status>=500 || error.status===0; }
 
 export async function saveNoteContent(payload:{noteId:string;expectedVersion:number;operationId:string;title:string;blocks:NoteBlocks},auth:AuthRequestOptions) {
+  return withRequestFeedback(auth, async auth => {
   const body={operation_id:payload.operationId,expected_version:payload.expectedVersion,title:payload.title.trim() || "未命名文档",blocks:toV2(payload.blocks).blocks.map(nativeBlock)};
   let wasUncertain=false;
   for(let attempt=0;attempt<2;attempt+=1) {
@@ -70,8 +72,10 @@ export async function saveNoteContent(payload:{noteId:string;expectedVersion:num
     catch(error) {
       if(!uncertain(error) && !wasUncertain) throw error;
       wasUncertain=true;
-      if(attempt===1 || !uncertain(error)) throw new ApiError(503,"上次保存结果尚未确认，请重试原来的保存。草稿仍保留。","DOCUMENT_WRITE_RESULT_UNKNOWN","",{operation_id:payload.operationId});
+      if(attempt===1 || !uncertain(error)) throw new ApiError(503, "上次保存结果尚未确认，请重试原来的保存。草稿仍保留。", "DOCUMENT_WRITE_RESULT_UNKNOWN", "", {operation_id:payload.operationId}, { cause: error });
     }
   }
   throw new Error("Unreachable content write recovery");
+
+  });
 }

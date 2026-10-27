@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError } from "../../shared/api/api-client";
 import type { TableHost } from "./context";
@@ -21,6 +22,7 @@ export function useDataTable(
   const [pending, setPending] = useState<TableChanges>({});
   const [error, setError] = useState<string | null>(null);
   const [storageError, setStorageError] = useState<string | null>(null);
+  useEffect(() => { if (storageError) reportError(storageError); }, [storageError]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const canRecover=host.canRecoverDraft??!host.readOnly;
@@ -325,7 +327,7 @@ export function useDataTable(
             draft.current=error.status===422?{...draft.current,request:null,requestRejected:undefined,prepared:undefined}:{...draft.current,requestRejected:true};
           }else{
             draft.current={...draft.current,requestRejected:false};
-            if(rejected)failure=new ApiError(503,"上次表格保存结果尚未确认，请重试原操作。本机修改仍保留。","TABLE_WRITE_RESULT_UNKNOWN");
+            if(rejected)failure=new ApiError(503, "上次表格保存结果尚未确认，请重试原操作。本机修改仍保留。", "TABLE_WRITE_RESULT_UNKNOWN", "", null, { cause: error });
           }
           persist();
         }

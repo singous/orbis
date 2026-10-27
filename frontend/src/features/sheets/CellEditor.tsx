@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import {
   CalendarDays,
   Check,
@@ -47,8 +48,7 @@ export function CellEditor({
   ].includes(field.kind);
   const [anchor, setAnchor] = useState<Anchor | null>(null);
   const [search, setSearch] = useState(initial ?? ""),
-    [creating, setCreating] = useState(false),
-    [error, setError] = useState("");
+    [creating, setCreating] = useState(false);
   useLayoutEffect(() => {
     if (choosing) setAnchor(anchorAt(host.current!));
     else {
@@ -268,13 +268,12 @@ export function CellEditor({
                     disabled={creating}
                     onClick={async () => {
                       setCreating(true);
-                      setError("");
+
                       try {
                         const id = await onCreateOption(search.trim());
                         setSearch("");
                         choose(id);
-                      } catch (e) {
-                        setError((e as Error).message);
+                      } catch (e) { reportError(e);
                       } finally {
                         setCreating(false);
                       }
@@ -289,7 +288,7 @@ export function CellEditor({
                   清空
                 </ActionButton>
               )}
-              {error && <p role="alert">{error}</p>}
+
             </>
           )}
         </Popover>

@@ -247,14 +247,17 @@ describe("durable collaboration provider", () => {
     expect(server.doc.getText("text").toString()).toContain("second tab");
   });
 
-  it("preserves failed structural edits when the server rejects a removed target before broadcast", async () => {
-    const { provider, server } = await setup();
+  it("preserves failed structural edits and shares one error with feedback and pending saves", async () => {
+    const onError = vi.fn();
+    const { provider, server } = await setup({ onError });
     server.acknowledge = false;
     provider.doc.getText("text").delete(0, 1);
     const saving = provider.flush();
     await vi.waitFor(() => expect(server.updates()).toHaveLength(1));
     server.sockets[0].message({ type: "error", status: 409, code: "COLLABORATION_TARGET_REMOVED", message: "目标已被并发移动或删除" });
     await expect(saving).rejects.toThrow("目标已被并发移动或删除");
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(await saving.catch(error => error)).toBe(onError.mock.calls[0][0]);
     expect(provider.getSnapshot()).toMatchObject({ status: "recovery", readOnly: true, pendingCount: 1, isSaved: false });
     expect(provider.doc.getText("text").toString()).toBe("erver");
     expect(JSON.parse(provider.exportRecovery()).pending).toHaveLength(1);
@@ -420,9 +423,13 @@ describe("durable collaboration provider", () => {
     await expect(provider.flush({ timeoutMs: 5 })).rejects.toThrow();
     await provider.dispose();
     const moved = paragraph.clone(); server.doc.getXmlFragment("body").delete(0, 1); server.doc.getXmlFragment("body").insert(0, [moved]); server.version++;
-    const restored = new DocumentCollaborationProvider({ documentId, workspaceId, userId, initialState: server.state(), token: () => "token", persistence: createCollaborationPersistence(factory), socketFactory: server.connect, laneOptions: laneOptions(factory) });
+    const onError = vi.fn();
+    const restored = new DocumentCollaborationProvider({ documentId, workspaceId, userId, initialState: server.state(), token: () => "token", persistence: createCollaborationPersistence(factory), socketFactory: server.connect, laneOptions: laneOptions(factory), onError });
     providers.push(restored);
-    await expect(restored.start()).rejects.toThrow("并发操作移动或删除");
+    const startup = restored.start();
+    await expect(startup).rejects.toThrow("并发操作移动或删除");
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(await startup.catch(error => error)).toBe(onError.mock.calls[0][0]);
     expect(restored.getSnapshot()).toMatchObject({ status: "recovery", readOnly: true, pendingCount: 1 });
     expect(((restored.doc.getXmlFragment("body").get(0) as Y.XmlElement).get(0) as Y.XmlText).toString()).toBe("riginal");
     const backup = JSON.parse(restored.exportRecovery()), decoded = new Y.Doc(); Y.applyUpdate(decoded, decodeCollaborationUpdate(backup.state));

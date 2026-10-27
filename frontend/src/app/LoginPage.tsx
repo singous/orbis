@@ -1,3 +1,4 @@
+import { reportError } from "../shared/api/request-feedback";
 import { useMutation } from "@tanstack/react-query";
 import { Envelope, Lock, Person } from "@gravity-ui/icons";
 import { InputGroup } from "@heroui/react/input-group";
@@ -10,35 +11,10 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
 
 import { AuthIllustration } from "../features/auth/AuthIllustration";
-import { ApiError } from "../shared/api/api-client";
 import { login, setup } from "../shared/auth/auth-api";
 import { authStore } from "../shared/auth/auth-store";
 import { Button } from "../shared/ui/Button";
 import { showToast } from "../shared/ui/Toast";
-
-function authErrorMessage(error: unknown, isSetup: boolean): string {
-  if (!(error instanceof ApiError)) return "暂时无法连接 Orbis API，请稍后重试。";
-  if (error.code === "INVALID_CREDENTIALS") return "邮箱或密码不正确。";
-  if (error.code === "SETUP_COMPLETED") return "系统已经完成初始化，请返回登录。";
-
-  if (error.code === "VALIDATION_ERROR" || error.status === 422) {
-    const data = error.data as { errors?: unknown } | null;
-    const issues = Array.isArray(data?.errors) ? data.errors : [];
-    for (const issue of issues) {
-      if (!issue || typeof issue !== "object") continue;
-      const { field, code } = issue as { field?: unknown; code?: unknown };
-      if (field === "body.email") return code === "MISSING" ? "请输入邮箱。" : "邮箱格式不正确，请检查后重试。";
-      if (field === "body.password") {
-        if (code === "MISSING" || (!isSetup && code === "STRING_TOO_SHORT")) return "请输入密码。";
-        if (code === "STRING_TOO_LONG") return "密码不能超过 256 位。";
-        return isSetup ? "密码需要 12 至 128 字节。" : "请检查密码后重试。";
-      }
-      if (field === "body.display_name") return code === "MISSING" ? "请输入显示名称。" : "请检查显示名称后重试。";
-    }
-    return "请检查填写的信息后重试。";
-  }
-  return error.message || "暂时无法连接 Orbis API，请稍后重试。";
-}
 
 export function LoginPage({ mode }: { mode: "login" | "setup" }) {
   const navigate = useNavigate();
@@ -61,15 +37,7 @@ export function LoginPage({ mode }: { mode: "login" | "setup" }) {
       const requested = (location.state as { from?: string } | null)?.from;
       navigate(requested || "/documents", { replace: true });
     },
-    onError: (error) => {
-      showToast({
-        title: isSetup && error instanceof ApiError && error.code === "SETUP_COMPLETED"
-          ? "无需重复初始化"
-          : isSetup ? "初始化失败" : "登录失败",
-        description: authErrorMessage(error, isSetup),
-        tone: "danger",
-      });
-    },
+    onError: reportError,
   });
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {

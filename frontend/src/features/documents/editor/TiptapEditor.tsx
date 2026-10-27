@@ -1,3 +1,5 @@
+import { showToast } from "../../../shared/ui/Toast";
+import { reportError } from "../../../shared/api/request-feedback";
 import { registerRetiredBlockCleanup } from "./tiptap-retired";
 import { ActionButton } from "../../../shared/ui/ActionButton";
 import { SelectField } from "../../../shared/ui/SelectField";
@@ -179,9 +181,8 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeCommand, setActiveCommand] = useState(0);
   const [slash, setSlash] = useState<{ query: string; from: number; to: number } | null>(null);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [contentError, setContentError] = useState<string | null>(null);
-  const [clipboardNotice, setClipboardNotice] = useState<string | null>(null);
+
+  const setClipboardNotice = (message: string | null) => { if (message) showToast({ title: message }); };
   onChangeRef.current = onChange;
   readOnlyRef.current = readOnly;
 
@@ -191,11 +192,11 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
       const next = fromTiptapDocument(current.state.doc);
       lastEmitted.current = next;
       onChangeRef.current({ blocks: next });
-      setContentError(null);
+
       errorCallback.current?.(null);
     } catch {
       const message = "正文暂未保存：内容转换失败。当前编辑仍保留，请重试保存。";
-      setContentError(message);
+      reportError(message);
       errorCallback.current?.(message);
     }
   }
@@ -392,14 +393,13 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file || !editor) return;
-    setUploadError(null);
+
     try {
       const url = await files.upload(file);
       if (editor.isDestroyed || readOnlyRef.current) return;
       const kind = file.type.startsWith("image/") ? "image" : file.type.startsWith("video/") ? "video" : file.type.startsWith("audio/") ? "audio" : "file";
       insertBlock(editor, { id: newBlockId(), type: kind, props: { url, name: file.name, caption: file.name }, content: [], children: [] });
-    } catch (error) {
-      setUploadError(error instanceof Error ? error.message : "文件上传失败");
+    } catch (error) { reportError(error);
     }
   }
 
@@ -441,7 +441,7 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
     if (ids.length) {
       const result = executeBlockCommand(editor, ids, {type:"convert",target,level:level ? Number(level) : undefined});
       if (result.ok) setBlockSelection(editor, result.selectedIds);
-      else setUploadError(result.message ?? "无法转换所选内容");
+      else reportError(result.message ?? "无法转换所选内容");
       return;
     }
     const chain = editor.chain().focus();
@@ -528,9 +528,7 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
       {label:"表格", run:()=>editor.chain().focus().insertTable({rows:3,cols:3,withHeaderRow:true}).run()},
       {label:"上传媒体或附件", run:()=>inputRef.current?.click()},
     ].map(item=><ActionButton key={item.label} role="menuitem" onMouseDown={event=>event.preventDefault()} onClick={()=>{item.run();setMoreOpen(false);}}>{item.label}</ActionButton>)}</div>,document.body) : null}
-    {uploadError ? <p role="alert" className="orbis-tiptap-error">{uploadError}</p> : null}
-    {contentError ? <div role="alert" className="orbis-tiptap-error"><p>{contentError}</p><ActionButton type="button" disabled={readOnly} onClick={() => editor && emitChange(editor)}>重试保存正文</ActionButton></div> : null}
-    {clipboardNotice ? <div role="status" className="orbis-block-notice">{clipboardNotice}<button type="button" aria-label="关闭复制提示" onClick={() => setClipboardNotice(null)}>×</button></div> : null}
+
     {!readOnly && editor && (slash || menuOpen) ? createPortal(<div style={insertPosition} className="orbis-tiptap-menu" role="listbox" aria-label="插入内容">{visible.length ? visible.map((item, index) => <ActionButton type="button" role="option" aria-selected={index === activeCommand % visible.length} key={item.label} onMouseDown={(event) => event.preventDefault()} onClick={() => run(item)}>{item.icon}{item.label}</ActionButton>) : <p>没有匹配的内容块</p>}</div>, document.body) : null}
     {editor ? <BlockControls editor={editor} readOnly={readOnly} noteId={noteId} /> : null}
     <EditorContent editor={editor} aria-label="文档正文" />

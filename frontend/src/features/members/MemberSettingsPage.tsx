@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { Avatar } from "@heroui/react/avatar";
 import { Tag } from "../../shared/ui/Tag";
@@ -7,11 +8,9 @@ import { Crown, Mail, RefreshCw, Shield, Trash2, UserPlus, Users } from "../../s
 import { type FormEvent, useState } from "react";
 import { useStore } from "zustand";
 
-import { ApiError } from "../../shared/api/api-client";
 import { authStore } from "../../shared/auth/auth-store";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { Button } from "../../shared/ui/Button";
-import { ToastNotification, showToast } from "../../shared/ui/Toast";
 import { TextInput } from "../../shared/ui/TextInput";
 import { SelectField } from "../../shared/ui/SelectField";
 
@@ -54,27 +53,21 @@ export function MemberSettingsPage() {
     queryClient.invalidateQueries({ queryKey: ["ownership-transfer"] }),
     queryClient.invalidateQueries({ queryKey: ["invitations"] }),
   ]);
-  const notifyFailure = (error: unknown) => showToast({
-    title: "操作未完成",
-    description: error instanceof ApiError && error.code === "MAIL_SERVICE_UNAVAILABLE"
-      ? "邮件服务不可用，暂时无法发送邀请或转让确认。"
-      : error instanceof Error ? error.message : "请稍后重试。",
-    tone: "danger",
-  });
+  const notifyFailure = (error: unknown) => reportError(error);
   const invite = useMutation({
     mutationFn: () => inviteMember({ email, role }, auth),
-    onSuccess: async item => { setEmail(""); await refresh(); showToast({ title: item.email_sent ? "邀请已发送" : "邀请已创建，邮件尚未送达", description: item.email_error_summary ?? undefined, tone: item.email_sent ? "success" : "danger" }); },
+    onSuccess: async () => { setEmail(""); await refresh();  },
     onError: notifyFailure,
   });
   const roleMutation = useMutation({
     mutationFn: ({ id, version, nextRole }: { id: string; version: number; nextRole: "admin" | "editor" | "viewer" }) => updateMemberRole(id, nextRole, version, auth),
-    onSuccess: async () => { await refresh(); showToast({ title: "成员角色已更新", tone: "success" }); },
+    onSuccess: async () => { await refresh();  },
     onError: notifyFailure,
   });
-  const removeMutation = useMutation({ mutationFn: ({ id, version }: { id: string; version: number }) => removeMember(id, version, auth), onSuccess: async () => { await refresh(); showToast({ title: "成员已移除", tone: "success" }); }, onError: notifyFailure });
-  const revokeMutation = useMutation({ mutationFn: (id: string) => revokeInvitation(id, auth), onSuccess: async () => { await refresh(); showToast({ title: "邀请已撤销", tone: "success" }); }, onError: notifyFailure });
-  const resendMutation = useMutation({ mutationFn: (id: string) => resendInvitation(id, auth), onSuccess: async item => { await refresh(); showToast({ title: item.email_sent ? "邀请已重新发送" : "邮件投递未完成，可稍后重发", description: item.email_error_summary ?? undefined, tone: item.email_sent ? "success" : "danger" }); }, onError: notifyFailure });
-  const transferMutation = useMutation({ mutationFn: (id: string) => startOwnershipTransfer(id, auth), onSuccess: async item => { await refresh(); showToast({ title: "所有权转让已发起", description: item.email_sent ? "请当前所有者通过邮件确认" : "邮件尚未送达，可在待确认转让中重发。", tone: item.email_sent ? "success" : "danger" }); }, onError: notifyFailure });
+  const removeMutation = useMutation({ mutationFn: ({ id, version }: { id: string; version: number }) => removeMember(id, version, auth), onSuccess: async () => { await refresh();  }, onError: notifyFailure });
+  const revokeMutation = useMutation({ mutationFn: (id: string) => revokeInvitation(id, auth), onSuccess: async () => { await refresh();  }, onError: notifyFailure });
+  const resendMutation = useMutation({ mutationFn: (id: string) => resendInvitation(id, auth), onSuccess: async () => { await refresh();  }, onError: notifyFailure });
+  const transferMutation = useMutation({ mutationFn: (id: string) => startOwnershipTransfer(id, auth), onSuccess: async () => { await refresh();  }, onError: notifyFailure });
   const resendTransfer = useMutation({ mutationFn: (id: string) => resendOwnership(id, auth), onSuccess: refresh, onError: notifyFailure });
   const cancelTransfer = useMutation({ mutationFn: (id: string) => cancelOwnership(id, auth), onSuccess: refresh, onError: notifyFailure });
   const pendingInvitations = invitesQuery.data?.items.filter((item) => item.status === "pending") ?? [];
@@ -99,8 +92,6 @@ export function MemberSettingsPage() {
   return (
     <WorkspaceShell>
       <PageContainer title="成员与权限" description="管理工作空间中的协作者与访问权限。">
-        {!canManage ? <ToastNotification tone="default" title="只读成员列表">你的角色不能邀请、移除或调整其他成员。</ToastNotification> : null}
-        {membersQuery.isError ? <ToastNotification tone="danger" title="成员列表加载失败">请刷新页面后重试。</ToastNotification> : null}
 
         {canManage ? (
           <section className="workbench-member-invite">

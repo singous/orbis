@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { IntegrationTokensSettings } from "../integrations/IntegrationTokensSettings";
 import { TextArea } from "@heroui/react/textarea";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
@@ -7,7 +8,6 @@ import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { AVATAR_MIME_TYPES, changeAvatar, getProfile, updateProfile, validateAvatar } from "../../shared/auth/profile-api";
 import { Button } from "../../shared/ui/Button";
 import { TextInput } from "../../shared/ui/TextInput";
-import { showToast } from "../../shared/ui/Toast";
 import { UserAvatar } from "../../shared/ui/UserAvatar";
 import { PageContainer } from "../../shared/ui/PageContainer";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
@@ -44,15 +44,15 @@ export function AccountSettingsPage() {
       if (getAuthSessionKey(authStore.getState()) !== sessionKey) return;
       authStore.getState().updateUser(saved, sessionKey);
       setName(saved.display_name || ""); setBio(saved.bio || "");setProfileBaseVersion(saved.profile_version); edited.current = false;
-      showToast({ title: "个人资料已保存", tone: "success" });
+
     } catch (error) {
-      if (getAuthSessionKey(authStore.getState()) === sessionKey) showToast({ title: "保存失败", description: error instanceof Error ? error.message : "请重试。", tone: "danger" });
+      if (getAuthSessionKey(authStore.getState()) === sessionKey) reportError(error);
     } finally { setPending(false); }
   }
   async function saveAvatar(file: File | null) {
     if (file) {
       const error = validateAvatar(file);
-      if (error) { showToast({ title: "无法上传头像", description: error, tone: "danger" }); return; }
+      if (error) { reportError(error); return; }
     }
     setPending(true);
     try {
@@ -60,9 +60,9 @@ export function AccountSettingsPage() {
       if (getAuthSessionKey(authStore.getState()) !== sessionKey) return;
       authStore.getState().updateUser(saved, sessionKey);
       if(profileBaseVersion===user?.profile_version)setProfileBaseVersion(saved.profile_version);
-      showToast({ title: file ? "头像已更新" : "已恢复默认头像", tone: "success" });
+
     } catch (error) {
-      if (getAuthSessionKey(authStore.getState()) === sessionKey) showToast({ title: "头像更新失败", description: error instanceof Error ? error.message : "请重试。", tone: "danger" });
+      if (getAuthSessionKey(authStore.getState()) === sessionKey) reportError(error);
     } finally { setPending(false); }
   }
   return <WorkspaceShell>

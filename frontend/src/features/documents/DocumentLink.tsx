@@ -21,9 +21,10 @@ export function DocumentLink({ noteId, onPointerEnter, onPointerLeave, onFocus, 
   function prefetch() {
     // Hovering the active row must not refetch (or fail) the editing session.
     if (!client || !auth || isCurrentDocument) return;
+    const background = { ...auth, feedback: { error: false } };
     void loadDocumentEditor().catch(() => { /* Navigation owns loading feedback. */ });
-    void client.prefetchQuery({ queryKey: ["note", noteId], queryFn: ({ signal }) => getNote(noteId, auth, signal) });
-    void client.prefetchQuery({ queryKey: ["note-content-pages", noteId], queryFn: ({ signal }) => getNoteChildrenPage(noteId, auth, { signal }) });
+    void client.prefetchQuery({ queryKey: ["note", noteId], meta: { silent: true }, queryFn: ({ signal }) => getNote(noteId, background, signal) });
+    void client.prefetchQuery({ queryKey: ["note-content-pages", noteId], meta: { silent: true }, queryFn: ({ signal }) => getNoteChildrenPage(noteId, background, { signal }) });
   }
   return <Link {...props}
     onPointerEnter={event => {

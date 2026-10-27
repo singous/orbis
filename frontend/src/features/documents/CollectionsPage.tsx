@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import {
@@ -19,7 +20,6 @@ import { authStore } from "../../shared/auth/auth-store";
 import { formatDate } from "../../shared/format/date";
 import { Button } from "../../shared/ui/Button";
 import { PageContainer } from "../../shared/ui/PageContainer";
-import { ToastNotification, showToast } from "../../shared/ui/Toast";
 import { DocumentShell } from "./DocumentShell";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { usePinnedNotebooks } from "./pinned-notebooks";
@@ -93,7 +93,7 @@ export function CollectionsPage() {
   useEffect(() => {
     if (!resourceError || shownResourceError.current === resourceError) return;
     shownResourceError.current = resourceError;
-    showToast({ title: "无法打开资源", description: resourceError, tone: "danger" });
+    reportError(resourceError);
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, navigate, resourceError]);
   const notebookCounts = useMemo(
@@ -176,11 +176,7 @@ export function CollectionsPage() {
           ) : null
         }
       >
-        {groupsQuery.isError || notebooksQuery.isError || notesQuery.isError ? (
-          <ToastNotification tone="danger" title="笔记本加载失败">
-            请检查 API 服务后重试。
-          </ToastNotification>
-        ) : null}
+
         <section className="workbench-section" aria-label="笔记本">
           {targetGroupId && !groupsQuery.isLoading && !groups.some(group => group.id === targetGroupId) ? <SearchGroupTarget id={targetGroupId} canCreate={canEdit} onCreate={() => setDialog({ kind: "notebook", groupId: targetGroupId })} /> : null}
           {groupsQuery.isLoading || notebooksQuery.isLoading ? (

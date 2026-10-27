@@ -1,3 +1,4 @@
+import { withRequestFeedback } from "../../../shared/api/request-feedback";
 import { z } from "zod";
 import { ApiError, apiRequest, workspacePath } from "../../../shared/api/api-client";
 import { authRequestOptions, type AuthRequestOptions } from "../../../shared/auth/use-auth-request";
@@ -22,6 +23,7 @@ function retryAfter(delay: number, signal?: AbortSignal) {
 }
 
 export async function getDocumentCollaboration(noteId: string, auth: AuthRequestOptions, options: { activate?: boolean; signal?: AbortSignal } = {}): Promise<CollaborationState> {
+  return withRequestFeedback({ ...auth, feedback: { ...auth.feedback, error: auth.feedback?.error ?? (error => !(error instanceof ApiError && error.code === "COLLABORATION_NOT_ENABLED")) } }, async auth => {
   for (let attempt = 0; ; attempt += 1) {
     try {
       const result = stateSchema.parse(await apiRequest(workspacePath(auth, `/documents/${noteId}/collaboration`), {
@@ -35,4 +37,6 @@ export async function getDocumentCollaboration(noteId: string, auth: AuthRequest
       await retryAfter(BOOTSTRAP_BUSY_RETRY_DELAY_MS * 2 ** attempt, options.signal);
     }
   }
+
+  });
 }

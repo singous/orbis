@@ -69,7 +69,7 @@ export class DocumentWriter {
         pending.uncertain=true;
       }
       await this.#checkpoint(true);
-      if(this.#pending?.uncertain && error instanceof ApiError && error.status>=400 && error.status<500) throw new ApiError(503,"上次保存结果尚未确认，当前访问权限暂时无法完成确认。草稿仍保留。","DOCUMENT_WRITE_RESULT_UNKNOWN","",{operation_id:pending.operation_id});
+      if(this.#pending?.uncertain && error instanceof ApiError && error.status>=400 && error.status<500) throw new ApiError(503, "上次保存结果尚未确认，当前访问权限暂时无法完成确认。草稿仍保留。", "DOCUMENT_WRITE_RESULT_UNKNOWN", "", {operation_id:pending.operation_id}, { cause: error });
       throw error;
     }
     this.#pending=null;

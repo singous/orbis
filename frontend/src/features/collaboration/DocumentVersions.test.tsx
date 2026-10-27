@@ -1,3 +1,4 @@
+import { Toaster } from "../../shared/ui/Toast";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -14,7 +15,7 @@ beforeEach(() => { authStore.getState().setSession(session); });
 afterEach(() => { cleanup(); authStore.getState().clearSession(); vi.unstubAllGlobals(); });
 function show(options: { onPrepareVersion?: () => Promise<number>; canManage?: boolean } = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
-  render(<QueryClientProvider client={client}><DocumentCollaborationPanel noteId={NOTE_ID} currentUserId={USER_ID} canManage={options.canManage ?? true} onClose={vi.fn()} onPrepareVersion={options.onPrepareVersion} onRestore={async restore => { await restore(42); }} /></QueryClientProvider>);
+  render(<QueryClientProvider client={client}><DocumentCollaborationPanel noteId={NOTE_ID} currentUserId={USER_ID} canManage={options.canManage ?? true} onClose={vi.fn()} onPrepareVersion={options.onPrepareVersion} onRestore={async restore => { await restore(42); }} /><Toaster /></QueryClientProvider>);
   return client;
 }
 async function history(user: ReturnType<typeof userEvent.setup>) { await user.click(screen.getByRole("tab", { name: "历史版本" })); }

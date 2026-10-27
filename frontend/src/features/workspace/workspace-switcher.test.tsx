@@ -221,8 +221,9 @@ it("retries membership discovery and aborts it when the selector closes", async 
   }));
   const view = renderSwitcher();
   await userEvent.click(view.trigger);
-  expect(await screen.findByRole("alertdialog")).toHaveTextContent("工作空间加载失败");
-  await userEvent.click(screen.getByRole("button", { name: "重新加载工作空间" }));
+  expect(await screen.findByRole("alertdialog")).toHaveTextContent("目标工作空间已不可用");
+  await userEvent.keyboard("{Escape}");
+  await userEvent.click(view.trigger);
   await waitFor(() => expect(pendingSignal).toBeDefined());
   await userEvent.keyboard("{Escape}");
   await waitFor(() => expect(pendingSignal?.aborted).toBe(true));

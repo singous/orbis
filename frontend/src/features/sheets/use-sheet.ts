@@ -23,7 +23,7 @@ export function useSheet(id: string, viewId: string, search: string) {
   const meta = useQuery({
     queryKey: [...scope, "meta"],
     queryFn: ({ signal }) => api.get(id, signal),
-    refetchInterval: 3000,
+    refetchInterval: query => query.state.status === "error" ? false : 3000,
   });
   const view =
     meta.data?.definition.views.find((v) => v.id === viewId) ??
