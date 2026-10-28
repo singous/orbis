@@ -3,13 +3,14 @@ import type { Field, Sheet } from "./model";
 type Definition = Sheet["definition"];
 
 /** Keep field order and every view's column order consistent without mutating the source. */
-export function updateFieldDefinition(definition: Definition, field: Field, insertIndex?: number): Definition {
+export function updateFieldDefinition(definition: Definition, field: Field, insertIndex?: number, relative?: { fieldID: string; after: boolean }): Definition {
   const existingIndex = definition.fields.findIndex(candidate => candidate.id === field.id);
   const fields = [...definition.fields];
   fields.splice(existingIndex >= 0 ? existingIndex : insertIndex ?? fields.length, existingIndex >= 0 ? 1 : 0, field);
   const views = definition.views.map(view => {
     const field_ids = [...view.field_ids];
-    if (existingIndex < 0) field_ids.splice(insertIndex ?? field_ids.length, 0, field.id);
+    const anchorIndex = relative ? field_ids.indexOf(relative.fieldID) : -1;
+    if (existingIndex < 0) field_ids.splice(anchorIndex >= 0 ? anchorIndex + (relative?.after ? 1 : 0) : insertIndex ?? field_ids.length, 0, field.id);
     return { ...view, field_ids };
   });
   return { fields, views };

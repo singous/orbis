@@ -48,3 +48,12 @@ it("inserts a field in each view but preserves existing order and hidden columns
   expect(edited.views).toEqual(original.views);
   expect(original).toEqual(snapshot);
 });
+
+it("inserts beside the displayed column even when views use different field orders", () => {
+  const original = definition();
+  original.views[0].field_ids = [other.id, field.id];
+  const inserted = newField("number");
+  const next = updateFieldDefinition(original, inserted, 0, { fieldID: field.id, after: false });
+  expect(next.views[0].field_ids).toEqual([other.id, inserted.id, field.id]);
+  expect(next.views[1].field_ids).toEqual([inserted.id, field.id, other.id]);
+});

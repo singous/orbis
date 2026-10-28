@@ -39,3 +39,10 @@ describe("shared action contract", () => {
     expect(action).not.toHaveBeenCalled();
   });
 });
+
+it("preserves checkbox state on actions with a custom accessibility role", () => {
+  const view = render(<ActionButton role="checkbox" aria-label="Visible field" aria-checked>Eye</ActionButton>);
+  expect(screen.getByRole("checkbox", { name: "Visible field" })).toBeChecked();
+  view.rerender(<ActionButton role="checkbox" aria-label="Visible field" aria-checked={false}>Eye</ActionButton>);
+  expect(screen.getByRole("checkbox", { name: "Visible field" })).not.toBeChecked();
+});

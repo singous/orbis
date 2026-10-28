@@ -2,10 +2,10 @@ import { reportError } from "../../shared/api/request-feedback";
 import { useState } from "react";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Button } from "../../shared/ui/Button";
-import { ArrowDown, ArrowUp, Plus, Trash2 } from "../../shared/ui/icons";
+import { Plus, Trash2 } from "../../shared/ui/icons";
 import { SelectField } from "../../shared/ui/SelectField";
 import { ValueEditor } from "./Cell";
-import { FieldIcon } from "./FieldIcon";
+import { FieldManager } from "./FieldManager";
 import { KINDS, type Field, type View } from "./model";
 import { Popover, type Anchor } from "./Popover";
 export type SettingsMode = "columns" | "filter" | "sort" | "group" | "height";
@@ -23,15 +23,23 @@ export function ViewSettings({
   view,
   onSave,
   onClose,
+  onFieldAction,
+  initialFieldID,
 }: {
+  initialFieldID?: string;
   mode: SettingsMode;
   anchor: Anchor;
   fields: Field[];
   view: View;
   onSave: (v: View) => Promise<unknown>;
   onClose: () => void;
+  onFieldAction?: (action: string, field: Field, anchor: Anchor) => void;
 }) {
-  const [draft, setDraft] = useState(structuredClone(view)),
+  const [draft, setDraft] = useState(() => {
+    const initial = structuredClone(view);
+    if (mode === "filter" && initialFieldID && !initial.filters.some(filter => filter.field_id === initialFieldID)) initial.filters.push({ field_id: initialFieldID, operator: "eq", value: null });
+    return initial;
+  }),
     [busy, setBusy] = useState(false);
   const sortable = fields.filter((f) => !KINDS[f.kind].multiple),
     filterable = sortable.filter((f) => !KINDS[f.kind].system);
@@ -48,14 +56,7 @@ export function ViewSettings({
       setBusy(false);
     }
   }
-  function move(id: string, delta: number) {
-    const next = [...draft.field_ids],
-      from = next.indexOf(id),
-      to = from + delta;
-    if (from < 0 || to < 0 || to >= next.length) return;
-    [next[from], next[to]] = [next[to], next[from]];
-    setDraft({ ...draft, field_ids: next });
-  }
+  if (mode === "columns") return <FieldManager fields={fields} view={view} anchor={anchor} onSave={onSave} onClose={onClose} onFieldAction={onFieldAction} />;
   return (
     <Popover
       anchor={anchor}
@@ -67,47 +68,6 @@ export function ViewSettings({
     >
       <div className="sheet-view-settings">
         <strong>{labels[mode]}</strong>
-        {mode === "columns" &&
-          [
-            ...draft.field_ids.map((id) => fields.find((f) => f.id === id)!),
-            ...fields.filter((f) => !draft.field_ids.includes(f.id)),
-          ].map((f) => (
-            <div className="sheet-setting-row" key={f.id}>
-              <label>
-                <input
-                  type="checkbox"
-                  disabled={busy}
-                  checked={draft.field_ids.includes(f.id)}
-                  onChange={(e) =>
-                    setDraft({
-                      ...draft,
-                      field_ids: e.target.checked
-                        ? [...draft.field_ids, f.id]
-                        : draft.field_ids.filter((id) => id !== f.id),
-                    })
-                  }
-                />
-                <FieldIcon kind={f.kind} />
-                {f.name}
-              </label>
-              <ActionButton
-                size="sm"
-                aria-label={`上移${f.name}`}
-                disabled={busy}
-                onClick={() => move(f.id, -1)}
-              >
-                <ArrowUp size={14} />
-              </ActionButton>
-              <ActionButton
-                size="sm"
-                aria-label={`下移${f.name}`}
-                disabled={busy}
-                onClick={() => move(f.id, 1)}
-              >
-                <ArrowDown size={14} />
-              </ActionButton>
-            </div>
-          ))}
         {mode === "height" &&
           [32, 40, 64, 96].map((height, i) => (
             <label key={height} className="sheet-setting-row">
