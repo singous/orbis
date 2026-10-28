@@ -15,7 +15,7 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); authStore.getState().clearSession(); delete window.__ORBIS_HOST__; vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
-it.each([["web", false], ["desktop", false], ["web", true]] as const)("preserves an open palette when the %s loading frame is replaced (compact: %s)", async (surface, compact) => {
+it.each([["web", false], ["desktop", false], ["web", true]] as const)("preserves an open palette and its trigger while the %s page finishes loading (compact: %s)", async (surface, compact) => {
   window.__ORBIS_HOST__ = { surface };
   vi.spyOn(window, "matchMedia").mockImplementation(query => ({ matches: compact && query === "(max-width: 767px)", media: query, onchange: null, addListener: () => {}, removeListener: () => {}, addEventListener: () => {}, removeEventListener: () => {}, dispatchEvent: () => false }));
   let complete!: (value: { default: ComponentType }) => void;
@@ -33,7 +33,7 @@ it.each([["web", false], ["desktop", false], ["web", true]] as const)("preserves
   await user.type(input, "保留加载中的搜索");
   await waitFor(() => expect(input).toHaveFocus());
   await act(async () => complete({ default: LoadedPage }));
-  expect(oldTrigger).not.toBeInTheDocument();
+  expect(oldTrigger).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "页面加载完成", hidden: true })).toBeInTheDocument();
   expect(screen.getByRole("combobox", { name: "搜索任何内容" })).toBe(input);
   expect(input).toHaveValue("保留加载中的搜索");
@@ -41,11 +41,10 @@ it.each([["web", false], ["desktop", false], ["web", true]] as const)("preserves
   expect(screen.getAllByRole("dialog", { name: "全局搜索" })).toHaveLength(1);
   await user.click(screen.getByRole("button", { name: "关闭搜索" }));
   await waitFor(() => expect(screen.queryByRole("dialog", { name: "全局搜索" })).not.toBeInTheDocument());
-  const currentTrigger = screen.getByRole("button", { name: compact ? "打开主导航" : name });
-  expect(currentTrigger).not.toBe(oldTrigger);
+  const currentTrigger = screen.getByRole("button", { name });
+  expect(currentTrigger).toBe(oldTrigger);
   await waitFor(() => expect(currentTrigger).toHaveFocus());
   await user.click(currentTrigger);
-  if (compact) await user.click(screen.getByRole("button", { name }));
   expect(screen.getByRole("combobox", { name: "搜索任何内容" })).toHaveValue("");
   client.clear();
 });

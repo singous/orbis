@@ -183,7 +183,7 @@ export function SheetWorkspace({
   const LoadingShell = embedded ? "div" : DocumentShell;
   if (!sheet || !view)
     return (
-      <LoadingShell>
+      <LoadingShell {...(!embedded ? { loading: true } : {})}>
         <div className="sheet-empty">
           {c.meta.error ? (
             <>
@@ -198,7 +198,7 @@ export function SheetWorkspace({
         </div>
       </LoadingShell>
     );
-  const activeForm = c.forms.data?.find((f) => f.id === selectedView);
+  const activeForm = releaseFeatures.sheetForms ? c.forms.data?.find((f) => f.id === selectedView) : undefined;
   const fail = (error: unknown) => {
     reportError(error);
     c.setError(error instanceof Error ? error.message : String(error));
@@ -251,6 +251,7 @@ export function SheetWorkspace({
     return c.update({ ...sheet!, definition: { fields: nextFields, views } });
   }
   async function addView(kind: "grid" | "kanban" | "form") {
+    if (kind === "form" && !releaseFeatures.sheetForms) return;
     try {
       await preparePendingNavigation();
     } catch (error) {
@@ -569,7 +570,7 @@ export function SheetWorkspace({
               )}
             </div>
           ))}
-          {c.forms.data?.map((f) => (
+          {releaseFeatures.sheetForms && c.forms.data?.map((f) => (
             <div
               className={`sheet-tab${activeForm?.id === f.id ? " active" : ""}`}
               key={f.id}
@@ -658,7 +659,7 @@ export function SheetWorkspace({
               </ActionButton>
             )}
             <span className="sheet-toolbar-spacer" />
-            {canEdit && (
+            {canEdit && releaseFeatures.sheetForms && (
               <ActionButton size="sm" aria-label="生成表单" title="生成表单" onClick={() => void addView("form")}>
                 <FileInput size={14} />
                 <span className="sheet-tool-label">生成表单</span>
@@ -772,7 +773,7 @@ export function SheetWorkspace({
               ))}
             {menu.kind === "add" && (
               <>
-                {(["grid", "kanban", "form"] as const).map((kind) => (
+                {(["grid", "kanban", "form"] as const).filter(kind => releaseFeatures.sheetForms || kind !== "form").map((kind) => (
                   <ActionButton
                     size="sm"
                     role="menuitem"

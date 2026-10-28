@@ -1,7 +1,8 @@
+import { createPortal } from "react-dom";
+import { useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type Ref } from "react";
+import { WorkspaceFrameContext } from "./workspace-frame-context";
 import { ActionButton } from "../../shared/ui/ActionButton";
-import type { CSSProperties, ReactNode } from "react";
 import { Menu, PanelRightOpen } from "../../shared/ui/icons";
-import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useStore } from "zustand";
 
@@ -25,7 +26,8 @@ import { useWorkspaceSearch } from "./use-workspace-search";
 export type { WorkspaceSidebarConfig } from "./workspace-sidebar-config";
 
 export type WorkspaceShellProps = {
-  children: ReactNode;
+  children?: ReactNode;
+  loading?: boolean;
   sectionTitle?: ReactNode;
   sidebar?: WorkspaceSidebarConfig | false;
   toolbar?: ReactNode;
@@ -36,10 +38,23 @@ export type WorkspaceShellProps = {
 };
 
 export function WorkspaceShell(props: WorkspaceShellProps) {
-  return <SearchPaletteProvider><WorkspaceShellContent {...props} /></SearchPaletteProvider>;
+  const frame = useContext(WorkspaceFrameContext);
+  return frame ? <WorkspaceFrameBridge {...props} /> : <SearchPaletteProvider><WorkspaceShellContent {...props} /></SearchPaletteProvider>;
 }
 
-function WorkspaceShellContent({ children, sectionTitle, sidebar, toolbar, contentLayout = "page", contextPanel, contextOpen = true, onOpenContext }: WorkspaceShellProps) {
+function WorkspaceFrameBridge({ children, loading = false, ...chrome }: WorkspaceShellProps) {
+  const frame = useContext(WorkspaceFrameContext)!;
+  const { pathname } = useLocation();
+  const [owner] = useState(() => Symbol("workspace-route"));
+  const { sidebar, toolbar, sectionTitle, contentLayout, contextPanel, contextOpen, onOpenContext } = chrome;
+  useLayoutEffect(() => {
+    frame.configure(owner, { sidebar, toolbar, sectionTitle, contentLayout, contextPanel, contextOpen, onOpenContext }, loading);
+  }, [frame.configure, owner, sidebar, toolbar, sectionTitle, contentLayout, contextPanel, contextOpen, onOpenContext, loading]);
+  useLayoutEffect(() => () => frame.release(owner), [frame.release, owner]);
+  return frame.content ? createPortal(children, frame.content, pathname) : null;
+}
+
+export function WorkspaceShellContent({ children, sectionTitle, sidebar, toolbar, contentLayout = "page", contextPanel, contextOpen = true, onOpenContext, contentRef }: WorkspaceShellProps & { contentRef?: Ref<HTMLDivElement> }) {
   const { isOpen: searchOpen } = useSearchPalette();
   const searchOpenRef = useRef(searchOpen);
   searchOpenRef.current = searchOpen;
@@ -54,6 +69,12 @@ function WorkspaceShellContent({ children, sectionTitle, sidebar, toolbar, conte
   const navigationRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const contextRef = useRef<HTMLElement>(null);
+  const contentScrollRef = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    setMainNavigationOpen(false);
+    setDocumentContextOpen(false);
+    if (contentScrollRef.current) { contentScrollRef.current.scrollTop = 0; contentScrollRef.current.scrollLeft = 0; }
+  }, [pathname]);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
   const contextTriggerRef = useRef<HTMLButtonElement>(null);
   const compact = useCompactNavigation();
@@ -132,7 +153,7 @@ function WorkspaceShellContent({ children, sectionTitle, sidebar, toolbar, conte
           /> : null}
         </div>
         <section className={`workspace-main-area${contentLayout === "document" ? " workspace-main-area-panel" : ""}${contextPanel && contextOpen ? " has-context" : ""}`} aria-label="主工作区">
-          <section className={`workspace-content${contentLayout === "document" ? " workspace-document-content" : ""}`} inert={drawerOpen ? true : undefined}>
+          <section ref={contentScrollRef} className={`workspace-content${contentLayout === "document" ? " workspace-document-content" : ""}`} inert={drawerOpen ? true : undefined}>
             {showToolbar ? (
               <header className="workspace-toolbar">
                 <ActionButton ref={menuTriggerRef} type="button" aria-label="打开主导航" aria-expanded={mainNavigationOpen} className="workspace-mobile-drawer-control" onClick={() => { setMainNavigationOpen(true); setDocumentContextOpen(false); }}><Menu aria-hidden="true" size={18} /></ActionButton>
@@ -142,7 +163,7 @@ function WorkspaceShellContent({ children, sectionTitle, sidebar, toolbar, conte
                 {contextPanel && onOpenContext ? <ActionButton type="button" aria-label="打开上下文面板" className="icon-button workspace-context-open-control" onClick={onOpenContext}><PanelRightOpen aria-hidden="true" size={16} /></ActionButton> : null}
               </header>
             ) : null}
-            <div key={pathname} id="workspace-main-content" tabIndex={-1} className="workspace-route-content">{children}</div>
+            <div ref={contentRef} id="workspace-main-content" tabIndex={-1} className="workspace-route-content">{children}</div>
           </section>
           {contextPanel ? <aside ref={contextRef} className="workspace-context-panel" aria-label="上下文面板" aria-hidden={compact && !documentContextExpanded ? true : undefined} inert={compact && !documentContextExpanded ? true : undefined} hidden={!contextOpen} onClick={closeAfterLink}>{contextPanel}</aside> : null}
         </section>

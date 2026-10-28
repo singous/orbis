@@ -359,7 +359,7 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
   if (embed && state.board && state.pageID !== embed.pageID) return <div className="board-preview-empty" role="alert">引用的画板页面已不存在，请重新选择引用页面。</div>;
   if (!state.board)
     return (
-      <LoadingShell>
+      <LoadingShell {...(!embed ? { loading: true } : {})}>
         {state.error ? (
           <div className="board-loading">
             <Button onClick={() => void session.start(embed?.pageID ?? new URLSearchParams(location.search).get("page") ?? "")}>重试</Button>

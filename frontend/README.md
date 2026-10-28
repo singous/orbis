@@ -28,6 +28,12 @@ npm run build
 
 内容组件登记由后端 `api/editor-components.json` 维护；`npm run sync:document-blocks` 更新前端副本，构建时检查同步状态。
 
+## 工作区布局
+
+`WorkspaceRoute` 持有稳定的 `WorkspaceFrame`。页面通过 `WorkspaceShell` 提供导航与页头配置，正文以 portal 挂载到共享内容容器，并保留页面内的 React context。加载占位使用 `loading` 保留当前导航、移除旧页面操作，避免文档、画板和数据表切换时重新挂载整页。
+
+未开放的工作区入口统一由 `src/shared/release-features.ts` 控制；隐藏入口不删除历史数据，已有公开交付协议继续兼容。
+
 ## 品牌资产
 
 `public/brand/orbis-mark.svg` 与 `orbis-wordmark.svg` 是 Logo 图形和字标的矢量源文件，依据品牌设计稿整理为路径，字标不依赖本机字体。

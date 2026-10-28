@@ -75,23 +75,17 @@ test("table, field menus, board and public collection share the same records", a
     page.locator(".sheet-board").getByRole("article").filter({ hasText: "准备产品演示" }),
   ).toBeVisible();
   await page.getByRole("tab", { name: "表格视图", exact: true }).click();
-  await page.getByRole("button", { name: "生成表单", exact: true }).click();
-  await expect(
-    page.getByRole("button", { name: "预览表单", exact: true }),
-  ).toBeVisible();
-  await page.screenshot({
-    animations: "disabled",
-    path: test.info().outputPath("sheet-form-editor.png"),
-  });
-  await page.getByRole("button", { name: "开始收集", exact: true }).click();
-  const link = await page
-    .getByRole("textbox", { name: "填写链接", exact: true })
-    .inputValue();
-  await expect(page.getByRole("img", { name: "表单填写二维码" })).toBeVisible();
-  await page.screenshot({
-    animations: "disabled",
-    path: test.info().outputPath("sheet-form-sharing.png"),
-  });
+  await expect(page.getByRole("button", { name: "生成表单", exact: true })).toHaveCount(0);
+  // Existing published forms stay compatible; their workspace creation entry
+  // is deferred, so seed this legacy form through the public application API.
+  const documentId = new URL(page.url()).pathname.split("/").at(-1)!;
+  const document = await responseData(await request.get(workspacePath(session, `/documents/${documentId}`), { headers: sessionHeaders(session) }));
+  const currentSheet = await responseData(await request.get(workspacePath(session, `/sheets/${document.sheet_id}`), { headers: sessionHeaders(session) }));
+  const legacyForm = await responseData(await request.put(workspacePath(session, `/sheets/${currentSheet.id}/forms`), {
+    headers: sessionHeaders(session), data: { id: crypto.randomUUID(), sheet_id: currentSheet.id, version: 0, enabled: true,
+      config: { title: "Legacy collection", description: "", fields: currentSheet.definition.fields.map((field: any) => ({ field_id: field.id, required: false, description: "" })) } },
+  }));
+  const link = new URL("/forms/" + legacyForm.token, page.url()).href;
   const context = await browser.newContext(),
     fill = await context.newPage();
   await fill.goto(link);

@@ -103,7 +103,7 @@ export function SheetsHome() {
     <DocumentShell notebookId={collection || undefined}>
       <PageContainer
         title="数据表"
-        description="组织结构化信息，在表格、看板和收集表单之间协作。"
+        description="组织结构化信息，在表格与看板之间协作。"
         actions={
           canEdit ? (
             <Button
