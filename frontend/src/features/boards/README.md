@@ -11,6 +11,10 @@ identities. Styling can be replaced independently of the board format.
   Boards do not read or write browser draft storage. Reloading opens server content
   without restoring or replaying unsaved operations. Each editor owns its temporary
   state, so multiple references do not compete for a shared browser-storage key.
+- `use-board-session.ts` owns session start/disposal, image cache lifetime, embedded
+  session handles and navigation registration. Token rotation updates request
+  credentials without replacing the session; workspace or credential changes dispose it.
+  `BoardEditor.tsx` owns canvas tools, viewport and panels.
 - `navigation.ts` tracks pending edits for one route-level blocker. Same-tab navigation
   requires saving or explicitly leaving without the unsaved changes. New embedded
   blocks create their own board and initial page; existing resources cannot be selected

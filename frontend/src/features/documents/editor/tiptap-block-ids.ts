@@ -3,7 +3,7 @@ import type { Node as PMNode } from "@tiptap/pm/model";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Mapping } from "@tiptap/pm/transform";
 
-import { newBlockId } from "../../content/model/blocks";
+import { newBlockId } from "../../content/blocks";
 import { inlineTransactionsOnly } from "./tiptap-inline-change";
 
 const OWNED_BLOCKS = new Set([

@@ -101,7 +101,7 @@ for (const kind of ["field", "view"] as const) {
 test.describe("touch sheet controls", () => {
   test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
 
-  test("toolbar, row selection, pickers and form actions remain usable on touch", async ({ page, request }) => {
+  test("toolbar, row selection and pickers remain usable on touch with deferred forms hidden", async ({ page, request }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await openSheet(page, request);
     const controls = await page.locator(".sheet-toolbar > .orbis-action-button").evaluateAll(elements => elements.map(element => {
@@ -140,18 +140,13 @@ test.describe("touch sheet controls", () => {
     expect(bounds!.width).toBeGreaterThanOrEqual(44);
     await day.tap();
     await expect(picker).toHaveCount(0);
-    await page.getByRole("button", { name: "生成表单", exact: true }).tap();
-    await expect(page.getByRole("button", { name: "预览表单", exact: true })).toBeVisible();
-    const tools = page.locator(".sheet-question-tools button");
-    expect(await tools.count()).toBeGreaterThan(0);
-    const sizes = await tools.evaluateAll(elements => elements.map(element => {
-      const bounds = element.getBoundingClientRect();
-      return { width: bounds.width, height: bounds.height };
-    }));
-    for (const bounds of sizes) {
-      expect(bounds.width).toBeGreaterThanOrEqual(44);
-      expect(bounds.height).toBeGreaterThanOrEqual(44);
-    }
+    await expect(page.getByRole("button", { name: "生成表单", exact: true })).toHaveCount(0);
+    await page.getByRole("button", { name: "添加视图", exact: true }).tap();
+    await expect(page.getByRole("menuitem", { name: "表单", exact: true })).toHaveCount(0);
+    const item = page.getByRole("menuitem", { name: "看板视图", exact: true });
+    const menuBounds = await item.boundingBox();
+    expect(menuBounds!.height).toBeGreaterThanOrEqual(44);
+    await page.keyboard.press("Escape");
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
   });
 });

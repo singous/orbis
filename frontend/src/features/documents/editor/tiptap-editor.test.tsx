@@ -3,7 +3,7 @@ import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import { TiptapEditor } from "./TiptapEditor";
-import type { NoteBlocksV2 } from "../../content/model/blocks";
+import type { NoteBlocksV2 } from "../../content/blocks";
 import * as model from "./tiptap-model";
 import type { EditorContentHandle } from "./editor-content-handle";
 import { EditorToolbarFrame } from "./EditorToolbarHost";

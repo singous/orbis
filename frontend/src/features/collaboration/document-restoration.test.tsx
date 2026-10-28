@@ -8,8 +8,8 @@ import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { authStore } from "../../shared/auth/auth-store";
 import { Toaster } from "../../shared/ui/Toast";
-import type { NoteBlocksV2 } from "../content/model/blocks";
-import { DocumentEditorPage } from "../documents/editor/DocumentEditorPage";
+import type { NoteBlocksV2 } from "../content/blocks";
+import { DocumentRoute } from "../../app/DocumentRoute";
 import { NOTE_ID, NOTEBOOK_ID, USER_ID, blocks, http, page, response, revision, session } from "./collaboration.test-utils";
 
 // Exercise the retained restoration workflow with its deferred entry enabled.
@@ -28,7 +28,7 @@ let client: QueryClient;
 beforeEach(() => { act(() => authStore.setState(session)); client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } }); });
 afterEach(() => { act(() => heroToast.clear()); cleanup(); client.clear(); vi.unstubAllGlobals(); act(() => authStore.getState().clearSession()); });
 function showEditor() {
-  return render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[`/documents/${NOTE_ID}`]}><Routes><Route path="/documents/:noteId" element={<DocumentEditorPage />} /></Routes></MemoryRouter><Toaster /></QueryClientProvider>);
+  return render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[`/documents/${NOTE_ID}`]}><Routes><Route path="/documents/:noteId" element={<DocumentRoute />} /></Routes></MemoryRouter><Toaster /></QueryClientProvider>);
 }
 const commandResult=(version:number)=>({document_id:NOTE_ID,operation_id:USER_ID,base_version:version-1,content_version:version,title:"产品计划",changed_block_ids:[],deleted_block_ids:[]});
 function server(mutate: (url: URL, init: RequestInit) => Response | Promise<Response>) {

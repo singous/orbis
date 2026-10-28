@@ -6,7 +6,7 @@ import { SiteEditorPage } from "./SiteEditorPage";
 import { authStore } from "../../shared/auth/auth-store";
 import { preparePendingNavigation } from "../../shared/navigation/pending-navigation";
 import { page, response, session } from "../collaboration/collaboration.test-utils";
-import { BrowserRequest } from "../../../tests/sites/browser-request";
+import { BrowserRequest } from "../../../tests/support/browser-request";
 
 vi.mock("../workspace/WorkspaceShell", () => ({ WorkspaceShell: ({ children }: { children: React.ReactNode }) => <main>{children}</main> }));
 const id = "018ff7c4-a5b6-7000-8000-000000000001";

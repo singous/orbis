@@ -6,7 +6,7 @@ import { afterEach, expect, it } from "vitest";
 import { collaborativeEditorExtensions } from "./TiptapEditor";
 import { tiptapExtensions } from "./tiptap-extensions";
 import { fromTiptapDocument, toTiptapDocument } from "./tiptap-model";
-import type { OrbisBlock, NoteBlocksV2 } from "../../content/model/blocks";
+import type { OrbisBlock, NoteBlocksV2 } from "../../content/blocks";
 import { blockSelectionKey } from "./blocks/block-selection";
 import { BLOCK_CLIPBOARD_MIME, installBlockClipboard, parseBlockClipboard } from "./blocks/block-clipboard";
 import { nativeBlock } from "../../content/codecs/api-content";

@@ -5,7 +5,7 @@ import { toTiptapDocument, fromTiptapDocument } from "../../src/features/documen
 import { executeBlockCommand } from "../../src/features/documents/editor/blocks/block-commands";
 import { BOARD_REMOVAL_EVENT, confirmBoardRemoval, type BoardRemovalRequest } from "../../src/features/documents/editor/blocks/board-removal";
 import { registerBoardNavigation } from "../../src/features/boards/navigation";
-import type { OrbisBlock } from "../../src/features/content/model/blocks";
+import type { OrbisBlock } from "../../src/features/content/blocks";
 
 const disposers: (() => void)[] = [];
 afterEach(() => { disposers.splice(0).reverse().forEach(dispose => dispose()); });

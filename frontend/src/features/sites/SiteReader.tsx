@@ -60,7 +60,7 @@ function useMediaQuery(query: string): boolean {
 async function pageMarkdown(page: PublishedPage): Promise<string> {
   const document = page.blocks as { schema_version?: number; blocks?: unknown[]; doc?: unknown };
   if (document.schema_version === 2 && Array.isArray(document.blocks)) {
-    const { v2ToMarkdown } = await import("../content/model/blocks");
+    const { v2ToMarkdown } = await import("../content/blocks");
     return `# ${page.title}\n\n${v2ToMarkdown(document.blocks as Parameters<typeof v2ToMarkdown>[0])}`.trim();
   }
   if (document.doc && typeof document.doc === "object") {

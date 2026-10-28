@@ -1,6 +1,6 @@
 import {createContext} from "react";
 import type {Editor} from "@tiptap/core";
-import type {OrbisBlock} from "../../../content/model/blocks";
+import type {OrbisBlock} from "../../../content/blocks";
 import {fromTiptapDocument} from "../tiptap-model";
 import {indexBlocks,normalizeBlockSelection} from "./block-tree";
 import {captureBlockActionSession,prepareBlockAction} from "./block-action-read";

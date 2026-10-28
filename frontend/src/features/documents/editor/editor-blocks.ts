@@ -1,5 +1,5 @@
 import type { NoteBlocks } from "../../../shared/api/schemas";
-import { isV2, toV2, type NoteBlocksV2, type OrbisBlock } from "../../content/model/blocks";
+import { isV2, toV2, type NoteBlocksV2, type OrbisBlock } from "../../content/blocks";
 
 /** Legacy documents have no persisted block IDs. Scope deterministic path IDs
  * to their document until the next ordinary edit saves the normalized v2 tree.

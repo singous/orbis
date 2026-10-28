@@ -7,7 +7,7 @@ import { ActionButton } from "../../shared/ui/ActionButton";
 import { TableHostContext } from "../data-tables/context";
 import { getNote } from "../documents/api";
 import { sheetAPI } from "./api";
-import { SheetWorkspace } from "./SheetPage";
+import { SheetWorkspace } from "./SheetWorkspace";
 import "./sheets.css";
 
 export function SheetEmbed({

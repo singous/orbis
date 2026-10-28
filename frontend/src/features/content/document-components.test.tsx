@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { ContentRenderer } from "./ContentRenderer";
-import { extractPlainTextV2, v2ToMarkdown, type OrbisBlock } from "./model/blocks";
+import { extractPlainTextV2, v2ToMarkdown, type OrbisBlock } from "./blocks";
 
 let sequence = 0;
 function block(type: string, props: Record<string, unknown> = {}, children: OrbisBlock[] = [], content = ""): OrbisBlock {

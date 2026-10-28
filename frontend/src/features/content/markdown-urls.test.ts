@@ -1,6 +1,6 @@
 import { marked } from "marked";
 import { expect, it } from "vitest";
-import { v2ToMarkdown, type OrbisBlock } from "./model/blocks";
+import { v2ToMarkdown, type OrbisBlock } from "./blocks";
 import { markdownDestination } from "./model/markdown-urls";
 import { tiptapDocToMarkdown } from "./codecs/markdown";
 

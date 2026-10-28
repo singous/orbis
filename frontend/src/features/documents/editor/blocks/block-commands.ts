@@ -5,7 +5,7 @@ import { Fragment, type Node as PMNode } from "@tiptap/pm/model";
 import { Selection } from "@tiptap/pm/state";
 import { closeHistory } from "@tiptap/pm/history";
 import { documentBlockDefinition } from "../../../content/model/document-components";
-import { canonicalJSON, newBlockId, type OrbisBlock } from "../../../content/model/blocks";
+import { canonicalJSON, newBlockId, type OrbisBlock } from "../../../content/blocks";
 import { fromTiptapDocument, toTiptapDocumentForSchema } from "../tiptap-model";
 import { blockActionAvailability } from "./block-capabilities";
 import { blockActionNeedsRead } from "./block-action-read";

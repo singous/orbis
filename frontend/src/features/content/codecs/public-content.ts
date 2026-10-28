@@ -1,7 +1,7 @@
 import {z} from "zod";
 import {editorPayload,nativePayloadSchema,type NativePayload} from "./api-content";
 import {publicTableRefSchema,publicTableSnapshot} from "../../data-tables/public-contract";
-import type {OrbisBlock} from "../model/blocks";
+import type {OrbisBlock} from "../blocks";
 import {boardViewSchema,type BoardViewData} from "../../boards/public-contract";
 type PublicBlock=NativePayload&{id:string;children:PublicBlock[];data_table?:z.infer<typeof publicTableRefSchema>;board?:BoardViewData};
 export const publicBlockSchema:z.ZodType<PublicBlock>=nativePayloadSchema.extend({id:z.string().min(1),data_table:publicTableRefSchema.optional(),board:boardViewSchema.optional(),children:z.lazy(()=>z.array(publicBlockSchema))});

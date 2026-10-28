@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { useEffect } from "react";
 import { createMemoryRouter, Link, Outlet, RouterProvider, useNavigate } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { BrowserRequest } from "../sites/browser-request";
+import { BrowserRequest } from "../support/browser-request";
 import { BoardNavigationGuard } from "../../src/features/boards/BoardNavigationGuard";
 import { boardNavigation, registerBoardNavigation } from "../../src/features/boards/navigation";
 import type { SessionState } from "../../src/features/boards/session";

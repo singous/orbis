@@ -5,7 +5,7 @@ import { tiptapExtensions } from "./tiptap-extensions";
 import { OrbisBlockSelection, setBlockSelection } from "./blocks/block-selection";
 import { BLOCK_CLIPBOARD_MIME, installBlockClipboard, serializeBlockClipboard } from "./blocks/block-clipboard";
 import { fromTiptapDocument, toTiptapDocument } from "./tiptap-model";
-import type { OrbisBlock } from "../../content/model/blocks";
+import type { OrbisBlock } from "../../content/blocks";
 
 const editors: Editor[] = [];
 function open(blocks: OrbisBlock[] = []) {

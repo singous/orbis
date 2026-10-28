@@ -4,7 +4,7 @@ import {ApiError,apiBlobRequest,apiRequest,workspacePath} from "../../shared/api
 import {paginationSchema} from "../../shared/api/schemas";
 import {authRequestOptions,type AuthRequestOptions} from "../../shared/auth/use-auth-request";
 import {TABLE_PAGE_SIZE,type TableChanges,type TableMutation,type TablePage,type TableDefinition} from "./model";
-import type {OrbisBlock} from "../content/model/blocks";
+import type {OrbisBlock} from "../content/blocks";
 
 const cellSchema=z.union([z.string(),z.number().finite(),z.boolean(),z.array(z.string()),z.null()]);
 const optionSchema=z.object({id:z.string().uuid(),label:z.string(),color:z.string()});

@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { authStore } from "../../shared/auth/auth-store";
 import { NotebookPage } from "../documents/NotebookPage";
 import { SiteEditorPage } from "./SiteEditorPage";
-import { BrowserRequest } from "../../../tests/sites/browser-request";
+import { BrowserRequest } from "../../../tests/support/browser-request";
 import { SitesPage } from "./SitesPage";
 import type { wireSiteConfig } from "./site-codec";
 

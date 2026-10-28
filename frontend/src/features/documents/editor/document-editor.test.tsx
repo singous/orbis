@@ -1,7 +1,7 @@
 import { Editor } from "@tiptap/core";
 import { afterEach, expect, it } from "vitest";
 
-import { newBlockId, type OrbisBlock } from "../../content/model/blocks";
+import { newBlockId, type OrbisBlock } from "../../content/blocks";
 import { tiptapExtensions } from "./tiptap-extensions";
 import { createDocumentBlock } from "./tiptap-insert";
 import { fromTiptapDocument, toTiptapDocument } from "./tiptap-model";

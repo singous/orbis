@@ -1,6 +1,6 @@
 import { Editor } from "@tiptap/core";
 import { afterEach, describe, expect, it } from "vitest";
-import type { OrbisBlock } from "../../content/model/blocks";
+import type { OrbisBlock } from "../../content/blocks";
 import { tiptapExtensions } from "./tiptap-extensions";
 import { fromTiptapDocument, toTiptapDocument } from "./tiptap-model";
 import { executeBlockCommand, locateEditorBlocks } from "./blocks/block-commands";

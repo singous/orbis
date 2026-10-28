@@ -8,8 +8,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { authStore } from "../../shared/auth/auth-store";
 import { NOTE_ID, blocks, session } from "../collaboration/collaboration.test-utils";
-import type { NoteBlocksV2 } from "../content/model/blocks";
-import { DocumentEditorPage } from "./editor/DocumentEditorPage";
+import type { NoteBlocksV2 } from "../content/blocks";
+import { DocumentRoute } from "../../app/DocumentRoute";
 
 vi.mock("./DocumentShell", () => ({ DocumentShell: ({ toolbar, children }: { toolbar: React.ReactNode; children: React.ReactNode }) => <main>{toolbar}{children}</main> }));
 vi.mock("./editor/TiptapEditor", () => ({
@@ -36,7 +36,7 @@ function showEditor() {
       <MemoryRouter initialEntries={[`/documents/${NOTE_ID}`]}>
         <Link to="/elsewhere">离开文档</Link>
         <Routes>
-          <Route path="/documents/:noteId" element={<DocumentEditorPage />} />
+          <Route path="/documents/:noteId" element={<DocumentRoute />} />
           <Route path="/collections/:notebookId" element={<h1>笔记本</h1>} />
           <Route path="/elsewhere" element={<h1>其他页面</h1>} />
         </Routes>

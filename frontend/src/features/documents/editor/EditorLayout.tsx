@@ -1,7 +1,7 @@
 import { useState, useSyncExternalStore, type ReactNode } from "react";
 import { Eye, EyeOff } from "../../../shared/ui/icons";
 import { ActionButton } from "../../../shared/ui/ActionButton";
-import { extractPlainTextV2, type NoteBlocksV2, type OrbisBlock } from "../../content/model/blocks";
+import { extractPlainTextV2, type NoteBlocksV2, type OrbisBlock } from "../../content/blocks";
 
 import type {BlockLoadState} from "./content-window";
 

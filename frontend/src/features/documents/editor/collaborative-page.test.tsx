@@ -17,7 +17,7 @@ import { fromTiptapDocument } from "./tiptap-model";
 import { decodeCollaborationUpdate, encodeCollaborationUpdate, type CollaborationState } from "./collaboration-provider";
 import type { EditorContentHandle } from "./editor-content-handle";
 import type { TiptapEditor } from "./TiptapEditor";
-import { DocumentEditorPage } from "./DocumentEditorPage";
+import { DocumentRoute } from "../../../app/DocumentRoute";
 import { createIndexedDbDraftAdapter, draftScopeKey, withDraftLane, type DraftCheckpoint } from "./draft-checkpoints";
 
 const harness = vi.hoisted(() => ({ hosts: [] as Array<TableHost | null>, hydrate: vi.fn() }));
@@ -122,7 +122,7 @@ afterEach(async () => {
 });
 function open() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return { ...render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[`/documents/${NOTE_ID}`]}><Routes><Route path="/documents/:noteId" element={<DocumentEditorPage />} /></Routes></MemoryRouter><Toaster /></QueryClientProvider>), client };
+  return { ...render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[`/documents/${NOTE_ID}`]}><Routes><Route path="/documents/:noteId" element={<DocumentRoute />} /></Routes></MemoryRouter><Toaster /></QueryClientProvider>), client };
 }
 
 it("uses the CRDT body without native JSON paging and shows saved only after durable ACK", async () => {
