@@ -25,7 +25,12 @@ async function drag(page: Page, handle: ReturnType<Page["locator"]>, target: Ret
 test("field manager reorders, hides and restores columns; header menu works through both triggers", async ({ page, request }) => {
   const { grid, sheet } = await seed(page, request);
   const names = sheet.definition.fields.map((field: { name: string }) => field.name);
-  await expect(page.locator(".sheet-toolbar")).toHaveCSS("background-color", "rgb(250, 250, 250)");
+  await expect(page.locator(".sheet-toolbar")).toHaveCSS("background-color", "rgb(244, 244, 244)");
+  const activeTab = page.locator(".sheet-tab.active");
+  await expect(activeTab).toHaveCSS("background-color", "rgb(244, 244, 244)");
+  const tabBox = (await activeTab.boundingBox())!;
+  const toolbarBox = (await page.locator(".sheet-toolbar").boundingBox())!;
+  expect(Math.abs(tabBox.y + tabBox.height - toolbarBox.y)).toBeLessThanOrEqual(1);
   await expect(page.getByRole("button", { name: "生成表单", exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "字段管理", exact: true }).click();
   const manager = page.getByRole("dialog", { name: "字段管理", exact: true });
@@ -77,6 +82,14 @@ test("row gutter, drag ordering and single or multi-record context actions persi
   const row = (name: string) => grid.locator(".sheet-grid-row").filter({ hasText: name });
   await row("Alpha").hover();
   await expect(row("Alpha").getByRole("button", { name: /查看记录/ })).toBeVisible();
+  await row("Alpha").getByRole("checkbox").check();
+  await row("Alpha").getByRole("checkbox").uncheck();
+  await expect(row("Alpha").locator(".sheet-row-select")).toHaveCSS("outline-style", "none");
+  await row("Beta").hover();
+  await expect(row("Alpha").locator(".sheet-row-drag")).toHaveCSS("opacity", "0");
+  await expect(row("Alpha").locator(".sheet-row-inspect")).toHaveCSS("opacity", "0");
+  await expect(row("Alpha").getByRole("checkbox")).toHaveCSS("opacity", "0");
+  await row("Alpha").hover();
   await drag(page, row("Alpha").getByRole("button", { name: /拖拽记录/ }), row("Gamma"), true);
   await expect.poll(async () => (await records()).map((value: { values: Record<string, string> }) => value.values[text.id])).toEqual(["Beta", "Gamma", "Alpha"]);
   await expect(grid.getByRole("gridcell").first()).toHaveText("Beta");
@@ -99,7 +112,11 @@ test("row gutter, drag ordering and single or multi-record context actions persi
   await page.getByRole("menuitem", { name: "复制行", exact: true }).click();
   await expect.poll(async () => (await records()).filter((value: { values: Record<string, string> }) => value.values[text.id] === "Alpha").length).toBe(2);
   await expect(grid.locator(".sheet-grid-row")).toHaveCount(6);
+  const beforeSelection = await grid.boundingBox();
   await row("Gamma").getByRole("checkbox").check();
+  await expect(page.locator(".sheet-selection-bar")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "删除记录", exact: true })).toHaveCount(0);
+  expect((await grid.boundingBox())!.y).toBe(beforeSelection!.y);
   await row("Beta edited").getByRole("checkbox").check();
   await expect(row("Gamma")).toHaveCSS("background-color", "rgb(222, 243, 243)");
   await expect(grid.locator(".sheet-cell.active")).toHaveCount(0);

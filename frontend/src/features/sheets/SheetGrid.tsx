@@ -669,33 +669,6 @@ export function SheetGrid({
             <Button size="sm">放弃草稿</Button>
           </ConfirmAction></DraftActions>
       )}
-      {selected.size > 0 && (
-        <div className="sheet-selection-bar">
-          已选择 {selected.size} 条记录
-          <ActionButton
-            size="sm"
-            disabled={readOnly || busy}
-            onClick={() => {
-              if (selected.size > MAX_BATCH) {
-                onError("每次最多删除 200 条记录");
-                return;
-              }
-              void onChange(
-                rows
-                  .filter((r) => selected.has(r.id))
-                  .map((r) => ({ id: r.id, version: r.version, delete: true })),
-              )
-                .then(() => setSelected(new Set()))
-                .catch((e) => onError(e));
-            }}
-          >
-            删除记录
-          </ActionButton>
-          <ActionButton size="sm" onClick={() => setSelected(new Set())}>
-            取消选择
-          </ActionButton>
-        </div>
-      )}
       <div
         className="sheet-grid-scroll"
         ref={scroller}
