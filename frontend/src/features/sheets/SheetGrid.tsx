@@ -3,7 +3,7 @@ import { DraftActions } from "../../shared/ui/DraftActions";
 import { Button } from "../../shared/ui/Button";
 
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ChevronDown, Expand, Plus } from "lucide-react";
+import { ChevronDown, Expand, GripVertical, Plus } from "lucide-react";
 import {
   useEffect,
   useLayoutEffect,
@@ -25,13 +25,14 @@ import {
   storeCellDraft,
   type CellDraft,
 } from "./cell-draft";
-import { decodeCells, encodeCells } from "./clipboard";
+import { copyRecordCells, pasteRecordCells, duplicateRecord } from "./record-actions";
+import { SheetRecordMenu } from "./SheetRecordMenu";
+import { usePointerReorder } from "./use-pointer-reorder";
 import { FieldIcon } from "./FieldIcon";
 import { moveGridSelection, type GridPoint as Point } from "./grid-navigation";
 import {
   KINDS,
   MAX_BATCH,
-  cellText,
   parseCell,
   type Field,
   type Patch,
@@ -41,7 +42,7 @@ import {
 } from "./model";
 import { anchorAt, type Anchor } from "./Popover";
 
-const ROW_HEADER_WIDTH = 44;
+const ROW_HEADER_WIDTH = 104;
 
 export function SheetGrid({
   rows,
@@ -70,7 +71,9 @@ export function SheetGrid({
   onMore,
   onRefresh,
   onError,
+  manualOrder = true,
 }: {
+  manualOrder?: boolean;
   rows: Row[];
   confirmedRows: Row[];
   draftKey: string;
@@ -98,6 +101,13 @@ export function SheetGrid({
   onRefresh: () => void;
   onError: (error: unknown) => void;
 }) {
+  const [rowHeaderWidth, setRowHeaderWidth] = useState(ROW_HEADER_WIDTH);
+  useEffect(() => {
+    const media = window.matchMedia("(pointer: coarse)");
+    const update = () => setRowHeaderWidth(media.matches ? 144 : ROW_HEADER_WIDTH);
+    update(); media.addEventListener?.("change", update);
+    return () => media.removeEventListener?.("change", update);
+  }, []);
   const scroller = useRef<HTMLDivElement>(null),
     dragging = useRef(false);
   const fields = useMemo(
@@ -116,6 +126,15 @@ export function SheetGrid({
       initial?: string;
     } | null>(null),
     [selected, setSelected] = useState<Set<string>>(new Set());
+  const [contextMenu, setContextMenu] = useState<{ anchor: Anchor; rowID: string; col?: number } | null>(null);
+  const rowReorder = usePointerReorder((id, target, after) => {
+    if (readOnly || busy || hasPending || !manualOrder) return;
+    void commit().then(ok => {
+      if (!ok) return;
+      const row = latest.current.rows.find(row => row.id === id);
+      if (row) void onChange([{ id, version: row.version, ...(after ? { after_id: target } : { before_id: target }) }]).catch(onError);
+    });
+  });
   const committedRows = useRef(new Map<string, Row>());
   const cellDraftKey = `${draftKey}:cell`;
   const restored = useRef(false);
@@ -242,17 +261,17 @@ export function SheetGrid({
     count: fields.length,
     getScrollElement: () => scroller.current,
     estimateSize: (i) => widths[fields[i].id] ?? 180,
-    paddingStart: ROW_HEADER_WIDTH,
+    paddingStart: rowHeaderWidth,
     overscan: 2,
   });
   useEffect(() => {
     columns.measure();
-  }, [widths]);
+  }, [widths, rowHeaderWidth]);
   useEffect(() => {
     virtualRows.measure();
   }, [view.row_height, view.group_field_id, rows]);
   const width =
-    ROW_HEADER_WIDTH +
+    rowHeaderWidth +
     fields.reduce((s, f) => s + (widths[f.id] ?? 180), 0) +
     44;
   const pagingAnchor = useRef<{
@@ -308,6 +327,7 @@ export function SheetGrid({
         }
       : null;
   function select(p: Point, shift: boolean) {
+    setSelected(new Set());
     if (!shift || !start) setStart(p);
     setEnd(p);
     scroller.current?.focus({ preventScroll: true });
@@ -496,6 +516,49 @@ export function SheetGrid({
       }),
     [],
   );
+  function currentRow(id: string) {
+    const row = latest.current.rows.find(value => value.id === id);
+    const confirmed = latest.current.confirmedRows.find(value => value.id === id);
+    return confirmed && row && confirmed.version > row.version ? confirmed : row;
+  }
+  async function openRecordMenu(rowID: string, anchor: Anchor, col?: number) {
+    if (editing && !(await commit())) return;
+    const index = latest.current.rows.findIndex(row => row.id === rowID);
+    if (index < 0) return;
+    if (!selected.has(rowID)) {
+      setSelected(new Set());
+      const inRange = col !== undefined && bounds && index >= bounds.top && index <= bounds.bottom && col >= bounds.left && col <= bounds.right;
+      if (!inRange) select({ row: index, col: col ?? 0 }, false);
+    }
+    setContextMenu({ anchor, rowID, col });
+  }
+  function copyText() {
+    if (selected.size) return copyRecordCells(rows.filter(row => selected.has(row.id)), fields);
+    if (contextMenu?.col === undefined && contextMenu) {
+      const row = currentRow(contextMenu.rowID); return row ? copyRecordCells([row], fields) : "";
+    }
+    return bounds ? copyRecordCells(rows.slice(bounds.top, bounds.bottom + 1), fields.slice(bounds.left, bounds.right + 1)) : "";
+  }
+  function pasteText(text: string) {
+    if (readOnly || busy || hasPending) return;
+    const point = end ?? { row: 0, col: 0 };
+    try {
+      const targets = selected.size ? rows.filter(row => selected.has(row.id)) : rows.slice(point.row);
+      const patches = pasteRecordCells(text, targets, fields.slice(selected.size ? 0 : point.col));
+      if (selected.size && patches.length > selected.size) throw new Error("粘贴行数超出已勾选的记录范围");
+      if (editing) {
+        clearCellDraft(cellDraftKey, editing.row.id, editing.field.id, editing.value);
+        queuedCommit.current = null; latest.current.editing = null; setEditing(null);
+      }
+      void onChange(patches).catch(onError);
+    } catch (error) { onError(error); }
+  }
+  function menuDelete() {
+    if (!contextMenu) return;
+    const targets = selected.has(contextMenu.rowID) ? rows.filter(row => selected.has(row.id)) : [currentRow(contextMenu.rowID)].filter((row): row is Row => Boolean(row));
+    if (targets.length > MAX_BATCH) { onError(`每次最多删除 ${MAX_BATCH} 条记录`); return; }
+    void onChange(targets.map(row => ({ id: row.id, version: row.version, delete: true }))).then(() => setSelected(new Set())).catch(onError);
+  }
   function keyboard(e: KeyboardEvent) {
     if (
       editing ||
@@ -505,6 +568,7 @@ export function SheetGrid({
       return;
     if ((e.ctrlKey || e.metaKey) && e.key === "a") {
       e.preventDefault();
+      setSelected(new Set());
       if (rows.length && fields.length) {
         setStart({ row: 0, col: 0 });
         setEnd({ row: rows.length - 1, col: fields.length - 1 });
@@ -540,9 +604,12 @@ export function SheetGrid({
       select(next, e.shiftKey && e.key !== "Tab");
       virtualRows.scrollToIndex(next.row, { align: "auto" });
       columns.scrollToIndex(next.col, { align: "auto" });
-    } else if (e.key === "F2" || e.key === " ") {
-      e.preventDefault();
-      edit(p);
+    } else if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")) {
+      e.preventDefault(); const row = rows[p.row]; if (row) void openRecordMenu(row.id, anchorAt(scroller.current?.querySelector(".sheet-cell.active") ?? scroller.current!), p.col);
+    } else if (e.key === " ") {
+      e.preventDefault(); if (rows[p.row]) onInspect(rows[p.row]);
+    } else if (e.key === "F2") {
+      e.preventDefault(); edit(p);
     } else if (
       (e.key === "Delete" || e.key === "Backspace") &&
       bounds &&
@@ -568,7 +635,7 @@ export function SheetGrid({
     <div
       className="sheet-grid-area"
       style={
-        { "--sheet-row-header-width": `${ROW_HEADER_WIDTH}px` } as CSSProperties
+        { "--sheet-row-header-width": `${rowHeaderWidth}px` } as CSSProperties
       }
     >
       {orphanDraft && (
@@ -638,65 +705,16 @@ export function SheetGrid({
         aria-colcount={fields.length}
         tabIndex={0}
         onKeyDown={keyboard}
-        onCopy={(e) => {
-          if (editing || !bounds) return;
-          e.preventDefault();
-          e.clipboardData.setData(
-            "text/plain",
-            encodeCells(
-              rows
-                .slice(bounds.top, bounds.bottom + 1)
-                .map((r) =>
-                  fields
-                    .slice(bounds.left, bounds.right + 1)
-                    .map((f) => cellText(f, r.values[f.id])),
-                ),
-            ),
-          );
+        onCopy={(event) => {
+          if (editing) return;
+          if (!bounds && !selected.size) return;
+          const text = copyText();
+          event.preventDefault(); event.clipboardData.setData("text/plain", text);
         }}
-        onPaste={(e) => {
-          const clipboard = e.clipboardData.getData("text/plain");
-          if (
-            (editing && !/[\t\r\n]/.test(clipboard)) ||
-            !end ||
-            readOnly ||
-            busy
-          )
-            return;
-          e.preventDefault();
-          try {
-            const data = decodeCells(clipboard);
-            if (data.length > MAX_BATCH) throw new Error("每次最多粘贴 200 行");
-            const patches = data.map((values, i) => {
-              const row = rows[end.row + i];
-              return {
-                id: row?.id ?? newUUID(),
-                version: row?.version ?? 0,
-                values: Object.fromEntries(
-                  values.map((value, j) => {
-                    const field = fields[end.col + j];
-                    if (!field) throw new Error("粘贴内容超出字段范围");
-                    return [field.id, parseCell(field, value)];
-                  }),
-                ),
-              };
-            });
-            // 先校验粘贴内容；无效输入必须保留当前编辑器和本机草稿。
-            if (editing) {
-              clearCellDraft(
-                cellDraftKey,
-                editing.row.id,
-                editing.field.id,
-                editing.value,
-              );
-              queuedCommit.current = null;
-              latest.current.editing = null;
-              setEditing(null);
-            }
-            void onChange(patches).catch((e) => onError(e));
-          } catch (err) {
-            onError(err);
-          }
+        onPaste={(event) => {
+          const text = event.clipboardData.getData("text/plain");
+          if ((editing && !/[\t\r\n]/.test(text)) || readOnly || busy || hasPending) return;
+          event.preventDefault(); pasteText(text);
         }}
       >
         <div className="sheet-grid-header" role="row" style={{ width }}>
@@ -721,6 +739,7 @@ export function SheetGrid({
                 key={field.id}
                 role="columnheader"
                 className="sheet-grid-heading"
+                onContextMenu={event => { if (readOnly) return; event.preventDefault(); onFieldMenu(field, { left: event.clientX, top: event.clientY }); }}
                 style={{ left: col.start, width: col.size }}
               >
                 <ActionButton
@@ -803,6 +822,7 @@ export function SheetGrid({
         </div>
         <div
           className="sheet-grid-body"
+          data-reorder-scope="records"
           style={{ height: virtualRows.getTotalSize(), width }}
         >
           {virtualRows.getVirtualItems().map((virtual) => {
@@ -818,7 +838,11 @@ export function SheetGrid({
               <div
                 role="row"
                 aria-rowindex={rowOffset + virtual.index + 2}
-                className="sheet-grid-row"
+                className={`sheet-grid-row${selected.has(row.id) ? " row-selected" : ""}`}
+                aria-selected={selected.has(row.id)}
+                data-reorder-id={row.id}
+                data-drop={rowReorder.target?.id === row.id ? (rowReorder.target.after ? "after" : "before") : undefined}
+                onContextMenu={event => { event.preventDefault(); void openRecordMenu(row.id, { left: event.clientX, top: event.clientY }); }}
                 key={row.id}
                 style={{ top: virtual.start, height: virtual.size, width }}
               >
@@ -842,6 +866,12 @@ export function SheetGrid({
                   className="sheet-row-label"
                   style={{ top: groupTop, height: view.row_height }}
                 >
+                  <button type="button" className="sheet-row-drag sheet-drag-handle" aria-label={`拖拽记录 ${rowOffset + virtual.index + 1}`} title={manualOrder ? "拖拽调整记录顺序；上下键可移动" : "请先关闭排序、筛选和分组"} disabled={readOnly || busy || hasPending || !manualOrder || selected.size > 1}
+                    onPointerDown={event => rowReorder.start(event, row.id)} onKeyDown={event => {
+                      if (!["ArrowUp", "ArrowDown"].includes(event.key)) return;
+                      event.preventDefault(); const target = rows[virtual.index + (event.key === "ArrowUp" ? -1 : 1)];
+                      if (target) void onChange([{ id: row.id, version: row.version, ...(event.key === "ArrowUp" ? { before_id: target.id } : { after_id: target.id }) }]).catch(onError);
+                    }}><GripVertical size={16} /></button>
                   <label className="sheet-row-select">
                     <input
                       type="checkbox"
@@ -858,6 +888,7 @@ export function SheetGrid({
                     />
                     <span>{rowOffset + virtual.index + 1}</span>
                   </label>
+                  <ActionButton size="sm" className="sheet-row-inspect" aria-label={`查看记录 ${rowOffset + virtual.index + 1}`} onClick={() => onInspect(row)}><Expand size={15} /></ActionButton>
                 </div>
                 {columns.getVirtualItems().map((col) => {
                   const field = fields[col.index],
@@ -865,7 +896,7 @@ export function SheetGrid({
                       editing?.row.id === row.id &&
                       editing.field.id === field.id;
                   const inRange = Boolean(
-                      bounds &&
+                      !selected.size && bounds &&
                         virtual.index >= bounds.top &&
                         virtual.index <= bounds.bottom &&
                         col.index >= bounds.left &&
@@ -874,12 +905,12 @@ export function SheetGrid({
                     // The active cell keeps its content readable; only the
                     // surrounding range carries the selection tint.
                     isActive =
-                      end?.row === virtual.index && end.col === col.index;
+                      !selected.size && end?.row === virtual.index && end.col === col.index;
                   return (
                     <div
                       role="gridcell"
                       data-first-column={col.index === 0 || undefined}
-                      aria-selected={inRange}
+                      aria-selected={inRange || selected.has(row.id)}
                       key={field.id}
                       className={`sheet-cell${duplicates[field.id]?.includes(row.id) ? " duplicate" : ""}${inRange && !isActive ? " selected" : ""}${isActive ? " active" : ""}${isEditing ? " editing" : ""}`}
                       style={{
@@ -890,7 +921,9 @@ export function SheetGrid({
                           ? `var(--sheet-ink-${view.text_colors[field.id]})`
                           : undefined,
                       }}
+                      onContextMenu={event => { event.preventDefault(); event.stopPropagation(); void openRecordMenu(row.id, { left: event.clientX, top: event.clientY }, col.index); }}
                       onPointerDown={(e) => {
+                        if (e.button !== 0) return;
                         if (
                           isEditing ||
                           (e.target as HTMLElement).closest("a,button")
@@ -985,19 +1018,6 @@ export function SheetGrid({
                         />
                       ) : (
                         <>
-                          {col.index === 0 && (
-                            <ActionButton
-                              size="sm"
-                              className="sheet-row-inspect"
-                              aria-label={`查看记录 ${rowOffset + virtual.index + 1}`}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                onInspect(row);
-                              }}
-                            >
-                              <Expand size={12} />
-                            </ActionButton>
-                          )}
                           <CellValue
                             field={field}
                             value={row.values[field.id]}
@@ -1039,21 +1059,28 @@ export function SheetGrid({
             <ActionButton
               size="sm"
               aria-label="添加记录"
+              className="sheet-add-row"
               disabled={busy}
               onClick={onAdd}
             >
               <Plus size={15} />
-              添加记录
             </ActionButton>
           ) : null}
         </div>
       </div>
+      {contextMenu && <SheetRecordMenu anchor={contextMenu.anchor} multiple={selected.has(contextMenu.rowID) && selected.size > 1} readOnly={readOnly} busy={busy || hasPending} manualOrder={manualOrder}
+        onClose={() => setContextMenu(null)}
+        onCopy={() => { void navigator.clipboard.writeText(copyText()).catch(onError); }}
+        onPaste={() => { void navigator.clipboard.readText().then(pasteText).catch(() => onError("浏览器无法读取剪贴板，请使用 Ctrl+V 或 Command+V 粘贴")); }}
+        onInsert={(before, count) => { void onChange(Array.from({ length: count }, () => ({ id: newUUID(), version: 0, values: {}, ...(before ? { before_id: contextMenu.rowID } : { after_id: contextMenu.rowID }) }))).catch(onError); }}
+        onDuplicate={() => { const row = currentRow(contextMenu.rowID); if (row) void onChange([duplicateRecord(row, allFields, manualOrder)]).catch(onError); }}
+        onInspect={() => { const row = currentRow(contextMenu.rowID); if (row) onInspect(row); }} onDelete={menuDelete} />}
       <div className="sheet-statusbar">
         <span>
           {total != null ? `${total} 条记录` : "正在读取记录数…"}
         </span>
         <span className="sheet-muted">
-          {bounds
+          {selected.size ? `已选择 ${selected.size} 条记录` : bounds
             ? `已选择 ${(bounds.bottom - bounds.top + 1) * (bounds.right - bounds.left + 1)} 个单元格`
             : "双击单元格编辑 · 拖动选择 · 支持复制粘贴"}
         </span>

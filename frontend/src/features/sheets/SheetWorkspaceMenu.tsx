@@ -1,4 +1,5 @@
-import { ArrowDown, ArrowUp, Columns3, Copy, FileInput, Filter, Group, LayoutGrid, Pencil, Plus, Table2, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Columns3, Copy, FileInput, Filter, Group, LayoutGrid, Pencil, Table2, Trash2 } from "lucide-react";
+import { Fragment } from "react";
 import { releaseFeatures } from "../../shared/release-features";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Popover, type Anchor } from "./Popover";
@@ -117,8 +118,8 @@ export function SheetWorkspaceMenu({ menu, busy, fieldCount, visibleFieldCount, 
           [
             { id: "edit", label: "编辑列", icon: Pencil },
             { id: "copy", label: "复制列", icon: Copy },
-            { id: "left", label: "向左插入列", icon: Plus },
-            { id: "right", label: "向右插入列", icon: Plus },
+            { id: "left", label: "向左插入列", icon: ArrowLeft },
+            { id: "right", label: "向右插入列", icon: ArrowRight },
             { id: "group", label: "按本列分组", icon: Group },
             { id: "filter", label: "按本列筛选", icon: Filter },
             { id: "asc", label: "升序", icon: ArrowUp },
@@ -128,7 +129,7 @@ export function SheetWorkspaceMenu({ menu, busy, fieldCount, visibleFieldCount, 
             { id: "hide", label: "隐藏列", icon: Columns3 },
             { id: "delete", label: "删除列", icon: Trash2 },
           ].map((item) => (
-            <ActionButton
+            <Fragment key={item.id}>{["left", "group", "delete"].includes(item.id) && <hr />}<ActionButton
               size="sm"
               role="menuitem"
               className={
@@ -138,6 +139,7 @@ export function SheetWorkspaceMenu({ menu, busy, fieldCount, visibleFieldCount, 
               disabled={
                 busy ||
                 (item.id === "group" && menu.field.kind !== "select") ||
+                (item.id === "filter" && (KINDS[menu.field.kind].system || KINDS[menu.field.kind].multiple)) ||
                 (["asc", "desc", "duplicates"].includes(item.id) &&
                   KINDS[menu.field.kind].multiple) ||
                 (item.id === "duplicates" &&
@@ -149,7 +151,7 @@ export function SheetWorkspaceMenu({ menu, busy, fieldCount, visibleFieldCount, 
             >
               <item.icon size={14} />
               {item.label}
-            </ActionButton>
+            </ActionButton></Fragment>
           ))}
       </div>
     </Popover>

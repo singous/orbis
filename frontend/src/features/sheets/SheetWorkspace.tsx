@@ -103,11 +103,13 @@ export function SheetWorkspace({
     [fieldEdit, setFieldEdit] = useState<{
       field: Field;
       index?: number;
+      relative?: { fieldID: string; after: boolean };
       anchor?: Anchor;
     } | null>(null),
     [settings, setSettings] = useState<{
       mode: SettingsMode;
       anchor: Anchor;
+      fieldID?: string;
     } | null>(null);
   const [record, setRecord] = useState<Row | null>(null),
     [rename, setRename] = useState<View | null>(null),
@@ -191,8 +193,8 @@ export function SheetWorkspace({
       },
     });
   }
-  async function saveField(next: Field, insertIndex?: number) {
-    return c.update({ ...sheet!, definition: updateFieldDefinition(sheet!.definition, next, insertIndex ?? fieldEdit?.index) });
+  async function saveField(next: Field, insertIndex?: number, relative = fieldEdit?.relative) {
+    return c.update({ ...sheet!, definition: updateFieldDefinition(sheet!.definition, next, insertIndex ?? fieldEdit?.index, relative) });
   }
 
   async function addView(kind: "grid" | "kanban" | "form") {
@@ -264,6 +266,7 @@ export function SheetWorkspace({
         field: newField(),
         anchor,
         index: index + (action === "right" ? 1 : 0),
+        relative: { fieldID: field.id, after: action === "right" },
       });
     if (action === "copy") {
       const next = {
@@ -272,7 +275,7 @@ export function SheetWorkspace({
         name: `${field.name} 副本`,
         copy_from: field.id,
       };
-      void saveField(next, index + 1).catch(fail);
+      void saveField(next, index + 1, { fieldID: field.id, after: true }).catch(fail);
     }
     if (action === "hide")
       void saveView({
@@ -290,7 +293,7 @@ export function SheetWorkspace({
       }).catch(fail);
     if (action === "group")
       void saveView({ ...view!, group_field_id: field.id }).catch(fail);
-    if (action === "filter") setSettings({ mode: "filter", anchor });
+    if (action === "filter") setSettings({ mode: "filter", anchor, fieldID: field.id });
   }
   const breadcrumb = (
     <nav className="document-breadcrumb sheet-breadcrumb" aria-label="文档位置">
@@ -598,6 +601,7 @@ export function SheetWorkspace({
 
           {view.kind === "grid" ? (
             <SheetGrid
+              manualOrder={!view.sorts.length && !view.group_field_id && !view.filters.length && !query}
               duplicates={Object.fromEntries(
                 view.highlight_duplicates.map((id) => [
                   id,
@@ -695,6 +699,8 @@ export function SheetWorkspace({
       {settings && (
         <ViewSettings
           mode={settings.mode}
+          initialFieldID={settings.fieldID}
+          onFieldAction={(action, field, anchor) => { setSettings(null); fieldAction(action, field, anchor); }}
           anchor={settings.anchor}
           fields={fields}
           view={view}

@@ -36,7 +36,7 @@ export function useSheet(id: string, viewId: string, search: string) {
     readonly unknown[],
     RecordPageParam
   >({
-    queryKey: [...scope, "records", view?.id, meta.data?.version, search],
+    queryKey: [...scope, "records", view?.id, meta.data?.version, meta.data?.order_revision ?? 0, search],
     enabled: Boolean(view),
     initialPageParam: { cursor: "", offset: 0 },
     queryFn: ({ pageParam, signal }) =>
@@ -51,7 +51,7 @@ export function useSheet(id: string, viewId: string, search: string) {
     maxPages: 10,
   });
   const stats = useQuery({
-    queryKey: [...scope, "stats", view?.id, meta.data?.version, search],
+    queryKey: [...scope, "stats", view?.id, meta.data?.version, meta.data?.order_revision ?? 0, search],
     enabled: Boolean(view),
     queryFn: ({ signal }) => api.stats(id, view!.id, search, signal),
     staleTime: 15000,

@@ -34337,7 +34337,8 @@
             "in": "query",
             "schema": {
               "type": "string"
-            }
+            },
+            "description": "Opaque cursor bound to the sheet, query, schema metadata and record ordering revision. Relative placement invalidates prior cursors with 422; restart from the first page. Ordinary record edits retain cursor compatibility."
           },
           {
             "name": "search",
@@ -55021,6 +55022,12 @@
             "type": "string",
             "format": "uuid",
             "description": "Owning document. Standalone tables appear in its notebook directory."
+          },
+          "order_revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "description": "Record ordering revision. Restart paginated record queries when this changes; ordinary record edits do not change it."
           }
         },
         "required": [
@@ -55034,7 +55041,8 @@
           "version",
           "created_at_ms",
           "updated_at_ms",
-          "document_id"
+          "document_id",
+          "order_revision"
         ],
         "additionalProperties": false,
         "description": "version 管理表格配置；schema_version 管理字段定义；data_revision 标识已提交的记录变化。时间字段均为 Unix 毫秒。"
@@ -55111,6 +55119,16 @@
           },
           "delete": {
             "type": "boolean"
+          },
+          "before_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Place this record immediately before an existing record in the same sheet. Mutually exclusive with after_id. The anchor cannot be modified in the same batch. Placements sharing an anchor retain request order. Omit both fields to preserve existing order or append new records."
+          },
+          "after_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Place this record immediately after an existing record in the same sheet. Mutually exclusive with before_id. The anchor cannot be modified in the same batch. Placements sharing an anchor retain request order. Ordering and the idempotent receipt are committed atomically."
           }
         },
         "required": [
