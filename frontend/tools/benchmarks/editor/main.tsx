@@ -2,7 +2,7 @@ import { Profiler, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { TiptapEditor } from "../../../src/features/documents/editor/TiptapEditor";
 import { AutosaveCoordinator } from "../../../src/features/documents/editor/autosave";
-import type { NoteBlocksV2, OrbisBlock } from "../../../src/features/content/model/blocks";
+import type { NoteBlocksV2, OrbisBlock } from "../../../src/features/content/blocks";
 import { createEditorDraftFingerprint } from "benchmark:draft";
 import { authStore } from "../../../src/shared/auth/auth-store";
 import "../../../src/styles/index.css";

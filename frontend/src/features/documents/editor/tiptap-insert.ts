@@ -1,5 +1,5 @@
 import { DOCUMENT_BLOCKS, type DocumentBlockKind } from "../../content/model/document-components";
-import { newBlockId, type OrbisBlock } from "../../content/model/blocks";
+import { newBlockId, type OrbisBlock } from "../../content/blocks";
 
 const GROUP_CHILD: Partial<Record<DocumentBlockKind, DocumentBlockKind | "codeBlock">> = { cardGroup: "card", steps: "step", tabs: "tab", codeGroup: "codeBlock" };
 

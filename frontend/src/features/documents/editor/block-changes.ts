@@ -1,4 +1,4 @@
-import { canonicalJSON, type NoteBlocksV2, type OrbisBlock } from "../../content/model/blocks";
+import { canonicalJSON, type NoteBlocksV2, type OrbisBlock } from "../../content/blocks";
 
 export type BlockChanges = {
   upserts: Array<Omit<OrbisBlock, "children">>;

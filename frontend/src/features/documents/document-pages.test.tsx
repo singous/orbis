@@ -8,7 +8,7 @@ import { MemoryRouter, Route, RouterProvider, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CollectionsPage } from "./CollectionsPage";
-import { DocumentEditorPage } from "./editor/DocumentEditorPage";
+import { DocumentRoute } from "../../app/DocumentRoute";
 import { NotebookPage } from "./NotebookPage";
 import { ApiError } from "../../shared/api/api-client";
 
@@ -497,7 +497,7 @@ describe("document function pages", () => {
     render(
       <MemoryRouter initialEntries={["/documents/018ff7c4-a5b6-7000-8000-000000000099"]}>
         <Routes>
-          <Route path="/documents/:noteId" element={<DocumentEditorPage />} />
+          <Route path="/documents/:noteId" element={<DocumentRoute />} />
           <Route path="/documents/collections" element={<CollectionsPage />} />
         </Routes>
       </MemoryRouter>,

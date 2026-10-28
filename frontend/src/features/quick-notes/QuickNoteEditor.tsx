@@ -7,7 +7,7 @@ import { Button } from "../../shared/ui/Button";
 import { Dialog, DialogContent, DialogFooter } from "../../shared/ui/Dialog";
 import { TextInput } from "../../shared/ui/TextInput";
 import { nativeBlock, editorBlock, type NativeBlock } from "../content/codecs/api-content";
-import { createEmptyV2, newBlockId, type NoteBlocksV2 } from "../content/model/blocks";
+import { createEmptyV2, newBlockId, type NoteBlocksV2 } from "../content/blocks";
 import { safeContentUrl } from "../content/ContentRenderer";
 import { tiptapExtensions } from "../documents/editor/tiptap-extensions";
 import { fromTiptapDocument, toTiptapDocumentForSchema, toTiptapDocument } from "../documents/editor/tiptap-model";

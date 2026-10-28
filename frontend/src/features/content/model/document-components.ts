@@ -1,5 +1,5 @@
 import contract from "./document-blocks.json";
-import type { OrbisBlock } from "./blocks";
+import type { OrbisBlock } from "./block-model";
 import { markdownDestination } from "./markdown-urls";
 
 export type DocumentBlockKind = keyof typeof contract.blocks;

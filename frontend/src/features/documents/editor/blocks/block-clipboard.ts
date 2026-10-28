@@ -5,7 +5,7 @@ import { DOMParser as ProseMirrorDOMParser, DOMSerializer } from '@tiptap/pm/mod
 import { safeContentUrl } from '../../../content/ContentRenderer';
 import { documentBlockDefinition } from '../../../content/model/document-components';
 import { parseFileReference } from '../../../files/managed-files';
-import { canonicalJSON, extractPlainTextV2, newBlockId, type OrbisBlock, type OrbisInline, type OrbisTableCell } from '../../../content/model/blocks';
+import { canonicalJSON, extractPlainTextV2, newBlockId, type OrbisBlock, type OrbisInline, type OrbisTableCell } from '../../../content/blocks';
 import { clipboardProps } from '../tiptap-clipboard';
 import { markdownClipboardDocument, markdownSourceClipboard, plainTextPasteRequested } from '../markdown-paste';
 import { fromTiptapDocument, toTiptapDocumentForSchema } from '../tiptap-model';

@@ -4,7 +4,7 @@ import { tiptapExtensions } from './tiptap-extensions';
 import { fromTiptapDocument, toTiptapDocument } from './tiptap-model';
 import { OrbisBlockSelection, setBlockSelection } from './blocks/block-selection';
 import { BLOCK_CLIPBOARD_MIME, copyBlocks, installBlockClipboard, parseBlockClipboard, pasteBlocks, serializeBlockClipboard } from './blocks/block-clipboard';
-import type { OrbisBlock } from '../../content/model/blocks';
+import type { OrbisBlock } from '../../content/blocks';
 import { registerBlockActionReader } from './blocks/block-action-read';
 const editors: Editor[] = [];
 const p = (id: string, children: OrbisBlock[] = []): OrbisBlock => ({ id, type: 'paragraph', props: {}, content: id, children });

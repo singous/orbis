@@ -6,7 +6,7 @@ import { blockActionNeedsRead, prepareBlockAction, registerBlockActionReader, se
 import { copyBlocks, parseBlockClipboard } from "./blocks/block-clipboard";
 import { executeBlockCommand } from "./blocks/block-commands";
 import { fromTiptapDocument, toTiptapDocument } from "./tiptap-model";
-import type { OrbisBlock } from "../../content/model/blocks";
+import type { OrbisBlock } from "../../content/blocks";
 import type { BlockLoadState } from "./content-window";
 
 const editors: Editor[] = [];

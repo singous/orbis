@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { OrbisBlock, OrbisInline, OrbisInlineStyle, OrbisTableCell, OrbisTableContent } from "../model/blocks";
+import type { OrbisBlock, OrbisInline, OrbisInlineStyle, OrbisTableCell, OrbisTableContent } from "../blocks";
 
 const runSchema = z.object({ text: z.string(), marks: z.array(z.enum(["bold", "italic", "underline", "strike", "code"])), href: z.string().nullable(), text_color: z.string().nullable().optional(), background_color: z.string().nullable().optional() }).strict();
 const cellSchema = z.object({ content: z.array(runSchema), row_span: z.number().int(), column_span: z.number().int(), alignment: z.string(), text_color: z.string().nullable(), background_color: z.string().nullable() }).strict();

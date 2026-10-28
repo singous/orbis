@@ -16,16 +16,12 @@ import {
   lazy,
   Suspense,
   useEffect,
-  useLayoutEffect,
   useId,
-  useMemo,
   useRef,
   useState,
-  useSyncExternalStore,
   type CSSProperties,
   type RefObject,
 } from "react";
-import { useStore } from "zustand";
 import {
   Check,
   Copy,
@@ -54,9 +50,6 @@ import {
   RiPencilLine,
   RiFunctionAddLine,
 } from "@remixicon/react";
-import { useAuthRequest } from "../../shared/auth/use-auth-request";
-import { authStore } from "../../shared/auth/auth-store";
-import { registerBoardNavigation } from "./navigation";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Button } from "../../shared/ui/Button";
 import { Dialog, DialogContent } from "../../shared/ui/Dialog";
@@ -69,7 +62,8 @@ import { BoardMinimap } from "./BoardMinimap";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { DocumentShell } from "../documents/DocumentShell";
 import { ShareButton } from "../sharing/ShareButton";
-import { BoardSession } from "./session";
+import type { BoardSession } from "./session";
+import { useBoardSession } from "./use-board-session";
 import { BoardCanvas } from "./BoardCanvas";
 import { BoardLibrary, type BoardLibraryTab } from "./BoardLibrary";
 import { BoardInspector } from "./BoardInspector";
@@ -87,7 +81,6 @@ import {
   exportAssets,
   MAX_PORTABLE_BYTES,
 } from "./portable";
-import { BoardImages } from "./images";
 import { insertBoardImage } from "./image-import";
 import "./boards.css";
 
@@ -113,29 +106,8 @@ type EmbeddedBoardOptions = {
   sessionRef?: RefObject<Pick<BoardSession, "getSnapshot"> | null>;
 };
 export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOptions }) {
-  const auth = useAuthRequest(),
-    authRef = useRef(auth);
-  authRef.current = auth;
-  const credential = useStore(authStore, (s) => s.credentialID),
-    user = useStore(authStore, (s) => s.user?.id),
-    workspace = useStore(authStore, (s) => s.workspace);
-  const identity = { credential, user, workspace };
-  const session = useMemo(
-    () =>
-      new BoardSession(
-        id,
-        () => authRef.current,
-      ),
-    [id, identity.credential, auth.workspaceId],
-  );
-  const state = useSyncExternalStore(session.subscribe, session.getSnapshot),
-    renderer = useRef<BoardRenderer | null>(null);
-  useLayoutEffect(() => {
-    const target = embed?.sessionRef;
-    if (!target) return;
-    target.current = session;
-    return () => { if (target.current === session) target.current = null; };
-  }, [session, embed?.sessionRef]);
+  const { auth, workspace, user, session, state, images } = useBoardSession(id, embed);
+  const renderer = useRef<BoardRenderer | null>(null);
   const [selection, setSelection] = useState<Set<string>>(new Set()),
     [camera, setCamera] = useState<Camera>({ x: 80, y: 80, zoom: 1 }),
     [tool, setTool] = useState("select");
@@ -160,8 +132,7 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
     importRef = useRef<HTMLInputElement>(null),
     lastPage = useRef("");
   const imageTarget = useRef<Element | null>(null);
-  const imageInput = useRef<HTMLInputElement>(null),
-    images = useRef<BoardImages | null>(null);
+  const imageInput = useRef<HTMLInputElement>(null);
   const imageImportOwner = useRef<{ session: BoardSession; abort: AbortController } | null>(null);
   useEffect(() => {
     const owner = { session, abort: new AbortController() };
@@ -172,14 +143,6 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
     };
   }, [session, state.pageID, state.status === "loading"]);
   useEffect(() => {
-    const cache = new BoardImages(() => authRef.current);
-    images.current = cache;
-    return () => {
-      cache.dispose();
-      images.current = null;
-    };
-  }, [credential, auth.workspaceId]);
-  useEffect(() => {
     if (!embed) return;
     setSelection(new Set());
     setInspector(false);
@@ -188,7 +151,7 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
     setTool(embed.readOnly ? "pan" : "select");
   }, [embed?.readOnly]);
   const canEdit =
-    !embed?.readOnly && canMutateWorkspaceContent(identity.workspace) &&
+    !embed?.readOnly && canMutateWorkspaceContent(workspace) &&
     state.status !== "conflict" &&
     state.status !== "save_failed" &&
     state.status !== "loading" &&
@@ -203,13 +166,7 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
       reportError(error);
     }
   };
-  useEffect(() => {
-    void session.start(embed?.pageID ?? new URLSearchParams(location.search).get("page") ?? "");
-    return () => {
-      session.dispose();
-      layoutAbort.current?.abort();
-    };
-  }, [session, embed?.pageID]);
+  useEffect(() => () => { layoutAbort.current?.abort(); }, [session, embed?.pageID]);
   const fittedPage = useRef("");
   useEffect(() => {
     if (!embed || state.status === "loading" || !state.board || fittedPage.current === state.pageID) return;
@@ -230,21 +187,6 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
       setCamera({ x: 80, y: 80, zoom: 1 });
     }
   }, [state.pageID]);
-  useEffect(() => registerBoardNavigation({
-    blockId: embed?.blockID,
-    subscribe: session.subscribe,
-    getSnapshot: session.getSnapshot,
-  }), [session, embed?.blockID]);
-  useEffect(() => {
-    const beforeUnload = (e: BeforeUnloadEvent) => {
-      if (session.getSnapshot().pending) {
-        e.preventDefault();
-        e.returnValue = "";
-      }
-    };
-    window.addEventListener("beforeunload", beforeUnload);
-    return () => window.removeEventListener("beforeunload", beforeUnload);
-  }, [session]);
   const submit = (commands: Command[]) => session.submit(commands);
   function fit() {
     const frame = embed?.frameID ? state.elements.get(embed.frameID) : undefined;
@@ -839,7 +781,7 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
             <Suspense fallback={<p>正在读取评论…</p>}>
               {releaseFeatures.documentCollaboration && <DocumentComments
                 noteId={board.document_id}
-                currentUserId={identity.user ?? ""}
+                currentUserId={user ?? ""}
                 canManage={canEdit}
               />}
             </Suspense>

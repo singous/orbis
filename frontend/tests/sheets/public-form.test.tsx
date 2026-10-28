@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { MemoryRouter, Route, Routes, useNavigate } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "../../src/shared/api/api-client";
-import { PublicSheetForm } from "../../src/features/sheets/SheetForms";
+import { PublicSheetForm } from "../../src/features/sheets/PublicSheetForm";
 import { readPublicForm, submitPublicForm } from "../../src/features/sheets/api";
 import { newField } from "../../src/features/sheets/model";
 

@@ -6,10 +6,10 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 import { authStore } from "../../../shared/auth/auth-store";
-import type { NoteBlocksV2 } from "../../content/model/blocks";
+import type { NoteBlocksV2 } from "../../content/blocks";
 import { NOTE_ID, NOTEBOOK_ID, http, page, response, session } from "../../collaboration/collaboration.test-utils";
 import { nativeCollection, nativeDocument, nativeSnapshot } from "./editor.test-utils";
-import { LegacyDocumentEditorPage } from "./DocumentEditorPage";
+import { LegacyDocumentEditorPage } from "./LegacyDocumentEditorPage";
 import type { EditorContentHandle } from "./editor-content-handle";
 import { reportRequestError } from "../../../shared/api/request-feedback";
 

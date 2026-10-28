@@ -27,7 +27,7 @@ import { DOCUMENT_BLOCKS, type DocumentBlockKind } from "../../content/model/doc
 import { FileContentContext } from "../../files/FileContent";
 import { useManagedFiles } from "../../files/use-managed-files";
 import { parseFileReference } from "../../files/managed-files";
-import { canonicalJSON, newBlockId, type NoteBlocksV2, type OrbisBlock } from "../../content/model/blocks";
+import { canonicalJSON, newBlockId, type NoteBlocksV2, type OrbisBlock } from "../../content/blocks";
 import { createDocumentBlock, INSERTABLE_DOCUMENT_BLOCKS } from "./tiptap-insert";
 import { tiptapExtensions } from "./tiptap-extensions";
 import { EditorReadOnlyContext } from "./tiptap-editor-context";

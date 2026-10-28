@@ -4,7 +4,7 @@ import { z } from "zod";
 import { ApiError,apiRequest,workspacePath } from "../../shared/api/api-client";
 import { noteChildrenPageSchema,noteContentSchema,type NoteBlocks,type NoteContent } from "../../shared/api/schemas";
 import { authRequestOptions,type AuthRequestOptions } from "../../shared/auth/use-auth-request";
-import { toV2 } from "../content/model/blocks";
+import { toV2 } from "../content/blocks";
 import { editorBlock,editorPayload,nativeBlock,nativeBlockSchema,nativePayloadSchema } from "../content/codecs/api-content";
 import { getNote } from "./catalog-api";
 

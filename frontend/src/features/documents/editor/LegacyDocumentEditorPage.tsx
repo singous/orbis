@@ -24,14 +24,14 @@ import { useOptionalAuthRequest } from "../../../shared/auth/use-auth-request";
 import { registerPendingNavigation } from "../../../shared/navigation/pending-navigation";
 import { Button } from "../../../shared/ui/Button";
 
-import { v2ToMarkdown, type NoteBlocksV2 } from "../../content/model/blocks";
+import { v2ToMarkdown, type NoteBlocksV2 } from "../../content/blocks";
 import type { RestoreSavedRevision } from "../../collaboration/DocumentCollaborationPanel";
 import { canMutateWorkspaceContent } from "../../workspace/capabilities";
 import { checkpointRecoveryIssue,draftScopeKey } from "./draft-checkpoints";
 import { useDraftCheckpoints } from "./use-draft-checkpoints";
 import { AutosaveCoordinator, type AutosaveState } from "./autosave";
 import { normalizeEditorBlocks } from "./editor-blocks";
-import type { OrbisBlock } from "../../content/model/blocks";
+import type { OrbisBlock } from "../../content/blocks";
 import { DocumentWriter } from "./document-writer";
 import type { DraftContentWindow } from "./draft-checkpoints";
 import { useQueryClient } from "@tanstack/react-query";
@@ -46,9 +46,6 @@ import { CONTENT_PAGE_SIZE, CONTENT_COMPLETION_PAGE_SIZE, type EditorContentHand
 
 // Load the editor only on document pages; readers use the lightweight renderer.
 const TiptapEditor = lazy(loadDocumentEditor);
-const SheetDocument = lazy(() => import("../../sheets/SheetPage").then(m => ({default:m.SheetWorkspace})));
-const BoardDocument = lazy(() => import("../../boards/BoardEditor").then(m => ({default:m.BoardEditor})));
-const CollaborativeDocumentEditorPage = lazy(() => import("./CollaborativeDocumentEditorPage"));
 
 function LiveDocumentEditor({ blocks, onChange, ...props }: {
   blocks: NoteBlocksV2;
@@ -111,16 +108,6 @@ class EditorErrorBoundary extends Component<{ children: ReactNode }, { hasError:
     }
     return this.props.children;
   }
-}
-
-export function DocumentEditorPage() {
-  const { noteId = "" } = useParams();
-  const note = useNote(noteId);
-  if (note.isPending) return <DocumentShell loading><LoadingState label="正在打开文档…" variant="editor" /></DocumentShell>;
-  if (note.data?.board_id) return <Suspense fallback={<DocumentShell loading><LoadingState label="正在打开画板…" variant="editor" /></DocumentShell>}><BoardDocument key={note.data.id} id={note.data.board_id}/></Suspense>;
-  if (note.data?.sheet_id) return <Suspense fallback={<DocumentShell loading><LoadingState label="正在打开数据表…" variant="editor" /></DocumentShell>}><SheetDocument key={note.data.id} id={note.data.sheet_id} /></Suspense>;
-  if (note.data?.collaboration_available === true) return <Suspense fallback={<DocumentShell loading><LoadingState label="正在打开文档…" variant="editor" /></DocumentShell>}><CollaborativeDocumentEditorPage /></Suspense>;
-  return <LegacyDocumentEditorPage />;
 }
 
 export function LegacyDocumentEditorPage() {
@@ -476,7 +463,7 @@ export function LegacyDocumentEditorPage() {
     if (!contentHandle.current) throw new Error("正文尚未准备好，请稍后重试。");
     while (contentWindow.current?.noteId === noteId && contentWindow.current.hasMore) await loadMoreContent(contentWindow.current.bounded ? CONTENT_COMPLETION_PAGE_SIZE : CONTENT_PAGE_SIZE);
     const present = new Set<string>();
-    const collect = (items: import("../../content/model/blocks").OrbisBlock[]) => { for (const item of items) { present.add(item.id); collect(item.children); } };
+    const collect = (items: import("../../content/blocks").OrbisBlock[]) => { for (const item of items) { present.add(item.id); collect(item.children); } };
     if (coordinatorRef.current?.current) collect(coordinatorRef.current.current.blocks.blocks);
     const retained = new Map([...loadStatesRef.current].filter(([id]) => present.has(id)));
     updateLoadStates(retained);
@@ -497,7 +484,7 @@ export function LegacyDocumentEditorPage() {
       const selected = new Set(ids);
       const present = new Set<string>();
       const retained = new Set<string>();
-      const visit = (items: import("../../content/model/blocks").OrbisBlock[], within = false) => {
+      const visit = (items: import("../../content/blocks").OrbisBlock[], within = false) => {
         for (const item of items) {
           if (selected.has(item.id)) present.add(item.id);
           const chosen = within || selected.has(item.id);

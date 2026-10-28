@@ -14,7 +14,7 @@ import {
   DocumentContextSummaryProvider,
   useDocumentContextSummary,
 } from "./DocumentContextPanel";
-import { DocumentEditorPage } from "./editor/DocumentEditorPage";
+import { DocumentRoute } from "../../app/DocumentRoute";
 import { DocumentShell } from "./DocumentShell";
 import { NotebookPage } from "./NotebookPage";
 import { NotebookSectionMenu } from "./NotebookSectionMenu";
@@ -413,7 +413,7 @@ describe("DocumentContextPanel", () => {
     treeState = { data: undefined, isLoading: false, isError: true, refetch: mocks.refetchTree };
     render(
       <MemoryRouter initialEntries={[`/documents/${rootNote.id}`]}>
-        <Routes><Route path="/documents/:noteId" element={<DocumentEditorPage />} /></Routes>
+        <Routes><Route path="/documents/:noteId" element={<DocumentRoute />} /></Routes>
       </MemoryRouter>,
     );
 
@@ -430,7 +430,7 @@ describe("DocumentContextPanel", () => {
     };
     render(
       <MemoryRouter initialEntries={[`/documents/${rootNote.id}`]}>
-        <Routes><Route path="*" element={<><DocumentEditorPage /><CurrentPath /></>} /></Routes>
+        <Routes><Route path="*" element={<><DocumentRoute /><CurrentPath /></>} /></Routes>
       </MemoryRouter>,
     );
 

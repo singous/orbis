@@ -21,7 +21,7 @@ import {
   v2ToMarkdown,
   type NoteBlocksV2,
   type OrbisBlock,
-} from "./blocks";
+} from "../blocks";
 
 const v1: NoteBlocks = {
   schema_version: 1,

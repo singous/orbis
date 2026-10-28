@@ -12,7 +12,7 @@ import { GripVertical, Plus, Copy, Link2, ArrowUp, ArrowDown, Layers, Trash2, Ch
 import { ActionButton } from '../../../../shared/ui/ActionButton';
 import { SelectField } from '../../../../shared/ui/SelectField';
 import { DOCUMENT_BLOCKS } from '../../../content/model/document-components';
-import { newBlockId } from '../../../content/model/blocks';
+import { newBlockId } from '../../../content/blocks';
 import { fromTiptapDocument } from '../tiptap-model';
 import { executeBlockCommand, locateEditorBlocks, ownedOrbisBlock, type BlockAction } from './block-commands';
 import { blockActionAvailability, createBlockActionContext, BLOCK_GROUP_KINDS } from './block-capabilities';

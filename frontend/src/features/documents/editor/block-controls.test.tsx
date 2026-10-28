@@ -4,7 +4,7 @@ import { Profiler } from 'react';
 import * as tree from './blocks/block-tree';
 import { requestBlockMenu } from './blocks/BlockControls';
 import { TiptapEditor } from './TiptapEditor';
-import type { NoteBlocksV2 } from '../../content/model/blocks';
+import type { NoteBlocksV2 } from '../../content/blocks';
 const blocks:NoteBlocksV2={schema_version:2,editor:'blocknote',blocks:['First','Second'].map((text,index)=>({id:`b${index}`,type:'paragraph',props:{},content:[{type:'text',text}],children:[]}))};
 const notify = vi.hoisted(() => vi.fn());
 vi.mock("../../../shared/ui/Toast", async original => ({ ...await original<typeof import("../../../shared/ui/Toast")>(), showToast: notify }));

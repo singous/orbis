@@ -26,7 +26,7 @@ import { canMutateWorkspaceContent } from "../../workspace/capabilities";
 import { ShareButton } from "../../sharing/ShareButton";
 import { TableHostContext, type PendingTableWriter, type TableHost } from "../../data-tables/context";
 import type { RestoreSavedRevision } from "../../collaboration/DocumentCollaborationPanel";
-import { v2ToMarkdown, type NoteBlocksV2 } from "../../content/model/blocks";
+import { v2ToMarkdown, type NoteBlocksV2 } from "../../content/blocks";
 import { DocumentShell } from "../DocumentShell";
 import { cacheDocumentCommit } from "../document-cache";
 import { getNote, saveNoteBlockChanges } from "../api";
@@ -34,7 +34,7 @@ import { useArchiveNote, useNote, useNotebook, useSaveNoteContent } from "../que
 import { DocumentCopyContext, type DocumentCopyPort } from "./blocks/block-copy-context";
 import { indexBlocks } from "./blocks/block-tree";
 import { EditorLayout, EditorOutlineStore } from "./EditorLayout";
-import { LegacyDocumentEditorPage } from "./DocumentEditorPage";
+import { LegacyDocumentEditorPage } from "./LegacyDocumentEditorPage";
 import { loadDocumentEditor } from "./editor-module";
 import { fromTiptapDocument } from "./tiptap-model";
 import type { EditorContentHandle } from "./editor-content-handle";

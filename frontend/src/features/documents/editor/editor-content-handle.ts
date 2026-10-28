@@ -1,4 +1,4 @@
-import type { NoteBlocksV2, OrbisBlock } from "../../content/model/blocks";
+import type { NoteBlocksV2, OrbisBlock } from "../../content/blocks";
 
 export type EditorContentHandle = {
   append: (blocks: OrbisBlock[]) => NoteBlocksV2;

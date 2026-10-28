@@ -1,5 +1,5 @@
 import type {TableCopyIntent} from "./table-copy";
-import { canonicalJSON, type NoteBlocksV2, type OrbisBlock } from "../../content/model/blocks";
+import { canonicalJSON, type NoteBlocksV2, type OrbisBlock } from "../../content/blocks";
 
 export type EditorDraft = { title: string; blocks: NoteBlocksV2; version: number;tableCopies?:TableCopyIntent[] };
 

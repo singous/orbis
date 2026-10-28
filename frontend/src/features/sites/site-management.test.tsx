@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { authStore } from "../../shared/auth/auth-store";
 import { Toaster } from "../../shared/ui/Toast";
 import { SiteEditorPage } from "./SiteEditorPage";
-import { BrowserRequest } from "../../../tests/sites/browser-request";
+import { BrowserRequest } from "../../../tests/support/browser-request";
 
 const id = "018ff7c4-a5b6-7000-8000-000000000001";
 const baseSite = { workspace_id:id,version:2,source:{kind:"manual",collections:[],excluded_document_ids:[],page_overrides:[]},branding:{logo:null,links:[],footer_links:[],cta:null,theme:"system"},id, name: "产品手册", slug: "guide", description: "产品知识", site_kind: "handbook", accent_color: "#0f766e", navigation: [], published_release_id: null, published_slug: null, created_at_ms: 1, updated_at_ms: 2 };

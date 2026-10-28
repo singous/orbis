@@ -19,7 +19,7 @@ export function validTableCopies(value:unknown):value is TableCopyIntent[]{
 }
 
 import type {EditorDraft} from "./editor-draft";
-import type {OrbisBlock} from "../../content/model/blocks";
+import type {OrbisBlock} from "../../content/blocks";
 import {editorPayload,type NativePayload} from "../../content/codecs/api-content";
 export type ResolvedCopyBlock={id:string;payload:NativePayload};
 export function annotateTableCopies(draft:EditorDraft,copies:ReadonlyMap<string,TableCopyIntent>):EditorDraft{

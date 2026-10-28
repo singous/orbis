@@ -20,7 +20,7 @@ npm run build
 ## 目录
 
 - `src/app/`：应用入口、路由与全局 provider。
-- `src/features/`：按产品业务组织；文档编辑器在 `documents/editor/`，通用内容模型和编解码在 `content/model/` 与 `content/codecs/`。
+- `src/features/`：按产品业务组织；文档编辑器在 `documents/editor/`，通用内容模型和编解码在 `content/model/` 与 `content/codecs/`，统一入口为 `content/blocks.ts`。
 - `src/shared/`：HTTP 客户端、认证、平台适配、导航与 UI 基础组件。
 - `src/styles/`：共享样式。
 - `tests/e2e/`：浏览器业务旅程与测试辅助代码；单元、组件测试与对应业务源码放在一起。
@@ -30,9 +30,31 @@ npm run build
 
 ## 工作区布局
 
-`WorkspaceRoute` 持有稳定的 `WorkspaceFrame`。页面通过 `WorkspaceShell` 提供导航与页头配置，正文以 portal 挂载到共享内容容器，并保留页面内的 React context。加载占位使用 `loading` 保留当前导航、移除旧页面操作，避免文档、画板和数据表切换时重新挂载整页。
+`app/router.tsx` 只装配顶层路由。`workspace-routes.tsx` 的私有页面全部挂在同一个认证父路由下；公开阅读、公开表单和邀请由 `public-routes.tsx` 单独组织。既有 URL 与权限边界保持兼容。
+
+`WorkspaceRoute` 通过 `Outlet` 渲染页面，并持有搜索作用域和稳定的 `WorkspaceFrame`。`WorkspaceLayout` 负责公共外壳，`WorkspaceShell` 只向所属布局提供页头、侧栏和上下文面板配置，正文直接留在正常 React 树中，不通过 portal 迁移。页面内部的加载占位使用 `loading` 保留当前区域导航、撤销旧页面操作；跨路径切换显式重置正文局部状态、滚动和移动抽屉。
+
+| 状态或资源 | 所有者 | 生命周期 |
+| --- | --- | --- |
+| 查询缓存、错误反馈 | `AppProviders` | 当前认证会话；切换会话清理旧缓存 |
+| 搜索框、公共导航、布局 | `WorkspaceRoute` / `WorkspaceFrame` | 私有工作区父路由 |
+| 抽屉焦点、关闭、滚动清理 | `use-workspace-drawers` | 公共布局，显式响应路径变化 |
+| 文档类型选择 | `app/DocumentRoute` | 只加载所需的正文、画板或数据表运行时 |
+| 画板会话、图片缓存、离页保护 | `use-board-session` | 画板及凭据/工作空间；刷新 token 保留会话 |
+| 编辑器选区、工具、菜单和草稿 | 各业务页面与控制器 | 当前页面或嵌入实例；不放入公共外壳 |
+| 内容契约与格式转换 | `content/model` / `content/codecs` | 纯模型与格式适配分开；持久化格式不变 |
 
 未开放的工作区入口统一由 `src/shared/release-features.ts` 控制；隐藏入口不删除历史数据，已有公开交付协议继续兼容。
+
+## 模块依赖
+
+- `app` 负责跨业务页面组合；`features` 实现业务；`shared` 提供不依赖业务的基础设施和控件。
+- `shared` 不导入 `features` / `app`，业务模块不导入 `app`。跨业务组合放在应用层；确有业务协作的 feature 依赖保持显式，不建立覆盖整个项目的公共组件仓库。
+- `content/model` 不依赖 React、Tiptap、Konva 或格式组合入口；模型、旧格式转换与 Markdown 导出分别维护。业务通过 `content/blocks.ts` 使用统一接口。
+- 数据表字段变更由 `sheets/definition.ts` 统一维护所有视图的相关配置；菜单只呈现选项，工作区控制器执行变更。
+- 静态模块依赖不允许循环。仅为类型的依赖不形成运行时循环；动态加载仍检查分层边界。生产代码不导入测试代码。
+
+`npm run check:architecture` 扫描全部生产 TypeScript 模块并运行检查器自身的用例，已纳入 `typecheck` 和 `build`。它约束依赖方向，不替代业务测试，也不判断隐式运行时通信是否合理。新增页面继续使用父布局，不为消除文件长度机械拆分组件。
 
 ## 品牌资产
 

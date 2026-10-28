@@ -1,8 +1,9 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { createContext, useContext, type ReactNode } from "react";
-import { MemoryRouter, useLocation, useNavigate, type NavigateFunction } from "react-router-dom";
+import { createContext, useContext, useState, type ReactNode } from "react";
+import { createMemoryRouter, RouterProvider, MemoryRouter, useLocation, useNavigate, type NavigateFunction } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
+import { BrowserRequest } from "../../../tests/support/browser-request";
 import { WorkspaceRoute } from "../../app/WorkspaceRoute";
 import { WorkspaceShell } from "./WorkspaceShell";
 
@@ -11,7 +12,7 @@ vi.mock("./WorkspaceAccountMenu", () => ({ WorkspaceAccountMenu: () => <button>A
 const Context = createContext("missing context");
 const sidebar = { title: <h2>Notebook navigation</h2>, content: <button>Notebook directory</button> };
 const clients: QueryClient[] = [];
-afterEach(() => { cleanup(); clients.splice(0).forEach(client => client.clear()); vi.restoreAllMocks(); });
+afterEach(() => { cleanup(); clients.splice(0).forEach(client => client.clear()); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 function Body() { return <p>{useContext(Context)}</p>; }
 function TextPage() { return <WorkspaceShell sidebar={sidebar} contentLayout="document" toolbar={<button>Text action</button>}><Body /></WorkspaceShell>; }
 function BoardPage() { return <WorkspaceShell sidebar={sidebar} contentLayout="document" toolbar={<button>Board action</button>}><p>Board content</p></WorkspaceShell>; }
@@ -57,4 +58,37 @@ it("closes a mobile drawer when navigation starts outside its link subtree", () 
   act(() => { void navigate("/documents/second"); });
   expect(screen.getByRole("heading", { name: "/documents/second" })).toBeInTheDocument();
   expect(document.querySelector(".workspace-shell")).not.toHaveClass("main-navigation-open");
+});
+
+it("lets the parent route own chrome while reused document routes reset local UI and scroll", async () => {
+  vi.stubGlobal("Request", BrowserRequest);
+  function Page() {
+    const [count, setCount] = useState(0);
+    const { pathname } = useLocation();
+    return <WorkspaceShell sidebar={sidebar} toolbar={<button>{pathname} action</button>}>
+      <button onClick={() => setCount(value => value + 1)}>Local count {count}</button>
+    </WorkspaceShell>;
+  }
+  const router = createMemoryRouter([{ element: <WorkspaceRoute />, children: [
+    { path: "/documents/:noteId", element: <Page /> },
+    { path: "/home", element: <WorkspaceShell sidebar={false}><h1>Home</h1></WorkspaceShell> },
+  ] }], { initialEntries: ["/documents/first"] });
+  const view = render(<QueryClientProvider client={client()}><RouterProvider router={router} /></QueryClientProvider>);
+  const shell = document.querySelector(".workspace-shell");
+  const content = document.getElementById("workspace-main-content")!;
+  const scroll = document.querySelector<HTMLElement>(".workspace-content")!;
+  fireEvent.click(screen.getByRole("button", { name: "Local count 0" }));
+  expect(screen.getByRole("button", { name: "Local count 1" })).toBeVisible();
+  scroll.scrollTop = 200;
+  await act(() => router.navigate("/documents/second"));
+  expect(screen.getByRole("button", { name: "Local count 0" })).toBeVisible();
+  expect(screen.queryByRole("button", { name: "/documents/first action" })).not.toBeInTheDocument();
+  expect(scroll.scrollTop).toBe(0);
+  expect(document.getElementById("workspace-main-content")).toBe(content);
+  await act(() => router.navigate("/home"));
+  expect(screen.getByRole("heading", { name: "Home" })).toBeVisible();
+  expect(document.querySelector(".workspace-shell")).toBe(shell);
+  expect(screen.queryByRole("button", { name: "/documents/second action" })).not.toBeInTheDocument();
+  view.unmount();
+  router.dispose();
 });

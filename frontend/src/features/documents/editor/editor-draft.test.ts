@@ -2,7 +2,7 @@ import { expect, it, vi } from "vitest";
 import { createEditorDraftFingerprint, type EditorDraft } from "./editor-draft";
 import { EditorOutlineStore } from "./EditorLayout";
 import { AutosaveCoordinator } from "./autosave";
-import type { OrbisBlock } from "../../content/model/blocks";
+import type { OrbisBlock } from "../../content/blocks";
 
 const paragraph = (id: string, text = "body"): OrbisBlock => ({ id, type: "paragraph", props: {}, content: [{ type: "text", text }], children: [] });
 const draft = (blocks: OrbisBlock[]): EditorDraft => ({ title: "Title", blocks: { schema_version: 2, editor: "blocknote", blocks }, version: 1 });

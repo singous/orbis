@@ -1,5 +1,5 @@
 import { documentBlockDefinition } from "../../../content/model/document-components";
-import type { OrbisBlock } from "../../../content/model/blocks";
+import type { OrbisBlock } from "../../../content/blocks";
 import { indexBlocks, normalizeBlockSelection, type BlockAction, type BlockAddress } from "./block-tree";
 
 export type { BlockAction } from "./block-tree";
