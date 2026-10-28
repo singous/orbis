@@ -102,7 +102,9 @@ test('document overview shares the shell and exposes its function menu alongside
   await page.getByRole('menuitem', { name: '文档', exact: true }).click();
   await expect(page).toHaveURL(/\/documents\/[^/]+$/);
   const createdDocumentPath = new URL(page.url()).pathname;
-  await expect(page.locator(`#notebook-directory a[href="${createdDocumentPath}"]`)).toHaveText('未命名文档');
+  const createdDocumentLink = page.locator(`#notebook-directory a[href="${createdDocumentPath}"]`);
+  await expect(createdDocumentLink).toBeVisible();
+  await expect(createdDocumentLink).toHaveText('未命名文档');
   await page.locator('#notebook-directory').getByRole('button', { name: '创建内容', exact: true }).click();
   await page.getByRole('menuitem', { name: '随手记', exact: true }).click();
   await expect(page).toHaveURL(/\/documents\/quick-notes$/);
