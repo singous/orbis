@@ -77,12 +77,19 @@ describe("WorkspaceShell (desktop surface)", () => {
     vi.restoreAllMocks();
   });
 
-  it.each([["/documents", "文档导航"], ["/sites", "站点导航"]])("provides secondary navigation by default on %s", (path, navigationName) => {
+  it.each([["/documents", "文档导航"]])("provides secondary navigation by default on %s", (path, navigationName) => {
     renderShell(path);
 
     expect(screen.getByRole("navigation", { name: "业务板块" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: navigationName })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "收起侧栏" })).toBeInTheDocument();
+  });
+
+  it.each(["/sites", "/sites/guide"])("hides deferred site navigation on %s", path => {
+    renderShell(path);
+    expect(screen.queryByRole("link", { name: "站点" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "我的站点" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "站点导航" })).not.toBeInTheDocument();
   });
 
   it("keeps the home rail without a function sidebar or width control", async () => {
@@ -121,8 +128,6 @@ describe("WorkspaceShell (desktop surface)", () => {
   });
 
   it.each([
-    ["/sites", "站点导航", ["我的站点"]],
-    ["/sites/guide", "站点导航", ["我的站点"]],
     ["/settings/account", "设置导航", ["个人资料", "成员管理"]],
   ] as const)("limits the secondary menu to its own area on %s", (path, label, links) => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -143,12 +148,12 @@ describe("WorkspaceShell (desktop surface)", () => {
     expect(within(rail).getByRole("link", { name: "在线文档" })).toHaveAttribute("aria-current", "page");
     expect(within(screen.getByRole("navigation", { name: "文档导航" })).getByRole("link", { name: "最近编辑" })).toHaveAttribute("aria-current", "page");
     expect(within(screen.getByRole("navigation", { name: "文档导航" })).getByRole("link", { name: "开始" })).not.toHaveAttribute("aria-current");
-    await actor.click(within(rail).getByRole("link", { name: "站点" }));
+    await actor.click(within(rail).getByRole("link", { name: "首页" }));
 
-    expect(within(rail).getByRole("link", { name: "站点" })).toHaveAttribute("aria-current", "page");
+    expect(within(rail).getByRole("link", { name: "首页" })).toHaveAttribute("aria-current", "page");
     expect(within(rail).getByRole("link", { name: "在线文档" })).not.toHaveAttribute("aria-current");
     expect(screen.queryByRole("navigation", { name: "文档导航" })).not.toBeInTheDocument();
-    expect(screen.getByRole("navigation", { name: "站点导航" })).toHaveTextContent("我的站点");
+    expect(screen.queryByRole("navigation", { name: "站点导航" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "回收站" })).not.toBeInTheDocument();
   });
 
@@ -158,8 +163,8 @@ describe("WorkspaceShell (desktop surface)", () => {
     const rail = screen.getByRole("navigation", { name: "业务板块" });
     await actor.click(screen.getByRole("button", { name: "收起侧栏" }));
     expect(screen.getByRole("button", { name: "展开侧栏" })).toBeInTheDocument();
-    await actor.click(within(rail).getByRole("link", { name: "站点" }));
-    expect(screen.getByRole("navigation", { name: "站点导航" })).toBeVisible();
+    await actor.click(within(rail).getByRole("link", { name: "在线文档" }));
+    expect(screen.getByRole("navigation", { name: "文档导航" })).toBeVisible();
     expect(screen.getByRole("button", { name: "收起侧栏" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "展开侧栏" })).toBeNull();
     await actor.click(screen.getByRole("button", { name: "收起侧栏" }));
@@ -454,7 +459,7 @@ describe("WorkspaceShell (desktop surface)", () => {
     renderShell();
     const rail = screen.getByRole("navigation", { name: "业务板块" });
 
-    expect(within(rail).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/home", "/documents", "/sites"]);
+    expect(within(rail).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/home", "/documents"]);
     expect(screen.queryByRole("link", { name: "知识库" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "记忆" })).not.toBeInTheDocument();
   });

@@ -1,3 +1,4 @@
+import { releaseFeatures } from "../../shared/release-features";
 import { reportError } from "../../shared/api/request-feedback";
 import { Modal } from "@heroui/react/modal";
 import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
@@ -46,7 +47,7 @@ export function GlobalSearchPalette({ initialFilters, onClose, isOpen = true, on
   const categoryMode = !input.trim() || (!parsed.hasPrefix && /^@\S*$/.test(input.trim()) && categories.length > 0);
   const filters: SearchFilters = { q: categoryMode ? "" : parsed.q, type: parsed.type, status, page };
   const { results, pendingInput } = usePaletteSearch(filters, { enabled: isOpen, composing });
-  const resultItems = !pendingInput && !results.isError && filters.q ? results.data?.items ?? [] : [];
+  const resultItems = !pendingInput && !results.isError && filters.q ? results.data?.items.filter(item => releaseFeatures.sites || item.type !== "site") ?? [] : [];
   const options = categoryMode ? categories.map(item => item.type) : resultItems.map(resultKey);
   const selectedIndex = Math.max(0, selected ? options.indexOf(selected) : 0);
   const activeKey = options[selectedIndex];

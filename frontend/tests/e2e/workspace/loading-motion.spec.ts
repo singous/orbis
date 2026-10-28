@@ -53,7 +53,7 @@ test("ordinary menus and notebook trees share local collapse motion, focus and r
 
   let ordinaryWidth: number | undefined;
   for (const entry of [
-    { path: "/sites", collapse: "收起侧栏", expand: "展开侧栏", key: "orbis.sidebarCollapsed" },
+    { path: "/documents", collapse: "收起侧栏", expand: "展开侧栏", key: "orbis.sidebarCollapsed" },
     { path: `/collections/${notebookId}`, collapse: "收起笔记本目录", expand: "展开笔记本目录", key: "orbis.notebookDirectoryCollapsed" },
   ]) {
     await page.goto(entry.path);
@@ -127,7 +127,7 @@ test("ordinary and notebook mobile drawers share navigation, creation dialogs an
   expect(created.status()).toBe(201);
   const notebookId = (await created.json()).data.id as string;
   for (const entry of [
-    { path: "/sites", collapse: "收起侧栏", key: "orbis.sidebarCollapsed", navigation: "站点导航" },
+    { path: "/documents", collapse: "收起侧栏", key: "orbis.sidebarCollapsed", navigation: "文档导航" },
     { path: `/collections/${notebookId}`, collapse: "收起笔记本目录", key: "orbis.notebookDirectoryCollapsed", navigation: "笔记本目录" },
   ]) {
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -201,7 +201,7 @@ test("tab changes, history and reload start expanded while saved widths remain i
     await expect(page.locator(".workspace-sidebar")).not.toHaveAttribute("inert", "");
     await expect.poll(() => frame.evaluate(element => element.getBoundingClientRect().width - element.querySelector(".workspace-business-rail")!.getBoundingClientRect().width)).toBeCloseTo(width, 0);
   }
-  await page.goto("/sites");
+  await page.goto("/documents");
   await expectOpen("收起侧栏", 300);
   await page.getByRole("button", { name: "收起侧栏", exact: true }).click();
   await rail.getByRole("button", { name: "打开用户菜单", exact: true }).click();
@@ -209,14 +209,14 @@ test("tab changes, history and reload start expanded while saved widths remain i
   await expect(page).toHaveURL(/\/settings\/account$/);
   await expectOpen("收起侧栏", 300);
   await page.getByRole("button", { name: "收起侧栏", exact: true }).click();
-  await rail.getByRole("link", { name: "站点", exact: true }).click();
+  await page.goto("/documents");
   await expectOpen("收起侧栏", 300);
   await page.goBack();
   await expectOpen("收起侧栏", 300);
   await page.goto(notebookPath);
   await expectOpen("收起笔记本目录", 320);
   await page.getByRole("button", { name: "收起笔记本目录", exact: true }).click();
-  await rail.getByRole("link", { name: "站点", exact: true }).click();
+  await page.goto("/documents");
   await expectOpen("收起侧栏", 300);
   await page.goBack();
   await expectOpen("收起笔记本目录", 320);

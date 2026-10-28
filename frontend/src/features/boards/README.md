@@ -12,8 +12,9 @@ identities. Styling can be replaced independently of the board format.
   without restoring or replaying unsaved operations. Each editor owns its temporary
   state, so multiple references do not compete for a shared browser-storage key.
 - `navigation.ts` tracks pending edits for one route-level blocker. Same-tab navigation
-  requires saving or explicitly leaving without the unsaved changes. Replacing an
-  inline reference checks that editor's pending state and requires explicit discard.
+  requires saving or explicitly leaving without the unsaved changes. New embedded
+  blocks create their own board and initial page; existing resources cannot be selected
+  or substituted from the embed. Legacy bindings and snapshots remain readable.
   Removing pending board blocks (including parent groups and native range deletion)
   and reparenting their blocks require confirmation; stale confirmations do not
   overwrite later document edits. Document undo/redo waits for pending board saves.

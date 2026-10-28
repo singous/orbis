@@ -65,6 +65,17 @@ function safeUrl(value: unknown, media = false): string {
   return safe;
 }
 function authoredProps(value: unknown, type?:string) {
+  if (type === "board" && record(value)) {
+    const binding: Record<string, string | number | null> = {};
+    // Board resource IDs are authored references, not editor/session IDs.
+    for (const key of ["board_id", "page_id", "frame_id"]) {
+      const item = value[key];
+      if (item === null || typeof item === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item)) binding[key] = item;
+    }
+    if (value.mode === "live" || value.mode === "snapshot") binding.mode = value.mode;
+    if (value.revision === null || typeof value.revision === "number" && Number.isSafeInteger(value.revision) && value.revision > 0) binding.revision = value.revision;
+    return binding;
+  }
   const props = clipboardProps(value);
   if(type==="dataTable"&&record(value)){
     for(const [key,rule] of Object.entries(documentBlockDefinition(type)!.props)){

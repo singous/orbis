@@ -5,7 +5,7 @@ import { matchPaletteCategories, parsePaletteInput, SEARCH_PALETTE_CATEGORIES } 
 describe("palette resource categories", () => {
   it("lists only implemented resource types and their supported aliases", () => {
     expect(SEARCH_PALETTE_CATEGORIES.map(category => [category.type, category.alias])).toEqual([
-      ["document", "@doc"], ["notebook", "@notebook"], ["group", "@group"], ["site", "@site"], ["file", "@file"],
+      ["document", "@doc"], ["notebook", "@notebook"], ["group", "@group"], ["file", "@file"],
     ]);
     expect(matchPaletteCategories("")).toEqual(SEARCH_PALETTE_CATEGORIES);
     expect(matchPaletteCategories("@")).toEqual(SEARCH_PALETTE_CATEGORIES);

@@ -1,3 +1,4 @@
+import { releaseFeatures } from "../../shared/release-features";
 import type { SearchType } from "./api";
 
 export type SearchPaletteCategory = {
@@ -8,13 +9,14 @@ export type SearchPaletteCategory = {
 };
 
 /** Every category maps to an implemented, permission-filtered search resource. */
-export const SEARCH_PALETTE_CATEGORIES: readonly SearchPaletteCategory[] = [
+const ALL_SEARCH_PALETTE_CATEGORIES: readonly SearchPaletteCategory[] = [
   { type: "document", alias: "@doc", label: "文档与评论", description: "搜索文档标题、已保存正文和评论" },
   { type: "notebook", alias: "@notebook", label: "笔记本", description: "按名称查找笔记本" },
   { type: "group", alias: "@group", label: "文档分组", description: "按名称查找文档分组" },
   { type: "site", alias: "@site", label: "站点", description: "搜索站点名称、描述和路径" },
   { type: "file", alias: "@file", label: "文件与附件", description: "搜索文件名与已有元数据" },
 ];
+export const SEARCH_PALETTE_CATEGORIES = ALL_SEARCH_PALETTE_CATEGORIES.filter(category => releaseFeatures.sites || category.type !== "site");
 
 export type ParsedPaletteInput = {
   q: string;

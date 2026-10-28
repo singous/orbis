@@ -1,3 +1,4 @@
+import { releaseFeatures } from "../../shared/release-features";
 import { reportError } from "../../shared/api/request-feedback";
 import { DraftActions } from "../../shared/ui/DraftActions";
 
@@ -151,8 +152,8 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
               </div>
             </div>
             <div className="page-actions">
-              <Button size="sm" aria-label={isPinned(collectionId) ? "取消收藏笔记本" : "收藏笔记本"} aria-pressed={isPinned(collectionId)} title="收藏的笔记本会显示在快捷访问中" icon={<Star aria-hidden="true" size={15} fill={isPinned(collectionId) ? "currentColor" : "none"} />} onClick={() => togglePin(collectionId)} disabled={!workspace || !notebook}>{isPinned(collectionId) ? "已收藏" : "收藏"}</Button>
-              {canEdit && notebook ? <ShareButton notebookId={collectionId} title={notebook.title} /> : null}
+              {releaseFeatures.documentFavorites && <Button size="sm" aria-label={isPinned(collectionId) ? "取消收藏笔记本" : "收藏笔记本"} aria-pressed={isPinned(collectionId)} title="收藏的笔记本会显示在快捷访问中" icon={<Star aria-hidden="true" size={15} fill={isPinned(collectionId) ? "currentColor" : "none"} />} onClick={() => togglePin(collectionId)} disabled={!workspace || !notebook}>{isPinned(collectionId) ? "已收藏" : "收藏"}</Button>}
+              {canEdit && notebook ? (releaseFeatures.documentSharing ? <ShareButton notebookId={collectionId} title={notebook.title} /> : null) : null}
               {canEdit ? <Button size="sm" icon={<Plus aria-hidden="true" size={14} />} onClick={() => void createDocument().catch((error) => reportError(error))} disabled={createNote.isPending}>新建文档</Button> : null}
               <input ref={fileInputRef} className="hidden" type="file" accept=".md,text/markdown,text/plain" onChange={handleImport} />
               <Dropdown>
@@ -166,7 +167,7 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
                     {canEdit ? <Dropdown.Item id="edit" textValue="编辑笔记本"><Settings2 aria-hidden="true" /><Label>编辑笔记本</Label></Dropdown.Item> : null}
                     {canEdit ? <Dropdown.Item id="import" textValue="导入 Markdown" isDisabled={importBusy}><Import aria-hidden="true" /><Label>导入 Markdown</Label></Dropdown.Item> : null}
                     <Dropdown.Item id="export" textValue="导出全部" isDisabled={!treeSummary.noteCount || exportMarkdown.isPending}><Download aria-hidden="true" /><Label>导出全部</Label></Dropdown.Item>
-                    {canEdit ? <Dropdown.Item id="site" href={`/sites?notebook=${collectionId}`} textValue="创建文档站点" render={(props) => "href" in props ? <Link {...props} to={`/sites?notebook=${collectionId}`} /> : <div {...props} />}><Globe2 aria-hidden="true" /><Label>创建文档站点</Label></Dropdown.Item> : null}
+                    {canEdit ? (releaseFeatures.sites ? <Dropdown.Item id="site" href={`/sites?notebook=${collectionId}`} textValue="创建文档站点" render={(props) => "href" in props ? <Link {...props} to={`/sites?notebook=${collectionId}`} /> : <div {...props} />}><Globe2 aria-hidden="true" /><Label>创建文档站点</Label></Dropdown.Item> : null) : null}
                   </Dropdown.Menu>
                 </Dropdown.Popover>
               </Dropdown>

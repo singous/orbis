@@ -1,3 +1,4 @@
+import { releaseFeatures } from "../../shared/release-features";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -53,11 +54,11 @@ export function SearchPage() {
     inputDirty.current = false;
     setParams(writeSearchFilters({ ...filters, q: input, ...patch, page: patch.page ?? 1 }));
   }
-  const data = results.data;
+  const data = results.data && { ...results.data, items: results.data.items.filter(item => releaseFeatures.sites || item.type !== "site") };
   const loading = Boolean(filters.q.trim() && (pendingInput || results.isPending));
   const error = results.error;
 
-  return <WorkspaceShell><PageContainer title="全局搜索" description="搜索有权访问的文档、评论、笔记本、分组、站点与文件。">
+  return <WorkspaceShell><PageContainer title="全局搜索" description="搜索有权访问的文档、评论、笔记本、分组与文件。">
     <form className="global-search-form" role="search" aria-label="内容搜索" onSubmit={(event) => { event.preventDefault(); if (!composing) updateFilters({ q: input }); }}>
       <div className="global-search-input-row">
         <TextInput id={GLOBAL_SEARCH_INPUT_ID} label="搜索内容" aria-label="搜索内容" type="search" autoFocus maxLength={SEARCH_MAX_LENGTH} placeholder="搜索标题、正文、评论或文件名…" value={input} onChange={(event) => { inputDirty.current = true; setInput(event.target.value); }} onCompositionStart={() => setComposing(true)} onCompositionEnd={(event) => { inputDirty.current = true; setInput(event.currentTarget.value); setComposing(false); }} />
