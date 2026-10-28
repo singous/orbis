@@ -359,11 +359,10 @@ describe("notebook entry points", () => {
     expect(requests.some((request) => request.method === "POST" && request.path === `/api/v1/workspaces/${WORKSPACE_ID}/sites`)).toBe(false);
   });
 
-  it("links notebook management to a prefilled site draft", async () => {
+  it("hides the deferred site creation entry in notebook management", async () => {
     renderRoute(`/documents/collections/${NOTEBOOK_ID}`, <NotebookPage />, "/documents/collections/:collectionId");
 
     await userEvent.click(await screen.findByRole("button", { name: "笔记本操作" }));
-    const link = screen.getByRole("menuitem", { name: "创建文档站点" });
-    expect(link).toHaveAttribute("href", `/sites?notebook=${NOTEBOOK_ID}`);
+    expect(screen.queryByRole("menuitem", { name: "创建文档站点" })).not.toBeInTheDocument();
   });
 });

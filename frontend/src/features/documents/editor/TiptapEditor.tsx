@@ -54,7 +54,7 @@ const TEXT_MARK_TOOLS = [
 
 function insertBlock(editor: Editor, value: OrbisBlock) {
   const node = toTiptapDocumentForSchema({ schema_version: 2, editor: "blocknote", blocks: [value] }, editor.schema).content?.[0];
-  if (node) editor.chain().focus().insertContent(node).run();
+  if (node) editor.chain().focus().insertContent(value.type === "board" ? [node, { type: "paragraph" }] : node).run();
 }
 
 const editorExtensions = [...tiptapExtensions, OrbisBlockSelection, OrbisActiveBlock];

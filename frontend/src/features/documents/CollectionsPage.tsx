@@ -1,3 +1,4 @@
+import { releaseFeatures } from "../../shared/release-features";
 import { reportError } from "../../shared/api/request-feedback";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { ActionButton } from "../../shared/ui/ActionButton";
@@ -274,7 +275,7 @@ export function CollectionsPage() {
                             </span>
                           </Link>
                           <div className="workbench-collection-actions">
-                            <ActionButton
+                            {releaseFeatures.documentFavorites && <ActionButton
                               type="button"
                               className={`icon-button${isPinned(notebook.id) ? " is-pinned" : ""}`}
                               aria-label={isPinned(notebook.id) ? `移出快捷访问 ${notebook.title}` : `加入快捷访问 ${notebook.title}`}
@@ -282,7 +283,7 @@ export function CollectionsPage() {
                               onClick={() => togglePin(notebook.id)}
                             >
                               <Pin aria-hidden="true" size={14} />
-                            </ActionButton>
+                            </ActionButton>}
                             {canEdit ? <>
                               <ActionButton type="button" className="icon-button" aria-label={`编辑笔记本 ${notebook.title}`} title="编辑名称和图标" onClick={() => setDialog({ kind: "edit-notebook", resource: notebook })}>
                                 <MoreHorizontal aria-hidden="true" size={16} />

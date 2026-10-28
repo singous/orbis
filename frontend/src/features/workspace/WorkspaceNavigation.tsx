@@ -1,3 +1,4 @@
+import { releaseFeatures } from "../../shared/release-features";
 import { StickyNote } from "lucide-react";
 import { BookOpen, ChevronDown, ChevronRight, Clock3, Globe, Home, Pin, Search, Settings, Trash2, Users } from "../../shared/ui/icons";
 import { type ReactNode, useId, useState } from "react";
@@ -69,7 +70,7 @@ export function WorkspaceNavigation() {
   switch (area.id) {
     case "documents": return <DocumentNavigation />;
     case "settings": return <SettingsNavigation />;
-    case "sites": return <MenuFrame label={area.navigationLabel}><NavLink to="/sites" className={navClass}><Globe size={18} />我的站点</NavLink></MenuFrame>;
+    case "sites": return releaseFeatures.sites ? <MenuFrame label={area.navigationLabel}><NavLink to="/sites" className={navClass}><Globe size={18} />我的站点</NavLink></MenuFrame> : null;
     case "home": return <MenuFrame label={area.navigationLabel}><NavLink to="/home" end className={navClass}><Home size={18} />工作台</NavLink></MenuFrame>;
     case "search": return null;
   }

@@ -468,17 +468,13 @@ describe("DocumentContextPanel", () => {
     await waitFor(() => expect(screen.getByRole("status", { name: "文档统计" })).toHaveTextContent("2 篇文档"));
     const main = screen.getByRole("region", { name: "主工作区" });
     expect(within(main).getByRole("heading", { name: "欢迎来到笔记本" })).toBeInTheDocument();
-    await actor.click(within(main).getByRole("button", { name: "收藏笔记本" }));
-    expect(within(main).getByRole("button", { name: "取消收藏笔记本" })).toHaveAttribute("aria-pressed", "true");
-    expect(JSON.parse(localStorage.getItem("orbis.pinnedNotebooks.workspace-1")!)).toContain(rootNote.notebook_id);
-    await actor.click(within(main).getByRole("button", { name: "取消收藏笔记本" }));
-    expect(within(main).getByRole("button", { name: "收藏笔记本" })).toHaveAttribute("aria-pressed", "false");
+    expect(within(main).queryByRole("button", { name: /收藏|分享/ })).not.toBeInTheDocument();
     expect(within(main).getByRole("button", { name: "新建文档" })).toBeEnabled();
     expect(within(main).queryByRole("button", { name: "导出全部" })).not.toBeInTheDocument();
     await actor.click(within(main).getByRole("button", { name: "笔记本操作" }));
     expect(screen.getByRole("menuitem", { name: "导出全部" })).toBeEnabled();
     expect(screen.getByRole("menuitem", { name: "导入 Markdown" })).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: "创建文档站点" })).toHaveAttribute("href", `/sites?notebook=${rootNote.notebook_id}`);
+    expect(screen.queryByRole("menuitem", { name: "创建文档站点" })).not.toBeInTheDocument();
     await actor.keyboard("{Escape}");
     // The notebook page owns its document list; no shell context panel aside.
     expect(screen.queryByRole("complementary", { name: "上下文面板" })).not.toBeInTheDocument();

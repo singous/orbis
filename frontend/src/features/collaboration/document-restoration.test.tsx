@@ -12,6 +12,9 @@ import type { NoteBlocksV2 } from "../content/model/blocks";
 import { DocumentEditorPage } from "../documents/editor/DocumentEditorPage";
 import { NOTE_ID, NOTEBOOK_ID, USER_ID, blocks, http, page, response, revision, session } from "./collaboration.test-utils";
 
+// Exercise the retained restoration workflow with its deferred entry enabled.
+vi.mock("../../shared/release-features", () => ({ releaseFeatures: { documentCollaboration: true } }));
+
 vi.mock("../documents/DocumentShell", () => ({ DocumentShell: ({ toolbar, children }: { toolbar: React.ReactNode; children: React.ReactNode }) => <main>{toolbar}{children}</main> }));
 vi.mock("../documents/editor/TiptapEditor", () => ({ TiptapEditor: ({ blocks: value, onChange, readOnly }: { blocks: NoteBlocksV2; onChange: (next: { blocks: ReturnType<typeof blocks> }) => void; readOnly: boolean }) => {
   const incoming = String((value.blocks[0]?.content as { text: string }[])?.[0]?.text ?? "");

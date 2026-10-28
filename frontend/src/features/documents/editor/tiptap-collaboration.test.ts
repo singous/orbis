@@ -1,4 +1,5 @@
 import { Editor, getSchema } from "@tiptap/core";
+import { GapCursor } from "@tiptap/pm/gapcursor";
 import * as Y from "yjs";
 import { prosemirrorJSONToYDoc } from "y-prosemirror";
 import { afterEach, expect, it } from "vitest";
@@ -18,6 +19,40 @@ function seed() {
   documents.push(doc); schemaDoc.destroy(); return doc;
 }
 function open(doc: Y.Doc) { const editor = new Editor({ extensions: collaborativeEditorExtensions(doc) }); editors.push(editor); return editor; }
+
+it("keeps a selected terminal board through a remote attribute update", () => {
+  const doc = seed(), editor = open(doc);
+  editor.commands.insertContentAt(editor.state.doc.content.size, { type: "orbisBoard", attrs: { orbisId: "board", orbisProps: { board_id: paragraphId } } });
+  editor.commands.setNodeSelection(editor.state.doc.content.size - 1);
+  expect(editor.state.selection).toBeInstanceOf(GapCursor);
+  const remote = new Y.Doc(); documents.push(remote);
+  Y.applyUpdate(remote, Y.encodeStateAsUpdate(doc));
+  (remote.getXmlFragment("body").get(1) as Y.XmlElement).setAttribute("orbisProps", { board_id: paragraphId, mode: "live" } as never);
+  expect(() => Y.applyUpdate(doc, Y.encodeStateAsUpdate(remote))).not.toThrow();
+  expect(editor.state.doc.lastChild?.type.name).toBe("orbisBoard");
+});
+
+it("restores a valid selection when a peer removes a selected terminal board", () => {
+  const doc = seed(), editor = open(doc);
+  editor.commands.insertContentAt(editor.state.doc.content.size, { type: "orbisBoard", attrs: { orbisId: "board" } });
+  editor.commands.setNodeSelection(editor.state.doc.content.size - 1);
+  const remote = new Y.Doc(); documents.push(remote);
+  Y.applyUpdate(remote, Y.encodeStateAsUpdate(doc));
+  remote.getXmlFragment("body").delete(1, 1);
+  expect(() => Y.applyUpdate(doc, Y.encodeStateAsUpdate(remote))).not.toThrow();
+  expect(editor.state.doc.lastChild?.type.name).toBe("paragraph");
+});
+
+it("types a space after a selected board without replacing it", () => {
+  const editor = open(seed());
+  editor.commands.setContent({ type: "doc", content: [{ type: "orbisBoard", attrs: { orbisId: paragraphId } }] });
+  editor.commands.setNodeSelection(0);
+  const event = new KeyboardEvent("keydown", { key: " ", code: "Space", bubbles: true, cancelable: true });
+  editor.view.dom.dispatchEvent(event);
+  expect(editor.state.doc.firstChild?.type.name).toBe("orbisBoard");
+  expect(editor.state.doc.lastChild?.textContent).toBe(" ");
+  expect(editor.state.selection.$from.parent.type.name).toBe("paragraph");
+});
 
 it("merges concurrent same-paragraph typing and keeps undo local to each editor", () => {
   const initial = seed(), left = new Y.Doc(), right = new Y.Doc();

@@ -55,8 +55,7 @@ describe("notebook layout", () => {
     expect(screen.getByText("文档 2")).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "空的默认分组" })).toBeNull();
     expect(screen.queryByRole("region", { name: "快捷访问" })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "加入快捷访问：笔记本 0" }));
-    expect(screen.getByRole("region", { name: "快捷访问" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "加入快捷访问：笔记本 0" })).not.toBeInTheDocument();
     expect(within(screen.getByRole("navigation", { name: "文档导航" })).getByRole("link", { name: "笔记本 0" })).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "最近更新" })).toBeNull();
   });

@@ -1,3 +1,4 @@
+import { releaseFeatures } from "../../shared/release-features";
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
@@ -48,7 +49,7 @@ export function DocumentOverviewPage() {
         <NotebookIcon icon={notebook.icon} />
         <span className="notebook-overview-card-copy"><strong>{notebook.title}</strong><span>更新于 {formatDate(notebook.updated_at_ms)}</span>{!compact && notesQuery.isSuccess ? <span className="notebook-overview-count">文档 {counts.get(notebook.id) ?? 0}</span> : null}</span>
       </Link>
-      <ActionButton type="button" className={`notebook-overview-pin${isPinned(notebook.id) ? " is-pinned" : ""}`} title={isPinned(notebook.id) ? "移出快捷访问" : "加入快捷访问"} aria-label={`${isPinned(notebook.id) ? "移出快捷访问" : "加入快捷访问"}：${notebook.title}`} aria-pressed={isPinned(notebook.id)} onClick={() => togglePin(notebook.id)}><Pin size={16} /></ActionButton>
+      {releaseFeatures.documentFavorites && <ActionButton type="button" className={`notebook-overview-pin${isPinned(notebook.id) ? " is-pinned" : ""}`} title={isPinned(notebook.id) ? "移出快捷访问" : "加入快捷访问"} aria-label={`${isPinned(notebook.id) ? "移出快捷访问" : "加入快捷访问"}：${notebook.title}`} aria-pressed={isPinned(notebook.id)} onClick={() => togglePin(notebook.id)}><Pin size={16} /></ActionButton>}
     </div>;
   }
   return <DocumentShell>
@@ -56,7 +57,7 @@ export function DocumentOverviewPage() {
       <PageContainer title="在线文档" description={`${notebooks.length} 个笔记本`} actions={<>{canEdit ? <Button variant="primary" icon={<Plus size={16} />} onClick={() => setCreating(true)}>新建笔记本</Button> : null}<Link to="/documents/collections" className="workbench-more">管理笔记本</Link></>}>
 
         {notebooksQuery.isLoading ? <LoadingState label="正在加载笔记本…" variant="cards" /> : null}
-        {common.length ? <section className="notebook-overview-common" aria-label="快捷访问"><header className="workbench-section-heading"><h2>快捷访问</h2><ActionButton type="button" aria-expanded={!isCollapsed("common")} onClick={() => toggleGroup("common")}>{isCollapsed("common") ? "展开" : "收起"}</ActionButton></header>{!isCollapsed("common") ? <div className="notebook-overview-grid">{common.map((notebook) => card(notebook, true))}</div> : null}</section> : null}
+        {common.length ? (releaseFeatures.documentFavorites ? <section className="notebook-overview-common" aria-label="快捷访问"><header className="workbench-section-heading"><h2>快捷访问</h2><ActionButton type="button" aria-expanded={!isCollapsed("common")} onClick={() => toggleGroup("common")}>{isCollapsed("common") ? "展开" : "收起"}</ActionButton></header>{!isCollapsed("common") ? <div className="notebook-overview-grid">{common.map((notebook) => card(notebook, true))}</div> : null}</section> : null) : null}
         {grouped.map((group) => <section key={group.id} className="notebook-overview-group" aria-label={group.title}><header className="workbench-section-heading"><h2>{group.title}</h2></header><div className="notebook-overview-grid">{group.notebooks.map((notebook) => card(notebook))}</div></section>)}
         {!notebooksQuery.isLoading && !notebooksQuery.isError && !notebooks.length ? <div className="workbench-empty-section"><BookOpen size={28} /><h3>还没有笔记本</h3><p>创建笔记本，开始整理你的文档。</p>{canEdit ? <Button variant="secondary" onClick={() => setCreating(true)}>新建笔记本</Button> : null}</div> : null}
       </PageContainer>

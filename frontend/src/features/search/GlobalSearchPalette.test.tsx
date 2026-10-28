@@ -111,13 +111,13 @@ describe("global search palette", () => {
     const input = await openPalette(view);
     const categoryList = screen.getByRole("listbox", { name: "搜索内容类型" });
     const categories = within(categoryList).getAllByRole("option");
-    expect(categories.map(option => option.querySelector("strong")?.textContent)).toEqual(["@doc", "@notebook", "@group", "@site", "@file"]);
+    expect(categories.map(option => option.querySelector("strong")?.textContent)).toEqual(["@doc", "@notebook", "@group", "@file"]);
     expect(categories[0]).toHaveAttribute("aria-selected", "true");
     await userEvent.keyboard("{ArrowDown}");
     expect(categories[1]).toHaveAttribute("aria-selected", "true");
     await userEvent.keyboard("{End}");
-    expect(categories[4]).toHaveAttribute("aria-selected", "true");
-    expect(input).toHaveAttribute("aria-activedescendant", categories[4].id);
+    expect(categories.at(-1)!).toHaveAttribute("aria-selected", "true");
+    expect(input).toHaveAttribute("aria-activedescendant", categories.at(-1)!.id);
     await userEvent.keyboard("{Home}{Enter}");
     expect(input).toHaveValue("@doc ");
     expect(mockedSearch.calls.at(-1)?.filters).toMatchObject({ q: "", type: "document" });

@@ -1,3 +1,4 @@
+import { releaseFeatures } from "../../shared/release-features";
 import { ConfirmAction } from "../../shared/ui/ConfirmAction";
 import { DraftActions } from "../../shared/ui/DraftActions";
 import { Button } from "../../shared/ui/Button";
@@ -444,13 +445,13 @@ export function SheetWorkspace({
       </span>
       <span className="document-header-divider" aria-hidden="true" />
       {canEdit && (
-        <ShareButton
+        (releaseFeatures.documentSharing ? <ShareButton
           notebookId={sheet.collection_id}
           noteId={sheet.document_id}
           title={sheet.title}
-        />
+        /> : null)
       )}
-      <ActionButton
+      {releaseFeatures.documentCollaboration && <ActionButton
         className="document-comment-trigger"
         aria-label="评论"
         aria-expanded={commentsOpen}
@@ -458,7 +459,7 @@ export function SheetWorkspace({
       >
         <MessageSquare size={16} />
         <span>评论</span>
-      </ActionButton>
+      </ActionButton>}
       <Dropdown>
         <ActionButton aria-label="更多文档操作">
           <MoreHorizontal size={18} />
@@ -960,11 +961,11 @@ export function SheetWorkspace({
               </ActionButton>
             </header>
             <Suspense fallback={<p>正在读取评论…</p>}>
-              <DocumentComments
+              {releaseFeatures.documentCollaboration && <DocumentComments
                 noteId={sheet.document_id}
                 currentUserId={userID}
                 canManage={canEdit}
-              />
+              />}
             </Suspense>
           </section>
         ) : undefined

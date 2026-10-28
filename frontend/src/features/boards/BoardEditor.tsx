@@ -1,3 +1,4 @@
+import { releaseFeatures } from "../../shared/release-features";
 import { ConfirmAction } from "../../shared/ui/ConfirmAction";
 import { reportError } from "../../shared/api/request-feedback";
 import { DraftActions } from "../../shared/ui/DraftActions";
@@ -402,26 +403,26 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
   const actions = (
     <>
       {!embed ? pendingActions : null}
-      <ShareButton
+      {releaseFeatures.documentSharing && <ShareButton
         notebookId={board.collection_id}
         noteId={board.document_id}
         title={board.title}
-      />
-      <ActionButton
+      />}
+      {releaseFeatures.documentCollaboration && <ActionButton
         aria-label="画板评论"
         title="评论"
         aria-pressed={comments}
         onClick={() => setComments(!comments)}
       >
         <MessageSquare size={17} />
-      </ActionButton>
-      <ActionButton
+      </ActionButton>}
+      {releaseFeatures.documentCollaboration && <ActionButton
         aria-label="画板历史"
         title="历史版本"
         onClick={openHistory}
       >
         <History size={17} />
-      </ActionButton>
+      </ActionButton>}
       <ActionButton
         aria-label="画布设置"
         title="画布设置"
@@ -703,9 +704,9 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
               >
                 <Redo2 size={17} />
               </ActionButton>
-              <ActionButton aria-label="查看画板历史" onClick={openHistory}>
+              {releaseFeatures.documentCollaboration && <ActionButton aria-label="查看画板历史" onClick={openHistory}>
                 <History size={16} />
-              </ActionButton>
+              </ActionButton>}
             </Toolbar>
           </div>
           {inspector && !comments ? (
@@ -836,11 +837,11 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
               </ActionButton>
             </header>
             <Suspense fallback={<p>正在读取评论…</p>}>
-              <DocumentComments
+              {releaseFeatures.documentCollaboration && <DocumentComments
                 noteId={board.document_id}
                 currentUserId={identity.user ?? ""}
                 canManage={canEdit}
-              />
+              />}
             </Suspense>
           </section>
         ) : null}
