@@ -208,3 +208,17 @@ it('omits retired drawing payloads while copying or pasting surrounding blocks',
  expect(value.structured).not.toContain('discarded');
  expect(parseBlockClipboard(JSON.stringify({version:1,blocks:[p('before'),drawing,p('after')]}))?.blocks.map(block=>block.id)).toEqual(['before','after']);
 });
+
+it.each(['live','snapshot'])('preserves %s board bindings and excludes internal metadata in block clipboard payloads', mode => {
+ const props={board_id:'00000000-0000-4000-8000-000000000001',page_id:'00000000-0000-4000-8000-000000000002',mode,revision:mode==='snapshot'?7:null,frame_id:mode==='snapshot'?'00000000-0000-4000-8000-000000000003':null};
+ const e=open([{id:'board',type:'board',props:{...props,private_token:'synthetic-secret'},content:[],children:[]}]);
+ const data=serializeBlockClipboard(e,['board']);
+ expect(parseBlockClipboard(data.structured)?.blocks[0].props).toEqual(props);
+ expect(data.structured).not.toContain('synthetic-secret');
+});
+it('rejects an invalid board binding before cutting the original block',()=>{
+ const e=open([{id:'board',type:'board',props:{board_id:'invalid',page_id:null,mode:'live',revision:null,frame_id:null},content:[],children:[]}]);
+ const result=vi.fn();installBlockClipboard(e,result);setBlockSelection(e,['board']);const original=e.state.doc;
+ const {data,ev}=event(e,'cut');
+ expect(ev.defaultPrevented).toBe(true);expect(data.size).toBe(0);expect(e.state.doc).toBe(original);expect(result).toHaveBeenCalledWith(expect.objectContaining({ok:false}));
+});

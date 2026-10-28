@@ -7,6 +7,8 @@ import { collaborativeEditorExtensions } from "./TiptapEditor";
 import { tiptapExtensions } from "./tiptap-extensions";
 import { fromTiptapDocument, toTiptapDocument } from "./tiptap-model";
 import type { OrbisBlock, NoteBlocksV2 } from "../../content/model/blocks";
+import { blockSelectionKey } from "./blocks/block-selection";
+import { BLOCK_CLIPBOARD_MIME, installBlockClipboard, parseBlockClipboard } from "./blocks/block-clipboard";
 import { nativeBlock } from "../../content/codecs/api-content";
 
 const paragraphId = "00000000-0000-4000-8000-000000000001";
@@ -113,4 +115,46 @@ it("round-trips a deeply nested large document without duplicating ancestor cont
   const editor = open(doc);
   expect(fromTiptapDocument(editor.state.doc).blocks.map(nativeBlock)).toEqual(value.blocks.map(nativeBlock));
   expect(Y.encodeStateAsUpdate(doc).byteLength).toBeLessThan(JSON.stringify(value).length * 1.5);
+});
+
+const selectedBoard = (id: string) => ({ type: "orbisBoard", attrs: { orbisId: id, orbisProps: { board_id: paragraphId, page_id: paragraphId, mode: "live", revision: null, frame_id: null } } });
+
+it.each(["copy", "cut"])("preserves %s for a keyboard-selected collaborative board", (type) => {
+  const editor = open(seed());
+  const position = editor.state.doc.content.size;
+  editor.commands.insertContentAt(position, selectedBoard("selected-board"));
+  editor.commands.setNodeSelection(position);
+  expect(editor.state.selection).toBeInstanceOf(GapCursor);
+  expect(blockSelectionKey.getState(editor.state)?.ids).toEqual(["selected-board"]);
+  const original = editor.state.doc;
+  const values = new Map<string, string>();
+  const event = new Event(type, { bubbles: true, cancelable: true });
+  Object.defineProperty(event, "clipboardData", { value: { getData: (key: string) => values.get(key) ?? "", setData: (key: string, value: string) => values.set(key, value) } });
+  let outcome: unknown;
+  const stop = installBlockClipboard(editor, result => { outcome = result; });
+  try { editor.view.dom.dispatchEvent(event); } finally { stop(); }
+  expect(event.defaultPrevented).toBe(true);
+  expect(outcome).toMatchObject({ ok: true });
+  expect(parseBlockClipboard(values.get(BLOCK_CLIPBOARD_MIME)!)?.blocks).toMatchObject([{ id: "selected-board", type: "board", props: { board_id: paragraphId, page_id: paragraphId } }]);
+  if (type === "copy") expect(editor.state.doc.eq(original)).toBe(true);
+  else expect(fromTiptapDocument(editor.state.doc).blocks.some(block => block.id === "selected-board")).toBe(false);
+});
+
+it.each(["Backspace", "Delete"])("keeps directional %s behavior at a genuine gap between boards", key => {
+  const editor = open(seed());
+  const first = editor.state.doc.content.size;
+  editor.commands.insertContentAt(first, [selectedBoard("previous-board"), selectedBoard("following-board")]);
+  const between = first + 1;
+  // Selecting a board first also verifies that moving to an ordinary gap
+  // clears the converted selection and its clipboard block IDs.
+  editor.commands.setNodeSelection(between);
+  editor.view.dispatch(editor.state.tr.setSelection(new GapCursor(editor.state.doc.resolve(between))));
+  expect(blockSelectionKey.getState(editor.state)?.ids).toEqual([]);
+  editor.view.dom.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }));
+  const retained = key === "Backspace" ? "following-board" : "previous-board";
+  expect(fromTiptapDocument(editor.state.doc).blocks.some(block => block.id === retained)).toBe(true);
+  editor.view.dom.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }));
+  const ids = fromTiptapDocument(editor.state.doc).blocks.map(block => block.id);
+  expect(ids).toContain(retained);
+  expect(ids).not.toContain(key === "Backspace" ? "previous-board" : "following-board");
 });

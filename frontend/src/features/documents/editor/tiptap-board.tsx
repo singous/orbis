@@ -1,8 +1,9 @@
 import { ySyncPluginKey } from "y-prosemirror";
 import { Node } from "@tiptap/core";
-import { NodeSelection, Plugin, TextSelection } from "@tiptap/pm/state";
+import { NodeSelection, Plugin, PluginKey, TextSelection } from "@tiptap/pm/state";
 import { GapCursor } from "@tiptap/pm/gapcursor";
 import type { EditorView } from "@tiptap/pm/view";
+import { blockSelectionKey } from "./blocks/block-selection";
 import { allowBoardRemoval } from "./blocks/board-removal";
 import {
   NodeViewWrapper,
@@ -43,10 +44,12 @@ function View({ node, updateAttributes, editor, getPos }: NodeViewProps) {
     </NodeViewWrapper>
   );
 }
+const convertedBoardSelectionKey = new PluginKey<string | null>("orbis-converted-board-selection");
 const hidden = { default: null, parseHTML: () => null, renderHTML: () => ({}) };
 function typeAfterBoard(view: EditorView, text: string) {
   const { selection, schema } = view.state;
-  const board = selection instanceof NodeSelection ? selection.node : selection instanceof GapCursor ? selection.$from.nodeAfter : null;
+  const converted = convertedBoardSelectionKey.getState(view.state);
+  const board = selection instanceof NodeSelection ? selection.node : selection instanceof GapCursor && converted && selection.$from.nodeAfter?.attrs.orbisId === converted ? selection.$from.nodeAfter : null;
   if (board?.type.name !== "orbisBoard") return false;
   const after = selection.from + board.nodeSize;
   const boundary = view.state.doc.resolve(after);
@@ -61,18 +64,43 @@ export const OrbisBoard = Node.create({
   name: "orbisBoard",
   addProseMirrorPlugins() {
     const editor = this.editor;
-    return [new Plugin({
+    return [new Plugin<string | null>({
       filterTransaction: transaction => allowBoardRemoval(editor, transaction),
-      // A boundary bookmark survives remote removal of the selected board.
-      // y-prosemirror restores node selections without checking node existence.
-      appendTransaction: (_transactions, _oldState, state) => ySyncPluginKey.getState(state) && state.selection instanceof NodeSelection && state.selection.node.type.name === "orbisBoard"
-        ? state.tr.setSelection(new GapCursor(state.selection.$from)).setMeta("addToHistory", false)
-        : null,
+      key: convertedBoardSelectionKey,
+      state: {
+        init: () => null,
+        apply: (transaction, current) => {
+          const converted = transaction.getMeta(convertedBoardSelectionKey) as string | null | undefined;
+          if (converted !== undefined) return converted;
+          if (transaction.selectionSet && !transaction.getMeta(ySyncPluginKey)?.isChangeOrigin) return null;
+          const selected = transaction.getMeta(blockSelectionKey) as { ids: string[] } | undefined;
+          return selected && current && !selected.ids.includes(current) ? null : current;
+        },
+      },
+      // Yjs needs a boundary bookmark, while the block selection preserves
+      // clipboard and deletion semantics for the explicitly selected board.
+      appendTransaction: (transactions, oldState, state) => {
+        if (ySyncPluginKey.getState(state) && state.selection instanceof NodeSelection && state.selection.node.type.name === "orbisBoard") {
+          const id = String(state.selection.node.attrs.orbisId);
+          return state.tr.setSelection(new GapCursor(state.selection.$from))
+            .setMeta(convertedBoardSelectionKey, id)
+            .setMeta(blockSelectionKey, { ids: [id], anchorId: id, focusId: id })
+            .setMeta("addToHistory", false);
+        }
+        const previous = convertedBoardSelectionKey.getState(oldState);
+        const selected = blockSelectionKey.getState(state)?.ids;
+        // A real caret movement ends the converted selection. In particular,
+        // an ordinary gap before another board must retain backward deletion.
+        if (previous && !convertedBoardSelectionKey.getState(state) && selected?.length === 1 && selected[0] === previous && transactions.some(transaction => transaction.selectionSet && !transaction.getMeta(ySyncPluginKey)?.isChangeOrigin)) {
+          return state.tr.setMeta(blockSelectionKey, { ids: [], anchorId: null, focusId: null }).setMeta("addToHistory", false);
+        }
+        return null;
+      },
       props: {
         handleTextInput: (view, _from, _to, text) => typeAfterBoard(view, text),
         handleKeyDown: (view, event) => {
           if (!view.editable || event.isComposing || event.ctrlKey || event.metaKey || event.altKey) return false;
-          if ((event.key === "Delete" || event.key === "Backspace") && view.state.selection instanceof GapCursor && view.state.selection.$from.nodeAfter?.type.name === "orbisBoard") {
+          if ((event.key === "Delete" || event.key === "Backspace") && view.state.selection instanceof GapCursor && view.state.selection.$from.nodeAfter?.type.name === "orbisBoard" && convertedBoardSelectionKey.getState(view.state) && view.state.selection.$from.nodeAfter.attrs.orbisId === convertedBoardSelectionKey.getState(view.state)) {
             const from = view.state.selection.from;
             view.dispatch(view.state.tr.delete(from, from + view.state.selection.$from.nodeAfter.nodeSize));
             return true;
