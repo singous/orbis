@@ -27,10 +27,11 @@ type plan struct {
 	view           sheet.View
 }
 type cursor struct {
-	Query   string `json:"q"`
-	Version int64  `json:"v"`
-	Keys    []any  `json:"k"`
-	ID      string `json:"id"`
+	OrderRevision int64  `json:"o,omitempty"`
+	Query         string `json:"q"`
+	Version       int64  `json:"v"`
+	Keys          []any  `json:"k"`
+	ID            string `json:"id"`
 }
 
 func selectView(t sheet.Sheet, id string) (sheet.View, error) {
@@ -165,7 +166,7 @@ func applyCursor(p *plan, t sheet.Sheet, q sheet.Query) error {
 		return sheet.Invalid("分页游标无效")
 	}
 	var c cursor
-	if err = json.Unmarshal(raw, &c); err != nil || c.Query != fingerprint(t, q) || c.Version != t.Version || !sheet.ValidID(c.ID) || len(c.Keys) != len(p.order) {
+	if err = json.Unmarshal(raw, &c); err != nil || c.Query != fingerprint(t, q) || c.Version != t.Version || c.OrderRevision != t.OrderRevision || !sheet.ValidID(c.ID) || len(c.Keys) != len(p.order) {
 		return sheet.Invalid("分页已过期，请刷新列表")
 	}
 	for i, key := range c.Keys {
@@ -249,7 +250,7 @@ func nextCursor(p plan, t sheet.Sheet, q sheet.Query, row recordRow) string {
 		}
 		keys = append(keys, value)
 	}
-	raw, _ := json.Marshal(cursor{Query: fingerprint(t, q), Version: t.Version, Keys: keys, ID: row.ID})
+	raw, _ := json.Marshal(cursor{OrderRevision: t.OrderRevision, Query: fingerprint(t, q), Version: t.Version, Keys: keys, ID: row.ID})
 	return base64.RawURLEncoding.EncodeToString(raw)
 }
 func (r *Repository) Records(ctx context.Context, sc sheet.Scope, q sheet.Query) (sheet.Page, error) {

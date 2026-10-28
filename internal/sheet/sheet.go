@@ -66,6 +66,7 @@ type ListPage struct {
 	NextCursor string    `json:"next_cursor"`
 }
 type Sheet struct {
+	OrderRevision int64      `json:"-"`
 	DocumentID    string     `json:"document_id"`
 	SchemaVersion int64      `json:"schema_version"`
 	DataRevision  int64      `json:"data_revision"`

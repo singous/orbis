@@ -84,5 +84,5 @@ func placeRecords(tx *gorm.DB, sheetID string, patches []sheet.Patch, result []s
 	for i := range result {
 		result[i].Position = positions[result[i].ID]
 	}
-	return nil
+	return tx.Exec("UPDATE sheet_activity SET order_revision=order_revision+1 WHERE sheet_id=?", sheetID).Error
 }

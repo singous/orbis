@@ -34337,7 +34337,8 @@
             "in": "query",
             "schema": {
               "type": "string"
-            }
+            },
+            "description": "Opaque cursor bound to the sheet, query, schema metadata and record ordering revision. Relative placement invalidates prior cursors with 422; restart from the first page. Ordinary record edits retain cursor compatibility."
           },
           {
             "name": "search",

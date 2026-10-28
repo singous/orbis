@@ -139,6 +139,7 @@ export function SheetWorkspaceMenu({ menu, busy, fieldCount, visibleFieldCount, 
               disabled={
                 busy ||
                 (item.id === "group" && menu.field.kind !== "select") ||
+                (item.id === "filter" && (KINDS[menu.field.kind].system || KINDS[menu.field.kind].multiple)) ||
                 (["asc", "desc", "duplicates"].includes(item.id) &&
                   KINDS[menu.field.kind].multiple) ||
                 (item.id === "duplicates" &&

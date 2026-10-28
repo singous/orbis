@@ -1,6 +1,8 @@
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
+import { ViewSettings } from "./ViewSettings";
+import { SheetWorkspaceMenu } from "./SheetWorkspaceMenu";
 import { FieldManager } from "./FieldManager";
 import { newField, type View } from "./model";
 afterEach(cleanup);
@@ -26,4 +28,13 @@ it("preserves one visible field and leaves the draft open on save failure", asyn
   await waitFor(() => expect(save).toHaveBeenCalledOnce());
   expect(close).not.toHaveBeenCalled();
   expect(screen.getByRole("dialog", { name: "字段管理" })).toBeVisible();
+});
+
+it("does not create unsupported system-column filters through either entry point", () => {
+  const system = { ...newField("created_at"), name: "Created" };
+  const ui = render(<ViewSettings mode="filter" initialFieldID={system.id} fields={[...fields, system]} view={view} anchor={{ left: 0, top: 0 }} onSave={vi.fn()} onClose={vi.fn()} />);
+  expect(screen.queryByRole("button", { name: /筛选字段 1/ })).not.toBeInTheDocument();
+  ui.unmount();
+  render(<SheetWorkspaceMenu menu={{ kind: "field", field: system, anchor: { left: 0, top: 0 } }} busy={false} fieldCount={4} visibleFieldCount={3} viewCount={1} onClose={vi.fn()} onRename={vi.fn()} onDuplicate={vi.fn()} onDelete={vi.fn()} onAdd={vi.fn()} onColor={vi.fn()} onFieldAction={vi.fn()} />);
+  expect(screen.getByRole("menuitem", { name: "按本列筛选" })).toBeDisabled();
 });

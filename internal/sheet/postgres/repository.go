@@ -81,11 +81,12 @@ func get(ctx context.Context, tx *gorm.DB, sc sheet.Scope, lock string) (sheet.S
 	if err != nil {
 		return t, err
 	}
-	var activity struct{ Revision int64 }
+	var activity struct{ Revision, OrderRevision int64 }
 	if err := tx.WithContext(ctx).Table("sheet_activity").Where("sheet_id=?", row.ID).Take(&activity).Error; err != nil {
 		return t, err
 	}
 	t.DataRevision = activity.Revision
+	t.OrderRevision = activity.OrderRevision
 	return t, nil
 }
 func (r *Repository) Get(ctx context.Context, sc sheet.Scope) (sheet.Sheet, error) {

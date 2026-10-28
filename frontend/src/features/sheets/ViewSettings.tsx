@@ -37,7 +37,8 @@ export function ViewSettings({
 }) {
   const [draft, setDraft] = useState(() => {
     const initial = structuredClone(view);
-    if (mode === "filter" && initialFieldID && !initial.filters.some(filter => filter.field_id === initialFieldID)) initial.filters.push({ field_id: initialFieldID, operator: "eq", value: null });
+    const field = fields.find(field => field.id === initialFieldID);
+    if (mode === "filter" && field && !KINDS[field.kind].system && !KINDS[field.kind].multiple && initial.filters.length < 20 && !initial.filters.some(filter => filter.field_id === initialFieldID)) initial.filters.push({ field_id: field.id, operator: "eq", value: null });
     return initial;
   }),
     [busy, setBusy] = useState(false);

@@ -4,6 +4,7 @@ package sheet_test
 
 import (
 	"github.com/google/uuid"
+	"net/url"
 	"orbis.local/orbis/internal/sheet"
 	"orbis.local/orbis/tests/testenv"
 	"sync"
@@ -90,5 +91,32 @@ func TestRelativeRecordPlacementSerializesConcurrentWriters(t *testing.T) {
 			t.Fatal("concurrent placement produced tied positions")
 		}
 		positions[row.Position] = true
+	}
+}
+
+func TestRelativeRecordPlacementInvalidatesOldCursorsOnlyAfterReordering(t *testing.T) {
+	f := setup(t)
+	// Ensure pre-reorder positions are larger than the sheet's own record count.
+	if err := f.env.DB.Exec("SELECT setval(pg_get_serial_sequence('sheet_records','position'),1000)").Error; err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 3; i++ {
+		f.change(t, sheet.Patch{ID: uuid.NewString()})
+	}
+	rows := f.page(t, "").Items
+	first := f.page(t, "?limit=1")
+	if first.NextCursor == "" {
+		t.Fatal("expected a cursor")
+	}
+	f.change(t, sheet.Patch{ID: rows[0].ID, Version: rows[0].Version, Values: map[string]any{f.table.Definition.Fields[0].ID: "Edited"}})
+	// Ordinary edits retain the existing pagination contract.
+	if len(f.page(t, "?limit=1&cursor="+url.QueryEscape(first.NextCursor)).Items) != 1 {
+		t.Fatal("ordinary edit invalidated pagination")
+	}
+	f.change(t, sheet.Patch{ID: rows[2].ID, Version: rows[2].Version, BeforeID: rows[0].ID})
+	f.env.Call(t, "GET", f.path+"/records?limit=1&cursor="+url.QueryEscape(first.NextCursor), f.token, nil, 422)
+	fresh := f.page(t, "?limit=1")
+	if fresh.Items[0].ID != rows[2].ID || len(f.page(t, "?limit=1&cursor="+url.QueryEscape(fresh.NextCursor)).Items) != 1 {
+		t.Fatal("fresh cursor did not resume the reordered records")
 	}
 }
