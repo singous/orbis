@@ -133,6 +133,9 @@ function ColumnRecords({
     [cursor, setCursor] = useState(""),
     [previous, setPrevious] = useState<string[]>([]),
     scroll = useRef<HTMLDivElement>(null);
+  const cursorScope = JSON.stringify([view.id, c.meta.data!.version, c.meta.data!.order_revision ?? 0, c.search]);
+  const previousScope = useRef(cursorScope);
+  const currentCursor = previousScope.current === cursorScope ? cursor : "";
   const query = useQuery({
     queryKey: [
       "sheets",
@@ -141,12 +144,13 @@ function ColumnRecords({
       "board",
       view.id,
       c.meta.data!.version,
+      c.meta.data!.order_revision ?? 0,
       group.id,
       c.search,
-      cursor,
+      currentCursor,
     ],
     queryFn: ({ signal }) =>
-      c.api.records(id, view.id, cursor, c.search, group.id, signal),
+      c.api.records(id, view.id, currentCursor, c.search, group.id, signal),
     gcTime: 0,
   });
   const rows = query.data?.items ?? [];
@@ -158,9 +162,10 @@ function ColumnRecords({
     overscan: 3,
   });
   useEffect(() => {
+    previousScope.current = cursorScope;
     setCursor("");
     setPrevious([]);
-  }, [view.id, c.meta.data!.version, c.search]);
+  }, [cursorScope]);
   useEffect(() => {
     scroll.current?.scrollTo({ top: 0 });
   }, [cursor]);
