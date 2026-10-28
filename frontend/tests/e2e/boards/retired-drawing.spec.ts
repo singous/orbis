@@ -127,14 +127,12 @@ test("opening retired drawing content removes only the old blocks and inserts na
   await page.keyboard.press("Enter");
   await page.keyboard.type("/board");
   await page.getByRole("option", { name: "画板", exact: true }).click();
-  await page.getByRole("button", { name: "选择画板", exact: true }).click();
-  await page.getByRole("button", { name: "新版原生画板", exact: true }).click();
-  await page.getByRole("button", { name: "插入画板", exact: true }).click();
+  await expect(page.getByRole("button", { name: /选择画板|更换引用/ })).toHaveCount(0);
   await expect
     .poll(async () =>
       (await content()).blocks.some(
         (block: any) =>
-          block.type === "board" && block.props.board_id === native.id,
+          block.type === "board" && Boolean(block.props.board_id) && block.props.board_id !== native.id,
       ),
     )
     .toBe(true);

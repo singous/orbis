@@ -1,3 +1,4 @@
+import { releaseFeatures } from "../../../src/shared/release-features";
 import { expect, test, type APIRequestContext, type Browser, type Page } from "@playwright/test";
 import { createCollection, createDocument, openWithSession, ownerSession, responseData, sessionHeaders, workspacePath, type TestSession } from "../helpers/api-fixtures";
 
@@ -73,6 +74,7 @@ async function localOperations(page: Page, id: string): Promise<string[]> {
 // Real WebSocket transport, persisted Yjs state, Go transactions and the actual
 // editor are all exercised here; only disposable synthetic accounts are used.
 test("named document versions fix content and restore into an editable collaboration session", async ({ page, request }, testInfo) => {
+  test.skip(!releaseFeatures.documentCollaboration, "Version-history entry points are deferred in this release; API and restoration coverage remains active.");
   const { session, document, blocks } = await fixture(request, "文档版本管理", ["Version baseline"]);
   await openWithSession(page, session, `/documents/${document.id}`);
   await expect(page.locator(".ProseMirror")).toBeVisible();
@@ -259,6 +261,7 @@ test("a committed update retries its original operation ID after a dropped WebSo
 });
 
 test("explicit history restore opens the new epoch and remains editable", async ({ page, request }) => {
+  test.skip(!releaseFeatures.documentCollaboration, "The history-panel entry is deferred; external restore and recovery journeys remain active.");
   const { session, document, blocks } = await fixture(request, "恢复历史协作", ["Historical body"]);
   const source = await content(request, session, document.id);
   await openWithSession(page, session, `/documents/${document.id}`);
