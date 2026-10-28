@@ -896,7 +896,7 @@ export function SheetGrid({
                       editing?.row.id === row.id &&
                       editing.field.id === field.id;
                   const inRange = Boolean(
-                      bounds &&
+                      !selected.size && bounds &&
                         virtual.index >= bounds.top &&
                         virtual.index <= bounds.bottom &&
                         col.index >= bounds.left &&
@@ -905,7 +905,7 @@ export function SheetGrid({
                     // The active cell keeps its content readable; only the
                     // surrounding range carries the selection tint.
                     isActive =
-                      end?.row === virtual.index && end.col === col.index;
+                      !selected.size && end?.row === virtual.index && end.col === col.index;
                   return (
                     <div
                       role="gridcell"
@@ -1080,7 +1080,7 @@ export function SheetGrid({
           {total != null ? `${total} 条记录` : "正在读取记录数…"}
         </span>
         <span className="sheet-muted">
-          {bounds
+          {selected.size ? `已选择 ${selected.size} 条记录` : bounds
             ? `已选择 ${(bounds.bottom - bounds.top + 1) * (bounds.right - bounds.left + 1)} 个单元格`
             : "双击单元格编辑 · 拖动选择 · 支持复制粘贴"}
         </span>

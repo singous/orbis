@@ -102,6 +102,7 @@ test("row gutter, drag ordering and single or multi-record context actions persi
   await row("Gamma").getByRole("checkbox").check();
   await row("Beta edited").getByRole("checkbox").check();
   await expect(row("Gamma")).toHaveCSS("background-color", "rgb(222, 243, 243)");
+  await expect(grid.locator(".sheet-cell.active")).toHaveCount(0);
   await row("Gamma").getByRole("gridcell").first().click({ button: "right" });
   const menu = page.getByRole("menu", { name: "多选记录操作" });
   await expect(menu.getByRole("menuitem")).toHaveCount(3);

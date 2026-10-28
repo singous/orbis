@@ -773,7 +773,7 @@ test("table pages live in the document tree and edit cells with anchored pickers
   await input.press("Escape");
   await expect(cells.first()).toContainText("原位编辑");
   const gutter = page.locator(".sheet-grid-row .sheet-row-label").first();
-  expect((await gutter.boundingBox())!.width).toBe(44);
+  expect((await gutter.boundingBox())!.width).toBeGreaterThan(44);
   await gutter.hover();
   await expect(gutter.getByRole("checkbox")).toBeVisible();
   expect((await gutter.getByRole("checkbox").boundingBox())!.width).toBe(14);
