@@ -89,10 +89,12 @@ type Record struct {
 	UpdatedAtMS int64          `json:"updated_at_ms"`
 }
 type Patch struct {
-	ID      string         `json:"id"`
-	Version int64          `json:"version"`
-	Values  map[string]any `json:"values"`
-	Delete  bool           `json:"delete,omitempty"`
+	ID       string         `json:"id"`
+	Version  int64          `json:"version"`
+	Values   map[string]any `json:"values"`
+	Delete   bool           `json:"delete,omitempty"`
+	BeforeID string         `json:"before_id,omitempty"`
+	AfterID  string         `json:"after_id,omitempty"`
 }
 type Changes struct {
 	OperationID   string  `json:"operation_id"`

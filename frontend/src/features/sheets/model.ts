@@ -135,6 +135,8 @@ export type Patch = {
   version: number;
   values?: Record<string, Value>;
   delete?: boolean;
+  before_id?: string;
+  after_id?: string;
 };
 export type Changes = {
   operation_id: string;

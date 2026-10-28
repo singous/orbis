@@ -55111,6 +55111,16 @@
           },
           "delete": {
             "type": "boolean"
+          },
+          "before_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Place this record immediately before an existing record in the same sheet. Mutually exclusive with after_id. The anchor cannot be modified in the same batch. Placements sharing an anchor retain request order. Omit both fields to preserve existing order or append new records."
+          },
+          "after_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Place this record immediately after an existing record in the same sheet. Mutually exclusive with before_id. The anchor cannot be modified in the same batch. Placements sharing an anchor retain request order. Ordering and the idempotent receipt are committed atomically."
           }
         },
         "required": [
