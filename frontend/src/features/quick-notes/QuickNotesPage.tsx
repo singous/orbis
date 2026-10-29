@@ -3,7 +3,9 @@ import { newUUID } from "../../shared/ids";
 import { useEffect, useRef, useState } from "react";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useStore } from "zustand";
-import { StickyNote, Tags, LayoutGrid, List, Search } from "lucide-react";
+import { StickyNote, Tags, LayoutGrid, List } from "lucide-react";
+import { ToggleButton } from "@heroui/react/toggle-button";
+import { ToggleButtonGroup } from "@heroui/react/toggle-button-group";
 import { authStore, getAuthSessionKey } from "../../shared/auth/auth-store";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { ApiError } from "../../shared/api/api-client";
@@ -27,6 +29,7 @@ import { QuickNoteTags } from "./QuickNoteTags";
 import "./quick-notes.css";
 
 const noteTime = new Intl.DateTimeFormat("zh-CN", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
+const ALL_TAGS_KEY = "all";
 
 function NoteCard({ note, tags, canEdit, disabled, onEdit, onPatch }: { note: QuickNote; tags: QuickNoteTag[]; canEdit: boolean; disabled: boolean; onEdit: () => void; onPatch: (change: { is_pinned?: boolean; is_deleted?: boolean }) => void }) {
   const [expanded, setExpanded] = useState(false);
@@ -88,8 +91,17 @@ function QuickNotesWorkspace() {
       <div className="quick-notes-layout">
         <QuickNoteComposer userId={user.id} workspaceId={workspace.id} tags={tagItems} canEdit={canEdit} expanded={expanded} onToggleExpanded={() => setExpanded(value => !value)} onManageTags={() => setTagManager(true)} onSaved={() => { refresh(); setFilter(value => ({ ...value, q: "", tag: "", deleted: false })); setSearch(""); }} />
         <section className="quick-notes-feed" aria-label="历史记录">
-          <div className="quick-notes-filters"><div className="quick-notes-search"><Search size={16} aria-hidden="true" /><TextInput aria-label="搜索随手记" placeholder="搜索记录…" maxLength={200} value={search} onChange={event => setSearch(event.target.value)} /></div><SelectField aria-label="记录排序" density="compact" value={filter.sort} options={[{ value: "updated", label: "最近更新" }, { value: "created", label: "最近创建" }]} onChange={value => setFilter(current => ({ ...current, sort: value as NoteFilter["sort"] }))} /><ActionButton type="button" aria-label={filter.deleted ? "返回全部记录" : "查看回收站"} title={filter.deleted ? "返回全部记录" : "查看回收站"} aria-pressed={filter.deleted} onClick={() => setFilter(current => ({ ...current, deleted: !current.deleted, tag: "" }))}><Trash2 size={17} /></ActionButton></div>
-          <div className="quick-notes-tag-filters" aria-label="按标签筛选"><ActionButton type="button" aria-pressed={!filter.tag} onClick={() => chooseTag("")}>{filter.deleted ? "回收站" : "全部"} {summary.data ? `(${filter.deleted ? summary.data.deleted : summary.data.total})` : ""}</ActionButton>{!filter.deleted ? <><ActionButton type="button" aria-pressed={filter.tag === "untagged"} onClick={() => chooseTag("untagged")}>无标签 {summary.data ? `(${summary.data.untagged})` : ""}</ActionButton>{tagItems.map(tag => <ActionButton key={tag.id} type="button" aria-pressed={filter.tag === tag.id} onClick={() => chooseTag(tag.id)}>{tag.name} ({tag.count})</ActionButton>)}</> : null}{canEdit ? <ActionButton type="button" aria-label="管理标签" title="管理标签" onClick={() => setTagManager(true)}><Tags size={16} /></ActionButton> : null}</div>
+          <div className="quick-notes-filters"><div className="quick-notes-search"><TextInput aria-label="搜索随手记" placeholder="搜索记录…" maxLength={200} value={search} onChange={event => setSearch(event.target.value)} /></div><SelectField aria-label="记录排序" density="compact" value={filter.sort} options={[{ value: "updated", label: "最近更新" }, { value: "created", label: "最近创建" }]} onChange={value => setFilter(current => ({ ...current, sort: value as NoteFilter["sort"] }))} /><ActionButton type="button" aria-label={filter.deleted ? "返回全部记录" : "查看回收站"} title={filter.deleted ? "返回全部记录" : "查看回收站"} aria-pressed={filter.deleted} onClick={() => setFilter(current => ({ ...current, deleted: !current.deleted, tag: "" }))}><Trash2 size={17} /></ActionButton></div>
+          <div className="quick-notes-tag-filters">
+            <ToggleButtonGroup className="quick-notes-tag-toggle-group" aria-label="按标签筛选" isDetached size="sm" selectionMode="single" disallowEmptySelection selectedKeys={[filter.tag || ALL_TAGS_KEY]} onSelectionChange={keys => {
+              const selected = keys.values().next().value;
+              if (typeof selected === "string") chooseTag(selected === ALL_TAGS_KEY ? "" : selected);
+            }}>
+              <ToggleButton id={ALL_TAGS_KEY}>{filter.deleted ? "回收站" : "全部"} {summary.data ? `(${filter.deleted ? summary.data.deleted : summary.data.total})` : ""}</ToggleButton>
+              {!filter.deleted && tagItems.map(tag => <ToggleButton key={tag.id} id={tag.id}>{tag.name} ({tag.count})</ToggleButton>)}
+            </ToggleButtonGroup>
+            {canEdit ? <ActionButton className="quick-notes-manage-tags" type="button" aria-label="管理标签" title="管理标签" onClick={() => setTagManager(true)}><Tags size={16} /></ActionButton> : null}
+          </div>
 
           {notes.isPending ? <LoadingState label="正在加载随手记…" variant="cards" /> : null}
           {!notes.isPending && !notes.isError && !items.length ? <div className="quick-notes-empty"><StickyNote size={36} /><h2>{filter.deleted ? "回收站是空的" : filter.q || filter.tag ? "没有找到匹配的记录" : "记下第一个想法"}</h2><p>{filter.deleted ? "移入回收站的记录可以在这里恢复。" : filter.q || filter.tag ? "试试其他关键词或标签。" : "一句灵感、一段代码、一张图片，都可以从这里开始。"}</p></div> : null}
