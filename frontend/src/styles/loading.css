@@ -15,6 +15,19 @@
 @media (max-width: 850px) { .loading-layout--cards { grid-template-columns: minmax(0, 1fr); } }
 @media (prefers-reduced-motion: reduce) { .loading-state .skeleton, .loading-state .spinner { animation: none; } }
 .action-pending-spinner { vertical-align: middle; margin-inline-end: 8px; }
+.workspace-startup-rail { gap: var(--orbis-space-4); }
+.workspace-startup-icon { width: var(--orbis-control-compact-height); height: var(--orbis-control-compact-height); flex: none; border-radius: var(--radius); }
+.workspace-startup-rail .workspace-startup-icon:first-child { margin-bottom: var(--orbis-space-6); }
+.workspace-startup-sidebar { padding: var(--orbis-space-4) var(--orbis-space-3); gap: var(--orbis-space-6); }
+.workspace-startup .workspace-startup-toolbar { display: none; }
+.workspace-loading-search { height: 46px; border-radius: 12px; }
+.workspace-loading-welcome { gap: var(--orbis-space-6); }
+.workspace-loading-title { height: 44px; width: 70%; border-radius: var(--radius); }
+.workspace-loading-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--orbis-space-6); margin-top: auto; }
+.workspace-loading-stat { height: 56px; border-radius: var(--radius); }
+.workspace-loading-panel { display: grid; gap: var(--orbis-space-6); min-height: 240px; }
+@media (max-width: 767px) { .workspace-startup .workspace-startup-toolbar { display: flex; } }
 @media (prefers-reduced-motion: reduce) {
   .ui-button .spinner, .orbis-action-button .spinner, .workspace-shell .animate-spin { animation: none; }
+  .workspace-startup .skeleton, .workspace-loading-home .skeleton { animation: none; }
 }
