@@ -5,7 +5,7 @@ import { ApiError, apiBlobRequest, apiRequest, workspacePath } from "../../share
 import { documentGroupSchema, nativeNoteSchema, notebookSchema, noteSchema, pageDataSchema, type DocumentGroup, type Notebook, type NotebookIconValue, type Note, type NoteTreeItem, type PageData } from "../../shared/api/schemas";
 import { authRequestOptions, type AuthRequestOptions } from "../../shared/auth/use-auth-request";
 export type ResourceStatus = "active" | "archived";
-export type CreateNotePayload = { notebook_id: string; title: string; parent_id: string | null; sort_order: number };
+export type CreateNotePayload = { notebook_id: string; title: string; parent_id: string | null; sort_order?: number };
 export type NoteOrderPayload = { parent_id: string | null; expected_note_ids: string[]; note_ids: string[]; expected_directory_version: number };
 const CATALOG_PAGE_SIZE = 100;
 const MAX_CATALOG_PAGES = 100;
