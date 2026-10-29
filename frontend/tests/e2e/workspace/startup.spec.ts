@@ -13,12 +13,15 @@ test("cold startup reserves workspace geometry and later routes preserve the mou
     await expect(placeholder.locator(".workspace-main-navigation")).toBeVisible();
     await expect(placeholder.locator(".workspace-sidebar")).toHaveCount(0);
     await expect(placeholder.locator(".workspace-startup-toolbar")).not.toBeVisible();
-    const content = await placeholder.locator(".page-container").boundingBox();
+    const content = await placeholder.locator(".home-page").boundingBox();
     expect(content!.x).toBeGreaterThan(50);
+    await expect(placeholder.locator(".home-grid > .home-card")).toHaveCount(4);
+    expect(await placeholder.locator(".home-grid").evaluate(node => getComputedStyle(node).gridTemplateColumns.split(" ").length)).toBe(2);
     await page.screenshot({ path: testInfo.outputPath("startup-desktop.png"), animations: "disabled" });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.emulateMedia({ reducedMotion: "reduce" });
     await expect(placeholder.locator(".workspace-startup-toolbar")).toBeVisible();
+    expect(await placeholder.locator(".home-grid").evaluate(node => getComputedStyle(node).gridTemplateColumns.split(" ").length)).toBe(1);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     expect(await placeholder.locator(".skeleton").first().evaluate(node => getComputedStyle(node).animationName)).toBe("none");
     await page.screenshot({ path: testInfo.outputPath("startup-mobile.png"), animations: "disabled" });
