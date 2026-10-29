@@ -23,7 +23,7 @@ it.each([["web", false], ["desktop", false], ["web", true]] as const)("preserves
   function LoadedPage() { return <WorkspaceShell><h1>页面加载完成</h1></WorkspaceShell>; }
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(<QueryClientProvider client={client}><MemoryRouter initialEntries={["/home"]}><WorkspaceRoute><Page /></WorkspaceRoute></MemoryRouter></QueryClientProvider>);
-  await screen.findByRole("heading", { name: "工作空间" });
+  await screen.findByRole("status", { name: "正在打开首页…" });
   const name = surface === "web" ? "搜索" : "全局搜索";
   const user = userEvent.setup();
   if (compact) await user.click(screen.getByRole("button", { name: "打开主导航" }));

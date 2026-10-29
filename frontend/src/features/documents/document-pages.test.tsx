@@ -436,7 +436,7 @@ describe("document function pages", () => {
     await renderRoute(path);
     expect(await screen.findByRole("heading", { name: "首页", level: 1 })).toBeVisible();
     expect(window.location.pathname).toBe("/home");
-    const rail = screen.getByRole("navigation", { name: "业务板块" });
+    const rail = await screen.findByRole("navigation", { name: "业务板块" });
     expect(within(rail).getByRole("link", { name: "首页" })).toHaveAttribute("aria-current", "page");
     expect(within(rail).getByRole("link", { name: "首页" })).toHaveAttribute("href", "/home");
     expect(screen.getByRole("button", { name: "切换工作空间" })).toBeInTheDocument();
