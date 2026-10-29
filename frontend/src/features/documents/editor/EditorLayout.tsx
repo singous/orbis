@@ -23,6 +23,7 @@ export class EditorOutlineStore {
   setRemote(headings: IndexedHeading[], boundary: number) { this.#remote = headings; this.#boundary = boundary; this.#publish(); }
   setBoundary(boundary: number) { this.#boundary = boundary; }
   setReadState(states: ReadonlyMap<string,BlockLoadState>) { this.#states=states; }
+  isPayloadLoaded(id: string) { return this.#states.get(id)?.payload_loaded !== false; }
   setSourceRoots(roots: OrbisBlock[],firstPosition=0) {
     for(const [index,root] of roots.entries())this.#sourceRoots.set(firstPosition+index,root.id);
   }
@@ -90,7 +91,7 @@ export function EditorLayout({ outlineStore, children, loadOutlineContent }: { o
     const layout = layoutRef.current;
     if (!layout) return;
     try {
-      if (!layout.querySelector(`[data-orbis-block-id="${CSS.escape(id)}"]`) && loadOutlineContent) {
+      if ((!outlineStore.isPayloadLoaded(id) || !layout.querySelector(`[data-orbis-block-id="${CSS.escape(id)}"]`)) && loadOutlineContent) {
         setLoading(true);
         await loadOutlineContent();
       }

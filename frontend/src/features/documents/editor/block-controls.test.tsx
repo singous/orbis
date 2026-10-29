@@ -208,7 +208,8 @@ it('navigates from the outline to the heading and repeats navigation without cha
  const heading:NoteBlocksV2={...blocks,blocks:[{...blocks.blocks[0],type:'heading',props:{level:2}},blocks.blocks[1]]};
  const store=new EditorOutlineStore();store.update(heading);
  const scroll=vi.fn();
- const {container}=render(<EditorLayout outlineStore={store}><TiptapEditor noteId="outline-document" blocks={heading} onChange={()=>{}}/></EditorLayout>);
+ const load=vi.fn(async()=>{});
+ const {container}=render(<EditorLayout outlineStore={store} loadOutlineContent={load}><TiptapEditor noteId="outline-document" blocks={heading} onChange={()=>{}}/></EditorLayout>);
  const node=container.querySelector('.ProseMirror h2')!;
  Object.defineProperty(node,'scrollIntoView',{configurable:true,value:scroll});
  const editor=(container.querySelector('.ProseMirror') as HTMLElement & {editor:import('@tiptap/core').Editor}).editor;
@@ -220,6 +221,38 @@ it('navigates from the outline to the heading and repeats navigation without cha
  fireEvent.click(link);
  await waitFor(()=>expect(scroll).toHaveBeenCalledTimes(2));
  expect(editor.state.doc).toBe(before);
+ expect(load).not.toHaveBeenCalled();
+});
+
+it('loads a heading payload even when its empty placeholder is already in the editor',async()=>{
+ const {EditorLayout,EditorOutlineStore}=await import('./EditorLayout');
+ const heading:NoteBlocksV2={...blocks,blocks:[{...blocks.blocks[0],type:'heading',props:{level:2},content:[]},blocks.blocks[1]]};
+ const store=new EditorOutlineStore();
+ const unread={id:'b0',parent_id:null,child_count:0,has_children:false,children_loaded:true,payload_loaded:false,payload_bytes:100,cursor:null,loaded_count:0};
+ store.setSourceRoots(heading.blocks);
+ store.setReadState(new Map([['b0',unread]]));
+ store.setRemote([{id:'b0',level:2,text:'Loaded heading',root_index:0}],2);
+ store.update(heading);
+ const scroll=vi.fn();
+ let editor:import('@tiptap/core').Editor;
+ const load=vi.fn(async()=>{
+  editor.commands.insertContentAt({from:1,to:1},'Loaded heading');
+  store.setReadState(new Map([['b0',{...unread,payload_loaded:true}]]));
+ });
+ const {container}=render(<EditorLayout outlineStore={store} loadOutlineContent={load}><TiptapEditor noteId="outline-document" blocks={heading} onChange={()=>{}}/></EditorLayout>);
+ editor=(container.querySelector('.ProseMirror') as HTMLElement & {editor:import('@tiptap/core').Editor}).editor;
+ const node=container.querySelector('.ProseMirror h2')!;
+ expect(node).toHaveAttribute('data-orbis-block-id','b0');
+ expect(node).toHaveTextContent('');
+ Object.defineProperty(node,'scrollIntoView',{configurable:true,value:scroll});
+ fireEvent.click(screen.getByRole('button',{name:'Loaded heading'}));
+ await waitFor(()=>expect(scroll).toHaveBeenCalledTimes(1));
+ expect(load).toHaveBeenCalledTimes(1);
+ expect(node).toHaveTextContent('Loaded heading');
+ expect(node).toHaveAttribute('data-orbis-target','true');
+ fireEvent.click(screen.getByRole('button',{name:'Loaded heading'}));
+ await waitFor(()=>expect(scroll).toHaveBeenCalledTimes(2));
+ expect(load).toHaveBeenCalledTimes(1);
 });
 
 it('loads an unread heading before navigating from the outline',async()=>{
