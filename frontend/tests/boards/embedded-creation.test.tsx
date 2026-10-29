@@ -6,6 +6,7 @@ import { MemoryRouter } from "react-router-dom";
 import { BoardEmbed } from "../../src/features/boards/BoardEmbed";
 import { TableHostContext } from "../../src/features/data-tables/context";
 import { authStore } from "../../src/shared/auth/auth-store";
+import { releaseFeatures } from "../../src/shared/release-features";
 
 const mocks = vi.hoisted(() => ({ create: vi.fn(), get: vi.fn(), list: vi.fn(), owner: vi.fn(), preview: vi.fn() }));
 vi.mock("../../src/features/boards/api", () => ({ boardAPI: () => mocks }));
@@ -25,6 +26,7 @@ function show(props: Record<string, unknown> = {}, readOnly = false) {
   return { ...view, onBind };
 }
 beforeEach(() => {
+  releaseFeatures.boardCreation = true;
   vi.resetAllMocks();
   authStore.setState({ credentialID: "credential", workspace: { id: "workspace", name: "Workspace", role: "owner", created_at_ms: 1, updated_at_ms: 1 } });
   mocks.owner.mockResolvedValue({ id: "document", collection_id: "collection" });
@@ -34,7 +36,17 @@ beforeEach(() => {
   vi.stubGlobal("IntersectionObserver", undefined);
   vi.stubGlobal("URL", Object.assign(URL, { createObjectURL: vi.fn(() => "blob:preview"), revokeObjectURL: vi.fn() }));
 });
-afterEach(() => { cleanup(); clients.splice(0).forEach(client => client.clear()); authStore.getState().clearSession(); vi.unstubAllGlobals(); });
+afterEach(() => { cleanup(); clients.splice(0).forEach(client => client.clear()); authStore.getState().clearSession(); vi.unstubAllGlobals(); releaseFeatures.boardCreation = false; });
+
+it("keeps blank blocks without creating boards while creation is deferred", async () => {
+  releaseFeatures.boardCreation = false;
+  const view = show();
+  expect(await screen.findByText("画板创建将在后续版本开放。")).toBeInTheDocument();
+  expect(mocks.owner).not.toHaveBeenCalled();
+  expect(mocks.create).not.toHaveBeenCalled();
+  expect(view.onBind).not.toHaveBeenCalled();
+  expect(screen.queryByRole("button", { name: "重试创建画板" })).not.toBeInTheDocument();
+});
 
 it("creates the block's own board without listing or selecting existing boards", async () => {
   const view = show();
@@ -68,6 +80,7 @@ it("does not create a resource for a read-only blank block", async () => {
   expect(mocks.create).not.toHaveBeenCalled();
 });
 it("keeps legacy snapshot bindings readable without exposing a replacement picker", async () => {
+  releaseFeatures.boardCreation = false;
   const view = show({ board_id: "legacy", page_id: block, mode: "snapshot", revision: 5, frame_id: "frame" });
   expect(await screen.findByText("快照 · v5")).toBeInTheDocument();
   await waitFor(() => expect(mocks.get).toHaveBeenCalledWith("legacy", 5, expect.any(AbortSignal)));

@@ -89,9 +89,10 @@ test('document overview shares the shell and exposes its function menu alongside
   expect(titleBox!.y).toBeGreaterThanOrEqual(controlsBox!.y + controlsBox!.height);
   expect(titleBox!.x + titleBox!.width).toBeLessThanOrEqual(columnBox!.x + columnBox!.width);
   await notebookHeader.getByRole('button', { name: '创建内容', exact: true }).click();
-  for (const name of ['随手记', '文档', '画板', '数据表']) {
+  for (const name of ['随手记', '文档', '数据表']) {
     await expect(page.getByRole('menuitem', { name, exact: true })).toBeVisible();
   }
+  await expect(page.getByRole('menuitem', { name: '画板', exact: true })).toHaveCount(0);
   await page.keyboard.press('Escape');
   await expect(notebookHeader.getByRole('button', { name: '创建内容', exact: true })).toBeFocused();
   await notebookHeader.getByRole('button', { name: '创建内容', exact: true }).click();

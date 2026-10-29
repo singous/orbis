@@ -17,7 +17,7 @@
 .quick-note-tools button[aria-pressed="true"] { color: var(--accent); }
 .quick-note-tool-divider { width: 1px; height: 18px; background: var(--separator); margin: 0 var(--orbis-space-1); }
 .quick-note-editor .tiptap { min-height: 320px; max-height: calc(100dvh - 380px); overflow: auto; padding: var(--orbis-space-4) var(--orbis-space-6); outline: none; font-size: var(--orbis-text-ui-size); line-height: var(--orbis-prose-body-leading); overflow-wrap: anywhere; }
-.quick-note-editor .tiptap:focus-visible { box-shadow: inset 0 0 0 2px var(--focus); }
+.quick-note-editor:has(.tiptap:focus-visible) .quick-note-tools { border-bottom-color: var(--accent); }
 .quick-note-editor .tiptap p.is-editor-empty:first-child::before { color: var(--field-placeholder); content: attr(data-placeholder); float: left; height: 0; pointer-events: none; }
 .quick-note-editor .tiptap p { margin: 0 0 .7em; }
 .quick-note-editor .tiptap ul, .quick-note-editor .tiptap ol { padding-left: 1.5em; }
@@ -41,13 +41,14 @@
 .quick-notes-feed { min-width: 0; }
 .quick-notes-filters { display: flex; align-items: center; gap: var(--orbis-space-2); margin-bottom: var(--orbis-space-4); }
 .quick-notes-filters .orbis-select-field { width: 140px; flex: 0 0 140px; }
-.quick-notes-search { display: flex; align-items: center; flex: 1; min-width: 100px; gap: var(--orbis-space-2); color: var(--muted); }
+.quick-notes-search { display: flex; align-items: center; flex: 1; min-width: 100px; }
 .quick-notes-search input { min-width: 0; }
 .quick-notes-filters > button { display: grid; place-items: center; flex-shrink: 0; width: var(--orbis-control-default-height); height: var(--orbis-control-default-height); border-radius: var(--radius); }
 .quick-notes-filters > button[aria-pressed="true"] { color: var(--accent); background: var(--surface-secondary); }
 .quick-notes-tag-filters { display: flex; align-items: center; flex-wrap: wrap; gap: var(--orbis-space-2); margin-bottom: var(--orbis-space-4); }
-.quick-notes-tag-filters button { display: inline-flex; align-items: center; gap: var(--orbis-space-1); max-width: 100%; min-height: var(--orbis-control-compact-height); padding: var(--orbis-space-1) var(--orbis-space-3); border: 1px solid var(--orbis-surface-edge); border-radius: var(--radius); background: var(--orbis-card-bg); font-size: var(--orbis-text-ui-size); overflow-wrap: anywhere; }
-.quick-notes-tag-filters button[aria-pressed="true"] { background: color-mix(in oklab, var(--accent) 9%, var(--surface)); border-color: color-mix(in oklab, var(--accent) 30%, var(--surface)); color: var(--accent); }
+.quick-notes-tag-toggle-group { flex-wrap: wrap; justify-content: flex-start; gap: var(--orbis-space-2); max-width: 100%; }
+.quick-notes-tag-toggle-group .toggle-button { max-width: 100%; height: auto; min-height: var(--orbis-control-compact-height); white-space: normal; overflow-wrap: anywhere; }
+.quick-notes-manage-tags { display: inline-flex; align-items: center; justify-content: center; min-width: var(--orbis-control-compact-height); min-height: var(--orbis-control-compact-height); border-radius: var(--radius); color: var(--muted); }
 .quick-notes-records { display: grid; gap: var(--orbis-space-4); align-items: start; }
 .quick-note-card { min-width: 0; padding: var(--orbis-space-4) var(--orbis-space-6); border-radius: var(--field-radius); border: 1px solid var(--orbis-surface-edge); background: var(--orbis-card-bg); box-shadow: var(--orbis-card-shadow); }
 .quick-note-card-heading { display: flex; align-items: center; flex-wrap: wrap; gap: var(--orbis-space-2); margin-bottom: var(--orbis-space-4); color: var(--muted); font-size: var(--orbis-text-caption-size); }
