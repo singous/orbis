@@ -803,7 +803,7 @@ export function LegacyDocumentEditorPage() {
   return (
     <DocumentShell editorLayout breadcrumb={breadcrumb} toolbar={toolbar} notebookId={noteQuery.data?.notebook_id} activeNoteId={noteId}>
       {!draft || !noteQuery.data || hydratedNoteRef.current !== draftKey ? <div className="page-container"><LoadingState label="正在打开文档…" variant="editor" /></div> : (
-        <EditorLayout outlineStore={outlineStore}>
+        <EditorLayout outlineStore={outlineStore} loadOutlineContent={loadCompleteContent}>
           <article className="editor-canvas">
             <HeroInput
               aria-label="文档标题"
