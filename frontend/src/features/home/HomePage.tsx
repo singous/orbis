@@ -13,7 +13,7 @@ import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
 import { useSearchPalette } from "../search/search-palette-context";
 import { NotebookIcon } from "../documents/NotebookIcon";
-import { useCreateNote, useNotebooks, useDocumentIndex, useNoteTree } from "../documents/queries";
+import { useCreateNote, useNotebooks, useDocumentIndex } from "../documents/queries";
 import { QuickNoteComposer } from "../quick-notes/QuickNoteComposer";
 import { QuickNoteTags } from "../quick-notes/QuickNoteTags";
 import { buildActivityCalendar, memberDays } from "./home-activity";
@@ -55,7 +55,6 @@ export function HomePage() {
   const notebookById = new Map(notebooks.map(notebook => [notebook.id, notebook]));
   const createNote = useCreateNote();
   const targetNotebook = recentNotebooks[0];
-  const treeQuery = useNoteTree(canEdit ? targetNotebook?.id : undefined);
   const creating = useRef(false);
   const navigate = useNavigate();
   async function startDocument() {
@@ -63,14 +62,14 @@ export function HomePage() {
     if (!targetNotebook) { navigate("/documents/collections"); return; }
     creating.current = true;
     try {
-      const note = await createNote.mutateAsync({ notebook_id: targetNotebook.id, title: "未命名文档", parent_id: null, sort_order: treeQuery.data?.items.length ?? 0 });
+      const note = await createNote.mutateAsync({ notebook_id: targetNotebook.id, title: "未命名文档", parent_id: null });
       navigate(`/documents/${note.id}`);
     } catch (error) { reportError(error); }
     finally { creating.current = false; }
   }
   const activity = buildActivityCalendar([...notes, ...(quickNotes.recent.data?.items ?? [])], now);
   const activityReady = notesQuery.isSuccess && quickNotes.recent.isSuccess;
-  const failedQueries = [notebooksQuery, notesQuery, quickNotes.summary, quickNotes.tags, quickNotes.recent, ...(canEdit && targetNotebook ? [treeQuery] : [])].filter(query => query.isError);
+  const failedQueries = [notebooksQuery, notesQuery, quickNotes.summary, quickNotes.tags, quickNotes.recent].filter(query => query.isError);
 
   return <WorkspaceShell>
     <div className="home-page">
@@ -85,7 +84,7 @@ export function HomePage() {
               <p className="home-welcome-subtitle">每个小想法，都值得有个家。</p>
               <p className="home-welcome-detail">和 Orbis 一起，记录生活的第 {user ? memberDays(user.created_at_ms, now) : 1} 天</p>
               <nav className="home-welcome-actions" aria-label="功能入口">
-                {canEdit ? <Button variant="primary" icon={<FileText size={19} aria-hidden="true" />} isPending={createNote.isPending} disabled={notebooksQuery.isPending || notebooksQuery.isError || Boolean(targetNotebook && !treeQuery.isSuccess)} onClick={() => void startDocument()}>写篇文档</Button> : <Link className="home-text-link" to="/documents">浏览文档<ArrowRight size={18} aria-hidden="true" /></Link>}
+                {canEdit ? <Button variant="primary" icon={<FileText size={19} aria-hidden="true" />} isPending={createNote.isPending} disabled={notebooksQuery.isPending || notebooksQuery.isError} onClick={() => void startDocument()}>写篇文档</Button> : <Link className="home-text-link" to="/documents">浏览文档<ArrowRight size={18} aria-hidden="true" /></Link>}
                 <Link className="home-text-link" to="/documents/collections">去逛逛笔记本<ArrowRight size={18} aria-hidden="true" /></Link>
               </nav>
             </div>
