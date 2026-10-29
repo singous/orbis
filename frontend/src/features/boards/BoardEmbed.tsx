@@ -1,4 +1,5 @@
 import { reportError } from "../../shared/api/request-feedback";
+import { releaseFeatures } from "../../shared/release-features";
 import { lazy, Suspense, useContext, useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useStore } from "zustand";
@@ -125,10 +126,10 @@ export function BoardEmbed({
   const owner = useQuery({
     queryKey: ["note", auth?.workspaceId, host?.noteId],
     queryFn: ({ signal }) => getNote(host!.noteId, auth!, signal),
-    enabled: !!auth && !!host?.noteId && !id,
+    enabled: releaseFeatures.boardCreation && !!auth && !!host?.noteId && !id,
   });
   async function create() {
-    if (!auth || !owner.data || !canEdit || !onBind || id || creating.current) return;
+    if (!releaseFeatures.boardCreation || !auth || !owner.data || !canEdit || !onBind || id || creating.current) return;
     creating.current = true;
     setCreateFailed(false);
     try {
@@ -161,7 +162,7 @@ export function BoardEmbed({
           <BoardPreviewViewport key={`${id}:${page}:${revision}:${String(props.frame_id ?? "")}`}><img src={url} alt={meta.data?.title ?? "画板预览"} draggable={false} /></BoardPreviewViewport>
         ) : (
           <div className="board-preview-empty">
-            {query.error ? <><ActionButton onPress={() => void query.refetch()}>重试读取画板</ActionButton></> : !id ? <><Shapes size={30} />{!readOnly && (createFailed || owner.isError) && <ActionButton onPress={() => owner.isError ? void owner.refetch() : void create()}>重试创建画板</ActionButton>}<p>{readOnly ? "尚未创建画板" : createFailed || owner.isError ? "画板创建失败，请重试。" : "正在创建画板…"}</p></> : <p>{auth ? "正在读取画板预览…" : "请登录工作空间查看画板。"}</p>}
+            {query.error ? <><ActionButton onPress={() => void query.refetch()}>重试读取画板</ActionButton></> : !id ? <><Shapes size={30} />{releaseFeatures.boardCreation && !readOnly && (createFailed || owner.isError) && <ActionButton onPress={() => owner.isError ? void owner.refetch() : void create()}>重试创建画板</ActionButton>}<p>{!releaseFeatures.boardCreation ? "画板创建将在后续版本开放。" : readOnly ? "尚未创建画板" : createFailed || owner.isError ? "画板创建失败，请重试。" : "正在创建画板…"}</p></> : <p>{auth ? "正在读取画板预览…" : "请登录工作空间查看画板。"}</p>}
           </div>
         )}
       </EmbeddedSurface>

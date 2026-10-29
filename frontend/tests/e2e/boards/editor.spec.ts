@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import {
   ownerSession,
   createCollection,
+  createBoard,
   openWithSession,
   responseData,
   workspacePath,
@@ -21,9 +22,8 @@ test("native board templates persist and editing supports undo, deletion and rec
       session,
       "画板验收 " + Date.now(),
     );
-  await openWithSession(page, session, "/collections/" + collection.id);
-  await page.getByRole("button", { name: "创建内容", exact: true }).click();
-  await page.getByRole("menuitem", { name: "画板", exact: true }).click();
+  const existingBoard = await createBoard(request, session, collection.id);
+  await openWithSession(page, session, "/documents/" + existingBoard.document_id);
   await expect(
     page.getByRole("application", { name: "画板编辑区域" }),
   ).toBeVisible();
@@ -512,9 +512,8 @@ test("container layout and connected field deletion preserve the rest of the dia
     session,
     "结构编辑 " + Date.now(),
   );
-  await openWithSession(page, session, "/collections/" + collection.id);
-  await page.getByRole("button", { name: "创建内容", exact: true }).click();
-  await page.getByRole("menuitem", { name: "画板", exact: true }).click();
+  const existingBoard = await createBoard(request, session, collection.id);
+  await openWithSession(page, session, "/documents/" + existingBoard.document_id);
   await page.getByRole("button", { name: "三层应用", exact: true }).click();
   await expect(page.locator(".board-save-state")).toHaveText("已保存");
   const documentID = page.url().split("/documents/")[1]?.split("?")[0];
