@@ -154,3 +154,120 @@ it.each(['menu','keyboard'])('ignores a delayed clipboard read failure after lea
  await act(async()=>{fail(new Error('上一份文档的读取失败'));});
  expect(notify).not.toHaveBeenCalled();
 });
+
+it.each(['editor whitespace', 'page gutter', 'release position', 'invalid position'])('moves a block when dropped through %s', async area => {
+ const {container}=render(<div className="document-scroll-region"><TiptapEditor blocks={blocks} onChange={()=>{}}/></div>);
+ await screen.findByText('First');
+ const dom=container.querySelector<HTMLElement>('.ProseMirror')!;
+ const editor=(dom as HTMLElement & {editor:import('@tiptap/core').Editor}).editor;
+ Object.defineProperty(dom,'offsetParent',{configurable:true,value:dom.parentElement});
+ const paragraphs=dom.querySelectorAll('p');
+ vi.spyOn(dom,'getBoundingClientRect').mockReturnValue(new DOMRect(100,100,500,200));
+ paragraphs.forEach((paragraph,index)=>vi.spyOn(paragraph,'getBoundingClientRect').mockReturnValue(new DOMRect(100,100+index*100,500,40)));
+ vi.spyOn(editor.view,'posAtCoords').mockImplementation(({top})=>top>300?null:{pos:editor.state.doc.firstChild!.nodeSize+1,inside:editor.state.doc.firstChild!.nodeSize});
+ fireEvent.pointerMove(paragraphs[0],{clientX:110,clientY:110});
+ const handle=await screen.findByRole('button',{name:'块操作：段落'});
+ const values=new Map<string,string>();
+ const dataTransfer={setData:(type:string,value:string)=>values.set(type,value),getData:(type:string)=>values.get(type)??'',effectAllowed:'',dropEffect:'',setDragImage:vi.fn()};
+ fireEvent.dragStart(handle,{dataTransfer});
+ expect(dataTransfer.setDragImage).toHaveBeenCalledWith(document.querySelector('.orbis-block-drag-preview'),16,16);
+ expect(document.querySelector('.block-drag-preview-text')).toHaveTextContent('First');
+ const target=area==='editor whitespace'?dom:container.querySelector('.document-scroll-region')!;
+ for(const type of ['dragover','drop']) {
+  const y=area==='invalid position'&&type==='drop'?400:area==='release position'&&type==='dragover'?201:239;
+  const event=new MouseEvent(type,{bubbles:true,cancelable:true,clientX:80,clientY:y});
+  Object.defineProperty(event,'dataTransfer',{value:dataTransfer});
+  fireEvent(target,event);
+ }
+ expect([...dom.querySelectorAll(':scope > p')].map(node=>node.textContent)).toEqual(area==='invalid position'?['First','Second']:['Second','First']);
+ expect(document.querySelector('.orbis-block-drop')).toBeNull();
+ expect(document.querySelector('.orbis-block-drag-preview')).toBeNull();
+ expect(container.querySelector('.is-block-dragging')).toBeNull();
+ if(area!=='invalid position'){
+  fireEvent.click(screen.getByRole('button',{name:'撤销'}));
+  expect([...dom.querySelectorAll(':scope > p')].map(node=>node.textContent)).toEqual(['First','Second']);
+ }
+});
+
+it.each([20,36])('centers the handle on the first text line at %ipx, independent of block height',async textHeight=>{
+ const {container}=render(<TiptapEditor blocks={blocks} onChange={()=>{}}/>);
+ const paragraph=await screen.findByText('First');
+ vi.spyOn(paragraph,'getBoundingClientRect').mockReturnValue(new DOMRect(100,100,500,180));
+ vi.spyOn(Range.prototype,'getClientRects').mockReturnValue([new DOMRect(100,110,10,textHeight)] as unknown as DOMRectList);
+ fireEvent.pointerMove(paragraph,{clientX:110,clientY:115});
+ await screen.findByRole('button',{name:'块操作：段落'});
+ const controls=container.querySelector<HTMLElement>('.orbis-block-controls')!;
+ vi.spyOn(controls,'getBoundingClientRect').mockReturnValue(new DOMRect(0,0,15,15));
+ fireEvent.pointerMove(paragraph,{clientX:111,clientY:115});
+ await waitFor(()=>expect(controls.style.top).toBe(`${110+textHeight/2-7.5}px`));
+ expect(controls.style.left).toBe('69px');
+});
+
+it('navigates from the outline to the heading and repeats navigation without changing content',async()=>{
+ const {EditorLayout,EditorOutlineStore}=await import('./EditorLayout');
+ const heading:NoteBlocksV2={...blocks,blocks:[{...blocks.blocks[0],type:'heading',props:{level:2}},blocks.blocks[1]]};
+ const store=new EditorOutlineStore();store.update(heading);
+ const scroll=vi.fn();
+ const load=vi.fn(async()=>{});
+ const {container}=render(<EditorLayout outlineStore={store} loadOutlineContent={load}><TiptapEditor noteId="outline-document" blocks={heading} onChange={()=>{}}/></EditorLayout>);
+ const node=container.querySelector('.ProseMirror h2')!;
+ Object.defineProperty(node,'scrollIntoView',{configurable:true,value:scroll});
+ const editor=(container.querySelector('.ProseMirror') as HTMLElement & {editor:import('@tiptap/core').Editor}).editor;
+ const before=editor.state.doc;
+ const link=screen.getByRole('button',{name:'First'});
+ fireEvent.click(link);
+ await waitFor(()=>expect(scroll).toHaveBeenCalledTimes(1));
+ expect(node).toHaveAttribute('data-orbis-target','true');
+ fireEvent.click(link);
+ await waitFor(()=>expect(scroll).toHaveBeenCalledTimes(2));
+ expect(editor.state.doc).toBe(before);
+ expect(load).not.toHaveBeenCalled();
+});
+
+it('loads a heading payload even when its empty placeholder is already in the editor',async()=>{
+ const {EditorLayout,EditorOutlineStore}=await import('./EditorLayout');
+ const heading:NoteBlocksV2={...blocks,blocks:[{...blocks.blocks[0],type:'heading',props:{level:2},content:[]},blocks.blocks[1]]};
+ const store=new EditorOutlineStore();
+ const unread={id:'b0',parent_id:null,child_count:0,has_children:false,children_loaded:true,payload_loaded:false,payload_bytes:100,cursor:null,loaded_count:0};
+ store.setSourceRoots(heading.blocks);
+ store.setReadState(new Map([['b0',unread]]));
+ store.setRemote([{id:'b0',level:2,text:'Loaded heading',root_index:0}],2);
+ store.update(heading);
+ const scroll=vi.fn();
+ let editor:import('@tiptap/core').Editor;
+ const load=vi.fn(async()=>{
+  editor.commands.insertContentAt({from:1,to:1},'Loaded heading');
+  store.setReadState(new Map([['b0',{...unread,payload_loaded:true}]]));
+ });
+ const {container}=render(<EditorLayout outlineStore={store} loadOutlineContent={load}><TiptapEditor noteId="outline-document" blocks={heading} onChange={()=>{}}/></EditorLayout>);
+ editor=(container.querySelector('.ProseMirror') as HTMLElement & {editor:import('@tiptap/core').Editor}).editor;
+ const node=container.querySelector('.ProseMirror h2')!;
+ expect(node).toHaveAttribute('data-orbis-block-id','b0');
+ expect(node).toHaveTextContent('');
+ Object.defineProperty(node,'scrollIntoView',{configurable:true,value:scroll});
+ fireEvent.click(screen.getByRole('button',{name:'Loaded heading'}));
+ await waitFor(()=>expect(scroll).toHaveBeenCalledTimes(1));
+ expect(load).toHaveBeenCalledTimes(1);
+ expect(node).toHaveTextContent('Loaded heading');
+ expect(node).toHaveAttribute('data-orbis-target','true');
+ fireEvent.click(screen.getByRole('button',{name:'Loaded heading'}));
+ await waitFor(()=>expect(scroll).toHaveBeenCalledTimes(2));
+ expect(load).toHaveBeenCalledTimes(1);
+});
+
+it('loads an unread heading before navigating from the outline',async()=>{
+ const {EditorLayout,EditorOutlineStore}=await import('./EditorLayout');
+ const store=new EditorOutlineStore();store.setRemote([{id:'later',level:2,text:'Later',root_index:2}],0);
+ const scroll=vi.fn();
+ let editor:import('@tiptap/core').Editor;
+ const load=vi.fn(async()=>{
+  editor.commands.insertContentAt(editor.state.doc.content.size,{type:'heading',attrs:{level:2,orbisId:'later'},content:[{type:'text',text:'Later'}]});
+  const node=editor.view.dom.querySelector('[data-orbis-block-id="later"]')!;
+  Object.defineProperty(node,'scrollIntoView',{configurable:true,value:scroll});
+ });
+ const {container}=render(<EditorLayout outlineStore={store} loadOutlineContent={load}><TiptapEditor noteId="outline-document" blocks={blocks} onChange={()=>{}}/></EditorLayout>);
+ editor=(container.querySelector('.ProseMirror') as HTMLElement & {editor:import('@tiptap/core').Editor}).editor;
+ fireEvent.click(screen.getByRole('button',{name:'Later'}));
+ await waitFor(()=>expect(scroll).toHaveBeenCalledTimes(1));
+ expect(load).toHaveBeenCalledTimes(1);
+});

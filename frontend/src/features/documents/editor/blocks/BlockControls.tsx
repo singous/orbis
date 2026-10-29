@@ -1,3 +1,4 @@
+import { NAVIGATE_OUTLINE_EVENT } from "../outline-navigation";
 import { BOARD_REMOVAL_EVENT, confirmBoardRemoval, type BoardRemovalRequest } from "./board-removal";
 import { BoardDiscardDialog } from "../../../boards/BoardDiscardDialog";
 import { showToast } from "../../../../shared/ui/Toast";
@@ -30,7 +31,7 @@ export function requestBlockMenu(editor: Editor) { editor.view.dom.dispatchEvent
 const DRAG_MIME='application/x-orbis-block-drag';
 const EDGE_SCROLL_DISTANCE=56;
 const MAX_SCROLL_STEP=16;
-const HANDLE_CLEARANCE=4;
+const HANDLE_CLEARANCE=16;
 type DropTarget={id:string;placement:'before'|'after'|'inside';ok:boolean;message?:string;rect:{top:number;left:number;width:number;height:number}};
 
 /** Inline input preserves block identity and geometry above the active block. */
@@ -64,6 +65,7 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
  const menuRef=useRef<HTMLDivElement>(null);
  const activeRef=useRef(activeId);activeRef.current=activeId;
  const dragRef=useRef<string[]|null>(null);
+ const dragPreviewRef=useRef<HTMLDivElement|null>(null);
  const dropRef=useRef<DropTarget|null>(null);
  const source=useMemo(()=>fromTiptapDocument(doc).blocks,[doc]);
  const index=useMemo(()=>indexBlocks(source),[source]);
@@ -133,8 +135,10 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
   // The sibling read control remains an explicit handle for that same block.
   const loader=ownRect.height?null:[...editor.view.dom.querySelectorAll<HTMLElement>('[data-block-loader]')].find(node=>node.dataset.blockLoader===id);
   const rect=loader?.getBoundingClientRect()??ownRect, parent=root.getBoundingClientRect();
-  const controlsWidth=controlsRef.current?.getBoundingClientRect().width??0;
-  const next={top:rect.top-parent.top+2,left:Math.max(HANDLE_CLEARANCE-parent.left,rect.left-parent.left-controlsWidth-HANDLE_CLEARANCE)};
+  const controlsRect=controlsRef.current?.getBoundingClientRect();
+  const controlsWidth=controlsRect?.width??0;
+  const center=firstTextLineCenter(element)??rect.top+parseFloat(getComputedStyle(element).lineHeight||'0')/2;
+  const next={top:(Number.isFinite(center)?center:rect.top+rect.height/2)-parent.top-(controlsRect?.height??0)/2,left:Math.max(HANDLE_CLEARANCE-parent.left,rect.left-parent.left-controlsWidth-HANDLE_CLEARANCE)};
   setPoint(previous=>previous?.top===next.top&&previous?.left===next.left?previous:next);
  }
  useLayoutEffect(()=>{positionHandle(activeId);},[activeId,doc,Boolean(point),readOnly,selection?.ids.length]);
@@ -151,7 +155,7 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
     const mapped=editor.view.domAtPos(editor.state.selection.from).node;
     const element=mapped instanceof Element?mapped:mapped.parentElement;
     const caretId=element?.closest<HTMLElement>('[data-orbis-block-id]')?.dataset.orbisBlockId;
-    if(inline&&caretId&&caretId===activeRef.current)return;
+    if(inline&&caretId&&caretId===activeRef.current){positionHandle(caretId);return;}
     const current=ownedOrbisBlock(liveDoc.current,editor.state.selection.from);
     if(current)setActiveId(current.id);
    }
@@ -164,6 +168,7 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
  useEffect(()=>{
   const dom=editor.view.dom;
   const root=dom.closest('.orbis-tiptap')??dom;
+  const dragSurface=dom.closest('.document-scroll-region,.workspace-content')??root;
   let moveFrame=0,scrollFrame=0;
   let lastPointer:{x:number;y:number}|null=null;
   let expandTimer:ReturnType<typeof setTimeout>|undefined;
@@ -175,7 +180,7 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
     if(loader&&dom.contains(loader))return locateEditorBlocks(editor.state.doc).find(entry=>entry.id===loader.dataset.blockLoader);
     const hit = targetElement?.closest<HTMLElement>('[data-orbis-block-id]');
     if (hit && dom.contains(hit)) return locateEditorBlocks(editor.state.doc).find(entry => entry.id === hit.dataset.orbisBlockId);
-    if(target instanceof Node&&dom.contains(target))return ownedOrbisBlock(editor.state.doc,editor.view.posAtDOM(target,0));
+    // 容器空白处按鼠标坐标定位，DOM offset 0 会错误命中第一个块。
     const bounds=dom.getBoundingClientRect();
     const found=editor.view.posAtCoords({left:Math.max(bounds.left+2,Math.min(bounds.right-2,x)),top:y});
     return found?ownedOrbisBlock(editor.state.doc,found.pos):undefined;
@@ -208,10 +213,12 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
    if(action){event.preventDefault();event.stopPropagation();runRef.current(action);}
    else if(event.key.length===1&&!event.metaKey&&!event.ctrlKey&&!event.altKey)clearBlockSelection(editor);
   };
-  const clearDrag=()=>{dragRef.current=null;dropRef.current=null;setDrop(null);cancelAnimationFrame(scrollFrame);clearTimeout(expandTimer);expandTarget=null;};
+  const clearDrag=()=>{dragPreviewRef.current?.remove();dragPreviewRef.current=null;root.classList.remove('is-block-dragging');dragRef.current=null;dropRef.current=null;setDrop(null);cancelAnimationFrame(scrollFrame);clearTimeout(expandTimer);expandTarget=null;};
   const updateDrop=(target:EventTarget|null,x:number,y:number)=>{
-   const entry=blockAt(target,x,y);if(!entry||!dragRef.current)return;
-   const element=editor.view.nodeDOM(entry.pos);if(!(element instanceof HTMLElement))return;
+   if(!dragRef.current)return;
+   const entry=blockAt(target,x,y);
+   const element=entry?editor.view.nodeDOM(entry.pos):null;
+   if(!entry||!(element instanceof HTMLElement)){dropRef.current=null;setDrop(null);clearTimeout(expandTimer);expandTarget=null;return;}
    const rect=element.getBoundingClientRect();const ratio=(y-rect.top)/Math.max(rect.height,1);
    const placement=ratio>.24&&ratio<.76&&x>rect.left+28?'inside':ratio<.5?'before':'after';
    const availability=blockActionAvailability(fromTiptapDocument(editor.state.doc).blocks,dragRef.current,{type:'move',targetId:entry.id,placement});
@@ -245,6 +252,7 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
   const dropped=(event:Event)=>{
    const e=event as DragEvent;if(!dragRef.current)return;
    e.preventDefault();e.stopPropagation();
+   updateDrop(e.target,e.clientX,e.clientY);
    const selected=dragRef.current;const target=dropRef.current;
    const trusted=e.dataTransfer?.getData(DRAG_MIME)===dragToken;
    clearDrag();scrollFrame=0;
@@ -265,12 +273,14 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
    if(!blockSelectionKey.getState(editor.state)?.ids.length)selectBlock(editor,id);
    setOpen(true);
   };
+  const layoutObserver=new ResizeObserver(()=>positionHandle(activeRef.current));
+  layoutObserver.observe(root);
   dom.addEventListener(OPEN_BLOCK_MENU_EVENT,openRequested);
   root.addEventListener('pointermove',pointer);root.addEventListener('pointerdown',pointer);
   dom.addEventListener('keydown',key,true);
-  root.addEventListener('dragover',dragOver);root.addEventListener('drop',dropped,true);
+  dragSurface.addEventListener('dragover',dragOver,true);dragSurface.addEventListener('drop',dropped,true);
   document.addEventListener('dragend',end);window.addEventListener('resize',resize);document.addEventListener('scroll',resize,true);
-  return()=>{dom.removeEventListener(OPEN_BLOCK_MENU_EVENT,openRequested);cancelAnimationFrame(moveFrame);clearDrag();root.removeEventListener('pointermove',pointer);root.removeEventListener('pointerdown',pointer);dom.removeEventListener('keydown',key,true);root.removeEventListener('dragover',dragOver);root.removeEventListener('drop',dropped,true);document.removeEventListener('dragend',end);window.removeEventListener('resize',resize);document.removeEventListener('scroll',resize,true);};
+  return()=>{layoutObserver.disconnect();dom.removeEventListener(OPEN_BLOCK_MENU_EVENT,openRequested);cancelAnimationFrame(moveFrame);clearDrag();root.removeEventListener('pointermove',pointer);root.removeEventListener('pointerdown',pointer);dom.removeEventListener('keydown',key,true);dragSurface.removeEventListener('dragover',dragOver,true);dragSurface.removeEventListener('drop',dropped,true);document.removeEventListener('dragend',end);window.removeEventListener('resize',resize);document.removeEventListener('scroll',resize,true);};
  },[editor,dragToken]);
 
  useEffect(()=>{
@@ -288,9 +298,10 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
   if(!noteId)return;
   let cancel=0;
   let clearTarget:ReturnType<typeof setTimeout>|undefined;
-  const locate=()=>{
-   const hash=window.location.hash;if(!hash.startsWith('#block-'))return;
-   let id:string;try{id=decodeURIComponent(hash.slice(7));}catch{return;}
+  const locate=(event?:Event)=>{
+   const outlineId=event?.type===NAVIGATE_OUTLINE_EVENT?(event as CustomEvent<string>).detail:null;
+   const hash=window.location.hash;if(!outlineId&&!hash.startsWith('#block-'))return;
+   let id:string;try{id=outlineId??decodeURIComponent(hash.slice(7));}catch{return;}
    const entry=locateEditorBlocks(editor.state.doc).find(item=>item.id===id);
    if(!entry){reportError('目标块已不存在或无法访问');return;}
    const node=editor.view.nodeDOM(entry.pos);if(!(node instanceof HTMLElement))return;
@@ -304,9 +315,9 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
    }
    clearBlockSelection(editor);setBlockTarget(editor,id);setActiveId(id);
    clearTimeout(clearTarget);clearTarget=setTimeout(()=>setBlockTarget(editor,null),1800);
-   cancel=requestAnimationFrame(()=>node.scrollIntoView?.({block:'center',behavior:'auto'}));
+   cancel=requestAnimationFrame(()=>node.scrollIntoView?.({block:'center',behavior:outlineId&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches?'smooth':'auto'}));
   };
-  locate();window.addEventListener('hashchange',locate);return()=>{window.removeEventListener('hashchange',locate);cancelAnimationFrame(cancel);clearTimeout(clearTarget);};
+  locate();window.addEventListener('hashchange',locate);editor.view.dom.addEventListener(NAVIGATE_OUTLINE_EVENT,locate);return()=>{window.removeEventListener('hashchange',locate);editor.view.dom.removeEventListener(NAVIGATE_OUTLINE_EVENT,locate);cancelAnimationFrame(cancel);clearTimeout(clearTarget);};
  },[editor,noteId]);
 
  async function copyLink(){
@@ -325,7 +336,6 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
  const convertOptions=open?CONVERSIONS.filter(option=>{const [target,level]=option.value.split(':');return availability({type:'convert',target,level:level?Number(level):undefined}).ok;}):[];
  return <>
   {current&&point?<div ref={controlsRef} className="orbis-block-controls" contentEditable={false} style={point}>
-   {!readOnly?<ActionButton className="block-add" aria-label="在块后插入" title="在下方插入" onMouseDown={e=>e.preventDefault()} onClick={()=>{setBlockSelection(editor,[current.id]);idsRef.current=[current.id];run({type:'insert',side:'after'});}}><Plus size={15}/></ActionButton>:null}
    <button type="button" ref={handleRef} className="block-grip" aria-label={`块操作：${LABELS[current.type]??current.type}`} aria-haspopup="menu" aria-expanded={open} title="点击打开块菜单 · 拖动移动块" draggable={!readOnly} onClick={event=>{
     setDoc(editor.state.doc);
     if (event.shiftKey || event.metaKey || event.ctrlKey || !blockSelectionKey.getState(editor.state)?.ids.includes(current.id)) selectBlock(editor,current.id,{shift:event.shiftKey,toggle:event.metaKey||event.ctrlKey});
@@ -334,7 +344,17 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
     if(readOnly){event.preventDefault();return;}
     let selected=blockSelectionKey.getState(editor.state)?.ids??[];if(!selected.includes(current.id)){selectBlock(editor,current.id);selected=[current.id];}
     dragRef.current=selected;event.dataTransfer.setData(DRAG_MIME,dragToken);event.dataTransfer.effectAllowed='move';setOpen(false);
-   }}><GripVertical size={16}/></button>
+    const preview=document.createElement('div');
+    preview.className='orbis-block-drag-preview';preview.setAttribute('aria-hidden','true');
+    const label=document.createElement('div');label.className='block-drag-preview-label';
+    label.textContent=selected.length>1?`移动 ${selected.length} 个块`:LABELS[current.type]??current.type;
+    const text=document.createElement('div');text.className='block-drag-preview-text';
+    const node=locateEditorBlocks(editor.state.doc).find(entry=>entry.id===current.id)?.node;
+    text.textContent=node?.textBetween(0,node.content.size,' ').trim().slice(0,120)||label.textContent;
+    preview.append(label,text);document.body.append(preview);dragPreviewRef.current=preview;
+    event.dataTransfer.setDragImage(preview,16,16);
+    editor.view.dom.closest('.orbis-tiptap')?.classList.add('is-block-dragging');
+   }}><GripVertical size="1em" viewBox="3 3 18 18"/></button>
    {selection?.ids.length? <span className="block-selection-count" aria-live="polite">{selection.ids.length>1?`${selection.ids.length} 块`:''}</span>:null}
   </div>:null}
   {open&&current?createPortal(<div ref={menuRef} className="orbis-block-menu" role="menu" aria-label="块操作" style={{top:menuPoint.top,left:menuPoint.left}} onKeyDown={event=>{
@@ -368,7 +388,7 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
     {actionItem('删除',{type:'delete'},<Trash2 size={15}/>)}
    </>:null}
   </div>,document.body):null}
-  {drop?createPortal(<div className={`orbis-block-drop ${drop.placement==='inside'?'is-inside':''} ${drop.ok?'':'is-invalid'}`} style={{top:drop.placement==='after'?drop.rect.top+drop.rect.height:drop.rect.top,left:drop.rect.left,width:drop.rect.width,height:drop.placement==='inside'?drop.rect.height:3}}><span>{drop.ok?(drop.placement==='inside'?'放入此块':drop.placement==='before'?'移动到上方':'移动到下方'):drop.message}</span></div>,document.body):null}
+  {drop?createPortal(<div className={`orbis-block-drop ${drop.placement==='inside'?'is-inside':''} ${drop.ok?'':'is-invalid'}`} style={{top:drop.placement==='after'?drop.rect.top+drop.rect.height:drop.rect.top,left:drop.rect.left,width:drop.rect.width,height:drop.placement==='inside'?drop.rect.height:2}}><span className={drop.ok&&drop.placement!=='inside'?'sr-only':undefined}>{drop.ok?(drop.placement==='inside'?'放入此块':drop.placement==='before'?'移动到上方':'移动到下方'):drop.message}</span></div>,document.body):null}
  <BoardDiscardDialog open={removal!==null}
    description="这个操作会结束当前画板编辑，未保存的修改不会恢复。可以保留当前内容重试保存，或放弃修改后继续。"
    cancelLabel="保留画板块" discardLabel="放弃并继续" onCancel={()=>setRemoval(null)}
@@ -377,4 +397,17 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
       if(request&&!confirmBoardRemoval(editor,request))setNotice('文档状态已变化，请重新执行操作。');
    }}
  /></>;
+}
+
+function firstTextLineCenter(element:HTMLElement):number|null {
+ const walker=document.createTreeWalker(element,NodeFilter.SHOW_TEXT);
+ const range=document.createRange();
+ for(let node=walker.nextNode();node;node=walker.nextNode()) {
+  const offset=node.textContent?.search(/\S/)??-1;
+  if(offset<0||node.parentElement?.closest('button,svg,[aria-hidden="true"]'))continue;
+  range.setStart(node,offset);range.setEnd(node,offset+1);
+  const rect=range.getClientRects()[0];
+  if(rect?.height)return rect.top+rect.height/2;
+ }
+ return null;
 }
