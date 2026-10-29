@@ -2,6 +2,30 @@ import { expect, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { openWithSession, ownerSession, responseData, sessionHeaders, workspacePath } from "../helpers/api-fixtures";
 
+test("empty quick notes use native tag toggles without an editor frame or duplicate search icon", async ({ page, request }, testInfo) => {
+  const session = await ownerSession(request);
+  await openWithSession(page, session, "/documents/quick-notes");
+  const filters = page.getByRole("radiogroup", { name: "按标签筛选", exact: true });
+  const all = filters.getByRole("radio", { name: "全部 (0)", exact: true });
+  await expect(all).toBeVisible();
+  await expect(all).toHaveClass(/toggle-button/);
+  await expect(all).toHaveAttribute("aria-checked", "true");
+  await expect(filters.getByRole("radio")).toHaveCount(1);
+  await expect(page.getByRole("button", { name: /无标签/ })).toHaveCount(0);
+  await expect(page.locator(".quick-notes-search svg")).toHaveCount(0);
+  await expect(page.getByRole("textbox", { name: "搜索随手记" })).toBeVisible();
+  const editor = page.getByRole("textbox", { name: "随手记正文" });
+  await editor.click();
+  await expect(editor).toBeFocused();
+  await expect(editor).toHaveCSS("box-shadow", "none");
+  await expect(editor).toHaveCSS("outline-style", "none");
+  await page.screenshot({ path: testInfo.outputPath("clean-editor-light.png"), fullPage: true, animations: "disabled" });
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(editor).toHaveCSS("box-shadow", "none");
+  await page.screenshot({ path: testInfo.outputPath("clean-editor-dark.png"), fullPage: true, animations: "disabled" });
+});
+
 test("capture, organize, edit and recover a personal note", async ({ page, request }, testInfo) => {
   const session = await ownerSession(request);
   await openWithSession(page, session, "/documents/quick-notes");
@@ -25,6 +49,24 @@ test("capture, organize, edit and recover a personal note", async ({ page, reque
   const card = page.getByRole("article", { name: "随手记记录" }).filter({ hasText: text });
   await expect(card).toBeVisible();
   await expect(card.getByText(tagName, { exact: true })).toBeVisible();
+  const filters = page.getByRole("radiogroup", { name: "按标签筛选", exact: true });
+  const tagged = filters.getByRole("radio", { name: `${tagName} (1)`, exact: true });
+  const filteredRequest = page.waitForRequest(request => {
+    const url = new URL(request.url());
+    return url.pathname.endsWith("/quick-notes") && url.searchParams.has("tag_id");
+  });
+  await tagged.click();
+  await filteredRequest;
+  await expect(tagged).toHaveAttribute("aria-checked", "true");
+  await expect(filters.getByRole("radio", { name: /^全部/ })).toHaveAttribute("aria-checked", "false");
+  await tagged.click();
+  await expect(tagged).toHaveAttribute("aria-checked", "true");
+  await tagged.focus();
+  await page.keyboard.press("ArrowLeft");
+  await expect(filters.getByRole("radio", { name: /^全部/ })).toBeFocused();
+  await page.keyboard.press("Space");
+  await expect(filters.getByRole("radio", { name: /^全部/ })).toHaveAttribute("aria-checked", "true");
+  await expect(card).toBeVisible();
   await card.getByRole("button", { name: "置顶记录", exact: true }).click();
   await expect(card.getByRole("button", { name: "取消置顶" })).toBeVisible();
   await card.getByRole("button", { name: "编辑记录" }).click();
