@@ -17,13 +17,14 @@ import "../../styles/tiptap-editor.css";
 
 const EXTENSIONS = new Set(["starterKit", "codeBlock", "underline", "link", "placeholder", "taskList", "taskItem", "orbisMetadata", "orbisStyle", "orbisMedia", "orbisBlockIds", "orbisCodeHighlight", "orbisMarkdownPaste"]);
 const extensions = tiptapExtensions.filter(extension => EXTENSIONS.has(extension.name)).map(extension => extension.name === "placeholder" ? extension.configure({ placeholder: "想到什么，随手记下…" }) : extension);
+const homeExtensions = extensions.map(extension => extension.name === "placeholder" ? extension.configure({ placeholder: "先记下来，灵感可不等人。" }) : extension);
 export function editorBlocks(blocks: NativeBlock[]): NoteBlocksV2 {
   return blocks.length ? { schema_version: 2, editor: "blocknote", blocks: blocks.map(editorBlock) } : createEmptyV2();
 }
 
-export function QuickNoteEditor({ initialValue, onChange, onSubmit, onError, onBusy, disabled = false }: {
+export function QuickNoteEditor({ initialValue, onChange, onSubmit, onError, onBusy, disabled = false, homeActions }: {
   initialValue: NativeBlock[]; onChange: (blocks: NativeBlock[]) => void; onSubmit: () => void;
-  onError: (error: unknown) => void; onBusy: (busy: boolean) => void; disabled?: boolean;
+  onError: (error: unknown) => void; onBusy: (busy: boolean) => void; disabled?: boolean; homeActions?: ReactNode;
 }) {
   const files = useManagedFiles("/quick-note-assets");
   const callbacks = useRef({ onChange, onSubmit, onError, onBusy });
@@ -38,7 +39,7 @@ export function QuickNoteEditor({ initialValue, onChange, onSubmit, onError, onB
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const editor = useEditor({
-    extensions, content: toTiptapDocument(editorBlocks(initialValue)), editable: !disabled,
+    extensions: homeActions ? homeExtensions : extensions, content: toTiptapDocument(editorBlocks(initialValue)), editable: !disabled,
     editorProps: { attributes: { role: "textbox", "aria-label": "随手记正文", "aria-multiline": "true" },
       handleKeyDown: (_view, event) => {
         if (event.key === "Enter" && (event.metaKey || event.ctrlKey) && !event.isComposing) { event.preventDefault(); callbacks.current.onSubmit(); return true; }
@@ -61,7 +62,7 @@ export function QuickNoteEditor({ initialValue, onChange, onSubmit, onError, onB
     },
   });
   useEffect(() => { editor?.setEditable(!disabled && !uploading, false); }, [editor, disabled, uploading]);
-  const active = useEditorState({ editor, selector: ({ editor }) => ({ bold: editor?.isActive("bold"), italic: editor?.isActive("italic"), list: editor?.isActive("bulletList"), task: editor?.isActive("taskList"), code: editor?.isActive("codeBlock") }) });
+  const active = useEditorState({ editor, selector: ({ editor }) => ({ bold: editor?.isActive("bold"), italic: editor?.isActive("italic"), list: editor?.isActive("bulletList"), task: editor?.isActive("taskList"), code: editor?.isActive("codeBlock"), characters: homeActions ? Array.from(editor?.getText() ?? "").length : 0 }) });
 
   async function upload(file: File) {
     if (!editor || disabled || uploadLock.current) return;
@@ -92,7 +93,11 @@ export function QuickNoteEditor({ initialValue, onChange, onSubmit, onError, onB
         {tool("无序列表", <List size={17} />, editor => editor.chain().focus().toggleBulletList().run(), active?.list)}
         {tool("代码块", <Code size={17} />, editor => editor.chain().focus().toggleCodeBlock().run(), active?.code)}
       </div>
-      <EditorContent editor={editor} />
+      {homeActions ? <div className="home-note-field"><EditorContent editor={editor} /><span className="home-note-count">{active?.characters ?? 0} 字</span></div> : <EditorContent editor={editor} />}
+      {homeActions ? <div className="home-note-actions">
+        <ActionButton type="button" className="home-note-attachment" disabled={disabled || uploading || !editor} onClick={() => uploadInput.current?.click()}><Paperclip size={20} aria-hidden="true" />添加附件</ActionButton>
+        {homeActions}
+      </div> : null}
       <input ref={imageInput} className="sr-only" type="file" accept="image/*" aria-label="选择随手记图片" tabIndex={-1} onChange={event => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void upload(file); }} />
       <input ref={uploadInput} className="sr-only" type="file" aria-label="选择随手记附件" tabIndex={-1} onChange={event => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void upload(file); }} />
       {uploading ? <p role="status" className="quick-note-hint">正在上传附件…</p> : null}
