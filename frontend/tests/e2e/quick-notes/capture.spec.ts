@@ -4,6 +4,15 @@ import { openWithSession, ownerSession, responseData, sessionHeaders, workspaceP
 
 test("empty quick notes use native tag toggles without an editor frame or duplicate search icon", async ({ page, request }, testInfo) => {
   const session = await ownerSession(request);
+  // This visual state must not depend on notes created by earlier journeys.
+  await page.route(/\/api\/v1\/workspaces\/[^/]+\/quick-note(?:s(?:\/summary)?|-tags)(?:\?|$)/, async route => {
+    const response = await route.fetch();
+    const envelope = await response.json();
+    envelope.data = Array.isArray(envelope.data.items)
+      ? { ...envelope.data, items: [], pagination: { ...envelope.data.pagination, total: 0 } }
+      : { total: 0, untagged: 0, deleted: 0 };
+    await route.fulfill({ response, json: envelope });
+  });
   await openWithSession(page, session, "/documents/quick-notes");
   const filters = page.getByRole("radiogroup", { name: "按标签筛选", exact: true });
   const all = filters.getByRole("radio", { name: "全部 (0)", exact: true });
