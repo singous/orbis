@@ -82,7 +82,7 @@ function NotebookCreateAction({ notebookId }: { notebookId: string }) {
   const tableIntent = useRef<string | null>(null);
 
   async function createBoard() {
-    if (creatingBoard) return;
+    if (!releaseFeatures.boardCreation || creatingBoard) return;
     setCreatingBoard(true);
     boardIntent.current ??= { id: newUUID(), operation_id: newUUID(), page_id: newUUID() };
     try {
@@ -146,7 +146,7 @@ function NotebookCreateAction({ notebookId }: { notebookId: string }) {
         }}>
           <Dropdown.Item id="quick-note" textValue="随手记"><StickyNote aria-hidden="true" className="notebook-create-quick-note" /><Label>随手记</Label></Dropdown.Item>
           <Dropdown.Item id="document" textValue="文档" isDisabled={!tree.isSuccess}><FilePlus2 aria-hidden="true" className="notebook-create-document" /><Label>文档</Label></Dropdown.Item>
-          <Dropdown.Item id="board" textValue="画板" isDisabled={!tree.isSuccess}><Shapes aria-hidden="true" className="notebook-create-board" /><Label>画板</Label></Dropdown.Item>
+          {releaseFeatures.boardCreation && <Dropdown.Item id="board" textValue="画板" isDisabled={!tree.isSuccess}><Shapes aria-hidden="true" className="notebook-create-board" /><Label>画板</Label></Dropdown.Item>}
           <Dropdown.Item id="table" textValue="数据表" isDisabled={!tree.isSuccess}><Table2 aria-hidden="true" className="notebook-create-table" /><Label>数据表</Label></Dropdown.Item>
         </Dropdown.Menu>
       </Dropdown.Popover>
