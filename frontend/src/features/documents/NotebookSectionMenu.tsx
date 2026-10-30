@@ -179,7 +179,7 @@ export function NotebookSectionMenu({
           <ActionButton type="button" className="notebook-home-more" aria-label="笔记本快捷操作" title="笔记本快捷操作"><MoreHorizontal aria-hidden="true" size={18} /></ActionButton>
           <Dropdown.Popover placement="bottom end" offset={4}>
             <Dropdown.Menu aria-label="笔记本快捷操作" onAction={() => togglePin(notebookId)}>
-              <Dropdown.Item id="pin" textValue={isPinned(notebookId) ? "移出快捷访问" : "加入快捷访问"}><Pin aria-hidden="true" size={16} /><Label>{isPinned(notebookId) ? "移出快捷访问" : "加入快捷访问"}</Label></Dropdown.Item>
+              <Dropdown.Item id="pin" textValue={isPinned(notebookId) ? "取消常用" : "设为常用"}><Pin aria-hidden="true" size={16} /><Label>{isPinned(notebookId) ? "取消常用" : "设为常用"}</Label></Dropdown.Item>
             </Dropdown.Menu>
           </Dropdown.Popover>
         </Dropdown>}

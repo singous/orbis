@@ -35,7 +35,8 @@ test("board creation entries stay hidden while table embeds remain available", a
   await expect(page.locator(".embed-table")).toBeVisible();
   expect(errors).toEqual([]);
   await page.goto(`/collections/${collection.id}`);
-  await expect(page.getByRole("button", { name: /收藏|分享|快捷访问/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /分享|收藏|快捷访问/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "设为常用笔记本", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "笔记本操作", exact: true }).click();
   await expect(page.getByRole("menuitem", { name: "创建文档站点" })).toHaveCount(0);
 });
