@@ -79,7 +79,7 @@ test("embedded data tables preserve search, cell selection and edits when expand
   const embed = page.locator(".embed-table");
   const grid = embed.getByRole("grid", { name: "数据表", exact: true });
   await embed.getByRole("button", { name: "添加记录", exact: true }).first().click();
-  await grid.getByRole("gridcell").first().click();
+  await grid.getByRole("gridcell").first().dblclick();
   await page.getByRole("textbox", { name: "文本", exact: true }).fill("验收任务");
   await page.getByRole("textbox", { name: "文本", exact: true }).press("Enter");
   await expect(grid.getByRole("gridcell").first()).toHaveText("验收任务");

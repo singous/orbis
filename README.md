@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/singous/orbis/releases/tag/release/v0.1.0"><img src="https://img.shields.io/badge/release-v0.1.0-23ad83?style=flat-square&amp;labelColor=17332b" alt="Release v0.1.0"></a>
+  <a href="https://github.com/singous/orbis/releases/tag/release/v0.1.1"><img src="https://img.shields.io/badge/release-v0.1.1-23ad83?style=flat-square&amp;labelColor=17332b" alt="Release v0.1.1"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-23ad83?style=flat-square&amp;labelColor=17332b" alt="License AGPL-3.0"></a>
   <a href="deploy/README.md"><img src="https://img.shields.io/badge/deploy-Docker_Compose-23ad83?style=flat-square&amp;labelColor=17332b" alt="Docker Compose 部署"></a>
   <a href="cli/README.md"><img src="https://img.shields.io/badge/client-Go_CLI-23ad83?style=flat-square&amp;labelColor=17332b" alt="独立 Go CLI"></a>
@@ -29,7 +29,7 @@
 
 ## 概览
 
-Orbis 将文集、块文档、多维表格和文档站放进同一个工作空间。用目录整理资料，用正文协同与评论一起完成内容，准备好后再发布给读者。
+Orbis 将文集、块文档、多维表格和文档站放进同一个工作空间。用目录整理资料，通过正文协同一起完成内容，再交付给读者。各版本的开放入口以版本说明为准。
 
 <table>
   <tr>
@@ -41,7 +41,7 @@ Orbis 将文集、块文档、多维表格和文档站放进同一个工作空�
     <td width="33%" valign="top">
       <sub>02 / COLLABORATE</sub><br>
       <b>一起完成</b><br><br>
-      通过成员角色、正文协同、评论和历史恢复推进工作；用多维表格组织结构化信息。
+      通过成员角色、正文协同和自动保存推进工作；用多维表格组织结构化信息。
     </td>
     <td width="33%" valign="top">
       <sub>03 / PUBLISH</sub><br>
@@ -57,14 +57,16 @@ Orbis 将文集、块文档、多维表格和文档站放进同一个工作空�
 | --- | --- |
 | **组织知识** | 工作空间、文集分组、嵌套目录、搜索、Markdown 导入导出 |
 | **丰富表达** | 块文档、富文本、普通表格、图片与附件、原生画板引用、内容组件 |
-| **团队协作** | 成员角色、邮件邀请、CRDT 正文协同、自动保存、评论、命名版本、自动历史、版本比较与恢复 |
+| **团队协作** | 成员角色、邮件邀请、CRDT 正文协同与自动保存；评论与版本管理接口保留，Web 管理入口暂缓开放 |
 | **随手记录** | 工作空间内个人私有随手记、富文本与附件、标签、搜索、置顶、回收站与本机草稿恢复 |
 | **多维表格** | 字段、记录、视图、筛选、排序、分组、复制、撤销与 CSV/Markdown 导出 |
 | **原生画板（暂缓开放）** | 创建入口暂时隐藏，后续迭代开放；已有画板及正文引用继续保留 |
-| **对外发布** | 文档站预览、固定快照、发布记录、版本切换与撤回、主题、移动端导航、公开搜索 |
+| **对外发布** | 已有文档站与分享链接继续可用；文档站导航、文档分享入口暂缓开放 |
 | **工具接入** | 公共 API、工作空间范围的 Agent 令牌、独立 CLI、产品 Skill、持久化分块导入 |
 
-旧版正文绘图已退役，不再提供旧编辑器、预览或数据下载。打开可编辑文档时，旧绘图块通过正文保存流程清除；新建画板和正文画板引用使用原生模块。
+旧版正文绘图已退役，不再提供旧编辑器、预览或数据下载。打开可编辑文档时，旧绘图块通过正文保存流程清除；原生画板和正文画板引用使用独立模块。
+
+0.1.1 暂缓开放画板创建、文档分享、评论与版本面板、文档站导航和表格表单管理入口；已有数据、公共 API、画板引用、公开站点与表单读取继续保留。具体范围见 [版本说明](docs/release/v0.1.1.md#使用边界)。
 
 **两种分享方式。** 文档站交付显式发布的快照；可撤销的实时分享展示当前可见内容，未来新增或移入的文档也可能进入分享范围。发布时私有文件会复制为发布专用对象；外部 HTTP(S) 媒体只固定 URL，不复制外部服务器的文件。
 
@@ -72,13 +74,14 @@ Orbis 将文集、块文档、多维表格和文档站放进同一个工作空�
 
 ### 自托管
 
-0.1.1 已在 `release/v0.1.1` 分支封版，暂未创建 tag，也未合入 `main`。本次提供封版源码和通用 Docker Compose 模板。你需要 Docker Engine、Compose V2 和 Git；运行构建后的镜像无需在宿主机安装 Go 或 Node.js。
+0.1.1 的封版源码使用 `release/v0.1.1` 标签，提供服务端、前端、协同引擎的构建定义和通用 Docker Compose 模板。你需要 Docker Engine、Compose V2 和 Git；运行构建后的镜像无需在宿主机安装 Go 或 Node.js。
 
 获取封版源码，构建服务端、前端和协同引擎镜像：
 
 ```bash
-git clone --branch release/v0.1.1 https://github.com/singous/orbis.git
+git clone https://github.com/singous/orbis.git
 cd orbis
+git switch --detach refs/tags/release/v0.1.1
 
 docker build --target server --build-arg ORBIS_VERSION=0.1.1 -t orbis-server:0.1.1 .
 docker build --target frontend -t orbis-frontend:0.1.1 .
@@ -117,11 +120,11 @@ bin/orbis --help
 
 ## 版本动态
 
-### 0.1.1 · 原生画板、文档版本与随手记
+### v0.1.1 · 随手记、表格交互与文档体验
 
-新增原生画板与交互式思维导图、命名版本与自动历史、个人随手记及正文内多维表格；更新文集导航、登录页面、品牌视觉与操作反馈。
+新增个人随手记，改进多维表格的双击编辑、右键菜单与拖拽排序，完善正文嵌入、目录定位、首页与操作反馈。已有原生画板和正文引用继续保留，创建入口暂缓开放。
 
-本次仅封版分支，暂不创建 tag，不合入 `main`。升级前请阅读旧正文绘图退役与数据库迁移说明。
+升级前请阅读旧正文绘图退役、暂缓开放入口与数据库迁移说明。
 
 [阅读 0.1.1 版本说明 →](docs/release/v0.1.1.md)
 
