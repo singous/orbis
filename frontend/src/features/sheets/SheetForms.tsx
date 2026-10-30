@@ -1,17 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
+import { reportError } from "../../shared/api/request-feedback";
 import { ArrowDown, ArrowUp, Copy, Plus, Send, Trash2 } from "lucide-react";
 import QRCode from "qrcode";
 import { useEffect, useRef, useState } from "react";
-import { useBlocker, useParams } from "react-router-dom";
-import { ApiError } from "../../shared/api/api-client";
-import { newUUID } from "../../shared/ids";
+import { useBlocker } from "react-router-dom";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Dialog, DialogContent } from "../../shared/ui/Dialog";
 import { Tag } from "../../shared/ui/Tag";
 import { TextInput } from "../../shared/ui/TextInput";
 import { ValueEditor } from "./Cell";
 import { FieldIcon } from "./FieldIcon";
-import { readPublicForm, submitPublicForm, uploadPublicFormFile } from "./api";
 import {
   KINDS,
   newField,
@@ -53,7 +50,6 @@ export function SheetForms({
   const [draft, setDraft] = useState(structuredClone(form)),
     [preview, setPreview] = useState(false),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState(""),
     [share, setShare] = useState(false),
     [copied, setCopied] = useState(false);
   const [values, setValues] = useState<Record<string, Value>>({});
@@ -68,7 +64,7 @@ export function SheetForms({
   }, [dirty]);
   async function save(enabled = draft.enabled) {
     setBusy(true);
-    setError("");
+
     try {
       const saved = await c.api.saveForm(c.meta.data!.id, {
         ...draft,
@@ -77,8 +73,7 @@ export function SheetForms({
       setDraft(saved);
       await c.forms.refetch();
       return saved;
-    } catch (e) {
-      setError((e as Error).message);
+    } catch (e) { reportError(e);
       throw e;
     } finally {
       setBusy(false);
@@ -127,8 +122,7 @@ export function SheetForms({
           ],
         },
       }));
-    } catch (e) {
-      setError((e as Error).message);
+    } catch (e) { reportError(e);
     } finally {
       setBusy(false);
     }
@@ -194,11 +188,7 @@ export function SheetForms({
           </>
         )}
       </div>
-      {error && (
-        <p className="sheet-error" role="alert">
-          {error}
-        </p>
-      )}
+
       <div className="sheet-form-body">
         {!preview && !readOnly && (
           <aside className="sheet-form-palette">
@@ -424,7 +414,7 @@ export function SheetForms({
                     void navigator.clipboard
                       .writeText(link)
                       .then(() => setCopied(true))
-                      .catch(() => setError("复制失败，请选中链接手动复制"));
+                      .catch(() => reportError("复制失败，请选中链接手动复制"));
                   }}
                 >
                   <Copy size={14} />
@@ -440,163 +430,5 @@ export function SheetForms({
         </Dialog>
       )}
     </div>
-  );
-}
-export function PublicSheetForm() {
-  const { token = "" } = useParams();
-  return <PublicSheetFormSession key={token} token={token} />;
-}
-
-/** 每个公开表单链接独立持有答案、提交凭据与成功状态。 */
-function PublicSheetFormSession({ token }: { token: string }) {
-  const query = useQuery({
-    queryKey: ["public-sheet-form", token],
-    queryFn: ({ signal }) => readPublicForm(token, signal),
-    retry: false,
-  });
-  const [values, setValues] = useState<Record<string, Value>>({}),
-    [busy, setBusy] = useState(false),
-    [error, setError] = useState(""),
-    [done, setDone] = useState(false);
-  const pending = useRef<{
-    operation_id: string;
-    version: number;
-    values: Record<string, Value>;
-  } | null>(null);
-  const submissionKey = `orbis.sheet-submission:${token}`;
-  useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem(submissionKey);
-      if (raw) {
-        const saved = JSON.parse(raw);
-        if (
-          saved &&
-          typeof saved.operation_id === "string" &&
-          Number.isSafeInteger(saved.version) &&
-          saved.values &&
-          typeof saved.values === "object"
-        ) {
-          pending.current = saved;
-          setValues(saved.values);
-        }
-      }
-    } catch {
-      setError("无法恢复上次填写内容");
-    }
-  }, [submissionKey]);
-  if (query.error)
-    return (
-      <main className="sheet-public">
-        <div className="sheet-form-paper">
-          <h1>暂时无法填写</h1>
-          <p>收集已停止，或填写链接已失效。</p>
-          <ActionButton size="sm" onClick={() => void query.refetch()}>
-            重试
-          </ActionButton>
-        </div>
-      </main>
-    );
-  if (!query.data) return <main className="sheet-public">正在加载表单…</main>;
-  const form = query.data;
-  async function submit() {
-    setError("");
-    for (const ff of form.config.fields) {
-      const v = values[ff.field_id];
-      if (
-        ff.required &&
-        (v == null || v === "" || (Array.isArray(v) && !v.length))
-      ) {
-        setError(
-          `请填写${form.fields.find((f) => f.id === ff.field_id)?.name}`,
-        );
-        return;
-      }
-    }
-    pending.current ??= {
-      operation_id: newUUID(),
-      version: form.version,
-      values: structuredClone(values),
-    };
-    try {
-      sessionStorage.setItem(submissionKey, JSON.stringify(pending.current));
-    } catch {
-      setError("无法保存提交凭据，请允许浏览器存储后重试");
-      return;
-    }
-    setBusy(true);
-    try {
-      await submitPublicForm(token, pending.current);
-      sessionStorage.removeItem(submissionKey);
-      setDone(true);
-    } catch (e) {
-      if (e instanceof ApiError && e.status >= 400 && e.status < 500 && ![408, 429].includes(e.status)) {
-        pending.current = null;
-        sessionStorage.removeItem(submissionKey);
-      }
-      setError((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
-  return (
-    <main className="sheet-public">
-      <form
-        className="sheet-form-paper"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void submit();
-        }}
-      >
-        {done ? (
-          <>
-            <h1>提交成功</h1>
-            <p>你的信息已保存，感谢填写。</p>
-          </>
-        ) : (
-          <>
-            <h1>{form.config.title}</h1>
-            <p className="sheet-form-description">{form.config.description}</p>
-            {form.config.fields.map((ff, i) => {
-              const field = form.fields.find((f) => f.id === ff.field_id);
-              return field ? (
-                <section className="sheet-form-question" key={field.id}>
-                  <label>
-                    {ff.required && <em>*</em>}
-                    {i + 1}. {field.name}
-                  </label>
-                  {ff.description && <p>{ff.description}</p>}
-                  <ValueEditor
-                    field={field}
-                    value={values[field.id]}
-                    publicMode
-                    publicUpload={(file) =>
-                      uploadPublicFormFile(token, field.id, file)
-                    }
-                    onChange={(value) => {
-                      if (!pending.current)
-                        setValues((old) => ({ ...old, [field.id]: value }));
-                    }}
-                  />
-                </section>
-              ) : null;
-            })}
-            {error && (
-              <p className="sheet-error" role="alert">
-                {error}
-              </p>
-            )}
-            <ActionButton
-              size="sm"
-              type="submit"
-              variant="primary"
-              className="sheet-primary"
-              disabled={busy}
-            >
-              {busy ? "提交中…" : pending.current ? "重试提交" : "提交"}
-            </ActionButton>
-          </>
-        )}
-      </form>
-    </main>
   );
 }

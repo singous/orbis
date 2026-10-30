@@ -22,13 +22,12 @@ test('document overview shares the shell and exposes its function menu alongside
 
   async function frame(path: string) {
     await page.goto(path);
-    await expect(page.locator('.page-title')).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
     return page.evaluate(() => {
       const panel = getComputedStyle(document.querySelector('.workspace-main-area')!);
       const grid = getComputedStyle(document.querySelector('.workspace-shell-grid')!);
       const rail = document.querySelector('.workspace-main-navigation')!.getBoundingClientRect();
-      const title = document.querySelector('.page-title')!.getBoundingClientRect();
-      return { radius: panel.borderRadius, border: panel.borderTopWidth, shadow: panel.boxShadow, gap: grid.columnGap, padding: grid.paddingLeft, railX: rail.x, railWidth: rail.width, titleX: title.x, titleY: title.y };
+      return { radius: panel.borderRadius, border: panel.borderTopWidth, shadow: panel.boxShadow, gap: grid.columnGap, padding: grid.paddingLeft, railX: rail.x, railWidth: rail.width };
     });
   }
   for (const width of [1440, 1920]) {
@@ -36,20 +35,21 @@ test('document overview shares the shell and exposes its function menu alongside
     const home = await frame('/home');
     const documents = await frame('/documents');
     expect({ radius: documents.radius, border: documents.border, shadow: documents.shadow }).toEqual({ radius: '0px', border: '0px', shadow: 'none' });
-    expect({ ...documents, railWidth: home.railWidth, titleX: home.titleX }).toEqual(home);
+    expect({ ...documents, railWidth: home.railWidth }).toEqual(home);
     expect(documents.railWidth).toBeGreaterThan(home.railWidth);
     await expect(page.getByRole('navigation', { name: '文档导航', exact: true })).toBeVisible();
     const navigation = page.getByRole('navigation', { name: '文档导航', exact: true });
     await expect(navigation.getByRole('link', { name: '开始', exact: true })).toHaveAttribute('href', '/documents');
     await expect(navigation.getByRole('link', { name: '数据表', exact: true })).toHaveCount(0);
     await expect(navigation.getByRole('link', { name: '回收站', exact: true })).toBeVisible();
-    await expect(navigation.getByRole('link', { name: 'Frame notebook one', exact: true })).toBeVisible();
+    await expect(navigation.getByRole('link', { name: 'Frame notebook one', exact: true })).toHaveCount(0);
+    await expect(navigation.getByRole('link', { name: '设置常用笔记本', exact: true })).toBeVisible();
     const section = page.getByRole('region', { name: 'Frame notebooks', exact: true });
     await expect(section).toBeVisible();
     await expect(page.getByRole('region', { name: 'Empty frame group', exact: true })).toHaveCount(0);
-    const heading = await page.locator('.notebook-overview-group h2').first().boundingBox();
+    const common = await page.getByRole('region', { name: '常用', exact: true }).boundingBox();
     const header = await page.locator('.notebook-overview .page-header').boundingBox();
-    expect(heading!.y - (header!.y + header!.height)).toBeLessThan(40);
+    expect(common!.y - (header!.y + header!.height)).toBeLessThan(40);
     const cards = await section.locator('.notebook-overview-card').evaluateAll(elements => elements.map(element => { const box = element.getBoundingClientRect(); return { y: box.y, right: box.right }; }));
     const row = await section.locator('.notebook-overview-grid').boundingBox();
     expect(cards).toHaveLength(2);
@@ -89,9 +89,10 @@ test('document overview shares the shell and exposes its function menu alongside
   expect(titleBox!.y).toBeGreaterThanOrEqual(controlsBox!.y + controlsBox!.height);
   expect(titleBox!.x + titleBox!.width).toBeLessThanOrEqual(columnBox!.x + columnBox!.width);
   await notebookHeader.getByRole('button', { name: '创建内容', exact: true }).click();
-  for (const name of ['随手记', '文档', '画板', '数据表']) {
+  for (const name of ['随手记', '文档', '数据表']) {
     await expect(page.getByRole('menuitem', { name, exact: true })).toBeVisible();
   }
+  await expect(page.getByRole('menuitem', { name: '画板', exact: true })).toHaveCount(0);
   await page.keyboard.press('Escape');
   await expect(notebookHeader.getByRole('button', { name: '创建内容', exact: true })).toBeFocused();
   await notebookHeader.getByRole('button', { name: '创建内容', exact: true }).click();
@@ -101,7 +102,10 @@ test('document overview shares the shell and exposes its function menu alongside
   await page.screenshot({ path: testInfo.outputPath('notebook-create-menu.png') });
   await page.getByRole('menuitem', { name: '文档', exact: true }).click();
   await expect(page).toHaveURL(/\/documents\/[^/]+$/);
-  await expect(page.locator('#notebook-directory').getByRole('link', { name: '未命名文档', exact: true })).toBeVisible();
+  const createdDocumentPath = new URL(page.url()).pathname;
+  const createdDocumentLink = page.locator(`#notebook-directory a[href="${createdDocumentPath}"]`);
+  await expect(createdDocumentLink).toBeVisible();
+  await expect(createdDocumentLink).toHaveText('未命名文档');
   await page.locator('#notebook-directory').getByRole('button', { name: '创建内容', exact: true }).click();
   await page.getByRole('menuitem', { name: '随手记', exact: true }).click();
   await expect(page).toHaveURL(/\/documents\/quick-notes$/);

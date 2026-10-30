@@ -13,6 +13,7 @@ import { readDocumentContextOpen, writeDocumentContextOpen } from "./document-co
 
 type DocumentShellProps = {
   children: ReactNode;
+  loading?: boolean;
   toolbar?: ReactNode;
   breadcrumb?: ReactNode;
   editorLayout?: boolean;
@@ -23,7 +24,7 @@ type DocumentShellProps = {
   activeNoteId?: string;
 };
 
-export function DocumentShell({ children, toolbar, breadcrumb, editorLayout = false, contextPanel, contextOpen, onOpenContext, notebookId, activeNoteId }: DocumentShellProps) {
+export function DocumentShell({ children, loading = false, toolbar, breadcrumb, editorLayout = false, contextPanel, contextOpen, onOpenContext, notebookId, activeNoteId }: DocumentShellProps) {
   const workspaceId = useStore(authStore, (state) => state.workspace?.id);
   const [storedContextOpen, setStoredContextOpen] = useState(() => workspaceId ? readDocumentContextOpen(workspaceId) : true);
   const isContextOpen = contextOpen ?? storedContextOpen;
@@ -39,6 +40,7 @@ export function DocumentShell({ children, toolbar, breadcrumb, editorLayout = fa
 
   return (
     <WorkspaceShell
+      loading={loading}
       sidebar={notebookId ? createNotebookSidebar(notebookId, activeNoteId) : { title: <h2>在线文档</h2>, content: <WorkspaceNavigation /> }}
       toolbar={toolbar}
       sectionTitle={breadcrumb}

@@ -1,3 +1,5 @@
+import { releaseFeatures } from "../../shared/release-features";
+import { reportError } from "../../shared/api/request-feedback";
 import { useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
@@ -12,7 +14,6 @@ import { useStore } from "zustand";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { authStore } from "../../shared/auth/auth-store";
 import { ActionButton } from "../../shared/ui/ActionButton";
-import { showToast } from "../../shared/ui/Toast";
 import { ArrowLeft, FilePlus2, Home, MoreHorizontal, Pin, Plus } from "../../shared/ui/icons";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { usePinnedNotebooks } from "./pinned-notebooks";
@@ -81,7 +82,7 @@ function NotebookCreateAction({ notebookId }: { notebookId: string }) {
   const tableIntent = useRef<string | null>(null);
 
   async function createBoard() {
-    if (creatingBoard) return;
+    if (!releaseFeatures.boardCreation || creatingBoard) return;
     setCreatingBoard(true);
     boardIntent.current ??= { id: newUUID(), operation_id: newUUID(), page_id: newUUID() };
     try {
@@ -91,7 +92,7 @@ function NotebookCreateAction({ notebookId }: { notebookId: string }) {
       await client.invalidateQueries({ queryKey: ["notebooks"] });
       navigate(`/documents/${board.document_id}`);
     } catch (error) {
-      showToast({ title: "创建画板失败", description: error instanceof Error ? error.message : "请稍后重试。", tone: "danger" });
+      reportError(error);
     } finally {
       setCreatingBoard(false);
     }
@@ -112,11 +113,7 @@ function NotebookCreateAction({ notebookId }: { notebookId: string }) {
       await client.invalidateQueries({ queryKey: ["notebooks"] });
       navigate(`/documents/${table.document_id}`);
     } catch (error) {
-      showToast({
-        title: "创建数据表失败",
-        description: (error as Error).message,
-        tone: "danger",
-      });
+      reportError(error);
     } finally {
       setCreatingTable(false);
     }
@@ -132,11 +129,7 @@ function NotebookCreateAction({ notebookId }: { notebookId: string }) {
       });
       navigate(`/documents/${note.id}`);
     } catch (error) {
-      showToast({
-        title: "创建文档失败",
-        description: error instanceof Error ? error.message : "请稍后重试。",
-        tone: "danger",
-      });
+      reportError(error);
     }
   }
 
@@ -153,7 +146,7 @@ function NotebookCreateAction({ notebookId }: { notebookId: string }) {
         }}>
           <Dropdown.Item id="quick-note" textValue="随手记"><StickyNote aria-hidden="true" className="notebook-create-quick-note" /><Label>随手记</Label></Dropdown.Item>
           <Dropdown.Item id="document" textValue="文档" isDisabled={!tree.isSuccess}><FilePlus2 aria-hidden="true" className="notebook-create-document" /><Label>文档</Label></Dropdown.Item>
-          <Dropdown.Item id="board" textValue="画板" isDisabled={!tree.isSuccess}><Shapes aria-hidden="true" className="notebook-create-board" /><Label>画板</Label></Dropdown.Item>
+          {releaseFeatures.boardCreation && <Dropdown.Item id="board" textValue="画板" isDisabled={!tree.isSuccess}><Shapes aria-hidden="true" className="notebook-create-board" /><Label>画板</Label></Dropdown.Item>}
           <Dropdown.Item id="table" textValue="数据表" isDisabled={!tree.isSuccess}><Table2 aria-hidden="true" className="notebook-create-table" /><Label>数据表</Label></Dropdown.Item>
         </Dropdown.Menu>
       </Dropdown.Popover>
@@ -182,14 +175,14 @@ export function NotebookSectionMenu({
           <Home aria-hidden="true" size={16} />
           <span>首页</span>
         </NavLink>
-        <Dropdown>
+        {releaseFeatures.documentFavorites && <Dropdown>
           <ActionButton type="button" className="notebook-home-more" aria-label="笔记本快捷操作" title="笔记本快捷操作"><MoreHorizontal aria-hidden="true" size={18} /></ActionButton>
           <Dropdown.Popover placement="bottom end" offset={4}>
             <Dropdown.Menu aria-label="笔记本快捷操作" onAction={() => togglePin(notebookId)}>
-              <Dropdown.Item id="pin" textValue={isPinned(notebookId) ? "移出快捷访问" : "加入快捷访问"}><Pin aria-hidden="true" size={16} /><Label>{isPinned(notebookId) ? "移出快捷访问" : "加入快捷访问"}</Label></Dropdown.Item>
+              <Dropdown.Item id="pin" textValue={isPinned(notebookId) ? "取消常用" : "设为常用"}><Pin aria-hidden="true" size={16} /><Label>{isPinned(notebookId) ? "取消常用" : "设为常用"}</Label></Dropdown.Item>
             </Dropdown.Menu>
           </Dropdown.Popover>
-        </Dropdown>
+        </Dropdown>}
       </div>
       <DocumentContextPanel
         notebookId={notebookId}

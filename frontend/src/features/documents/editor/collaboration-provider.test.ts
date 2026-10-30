@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { IDBFactory } from "fake-indexeddb";
 import * as Y from "yjs";
 import { DocumentCollaborationProvider, decodeCollaborationUpdate, encodeCollaborationUpdate, type CollaborationState, type CollaborationProviderOptions, type CollaborationNetwork } from "./collaboration-provider";
-import { ApiError } from "../../../shared/api/api-client";
+import { ApiError, apiRequest } from "../../../shared/api/api-client";
 import { collaborationScope, createCollaborationPersistence } from "./collaboration-persistence";
 import { fingerprintElement } from "../../content/codecs/collaboration-fingerprint";
 import type { DraftLaneOptions } from "./draft-lanes";
@@ -247,14 +247,17 @@ describe("durable collaboration provider", () => {
     expect(server.doc.getText("text").toString()).toContain("second tab");
   });
 
-  it("preserves failed structural edits when the server rejects a removed target before broadcast", async () => {
-    const { provider, server } = await setup();
+  it("preserves failed structural edits and shares one error with feedback and pending saves", async () => {
+    const onError = vi.fn();
+    const { provider, server } = await setup({ onError });
     server.acknowledge = false;
     provider.doc.getText("text").delete(0, 1);
     const saving = provider.flush();
     await vi.waitFor(() => expect(server.updates()).toHaveLength(1));
     server.sockets[0].message({ type: "error", status: 409, code: "COLLABORATION_TARGET_REMOVED", message: "目标已被并发移动或删除" });
     await expect(saving).rejects.toThrow("目标已被并发移动或删除");
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(await saving.catch(error => error)).toBe(onError.mock.calls[0][0]);
     expect(provider.getSnapshot()).toMatchObject({ status: "recovery", readOnly: true, pendingCount: 1, isSaved: false });
     expect(provider.doc.getText("text").toString()).toBe("erver");
     expect(JSON.parse(provider.exportRecovery()).pending).toHaveLength(1);
@@ -420,9 +423,13 @@ describe("durable collaboration provider", () => {
     await expect(provider.flush({ timeoutMs: 5 })).rejects.toThrow();
     await provider.dispose();
     const moved = paragraph.clone(); server.doc.getXmlFragment("body").delete(0, 1); server.doc.getXmlFragment("body").insert(0, [moved]); server.version++;
-    const restored = new DocumentCollaborationProvider({ documentId, workspaceId, userId, initialState: server.state(), token: () => "token", persistence: createCollaborationPersistence(factory), socketFactory: server.connect, laneOptions: laneOptions(factory) });
+    const onError = vi.fn();
+    const restored = new DocumentCollaborationProvider({ documentId, workspaceId, userId, initialState: server.state(), token: () => "token", persistence: createCollaborationPersistence(factory), socketFactory: server.connect, laneOptions: laneOptions(factory), onError });
     providers.push(restored);
-    await expect(restored.start()).rejects.toThrow("并发操作移动或删除");
+    const startup = restored.start();
+    await expect(startup).rejects.toThrow("并发操作移动或删除");
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(await startup.catch(error => error)).toBe(onError.mock.calls[0][0]);
     expect(restored.getSnapshot()).toMatchObject({ status: "recovery", readOnly: true, pendingCount: 1 });
     expect(((restored.doc.getXmlFragment("body").get(0) as Y.XmlElement).get(0) as Y.XmlText).toString()).toBe("riginal");
     const backup = JSON.parse(restored.exportRecovery()), decoded = new Y.Doc(); Y.applyUpdate(decoded, decodeCollaborationUpdate(backup.state));
@@ -582,6 +589,33 @@ describe("durable collaboration provider", () => {
     const { provider, server } = await setup({ refreshToken: async () => { throw new ApiError(401, "登录已失效", "AUTH_REQUIRED"); } });
     server.sockets[0].message({ type: "error", status: 401 });
     await vi.waitFor(() => expect(provider.getSnapshot()).toMatchObject({ status: "read_only", readOnly: true }));
+  });
+
+  it.each(["network", "status-zero"])("resumes the original pending write after a transient %s authentication probe failure", async kind => {
+    const network = new FakeNetwork();
+    const fetchProbe = vi.spyOn(globalThis, "fetch")
+      .mockRejectedValueOnce(kind === "network" ? new TypeError("Failed to fetch") : new ApiError(0, "网络不可用"))
+      .mockResolvedValue(new Response(JSON.stringify({ code: "OK", message: "ok", request_id: "probe", data: {} }), { headers: { "Content-Type": "application/json" } }));
+    try {
+      const refreshToken = vi.fn(async () => { await apiRequest("/v1/auth-probe", { feedback: { error: false } }); return "refreshed"; });
+      const { provider, server } = await setup({ network, refreshToken, reconnectDelayMs: 100000 });
+      server.acknowledge = false;
+      provider.doc.getText("text").insert(0, "retained ");
+      await expect(provider.flush({ timeoutMs: 5 })).rejects.toThrow();
+      const original = server.updates()[0];
+      server.requiredToken = "refreshed";
+      server.sockets[0].message({ type: "error", status: 401 });
+      await vi.waitFor(() => expect(provider.getSnapshot()).toMatchObject({ status: "offline", readOnly: false, pendingCount: 1 }));
+      expect(refreshToken).toHaveBeenCalledTimes(1);
+      network.set(false);
+      server.acknowledge = true;
+      network.set(true);
+      await provider.flush();
+      expect(refreshToken).toHaveBeenCalledTimes(2);
+      expect(server.updates()[1]).toEqual(original);
+      expect(server.doc.getText("text").toString()).toBe("retained server");
+      expect(provider.getSnapshot()).toMatchObject({ status: "online", readOnly: false, isSaved: true });
+    } finally { fetchProbe.mockRestore(); }
   });
 });
 

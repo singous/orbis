@@ -41,7 +41,8 @@
 .document-tree-tools .icon-button:disabled { opacity: .4; }
 .document-context-tree { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
 .document-context-item, .document-context-children { min-width: 0; }
-.document-context-children { padding: 0; }
+.document-context-item + .document-context-item { margin-top: var(--orbis-space-1); }
+.document-context-children { padding: var(--orbis-space-1) 0 0; }
 .document-context-row, .document-main-row {
   display: flex;
   align-items: center;

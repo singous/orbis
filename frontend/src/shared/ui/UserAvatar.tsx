@@ -27,6 +27,7 @@ function StoredAvatar(props: UserAvatarProps) {
   const image = useQuery({
     queryKey: ["user-avatar", getAuthSessionKey(state), props.user?.id, props.user?.avatar_asset_id],
     queryFn: () => getAvatar(auth!),
+    meta: { silent: true },
     enabled: Boolean(auth && props.user?.id === state.user?.id),
     staleTime: 5 * 60 * 1000,
     retry: false,

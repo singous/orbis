@@ -81,11 +81,12 @@ func get(ctx context.Context, tx *gorm.DB, sc sheet.Scope, lock string) (sheet.S
 	if err != nil {
 		return t, err
 	}
-	var activity struct{ Revision int64 }
+	var activity struct{ Revision, OrderRevision int64 }
 	if err := tx.WithContext(ctx).Table("sheet_activity").Where("sheet_id=?", row.ID).Take(&activity).Error; err != nil {
 		return t, err
 	}
 	t.DataRevision = activity.Revision
+	t.OrderRevision = activity.OrderRevision
 	return t, nil
 }
 func (r *Repository) Get(ctx context.Context, sc sheet.Scope) (sheet.Sheet, error) {
@@ -445,8 +446,16 @@ func history(tx *gorm.DB, row recordRow, operation string, deleted bool, actor *
 func change(ctx context.Context, tx *gorm.DB, sc sheet.Scope, in sheet.Changes, now int64, actorKey string) (sheet.ChangeResult, error) {
 	result := sheet.ChangeResult{Records: []sheet.Record{}, Deleted: []string{}}
 	countDelta := int64(0)
-	// A shared schema lock permits independent record writers and excludes schema edits.
-	t, err := get(ctx, tx, sc, "SHARE")
+	// Relative placement changes the common order and excludes ordinary record writers.
+	// Unpositioned edits retain the shared schema lock and independent row concurrency.
+	strength := "SHARE"
+	for _, patch := range in.Records {
+		if patch.BeforeID != "" || patch.AfterID != "" {
+			strength = "UPDATE"
+			break
+		}
+	}
+	t, err := get(ctx, tx, sc, strength)
 	if err != nil {
 		return result, err
 	}
@@ -551,6 +560,9 @@ func change(ctx context.Context, tx *gorm.DB, sc sheet.Scope, in sheet.Changes, 
 			return result, err
 		}
 		result.Records = append(result.Records, row.domain(t.Definition))
+	}
+	if err := placeRecords(tx, t.ID, in.Records, result.Records); err != nil {
+		return result, err
 	}
 	if err := tx.Exec("UPDATE sheet_activity SET revision=revision+1,record_count=record_count+?,updated_at_ms=? WHERE sheet_id=?", countDelta, now, t.ID).Error; err != nil {
 		return result, err

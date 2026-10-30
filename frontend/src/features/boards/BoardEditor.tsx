@@ -1,9 +1,13 @@
+import { releaseFeatures } from "../../shared/release-features";
+import { ConfirmAction } from "../../shared/ui/ConfirmAction";
+import { reportError } from "../../shared/api/request-feedback";
+import { DraftActions } from "../../shared/ui/DraftActions";
 import { Dropdown } from "@heroui/react/dropdown";
 import { Label } from "@heroui/react/label";
 import { Tabs } from "@heroui/react/tabs";
 import { Toolbar } from "@heroui/react/toolbar";
 import { ToggleButton } from "@heroui/react/toggle-button";
-import { ToastNotification } from "../../shared/ui/Toast";
+
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { Tooltip } from "../../shared/ui/Tooltip";
 import { newUUID } from "../../shared/ids";
@@ -13,13 +17,11 @@ import {
   Suspense,
   useEffect,
   useId,
-  useMemo,
   useRef,
   useState,
-  useSyncExternalStore,
   type CSSProperties,
+  type RefObject,
 } from "react";
-import { useStore } from "zustand";
 import {
   Check,
   Copy,
@@ -48,20 +50,20 @@ import {
   RiPencilLine,
   RiFunctionAddLine,
 } from "@remixicon/react";
-import { useAuthRequest } from "../../shared/auth/use-auth-request";
-import { authStore } from "../../shared/auth/auth-store";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Button } from "../../shared/ui/Button";
 import { Dialog, DialogContent } from "../../shared/ui/Dialog";
 import { boardCanvasBackground, boardCanvasTextColor, DEFAULT_BOARD_BACKGROUND } from "./board-appearance";
 import { TemplatePreview } from "./TemplatePreview";
+import { PREVIEW_ZOOMS } from "./BoardPreviewViewport";
 import { zoomAt } from "./viewport";
 import { BoardShell } from "./BoardShell";
 import { BoardMinimap } from "./BoardMinimap";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { DocumentShell } from "../documents/DocumentShell";
 import { ShareButton } from "../sharing/ShareButton";
-import { BoardSession } from "./session";
+import type { BoardSession } from "./session";
+import { useBoardSession } from "./use-board-session";
 import { BoardCanvas } from "./BoardCanvas";
 import { BoardLibrary, type BoardLibraryTab } from "./BoardLibrary";
 import { BoardInspector } from "./BoardInspector";
@@ -79,7 +81,6 @@ import {
   exportAssets,
   MAX_PORTABLE_BYTES,
 } from "./portable";
-import { BoardImages } from "./images";
 import { insertBoardImage } from "./image-import";
 import "./boards.css";
 
@@ -93,34 +94,24 @@ const STATUS = {
   loading: "正在读取…",
   saved: "已保存",
   saving: "正在同步…",
-  offline: "离线，修改保存在本机",
+  save_failed: "保存失败",
   conflict: "有修改需要处理",
   error: "读取失败",
 };
-export function BoardEditor({ id }: { id: string }) {
-  const auth = useAuthRequest(),
-    authRef = useRef(auth);
-  authRef.current = auth;
-  const credential = useStore(authStore, (s) => s.credentialID),
-    user = useStore(authStore, (s) => s.user?.id),
-    workspace = useStore(authStore, (s) => s.workspace);
-  const identity = { credential, user, workspace };
-  const session = useMemo(
-    () =>
-      new BoardSession(
-        id,
-        `${identity.credential}:${auth.workspaceId}:${id}`,
-        () => authRef.current,
-      ),
-    [id, identity.credential, auth.workspaceId],
-  );
-  const state = useSyncExternalStore(session.subscribe, session.getSnapshot),
-    renderer = useRef<BoardRenderer | null>(null);
+type EmbeddedBoardOptions = {
+  pageID: string;
+  blockID?: string;
+  frameID?: string;
+  readOnly: boolean;
+  sessionRef?: RefObject<Pick<BoardSession, "getSnapshot"> | null>;
+};
+export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOptions }) {
+  const { auth, workspace, user, session, state, images } = useBoardSession(id, embed);
+  const renderer = useRef<BoardRenderer | null>(null);
   const [selection, setSelection] = useState<Set<string>>(new Set()),
     [camera, setCamera] = useState<Camera>({ x: 80, y: 80, zoom: 1 }),
     [tool, setTool] = useState("select");
-  const [error, setError] = useState(""),
-    [errorAttempt, setErrorAttempt] = useState(0),
+  const
     [library, setLibrary] = useState(false),
     [inspector, setInspector] = useState(false),
     [comments, setComments] = useState(false),
@@ -130,7 +121,6 @@ export function BoardEditor({ id }: { id: string }) {
       created_at_ms: number;
     }>>([]),
     [historyOpen, setHistoryOpen] = useState(false),
-    [discard, setDiscard] = useState(false),
     [layoutBusy, setLayoutBusy] = useState(false);
   const [libraryTab, setLibraryTab] = useState<BoardLibraryTab>("shapes");
   const inspectorID = useId();
@@ -142,8 +132,7 @@ export function BoardEditor({ id }: { id: string }) {
     importRef = useRef<HTMLInputElement>(null),
     lastPage = useRef("");
   const imageTarget = useRef<Element | null>(null);
-  const imageInput = useRef<HTMLInputElement>(null),
-    images = useRef<BoardImages | null>(null);
+  const imageInput = useRef<HTMLInputElement>(null);
   const imageImportOwner = useRef<{ session: BoardSession; abort: AbortController } | null>(null);
   useEffect(() => {
     const owner = { session, abort: new AbortController() };
@@ -154,29 +143,42 @@ export function BoardEditor({ id }: { id: string }) {
     };
   }, [session, state.pageID, state.status === "loading"]);
   useEffect(() => {
-    const cache = new BoardImages(() => authRef.current);
-    images.current = cache;
-    return () => {
-      cache.dispose();
-      images.current = null;
-    };
-  }, [credential, auth.workspaceId]);
+    if (!embed) return;
+    setSelection(new Set());
+    setInspector(false);
+    setLibrary(false);
+    setComments(false);
+    setTool(embed.readOnly ? "pan" : "select");
+  }, [embed?.readOnly]);
   const canEdit =
-    canMutateWorkspaceContent(identity.workspace) &&
+    !embed?.readOnly && canMutateWorkspaceContent(workspace) &&
     state.status !== "conflict" &&
+    state.status !== "save_failed" &&
     state.status !== "loading" &&
     state.status !== "error";
   const fail = (error: unknown) => {
-    setError(error instanceof Error ? error.message : String(error));
-    setErrorAttempt(attempt => attempt + 1);
+    reportError(error);
   };
+  const recover = async (action: () => Promise<void>) => {
+    try {
+      await action();
+    } catch (error) {
+      reportError(error);
+    }
+  };
+  useEffect(() => () => { layoutAbort.current?.abort(); }, [session, embed?.pageID]);
+  const fittedPage = useRef("");
   useEffect(() => {
-    void session.start(new URLSearchParams(location.search).get("page") ?? "");
-    return () => {
-      session.dispose();
-      layoutAbort.current?.abort();
-    };
-  }, [session]);
+    if (!embed || state.status === "loading" || !state.board || fittedPage.current === state.pageID) return;
+    const frame = requestAnimationFrame(() => {
+      if (!renderer.current) return;
+      const target = embed.frameID ? state.elements.get(embed.frameID) : undefined;
+      const bounds = target ? elementBounds(target, state.elements) : unionBounds([...state.elements.values()].map(e => elementBounds(e, state.elements)));
+      setCamera(renderer.current.fit(bounds));
+      fittedPage.current = state.pageID;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [embed, state.status, state.pageID, state.board, state.elements]);
   useEffect(() => {
     if (state.pageID !== lastPage.current) {
       lastPage.current = state.pageID;
@@ -185,19 +187,10 @@ export function BoardEditor({ id }: { id: string }) {
       setCamera({ x: 80, y: 80, zoom: 1 });
     }
   }, [state.pageID]);
-  useEffect(() => {
-    const beforeUnload = (e: BeforeUnloadEvent) => {
-      if (session.getSnapshot().pending) {
-        e.preventDefault();
-        e.returnValue = "";
-      }
-    };
-    window.addEventListener("beforeunload", beforeUnload);
-    return () => window.removeEventListener("beforeunload", beforeUnload);
-  }, [session]);
   const submit = (commands: Command[]) => session.submit(commands);
   function fit() {
-    const bounds = unionBounds(
+    const frame = embed?.frameID ? state.elements.get(embed.frameID) : undefined;
+    const bounds = frame ? elementBounds(frame, state.elements) : unionBounds(
       [...state.elements.values()].map((e) => elementBounds(e, state.elements)),
     );
     if (renderer.current) setCamera(renderer.current.fit(bounds));
@@ -250,7 +243,6 @@ export function BoardEditor({ id }: { id: string }) {
   }
   async function arrange() {
     setLayoutBusy(true);
-    setError("");
     layoutAbort.current?.abort();
     const abort = new AbortController();
     layoutAbort.current = abort;
@@ -305,26 +297,45 @@ export function BoardEditor({ id }: { id: string }) {
       setExporting(false);
     }
   }
+  const LoadingShell = embed ? "div" : DocumentShell;
+  if (embed && state.board && state.pageID !== embed.pageID) return <div className="board-preview-empty" role="alert">引用的画板页面已不存在，请重新选择引用页面。</div>;
   if (!state.board)
     return (
-      <DocumentShell>
+      <LoadingShell {...(!embed ? { loading: true } : {})}>
         {state.error ? (
           <div className="board-loading">
-            <ToastNotification tone="danger" title="无法打开画板" timeout={0}>
-              {state.error}
-              <Button onClick={() => void session.start()}>重试</Button>
-            </ToastNotification>
+            <Button onClick={() => void session.start(embed?.pageID ?? new URLSearchParams(location.search).get("page") ?? "")}>重试</Button>
           </div>
         ) : <LoadingState label="正在打开画板…" variant="editor" />}
-      </DocumentShell>
+      </LoadingShell>
     );
   const board = state.board,
     page = board.pages.find((p) => p.id === state.pageID) ?? board.pages[0];
+  const pendingActions = state.pending ? (
+    <DraftActions>
+      <section>
+        <h3 className="mb-2 text-sm font-semibold">当前修改</h3>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button size="sm" disabled={state.status === "saving" || state.status === "loading"} onClick={() => void recover(() => session.retry())}>重试同步</Button>
+          <Button size="sm" onClick={() => void exportFile("json")}>导出当前画板</Button>
+          {state.canDiscard ? (
+            <ConfirmAction title="放弃未保存修改" description="将放弃当前页面未保存的画板修改，并重新读取服务器版本。可以先导出当前画板。" confirmLabel="放弃并重新读取" disabled={!state.canDiscard} onConfirm={() => session.discardPending()}>
+              <Button size="sm">放弃未保存修改</Button>
+            </ConfirmAction>
+          ) : null}
+        </div>
+      </section>
+    </DraftActions>
+  ) : null;
   const saveState = (
+    <>
     <span className={"board-save-state is-" + state.status} role="status">
       {state.status === "saved" ? <Check size={13} /> : null}
       {STATUS[state.status]}
     </span>
+    {embed ? pendingActions : null}
+    {state.pending > 0 && (state.status === "save_failed" || state.status === "conflict") && <ActionButton size="sm" onPress={() => void recover(() => session.retry())}>重试保存</ActionButton>}
+    </>
   );
   const openHistory = () =>
     void boardAPI(auth)
@@ -333,26 +344,27 @@ export function BoardEditor({ id }: { id: string }) {
       .catch(fail);
   const actions = (
     <>
-      <ShareButton
+      {!embed ? pendingActions : null}
+      {releaseFeatures.documentSharing && <ShareButton
         notebookId={board.collection_id}
         noteId={board.document_id}
         title={board.title}
-      />
-      <ActionButton
+      />}
+      {releaseFeatures.documentCollaboration && <ActionButton
         aria-label="画板评论"
         title="评论"
         aria-pressed={comments}
         onClick={() => setComments(!comments)}
       >
         <MessageSquare size={17} />
-      </ActionButton>
-      <ActionButton
+      </ActionButton>}
+      {releaseFeatures.documentCollaboration && <ActionButton
         aria-label="画板历史"
         title="历史版本"
         onClick={openHistory}
       >
         <History size={17} />
-      </ActionButton>
+      </ActionButton>}
       <ActionButton
         aria-label="画布设置"
         title="画布设置"
@@ -456,18 +468,19 @@ export function BoardEditor({ id }: { id: string }) {
   return (
     <BoardShell
       board={board}
+      embedded={!!embed}
       status={saveState}
       actions={actions}
     >
-      <section className={"board-workspace" + (inspector || comments ? " has-inspector" : "")}>
+      <section className={"board-workspace" + (inspector || comments ? " has-inspector" : "") + (embed?.readOnly ? " is-embed-reading" : "")}>
         <Tabs className="board-page-host"
         selectedKey={state.pageID}
-        onSelectionChange={key => { if (typeof key === "string") void session.switchPage(key).catch(fail); }}
+        onSelectionChange={key => { if (!embed && typeof key === "string") void session.switchPage(key).catch(fail); }}
         keyboardActivation="manual"
       >
           <Tabs.ListContainer className="board-page-list-container">
             <Tabs.List aria-label="画板页面">
-              {board.pages.map(p => <Tabs.Tab id={p.id} key={p.id}>{p.name}<Tabs.Indicator /></Tabs.Tab>)}
+              {board.pages.filter(p => !embed || p.id === state.pageID).map(p => <Tabs.Tab id={p.id} key={p.id}>{p.name}<Tabs.Indicator /></Tabs.Tab>)}
             </Tabs.List>
           </Tabs.ListContainer>
         <Tabs.Panel key={state.pageID} id={state.pageID} className="board-main">
@@ -588,15 +601,12 @@ export function BoardEditor({ id }: { id: string }) {
               >
                 <Minus size={15} />
               </ActionButton>
-              <ActionButton
-                onClick={() => zoom(1)}
-                aria-label="恢复百分之百缩放"
-              >
-                {(camera.zoom * 100).toFixed(
-                  camera.zoom < 0.01 ? 3 : camera.zoom < 0.1 ? 1 : 0,
-                )}
-                %
-              </ActionButton>
+              <Dropdown>
+                <ActionButton aria-label={`缩放比例 ${Math.round(camera.zoom * 100)}%`}>{Math.round(camera.zoom * 100)}%</ActionButton>
+                <Dropdown.Popover placement="bottom end"><Dropdown.Menu aria-label="画板缩放比例" onAction={key => zoom(Number(key))}>
+                  {PREVIEW_ZOOMS.map(value => <Dropdown.Item key={value} id={String(value)} textValue={`${value * 100}%`}>{value * 100}%</Dropdown.Item>)}
+                </Dropdown.Menu></Dropdown.Popover>
+              </Dropdown>
               <ActionButton
                 aria-label="放大画板"
                 title="放大画板"
@@ -636,9 +646,9 @@ export function BoardEditor({ id }: { id: string }) {
               >
                 <Redo2 size={17} />
               </ActionButton>
-              <ActionButton aria-label="查看画板历史" onClick={openHistory}>
+              {releaseFeatures.documentCollaboration && <ActionButton aria-label="查看画板历史" onClick={openHistory}>
                 <History size={16} />
-              </ActionButton>
+              </ActionButton>}
             </Toolbar>
           </div>
           {inspector && !comments ? (
@@ -659,7 +669,7 @@ export function BoardEditor({ id }: { id: string }) {
 
           <ActionButton
             aria-label="添加画板页面"
-            disabled={!canEdit || board.pages.length >= 20}
+            disabled={!!embed || !canEdit || board.pages.length >= 20}
             onClick={() =>
               void submit([
                 {
@@ -756,24 +766,6 @@ export function BoardEditor({ id }: { id: string }) {
             <RiFunctionAddLine size={16} />
           </ActionButton>
         </Toolbar>
-        {error || state.error ? (
-          <ToastNotification key={errorAttempt} title="画板操作未完成" tone="danger" timeout={state.pending ? 0 : undefined}>
-            <span>{error || state.error}</span>
-            {state.pending ? (
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button size="sm" onClick={() => void session.retry().catch(fail)}>
-                  重试同步
-                </Button>
-                <Button size="sm" onClick={() => void exportFile("json")}>
-                  导出本机修改
-                </Button>
-                <Button size="sm" onClick={() => setDiscard(true)}>
-                  放弃未同步修改
-                </Button>
-              </div>
-            ) : null}
-          </ToastNotification>
-        ) : null}
 
         {comments ? (
           <section className="board-comments">
@@ -787,11 +779,11 @@ export function BoardEditor({ id }: { id: string }) {
               </ActionButton>
             </header>
             <Suspense fallback={<p>正在读取评论…</p>}>
-              <DocumentComments
+              {releaseFeatures.documentCollaboration && <DocumentComments
                 noteId={board.document_id}
-                currentUserId={identity.user ?? ""}
+                currentUserId={user ?? ""}
                 canManage={canEdit}
-              />
+              />}
             </Suspense>
           </section>
         ) : null}
@@ -853,30 +845,6 @@ export function BoardEditor({ id }: { id: string }) {
           event.target.value = "";
         }}
       />
-      <Dialog
-        open={discard}
-        onOpenChange={(open) => {
-          if (!open) setDiscard(false);
-        }}
-      >
-        <DialogContent title="放弃未同步修改">
-          <p>
-            将清除这张画板在本机尚未确认的操作，并重新读取服务器版本。可以先导出本机修改。
-          </p>
-          <Button onClick={() => setDiscard(false)}>继续保留</Button>
-          <Button
-            variant="danger"
-            onClick={() =>
-              void session
-                .discardPending()
-                .then(() => setDiscard(false))
-                .catch(fail)
-            }
-          >
-            放弃并重新读取
-          </Button>
-        </DialogContent>
-      </Dialog>
       <Dialog
         open={historyOpen}
         onOpenChange={setHistoryOpen}

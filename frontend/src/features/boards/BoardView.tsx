@@ -1,15 +1,15 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { useEffect, useRef, useState } from "react";
 import { Shapes } from "lucide-react";
 import { type BoardViewData } from "./public-contract";
-import { Dialog, DialogContent } from "../../shared/ui/Dialog";
-import { ActionButton } from "../../shared/ui/ActionButton";
+import { EmbeddedSurface } from "../../shared/ui/EmbeddedSurface";
+import { BoardPreviewViewport } from "./BoardPreviewViewport";
 import { useOptionalAuthRequest } from "../../shared/auth/use-auth-request";
 import { createManagedFiles } from "../files/managed-files";
 import "./board-preview.css";
 const privateImage =
   /href="\/api\/v1\/workspaces\/([0-9a-f-]{36})\/assets\/([0-9a-f-]{36})\/content"/g;
 export function BoardView({ view }: { view: BoardViewData }) {
-  const [open, setOpen] = useState(false);
   const auth = useOptionalAuthRequest(),
     authRef = useRef(auth);
   authRef.current = auth;
@@ -17,11 +17,11 @@ export function BoardView({ view }: { view: BoardViewData }) {
     source: string;
     svg: string;
   } | null>(null);
-  const [error, setError] = useState("");
+
   const needsAssets = Array.from(view.svg.matchAll(privateImage));
   useEffect(() => {
     const matches = Array.from(view.svg.matchAll(privateImage));
-    setError("");
+
     if (!matches.length) return;
     const files = createManagedFiles(() => authRef.current);
     let active = true;
@@ -42,7 +42,7 @@ export function BoardView({ view }: { view: BoardViewData }) {
         });
     })().catch((error: unknown) => {
       if (active)
-        setError(error instanceof Error ? error.message : "图片读取失败。");
+        reportError(error);
     });
     return () => {
       active = false;
@@ -72,20 +72,8 @@ export function BoardView({ view }: { view: BoardViewData }) {
     />
   );
   return (
-    <figure className="board-embed">
-      <header>
-        <Shapes size={16} />
-        <strong>{view.title}</strong>
-        <span className="board-embed-spacer" />
-        <ActionButton onClick={() => setOpen(true)}>放大查看</ActionButton>
-      </header>
-      {error ? <p role="alert">{error}</p> : null}
-      {content}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent title={view.title} className="board-preview-dialog">
-          <div className="board-expanded-preview">{content}</div>
-        </DialogContent>
-      </Dialog>
-    </figure>
+    <EmbeddedSurface kind="board" label={view.title} surfaceKey={`public:${view.title}`}>
+      <BoardPreviewViewport>{content}</BoardPreviewViewport>
+    </EmbeddedSurface>
   );
 }

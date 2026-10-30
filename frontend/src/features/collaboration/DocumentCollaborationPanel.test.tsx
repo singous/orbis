@@ -62,7 +62,7 @@ describe("document collaboration", () => {
     await user.keyboard("{Escape}");
     expect(onClose).not.toHaveBeenCalled();
     await act(async () => { finish(); await pending; });
-    await screen.findByText("历史版本已恢复");
+    await waitFor(() => expect(screen.getByRole("button", { name: "关闭评论与历史" })).toBeEnabled());
     await user.keyboard("{Escape}");
     expect(onClose).toHaveBeenCalledOnce();
   });
@@ -160,7 +160,7 @@ describe("document collaboration", () => {
     await user.click(await screen.findByRole("button", { name: /查看保存记录 2/ }));
     await screen.findByText("历史正文");
     await user.click(screen.getByRole("button", { name: "恢复此版本" }));
-    await screen.findByText("历史版本已恢复");
+    await screen.findByRole("alertdialog", { name: "ok" });
     expect(requests.find((request) => request.method === "POST")?.body).toEqual({ expected_version: 8,source_version:2,operation_id:expect.any(String) });
     expect(client.getQueryData(["note-content", NOTE_ID])).toMatchObject({kind:"complete",content_version:9,title:"产品计划"});
   });
@@ -201,9 +201,9 @@ describe("document collaboration", () => {
     showPanel();
     expect(await screen.findByRole("alert")).toHaveTextContent("暂时无法加载评论");
     unavailable = false;
-    await user.click(screen.getByRole("button", { name: "重试加载评论" }));
+    await user.click(await screen.findByRole("button", { name: "重试加载评论" }));
     await screen.findByText("第一条讨论");
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "重试加载评论" })).not.toBeInTheDocument();
   });
 
   it("shows a newly posted comment beyond the loaded pages without duplicating it later", async () => {

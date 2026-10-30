@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/singous/orbis/releases/tag/v0.1.0"><img src="https://img.shields.io/badge/release-v0.1.0-23ad83?style=flat-square&amp;labelColor=17332b" alt="Release v0.1.0"></a>
+  <a href="https://github.com/singous/orbis/releases/tag/release/v0.1.1"><img src="https://img.shields.io/badge/release-v0.1.1-23ad83?style=flat-square&amp;labelColor=17332b" alt="Release v0.1.1"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-23ad83?style=flat-square&amp;labelColor=17332b" alt="License AGPL-3.0"></a>
   <a href="deploy/README.md"><img src="https://img.shields.io/badge/deploy-Docker_Compose-23ad83?style=flat-square&amp;labelColor=17332b" alt="Docker Compose 部署"></a>
   <a href="cli/README.md"><img src="https://img.shields.io/badge/client-Go_CLI-23ad83?style=flat-square&amp;labelColor=17332b" alt="独立 Go CLI"></a>
@@ -29,7 +29,7 @@
 
 ## 概览
 
-Orbis 将文集、块文档、多维表格和文档站放进同一个工作空间。用目录整理资料，用正文协同与评论一起完成内容，准备好后再发布给读者。
+Orbis 将文集、块文档、多维表格和文档站放进同一个工作空间。用目录整理资料，通过正文协同一起完成内容，再交付给读者。各版本的开放入口以版本说明为准。
 
 <table>
   <tr>
@@ -41,7 +41,7 @@ Orbis 将文集、块文档、多维表格和文档站放进同一个工作空�
     <td width="33%" valign="top">
       <sub>02 / COLLABORATE</sub><br>
       <b>一起完成</b><br><br>
-      通过成员角色、正文协同、评论和历史恢复推进工作；用多维表格组织结构化信息。
+      通过成员角色、正文协同和自动保存推进工作；用多维表格组织结构化信息。
     </td>
     <td width="33%" valign="top">
       <sub>03 / PUBLISH</sub><br>
@@ -56,15 +56,17 @@ Orbis 将文集、块文档、多维表格和文档站放进同一个工作空�
 | 场景 | 当前支持 |
 | --- | --- |
 | **组织知识** | 工作空间、文集分组、嵌套目录、搜索、Markdown 导入导出 |
-| **丰富表达** | 块文档、富文本、普通表格、图片与附件、绘图、内容组件 |
-| **团队协作** | 成员角色、邮件邀请、CRDT 正文协同、自动保存、评论、命名版本、自动历史、版本比较与恢复 |
+| **丰富表达** | 块文档、富文本、普通表格、图片与附件、原生画板引用、内容组件 |
+| **团队协作** | 成员角色、邮件邀请、CRDT 正文协同与自动保存；评论与版本管理接口保留，Web 管理入口暂缓开放 |
 | **随手记录** | 工作空间内个人私有随手记、富文本与附件、标签、搜索、置顶、回收站与本机草稿恢复 |
 | **多维表格** | 字段、记录、视图、筛选、排序、分组、复制、撤销与 CSV/Markdown 导出 |
-| **原生画板（开发分支）** | 流程图、思维导图、系统架构、UML、ER 与泳道图；114 种图形、24 个模板、6,283 个内置图标；图片、导入导出与正文引用 |
-| **对外发布** | 文档站预览、固定快照、发布记录、版本切换与撤回、主题、移动端导航、公开搜索 |
+| **原生画板（暂缓开放）** | 创建入口暂时隐藏，后续迭代开放；已有画板及正文引用继续保留 |
+| **对外发布** | 已有文档站与分享链接继续可用；文档站导航、文档分享入口暂缓开放 |
 | **工具接入** | 公共 API、工作空间范围的 Agent 令牌、独立 CLI、产品 Skill、持久化分块导入 |
 
-旧版正文绘图已退役，不再提供旧编辑器、预览或数据下载。打开可编辑文档时，旧绘图块通过正文保存流程清除；新建画板和正文画板引用使用原生模块。
+旧版正文绘图已退役，不再提供旧编辑器、预览或数据下载。打开可编辑文档时，旧绘图块通过正文保存流程清除；原生画板和正文画板引用使用独立模块。
+
+0.1.1 暂缓开放画板创建、文档分享、评论与版本面板、文档站导航和表格表单管理入口；已有数据、公共 API、画板引用、公开站点与表单读取继续保留。具体范围见 [版本说明](docs/release/v0.1.1.md#使用边界)。
 
 **两种分享方式。** 文档站交付显式发布的快照；可撤销的实时分享展示当前可见内容，未来新增或移入的文档也可能进入分享范围。发布时私有文件会复制为发布专用对象；外部 HTTP(S) 媒体只固定 URL，不复制外部服务器的文件。
 
@@ -72,17 +74,18 @@ Orbis 将文集、块文档、多维表格和文档站放进同一个工作空�
 
 ### 自托管
 
-v0.1.0 提供封版源码和通用 Docker Compose 模板。你需要 Docker Engine、Compose V2 和 Git；运行构建后的镜像无需在宿主机安装 Go 或 Node.js。
+0.1.1 的封版源码使用 `release/v0.1.1` 标签，提供服务端、前端、协同引擎的构建定义和通用 Docker Compose 模板。你需要 Docker Engine、Compose V2 和 Git；运行构建后的镜像无需在宿主机安装 Go 或 Node.js。
 
 获取封版源码，构建服务端、前端和协同引擎镜像：
 
 ```bash
-git clone --branch v0.1.0 https://github.com/singous/orbis.git
+git clone https://github.com/singous/orbis.git
 cd orbis
+git switch --detach refs/tags/release/v0.1.1
 
-docker build --target server --build-arg ORBIS_VERSION=0.1.0 -t orbis-server:0.1.0 .
-docker build --target frontend -t orbis-frontend:0.1.0 .
-docker build --target collaboration -t orbis-collaboration:0.1.0 .
+docker build --target server --build-arg ORBIS_VERSION=0.1.1 -t orbis-server:0.1.1 .
+docker build --target frontend -t orbis-frontend:0.1.1 .
+docker build --target collaboration -t orbis-collaboration:0.1.1 .
 
 (umask 077; set -C; cat deploy/.env.example > deploy/.env)
 ```
@@ -117,6 +120,14 @@ bin/orbis --help
 
 ## 版本动态
 
+### v0.1.1 · 随手记、表格交互与文档体验
+
+新增个人随手记，改进多维表格的双击编辑、右键菜单与拖拽排序，完善正文嵌入、目录定位、首页与操作反馈。已有原生画板和正文引用继续保留，创建入口暂缓开放。
+
+升级前请阅读旧正文绘图退役、暂缓开放入口与数据库迁移说明。
+
+[阅读 0.1.1 版本说明 →](docs/release/v0.1.1.md)
+
 ### v0.1.0 · 文档、协作与发布
 
 首个封版版本串联文档整理、多人协作、多维表格和文档站发布，并交付独立 CLI 与自托管部署模板。
@@ -124,7 +135,7 @@ bin/orbis --help
 > [!NOTE]
 > v0.1.0 的封版提交仍有浏览器端到端验收失败待处理。已完成的验证、使用边界和部署入口见 [版本说明](docs/release/v0.1.0.md)。
 
-[阅读 Release Notes →](https://github.com/singous/orbis/releases/tag/v0.1.0)
+[阅读 Release Notes →](https://github.com/singous/orbis/releases/tag/release/v0.1.0)
 
 **后续方向**：自定义域名、API 调试台、高级站点模板和 S3 存储适配尚未提供；独立 MCP 服务将在出现实际需求后建立。
 
@@ -137,7 +148,7 @@ bin/orbis --help
 | 协同引擎与内容恢复 | [协同引擎说明](collaboration/README.md) |
 | 命令行与自动化接入 | [CLI](cli/README.md) · [产品 Skill](skills/orbis/SKILL.md) |
 | 公共接口与数据格式 | [OpenAPI](api/openapi.json) |
-| 版本范围与已知限制 | [v0.1.0 版本说明](docs/release/v0.1.0.md) |
+| 版本范围与已知限制 | [0.1.1 封版说明](docs/release/v0.1.1.md) · [v0.1.0 版本说明](docs/release/v0.1.0.md) |
 
 ## 参与开发
 

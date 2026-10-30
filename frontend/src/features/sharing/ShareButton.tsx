@@ -1,3 +1,5 @@
+import { showToast } from "../../shared/ui/Toast";
+import { withRequestFeedback, reportError } from "../../shared/api/request-feedback";
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link2, Share2 } from "lucide-react";
@@ -34,7 +36,6 @@ export function ShareDialog({
   const [created, setCreated] = useState<{ id: string; url: string } | null>(
     null,
   );
-  const [feedback, setFeedback] = useState<string | null>(null);
   const sessionGeneration = useRef(0);
   const key = [
     "document-shares",
@@ -56,15 +57,15 @@ export function ShareDialog({
         id: share.id,
         url: new URL(share.path, window.location.origin).href,
       });
-      setFeedback(null);
+
       void client.invalidateQueries({ queryKey: key });
     },
   });
   const revoke = useMutation({
-    mutationFn: (value:{id:string;version:number}) => revokeShare(value.id,value.version,auth),
+    mutationFn: (value:{id:string;version:number}) => withRequestFeedback({ ...auth, feedback: { success: true } }, context => revokeShare(value.id, value.version, context)),
     onSuccess: (share) => {
       if (created?.id === share.id) setCreated(null);
-      setFeedback("链接已撤销，后续访问立即失效。");
+
       void client.invalidateQueries({ queryKey: key });
     },
   });
@@ -72,19 +73,18 @@ export function ShareDialog({
     sessionGeneration.current += 1;
     if (!open) return;
     setCreated(null);
-    setFeedback(null);
+
     create.reset();
     revoke.reset();
     return () => { sessionGeneration.current += 1; };
   }, [open, target.notebookId, target.noteId, auth.workspaceId]);
-  const error = create.error ?? revoke.error ?? query.error;
   async function copy(url: string) {
     const generation = sessionGeneration.current;
     try {
       await navigator.clipboard.writeText(url);
-      if (generation === sessionGeneration.current) setFeedback("链接已复制。");
+      if (generation === sessionGeneration.current) showToast({ title: "链接已复制。", tone: "success" });
     } catch {
-      if (generation === sessionGeneration.current) setFeedback("复制失败，请手动选择并复制链接。");
+      if (generation === sessionGeneration.current) reportError("复制失败，请手动选择并复制链接。");
     }
   }
   return (
@@ -105,11 +105,7 @@ export function ShareDialog({
           </p>
           <p>分享独立于站点发布，可以随时撤销。</p>
         </div>
-        {error ? (
-          <p role="alert">
-            {error instanceof Error ? error.message : "分享操作失败，请重试。"}
-          </p>
-        ) : null}
+
         {created ? (
           <div className="share-created">
             <label htmlFor="created-share-url">公开链接</label>
@@ -136,7 +132,7 @@ export function ShareDialog({
         >
           创建公开链接
         </Button>
-        {feedback ? <p role="status">{feedback}</p> : null}
+
         <section className="share-existing" aria-label="已创建的分享链接">
           <h3>已创建的链接</h3>
           {query.isPending ? (

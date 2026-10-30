@@ -122,7 +122,7 @@ test("workspace actions share sizing and notebook headings retain breathing room
   await notebookDialog.getByRole("button", { name: "取消", exact: true }).click();
 
   await page.goto("/home");
-  const homeAction = await actionMetrics(page.getByRole("link", { name: "新建笔记本", exact: true }));
+  const homeAction = await actionMetrics(page.getByRole("button", { name: "写篇文档", exact: true }));
   measurements.home = homeAction;
   expect.soft(homeAction.height, "home primary action height").toBe(36);
   expect.soft(homeAction.fontSize, "home primary action font").toBe("14px");

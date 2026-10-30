@@ -28,7 +28,7 @@
 }
 
 .popover, [data-slot="dropdown-popover"], .orbis-select-popover, .orbis-modal-dialog,
-.orbis-block-menu, .editor-more-menu, .orbis-block-notice, .tooltip, .toast,
+.orbis-block-menu, .editor-more-menu, .tooltip, .toast,
 .orbis-auth-card {
   background: var(--orbis-floating-bg);
   border: 1px solid var(--orbis-surface-edge);

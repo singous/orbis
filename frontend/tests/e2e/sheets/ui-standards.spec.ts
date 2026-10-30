@@ -71,7 +71,7 @@ for (const kind of ["field", "view"] as const) {
       await popover.getByRole("checkbox", { name: "日期", exact: true }).uncheck();
     }
     const save = popover.getByRole("button", { name: kind === "field" ? "保存字段" : "应用", exact: true });
-    const notification = page.getByRole("alertdialog", { name: kind === "field" ? "无法保存字段" : "无法应用设置", exact: true });
+    const notification = page.getByRole("alertdialog", { name: "保存设置失败，请重试", exact: true });
     const expectDraft = async () => {
       await expect(popover).toBeVisible();
       if (kind === "field") await expect(popover.getByRole("textbox", { name: "字段名称", exact: true })).toHaveValue("未保存的状态列");
@@ -79,6 +79,8 @@ for (const kind of ["field", "view"] as const) {
     };
     await save.click();
     await expect(notification).toContainText("保存设置失败，请重试");
+    await expect(page.getByRole("alertdialog")).toHaveCount(1);
+    await expect(notification.getByRole("button")).toHaveCount(1);
     await notification.hover();
     await notification.getByRole("button", { name: "Close", exact: true }).click();
     await expect(notification).toHaveCount(0);
@@ -99,7 +101,7 @@ for (const kind of ["field", "view"] as const) {
 test.describe("touch sheet controls", () => {
   test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
 
-  test("toolbar, row selection, pickers and form actions remain usable on touch", async ({ page, request }) => {
+  test("toolbar, row selection and pickers remain usable on touch with deferred forms hidden", async ({ page, request }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await openSheet(page, request);
     const controls = await page.locator(".sheet-toolbar > .orbis-action-button").evaluateAll(elements => elements.map(element => {
@@ -128,8 +130,14 @@ test.describe("touch sheet controls", () => {
     await expect(page.getByRole("checkbox", { name: "选择记录 1", exact: true })).toBeChecked();
     await page.locator(".sheet-grid-row .sheet-row-select").first().tap({ position: { x: 3, y: 3 } });
     await expect(page.getByRole("checkbox", { name: "选择记录 1", exact: true })).not.toBeChecked();
-    await page.getByRole("gridcell").nth(2).tap();
+    const dateCell = page.getByRole("gridcell").nth(2);
     const picker = page.getByRole("dialog", { name: "日期选择", exact: true });
+    await dateCell.tap();
+    await expect(dateCell).toHaveAttribute("aria-selected", "true");
+    await expect(picker).toHaveCount(0);
+    await dateCell.tap();
+    await dateCell.tap();
+    await expect(picker).toBeVisible();
     await expectInsideViewport(picker);
     await expect(picker).toHaveCSS("animation-name", "none");
     const day = picker.locator(".sheet-calendar-grid > button").nth(10);
@@ -138,18 +146,13 @@ test.describe("touch sheet controls", () => {
     expect(bounds!.width).toBeGreaterThanOrEqual(44);
     await day.tap();
     await expect(picker).toHaveCount(0);
-    await page.getByRole("button", { name: "生成表单", exact: true }).tap();
-    await expect(page.getByRole("button", { name: "预览表单", exact: true })).toBeVisible();
-    const tools = page.locator(".sheet-question-tools button");
-    expect(await tools.count()).toBeGreaterThan(0);
-    const sizes = await tools.evaluateAll(elements => elements.map(element => {
-      const bounds = element.getBoundingClientRect();
-      return { width: bounds.width, height: bounds.height };
-    }));
-    for (const bounds of sizes) {
-      expect(bounds.width).toBeGreaterThanOrEqual(44);
-      expect(bounds.height).toBeGreaterThanOrEqual(44);
-    }
+    await expect(page.getByRole("button", { name: "生成表单", exact: true })).toHaveCount(0);
+    await page.getByRole("button", { name: "添加视图", exact: true }).tap();
+    await expect(page.getByRole("menuitem", { name: "表单", exact: true })).toHaveCount(0);
+    const item = page.getByRole("menuitem", { name: "看板视图", exact: true });
+    const menuBounds = await item.boundingBox();
+    expect(menuBounds!.height).toBeGreaterThanOrEqual(44);
+    await page.keyboard.press("Escape");
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
   });
 });

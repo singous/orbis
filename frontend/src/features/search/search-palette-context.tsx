@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { Component, createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { useStore } from "zustand";
@@ -17,6 +18,8 @@ type SearchPaletteContextValue = {
 const SearchPaletteContext = createContext<SearchPaletteContextValue | null>(null);
 
 class PaletteBoundary extends Component<{ children: ReactNode; isOpen: boolean; onClose: () => void; onExited: () => void }, { failed: boolean }> {
+  componentDidCatch() { reportError("页面内容无法显示，请刷新重试。"); }
+
   state = { failed: false };
   static getDerivedStateFromError() { return { failed: true }; }
   render() {

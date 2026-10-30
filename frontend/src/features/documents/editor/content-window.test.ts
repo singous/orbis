@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import { appendChildBlocks, hydrateBlockPayload, mergeLoadDescriptors } from "./content-window";
 import { createBlockChanges } from "./block-changes";
-import type { NoteBlocksV2, OrbisBlock } from "../../content/model/blocks";
+import type { NoteBlocksV2, OrbisBlock } from "../../content/blocks";
 
 const paragraph = (id: string, text = id): OrbisBlock => ({ id, type: "paragraph", props: {}, content: [{ type: "text", text }], children: [] });
 const document = (blocks: OrbisBlock[]): NoteBlocksV2 => ({ schema_version: 2, editor: "blocknote", blocks });

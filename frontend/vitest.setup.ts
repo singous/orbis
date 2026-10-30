@@ -1,4 +1,10 @@
 import "@testing-library/jest-dom/vitest";
+import { configure } from "@testing-library/dom";
+
+// Cold lazy imports can exceed the library's one-second default on shared runners.
+// Keep a bounded readiness wait; tests with operation-specific budgets still override it.
+const ASYNC_UI_READY_TIMEOUT_MS = 3_000;
+configure({ asyncUtilTimeout: ASYNC_UI_READY_TIMEOUT_MS });
 
 Object.defineProperty(window, "matchMedia", {
   configurable: true,

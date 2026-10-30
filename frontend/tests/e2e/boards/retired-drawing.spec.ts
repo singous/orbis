@@ -9,7 +9,7 @@ import {
   workspacePath,
 } from "../helpers/api-fixtures";
 
-test("opening retired drawing content removes only the old blocks and inserts native boards from the editor", async ({
+test("opening retired drawing content removes only the old blocks and preserves access to existing native boards", async ({
   page,
   request,
 }) => {
@@ -126,19 +126,8 @@ test("opening retired drawing content removes only the old blocks and inserts na
   await page.keyboard.press("End");
   await page.keyboard.press("Enter");
   await page.keyboard.type("/board");
-  await page.getByRole("option", { name: "画板", exact: true }).click();
-  await page.getByRole("button", { name: "选择画板", exact: true }).click();
-  await page.getByRole("button", { name: "新版原生画板", exact: true }).click();
-  await page.getByRole("button", { name: "插入画板", exact: true }).click();
-  await expect
-    .poll(async () =>
-      (await content()).blocks.some(
-        (block: any) =>
-          block.type === "board" && block.props.board_id === native.id,
-      ),
-    )
-    .toBe(true);
-  await page.getByRole("link", { name: "打开画板", exact: true }).click();
+  await expect(page.getByRole("option", { name: "画板", exact: true })).toHaveCount(0);
+  await page.goto(`/documents/${native.document_id}`);
   await expect(
     page.getByRole("application", { name: "画板编辑区域" }),
   ).toBeVisible();

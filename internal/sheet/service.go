@@ -116,6 +116,15 @@ func (s *Service) Change(ctx context.Context, sc Scope, in Changes) (ChangeResul
 		}
 		seen[p.ID] = true
 	}
+	for _, p := range in.Records {
+		anchor := p.BeforeID
+		if anchor == "" {
+			anchor = p.AfterID
+		}
+		if anchor != "" && (!ValidID(anchor) || seen[anchor] || p.Delete) || p.BeforeID != "" && p.AfterID != "" {
+			return ChangeResult{}, Invalid("排序参照记录无效或与本次修改冲突")
+		}
+	}
 	return s.repo.Change(ctx, sc, in, s.clock.Now().UnixMilli())
 }
 func (s *Service) Forms(ctx context.Context, sc Scope) ([]Form, error) {

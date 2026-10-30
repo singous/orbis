@@ -31,8 +31,6 @@
 .collaboration-preview .document-prose { font-size: var(--orbis-prose-body-size); }
 .collaboration-restore { display: grid; gap: 12px; padding-top: 22px; margin-top: 22px; border-top: 1px solid var(--border-subtle); }
 .collaboration-restore > button { justify-self: start; }
-.collaboration-error { padding: 11px 12px; border-radius: 8px; font-size: var(--orbis-text-caption-size); line-height: var(--orbis-text-caption-leading); margin: 10px 0 0; overflow-wrap: anywhere; }
-.collaboration-error { color: var(--danger-text, #a52b2b); background: var(--danger-surface, #fff1f1); }
 .collaboration-panel button:disabled { opacity: .45; cursor: not-allowed; }
 .collaboration-panel button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
 @media (max-width: 600px) {

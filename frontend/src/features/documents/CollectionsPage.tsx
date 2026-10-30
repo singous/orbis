@@ -1,3 +1,5 @@
+import { releaseFeatures } from "../../shared/release-features";
+import { reportError } from "../../shared/api/request-feedback";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import {
@@ -19,7 +21,6 @@ import { authStore } from "../../shared/auth/auth-store";
 import { formatDate } from "../../shared/format/date";
 import { Button } from "../../shared/ui/Button";
 import { PageContainer } from "../../shared/ui/PageContainer";
-import { ToastNotification, showToast } from "../../shared/ui/Toast";
 import { DocumentShell } from "./DocumentShell";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { usePinnedNotebooks } from "./pinned-notebooks";
@@ -93,7 +94,7 @@ export function CollectionsPage() {
   useEffect(() => {
     if (!resourceError || shownResourceError.current === resourceError) return;
     shownResourceError.current = resourceError;
-    showToast({ title: "无法打开资源", description: resourceError, tone: "danger" });
+    reportError(resourceError);
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, navigate, resourceError]);
   const notebookCounts = useMemo(
@@ -176,11 +177,7 @@ export function CollectionsPage() {
           ) : null
         }
       >
-        {groupsQuery.isError || notebooksQuery.isError || notesQuery.isError ? (
-          <ToastNotification tone="danger" title="笔记本加载失败">
-            请检查 API 服务后重试。
-          </ToastNotification>
-        ) : null}
+
         <section className="workbench-section" aria-label="笔记本">
           {targetGroupId && !groupsQuery.isLoading && !groups.some(group => group.id === targetGroupId) ? <SearchGroupTarget id={targetGroupId} canCreate={canEdit} onCreate={() => setDialog({ kind: "notebook", groupId: targetGroupId })} /> : null}
           {groupsQuery.isLoading || notebooksQuery.isLoading ? (
@@ -278,15 +275,15 @@ export function CollectionsPage() {
                             </span>
                           </Link>
                           <div className="workbench-collection-actions">
-                            <ActionButton
+                            {releaseFeatures.documentFavorites && <ActionButton
                               type="button"
                               className={`icon-button${isPinned(notebook.id) ? " is-pinned" : ""}`}
-                              aria-label={isPinned(notebook.id) ? `移出快捷访问 ${notebook.title}` : `加入快捷访问 ${notebook.title}`}
+                              aria-label={isPinned(notebook.id) ? `取消常用 ${notebook.title}` : `设为常用 ${notebook.title}`}
                               aria-pressed={isPinned(notebook.id)}
                               onClick={() => togglePin(notebook.id)}
                             >
                               <Pin aria-hidden="true" size={14} />
-                            </ActionButton>
+                            </ActionButton>}
                             {canEdit ? <>
                               <ActionButton type="button" className="icon-button" aria-label={`编辑笔记本 ${notebook.title}`} title="编辑名称和图标" onClick={() => setDialog({ kind: "edit-notebook", resource: notebook })}>
                                 <MoreHorizontal aria-hidden="true" size={16} />

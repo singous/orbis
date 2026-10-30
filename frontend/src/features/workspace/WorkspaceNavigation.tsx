@@ -1,7 +1,8 @@
+import { releaseFeatures } from "../../shared/release-features";
 import { StickyNote } from "lucide-react";
 import { BookOpen, ChevronDown, ChevronRight, Clock3, Globe, Home, Pin, Search, Settings, Trash2, Users } from "../../shared/ui/icons";
 import { type ReactNode, useId, useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { useStore } from "zustand";
 
 import { authStore } from "../../shared/auth/auth-store";
@@ -35,19 +36,20 @@ function DocumentNavigation() {
   const { isPinned } = usePinnedNotebooks(workspace?.id);
   const [expanded, setExpanded] = useState(true);
   const notebooksId = useId();
-  const items = [...(notebooks.data?.items ?? [])].sort((a, b) => Number(isPinned(b.id)) - Number(isPinned(a.id)));
+  const allNotebooks = notebooks.data?.items ?? [];
+  const items = allNotebooks.filter(notebook => isPinned(notebook.id));
 
   return <MenuFrame label="文档导航" footer={<NavLink to="/documents/archive" className={navClass}><Trash2 size={18} aria-hidden="true" />回收站</NavLink>}>
     <ActionButton type="button" className="workspace-function-link document-menu-search" aria-haspopup="dialog" aria-expanded={isOpen} onClick={() => openSearch({ type: "document" })}><Search size={18} aria-hidden="true" />搜索文档</ActionButton>
     {documentLinks.map(({ to, label, icon: Icon }) => <NavLink key={to} to={to} end className={navClass}><Icon size={18} aria-hidden="true" />{label}</NavLink>)}
     <div className="document-notebooks-heading">
-      <ActionButton type="button" className="workspace-function-link" aria-label={expanded ? "收起笔记本" : "展开笔记本"} aria-expanded={expanded} aria-controls={notebooksId} onClick={() => setExpanded(value => !value)}><ChevronDown size={16} aria-hidden="true" /><span>笔记本</span></ActionButton>
+      <ActionButton type="button" className="workspace-function-link" aria-label={expanded ? "收起常用笔记本" : "展开常用笔记本"} aria-expanded={expanded} aria-controls={notebooksId} onClick={() => setExpanded(value => !value)}><ChevronDown size={16} aria-hidden="true" /><span>常用笔记本</span></ActionButton>
       <NavLink to="/documents/collections" className="document-notebooks-manage" aria-label="管理笔记本" title="管理笔记本"><ChevronRight size={16} aria-hidden="true" /></NavLink>
     </div>
     <div id={notebooksId} className="document-notebooks-list" hidden={!expanded}>
       {notebooks.isLoading ? <span className="document-notebooks-status" role="status">正在加载笔记本…</span> : null}
-      {notebooks.isError ? <div className="document-notebooks-status" role="alert">笔记本加载失败<ActionButton type="button" onClick={() => void notebooks.refetch()}>重试</ActionButton></div> : null}
-      {!notebooks.isLoading && !notebooks.isError && !items.length ? <NavLink to="/documents/collections" className={navClass}><BookOpen size={18} aria-hidden="true" />创建第一个笔记本</NavLink> : null}
+
+      {!notebooks.isLoading && !notebooks.isError && !items.length ? <Link to={allNotebooks.length ? "/documents" : "/documents/collections"} className="workspace-function-link"><BookOpen size={18} aria-hidden="true" />{allNotebooks.length ? "设置常用笔记本" : "创建第一个笔记本"}</Link> : null}
       {items.map((notebook) => <NavLink key={notebook.id} to={`/collections/${notebook.id}`} className={navClass}><NotebookIcon icon={notebook.icon} size="sm" /><span className="truncate">{notebook.title}</span>{isPinned(notebook.id) ? <Pin className="document-notebook-pin" size={13} aria-hidden="true" /> : null}</NavLink>)}
     </div>
   </MenuFrame>;
@@ -69,7 +71,7 @@ export function WorkspaceNavigation() {
   switch (area.id) {
     case "documents": return <DocumentNavigation />;
     case "settings": return <SettingsNavigation />;
-    case "sites": return <MenuFrame label={area.navigationLabel}><NavLink to="/sites" className={navClass}><Globe size={18} />我的站点</NavLink></MenuFrame>;
+    case "sites": return releaseFeatures.sites ? <MenuFrame label={area.navigationLabel}><NavLink to="/sites" className={navClass}><Globe size={18} />我的站点</NavLink></MenuFrame> : null;
     case "home": return <MenuFrame label={area.navigationLabel}><NavLink to="/home" end className={navClass}><Home size={18} />工作台</NavLink></MenuFrame>;
     case "search": return null;
   }

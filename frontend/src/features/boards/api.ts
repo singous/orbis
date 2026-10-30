@@ -17,12 +17,14 @@ export function boardAPI(auth: AuthRequestOptions) {
     method = "GET",
     body?: unknown,
     signal?: AbortSignal,
+    silent = false,
   ) =>
     apiRequest(workspacePath(auth, "/boards" + path), {
       ...authRequestOptions(auth),
       method,
       body: body as Record<string, unknown>,
       signal,
+      feedback: silent ? { ...auth.feedback, error: false } : auth.feedback,
     });
   return {
     list: async (page = 1, signal?: AbortSignal) =>
@@ -109,17 +111,9 @@ export function boardAPI(auth: AuthRequestOptions) {
             "GET",
             undefined,
             signal,
+            true,
           ),
         ),
-    receipt: async (id: string, operation: string, signal?: AbortSignal) =>
-      changeSchema.parse(
-        await request(
-          `/${id}/operations/${operation}`,
-          "GET",
-          undefined,
-          signal,
-        ),
-      ),
     history: async (id: string, signal?: AbortSignal) =>
       z
         .object({

@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { getDocumentGroup, getNotebook } from "./catalog-api";
 import { useDocumentAuth } from "./queries";
@@ -16,7 +17,6 @@ import { useStore } from "zustand";
 
 import { authStore } from "../../shared/auth/auth-store";
 import { PageContainer } from "../../shared/ui/PageContainer";
-import { ToastNotification, showToast } from "../../shared/ui/Toast";
 import { DocumentShell } from "./DocumentShell";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { useSearchResource } from "../search/use-search-resource";
@@ -154,9 +154,9 @@ export function ArchivePage() {
   async function completeRestore(action: () => Promise<unknown>) {
     try {
       await action();
-      showToast({ title: "已恢复", tone: "success" });
+
     } catch (error) {
-      showToast({ title: "恢复失败", description: error instanceof Error ? error.message : "请稍后重试。", tone: "danger" });
+      reportError(error);
     }
   }
 
@@ -171,11 +171,7 @@ export function ArchivePage() {
         }
       >
         {target ? <ArchiveSearchTarget id={target.id} type={target.type} canRestore={canRestore} /> : null}
-        {groupsQuery.isError || notebooksQuery.isError || collectionDetails.some(query => query.isError) || notesQuery.isError ? (
-          <ToastNotification tone="danger" title="回收站加载失败">
-            请检查 API 服务后重试。
-          </ToastNotification>
-        ) : null}
+
         {groupsQuery.isLoading ||
         notebooksQuery.isLoading ||
         collectionDetails.some(query => query.isPending) ||
@@ -256,18 +252,18 @@ function ArchiveSearchTarget({ id, type, canRestore }: { id: string; type: "docu
       if (type==="group") await archiveGroup.mutateAsync({ id,archived:false,expected_version:info.data });
       else if (type==="notebook") await archiveNotebook.mutateAsync({ id,archived:false,expected_directory_version:info.data });
       else await archiveNote.mutateAsync({ id,archived:false,expected_directory_version:info.data });
-      showToast({ title: "已恢复", tone: "success" });
+
     } catch (error) {
-      showToast({ title: "恢复失败", description: error instanceof Error ? error.message : "请先检查上级资源是否已恢复。", tone: "danger" });
+      reportError(error);
     }
   }
   if (query.isPending) return <LoadingState label="正在定位回收站内容…" />;
-  if (query.isError) return <ToastNotification tone="danger" title="回收站内容定位失败" timeout={0}><Button onClick={() => void query.refetch()}>重试</Button></ToastNotification>;
-  if (!query.data) return <ToastNotification tone="default" title="该内容已不在回收站中">内容可能已恢复或当前已无权访问。</ToastNotification>;
+  if (query.isError) return null;
+  if (!query.data) return null;
   const Icon = type === "group" ? FolderKanban : type === "notebook" ? BookOpen : FilePlus2;
   return <div ref={target} tabIndex={-1} aria-label="搜索定位的回收站内容">
     {canRestore && info.isPending ? <LoadingState label="正在准备恢复…" compact /> : null}
-    {canRestore && info.isError ? <ToastNotification title="恢复信息加载失败" tone="danger" timeout={0}><Button onClick={()=>void info.refetch()}>重试加载恢复信息</Button></ToastNotification> : null}
+
     <ArchiveSection title="搜索定位" icon={<Icon aria-hidden="true" size={18} />} resources={[{ id, label: query.data.title, parentLabel: query.data.location }]} canRestore={canRestore && info.data!==undefined && !info.isError} onRestore={() => void restore()} pendingId={action.isPending ? id : undefined} />
   </div>;
 }

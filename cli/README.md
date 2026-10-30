@@ -25,7 +25,7 @@ orbis versions restore VERSION_ID --document DOCUMENT_ID \
 
 升级需执行新增 SQL migration。已有版本历史或操作回执时，版本 migration 的降级会主动拒绝执行，需先准备经审核的数据保留方案。
 
-独立的 Go 命令行应用，通过公开的工作空间 Agent API 访问 Orbis。它不导入后端内部包、不连接数据库，也不需要 Python。当前 CLI 版本为 `0.1.0`，使用 Agent 协议 `2.0` 和内容格式 `orbis.blocks.v1`。
+独立的 Go 命令行应用，通过公开的工作空间 Agent API 访问 Orbis。它不导入后端内部包、不连接数据库，也不需要 Python。当前 CLI 版本为 `0.1.1`，使用 Agent 协议 `2.0` 和内容格式 `orbis.blocks.v1`。
 
 ## 构建与安装
 

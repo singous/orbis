@@ -105,6 +105,7 @@ export type View = z.infer<typeof viewSchema>;
 export const sheetSchema = z.object({
   document_id: z.string().uuid(),
   data_revision: z.number(),
+  order_revision: z.number().optional(),
   schema_version: z.number(),
   id: z.string(),
   workspace_id: z.string(),
@@ -135,6 +136,8 @@ export type Patch = {
   version: number;
   values?: Record<string, Value>;
   delete?: boolean;
+  before_id?: string;
+  after_id?: string;
 };
 export type Changes = {
   operation_id: string;

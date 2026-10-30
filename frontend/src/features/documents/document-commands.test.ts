@@ -1,6 +1,6 @@
 import { expect,it } from "vitest";
 import { planDocumentWrite } from "./document-commands";
-import type { OrbisBlock } from "../content/model/blocks";
+import type { OrbisBlock } from "../content/blocks";
 import type { EditorDraft } from "./editor/editor-draft";
 const block=(text:string,children:OrbisBlock[]=[]):OrbisBlock=>({ id:crypto.randomUUID(),type:children.length ? "group" : "paragraph",props:{},content:children.length ? [] : [{type:"text",text}],children });
 const draft=(blocks:OrbisBlock[],title="文档"):EditorDraft=>({title,blocks:{schema_version:2,editor:"blocknote",blocks},version:2});

@@ -7,6 +7,11 @@
 .sheet-field-dialog,
 .sheet-share-dialog,
 .sheet-embed {
+  --sheet-toolbar-bg: #f4f4f4;
+  --sheet-chrome-border: #dedede;
+  --sheet-record-selected: #def3f3;
+  --sheet-selection-ink: #00b578;
+  --sheet-active-border: #3b8cff;
   --sheet-green: color-mix(in oklab, var(--success) 16%, var(--surface));
   --sheet-amber: color-mix(in oklab, var(--warning) 16%, var(--surface));
   --sheet-blue: color-mix(in oklab, #4084d5 15%, var(--surface));
@@ -63,41 +68,47 @@
 }
 .sheet-view-tabs {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: stretch;
+  gap: 0;
   min-height: 44px;
-  padding: 4px 20px;
-  border-bottom: 1px solid var(--border-subtle);
+  padding: 4px 8px 0;
   flex-shrink: 0;
   overflow-x: auto;
 }
 .sheet-view-tabs > [role="tablist"] {
   display: flex;
-  gap: 6px;
-  align-items: center;
+  gap: 0;
+  align-items: stretch;
 }
 .sheet-tab {
   display: flex;
   align-items: center;
-  border-radius: 8px;
+  position: relative;
+  border-radius: 12px 12px 0 0;
   white-space: nowrap;
-  padding: 2px;
+  padding: 4px 12px;
+  border: 1px solid transparent;
+  border-bottom: 0;
 }
 .sheet-tab.active {
-  background: var(--surface-secondary);
+  background: var(--sheet-toolbar-bg);
+  border-color: var(--sheet-chrome-border);
 }
 .sheet-tab.active [role="tab"] {
-  color: var(--accent);
+  color: var(--text-primary);
   font-weight: var(--orbis-weight-action);
 }
 .sheet-tab > [role="tab"] {
   gap: 8px;
+  padding-inline: 8px;
+  background: transparent;
 }
 .sheet-tab > button:last-child:not([role="tab"]) {
   padding-inline: 5px;
   min-width: 26px;
 }
 .sheet-toolbar {
+  background: var(--sheet-toolbar-bg);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -106,7 +117,7 @@
   flex-shrink: 0;
   overflow-x: auto;
   white-space: nowrap;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--sheet-chrome-border);
   overscroll-behavior-x: contain;
 }
 .sheet-toolbar > :not(.sheet-toolbar-spacer),
@@ -131,7 +142,7 @@
   padding: 5px 9px;
   min-width: 110px;
   max-width: 190px;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--sheet-chrome-border);
   border-radius: 8px;
   color: var(--text-tertiary);
 }
@@ -166,7 +177,7 @@
   position: sticky;
   top: 0;
   height: 40px;
-  background: var(--surface-secondary);
+  background: var(--orbis-panel-bg);
   z-index: 4;
   border-bottom: 1px solid var(--border-subtle);
 }
@@ -228,7 +239,7 @@
   border-bottom: 1px solid var(--border-subtle);
 }
 .sheet-grid-row:hover {
-  background: var(--surface-hover);
+  background: var(--sheet-toolbar-bg);
 }
 .sheet-row-label {
   position: sticky;
@@ -238,7 +249,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 0;
   z-index: 2;
   background: var(--orbis-panel-bg);
   color: var(--text-tertiary);
@@ -246,20 +257,21 @@
   font-size: var(--orbis-text-caption-size);
 }
 .sheet-grid-header .sheet-row-label {
-  background: var(--surface-secondary);
+  background: var(--orbis-panel-bg);
 }
-.sheet-row-select { display: grid; place-items: center; width: 100%; height: 100%; cursor: pointer; }
+.sheet-row-select { display: grid; place-items: center; width: 32px; flex: none; height: 100%; cursor: pointer; }
+.sheet-grid-header .sheet-row-select { margin-inline: auto; }
 .sheet-row-select > input, .sheet-row-select > span { grid-area: 1 / 1; }
 .sheet-row-select > input { opacity: 0; }
 .sheet-row-select > span { pointer-events: none; }
 .sheet-grid-header .sheet-row-select > input,
 .sheet-grid-row:hover .sheet-row-select > input,
-.sheet-row-select:focus-within > input,
+.sheet-row-select:has(> input:focus-visible) > input,
 .sheet-row-select > input:checked { opacity: 1; }
 .sheet-grid-row:hover .sheet-row-select > span,
-.sheet-row-select:focus-within > span,
+.sheet-row-select:has(> input:focus-visible) > span,
 .sheet-row-select > input:checked + span { opacity: 0; }
-.sheet-row-select:focus-within { outline: 2px solid var(--focus); outline-offset: -2px; }
+.sheet-row-select:has(> input:focus-visible) { outline: 2px solid var(--focus); outline-offset: -2px; }
 .sheet-cell {
   position: absolute;
   top: 0;
@@ -317,16 +329,6 @@
   margin-left: auto;
   font-size: var(--orbis-text-caption-size);
 }
-.sheet-selection-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 20px;
-  background: var(--accent-softer);
-  color: var(--accent);
-  flex-shrink: 0;
-  flex-wrap: wrap;
-}
 .sheet-error {
   color: var(--danger-text);
   font-size: var(--orbis-text-caption-size);
@@ -340,7 +342,7 @@
   position: fixed;
   width: 248px;
   padding: 8px;
-  background: var(--orbis-floating-bg);
+  background: var(--orbis-panel-bg);
   border: 1px solid var(--orbis-surface-edge);
   border-radius: 12px;
   box-shadow: var(--orbis-floating-shadow);
@@ -1263,6 +1265,9 @@
     .sheet-share-dialog,
     .sheet-embed
   ) {
+  --sheet-toolbar-bg: var(--surface-secondary);
+  --sheet-chrome-border: var(--border-subtle);
+  --sheet-record-selected: color-mix(in oklab, #00b5ad 20%, var(--orbis-panel-bg));
   --sheet-ink-blue: #79b8ff;
   --sheet-ink-green: #79d9b6;
   --sheet-ink-amber: #eac378;
@@ -1375,7 +1380,7 @@
 }
 /* The active cell keeps its content untinted; range members carry the fill. */
 .sheet-cell.active {
-  box-shadow: inset 0 0 0 2px var(--accent);
+  box-shadow: inset 0 0 0 2px var(--sheet-active-border);
 }
 .sheet-cell.selected {
   background: color-mix(in oklab, var(--accent) 8%, var(--orbis-panel-bg));
@@ -1428,6 +1433,7 @@
 .sheet-cell-picker:focus-visible {
   opacity: 1;
 }
+.sheet-cell > .sheet-cell-picker { pointer-events: none; }
 .sheet-cell-picker:hover {
   background: var(--surface-hover);
 }
@@ -1606,14 +1612,12 @@
   margin-bottom: 16px;
 }
 .sheet-row-inspect.orbis-action-button {
-  position: absolute;
-  left: 4px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 24px;
-  min-width: 24px;
-  height: 24px;
-  min-height: 24px;
+  position: static;
+  flex: none;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  min-height: 28px;
   padding: 2px;
   opacity: 0;
 }
@@ -1632,7 +1636,7 @@
   --sheet-cell-content-inset: 12px;
 }
 .sheet-cell[data-first-column] {
-  --sheet-cell-content-inset: 32px;
+  --sheet-cell-content-inset: 12px;
 }
 .sheet-cell[data-first-column]:not(.editing) {
   padding-inline-start: var(--sheet-cell-content-inset);
@@ -1664,7 +1668,7 @@ textarea.sheet-inline-input {
     min-height: 0;
     opacity: 1;
   }
-  .sheet-cell[data-first-column] { --sheet-cell-content-inset: calc(var(--orbis-control-touch-height) + var(--orbis-space-2)); }
+  .sheet-cell[data-first-column] { --sheet-cell-content-inset: 12px; }
   .sheet-cell-picker-popover { width: 360px; }
   .sheet-option-edit { grid-template-columns: 16px minmax(0, 1fr) var(--orbis-control-touch-height); }
   .sheet-option-edit > .orbis-select-field { grid-column: 2; }
@@ -1673,3 +1677,59 @@ textarea.sheet-inline-input {
 }
 
 @media (prefers-reduced-motion: reduce) { .sheet-popover { animation: none; } }
+
+/* 内嵌表格使用外层可调整的视窗；表头、工具和记录仍共享独立页面的组件。 */
+.sheet-embed-editor { background: transparent; border: 0; margin: 0; overflow: visible; }
+.sheet-embedded-workspace { height: 100%; min-height: 0; }
+.sheet-embedded-workspace .sheet-tool-label { display: none; }
+.sheet-embedded-workspace .sheet-toolbar .orbis-action-button { padding-inline: 7px; min-width: 30px; }
+.sheet-embedded-workspace .sheet-toolbar { flex-wrap: wrap; overflow: visible; }
+.sheet-embedded-workspace .sheet-search { margin-left: 0; min-width: 80px; flex: 1; }
+.sheet-embed-save { margin-left: auto; padding-inline: 8px; color: var(--text-tertiary); font-size: 11px; white-space: nowrap; }
+.embed-surface.is-expanded .sheet-tool-label { display: inline; }
+.sheet-embedded-workspace .sheet-record-panel { position: absolute; inset: 0 0 0 auto; max-width: min(400px, 100%); z-index: 25; overflow: auto; background: var(--surface); }
+
+/* Sheet view chrome and context actions share the grid's compact visual rhythm. */
+.sheet-tab + .sheet-tab::before { content: ""; position: absolute; left: 0; top: 50%; height: 18px; width: 1px; transform: translateY(-50%); background: var(--border-subtle); }
+.sheet-tab [role="tab"] > svg { color: var(--text-secondary); }
+.sheet-tab.active [role="tab"] > svg { color: var(--sheet-selection-ink); }
+.sheet-row-drag, .sheet-drag-handle { border: 0; background: transparent; color: var(--text-secondary); cursor: grab; padding: 4px; display: inline-flex; align-items: center; justify-content: center; touch-action: none; }
+.sheet-drag-handle:active { cursor: grabbing; }
+.sheet-drag-handle:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; border-radius: 4px; }
+.sheet-drag-handle:disabled { cursor: default; opacity: .35; }
+.sheet-row-drag, .sheet-row-drag:disabled { opacity: 0; width: 24px; height: 100%; flex: none; }
+.sheet-grid-row:hover .sheet-row-drag,
+.sheet-grid-row:has(.sheet-row-label :focus-visible) .sheet-row-drag,
+.sheet-grid-row:has(.sheet-row-label :focus-visible) .sheet-row-inspect { opacity: 1; }
+.sheet-grid-row.row-selected, .sheet-grid-row.row-selected .sheet-row-label { background: var(--sheet-record-selected); }
+.sheet-workspace .sheet-row-select input[type="checkbox"] { accent-color: var(--sheet-selection-ink); }
+.sheet-grid-row[data-drop="before"] { box-shadow: inset 0 2px var(--sheet-active-border); }
+.sheet-grid-row[data-drop="after"] { box-shadow: inset 0 -2px var(--sheet-active-border); }
+.sheet-field-manager { width: 340px; padding: 8px; }
+.sheet-field-list { display: flex; flex-direction: column; gap: 2px; }
+.sheet-managed-field { display: flex; align-items: center; position: relative; gap: 8px; min-height: 40px; padding: 0 4px; }
+.sheet-managed-field-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sheet-managed-field.is-hidden > .sheet-managed-field-name { color: var(--text-tertiary); }
+.sheet-managed-field[data-drop="before"] { box-shadow: inset 0 2px var(--sheet-active-border); }
+.sheet-managed-field[data-drop="after"] { box-shadow: inset 0 -2px var(--sheet-active-border); }
+.sheet-managed-field-menu { position: absolute; right: 0; top: 100%; z-index: 2; min-width: 130px; padding: 6px; border: 1px solid var(--border-subtle); border-radius: 10px; background: var(--orbis-panel-bg); box-shadow: var(--orbis-floating-shadow); }
+.sheet-field-manager-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 8px 4px 0; border-top: 1px solid var(--border-subtle); margin-top: 8px; }
+.sheet-record-menu { width: 278px; padding: 10px; }
+.sheet-menu hr { margin: 8px 0; border: 0; border-top: 1px solid var(--border-subtle); }
+.sheet-menu kbd { margin-left: auto; color: var(--text-tertiary); font: inherit; font-size: var(--orbis-text-caption-size); }
+.sheet-insert-row { display: flex; align-items: center; gap: 4px; padding-right: 8px; }
+.sheet-insert-row > button { flex: 1; }
+.sheet-insert-row input { width: 48px; min-width: 0; height: 30px; border: 1px solid var(--border-subtle); border-radius: 6px; text-align: center; background: transparent; }
+@media (pointer: coarse) {
+  .sheet-row-drag { opacity: 1; }
+  .sheet-row-drag:disabled { opacity: .35; }
+  .sheet-field-manager .sheet-drag-handle, .sheet-managed-field > button { min-width: var(--orbis-control-touch-height); min-height: var(--orbis-control-touch-height); }
+}
+
+.sheet-grid-tail .sheet-add-row { flex: none; justify-content: center; width: 28px; min-width: 28px; height: 28px; min-height: 28px; border: 1px solid var(--border-subtle); border-radius: 50%; padding: 4px; background: var(--orbis-panel-bg); }
+@media (pointer: coarse) {
+  .sheet-row-drag, .sheet-grid-row .sheet-row-select { width: var(--orbis-control-touch-height); }
+  .sheet-grid-tail .sheet-add-row { min-width: var(--orbis-control-touch-height); min-height: var(--orbis-control-touch-height); }
+}
+
+.sheet-grid-header, .sheet-grid-body, .sheet-grid-row, .sheet-grid-tail { min-width: 100%; }

@@ -318,7 +318,7 @@ it("discloses live future scope before creating a link and supports revocation",
   );
   await screen.findByRole("button", { name: "撤销链接" });
   await user.click(screen.getByRole("button", { name: "撤销链接" }));
-  await screen.findByText("链接已撤销，后续访问立即失效。");
+  await screen.findByText("已撤销");
   expect(screen.queryByLabelText("公开链接")).not.toBeInTheDocument();
   client.clear();
 });

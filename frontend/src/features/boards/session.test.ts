@@ -1,13 +1,14 @@
-import "fake-indexeddb/auto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BoardSession } from "./session";
-import { readJournal } from "./journal";
 import { makeElement, type Board, type Change, type Mutation } from "./model";
 import { ApiError } from "../../shared/api/api-client";
+import { reportRequestError } from "../../shared/api/request-feedback";
+
+const notify = vi.hoisted(() => vi.fn());
+vi.mock("../../shared/ui/Toast", () => ({ showToast: notify }));
 
 const mock = vi.hoisted(() => ({
   get: vi.fn(),
-  receipt: vi.fn(),
   elements: vi.fn(),
   change: vi.fn(),
   changes: vi.fn(),
@@ -23,6 +24,7 @@ const sessions: BoardSession[] = [];
 let metadata: Board;
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.spyOn(console, "error").mockImplementation(() => {});
   const id = crypto.randomUUID();
   metadata = {
     id,
@@ -45,9 +47,6 @@ beforeEach(() => {
     updated_at_ms: 1,
   };
   mock.get.mockImplementation(async () => structuredClone(metadata));
-  mock.receipt.mockRejectedValue(
-    new ApiError(404, "Missing", "RESOURCE_NOT_FOUND"),
-  );
   mock.elements.mockResolvedValue({
     items: [],
     revision: 1,
@@ -59,11 +58,14 @@ beforeEach(() => {
 afterEach(() => {
   for (const session of sessions) session.dispose();
   sessions.length = 0;
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
-function session(key = crypto.randomUUID()) {
-  const s = new BoardSession(metadata.id, key, auth);
+function session() {
+  const s = new BoardSession(metadata.id, auth);
   sessions.push(s);
-  return { s, key };
+  return { s };
 }
 function ack(input: Mutation): Change {
   const command = input.commands[0];
@@ -82,139 +84,230 @@ function ack(input: Mutation): Change {
     updated_at_ms: 2,
   };
 }
-describe("board durable save", () => {
-  it("replays the same operation after a committed response is lost, including after reopening", async () => {
-    const { s, key } = session();
+describe("board in-memory saving", () => {
+  it("reports a local startup validation failure and allows retrying the referenced page", async () => {
+    const { s } = session();
+    mock.get.mockResolvedValueOnce({ ...metadata, pages: [] });
+    await s.start(metadata.pages[0].id);
+    expect(s.getSnapshot().status).toBe("error");
+    expect(notify).toHaveBeenCalledExactlyOnceWith({ title: "画板没有可读取的页面。", tone: "danger" });
+    await s.start(metadata.pages[0].id);
+    expect(s.getSnapshot()).toMatchObject({ status: "saved", pageID: metadata.pages[0].id });
+  });
+
+  it("reports each explicit save retry once and retains the original request", async () => {
+    const { s } = session();
     await s.start();
-    const e = makeElement("flow.process", metadata.pages[0].id, 0, 0);
-    let committed: Change | undefined;
-    mock.change.mockImplementationOnce(async (_id, input) => {
-      committed = ack(input);
-      throw new TypeError("response lost");
+    mock.change.mockImplementation(async () => {
+      const failure = new ApiError(503, "保存暂时失败", "TEMPORARY_ERROR");
+      reportRequestError(failure);
+      throw failure;
     });
-    await s.submit([{ type: "elements.create", elements: [e] }]);
-    await vi.waitFor(() => expect(s.getSnapshot().status).toBe("offline"));
-    const pending = await readJournal(key);
-    expect(pending).toHaveLength(1);
-    await expect(s.discardPending()).rejects.toThrow("尚未确认");
+    await s.submit([{ type: "elements.create", elements: [makeElement("flow.process", metadata.pages[0].id, 0, 0)] }]);
+    await vi.waitFor(() => expect(s.getSnapshot().status).toBe("save_failed"));
+    expect(notify).toHaveBeenCalledTimes(1);
+    await s.retry();
+    expect(notify).toHaveBeenCalledTimes(2);
+    expect(mock.change.mock.calls[1][1]).toEqual(mock.change.mock.calls[0][1]);
+    expect(s.getSnapshot().pending).toBe(1);
+  });
+
+  it("opens and saves without accessing browser storage", async () => {
+    const open = vi.fn(() => { throw new Error("Storage is unavailable"); });
+    vi.stubGlobal("indexedDB", { open });
+    const localRead = vi.spyOn(localStorage, "getItem");
+    const localWrite = vi.spyOn(localStorage, "setItem");
+    const { s } = session();
+    await s.start();
+    mock.change.mockImplementation(async (_id, input) => ack(input));
+    await s.submit([{ type: "elements.create", elements: [makeElement("flow.process", metadata.pages[0].id, 0, 0)] }]);
+    await vi.waitFor(() => expect(s.getSnapshot()).toMatchObject({ status: "saved", pending: 0 }));
+    expect(open).not.toHaveBeenCalled();
+    expect(localRead).not.toHaveBeenCalled();
+    expect(localWrite).not.toHaveBeenCalled();
+  });
+
+  it("does not notify the editor during idle polling", async () => {
+    const { s } = session();
+    await s.start();
+    const listener = vi.fn();
+    s.subscribe(listener);
+    await vi.waitFor(() => expect(mock.changes).toHaveBeenCalled(), { timeout: 1500 });
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it("ignores empty commands and submits valid commands once", async () => {
+    const { s } = session();
+    await s.start();
+    await s.submit([]);
+    await s.submit([{ type: "elements.update", patches: [] }, { type: "elements.delete", targets: [] }]);
+    expect(mock.change).not.toHaveBeenCalled();
+    expect(s.getSnapshot()).toMatchObject({ status: "saved", pending: 0, canUndo: false });
+    const element = makeElement("flow.process", metadata.pages[0].id, 0, 0);
+    mock.change.mockImplementation(async (_id, input) => ack(input));
+    await s.submit([{ type: "elements.update", patches: [] }, { type: "elements.create", elements: [element] }]);
+    await vi.waitFor(() => expect(s.getSnapshot().pending).toBe(0));
+    expect(mock.change.mock.calls[0][1].commands).toEqual([{ type: "elements.create", elements: [element] }]);
+  });
+
+  it("retains a failed edit in memory and only resends after an explicit retry", async () => {
+    vi.useFakeTimers();
+    const { s } = session();
+    await s.start();
+    const element = makeElement("flow.process", metadata.pages[0].id, 0, 0);
+    mock.change.mockRejectedValue(new TypeError("Network unavailable"));
+    await s.submit([{ type: "elements.create", elements: [element] }]);
+    await vi.waitFor(() => expect(s.getSnapshot()).toMatchObject({ status: "save_failed", pending: 1 }));
+    expect(s.getSnapshot().elements.has(element.id)).toBe(true);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(mock.change).toHaveBeenCalledOnce();
+    await expect(s.submit([{ type: "elements.create", elements: [element] }])).rejects.toThrow("请先重试保存");
+    const original = structuredClone(mock.change.mock.calls[0][1]);
+    mock.change.mockImplementation(async (_id, input) => ack(input));
+    await s.retry();
+    expect(mock.change.mock.calls[1][1]).toEqual(original);
+    expect(s.getSnapshot()).toMatchObject({ status: "saved", pending: 0 });
+  });
+
+  it("preserves request order when another edit is submitted before the first acknowledgement", async () => {
+    const { s } = session();
+    await s.start();
+    let finish!: (change: Change) => void;
+    mock.change.mockImplementationOnce(() => new Promise<Change>(resolve => { finish = resolve; }));
+    mock.change.mockImplementation(async (_id, input) => ack(input));
+    const first = makeElement("flow.process", metadata.pages[0].id, 0, 0);
+    const second = makeElement("flow.process", metadata.pages[0].id, 300, 0);
+    await s.submit([{ type: "elements.create", elements: [first] }]);
+    await s.submit([{ type: "elements.create", elements: [second] }]);
+    expect(mock.change).toHaveBeenCalledOnce();
+    expect(s.getSnapshot().pending).toBe(2);
+    finish(ack(mock.change.mock.calls[0][1]));
+    await vi.waitFor(() => expect(s.getSnapshot().pending).toBe(0));
+    expect(mock.change).toHaveBeenCalledTimes(2);
+    expect(s.getSnapshot().elements.size).toBe(2);
+  });
+
+  it.each(["before", "after"])("keeps another editor independent when opened %s a failed save on the same board", async when => {
+    const { s } = session();
+    const second = session().s;
+    await s.start();
+    if (when === "before") await second.start();
+    const firstElement = makeElement("flow.process", metadata.pages[0].id, 0, 0);
+    mock.change.mockRejectedValueOnce(new TypeError("Disconnected"));
+    await s.submit([{ type: "elements.create", elements: [firstElement] }]);
+    await vi.waitFor(() => expect(s.getSnapshot().status).toBe("save_failed"));
+    const firstRequest = structuredClone(mock.change.mock.calls[0][1]);
+    if (when === "after") await second.start();
+    expect(second.getSnapshot().pending).toBe(0);
+    expect(mock.change).toHaveBeenCalledOnce();
+    mock.change.mockImplementation(async (_id, input) => ack(input));
+    const secondElement = makeElement("flow.process", metadata.pages[0].id, 300, 0);
+    await second.submit([{ type: "elements.create", elements: [secondElement] }]);
+    await vi.waitFor(() => expect(second.getSnapshot()).toMatchObject({ status: "saved", pending: 0 }));
+    expect(s.getSnapshot()).toMatchObject({ status: "save_failed", pending: 1 });
+    expect(mock.change.mock.calls[1][1].operation_id).not.toBe(firstRequest.operation_id);
+    await s.retry();
+    expect(mock.change.mock.calls[2][1]).toEqual(firstRequest);
+    expect(s.getSnapshot().pending).toBe(0);
+  });
+
+  it("opens server content without restoring or replaying an unsaved edit after disposal", async () => {
+    const { s } = session();
+    await s.start();
+    const element = makeElement("flow.process", metadata.pages[0].id, 0, 0);
+    mock.change.mockRejectedValue(new TypeError("Offline"));
+    await s.submit([{ type: "elements.create", elements: [element] }]);
+    await vi.waitFor(() => expect(s.getSnapshot().status).toBe("save_failed"));
     s.dispose();
-    metadata.revision = 2;
-    mock.receipt.mockImplementation(async () => committed);
-    mock.elements.mockResolvedValue({
-      items: committed!.elements,
-      revision: 2,
-      next_cursor: null,
-      has_more: false,
-    });
-    mock.change.mockImplementation(async (_id, input) => {
-      expect(input.operation_id).toBe(pending[0].input.operation_id);
-      return committed;
-    });
-    const reopened = session(key).s;
+    mock.change.mockClear();
+    const reopened = session().s;
     await reopened.start();
-    await vi.waitFor(() => expect(reopened.getSnapshot().status).toBe("saved"));
-    expect(reopened.getSnapshot().elements.size).toBe(1);
-    expect(await readJournal(key)).toEqual([]);
+    expect(reopened.getSnapshot()).toMatchObject({ status: "saved", pending: 0 });
+    expect(reopened.getSnapshot().elements.size).toBe(0);
+    expect(mock.change).not.toHaveBeenCalled();
   });
-  it("retains a rejected local draft if refreshing the server fails during discard", async () => {
-    const { s, key } = session();
+
+  it("retries an ambiguous save with its original operation ID and payload", async () => {
+    const { s } = session();
     await s.start();
-    mock.change.mockRejectedValue(
-      new ApiError(409, "Conflict", "BOARD_ELEMENT_CONFLICT"),
-    );
-    const e = makeElement("flow.process", metadata.pages[0].id, 0, 0);
-    await s.submit([{ type: "elements.create", elements: [e] }]);
-    await vi.waitFor(() => expect(s.getSnapshot().status).toBe("conflict"));
-    mock.get.mockRejectedValueOnce(new TypeError("offline"));
-    await expect(s.discardPending()).rejects.toThrow("offline");
-    expect(await readJournal(key)).toHaveLength(1);
-    expect(s.getSnapshot().elements.get(e.id)?.text).toBe(e.text);
+    let committed!: Change;
+    mock.change.mockImplementationOnce(async (_id, input) => { committed = ack(input); throw new TypeError("Response lost"); });
+    const element = makeElement("flow.process", metadata.pages[0].id, 0, 0);
+    await s.submit([{ type: "elements.create", elements: [element] }]);
+    await vi.waitFor(() => expect(s.getSnapshot().status).toBe("save_failed"));
+    await expect(s.discardPending()).rejects.toThrow("尚未确认");
+    mock.change.mockResolvedValueOnce(committed);
+    await s.retry();
+    expect(mock.change.mock.calls[1][1]).toEqual(mock.change.mock.calls[0][1]);
+    expect(s.getSnapshot()).toMatchObject({ status: "saved", pending: 0 });
+    expect(s.getSnapshot().elements.size).toBe(1);
   });
-  it.each([403, 409])("retains an uncertain operation after a retry receives HTTP %s", async (status) => {
-    const { s, key } = session();
+
+  it.each([403, 409])("retains an uncertain operation if its retry receives HTTP %s", async status => {
+    const { s } = session();
     await s.start();
-    const e = makeElement("flow.process", metadata.pages[0].id, 0, 0);
-    mock.change.mockRejectedValueOnce(new TypeError("response lost"));
-    await s.submit([{ type: "elements.create", elements: [e] }]);
-    await vi.waitFor(() => expect(s.getSnapshot().status).toBe("offline"));
-    const pending = await readJournal(key);
+    mock.change.mockRejectedValueOnce(new TypeError("Response lost"));
+    await s.submit([{ type: "elements.create", elements: [makeElement("flow.process", metadata.pages[0].id, 0, 0)] }]);
+    await vi.waitFor(() => expect(s.getSnapshot().status).toBe("save_failed"));
     mock.change.mockRejectedValueOnce(new ApiError(status, "Retry rejected", "BOARD_ACCESS_CHANGED"));
     await s.retry();
+    expect(s.getSnapshot()).toMatchObject({ pending: 1, canDiscard: false });
     await expect(s.discardPending()).rejects.toThrow("尚未确认");
-    expect(await readJournal(key)).toEqual(pending);
-
-    mock.change.mockImplementationOnce(async (_id, input) => {
-      expect(input.operation_id).toBe(pending[0].input.operation_id);
-      return ack(input);
-    });
+    mock.change.mockImplementationOnce(async (_id, input) => ack(input));
     await s.retry();
-    expect(s.getSnapshot().status).toBe("saved");
-    expect(await readJournal(key)).toEqual([]);
+    expect(s.getSnapshot().pending).toBe(0);
   });
-  it("keeps a recovered operation uncertain when replay is rejected", async () => {
-    const { s, key } = session();
+
+  it("preserves diagnostic details and retains a rejected edit if discarding cannot reload the server", async () => {
+    const { s } = session();
     await s.start();
-    mock.change.mockRejectedValueOnce(new TypeError("response lost"));
-    await s.submit([{ type: "elements.create", elements: [makeElement("flow.process", metadata.pages[0].id, 0, 0)] }]);
-    await vi.waitFor(() => expect(s.getSnapshot().status).toBe("offline"));
-    s.dispose();
-    mock.change.mockRejectedValue(new ApiError(403, "Permission changed", "FORBIDDEN"));
-    const reopened = session(key).s;
-    await reopened.start();
-    await vi.waitFor(() => expect(reopened.getSnapshot().status).toBe("conflict"));
-    await expect(reopened.discardPending()).rejects.toThrow("尚未确认");
-    expect(await readJournal(key)).toHaveLength(1);
+    mock.change.mockRejectedValue(new ApiError(422, "请求字段校验失败", "VALIDATION_ERROR", "request-1", {
+      errors: [{ field: "body", code: "INVALID_VALUE", message: "图元尺寸无效" }],
+    }));
+    const element = makeElement("flow.process", metadata.pages[0].id, 0, 0);
+    await s.submit([{ type: "elements.create", elements: [element] }]);
+    await vi.waitFor(() => expect(s.getSnapshot().canDiscard).toBe(true));
+    expect(console.error).toHaveBeenCalledWith("画板操作同步失败", expect.objectContaining({
+      board_id: metadata.id, stage: "request", exception_type: "ApiError", status: 422,
+      code: "VALIDATION_ERROR", request_id: "request-1", reason: expect.stringContaining("图元尺寸无效"),
+    }));
+    mock.get.mockRejectedValueOnce(new Error("Read failed"));
+    await expect(s.discardPending()).rejects.toThrow("Read failed");
+    expect(s.getSnapshot()).toMatchObject({ status: "conflict", pending: 1, canDiscard: true });
+    expect(s.getSnapshot().elements.has(element.id)).toBe(true);
+    await s.discardPending();
+    expect(s.getSnapshot()).toMatchObject({ status: "saved", pending: 0 });
+    expect(s.getSnapshot().elements.size).toBe(0);
   });
-  it("allows discarding an operation definitively rejected on its first attempt", async () => {
-    const { s, key } = session();
+
+  it("does not resend a rejected operation while reloading the server to discard it", async () => {
+    const { s } = session();
     await s.start();
     mock.change.mockRejectedValue(new ApiError(409, "Conflict", "BOARD_ELEMENT_CONFLICT"));
     await s.submit([{ type: "elements.create", elements: [makeElement("flow.process", metadata.pages[0].id, 0, 0)] }]);
-    await vi.waitFor(() => expect(s.getSnapshot().status).toBe("conflict"));
-    await s.discardPending();
-    expect(await readJournal(key)).toEqual([]);
+    await vi.waitFor(() => expect(s.getSnapshot().canDiscard).toBe(true));
+    let reload!: (board: Board) => void;
+    mock.get.mockImplementationOnce(() => new Promise<Board>(resolve => { reload = resolve; }));
+    const discard = s.discardPending();
+    await vi.waitFor(() => expect(s.getSnapshot().status).toBe("loading"));
+    await s.retry();
+    expect(mock.change).toHaveBeenCalledOnce();
+    reload(metadata);
+    await discard;
+    expect(s.getSnapshot()).toMatchObject({ status: "saved", pending: 0 });
   });
-  it("does not apply a response from a disposed session after StrictMode restarts it", async () => {
+
+  it("ignores an old response when StrictMode restarts a disposed session", async () => {
     const { s } = session();
     let resolve!: (value: Board) => void;
-    mock.get.mockImplementationOnce(
-      () =>
-        new Promise<Board>((r) => {
-          resolve = r;
-        }),
-    );
+    mock.get.mockImplementationOnce(() => new Promise<Board>(done => { resolve = done; }));
     const first = s.start();
-    await vi.waitFor(() => expect(mock.get).toHaveBeenCalledOnce());
     s.dispose();
-    const second = s.start();
-    await second;
-    resolve({ ...metadata, title: "stale lifecycle" });
+    await s.start();
+    resolve({ ...metadata, title: "Stale lifecycle" });
     await first;
     expect(s.getSnapshot().board?.title).toBe("Test");
   });
-});
-
-it("never overwrites another window's durable pending operations", async () => {
-  const { writeJournal } = await import("./journal");
-  const key = crypto.randomUUID();
-  const input: Mutation = {
-    operation_id: crypto.randomUUID(),
-    schema_version: 1,
-    commands: [],
-  };
-  const first = {
-    input,
-    before: [],
-    before_pages: [],
-    page_id: crypto.randomUUID(),
-    history_mode: "normal" as const,
-  };
-  await writeJournal(key, [first], []);
-  await expect(writeJournal(key, [], [])).rejects.toThrow("另一个窗口");
-  expect((await readJournal(key))[0].input.operation_id).toBe(
-    input.operation_id,
-  );
-  await writeJournal(key, [], [first]);
 });
 
 it("does not apply a local mutation twice when the stream arrives before its HTTP receipt", async () => {

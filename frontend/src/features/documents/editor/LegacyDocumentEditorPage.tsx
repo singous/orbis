@@ -1,3 +1,7 @@
+import { releaseFeatures } from "../../../shared/release-features";
+import { ConfirmAction } from "../../../shared/ui/ConfirmAction";
+import { markErrorHandled, reportError, reportRequestError } from "../../../shared/api/request-feedback";
+import { DraftActions } from "../../../shared/ui/DraftActions";
 import {cacheDocumentCommit} from "../document-cache";
 import {annotateTableCopies,resolveTableCopies,type TableCopyIntent} from "./table-copy";
 import {DocumentCopyContext,type DocumentCopyPort} from "./blocks/block-copy-context";
@@ -19,15 +23,15 @@ import { authStore } from "../../../shared/auth/auth-store";
 import { useOptionalAuthRequest } from "../../../shared/auth/use-auth-request";
 import { registerPendingNavigation } from "../../../shared/navigation/pending-navigation";
 import { Button } from "../../../shared/ui/Button";
-import { ToastNotification } from "../../../shared/ui/Toast";
-import { v2ToMarkdown, type NoteBlocksV2 } from "../../content/model/blocks";
+
+import { v2ToMarkdown, type NoteBlocksV2 } from "../../content/blocks";
 import type { RestoreSavedRevision } from "../../collaboration/DocumentCollaborationPanel";
 import { canMutateWorkspaceContent } from "../../workspace/capabilities";
 import { checkpointRecoveryIssue,draftScopeKey } from "./draft-checkpoints";
 import { useDraftCheckpoints } from "./use-draft-checkpoints";
 import { AutosaveCoordinator, type AutosaveState } from "./autosave";
 import { normalizeEditorBlocks } from "./editor-blocks";
-import type { OrbisBlock } from "../../content/model/blocks";
+import type { OrbisBlock } from "../../content/blocks";
 import { DocumentWriter } from "./document-writer";
 import type { DraftContentWindow } from "./draft-checkpoints";
 import { useQueryClient } from "@tanstack/react-query";
@@ -42,9 +46,6 @@ import { CONTENT_PAGE_SIZE, CONTENT_COMPLETION_PAGE_SIZE, type EditorContentHand
 
 // Load the editor only on document pages; readers use the lightweight renderer.
 const TiptapEditor = lazy(loadDocumentEditor);
-const SheetDocument = lazy(() => import("../../sheets/SheetPage").then(m => ({default:m.SheetWorkspace})));
-const BoardDocument = lazy(() => import("../../boards/BoardEditor").then(m => ({default:m.BoardEditor})));
-const CollaborativeDocumentEditorPage = lazy(() => import("./CollaborativeDocumentEditorPage"));
 
 function LiveDocumentEditor({ blocks, onChange, ...props }: {
   blocks: NoteBlocksV2;
@@ -91,6 +92,8 @@ const saveStateCopy: Record<AutosaveState, { label: string; icon: typeof Save }>
 };
 
 class EditorErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  componentDidCatch() { reportError("页面内容无法显示，请刷新重试。"); }
+
   state = { hasError: false };
 
   static getDerivedStateFromError() {
@@ -100,23 +103,11 @@ class EditorErrorBoundary extends Component<{ children: ReactNode }, { hasError:
   render() {
     if (this.state.hasError) {
       return (
-        <ToastNotification tone="danger" title="编辑器加载失败">
-          文档内容暂时无法在编辑器中打开。请刷新重试，或返回文档中心。
-        </ToastNotification>
+        null
       );
     }
     return this.props.children;
   }
-}
-
-export function DocumentEditorPage() {
-  const { noteId = "" } = useParams();
-  const note = useNote(noteId);
-  if (note.isPending) return <DocumentShell><LoadingState label="正在打开文档…" variant="editor" /></DocumentShell>;
-  if (note.data?.board_id) return <Suspense fallback={<DocumentShell><LoadingState label="正在打开画板…" variant="editor" /></DocumentShell>}><BoardDocument key={note.data.id} id={note.data.board_id}/></Suspense>;
-  if (note.data?.sheet_id) return <Suspense fallback={<DocumentShell><LoadingState label="正在打开数据表…" variant="editor" /></DocumentShell>}><SheetDocument key={note.data.id} id={note.data.sheet_id} /></Suspense>;
-  if (note.data?.collaboration_available === true) return <Suspense fallback={<DocumentShell><LoadingState label="正在打开文档…" variant="editor" /></DocumentShell>}><CollaborativeDocumentEditorPage /></Suspense>;
-  return <LegacyDocumentEditorPage />;
 }
 
 export function LegacyDocumentEditorPage() {
@@ -141,17 +132,16 @@ export function LegacyDocumentEditorPage() {
   const saveContent = useSaveNoteContent();
   const archiveNote = useArchiveNote();
   const [draft, setDraft] = useState<EditorDraft | null>(null);
-  const [recoveryBlocked,setRecoveryBlocked]=useState<{record:import("./draft-checkpoints").DraftCheckpoint;message:string}|null>(null);
+  const [retainedDraft,setRetainedDraft]=useState<{record:import("./draft-checkpoints").DraftCheckpoint;message:string}|null>(null);
   const [editorError, setEditorError] = useState<string | null>(null);
   const editorErrorRef = useRef<string | null>(null);
   const [autosaveState, setSaveState] = useState<AutosaveState>("saved");
-  const [collaborationOpen, setCollaborationOpen] = useState(Boolean(commentId));
-  const [collaborationMounted, setCollaborationMounted] = useState(Boolean(commentId));
+  const [collaborationOpen, setCollaborationOpen] = useState(Boolean(releaseFeatures.documentCollaboration && commentId));
+  const [collaborationMounted, setCollaborationMounted] = useState(Boolean(releaseFeatures.documentCollaboration && commentId));
   const [collaborationSession, setCollaborationSession] = useState(0);
-  useEffect(() => { setCollaborationOpen(Boolean(commentId)); if (commentId) setCollaborationMounted(true); }, [noteId, commentId]);
+  useEffect(() => { setCollaborationOpen(Boolean(releaseFeatures.documentCollaboration && commentId)); if (releaseFeatures.documentCollaboration && commentId) setCollaborationMounted(true); }, [noteId, commentId]);
   const [restoring, setRestoring] = useState(false);
   const [archiving, setArchiving] = useState(false);
-  const [archiveError, setArchiveError] = useState<string | null>(null);
   const [restorationConflict, setRestorationConflict] = useState(false);
   const restoringRef = useRef(false);
   const archivingRef = useRef<AutosaveCoordinator<EditorDraft> | null>(null);
@@ -210,9 +200,18 @@ export function LegacyDocumentEditorPage() {
     if (restoringRef.current || !note || !content || (workspace && note.workspace_id !== workspace.id)) return;
     let disposed = false;
     async function initialize(note: NonNullable<typeof noteQuery.data>, content: NonNullable<typeof contentQuery.data>) {
-    const recovered = checkpoints.recovery ?? (hydratedNoteRef.current !== draftKey ? await checkpoints.controller.read().catch(() => null) : null);
+    let recovered = checkpoints.recovery ?? (hydratedNoteRef.current !== draftKey ? await checkpoints.controller.read().catch(() => null) : null);
     if (disposed) return;
-    if(recovered){const message=checkpointRecoveryIssue(recovered,noteId);if(message){coordinatorRef.current?.dispose(false);setRecoveryBlocked({record:recovered,message});return;}}
+    if (recovered) {
+      const message = checkpointRecoveryIssue(recovered, noteId);
+      if (message) {
+        setRetainedDraft({ record: recovered, message });
+        await checkpoints.controller.startFresh();
+        if (disposed) return;
+        recovered = null;
+        checkpoints.consumeRecovery();
+      }
+    }
     // The version can only move forward per note, so a cached version at or
     // below what we last saved is either our own echo (setQueryData after
     // flush) or a stale query response that arrived late. Rebuilding the
@@ -318,11 +317,11 @@ export function LegacyDocumentEditorPage() {
 
   useEffect(() => {
     setEditorError(null);
-    setRecoveryBlocked(null);
+    setRetainedDraft(null);
     setRestorationConflict(false);
     editorErrorRef.current = null;
     setArchiving(false);
-    setArchiveError(null);
+
     const abort = new AbortController();
     contentAbort.current = abort;
     return () => {
@@ -384,7 +383,10 @@ export function LegacyDocumentEditorPage() {
     loadingRequest.current = task;
     try { await task; }
     catch (error) {
-      if (!abort.signal.aborted && contentWindow.current === window) setLoadMoreError(error instanceof Error ? error.message : "后续正文加载失败，请重试。");
+      if (!abort.signal.aborted && contentWindow.current === window) {
+        reportRequestError(error);
+        setLoadMoreError(error instanceof Error ? error.message : "后续正文加载失败，请重试。");
+      } else markErrorHandled(error);
       throw error;
     } finally {
       if (loadingRequest.current === task) { loadingRequest.current = null; setLoadingMore(false); }
@@ -446,7 +448,10 @@ export function LegacyDocumentEditorPage() {
     childRequests.current.set(id, task);
     try { await task; }
     catch (error) {
-      if (!abort.signal.aborted && coordinatorRef.current === coordinator) mark({ error: error instanceof Error ? error.message : "子内容加载失败，请重试。" });
+      if (!abort.signal.aborted && coordinatorRef.current === coordinator) {
+        reportRequestError(error);
+        mark({ error: error instanceof Error ? error.message : "子内容加载失败，请重试。" });
+      } else markErrorHandled(error);
       throw error;
     } finally {
       if (childRequests.current.get(id) === task) childRequests.current.delete(id);
@@ -458,7 +463,7 @@ export function LegacyDocumentEditorPage() {
     if (!contentHandle.current) throw new Error("正文尚未准备好，请稍后重试。");
     while (contentWindow.current?.noteId === noteId && contentWindow.current.hasMore) await loadMoreContent(contentWindow.current.bounded ? CONTENT_COMPLETION_PAGE_SIZE : CONTENT_PAGE_SIZE);
     const present = new Set<string>();
-    const collect = (items: import("../../content/model/blocks").OrbisBlock[]) => { for (const item of items) { present.add(item.id); collect(item.children); } };
+    const collect = (items: import("../../content/blocks").OrbisBlock[]) => { for (const item of items) { present.add(item.id); collect(item.children); } };
     if (coordinatorRef.current?.current) collect(coordinatorRef.current.current.blocks.blocks);
     const retained = new Map([...loadStatesRef.current].filter(([id]) => present.has(id)));
     updateLoadStates(retained);
@@ -479,7 +484,7 @@ export function LegacyDocumentEditorPage() {
       const selected = new Set(ids);
       const present = new Set<string>();
       const retained = new Set<string>();
-      const visit = (items: import("../../content/model/blocks").OrbisBlock[], within = false) => {
+      const visit = (items: import("../../content/blocks").OrbisBlock[], within = false) => {
         for (const item of items) {
           if (selected.has(item.id)) present.add(item.id);
           const chosen = within || selected.has(item.id);
@@ -586,7 +591,7 @@ export function LegacyDocumentEditorPage() {
     if (!canEdit || coordinatorRef.current?.state !== "saved" || restoringRef.current || archivingRef.current) return;
     restoringRef.current = true; setRestoring(true);
     try { await checkpoints.chooseRecovery(record); }
-    catch (error) { setEditorError(error instanceof Error ? error.message : "本机草稿恢复失败，请重试。"); }
+    catch (error) { reportError(error);  setEditorError(error instanceof Error ? error.message : "本机草稿恢复失败，请重试。"); }
     finally { restoringRef.current = false; setRestoring(false); }
   }
 
@@ -599,10 +604,6 @@ export function LegacyDocumentEditorPage() {
     await coordinator?.settlePendingSave();
     const [noteResult, contentResult] = await Promise.all([noteQuery.refetch(), contentQuery.refetch()]);
     if (coordinatorRef.current !== coordinator || !noteResult.data || !contentResult.data || noteResult.error || contentResult.error) return;
-    if(recoveryBlocked){
-      await checkpoints.controller.acknowledge(checkpoints.controller.sequence);
-      checkpoints.consumeRecovery();setRecoveryBlocked(null);hydratedNoteRef.current=null;return;
-    }
     coordinator?.dispose(false);
     const next = { title: contentResult.data.title ?? noteResult.data.title, blocks: normalizeEditorBlocks(noteId, contentResult.data.blocks), version: contentResult.data.content_version };
     if (coordinatorMode.current?.coordinator === coordinator) { coordinatorMode.current.mode.partial = "next_cursor" in contentResult.data; coordinatorMode.current.mode.blocks = "next_cursor" in contentResult.data && (isBoundedContentPage(contentResult.data)); }
@@ -617,7 +618,7 @@ export function LegacyDocumentEditorPage() {
     setDraft(next);
     outlineStore.update(next.blocks);
     setRestorationConflict(false);
-    }catch(error){setEditorError(error instanceof Error?error.message:"服务端版本载入失败，请重试。");}
+    }catch(error){ reportError(error); setEditorError(error instanceof Error?error.message:"服务端版本载入失败，请重试。");}
     finally{restoringRef.current=false;setRestoring(false);}
   }
 
@@ -678,12 +679,12 @@ export function LegacyDocumentEditorPage() {
     const note = noteQuery.data;
     if (!canEdit || !note || !coordinator || restoringRef.current || archivingRef.current) return;
     if (restorationConflict || ["conflict", "error"].includes(coordinator.state)) {
-      setArchiveError("请先处理保存失败或版本冲突，再归档文档。本地草稿仍保留。");
+      reportError("保存未完成，请刷新后再归档文档。");
       return;
     }
     archivingRef.current = coordinator;
     setArchiving(true);
-    setArchiveError(null);
+
     try {
       await flushCurrentDraft(coordinator);
       if (!notebook) throw new Error("目录版本尚未载入，请重新载入。");
@@ -691,7 +692,7 @@ export function LegacyDocumentEditorPage() {
       if (coordinatorRef.current === coordinator) navigate(`/collections/${note.notebook_id}`, { replace: true });
     } catch (error) {
       if (coordinatorRef.current === coordinator) {
-        setArchiveError(error instanceof Error ? error.message : "归档失败，请重试。本地草稿仍保留。");
+        reportError(error);
       }
     } finally {
       if (archivingRef.current === coordinator) {
@@ -762,7 +763,7 @@ export function LegacyDocumentEditorPage() {
   }),[draftKey,noteId,workspace?.id,canEdit,tableWriters]);
 
   if (noteQuery.isError || contentQuery.isError) {
-    return <DocumentShell><div className="mx-auto max-w-3xl p-8"><ToastNotification tone="danger" title="无法打开文档">文档可能已归档，或你没有访问权限。</ToastNotification><Link to="/documents" className="mt-4 inline-flex text-sm font-semibold">返回文档中心</Link></div></DocumentShell>;
+    return <DocumentShell><div className="mx-auto max-w-3xl p-8"><Link to="/documents" className="mt-4 inline-flex text-sm font-semibold">返回文档中心</Link></div></DocumentShell>;
   }
 
   const breadcrumb = (
@@ -775,13 +776,19 @@ export function LegacyDocumentEditorPage() {
     </nav>
   );
   const toolbar = (
-    <div className="document-header-actions">
+    <div className="document-header-actions">{(retainedDraft) || (checkpoints.candidates.length) || (checkpoints.status.status === "failed" && autosaveState !== "saved") || (draft && saveState === "conflict") || (saveState === "error" && !editorError) ? <DraftActions>{retainedDraft ? <section><h3 className="mb-2 text-sm font-semibold">保留的草稿</h3><div className="mt-3 flex flex-wrap gap-2"><Button onClick={()=>{
+        const url=URL.createObjectURL(new Blob([JSON.stringify(retainedDraft.record)],{type:"application/json"}));const link=document.createElement("a");link.href=url;link.download=`orbis-local-draft-${noteId}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),0);
+      }}>下载本机草稿</Button></div></section> : null}
+{checkpoints.candidates.length ? <section><h3 className="mb-2 text-sm font-semibold">其他窗口的草稿</h3><div className="mt-3 flex flex-wrap gap-2">{checkpoints.candidates.map(record => <Button key={record.scopeKey} size="sm" variant="secondary" disabled={autosaveState !== "saved"} onClick={() => void recoverLocalDraft(record)}>恢复“{record.current.title || "未命名文档"}”（基础版本 {record.saved.version}）</Button>)}<Button size="sm" variant="ghost" onClick={checkpoints.dismissCandidates}>稍后处理</Button></div></section> : null}
+{checkpoints.status.status === "failed" && autosaveState !== "saved" ? <section><h3 className="mb-2 text-sm font-semibold">保存副本</h3><Button variant="ghost" onClick={() => void checkpoints.controller.flush().catch(() => {})}>重试保存到本机</Button></section> : null}
+{draft && saveState === "conflict" ? <section><h3 className="mb-2 text-sm font-semibold">当前修改</h3><div className="mt-3 flex flex-wrap gap-2"><Button variant="secondary" icon={<Download aria-hidden="true" size={14} />} onClick={() => void loadCompleteContent().then(() => navigator.clipboard?.writeText(v2ToMarkdown((coordinatorRef.current?.current ?? draft).blocks.blocks))).catch(() => {})}>复制本地 Markdown</Button><ConfirmAction title="载入服务端版本" description="当前未保存的正文和标题将被服务端版本替换。需要保留时，请先复制本地 Markdown。" confirmLabel="替换本地修改" disabled={restoring || archiving} onConfirm={reloadServer}><Button variant="secondary" icon={<RotateCcw aria-hidden="true" size={14} />}>载入服务端版本</Button></ConfirmAction></div></section> : null}
+{saveState === "error" && !editorError ? <section><h3 className="mb-2 text-sm font-semibold">保存修改</h3><div className="mt-3"><Button variant="secondary" icon={<RefreshCw aria-hidden="true" size={14} />} onClick={() => coordinatorRef.current?.retry()}>重试保存</Button></div></section> : null}</DraftActions> : null}
       <span className={`document-save-state is-${saveState}`} role="status" aria-live="polite" aria-atomic="true">
         <StateIcon aria-hidden="true" size={14} className={saveState === "saving" ? "document-save-spinner" : ""} /><span>{canEdit ? checkpointCopy ?? stateCopy.label : "只读"}</span>
       </span>
       <span className="document-header-divider" aria-hidden="true" />
-      {canEdit && noteQuery.data ? <ShareButton notebookId={noteQuery.data.notebook_id!} noteId={noteId} title={draft?.title || noteQuery.data.title} /> : null}
-      <ActionButton ref={collaborationTriggerRef} type="button" className="document-comment-trigger" aria-label="评论与历史" aria-haspopup="dialog" aria-expanded={collaborationOpen} disabled={!draft || archiving} onClick={() => { setCollaborationMounted(true); setCollaborationSession(value => value + 1); setCollaborationOpen(true); }}><MessageSquare aria-hidden="true" size={16} /><span>评论</span></ActionButton>
+      {canEdit && noteQuery.data ? (releaseFeatures.documentSharing ? <ShareButton notebookId={noteQuery.data.notebook_id!} noteId={noteId} title={draft?.title || noteQuery.data.title} /> : null) : null}
+      {releaseFeatures.documentCollaboration && <ActionButton ref={collaborationTriggerRef} type="button" className="document-comment-trigger" aria-label="评论与历史" aria-haspopup="dialog" aria-expanded={collaborationOpen} disabled={!draft || archiving} onClick={() => { setCollaborationMounted(true); setCollaborationSession(value => value + 1); setCollaborationOpen(true); }}><MessageSquare aria-hidden="true" size={16} /><span>评论</span></ActionButton>}
       {canEdit ? <Dropdown>
         <ActionButton type="button" className="icon-button" aria-label="更多文档操作" disabled={!draft || editorBusy}><MoreHorizontal aria-hidden="true" size={18} /></ActionButton>
         <Dropdown.Popover placement="bottom end" className="document-actions-popover" offset={6}>
@@ -795,10 +802,8 @@ export function LegacyDocumentEditorPage() {
 
   return (
     <DocumentShell editorLayout breadcrumb={breadcrumb} toolbar={toolbar} notebookId={noteQuery.data?.notebook_id} activeNoteId={noteId}>
-      {recoveryBlocked ? <div className="page-container"><ToastNotification tone="warning" title="本机草稿需要手动恢复" timeout={0}>{recoveryBlocked.message}<div className="mt-3 flex flex-wrap gap-2"><Button onClick={()=>{
-        const url=URL.createObjectURL(new Blob([JSON.stringify(recoveryBlocked.record)],{type:"application/json"}));const link=document.createElement("a");link.href=url;link.download=`orbis-local-draft-${noteId}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),0);
-      }}>下载本机草稿</Button><Button disabled={restoring} onClick={()=>void reloadServer()}>放弃本机恢复并载入服务端版本</Button></div></ToastNotification></div> : !draft || !noteQuery.data || hydratedNoteRef.current !== draftKey ? <div className="page-container"><LoadingState label="正在打开文档…" variant="editor" /></div> : (
-        <EditorLayout outlineStore={outlineStore}>
+      {!draft || !noteQuery.data || hydratedNoteRef.current !== draftKey ? <div className="page-container"><LoadingState label="正在打开文档…" variant="editor" /></div> : (
+        <EditorLayout outlineStore={outlineStore} loadOutlineContent={loadCompleteContent}>
           <article className="editor-canvas">
             <HeroInput
               aria-label="文档标题"
@@ -809,14 +814,6 @@ export function LegacyDocumentEditorPage() {
               onChange={(event) => changeDraft({ ...(coordinatorRef.current?.current ?? draft), title: event.target.value })}
             />
             <div className="mb-7 mt-2 flex items-center gap-2 text-xs text-[var(--muted-light)]"><span>{canEdit ? "停手后自动保存" : "只读访问"}</span></div>
-
-            {archiveError ? <ToastNotification tone="danger" title="未能归档文档">{archiveError}</ToastNotification> : null}
-            {checkpoints.candidates.length ? <ToastNotification tone="warning" title="检测到其他会话保留的本机草稿" timeout={0}>选择需要恢复的内容，原会话草稿会继续保留。<div className="mt-3 flex flex-wrap gap-2">{checkpoints.candidates.map(record => <Button key={record.scopeKey} size="sm" variant="secondary" disabled={autosaveState !== "saved"} onClick={() => void recoverLocalDraft(record)}>恢复“{record.current.title || "未命名文档"}”（基础版本 {record.saved.version}）</Button>)}<Button size="sm" variant="ghost" onClick={checkpoints.dismissCandidates}>稍后处理</Button></div></ToastNotification> : null}
-            {checkpoints.status.status === "failed" && autosaveState !== "saved" ? <ToastNotification tone="warning" title="本机草稿尚未持久保存" timeout={0}>浏览器存储暂不可用，请保持页面打开并重试同步。<Button variant="ghost" onClick={() => void checkpoints.controller.flush().catch(() => {})}>重试保存到本机</Button></ToastNotification> : null}
-            {saveState === "conflict" ? <ToastNotification tone="warning" title="检测到其他窗口的更新" timeout={0}>本地草稿仍保留。建议先复制本地 Markdown，再载入服务端版本。
-              <div className="mt-3 flex flex-wrap gap-2"><Button variant="secondary" icon={<Download aria-hidden="true" size={14} />} onClick={() => void loadCompleteContent().then(() => navigator.clipboard?.writeText(v2ToMarkdown((coordinatorRef.current?.current ?? draft).blocks.blocks))).catch(() => {})}>复制本地 Markdown</Button><Button variant="secondary" icon={<RotateCcw aria-hidden="true" size={14} />} onClick={reloadServer}>载入服务端版本</Button></div>
-            </ToastNotification> : null}
-            {saveState === "error" && !editorError ? <ToastNotification tone="danger" title="自动保存失败" timeout={0}>网络恢复后可手动重试，本地草稿不会丢失。<div className="mt-3"><Button variant="secondary" icon={<RefreshCw aria-hidden="true" size={14} />} onClick={() => coordinatorRef.current?.retry()}>重试保存</Button></div></ToastNotification> : null}
 
             <DocumentCopyContext.Provider value={copyPort}><TableHostContext.Provider value={tableHost}><EditorErrorBoundary key={noteId}>
               <Suspense fallback={<LoadingState label="正在准备编辑…" variant="editor-body" delayMs={180} />}>
@@ -837,13 +834,13 @@ export function LegacyDocumentEditorPage() {
             </EditorErrorBoundary></TableHostContext.Provider></DocumentCopyContext.Provider>
             {hasMoreContent ? <div ref={loadMoreTarget} className="document-load-more" aria-live="polite">
               {loadingMore ? <LoadingState label="正在载入后续正文…" compact /> : null}
-              {loadMoreError ? <ToastNotification tone="danger" title="后续正文未能载入" timeout={0}>{loadMoreError}<Button variant="secondary" onClick={() => void loadMoreContent().catch(() => {})}>重试加载</Button></ToastNotification> : null}
-              {!loadingMore && !loadMoreError ? <Button variant="ghost" onClick={() => void loadMoreContent().catch(() => {})}>继续阅读</Button> : null}
+
+              {!loadingMore ? <Button variant="ghost" onClick={() => void loadMoreContent().catch(() => {})}>继续阅读</Button> : null}
             </div> : null}
           </article>
         </EditorLayout>
       )}
-      {collaborationMounted ? <Suspense fallback={collaborationOpen ? <LoadingState label="正在加载评论与历史…" compact /> : null}><DocumentCollaborationPanel key={`${noteId}:${collaborationSession}`} open={collaborationOpen} noteId={noteId} currentUserId={currentUserId} canManage={canEdit} onClose={closeCollaboration} onRestore={restoreSavedRevision} onPrepareVersion={async () => { const coordinator = coordinatorRef.current; if (!coordinator || !canEdit || restoringRef.current || archivingRef.current) throw new Error("当前草稿尚未准备好。"); return (await flushCurrentDraft(coordinator)).version; }} /></Suspense> : null}
+      {collaborationMounted ? <Suspense fallback={collaborationOpen ? <LoadingState label="正在加载评论与历史…" compact /> : null}>{releaseFeatures.documentCollaboration && <DocumentCollaborationPanel key={`${noteId}:${collaborationSession}`} open={collaborationOpen} noteId={noteId} currentUserId={currentUserId} canManage={canEdit} onClose={closeCollaboration} onRestore={restoreSavedRevision} onPrepareVersion={async () => { const coordinator = coordinatorRef.current; if (!coordinator || !canEdit || restoringRef.current || archivingRef.current) throw new Error("当前草稿尚未准备好。"); return (await flushCurrentDraft(coordinator)).version; }} />}</Suspense> : null}
     </DocumentShell>
   );
 }

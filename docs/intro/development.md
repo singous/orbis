@@ -145,7 +145,7 @@ WebSocket 的 access JWT 仅在首帧传递，不放入 URL；会话、资源可
 ```bash
 make backend-build cli-build frontend-build collaboration-build
 
-docker build --target server --build-arg ORBIS_VERSION=0.1.0-dev -t orbis-server:local .
+docker build --target server --build-arg ORBIS_VERSION=0.1.1-dev -t orbis-server:local .
 docker build --target frontend -t orbis-frontend:local .
 docker build --target collaboration -t orbis-collaboration:local .
 ```

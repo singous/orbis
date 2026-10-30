@@ -2,7 +2,7 @@ import { Editor } from "@tiptap/core";
 import { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { NoteBlocksV2, OrbisBlock } from "../../content/model/blocks";
+import type { NoteBlocksV2, OrbisBlock } from "../../content/blocks";
 import { tiptapExtensions } from "./tiptap-extensions";
 import { fromTiptapDocument, toTiptapDocument } from "./tiptap-model";
 

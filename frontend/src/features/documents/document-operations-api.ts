@@ -1,3 +1,4 @@
+import { withRequestFeedback } from "../../shared/api/request-feedback";
 import {nativePayloadSchema} from "../content/codecs/api-content";
 import type {TableCopyIntent} from "./editor/table-copy";
 import {z} from "zod";
@@ -9,6 +10,7 @@ const resultSchema=documentWriteResultSchema;
 const documentPath=(id:string,auth:AuthRequestOptions,suffix="")=>workspacePath(auth,`/documents/${id}${suffix}`);
 function uncertain(error:unknown){return !(error instanceof ApiError)||error.status>=500||error.status===0;}
 export async function saveNoteBlockChanges(payload:{noteId:string;expectedVersion:number;operationId:string;operations:DocumentCommand[];tableCopies?:TableCopyIntent[]},auth:AuthRequestOptions) {
+  return withRequestFeedback(auth, async auth => {
   const body={ operation_id:payload.operationId,expected_version:payload.expectedVersion,operations:payload.operations,...(payload.tableCopies?.length?{table_copies:payload.tableCopies}:{}) };
   let wasUncertain=false;
   for(let attempt=0;attempt<2;attempt+=1) {
@@ -17,17 +19,19 @@ export async function saveNoteBlockChanges(payload:{noteId:string;expectedVersio
       return {...result,note_id:result.document_id,table_blocks:[]};
     } catch(error) {
       if(!uncertain(error)) {
-        if(wasUncertain) throw new ApiError(503,"上次保存结果尚未确认，请重试原来的保存。草稿仍保留。","DOCUMENT_WRITE_RESULT_UNKNOWN","",{operation_id:payload.operationId});
+        if(wasUncertain) throw new ApiError(503, "上次保存结果尚未确认，请重试原来的保存。草稿仍保留。", "DOCUMENT_WRITE_RESULT_UNKNOWN", "", {operation_id:payload.operationId}, { cause: error });
         throw error;
       }
       wasUncertain=true;
       try {
-        const result=resultSchema.parse(await apiRequest(documentPath(payload.noteId,auth,`/operations/${payload.operationId}`),authRequestOptions(auth)));
+        const result=resultSchema.parse(await apiRequest(documentPath(payload.noteId,auth,`/operations/${payload.operationId}`),authRequestOptions({ ...auth, feedback: { ...auth.feedback, error: false } })));
         return {...result,note_id:result.document_id,table_blocks:[]};
       } catch(receiptError) {
-        if(!(receiptError instanceof ApiError) || receiptError.code!=="OPERATION_NOT_FOUND" || attempt===1) throw new ApiError(503,"上次保存结果尚未确认，请重试原来的保存。草稿仍保留。","DOCUMENT_WRITE_RESULT_UNKNOWN","",{operation_id:payload.operationId});
+        if(!(receiptError instanceof ApiError) || receiptError.code!=="OPERATION_NOT_FOUND" || attempt===1) throw new ApiError(503, "上次保存结果尚未确认，请重试原来的保存。草稿仍保留。", "DOCUMENT_WRITE_RESULT_UNKNOWN", "", {operation_id:payload.operationId}, { cause: receiptError });
       }
     }
   }
   throw new Error("Unreachable document write recovery");
+
+  });
 }

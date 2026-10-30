@@ -1,10 +1,11 @@
+import { withRequestFeedback } from "../../shared/api/request-feedback";
 import {saveNoteBlockChanges} from "./document-operations-api";
 import { z } from "zod";
 import { ApiError, apiBlobRequest, apiRequest, workspacePath } from "../../shared/api/api-client";
 import { documentGroupSchema, nativeNoteSchema, notebookSchema, noteSchema, pageDataSchema, type DocumentGroup, type Notebook, type NotebookIconValue, type Note, type NoteTreeItem, type PageData } from "../../shared/api/schemas";
 import { authRequestOptions, type AuthRequestOptions } from "../../shared/auth/use-auth-request";
 export type ResourceStatus = "active" | "archived";
-export type CreateNotePayload = { notebook_id: string; title: string; parent_id: string | null; sort_order: number };
+export type CreateNotePayload = { notebook_id: string; title: string; parent_id: string | null; sort_order?: number };
 export type NoteOrderPayload = { parent_id: string | null; expected_note_ids: string[]; note_ids: string[]; expected_directory_version: number };
 const CATALOG_PAGE_SIZE = 100;
 const MAX_CATALOG_PAGES = 100;
@@ -38,7 +39,11 @@ export async function updateDocumentGroup(groupId: string, payload: { expected_v
   return documentGroupSchema.parse(await apiRequest(path(auth,`/collection-groups/${groupId}`),{ ...authRequestOptions(auth),method:"PATCH",body:payload }));
 }
 export async function setDocumentGroupArchived(groupId: string, archived: boolean, expectedVersion: number, auth: AuthRequestOptions): Promise<DocumentGroup> {
+  return withRequestFeedback({ ...auth, feedback: { ...auth.feedback, success: true } }, async auth => {
+
   return documentGroupSchema.parse(await apiRequest(path(auth,`/collection-groups/${groupId}/archive`),{ ...authRequestOptions(auth),method:"PUT",body:{ archived,expected_version:expectedVersion } }));
+
+  });
 }
 export function listNotebooks(auth: AuthRequestOptions, groupId?: string, status: ResourceStatus = "active", options: { signal?: AbortSignal } = {}) {
   return pages(query("/collections",{ group_id:groupId,archived:String(status === "archived") }),notebookSchema,auth,options.signal);
@@ -53,7 +58,11 @@ export async function updateNotebook(collectionId: string, payload: { expected_v
   return notebookSchema.parse(await apiRequest(path(auth,`/collections/${collectionId}`),{ ...authRequestOptions(auth),method:"PATCH",body:payload }));
 }
 export async function setNotebookArchived(collectionId: string, archived: boolean, expectedDirectoryVersion: number, auth: AuthRequestOptions): Promise<Notebook> {
+  return withRequestFeedback({ ...auth, feedback: { ...auth.feedback, success: true } }, async auth => {
+
   return notebookSchema.parse(await apiRequest(path(auth,`/collections/${collectionId}/archive`),{ ...authRequestOptions(auth),method:"PUT",body:{ archived,expected_directory_version:expectedDirectoryVersion } }));
+
+  });
 }
 export async function createNote(payload: CreateNotePayload, auth: AuthRequestOptions): Promise<Note> {
   return noteSchema.parse(await apiRequest(path(auth,`/collections/${payload.notebook_id}/documents`),{ ...authRequestOptions(auth),method:"POST",body:{ title:payload.title,parent_id:payload.parent_id } }));
@@ -62,8 +71,12 @@ export async function getNote(noteId: string, auth: AuthRequestOptions, signal?:
   return noteSchema.parse(await apiRequest(path(auth,`/documents/${noteId}`),{ ...authRequestOptions(auth),signal }));
 }
 export async function setNoteArchived(noteId: string, archived: boolean, expectedDirectoryVersion: number, auth: AuthRequestOptions) {
+  return withRequestFeedback({ ...auth, feedback: { ...auth.feedback, success: true } }, async auth => {
+
   const result = z.object({ document:noteSchema,directory_version:z.number().int().positive() }).parse(await apiRequest(path(auth,`/documents/${noteId}/archive`),{ ...authRequestOptions(auth),method:"PUT",body:{ archived,expected_directory_version:expectedDirectoryVersion } }));
   return { ...result.document,directory_version:result.directory_version };
+
+  });
 }
 export async function updateNote(noteId: string, payload: { title?: string; parent_id?: string | null; sort_order?: number; expected_version?: number; expected_directory_version?: number; operation_id?: string }, auth: AuthRequestOptions): Promise<Note> {
   const location = payload.parent_id !== undefined || payload.sort_order !== undefined;

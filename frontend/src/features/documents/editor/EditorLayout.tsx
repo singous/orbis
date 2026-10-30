@@ -1,7 +1,9 @@
-import { useState, useSyncExternalStore, type ReactNode } from "react";
+import { reportError } from "../../../shared/api/request-feedback";
+import { NAVIGATE_OUTLINE_EVENT } from "./outline-navigation";
+import { useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { Eye, EyeOff } from "../../../shared/ui/icons";
 import { ActionButton } from "../../../shared/ui/ActionButton";
-import { extractPlainTextV2, type NoteBlocksV2, type OrbisBlock } from "../../content/model/blocks";
+import { extractPlainTextV2, type NoteBlocksV2, type OrbisBlock } from "../../content/blocks";
 
 import type {BlockLoadState} from "./content-window";
 
@@ -21,6 +23,7 @@ export class EditorOutlineStore {
   setRemote(headings: IndexedHeading[], boundary: number) { this.#remote = headings; this.#boundary = boundary; this.#publish(); }
   setBoundary(boundary: number) { this.#boundary = boundary; }
   setReadState(states: ReadonlyMap<string,BlockLoadState>) { this.#states=states; }
+  isPayloadLoaded(id: string) { return this.#states.get(id)?.payload_loaded !== false; }
   setSourceRoots(roots: OrbisBlock[],firstPosition=0) {
     for(const [index,root] of roots.entries())this.#sourceRoots.set(firstPosition+index,root.id);
   }
@@ -81,16 +84,31 @@ export class EditorOutlineStore {
   }
 }
 
-export function EditorLayout({ outlineStore, children }: { outlineStore: EditorOutlineStore; children: ReactNode }) {
+export function EditorLayout({ outlineStore, children, loadOutlineContent }: { outlineStore: EditorOutlineStore; children: ReactNode; loadOutlineContent?: () => Promise<void> }) {
+  const layoutRef = useRef<HTMLDivElement>(null);
+  const [loading, setLoading] = useState(false);
+  async function navigateHeading(id: string) {
+    const layout = layoutRef.current;
+    if (!layout) return;
+    try {
+      if ((!outlineStore.isPayloadLoaded(id) || !layout.querySelector(`[data-orbis-block-id="${CSS.escape(id)}"]`)) && loadOutlineContent) {
+        setLoading(true);
+        await loadOutlineContent();
+      }
+      if (layoutRef.current !== layout || !layout.isConnected) return;
+      layout.querySelector(".ProseMirror")?.dispatchEvent(new CustomEvent(NAVIGATE_OUTLINE_EVENT, { detail: id }));
+    } catch (error) { reportError(error); }
+    finally { setLoading(false); }
+  }
   const outline = useSyncExternalStore(outlineStore.subscribe, outlineStore.snapshot, outlineStore.snapshot);
   const [pinned, setPinned] = useState(false);
   const [hovered, setHovered] = useState(false);
-  return <div className={`editor-layout${pinned || hovered ? " outline-open" : ""}`}>
+  return <div ref={layoutRef} className={`editor-layout${pinned || hovered ? " outline-open" : ""}`}>
     {children}
     <aside className="editor-outline" aria-label="文档大纲" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
       <ActionButton type="button" className="editor-outline-pin" aria-label={pinned ? "取消大纲常驻" : "大纲常驻"} aria-pressed={pinned} title={pinned ? "取消常驻" : "常驻大纲"} onClick={() => setPinned(value => !value)}>{pinned ? <Eye aria-hidden="true" size={14} /> : <EyeOff aria-hidden="true" size={14} />}</ActionButton>
       <div className="editor-outline-body"><div className="mb-4 text-xs font-semibold text-[var(--muted)]">大纲</div>
-        {outline.length ? <nav className="space-y-1">{outline.map(item => <div key={item.id} className="truncate rounded-md py-1.5 text-xs text-[var(--muted)]" style={{ paddingLeft: `${(item.level - 1) * 10}px` }}>{item.text}</div>)}</nav> : <p className="text-xs leading-5 text-[var(--muted-light)]">添加标题后，这里会自动生成大纲。</p>}
+        {outline.length ? <nav className="space-y-1">{outline.map(item => <ActionButton key={item.id} className="editor-outline-link" disabled={loading} title={item.text} style={{ paddingLeft: `${(item.level - 1) * 10}px` }} onPress={() => { void navigateHeading(item.id); }}>{item.text}</ActionButton>)}</nav> : <p className="text-xs leading-5 text-[var(--muted-light)]">添加标题后，这里会自动生成大纲。</p>}
       </div>
     </aside>
   </div>;

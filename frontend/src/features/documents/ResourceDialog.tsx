@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { type FormEvent, useEffect, useState } from "react";
 
 import { Button } from "../../shared/ui/Button";
@@ -27,20 +28,20 @@ export function ResourceDialog({
 }) {
   const [value, setValue] = useState(initialValue);
   const [submitting,setSubmitting]=useState(false);
-  const [submitError,setSubmitError]=useState<string|null>(null);
+
   const busy=pending||submitting;
 
   useEffect(() => {
-    if (open){setValue(initialValue);setSubmitError(null);}
+    if (open){setValue(initialValue);}
   }, [initialValue, open]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const normalized = value.trim();
     if (!normalized||busy) return;
-    setSubmitting(true);setSubmitError(null);
+    setSubmitting(true);
     try{await onSubmit(normalized);}
-    catch(error){setSubmitError(error instanceof Error?error.message:"操作失败，请重试。");}
+    catch(error){ reportError(error);}
     finally{setSubmitting(false);}
   }
 
@@ -61,7 +62,7 @@ export function ResourceDialog({
             autoFocus
             onChange={(event) => setValue(event.target.value)}
           />
-          {submitError?<p role="alert" className="mt-3 text-sm">{submitError}</p>:null}
+
           <DialogFooter>
             <DialogClose asChild>
               <Button variant="ghost" disabled={busy}>取消</Button>

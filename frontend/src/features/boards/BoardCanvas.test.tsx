@@ -84,6 +84,19 @@ it("moves the action anchor with the drag and keeps the preview until the move i
   expect(drawing.clear).toHaveBeenCalledOnce();
 });
 
+it.each(["connector", "deselect"])("does not submit an empty move when dragging %s", async (kind) => {
+  const element = makeElement(kind === "connector" ? "connector" : "flow.process", crypto.randomUUID(), 100, 160);
+  const submit = vi.fn().mockResolvedValue(undefined);
+  render(<BoardCanvas elements={new Map([[element.id, element]])} pageID={element.page_id} selection={new Set([element.id])} onSelection={vi.fn()} camera={{ x: 0, y: 0, zoom: 1 }} onCamera={vi.fn()} tool="select" onTool={vi.fn()} submit={submit} readOnly={false} rendererRef={{ current: null }} onError={vi.fn()} onUndo={vi.fn()} onRedo={vi.fn()} />);
+  const pointer = (x: number, type: string) => ({ id: element.id, point: { x, y: 160 }, screen: { x, y: 160 }, event: new MouseEvent(type, { button: 0, shiftKey: kind === "deselect" }) as PointerEvent });
+  await act(async () => {
+    drawing.events!.down(pointer(100, "pointerdown"));
+    drawing.events!.move(pointer(108, "pointermove"));
+    drawing.events!.up(pointer(108, "pointerup"));
+  });
+  expect(submit).not.toHaveBeenCalled();
+});
+
 it("does not clear a newer drag when the previous move finishes, and restores on cancel", async () => {
   let queued!: () => void;
   const submit = vi.fn(() => new Promise<void>(resolve => { queued = resolve; }));
@@ -201,4 +214,15 @@ it("keeps mindmap controls reachable across the gap beside a hovered topic", () 
   expect(screen.getByRole("button", { name: "收起“中心主题”的子主题" })).toBeVisible();
   act(() => drawing.events!.move(move(null, 700, 500)));
   expect(screen.queryByRole("button", { name: "收起“中心主题”的子主题" })).toBeNull();
+});
+
+
+it("handles canvas shortcuts inside a noneditable embed nested in the document editor", () => {
+  const element = makeElement("flow.process", "page", 0, 0);
+  const onSelection = vi.fn();
+  render(<div contentEditable suppressContentEditableWarning><div contentEditable={false}>
+    <BoardCanvas elements={new Map([[element.id, element]])} pageID="page" selection={new Set()} onSelection={onSelection} camera={{ x: 0, y: 0, zoom: 1 }} onCamera={vi.fn()} tool="select" onTool={vi.fn()} submit={vi.fn().mockResolvedValue(undefined)} readOnly={false} rendererRef={{ current: null }} onError={vi.fn()} onUndo={vi.fn()} onRedo={vi.fn()} />
+  </div></div>);
+  fireEvent.keyDown(screen.getByRole("application", { name: "画板编辑区域" }), { key: "a", ctrlKey: true });
+  expect(onSelection).toHaveBeenCalledWith(new Set([element.id]));
 });

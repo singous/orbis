@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { useQuery } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useRef, useState } from "react";
@@ -41,7 +42,7 @@ function BoardCell({
   function edit() {
     if (!editable || c.busy || editing) return;
     if (field.kind === "checkbox") {
-      void c.change([{ id: row.id, version: row.version, values: { [field.id]: !row.values[field.id] } }]).catch(() => {});
+      void c.change([{ id: row.id, version: row.version, values: { [field.id]: !row.values[field.id] } }]).catch(reportError);
     } else {
       setValue(row.values[field.id] ?? null);
       setEditing(true);
@@ -132,6 +133,9 @@ function ColumnRecords({
     [cursor, setCursor] = useState(""),
     [previous, setPrevious] = useState<string[]>([]),
     scroll = useRef<HTMLDivElement>(null);
+  const cursorScope = JSON.stringify([view.id, c.meta.data!.version, c.meta.data!.order_revision ?? 0, c.search]);
+  const previousScope = useRef(cursorScope);
+  const currentCursor = previousScope.current === cursorScope ? cursor : "";
   const query = useQuery({
     queryKey: [
       "sheets",
@@ -140,12 +144,13 @@ function ColumnRecords({
       "board",
       view.id,
       c.meta.data!.version,
+      c.meta.data!.order_revision ?? 0,
       group.id,
       c.search,
-      cursor,
+      currentCursor,
     ],
     queryFn: ({ signal }) =>
-      c.api.records(id, view.id, cursor, c.search, group.id, signal),
+      c.api.records(id, view.id, currentCursor, c.search, group.id, signal),
     gcTime: 0,
   });
   const rows = query.data?.items ?? [];
@@ -157,19 +162,16 @@ function ColumnRecords({
     overscan: 3,
   });
   useEffect(() => {
+    previousScope.current = cursorScope;
     setCursor("");
     setPrevious([]);
-  }, [view.id, c.meta.data!.version, c.search]);
+  }, [cursorScope]);
   useEffect(() => {
     scroll.current?.scrollTo({ top: 0 });
   }, [cursor]);
   return (
     <>
-      {query.error && (
-        <p className="sheet-error" role="alert">
-          {query.error.message}
-        </p>
-      )}
+
       <div
         ref={scroll}
         className="sheet-board-cards"
@@ -300,7 +302,7 @@ function Column(props: ColumnProps) {
                 values: { [view.group_field_id]: group.id || null },
               },
             ])
-            .catch(() => {});
+            .catch(reportError);
         } catch {
           /* Unrelated drag sources do not carry a record command. */
         }
@@ -328,7 +330,7 @@ function Column(props: ColumnProps) {
                     values: { [view.group_field_id]: group.id || null },
                   },
                 ])
-                .catch(() => {})
+                .catch(reportError)
             }
           >
             <Plus size={15} />

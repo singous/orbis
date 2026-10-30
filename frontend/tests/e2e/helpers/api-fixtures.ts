@@ -30,6 +30,9 @@ export async function createCollection(request:APIRequestContext,session:TestSes
 export async function createDocument(request:APIRequestContext,session:TestSession,collectionId:string,title="未命名文档",parentId:string|null=null){
   return responseData(await request.post(workspacePath(session,`/collections/${collectionId}/documents`),{headers:sessionHeaders(session),data:{title,parent_id:parentId}}));
 }
+export async function createBoard(request:APIRequestContext,session:TestSession,collectionId:string,title="Existing board"){
+  return responseData(await request.post(workspacePath(session,"/boards"),{headers:sessionHeaders(session),data:{id:crypto.randomUUID(),operation_id:crypto.randomUUID(),page_id:crypto.randomUUID(),collection_id:collectionId,parent_id:null,title,elements:[]}}));
+}
 export async function openWithSession(page:Page,session:TestSession,path:string){
   await page.goto("/login");
   await page.evaluate(value=>localStorage.setItem("orbis.auth.v2",JSON.stringify({accessToken:value.access_token,refreshToken:value.refresh_token,user:value.user,workspace:value.workspace,credentialID:crypto.randomUUID()})),session);

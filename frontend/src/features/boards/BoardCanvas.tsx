@@ -217,14 +217,15 @@ export function BoardCanvas(props: Props) {
               selection.add(hit.id);
             }
             p.onSelection(selection);
-            if (!p.readOnly) {
+            const movable = descendants(p.elements, selection);
+            if (!p.readOnly && movable.length) {
               previewOwner.current++;
               gesture.current = {
                 kind: "move",
                 start: event.point,
                 screen: event.screen,
                 camera: p.camera,
-                elements: descendants(p.elements, selection),
+                elements: movable,
                 points: [],
               };
             }
@@ -481,7 +482,7 @@ export function BoardCanvas(props: Props) {
         if (
           event.nativeEvent.isComposing ||
           (event.target instanceof HTMLElement &&
-            event.target.closest("input,textarea,button,[contenteditable=true]"))
+            (event.target.closest("input,textarea,button") || event.target.closest("[contenteditable]")?.getAttribute("contenteditable") === "true"))
         )
           return;
         const command = event.metaKey || event.ctrlKey;
@@ -492,6 +493,7 @@ export function BoardCanvas(props: Props) {
           return;
         }
         if (event.key === "Escape") {
+          if (connect.current || gesture.current || props.selection.size || (props.tool !== "select" && props.tool !== "pan")) event.preventDefault();
           connect.current = null;
           gesture.current = null;
           setInteracting(false);

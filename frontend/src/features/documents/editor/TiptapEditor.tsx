@@ -1,3 +1,8 @@
+import { isEmbeddedInput } from "./blocks/block-selection";
+import { releaseFeatures } from "../../../shared/release-features";
+import { blockBoardHistory } from "./blocks/board-removal";
+import { showToast } from "../../../shared/ui/Toast";
+import { reportError, reportRequestError } from "../../../shared/api/request-feedback";
 import { registerRetiredBlockCleanup } from "./tiptap-retired";
 import { ActionButton } from "../../../shared/ui/ActionButton";
 import { SelectField } from "../../../shared/ui/SelectField";
@@ -23,7 +28,7 @@ import { DOCUMENT_BLOCKS, type DocumentBlockKind } from "../../content/model/doc
 import { FileContentContext } from "../../files/FileContent";
 import { useManagedFiles } from "../../files/use-managed-files";
 import { parseFileReference } from "../../files/managed-files";
-import { canonicalJSON, newBlockId, type NoteBlocksV2, type OrbisBlock } from "../../content/model/blocks";
+import { canonicalJSON, newBlockId, type NoteBlocksV2, type OrbisBlock } from "../../content/blocks";
 import { createDocumentBlock, INSERTABLE_DOCUMENT_BLOCKS } from "./tiptap-insert";
 import { tiptapExtensions } from "./tiptap-extensions";
 import { EditorReadOnlyContext } from "./tiptap-editor-context";
@@ -50,7 +55,7 @@ const TEXT_MARK_TOOLS = [
 
 function insertBlock(editor: Editor, value: OrbisBlock) {
   const node = toTiptapDocumentForSchema({ schema_version: 2, editor: "blocknote", blocks: [value] }, editor.schema).content?.[0];
-  if (node) editor.chain().focus().insertContent(node).run();
+  if (node) editor.chain().focus().insertContent(value.type === "board" ? [node, { type: "paragraph" }] : node).run();
 }
 
 const editorExtensions = [...tiptapExtensions, OrbisBlockSelection, OrbisActiveBlock];
@@ -98,7 +103,7 @@ const COMMANDS: Command[] = [
   { label: "代码块", keywords: "code", icon: <Code size={16} />, run: (editor) => editor.chain().focus().toggleCodeBlock().run() },
   { label: "分隔线", keywords: "divider rule", icon: <Minus size={16} />, run: (editor) => editor.chain().focus().setHorizontalRule().run() },
   { label: "表格", keywords: "table", icon: <Table2 size={16} />, run: (editor) => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run() },
-  { label: "画板", keywords: "drawing whiteboard canvas 画板", icon: <Plus size={16} />, run: (editor) => insertBlock(editor, { id: newBlockId(), type: "board", props: { board_id:null,page_id:null,mode:"live",revision:null,frame_id:null }, content: [], children: [] }) },
+  ...(releaseFeatures.boardCreation ? [{ label: "画板", keywords: "drawing whiteboard canvas 画板", icon: <Plus size={16} />, run: (editor: Editor) => insertBlock(editor, { id: newBlockId(), type: "board", props: { board_id:null,page_id:null,mode:"live",revision:null,frame_id:null }, content: [], children: [] }) }] : []),
   ...INSERTABLE_DOCUMENT_BLOCKS.filter(kind => kind !== "group").map((kind: DocumentBlockKind) => ({ label: DOCUMENT_BLOCKS[kind].label, keywords: `${kind} document`, icon: <Plus size={16} />, run: (editor: Editor) => insertBlock(editor, createDocumentBlock(kind)) })),
 ];
 
@@ -179,9 +184,7 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeCommand, setActiveCommand] = useState(0);
   const [slash, setSlash] = useState<{ query: string; from: number; to: number } | null>(null);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [contentError, setContentError] = useState<string | null>(null);
-  const [clipboardNotice, setClipboardNotice] = useState<string | null>(null);
+
   onChangeRef.current = onChange;
   readOnlyRef.current = readOnly;
 
@@ -191,11 +194,11 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
       const next = fromTiptapDocument(current.state.doc);
       lastEmitted.current = next;
       onChangeRef.current({ blocks: next });
-      setContentError(null);
+
       errorCallback.current?.(null);
     } catch {
       const message = "正文暂未保存：内容转换失败。当前编辑仍保留，请重试保存。";
-      setContentError(message);
+      reportError(message);
       errorCallback.current?.(message);
     }
   }
@@ -209,13 +212,16 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
     editorProps: {
       handleKeyDown: (_view, event) => {
         if (!(event.ctrlKey || event.metaKey)) return false;
+        const historyEditor = currentEditorRef.current;
+        if (!readOnly && !event.isComposing && historyEditor && !isEmbeddedInput(event.target) && ["z", "y"].includes(event.key.toLowerCase()) && blockBoardHistory(historyEditor)) {
+          event.preventDefault(); return true;
+        }
         if (pendingFullAction.current && ["c", "x"].includes(event.key.toLowerCase())) {
           event.preventDefault();
           const ready = pendingFullPromise.current;
           const selectAll = pendingSelection.current === "all";
           const action = fullActionRef.current;
           const cut = event.key.toLowerCase() === "x";
-          setClipboardNotice("正在读取完整内容并" + (cut ? "剪切" : "复制") + "…");
           clipboardQueue.current = clipboardQueue.current.catch(() => {}).then(async () => {
             if (!ready) throw new Error("完整读取尚未准备好，请重试复制。");
             await ready;
@@ -224,8 +230,12 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
             if (!selectAll) throw new Error("当前没有完整选区，请重新选择后复制。");
             const ids = locateEditorBlocks(current.state.doc).filter(entry => entry.parentId === null).map(entry => entry.id);
             const result = await copyBlocks(current, ids, cut);
-            setClipboardNotice(result.message ?? (result.ok ? "已复制完整内容" : "复制失败，原内容已保留"));
-          }).catch(error => setClipboardNotice(error instanceof Error ? error.message : "复制失败，原内容已保留。"));
+            if (currentEditorRef.current !== current || current.isDestroyed || fullActionRef.current !== action) return;
+            if (result.ok) showToast({ title: result.message ?? "已复制完整内容" });
+            else reportError(result.error ?? result.message ?? "复制失败，原内容已保留");
+          }).catch(error => {
+            if (currentEditorRef.current && !currentEditorRef.current.isDestroyed && fullActionRef.current === action) reportError(error);
+          });
           return true;
         }
         if (!moreContentRef.current || !completeRef.current) return false;
@@ -242,7 +252,9 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
           else editor.chain().focus().setTextSelection(editor.state.doc.content.size - 1).scrollIntoView().run();
         });
         pendingFullPromise.current = ready;
-        void ready.catch(error => setClipboardNotice(error instanceof Error ? error.message : "完整读取失败，请重试。")).finally(() => {
+        void ready.catch(error => {
+          if (currentEditorRef.current && !currentEditorRef.current.isDestroyed && fullActionRef.current === action) reportRequestError(error);
+        }).finally(() => {
           if (pendingFullPromise.current === ready) { pendingFullAction.current = false; pendingFullPromise.current = null; pendingSelection.current = null; }
         });
         return true;
@@ -392,14 +404,13 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file || !editor) return;
-    setUploadError(null);
+
     try {
       const url = await files.upload(file);
       if (editor.isDestroyed || readOnlyRef.current) return;
       const kind = file.type.startsWith("image/") ? "image" : file.type.startsWith("video/") ? "video" : file.type.startsWith("audio/") ? "audio" : "file";
       insertBlock(editor, { id: newBlockId(), type: kind, props: { url, name: file.name, caption: file.name }, content: [], children: [] });
-    } catch (error) {
-      setUploadError(error instanceof Error ? error.message : "文件上传失败");
+    } catch (error) { reportError(error);
     }
   }
 
@@ -441,7 +452,7 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
     if (ids.length) {
       const result = executeBlockCommand(editor, ids, {type:"convert",target,level:level ? Number(level) : undefined});
       if (result.ok) setBlockSelection(editor, result.selectedIds);
-      else setUploadError(result.message ?? "无法转换所选内容");
+      else reportError(result.message ?? "无法转换所选内容");
       return;
     }
     const chain = editor.chain().focus();
@@ -469,8 +480,8 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
   const formatToolbar = !readOnly && editor ? <Toolbar className="orbis-tiptap-toolbar" aria-label="文档格式">
       <SelectField density="compact" aria-label="段落类型" className="editor-block-type" value={active?.h1 ? "heading:1" : active?.h2 ? "heading:2" : active?.h3 ? "heading:3" : active?.bulletList ? "bulletListItem" : active?.orderedList ? "numberedListItem" : active?.taskList ? "checkListItem" : active?.quote ? "quote" : active?.codeBlock ? "codeBlock" : "paragraph"} options={[{value:"paragraph",label:"正文"},{value:"heading:1",label:"标题 1"},{value:"heading:2",label:"标题 2"},{value:"heading:3",label:"标题 3"},{value:"bulletListItem",label:"无序列表"},{value:"numberedListItem",label:"有序列表"},{value:"checkListItem",label:"任务清单"},{value:"quote",label:"引用"},{value:"codeBlock",label:"代码块"}]} onChange={setParagraphType} />
       <span className="orbis-tiptap-toolbar-divider" />
-      <Tool title="撤销" onClick={() => editor.chain().focus().undo().run()}><Undo2 size={16} /></Tool>
-      <Tool title="重做" onClick={() => editor.chain().focus().redo().run()}><Redo2 size={16} /></Tool>
+      <Tool title="撤销" onClick={() => { if (!blockBoardHistory(editor)) editor.chain().focus().undo().run(); }}><Undo2 size={16} /></Tool>
+      <Tool title="重做" onClick={() => { if (!blockBoardHistory(editor)) editor.chain().focus().redo().run(); }}><Redo2 size={16} /></Tool>
       <span className="orbis-tiptap-toolbar-divider" />
       <ToggleButtonGroup
         className="editor-text-style-tools"
@@ -524,13 +535,11 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
       {label:"当前块操作", run:()=>requestBlockMenu(editor)},
       {label:"斜体", run:()=>toggleMark("italic")}, {label:"下划线", run:()=>toggleMark("underline")},
       {label:"删除线", run:()=>toggleMark("strike")}, {label:"链接", run:()=>inlineLink(editor)},
-      {label:"重做", run:()=>editor.chain().focus().redo().run()},
+      {label:"重做", run:()=>{if(!blockBoardHistory(editor))editor.chain().focus().redo().run();}},
       {label:"表格", run:()=>editor.chain().focus().insertTable({rows:3,cols:3,withHeaderRow:true}).run()},
       {label:"上传媒体或附件", run:()=>inputRef.current?.click()},
     ].map(item=><ActionButton key={item.label} role="menuitem" onMouseDown={event=>event.preventDefault()} onClick={()=>{item.run();setMoreOpen(false);}}>{item.label}</ActionButton>)}</div>,document.body) : null}
-    {uploadError ? <p role="alert" className="orbis-tiptap-error">{uploadError}</p> : null}
-    {contentError ? <div role="alert" className="orbis-tiptap-error"><p>{contentError}</p><ActionButton type="button" disabled={readOnly} onClick={() => editor && emitChange(editor)}>重试保存正文</ActionButton></div> : null}
-    {clipboardNotice ? <div role="status" className="orbis-block-notice">{clipboardNotice}<button type="button" aria-label="关闭复制提示" onClick={() => setClipboardNotice(null)}>×</button></div> : null}
+
     {!readOnly && editor && (slash || menuOpen) ? createPortal(<div style={insertPosition} className="orbis-tiptap-menu" role="listbox" aria-label="插入内容">{visible.length ? visible.map((item, index) => <ActionButton type="button" role="option" aria-selected={index === activeCommand % visible.length} key={item.label} onMouseDown={(event) => event.preventDefault()} onClick={() => run(item)}>{item.icon}{item.label}</ActionButton>) : <p>没有匹配的内容块</p>}</div>, document.body) : null}
     {editor ? <BlockControls editor={editor} readOnly={readOnly} noteId={noteId} /> : null}
     <EditorContent editor={editor} aria-label="文档正文" />

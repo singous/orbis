@@ -3,7 +3,7 @@ import { Node as ProseMirrorNode } from "@tiptap/pm/model";
 
 import { documentBlockDefinition } from "../../content/model/document-components";
 import { fingerprintText } from "../../content/codecs/collaboration-fingerprint";
-import { canonicalJSON, newBlockId, type NoteBlocksV2, type OrbisBlock, type OrbisInline, type OrbisTableCell, type OrbisTableContent } from "../../content/model/blocks";
+import { canonicalJSON, newBlockId, type NoteBlocksV2, type OrbisBlock, type OrbisInline, type OrbisTableCell, type OrbisTableContent } from "../../content/blocks";
 
 const INLINE_MARKS = ["bold", "italic", "underline", "strike", "code"] as const;
 const LIST_TYPES = { bulletListItem: "bulletList", numberedListItem: "orderedList", checkListItem: "taskList" } as const;

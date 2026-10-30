@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ApiError } from "../../shared/api/api-client";
@@ -31,7 +32,7 @@ export function LiveSharedDocument({
     retry: false,
     staleTime: 0,
     gcTime: 0,
-    refetchInterval: LIVE_REFRESH_INTERVAL_MS,
+    refetchInterval: query => query.state.status === "error" ? false : LIVE_REFRESH_INTERVAL_MS,
   });
   const [additional, setAdditional] = useState<SharedContentPage[]>([]);
   const [payloads, setPayloads] = useState<SharedBlock[]>([]);
@@ -98,7 +99,7 @@ export function LiveSharedDocument({
         ...current.filter((item) => item.content_version === version),
         page,
       ]);
-    } catch (cause) {
+    } catch (cause) { reportError(cause);
       if (
         cause instanceof ApiError &&
         (cause.status === 409 || cause.status === 404)
@@ -130,7 +131,7 @@ export function LiveSharedDocument({
         ),
         block,
       ]);
-    } catch (cause) {
+    } catch (cause) { reportError(cause);
       setError(cause);
       if (
         cause instanceof ApiError &&
@@ -184,11 +185,7 @@ export function LiveSharedDocument({
       >
         <TableHostContext.Provider value={{ noteId, draftScope: "", auth: null, readOnly: true, shareToken: token }}><ContentRenderer blocks={blocks} pageTitle={first.data.title} /></TableHostContext.Provider>
       </PublicShareFiles>
-      {error ? (
-        <p role="alert">
-          {error instanceof Error ? error.message : "加载失败"}
-        </p>
-      ) : null}
+
       {missingPayloads.length ? (
         <section
           className="share-pending-children"

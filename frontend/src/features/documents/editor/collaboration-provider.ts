@@ -35,6 +35,7 @@ export type CollaborationProviderOptions = {
   token: () => Promise<string> | string;
   refreshToken?: (signal?: AbortSignal) => Promise<string | null>;
   onForbidden?: () => void;
+  onError?: (error: Error) => void;
   socketUrl?: string;
   persistence?: CollaborationPersistence;
   socketFactory?: (url: string) => Socket;
@@ -228,7 +229,7 @@ export class DocumentCollaborationProvider {
     const overBudget = this.pending.size > MAX_PENDING_OPERATIONS || [...this.pending.values()].some(operation => operation.table_copies && !validTableCopies(operation.table_copies)) || [...this.pending.values()].reduce((size, operation) => size + Math.ceil(operation.update.length * 3 / 4), 0) > MAX_PENDING_BYTES;
     if (overBudget) this.stop("recovery", "待保存的本机修改已达到离线缓存上限。内容仍已保留，请下载草稿并恢复连接后重新打开文档。");
     const write = this.persistenceQueue.then(() => this.persistence.write(checkpoint, added, acknowledged)).then(() => { for (const operation of added) if (this.pending.get(operation.operation_id) === operation) this.persisted.add(operation.operation_id); this.sendNext(); });
-    this.persistenceQueue = write.catch(error => { this.stop("error", error instanceof Error ? error.message : "本地协作草稿保存失败。"); });
+    this.persistenceQueue = write.catch(error => { this.stop("error", error instanceof Error ? error : "本地协作草稿保存失败。"); });
     return write;
   }
   private localUpdate = (update: Uint8Array, origin: unknown, _doc: Y.Doc, transaction: Y.Transaction) => {
@@ -302,7 +303,7 @@ export class DocumentCollaborationProvider {
         if (index === 0) Y.applyUpdate(this.doc, checkpoint.state, REMOTE_ORIGIN);
         else {
           try { this.applyState({ ...this.options.initialState, state: encodeCollaborationUpdate(checkpoint.state) }); }
-          catch (error) { this.stop("recovery", error instanceof Error ? error.message : "多个本机草稿需要人工恢复。"); throw error; }
+          catch (error) { this.stop("recovery", error instanceof Error ? error : "多个本机草稿需要人工恢复。"); throw error; }
         }
         for (const operation of checkpoint.pending) { this.pending.set(operation.operation_id, operation); this.persisted.add(operation.operation_id); this.transmitted.add(operation.operation_id); }
       }
@@ -312,7 +313,7 @@ export class DocumentCollaborationProvider {
       this.sequence = Math.max(0, ...[...this.pending.values()].map(operation => operation.sequence ?? 0));
       try { this.applyState(this.options.initialState); }
       catch (error) {
-        this.stop("recovery", error instanceof Error ? error.message : "本机草稿与当前文档需要人工恢复。");
+        this.stop("recovery", error instanceof Error ? error : "本机草稿与当前文档需要人工恢复。");
         throw error;
       }
       for (const operation of this.pending.values()) Y.applyUpdate(this.intentBaseline, decodeCollaborationUpdate(operation.update), REMOTE_ORIGIN);
@@ -321,7 +322,7 @@ export class DocumentCollaborationProvider {
       await this.persist();
       if (!this.disposed) { this.unsubscribeNetwork = this.network.subscribe(this.networkChanged); this.networkChanged(this.network.online()); }
     } catch (error) {
-      if (!this.terminal) this.stop("error", error instanceof Error ? error.message : "协作草稿恢复失败。");
+      if (!this.terminal) this.stop("error", error instanceof Error ? error : "协作草稿恢复失败。");
       throw error;
     }
   }
@@ -331,7 +332,7 @@ export class DocumentCollaborationProvider {
       await this.persist();
       this.notify();
     } catch (error) {
-      this.stop("recovery", error instanceof Error ? error.message : "无法同步文档，本机草稿仍已保留。");
+      this.stop("recovery", error instanceof Error ? error : "无法同步文档，本机草稿仍已保留。");
       throw error;
     }
   }
@@ -374,7 +375,7 @@ export class DocumentCollaborationProvider {
     socket.onmessage = event => {
       if (this.socket !== socket || this.disposed || this.terminal) return;
       try { this.receive(JSON.parse(String(event.data)) as Record<string, unknown>); }
-      catch (error) { this.stop("error", error instanceof Error ? error.message : "无法读取协作消息，本机修改仍已保留。"); }
+      catch (error) { this.stop("error", error instanceof Error ? error : "无法读取协作消息，本机修改仍已保留。"); }
     };
     socket.onerror = () => { if (this.socket === socket) socket.close(); };
     socket.onclose = () => {
@@ -400,7 +401,7 @@ export class DocumentCollaborationProvider {
       const state = message.data as CollaborationState;
       if (state?.epoch !== this.epoch) { this.stop("recovery", "文档已切换到新的协作版本。请下载本机草稿，再重新打开文档。"); return; }
       try { this.applyState(state); }
-      catch (error) { this.stop("recovery", error instanceof Error ? error.message : "并发操作改变了本机编辑目标，请下载草稿后恢复。"); return; }
+      catch (error) { this.stop("recovery", error instanceof Error ? error : "并发操作改变了本机编辑目标，请下载草稿后恢复。"); return; }
       this.transportReady = true;
       this.clearConnectionTimer();
       this.authRefreshAttempted = false;
@@ -480,7 +481,7 @@ export class DocumentCollaborationProvider {
     } catch (error) {
       if (this.disposed) return;
       if (error instanceof ApiError && [401, 403, 404].includes(error.status)) this.stop("read_only", "登录状态无法验证，请重新登录。本机草稿仍已保留。");
-      else if (error instanceof ApiError && error.status < 500 && ![408, 429].includes(error.status)) this.stop("error", error.message);
+      else if (error instanceof ApiError && error.status >= 400 && error.status < 500 && ![408, 429].includes(error.status)) this.stop("error", error);
       else {
         this.authRefreshAttempted = false;
         this.refreshing = false;
@@ -500,13 +501,17 @@ export class DocumentCollaborationProvider {
     this.socket = null;
     if (socket) { socket.onopen = socket.onmessage = socket.onclose = socket.onerror = null; socket.close(); }
   }
-  private stop(status: "read_only" | "recovery" | "error", error: string) {
+  private stop(status: "read_only" | "recovery" | "error", reason: string | Error) {
     if (this.disposed) return;
+    const failure = reason instanceof Error ? reason : new Error(reason);
+    const error = failure.message;
+    const changed = !this.terminal || this.snapshot.error !== error;
     this.terminal = true;
     if (this.reconnectTimer !== null) { clearTimeout(this.reconnectTimer); this.reconnectTimer = null; }
     this.disconnect();
     this.notify({ status, readOnly: true, error });
-    this.settleWaiters(new Error(error));
+    if (changed) this.options.onError?.(failure);
+    this.settleWaiters(failure);
   }
   private settleWaiters(error?: Error) {
     for (const waiter of this.waiters) {

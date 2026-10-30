@@ -12,6 +12,7 @@ import { newUUID } from "../../shared/ids";
 import { sheetAPI, type RecordPage } from "./api";
 import { acknowledgeCellDraft, readCellDraft } from "./cell-draft";
 import type { Changes, Patch, Row, Sheet } from "./model";
+import { reportError } from "../../shared/api/request-feedback";
 
 type RecordPageParam = { cursor: string; offset: number };
 
@@ -23,7 +24,7 @@ export function useSheet(id: string, viewId: string, search: string) {
   const meta = useQuery({
     queryKey: [...scope, "meta"],
     queryFn: ({ signal }) => api.get(id, signal),
-    refetchInterval: 3000,
+    refetchInterval: query => query.state.status === "error" ? false : 3000,
   });
   const view =
     meta.data?.definition.views.find((v) => v.id === viewId) ??
@@ -35,7 +36,7 @@ export function useSheet(id: string, viewId: string, search: string) {
     readonly unknown[],
     RecordPageParam
   >({
-    queryKey: [...scope, "records", view?.id, meta.data?.version, search],
+    queryKey: [...scope, "records", view?.id, meta.data?.version, meta.data?.order_revision ?? 0, search],
     enabled: Boolean(view),
     initialPageParam: { cursor: "", offset: 0 },
     queryFn: ({ pageParam, signal }) =>
@@ -50,7 +51,7 @@ export function useSheet(id: string, viewId: string, search: string) {
     maxPages: 10,
   });
   const stats = useQuery({
-    queryKey: [...scope, "stats", view?.id, meta.data?.version, search],
+    queryKey: [...scope, "stats", view?.id, meta.data?.version, meta.data?.order_revision ?? 0, search],
     enabled: Boolean(view),
     queryFn: ({ signal }) => api.stats(id, view!.id, search, signal),
     staleTime: 15000,
@@ -67,6 +68,7 @@ export function useSheet(id: string, viewId: string, search: string) {
   const userID = useStore(authStore, (state) => state.user?.id);
   const draftKey = `orbis.sheet-draft:${userID}:${auth.workspaceId}:${id}`;
   const alive = useRef(true);
+  const reportedDraftFailure = useRef<string | null>(null);
   useEffect(() => {
     alive.current = true;
     try {
@@ -75,7 +77,10 @@ export function useSheet(id: string, viewId: string, search: string) {
         request.current = JSON.parse(saved);
         setError("发现尚未确认的修改，请重试保存。");
       }
+      reportedDraftFailure.current = null;
     } catch {
+      if (reportedDraftFailure.current !== draftKey) reportError("无法读取本机草稿。");
+      reportedDraftFailure.current = draftKey;
       setError("无法读取本机草稿。");
     }
     return () => {

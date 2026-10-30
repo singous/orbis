@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import {
   ownerSession,
   createCollection,
+  createBoard,
   openWithSession,
   responseData,
   workspacePath,
@@ -21,9 +22,8 @@ test("native board templates persist and editing supports undo, deletion and rec
       session,
       "画板验收 " + Date.now(),
     );
-  await openWithSession(page, session, "/collections/" + collection.id);
-  await page.getByRole("button", { name: "创建内容", exact: true }).click();
-  await page.getByRole("menuitem", { name: "画板", exact: true }).click();
+  const existingBoard = await createBoard(request, session, collection.id);
+  await openWithSession(page, session, "/documents/" + existingBoard.document_id);
   await expect(
     page.getByRole("application", { name: "画板编辑区域" }),
   ).toBeVisible();
@@ -301,7 +301,7 @@ test("images survive portable export/import and PNG export", async ({
   expect(await preview.text()).toContain("data:image/png;base64,");
 });
 
-test("a lost save response is recovered after reload with the original operation id", async ({
+test("a lost save response waits for manual retry with the original operation id", async ({
   page,
   request,
 }) => {
@@ -343,7 +343,7 @@ test("a lost save response is recovered after reload with the original operation
   await openWithSession(page, session, "/documents/" + board.document_id);
   await page.getByRole("button", { name: "审批流程", exact: true }).click();
   await expect(page.locator(".board-save-state")).toHaveText(
-    "离线，修改保存在本机",
+    "保存失败",
   );
   const snapshot = async () =>
     responseData(
@@ -354,7 +354,7 @@ test("a lost save response is recovered after reload with the original operation
     );
   await expect.poll(async () => (await snapshot()).elements.length).toBe(12);
   online = true;
-  await page.reload();
+  await page.getByRole("button", { name: "重试保存", exact: true }).click();
   await expect(page.locator(".board-save-state")).toHaveText("已保存");
   expect(operations.size).toBe(1);
   expect((await snapshot()).elements).toHaveLength(12);
@@ -472,7 +472,7 @@ test("mind map keyboard editing and native document embeds preserve board refere
   );
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/documents/" + doc.id);
-  const embedded = page.locator(".board-embed img").first();
+  const embedded = page.locator(".embed-board img").first();
   await expect(embedded).toBeVisible();
   await expect
     .poll(() =>
@@ -486,7 +486,7 @@ test("mind map keyboard editing and native document embeds preserve board refere
     animations: "disabled",
   });
   await page.reload();
-  await expect(page.locator(".board-embed img").first()).toBeVisible();
+  await expect(page.locator(".embed-board img").first()).toBeVisible();
   expect(
     (
       await responseData(
@@ -512,9 +512,8 @@ test("container layout and connected field deletion preserve the rest of the dia
     session,
     "结构编辑 " + Date.now(),
   );
-  await openWithSession(page, session, "/collections/" + collection.id);
-  await page.getByRole("button", { name: "创建内容", exact: true }).click();
-  await page.getByRole("menuitem", { name: "画板", exact: true }).click();
+  const existingBoard = await createBoard(request, session, collection.id);
+  await openWithSession(page, session, "/documents/" + existingBoard.document_id);
   await page.getByRole("button", { name: "三层应用", exact: true }).click();
   await expect(page.locator(".board-save-state")).toHaveText("已保存");
   const documentID = page.url().split("/documents/")[1]?.split("?")[0];

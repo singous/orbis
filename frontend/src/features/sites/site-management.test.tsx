@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { authStore } from "../../shared/auth/auth-store";
 import { Toaster } from "../../shared/ui/Toast";
 import { SiteEditorPage } from "./SiteEditorPage";
-import { BrowserRequest } from "../../../tests/sites/browser-request";
+import { BrowserRequest } from "../../../tests/support/browser-request";
 
 const id = "018ff7c4-a5b6-7000-8000-000000000001";
 const baseSite = { workspace_id:id,version:2,source:{kind:"manual",collections:[],excluded_document_ids:[],page_overrides:[]},branding:{logo:null,links:[],footer_links:[],cta:null,theme:"system"},id, name: "产品手册", slug: "guide", description: "产品知识", site_kind: "handbook", accent_color: "#0f766e", navigation: [], published_release_id: null, published_slug: null, created_at_ms: 1, updated_at_ms: 2 };
@@ -75,7 +75,7 @@ describe("site editing", () => {
     await userEvent.click(screen.getByRole("button", { name: "保存设置" }));
     await waitFor(() => expect(requests.find((item) => item.method === "PUT")?.body).toMatchObject({ name: "团队使用手册", expected_version: 2 }));
     expect(requests.some((item) => item.path.endsWith("/publish"))).toBe(false);
-    expect(await screen.findByText("设置已保存")).toBeInTheDocument();
+    expect(await screen.findByText("成功")).toBeInTheDocument();
     expect(input.closest("form")).not.toHaveTextContent("设置已保存");
   });
 
@@ -102,7 +102,6 @@ describe("site editing", () => {
   });
 });
 
-
 it("warns before leaving a site with unsaved settings and releases the warning after save", async () => {
   renderEditor();
   const input = await screen.findByRole("textbox", { name: "站点名称" });
@@ -114,12 +113,11 @@ it("warns before leaving a site with unsaved settings and releases the warning a
   window.dispatchEvent(dirty);
   expect(dirty.defaultPrevented).toBe(true);
   await userEvent.click(screen.getByRole("button", { name: "保存设置" }));
-  await screen.findByText("设置已保存");
+  await screen.findByText("成功");
   const saved = new Event("beforeunload", { cancelable: true });
   window.dispatchEvent(saved);
   expect(saved.defaultPrevented).toBe(false);
 });
-
 
 it("saves a dirty site before explicit preview without blocking its own navigation", async () => {
   renderEditor();
