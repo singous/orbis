@@ -200,7 +200,7 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false, load
             </div>
           </div>
           {compactOutline ? <Outline items={outline} mobile /> : null}
-          {contentState?.loading ? <LoadingState label="正在加载正文…" variant="editor" /> : contentState?.error ? null : <ContentRenderer blocks={current.blocks} pageTitle={current.title} />}
+          {contentState?.loading ? <LoadingState label="正在加载正文…" variant="editor" /> : contentState?.error ? <div className="site-reader-body-status"><ActionButton type="button" onPress={contentState.retry}>重新加载正文</ActionButton></div> : <ContentRenderer blocks={current.blocks} pageTitle={current.title} />}
           <nav className="site-reader-pagination" aria-label="相邻文档">
             {currentIndex > 0 ? <Link to={pageHref(basePath, snapshot.pages[currentIndex - 1].slug)}><ArrowLeft aria-hidden="true" size={18} /><span><small>上一篇</small>{snapshot.pages[currentIndex - 1].title}</span></Link> : <span />}
             {currentIndex < snapshot.pages.length - 1 ? <Link to={pageHref(basePath, snapshot.pages[currentIndex + 1].slug)}><span><small>下一篇</small>{snapshot.pages[currentIndex + 1].title}</span><ArrowRight aria-hidden="true" size={18} /></Link> : null}

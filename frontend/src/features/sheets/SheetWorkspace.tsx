@@ -333,12 +333,11 @@ export function SheetWorkspace({
       )}
     </nav>
   );
-  const actions = (
-    <div className="document-header-actions">{c.hasPending ? <DraftActions><section><h3 className="mb-2 text-sm font-semibold">当前修改</h3>
+  const draftActions = c.hasPending ? <DraftActions><section><h3 className="mb-2 text-sm font-semibold">当前修改</h3>
             <div className="mt-3 flex flex-wrap gap-2">
               <Button
                 size="sm"
-                disabled={c.busy}
+                disabled={c.busy || !canEdit}
                 onClick={() => void c.change().catch(fail)}
               >
                 重试保存
@@ -363,7 +362,9 @@ export function SheetWorkspace({
                 <Button size="sm" disabled={c.busy}>放弃本次修改</Button>
               </ConfirmAction>
             </div>
-          </section></DraftActions> : null}
+          </section></DraftActions> : null;
+  const actions = (
+    <div className="document-header-actions">{draftActions}
       <span className="sheet-save-state">
         {c.busy ? (
           "保存中…"
@@ -735,6 +736,7 @@ export function SheetWorkspace({
   );
   if (embedded) return <EmbeddedSurface kind="table" label={sheet.title}
     surfaceKey={`${c.auth.workspaceId}:${embedKey || id}`}
+    actions={draftActions}
     defaultHeight={view.kind === "grid" ? Math.min(520, 150 + Math.max(3, c.rows.length) * view.row_height) : 460}>
     {content}
   </EmbeddedSurface>;

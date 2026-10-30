@@ -130,8 +130,14 @@ test.describe("touch sheet controls", () => {
     await expect(page.getByRole("checkbox", { name: "选择记录 1", exact: true })).toBeChecked();
     await page.locator(".sheet-grid-row .sheet-row-select").first().tap({ position: { x: 3, y: 3 } });
     await expect(page.getByRole("checkbox", { name: "选择记录 1", exact: true })).not.toBeChecked();
-    await page.getByRole("gridcell").nth(2).tap();
+    const dateCell = page.getByRole("gridcell").nth(2);
     const picker = page.getByRole("dialog", { name: "日期选择", exact: true });
+    await dateCell.tap();
+    await expect(dateCell).toHaveAttribute("aria-selected", "true");
+    await expect(picker).toHaveCount(0);
+    await dateCell.tap();
+    await dateCell.tap();
+    await expect(picker).toBeVisible();
     await expectInsideViewport(picker);
     await expect(picker).toHaveCSS("animation-name", "none");
     const day = picker.locator(".sheet-calendar-grid > button").nth(10);
