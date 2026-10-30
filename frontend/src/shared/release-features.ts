@@ -1,7 +1,7 @@
-/** Frontend entry points deferred until a later release. Data and APIs remain available. */
+/** Release-specific frontend entry points. Deferred features retain their data and APIs. */
 export const releaseFeatures: Record<"documentSharing" | "documentFavorites" | "documentCollaboration" | "sites" | "sheetForms" | "boardCreation", boolean> = {
   documentSharing: false,
-  documentFavorites: false,
+  documentFavorites: true,
   documentCollaboration: false,
   sites: false,
   sheetForms: false,

@@ -8,7 +8,7 @@ import { newUUID } from "../../shared/ids";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Dropdown } from "@heroui/react/dropdown";
 import { Label } from "@heroui/react/label";
-import { Hand, Star } from "lucide-react";
+import { Hand, Pin } from "lucide-react";
 import { ArrowLeft, Download, Globe2, Import, MoreHorizontal, Plus, Settings2 } from "../../shared/ui/icons";
 import { type ChangeEvent, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -152,7 +152,7 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
               </div>
             </div>
             <div className="page-actions">
-              {releaseFeatures.documentFavorites && <Button size="sm" aria-label={isPinned(collectionId) ? "取消收藏笔记本" : "收藏笔记本"} aria-pressed={isPinned(collectionId)} title="收藏的笔记本会显示在快捷访问中" icon={<Star aria-hidden="true" size={15} fill={isPinned(collectionId) ? "currentColor" : "none"} />} onClick={() => togglePin(collectionId)} disabled={!workspace || !notebook}>{isPinned(collectionId) ? "已收藏" : "收藏"}</Button>}
+              {releaseFeatures.documentFavorites && <Button size="sm" aria-label={isPinned(collectionId) ? "取消常用笔记本" : "设为常用笔记本"} aria-pressed={isPinned(collectionId)} title="常用笔记本会显示在左侧菜单和文档首页顶部" icon={<Pin aria-hidden="true" />} onClick={() => togglePin(collectionId)} disabled={!workspace || !notebook}>{isPinned(collectionId) ? "已设为常用" : "设为常用"}</Button>}
               {canEdit && notebook ? (releaseFeatures.documentSharing ? <ShareButton notebookId={collectionId} title={notebook.title} /> : null) : null}
               {canEdit ? <Button size="sm" icon={<Plus aria-hidden="true" size={14} />} onClick={() => void createDocument().catch((error) => reportError(error))} disabled={createNote.isPending}>新建文档</Button> : null}
               <input ref={fileInputRef} className="hidden" type="file" accept=".md,text/markdown,text/plain" onChange={handleImport} />

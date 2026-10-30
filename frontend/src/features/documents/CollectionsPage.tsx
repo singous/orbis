@@ -278,7 +278,7 @@ export function CollectionsPage() {
                             {releaseFeatures.documentFavorites && <ActionButton
                               type="button"
                               className={`icon-button${isPinned(notebook.id) ? " is-pinned" : ""}`}
-                              aria-label={isPinned(notebook.id) ? `移出快捷访问 ${notebook.title}` : `加入快捷访问 ${notebook.title}`}
+                              aria-label={isPinned(notebook.id) ? `取消常用 ${notebook.title}` : `设为常用 ${notebook.title}`}
                               aria-pressed={isPinned(notebook.id)}
                               onClick={() => togglePin(notebook.id)}
                             >

@@ -15,7 +15,8 @@
 .notebook-home-more { display: grid; place-items: center; flex: none; width: var(--orbis-control-compact-height); height: var(--orbis-control-compact-height); color: var(--text-tertiary); }
 .notebook-overview .page-header { padding-bottom: 16px; margin-bottom: 24px; }
 .notebook-overview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, max(260px, calc((100% - 32px) / 3))), 1fr)); gap: 16px; }
-.notebook-overview-common { padding: 20px; background: var(--surface-secondary); border-radius: 10px; margin-bottom: 36px; }
+.notebook-overview-common { padding: var(--orbis-space-6); background: var(--surface-secondary); border-radius: var(--field-radius); margin-bottom: var(--orbis-space-8); }
+.notebook-overview-common-empty { margin: 0; color: var(--text-secondary); font-size: var(--orbis-text-ui-size); line-height: var(--orbis-text-ui-leading); }
 .notebook-overview-group { margin-bottom: 32px; }
 .notebook-overview-card { position: relative; border: 1px solid var(--border-subtle); border-radius: 12px; background: var(--surface-content); min-width: 0; }
 .notebook-overview-card:hover { border-color: var(--muted-light); }
@@ -25,7 +26,7 @@
 .notebook-overview-card-copy > span { font-size: var(--orbis-text-caption-size); color: var(--muted); line-height: var(--orbis-text-caption-leading); }
 .notebook-overview-count { margin-top: auto; padding-top: 18px; }
 .notebook-overview-card.is-compact .notebook-overview-card-link { min-height: 78px; padding-block: 18px; }
-.notebook-overview-pin { position: absolute; right: 10px; top: 14px; width: var(--orbis-control-compact-height); height: var(--orbis-control-compact-height); display: flex; align-items: center; justify-content: center; color: var(--muted); border-radius: 6px; }
+.notebook-overview-pin { position: absolute; right: var(--orbis-space-2); top: var(--orbis-space-3); color: var(--muted); }
 .notebook-overview-pin:hover, .notebook-overview-pin.is-pinned { background: var(--surface-secondary); color: var(--text); }
 .editor-loading-reserve { min-height: 160px; }
 .loading-layout { min-width: 0; grid-template-columns: minmax(0, 1fr); }
