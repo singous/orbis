@@ -914,7 +914,6 @@ export function SheetGrid({
                                 { row: virtual.index, col: col.index },
                                 false,
                               );
-                              edit({ row: virtual.index, col: col.index });
                             }
                           });
                           return;
@@ -929,13 +928,13 @@ export function SheetGrid({
                         if (dragging.current)
                           setEnd({ row: virtual.index, col: col.index });
                       }}
-                      onClick={(event) => {
+                      onDoubleClick={(event) => {
                         if (
                           isEditing ||
                           event.shiftKey ||
                           readOnly ||
                           busy ||
-                          (event.target as HTMLElement).closest("a")
+                          (event.target as HTMLElement).closest("a,button")
                         )
                           return;
                         if (editing) return;
@@ -1003,12 +1002,12 @@ export function SheetGrid({
                               "datetime",
                               "person",
                             ].includes(field.kind) && (
-                              <button
+                              <span
                                 className="sheet-cell-picker"
-                                aria-label={`编辑${field.name}`}
+                                aria-hidden="true"
                               >
                                 <ChevronDown size={14} />
-                              </button>
+                              </span>
                             )}
                         </>
                       )}

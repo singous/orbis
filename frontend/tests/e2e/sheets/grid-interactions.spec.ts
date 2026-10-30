@@ -12,7 +12,7 @@ async function seed(page: Page, request: APIRequestContext) {
   const grid = page.getByRole("grid", { name: "数据表", exact: true });
   await expect(grid.getByRole("gridcell").first()).toHaveText("Alpha");
   const records = async () => (await responseData(await request.get(workspacePath(session, `/sheets/${sheet.id}/records`), { headers }))).items;
-  return { grid, text, sheet, records };
+  return { grid, text, sheet, records, session };
 }
 async function drag(page: Page, handle: ReturnType<Page["locator"]>, target: ReturnType<Page["locator"]>, after = false) {
   const from = (await handle.boundingBox())!, to = (await target.boundingBox())!;
@@ -21,6 +21,62 @@ async function drag(page: Page, handle: ReturnType<Page["locator"]>, target: Ret
   await page.mouse.move(to.x + to.width / 2, to.y + to.height * (after ? .8 : .2), { steps: 10 });
   await page.mouse.up();
 }
+
+test("cell clicks select, double clicks edit, and selection never changes values", async ({ page, request }) => {
+  const { grid, text, sheet, records, session } = await seed(page, request);
+  const checkbox = { id: crypto.randomUUID(), name: "完成", kind: "checkbox", default: null, options: [] };
+  sheet.definition.fields.push(checkbox);
+  sheet.definition.views[0].field_ids.push(checkbox.id);
+  await responseData(await request.put(workspacePath(session, `/sheets/${sheet.id}`), {
+    headers: sessionHeaders(session), data: { version: sheet.version, title: sheet.title, definition: sheet.definition },
+  }));
+  await page.reload();
+  const firstRow = grid.locator(".sheet-grid-row").first();
+  const first = firstRow.getByRole("gridcell").first();
+  const second = grid.locator(".sheet-grid-row").nth(1).getByRole("gridcell").first();
+  const writes: string[] = [];
+  page.on("request", request => { if (request.method() === "POST" && request.url().endsWith(`/sheets/${sheet.id}/changes`)) writes.push(request.postData() ?? ""); });
+  await first.click();
+  await expect(first).toHaveAttribute("aria-selected", "true");
+  await expect(grid.locator(".sheet-inline-editor")).toHaveCount(0);
+  const status = firstRow.getByRole("gridcell").nth(1);
+  await status.click();
+  await expect(status).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("dialog", { name: "状态选择", exact: true })).toHaveCount(0);
+  await drag(page, first, firstRow.getByRole("gridcell").nth(2));
+  await expect(grid.locator('[role="gridcell"][aria-selected="true"]')).toHaveCount(3);
+  await expect(grid.locator(".sheet-inline-editor")).toHaveCount(0);
+  expect(writes).toHaveLength(0);
+
+  await first.dblclick();
+  const input = grid.getByRole("textbox", { name: text.name, exact: true });
+  await expect(input).toBeFocused();
+  await input.fill("Saved by changing selection");
+  await second.click();
+  await expect(first).toContainText("Saved by changing selection");
+  await expect(second).toHaveAttribute("aria-selected", "true");
+  await expect(grid.locator(".sheet-inline-editor")).toHaveCount(0);
+  await expect.poll(async () => (await records())[0].values[text.id]).toBe("Saved by changing selection");
+  await grid.press("F2");
+  await expect(input).toHaveValue("Beta");
+  await input.press("Escape");
+  await grid.press("Z");
+  await expect(input).toHaveValue("Z");
+  await input.press("Escape");
+  await status.dblclick();
+  await expect(page.getByRole("dialog", { name: "状态选择", exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
+
+  const checked = firstRow.getByRole("checkbox", { name: "完成", exact: true });
+  const before = writes.length;
+  await checked.click();
+  await expect(checked).not.toBeChecked();
+  expect(writes).toHaveLength(before);
+  await firstRow.getByRole("gridcell").last().dblclick();
+  await expect(checked).toBeChecked();
+  expect(writes).toHaveLength(before + 1);
+  await expect.poll(async () => (await records())[0].values[checkbox.id]).toBe(true);
+});
 
 test("field manager reorders, hides and restores columns; header menu works through both triggers", async ({ page, request }) => {
   const { grid, sheet } = await seed(page, request);
