@@ -1433,6 +1433,7 @@
 .sheet-cell-picker:focus-visible {
   opacity: 1;
 }
+.sheet-cell > .sheet-cell-picker { pointer-events: none; }
 .sheet-cell-picker:hover {
   background: var(--surface-hover);
 }
