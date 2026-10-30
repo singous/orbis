@@ -1,6 +1,49 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { createCollection, createDocument, openWithSession, ownerSession, responseData, sessionHeaders, workspacePath } from "../helpers/api-fixtures";
+
+async function expectHomeControlScale(page: Page) {
+  const sizes = await page.evaluate(() => {
+    const root = getComputedStyle(document.documentElement);
+    const tokenPixels = (token: string) => {
+      const value = root.getPropertyValue(token).trim();
+      return parseFloat(value) * (value.endsWith("rem") ? parseFloat(root.fontSize) : 1);
+    };
+    const height = (selector: string) => document.querySelector(selector)!.getBoundingClientRect().height;
+    const font = (selector: string) => parseFloat(getComputedStyle(document.querySelector(selector)!).fontSize);
+    // Compare the home control with the same shared component outside page styling.
+    const appearance = (element: Element) => {
+      const style = getComputedStyle(element);
+      return { radius: style.borderRadius, padding: style.padding, background: style.backgroundColor, color: style.color, font: style.fontSize };
+    };
+    const controls = [".home-welcome-actions button", ".home-note-actions > button:first-child", ".home-note-actions > button:last-child", ".home-note-actions summary", ".home-search .orbis-icon-button"].map(selector => {
+      const control = document.querySelector(selector)!;
+      const reference = control.cloneNode(false) as HTMLElement;
+      document.body.append(reference);
+      const pair = { home: appearance(control), shared: appearance(reference) };
+      reference.remove();
+      return pair;
+    });
+    const result = {
+      button: height(".home-welcome-actions button"), save: height(".home-note-actions > button:last-child"),
+      attachment: height(".home-note-actions > button:first-child"), tag: height(".home-note-actions summary"),
+      search: height(".home-search-group"), iconButton: height(".home-search .orbis-icon-button"), toolbar: height(".home-note-composer .quick-note-tools button"),
+      title: font(".home-header h1"), section: font(".home-recent h2"), body: font(".home-document-copy strong"),
+      expectedButton: tokenPixels("--orbis-control-default-height"), expectedForm: tokenPixels("--orbis-control-form-height"), expectedCompact: tokenPixels("--orbis-control-compact-height"),
+      expectedTitle: tokenPixels("--orbis-text-page-title-size"), expectedSection: tokenPixels("--orbis-text-panel-title-size"), expectedBody: tokenPixels("--orbis-text-ui-size"),
+      controls,
+    };
+    return result;
+  });
+  for (const control of [sizes.button, sizes.save, sizes.attachment, sizes.tag]) expect(control).toBeCloseTo(sizes.expectedButton, 1);
+  expect(sizes.search).toBeCloseTo(sizes.expectedForm, 1);
+  expect(sizes.iconButton).toBeCloseTo(sizes.expectedCompact, 1);
+  expect(sizes.toolbar).toBeCloseTo(sizes.expectedCompact, 1);
+  expect(sizes.title).toBeCloseTo(sizes.expectedTitle, 1);
+  expect(sizes.section).toBeCloseTo(sizes.expectedSection, 1);
+  expect(sizes.body).toBeCloseTo(sizes.expectedBody, 1);
+  for (const control of sizes.controls) expect(control.home).toEqual(control.shared);
+}
 
 test("home captures an idea, resumes writing and adapts to small screens", async ({ page, request }, testInfo) => {
   const errors: string[] = [];
@@ -20,6 +63,7 @@ test("home captures an idea, resumes writing and adapts to small screens", async
   const editor = composer.getByRole("textbox", { name: "随手记正文" });
   await expect(composer.getByRole("button", { name: "记一下" })).toBeDisabled();
   await expect(page.locator(".home-welcome-art")).toHaveJSProperty("naturalWidth", 640);
+  await expectHomeControlScale(page);
   const idea = `首页灵感 ${randomUUID().slice(0, 8)}`;
   await editor.fill(idea);
   await page.reload();
@@ -74,4 +118,25 @@ test("home captures an idea, resumes writing and adapts to small screens", async
   await expect(page).toHaveURL(/\/documents\/[0-9a-f-]+$/);
   await expect(page.getByRole("textbox", { name: "文档标题" })).toBeVisible();
   expect(errors).toEqual([]);
+});
+
+test("home controls follow the shared touch scale and user font size", async ({ browser, request }, testInfo) => {
+  const session = await ownerSession(request);
+  const notebook = await createCollection(request, session, "触屏尺寸验证");
+  await createDocument(request, session, notebook.id, "触屏验证文档");
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  try {
+    const page = await context.newPage();
+    await openWithSession(page, session, "/home");
+    await expect(page.locator(".home-document-copy strong").first()).toBeVisible();
+    await expectHomeControlScale(page);
+    await page.evaluate(() => { document.documentElement.style.fontSize = "20px"; });
+    await expectHomeControlScale(page);
+    await expect(page.getByRole("button", { name: "写篇文档", exact: true })).toHaveCSS("min-height", "55px");
+    expect(await page.locator(".home-page").evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+    await page.getByRole("region", { name: "快速记录" }).screenshot({ path: testInfo.outputPath("touch-large-type.png"), animations: "disabled" });
+    await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    await expectHomeControlScale(page);
+  } finally { await context.close(); }
 });
