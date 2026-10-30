@@ -95,7 +95,7 @@ export function QuickNoteEditor({ initialValue, onChange, onSubmit, onError, onB
       </div>
       {homeActions ? <div className="home-note-field"><EditorContent editor={editor} /><span className="home-note-count">{active?.characters ?? 0} 字</span></div> : <EditorContent editor={editor} />}
       {homeActions ? <div className="home-note-actions">
-        <ActionButton type="button" className="home-note-attachment" disabled={disabled || uploading || !editor} onClick={() => uploadInput.current?.click()}><Paperclip size={20} aria-hidden="true" />添加附件</ActionButton>
+        <Button variant="ghost" disabled={disabled || uploading || !editor} onClick={() => uploadInput.current?.click()}><Paperclip aria-hidden="true" />添加附件</Button>
         {homeActions}
       </div> : null}
       <input ref={imageInput} className="sr-only" type="file" accept="image/*" aria-label="选择随手记图片" tabIndex={-1} onChange={event => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void upload(file); }} />

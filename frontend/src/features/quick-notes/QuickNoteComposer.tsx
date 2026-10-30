@@ -2,7 +2,7 @@ import { reportError } from "../../shared/api/request-feedback";
 import { useEffect, useRef, useState } from "react";
 import { ApiError } from "../../shared/api/api-client";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
-import { Button } from "../../shared/ui/Button";
+import { Button, buttonVariants } from "../../shared/ui/Button";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Maximize2, Minimize2, Tag as TagIcon } from "lucide-react";
 import { Plus, X } from "../../shared/ui/icons";
@@ -70,7 +70,7 @@ export function QuickNoteComposer({ userId, workspaceId, note, tags, onSaved, on
     } finally { saveLock.current = false; if (mounted.current) setSaving(false); }
   }
   const hasContent = hasNoteContent(draft.blocks);
-  const tagPicker = <details className="quick-note-tag-picker"><summary aria-label="添加标签">{appearance === "home" ? <TagIcon size={20} aria-hidden="true" /> : <Plus size={14} />}添加标签</summary><div className="quick-note-tag-options">
+  const tagPicker = <details className={appearance === "home" ? "home-note-tag-picker" : "quick-note-tag-picker"}><summary className={appearance === "home" ? buttonVariants({ variant: "ghost" }) : undefined} aria-label="添加标签">{appearance === "home" ? <TagIcon aria-hidden="true" /> : <Plus size={14} />}添加标签</summary><div className="quick-note-tag-options">
     {tags.filter(tag => !draft.tag_ids.includes(tag.id)).map(tag => <ActionButton key={tag.id} type="button" disabled={locked || draft.tag_ids.length >= 20} onClick={() => update({ ...draft, tag_ids: [...draft.tag_ids, tag.id] })}>{tag.name}</ActionButton>)}
     <ActionButton type="button" disabled={locked} onClick={onManageTags}><Plus size={14} />管理标签</ActionButton>
   </div></details>;

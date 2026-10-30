@@ -5,8 +5,8 @@ import { InputGroup } from "@heroui/react/input-group";
 import { authStore } from "../../shared/auth/auth-store";
 import { reportError } from "../../shared/api/request-feedback";
 import { formatDate } from "../../shared/format/date";
-import { ActionButton } from "../../shared/ui/ActionButton";
-import { Button } from "../../shared/ui/Button";
+import { Button, buttonVariants } from "../../shared/ui/Button";
+import { IconButton } from "../../shared/ui/IconButton";
 import { ArrowRight, FileText, Search } from "../../shared/ui/icons";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
@@ -32,9 +32,9 @@ function HomeInlineSearch() {
     openSearch({ q: keyword.trim(), type: "document" });
   }
   return <form className="home-search" onSubmit={submitSearch} role="search">
-    <InputGroup fullWidth className="home-search-group"><InputGroup.Prefix><Search aria-hidden="true" size={20} /></InputGroup.Prefix>
+    <InputGroup fullWidth className="home-search-group orbis-compact-search"><InputGroup.Prefix><Search aria-hidden="true" className="home-ui-icon" /></InputGroup.Prefix>
       <InputGroup.Input type="search" aria-label="搜索文档" placeholder="搜索你的知识…" value={keyword} onChange={event => setKeyword(event.target.value)} onKeyDown={event => { if (event.key === "Enter" && event.nativeEvent.isComposing) event.preventDefault(); }} />
-      <InputGroup.Suffix><ActionButton type="submit" aria-label="搜索" className="home-search-submit"><ArrowRight aria-hidden="true" size={18} /></ActionButton></InputGroup.Suffix>
+      <InputGroup.Suffix><IconButton type="submit" size="sm" aria-label="搜索"><ArrowRight aria-hidden="true" /></IconButton></InputGroup.Suffix>
     </InputGroup>
   </form>;
 }
@@ -84,8 +84,8 @@ export function HomePage() {
               <p className="home-welcome-subtitle">每个小想法，都值得有个家。</p>
               <p className="home-welcome-detail">和 Orbis 一起，记录生活的第 {user ? memberDays(user.created_at_ms, now) : 1} 天</p>
               <nav className="home-welcome-actions" aria-label="功能入口">
-                {canEdit ? <Button variant="primary" icon={<FileText size={19} aria-hidden="true" />} isPending={createNote.isPending} disabled={notebooksQuery.isPending || notebooksQuery.isError} onClick={() => void startDocument()}>写篇文档</Button> : <Link className="home-text-link" to="/documents">浏览文档<ArrowRight size={18} aria-hidden="true" /></Link>}
-                <Link className="home-text-link" to="/documents/collections">去逛逛笔记本<ArrowRight size={18} aria-hidden="true" /></Link>
+                {canEdit ? <Button variant="primary" icon={<FileText aria-hidden="true" />} isPending={createNote.isPending} disabled={notebooksQuery.isPending || notebooksQuery.isError} onClick={() => void startDocument()}>写篇文档</Button> : <Link className={buttonVariants({ variant: "ghost" })} to="/documents">浏览文档<ArrowRight aria-hidden="true" /></Link>}
+                <Link className={buttonVariants({ variant: "ghost" })} to="/documents/collections">去逛逛笔记本<ArrowRight aria-hidden="true" /></Link>
               </nav>
             </div>
             <img className="home-welcome-art" src="/images/home/welcome-stationery.webp" alt="" width="320" height="320" />
@@ -100,21 +100,21 @@ export function HomePage() {
         {user && workspace ? <QuickNoteComposer key={`${user.id}:${workspace.id}`} appearance="home" userId={user.id} workspaceId={workspace.id} tags={quickNotes.tags.data?.items ?? []} canEdit={canEdit} onManageTags={() => setTagManager(true)} onSaved={quickNotes.refresh} /> : null}
 
         <section className="home-card home-recent" aria-label="最近编辑">
-          <header className="home-card-heading"><h2>接着上次的灵感</h2><Link className="home-more" to="/documents/recent">查看全部<ArrowRight size={17} aria-hidden="true" /></Link></header>
+          <header className="home-card-heading"><h2>接着上次的灵感</h2><Link className={buttonVariants({ variant: "ghost", size: "sm" })} to="/documents/recent">查看全部<ArrowRight aria-hidden="true" /></Link></header>
           {notesQuery.isPending ? <LoadingState label="正在加载最近文档…" /> : null}
-          {notesQuery.isSuccess && !notes.length ? <div className="home-empty"><FileText size={30} aria-hidden="true" /><p>还没有可继续的文档</p><Link className="home-text-link" to="/documents/collections">从第一个笔记本开始<ArrowRight size={16} aria-hidden="true" /></Link></div> : null}
+          {notesQuery.isSuccess && !notes.length ? <div className="home-empty"><FileText className="home-ui-icon" aria-hidden="true" /><p>还没有可继续的文档</p><Link className={buttonVariants({ variant: "ghost" })} to="/documents/collections">从第一个笔记本开始<ArrowRight aria-hidden="true" /></Link></div> : null}
           <ul className="home-document-list">{notes.slice(0, 3).map(note => {
             const notebook = notebookById.get(note.notebook_id);
             return <li key={note.id}><Link to={`/documents/${note.id}`} className="home-document-row">
-              <FileText size={29} strokeWidth={1.6} aria-hidden="true" />
+              <FileText className="home-ui-icon" aria-hidden="true" />
               <span className="home-document-copy"><strong>{note.title || "未命名文档"}</strong><span>{notebook ? <><NotebookIcon icon={notebook.icon} size="sm" />{notebook.title}</> : "在线文档"}</span></span>
-              <time dateTime={new Date(note.updated_at_ms).toISOString()}>{formatDate(note.updated_at_ms)}</time><ArrowRight className="home-document-arrow" size={16} aria-hidden="true" />
+              <time dateTime={new Date(note.updated_at_ms).toISOString()}>{formatDate(note.updated_at_ms)}</time><ArrowRight className="home-document-arrow home-ui-icon" aria-hidden="true" />
             </Link></li>;
           })}</ul>
           <div className="home-notebooks"><h3>常去的小角落</h3>
             {notebooksQuery.isPending ? <LoadingState label="正在加载笔记本…" /> : null}
-            {notebooksQuery.isSuccess && !notebooks.length ? <Link className="home-text-link" to="/documents/collections">为你的想法创建一个笔记本<ArrowRight size={16} aria-hidden="true" /></Link> : null}
-            <div className="home-notebook-grid">{recentNotebooks.map(notebook => <Link key={notebook.id} className="home-notebook" to={`/collections/${notebook.id}`}><NotebookIcon icon={notebook.icon} size="lg" /><span><strong>{notebook.title}</strong><span>更新于 {formatDate(notebook.updated_at_ms)}</span></span></Link>)}</div>
+            {notebooksQuery.isSuccess && !notebooks.length ? <Link className={buttonVariants({ variant: "ghost" })} to="/documents/collections">为你的想法创建一个笔记本<ArrowRight aria-hidden="true" /></Link> : null}
+            <div className="home-notebook-grid">{recentNotebooks.map(notebook => <Link key={notebook.id} className="home-notebook" to={`/collections/${notebook.id}`}><NotebookIcon icon={notebook.icon} /><span><strong>{notebook.title}</strong><span>更新于 {formatDate(notebook.updated_at_ms)}</span></span></Link>)}</div>
           </div>
         </section>
 
