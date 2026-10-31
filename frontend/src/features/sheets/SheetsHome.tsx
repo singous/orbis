@@ -7,15 +7,14 @@ import { ApiError } from "../../shared/api/api-client";
 import { authStore } from "../../shared/auth/auth-store";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { newUUID } from "../../shared/ids";
-import { ActionButton } from "../../shared/ui/ActionButton";
-import { Button } from "../../shared/ui/Button";
-import { Dialog, DialogContent, DialogFooter } from "../../shared/ui/Dialog";
+import { Button } from "@orbis/ui/button";
+import { Dialog, DialogContent, DialogFooter } from "@orbis/ui/dialog";
 import { EmptyState } from "../../shared/ui/EmptyState";
 import { Plus, Table2 } from "../../shared/ui/icons";
 import { PageContainer } from "../../shared/ui/PageContainer";
-import { SelectField } from "../../shared/ui/SelectField";
+import { Select } from "@orbis/ui/select";
 
-import { TextInput } from "../../shared/ui/TextInput";
+import { Input } from "@orbis/ui/input";
 import { DocumentShell } from "../documents/DocumentShell";
 import { useNotebooks } from "../documents/queries";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
@@ -108,22 +107,21 @@ export function SheetsHome() {
           canEdit ? (
             <Button
               variant="primary"
-              icon={<Plus size={16} />}
               onClick={openCreate}
             >
-              新建数据表
+              <Plus size={16} aria-hidden="true" />新建数据表
             </Button>
           ) : undefined
         }
       >
         <div className="sheet-home-content">
           <div className="sheet-home-filters">
-            <SelectField
+            <Select
               aria-label="筛选笔记本"
               density="compact"
               value={collection}
               options={[{ value: "", label: "全部笔记本" }, ...notebookOptions]}
-              onChange={setCollection}
+              onValueChange={next => { if (next !== null) setCollection(next); }}
             />
           </div>
           {list.error ? (
@@ -162,7 +160,7 @@ export function SheetsHome() {
             <div className="sheet-list-more">
               <Button
                 size="sm"
-                isPending={list.isFetchingNextPage}
+                loading={list.isFetchingNextPage}
                 onClick={() => void list.fetchNextPage()}
               >
                 加载更多
@@ -179,39 +177,38 @@ export function SheetsHome() {
           <DialogContent
             title="新建数据表"
             description="选择所属笔记本和起始模板。"
-            className="sheet-create-dialog"
+            className="max-w-140"
           >
-            <div className="sheet-create-fields">
-              <TextInput
-                label="数据表名称"
+            <div className="grid gap-5 pt-6">
+              <label className="grid gap-1.5 text-sm font-medium text-ob-foreground">数据表名称<Input
                 aria-label="数据表名称"
                 value={title}
                 disabled={busy || !!intent.current}
                 onChange={(e) => setTitle(e.target.value)}
-              />
-              <SelectField
+              /></label>
+              <Select
                 label="所属笔记本"
                 value={target}
                 options={notebookOptions}
                 disabled={busy || !!intent.current}
-                onChange={setTarget}
+                onValueChange={next => { if (next !== null) setTarget(next); }}
               />
               {!notebookOptions.length && (
                 <p className="sheet-muted">请先在文档中心创建笔记本。</p>
               )}
-              <span className="sheet-section-label">起始模板</span>
-              <div className="sheet-template-list">
+              <span className="text-sm font-medium text-ob-muted-foreground">起始模板</span>
+              <div className="grid grid-cols-2 gap-2.5">
                 {templates.map((t) => (
-                  <ActionButton
+                  <Button variant="ghost"
                     key={t.id}
                     aria-pressed={template === t.id}
-                    className={template === t.id ? "selected" : ""}
+                    // 保持原模板卡片 76px 的最小高度，长文案仍可换行。
+                    className={`min-h-[76px] justify-start whitespace-normal rounded-ob-xl border-ob-border px-4 py-3 text-start ${template === t.id ? "bg-ob-accent outline-1 outline-ob-ring" : "bg-ob-card"}`}
                     disabled={busy || !!intent.current}
                     onClick={() => setTemplate(t.id)}
                   >
-                    <strong>{t.name}</strong>
-                    <span>{t.description}</span>
-                  </ActionButton>
+                    <span className="grid gap-1"><strong className="text-sm font-medium">{t.name}</strong><span className="text-xs text-ob-muted-foreground">{t.description}</span></span>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -221,7 +218,7 @@ export function SheetsHome() {
               </Button>
               <Button
                 variant="primary"
-                isPending={busy}
+                loading={busy}
                 disabled={!target || !title.trim()}
                 onClick={() => void create()}
               >

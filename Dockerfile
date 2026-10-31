@@ -63,6 +63,7 @@ CMD ["node", "server.mjs"]
 FROM node:24-slim@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20 AS frontend-source
 WORKDIR /app/frontend
 COPY --chmod=644 frontend/package.json frontend/package-lock.json ./
+COPY --chmod=644 frontend/packages/ui/package.json ./packages/ui/package.json
 RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
 COPY --chown=1000:1000 --chmod=755 frontend/ ./
 RUN mkdir -p /app/api && chmod 755 /app/api

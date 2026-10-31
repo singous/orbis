@@ -123,3 +123,14 @@ npm run test:e2e
 
 浏览器测试需要 Go 工具链与 Docker。Playwright 调用根目录的 Go 测试启动器，创建独占的 PostgreSQL、Redis 和临时文件目录，显式安装数据库并启动后端；不读取部署 `.env`，不复用日常账号或数据库。
 可通过 `ORBIS_E2E_WEB_PORT` 与 `ORBIS_E2E_API_PORT` 调整测试监听端口。
+
+
+## UI 平台
+
+通用控件使用私有源码包 `@orbis/ui/<component>`，公共入口由 `packages/ui/package.json#exports` 定义，不使用根 barrel 或内部路径。产品文案、草稿与保存策略留在 feature 或 shared/ui pattern。新代码不直接导入 HeroUI、Base UI、Lucide、Radix、Sonner 或 cmdk。
+
+包级契约、主题、表单、可访问名称和浮层规则见 [UI 包文档](packages/ui/README.md)。应用开发路径 `/__ui` 验证页面样式与组合，`npm run storybook` 预览原语状态。迁移期间保留未迁组件及样式；`check:ui` 冻结已有违规，只拦截新增，`node scripts/check-ui.mjs --prune` 只删除已清理的例外，不扩大基线。
+
+验证使用 `npm run typecheck`、`npm run test:run`、`npm run test:storybook`、`npm run test:ui`、`npm run test:a11y`、`npm run storybook:build` 与 `npm run build`。应用 UI 测试在 HTTP 边界提供响应，完整持久化与协作仍须 `test:e2e`。包体检查 `npm run check:bundle` 读取 Vite manifest，与固定提交的原始 lockfile 构建比较首屏和 feature chunk gzip；最终清理 HeroUI 后还需 `npm run check:bundle -- --complete` 验证总体减少。
+
+新增/升级依赖或复制代码时，同步 `licenses/npm-manifest.json`、原始许可文本、来源与 `THIRD_PARTY_NOTICES.md`。`licenses:generate -- --check` 可离线检查一致性；`check:licenses` 和 `licenses:bundle dist/licenses` 使用严格发行门禁，待审项不能当作已批准。`licenses/pending-review-summary.json` 和 `licenses/material-gaps.json` 记录真实缺口。

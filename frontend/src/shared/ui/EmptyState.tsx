@@ -1,4 +1,3 @@
-import { EmptyState as HeroEmptyState } from "@heroui/react/empty-state";
 import type { ReactNode } from "react";
 
 import { cn } from "./cn";
@@ -17,18 +16,18 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <HeroEmptyState
+    <div data-slot="ob-empty-state"
       className={cn(
         "flex flex-col items-center justify-center gap-3 px-6 py-16 text-center",
         className,
       )}
     >
-      {icon ? <div className="mb-1 grid h-12 w-12 place-items-center rounded-xl bg-[var(--surface-hover)] text-[var(--text-secondary)]">{icon}</div> : null}
-      <div className="text-base font-semibold text-[var(--text-primary)]">{title}</div>
+      {icon ? <div className="mb-1 grid h-12 w-12 place-items-center rounded-xl bg-ob-accent text-ob-muted-foreground">{icon}</div> : null}
+      <div className="text-base font-semibold text-ob-foreground">{title}</div>
       {description ? (
-        <p className="max-w-sm text-sm leading-6 text-[var(--text-secondary)]">{description}</p>
+        <p className="max-w-sm text-sm leading-6 text-ob-muted-foreground">{description}</p>
       ) : null}
       {action ? <div className="mt-2">{action}</div> : null}
-    </HeroEmptyState>
+    </div>
   );
 }

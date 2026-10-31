@@ -26,7 +26,7 @@ import {
   Settings2,
   Table2,
   X,
-} from "lucide-react";
+} from "@orbis/ui/icons";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import {
   Link,

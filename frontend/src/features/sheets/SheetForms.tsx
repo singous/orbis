@@ -1,5 +1,5 @@
 import { reportError } from "../../shared/api/request-feedback";
-import { ArrowDown, ArrowUp, Copy, Plus, Send, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Copy, Plus, Send, Trash2 } from "@orbis/ui/icons";
 import QRCode from "qrcode";
 import { useEffect, useRef, useState } from "react";
 import { useBlocker } from "react-router-dom";

@@ -1,5 +1,5 @@
 import { Dropdown } from "@heroui/react/dropdown";
-import { Maximize, Minus, Plus } from "lucide-react";
+import { Maximize, Minus, Plus } from "@orbis/ui/icons";
 import { useRef, useState, type ReactNode } from "react";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Tooltip } from "../../shared/ui/Tooltip";

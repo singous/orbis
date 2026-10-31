@@ -2,7 +2,7 @@ import { reportError } from "../../shared/api/request-feedback";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { Tag } from "../../shared/ui/Tag";
 import { Tabs } from "@heroui/react/tabs";
-import { TextArea as HeroTextArea } from "@heroui/react/textarea";
+import { Textarea as HeroTextArea } from "@orbis/ui/textarea";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Drawer } from "@heroui/react/drawer";
 import { History, MessageSquare, X } from "../../shared/ui/icons";

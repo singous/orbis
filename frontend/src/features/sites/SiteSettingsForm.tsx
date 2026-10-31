@@ -1,5 +1,5 @@
 import { Input as HeroInput } from "@heroui/react/input";
-import { TextArea as HeroTextArea } from "@heroui/react/textarea";
+import { Textarea as HeroTextArea } from "@orbis/ui/textarea";
 import { InputGroup } from "@heroui/react/input-group";
 import { SelectField } from "../../shared/ui/SelectField";
 import { ColorField } from "../../shared/ui/ColorField";

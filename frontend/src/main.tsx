@@ -4,7 +4,6 @@ import ReactDOM from "react-dom/client";
 import { App } from "./app/App";
 import { initializeAppearance } from "./shared/theme/appearance";
 import "./styles/index.css";
-import "./styles/auth.css";
 import "./styles/workspace-shell.css";
 import "./styles/base-mvp.css";
 import "./styles/collaboration.css";

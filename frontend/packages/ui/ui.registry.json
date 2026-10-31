@@ -1,0 +1,22 @@
+{
+  "license": "MIT",
+  "copyright": "Copyright (c) 2023 shadcn",
+  "licenseFile": "licenses/texts/shadcn-ui-MIT.txt",
+  "style": "base-nova",
+  "cliVersion": "4.23.0",
+  "acquisition": "Registry JSON downloaded directly; no CLI overwrite",
+  "components": {
+    "button": {
+      "source": "https://ui.shadcn.com/r/styles/base-nova/button.json",
+      "sourceChecksum": "sha256:9ba7e870178813f0552b818a913a2792fb500c779e36395740b4973e3025d427",
+      "modifications": "Orbis semantic tokens, owned props, public subpaths, React 19 refs, loading semantics and nested-theme portals",
+      "status": "experimental"
+    },
+    "dialog": {
+      "source": "https://ui.shadcn.com/r/styles/base-nova/dialog.json",
+      "sourceChecksum": "sha256:40fc321d25eb9590d07db54b00d9bc1a74274a549aa06d5915a34ba302ed8b94",
+      "modifications": "Orbis semantic tokens, owned props, public subpaths, React 19 refs, loading semantics and nested-theme portals",
+      "status": "experimental"
+    }
+  }
+}

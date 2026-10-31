@@ -1,6 +1,6 @@
 import { Input as HeroInput } from "@heroui/react/input";
 import { Checkbox } from "@heroui/react/checkbox";
-import { TextArea as HeroTextArea } from "@heroui/react/textarea";
+import { Textarea as HeroTextArea } from "@orbis/ui/textarea";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { ChevronDown, ChevronRight, FileText, PencilLine } from "../../shared/ui/icons";
 import { useState } from "react";

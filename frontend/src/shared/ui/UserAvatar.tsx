@@ -1,4 +1,4 @@
-import { Avatar } from "@heroui/react/avatar";
+import { Avatar } from "@orbis/ui/avatar";
 import { useQuery } from "@tanstack/react-query";
 import { useStore } from "zustand";
 import type { ComponentProps, CSSProperties } from "react";
@@ -16,10 +16,8 @@ export function identityColor(identity: string): CSSProperties {
 type UserAvatarProps = { user: User | null; size?: ComponentProps<typeof Avatar>["size"]; className?: string };
 function AvatarImage({ user, size = "sm", className = "", src }: UserAvatarProps & { src?: string }) {
   const name = user?.display_name || user?.email || "Orbis";
-  return <Avatar size={size} className={`identity-avatar ${className}`} style={identityColor(user?.id || "orbis")}>
-    {src ? <Avatar.Image src={src} alt={`${name}的头像`} /> : null}
-    <Avatar.Fallback>{Array.from(name)[0]?.toUpperCase() || "O"}</Avatar.Fallback>
-  </Avatar>;
+  return <Avatar size={size} className={`identity-avatar ${className}`} style={identityColor(user?.id || "orbis")}
+    src={src} alt={`${name}的头像`} fallback={Array.from(name)[0]?.toUpperCase() || "O"} />;
 }
 function StoredAvatar(props: UserAvatarProps) {
   const auth = useOptionalAuthRequest();

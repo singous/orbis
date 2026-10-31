@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { ArrowDown, ArrowUp, Eye, EyeOff, GripVertical, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Eye, EyeOff, GripVertical, MoreHorizontal, Pencil, Trash2 } from "@orbis/ui/icons";
 import { reportError } from "../../shared/api/request-feedback";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Button } from "../../shared/ui/Button";

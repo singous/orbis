@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { CircleHelp, Shapes } from "lucide-react";
+import { CircleHelp, Shapes } from "@orbis/ui/icons";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Dialog, DialogContent } from "../../shared/ui/Dialog";
 import { createNotebookSidebar } from "../documents/NotebookSectionMenu";

@@ -10,16 +10,30 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:e2e": "playwright test",
-    "typecheck": "npm run check:architecture && tsc --noEmit -p tsconfig.json",
+    "typecheck": "npm run check:architecture && npm run check:ui && tsc --noEmit -p tsconfig.json",
     "sync:document-blocks": "node scripts/sync-document-blocks.mjs",
     "check:document-blocks": "node scripts/sync-document-blocks.mjs --check",
-    "prebuild": "npm run check:architecture && node scripts/sync-brand-assets.mjs --check --frontend-only && node scripts/sync-document-blocks.mjs --check && node scripts/clear-retired-assets.mjs && node scripts/sync-board-assets.mjs && node scripts/sync-board-templates.mjs",
+    "prebuild": "npm run check:architecture && npm run check:ui && node scripts/sync-brand-assets.mjs --check --frontend-only && node scripts/sync-document-blocks.mjs --check && node scripts/clear-retired-assets.mjs && node scripts/sync-board-assets.mjs && node scripts/sync-board-templates.mjs",
     "predev": "node scripts/clear-retired-assets.mjs && node scripts/sync-board-assets.mjs && node scripts/sync-board-templates.mjs",
     "sync:board-templates": "node scripts/sync-board-templates.mjs --write",
     "sync:brand": "node scripts/sync-brand-assets.mjs",
     "check:brand": "node scripts/sync-brand-assets.mjs --check",
     "export:brand": "node scripts/export-brand-assets.mjs",
-    "check:architecture": "node --test tests/architecture/*.node-test.mjs && node scripts/check-architecture.mjs"
+    "check:architecture": "node --test tests/architecture/*.node-test.mjs && node scripts/check-architecture.mjs",
+    "check:ui": "node scripts/check-ui.mjs",
+    "report:ui": "node scripts/check-ui.mjs --report",
+    "storybook": "storybook dev -p 6006 -c packages/ui/.storybook --disable-telemetry",
+    "storybook:build": "storybook build -c packages/ui/.storybook -o storybook-static --disable-telemetry",
+    "test:storybook": "vitest run --config packages/ui/vite.config.ts",
+    "test:ui": "playwright test --config playwright.ui.config.ts",
+    "test:types": "tsc --noEmit -p tsconfig.json",
+    "licenses:generate": "node scripts/license-inventory.mjs",
+    "check:licenses": "node scripts/license-inventory.mjs --check --release",
+    "report:licenses": "node scripts/license-inventory.mjs --check",
+    "check:bundle": "node scripts/check-bundle.mjs",
+    "test:a11y": "playwright test --config playwright.ui.config.ts --grep accessibility:",
+    "licenses:bundle": "node scripts/license-inventory.mjs --bundle",
+    "test:licenses": "node --test tests/licenses/*.node-test.mjs"
   },
   "dependencies": {
     "@dnd-kit/dom": "^0.5.0",
@@ -28,6 +42,7 @@
     "@gravity-ui/icons": "2.23.0",
     "@heroui/react": "^3.2.6",
     "@heroui/styles": "^3.2.6",
+    "@orbis/ui": "0.0.1",
     "@remixicon/react": "4.6.0",
     "@tailwindcss/vite": "^4.1.10",
     "@tanstack/react-query": "^5.81.2",
@@ -54,7 +69,6 @@
     "highlight.js": "11.12.0",
     "konva": "10.9.0",
     "lib0": "0.2.119",
-    "lucide-react": "^0.468.0",
     "marked": "^18.0.5",
     "qrcode": "1.5.4",
     "react": "^19.1.0",
@@ -68,9 +82,14 @@
     "zustand": "^5.0.5"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
     "@dnd-kit/abstract": "0.5.0",
     "@iconify-json/tabler": "1.2.42",
     "@playwright/test": "^1.63.0",
+    "@storybook/addon-a11y": "9.1.21",
+    "@storybook/addon-docs": "9.1.21",
+    "@storybook/addon-vitest": "9.1.21",
+    "@storybook/react-vite": "9.1.21",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
@@ -79,11 +98,17 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.5.2",
+    "@vitest/browser": "3.2.6",
     "esbuild": "0.25.12",
     "fake-indexeddb": "6.2.6",
     "jsdom": "^26.1.0",
+    "storybook": "9.1.21",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
     "vitest": "^3.2.4"
-  }
+  },
+  "license": "AGPL-3.0-only",
+  "workspaces": [
+    "packages/*"
+  ]
 }

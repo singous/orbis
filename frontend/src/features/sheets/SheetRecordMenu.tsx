@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowDown, ArrowUp, Copy, Expand, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Copy, Expand, Trash2 } from "@orbis/ui/icons";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { MAX_BATCH } from "./model";
 import { Popover, type Anchor } from "./Popover";

@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus } from "@orbis/ui/icons";
 import { useEffect, useRef, useState } from "react";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Tooltip } from "../../shared/ui/Tooltip";

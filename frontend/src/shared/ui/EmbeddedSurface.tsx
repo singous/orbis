@@ -1,4 +1,4 @@
-import { ArrowLeft, Maximize2, RotateCcw } from "lucide-react";
+import { ArrowLeft, Maximize2, RotateCcw } from "@orbis/ui/icons";
 import { createPortal } from "react-dom";
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { ActionButton } from "./ActionButton";

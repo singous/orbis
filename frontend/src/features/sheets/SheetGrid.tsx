@@ -3,7 +3,7 @@ import { DraftActions } from "../../shared/ui/DraftActions";
 import { Button } from "../../shared/ui/Button";
 
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ChevronDown, Expand, GripVertical, Plus } from "lucide-react";
+import { ChevronDown, Expand, GripVertical, Plus } from "@orbis/ui/icons";
 import {
   useEffect,
   useLayoutEffect,

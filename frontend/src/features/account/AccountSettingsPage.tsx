@@ -1,12 +1,12 @@
 import { reportError } from "../../shared/api/request-feedback";
-import { TextArea } from "@heroui/react/textarea";
+import { Textarea } from "@orbis/ui/textarea";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { useStore } from "zustand";
 import { authStore, getAuthSessionKey } from "../../shared/auth/auth-store";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { AVATAR_MIME_TYPES, changeAvatar, getProfile, updateProfile, validateAvatar } from "../../shared/auth/profile-api";
-import { Button } from "../../shared/ui/Button";
-import { TextInput } from "../../shared/ui/TextInput";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
 import { UserAvatar } from "../../shared/ui/UserAvatar";
 import { PageContainer } from "../../shared/ui/PageContainer";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
@@ -71,17 +71,17 @@ export function AccountSettingsPage() {
           <UserAvatar user={user} size="lg" className="workbench-profile-avatar" />
           <div className="profile-identity"><h2>{user?.display_name || "我的账号"}</h2><p>{user?.email}</p>
             <div className="profile-avatar-actions">
-              <Button size="sm" disabled={pending} onPress={() => fileInput.current?.click()}>更换头像</Button>
-              {user?.avatar_asset_id ? <Button size="sm" variant="ghost" disabled={pending} onPress={() => void saveAvatar(null)}>移除头像</Button> : null}
+              <Button size="sm" disabled={pending} onClick={() => fileInput.current?.click()}>更换头像</Button>
+              {user?.avatar_asset_id ? <Button size="sm" variant="ghost" disabled={pending} onClick={() => void saveAvatar(null)}>移除头像</Button> : null}
             </div>
             <p className="profile-upload-help">PNG、JPEG 或 WebP，最大 2 MiB。上传后自动裁剪为方形并保存。</p>
             <input ref={fileInput} type="file" hidden accept={AVATAR_MIME_TYPES.join(",")} aria-label="选择头像图片" onChange={event => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void saveAvatar(file); }} />
           </div>
         </div>
         <form className="profile-edit-form" onSubmit={save}>
-          <TextInput label="名称" value={name} maxLength={120} disabled={pending} onChange={event => { edited.current = true; setName(event.target.value); }} />
-          <div className="profile-field"><label htmlFor={bioId}>个人简介</label><TextArea id={bioId} value={bio} maxLength={500} disabled={pending} onChange={event => { edited.current = true; setBio(event.target.value); }} placeholder="介绍一下自己，或写下你正在关注的事情。" /></div>
-          <div className="profile-form-actions"><Button type="submit" variant="primary" isPending={pending} disabled={pending}>{pending ? "保存中…" : "保存资料"}</Button></div>
+          <label className="profile-field">名称<Input value={name} maxLength={120} disabled={pending} onChange={event => { edited.current = true; setName(event.target.value); }} /></label>
+          <div className="profile-field"><label htmlFor={bioId}>个人简介</label><Textarea id={bioId} value={bio} maxLength={500} disabled={pending} onChange={event => { edited.current = true; setBio(event.target.value); }} placeholder="介绍一下自己，或写下你正在关注的事情。" /></div>
+          <div className="profile-form-actions"><Button type="submit" variant="primary" loading={pending}>{pending ? "保存中…" : "保存资料"}</Button></div>
         </form>
         <dl className="workbench-settings-list profile-workspace-info">
           <div><dt>工作空间</dt><dd>{workspace?.name || "私人工作空间"}</dd></div>

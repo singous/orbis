@@ -3,7 +3,7 @@ import { releaseFeatures } from "../../shared/release-features";
 import { lazy, Suspense, useContext, useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useStore } from "zustand";
-import { ExternalLink, Pencil, Shapes } from "lucide-react";
+import { ExternalLink, Pencil, Shapes } from "@orbis/ui/icons";
 import { Link } from "react-router-dom";
 import { apiBlobRequest, workspacePath } from "../../shared/api/api-client";
 import { authStore } from "../../shared/auth/auth-store";

@@ -1,5 +1,5 @@
 import { reportError } from "../../shared/api/request-feedback";
-import { Paperclip, Star, X } from "lucide-react";
+import { Paperclip, Star, X } from "@orbis/ui/icons";
 import { useEffect, useRef, useState } from "react";
 import {
   apiBlobRequest,

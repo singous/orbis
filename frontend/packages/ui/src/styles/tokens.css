@@ -1,0 +1,107 @@
+:root, [data-theme="light"] {
+  color-scheme: light;
+  /* 基础色板：只在这里出现原始色值 */
+  --ob-gray-0: oklch(100% 0 0);
+  --ob-gray-50: oklch(97.02% 0 0);
+  --ob-gray-200: oklch(90% 0 0);
+  --ob-gray-900: oklch(21.03% 0 0);
+  --ob-red-600: oklch(53% 0.1967 354.17);
+  --ob-green-600: oklch(55% 0.15 145);
+
+  /* 语义 token：业务唯一可见的一层 */
+  --ob-background: var(--ob-gray-50);
+  --ob-surface: var(--ob-gray-0);
+  --ob-surface-raised: var(--ob-gray-0);
+  --ob-foreground: var(--ob-gray-900);
+  --ob-muted-foreground: oklch(54% 0 0);
+  --ob-primary: oklch(0 0 0);
+  --ob-primary-foreground: oklch(99.11% 0 0);
+  --ob-secondary: oklch(94% 0 0);
+  --ob-secondary-foreground: var(--ob-foreground);
+  --ob-accent-surface: oklch(96% 0 0);
+  --ob-accent-surface-foreground: var(--ob-foreground);
+  --ob-danger: var(--ob-red-600);
+  --ob-danger-text: var(--ob-danger);
+  --ob-danger-foreground: oklch(99.11% 0 0);
+  --ob-success: var(--ob-green-600);
+  --ob-warning: oklch(78.19% 0.1585 41.87);
+  --ob-border: var(--ob-gray-200);
+  --ob-input: var(--ob-gray-200);
+  --ob-ring: oklch(0 0 0);
+  --ob-scrim: rgb(16 24 40 / 28%);
+
+  --ob-radius: 0.25rem;
+  --ob-radius-sm: var(--ob-radius);
+  --ob-radius-md: calc(var(--ob-radius) + 2px);
+  --ob-radius-lg: calc(var(--ob-radius) + 4px);
+  --ob-radius-xl: calc(var(--ob-radius) + 8px);
+
+  --ob-control-height-sm: 2rem;
+  --ob-control-height-md: 2.25rem;
+  --ob-control-height-lg: 2.5rem;
+  --ob-control-height-touch: 2.75rem;
+
+  --ob-motion-feedback: 120ms;
+  --ob-motion-popover: 180ms;
+  --ob-motion-dialog: 220ms;
+  --ob-ease-out: cubic-bezier(.2, .8, .2, 1);
+
+  --ob-z-dialog: 80;
+  --ob-z-popover: 90;
+  --ob-z-tooltip: 100;
+}
+
+[data-theme="dark"] {
+  --ob-danger-text: oklch(75% 0.15 354.17);
+  color-scheme: dark;
+  --ob-background: oklch(12% 0 0);
+  --ob-surface: oklch(21.03% 0 0);
+  --ob-surface-raised: oklch(21.03% 0 0);
+  --ob-foreground: oklch(99.11% 0 0);
+  --ob-muted-foreground: oklch(70.5% 0 0);
+  --ob-primary: oklch(98.48% 0 0);
+  --ob-primary-foreground: oklch(15% 0 0);
+  --ob-secondary: oklch(27.4% 0 0);
+  --ob-accent-surface: oklch(27.21% 0 0);
+  --ob-border: oklch(28% 0 0);
+  --ob-input: oklch(28% 0 0);
+  --ob-ring: oklch(98.48% 0 0);
+  --ob-scrim: rgb(0 0 0 / 48%);
+}
+
+/* 在每个主题边界重新绑定别名，避免继承上层已经解析的颜色。 */
+:root, [data-theme="light"], [data-theme="dark"] {
+  --ob-secondary-foreground: var(--ob-foreground);
+  --ob-accent-surface-foreground: var(--ob-foreground);
+}
+
+@theme inline {
+  --color-ob-background: var(--ob-background);
+  --color-ob-foreground: var(--ob-foreground);
+  --color-ob-card: var(--ob-surface);
+  --color-ob-card-foreground: var(--ob-foreground);
+  --color-ob-popover: var(--ob-surface-raised);
+  --color-ob-popover-foreground: var(--ob-foreground);
+  --color-ob-primary: var(--ob-primary);
+  --color-ob-primary-foreground: var(--ob-primary-foreground);
+  --color-ob-secondary: var(--ob-secondary);
+  --color-ob-secondary-foreground: var(--ob-secondary-foreground);
+  --color-ob-muted: var(--ob-secondary);
+  --color-ob-muted-foreground: var(--ob-muted-foreground);
+  --color-ob-accent: var(--ob-accent-surface);
+  --color-ob-accent-foreground: var(--ob-accent-surface-foreground);
+  --color-ob-destructive: var(--ob-danger);
+  --color-ob-danger-text: var(--ob-danger-text);
+  --color-ob-destructive-foreground: var(--ob-danger-foreground);
+  --color-ob-success: var(--ob-success);
+  --color-ob-warning: var(--ob-warning);
+  --color-ob-border: var(--ob-border);
+  --color-ob-input: var(--ob-input);
+  --color-ob-ring: var(--ob-ring);
+  --radius-ob-sm: var(--ob-radius-sm);
+  --radius-ob-md: var(--ob-radius-md);
+  --radius-ob-lg: var(--ob-radius-lg);
+  --radius-ob-xl: var(--ob-radius-xl);
+}
+
+/* 颜色差异由各主题作用域的 token 表达，不注册匹配任意深色祖先的 dark variant。 */

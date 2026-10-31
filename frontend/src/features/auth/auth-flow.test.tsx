@@ -1,5 +1,4 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { toast as heroToast } from "@heroui/react/toast";
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
@@ -7,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { LoginPage } from "../../app/LoginPage";
 import { ApiError } from "../../shared/api/api-client";
-import { Toaster } from "../../shared/ui/Toast";
+import { clearToasts, Toaster } from "../../shared/ui/Toast";
 
 const loginMock = vi.fn();
 const setupMock = vi.fn();
@@ -34,7 +33,7 @@ describe("community auth flow", () => {
   });
 
   afterEach(() => {
-    act(() => heroToast.clear());
+    act(() => clearToasts());
   });
 
   it("defaults to login and exposes setup without public registration", () => {
@@ -96,7 +95,7 @@ describe("community auth flow", () => {
     expect(screen.queryByText(/至少需要 8 位/)).not.toBeInTheDocument();
   });
 
-  it("enforces the eight character requirement only during initial setup", async () => {
+  it("enforces the password byte requirement only during initial setup", async () => {
     renderPage("setup");
     await userEvent.type(screen.getByLabelText("显示名称"), "Owner");
     await userEvent.type(screen.getByLabelText("邮箱"), "owner@example.com");
@@ -106,4 +105,21 @@ describe("community auth flow", () => {
     expect(setupMock).not.toHaveBeenCalled();
     expect(await screen.findByText("密码需要 12 至 128 字节。")).toBeInTheDocument();
   });
+});
+
+it("keeps the submit action focused and blocks repeated activation while connecting", async () => {
+  let fail!: (error: Error) => void;
+  loginMock.mockImplementation(() => new Promise((_resolve, reject) => { fail = reject; }));
+  renderPage("login");
+  const user = userEvent.setup();
+  await user.type(screen.getByLabelText("邮箱"), "owner@example.com");
+  await user.type(screen.getByLabelText("密码"), "short");
+  await user.click(screen.getByRole("button", { name: "登录 Orbis" }));
+  const submit = screen.getByRole("button", { name: "正在连接…" });
+  expect(submit).toHaveFocus();
+  expect(submit).toHaveAttribute("aria-disabled", "true");
+  expect(submit).not.toHaveAttribute("disabled");
+  await user.keyboard("{Enter} ");
+  expect(loginMock).toHaveBeenCalledTimes(1);
+  await act(async () => { fail(new ApiError(401, "Invalid credentials", "INVALID_CREDENTIALS")); });
 });

@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "policy": "Only a maintainer may approve review-level licenses. Pending records describe evidence and proposed scope, not an authorization. approvedBy, approvedAt, selectedLicense, conclusion and correspondingSourceRequired must be supplied by an actual approval.",
+  "packages": {
+    "@axe-core/playwright@4.14.0": {
+      "status": "pending",
+      "declaredLicense": "MPL-2.0",
+      "usageEvidence": [
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "scopeEvidence": "Development/browser accessibility testing only; not imported by production app",
+      "remaining": "Maintainer confirmation of combination and distribution obligations"
+    },
+    "axe-core@4.14.0": {
+      "status": "pending",
+      "declaredLicense": "MPL-2.0",
+      "usageEvidence": [
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "scopeEvidence": "Development/browser accessibility testing only; not imported by production app",
+      "remaining": "Maintainer confirmation of combination and distribution obligations"
+    },
+    "caniuse-lite@1.0.30001799": {
+      "status": "pending",
+      "declaredLicense": "CC-BY-4.0",
+      "usageEvidence": [
+        "build-only",
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "scopeEvidence": "Browsers compatibility data used by CSS build tooling",
+      "remaining": "Maintainer confirmation of combination and distribution obligations"
+    },
+    "elkjs@0.12.0": {
+      "status": "pending",
+      "declaredLicense": "EPL-2.0 OR GPL-3.0-or-later",
+      "usageEvidence": [
+        "runtime"
+      ],
+      "distribution": "browser-js",
+      "scopeEvidence": "frontend/src/features/boards/layout imports elkjs; generated JavaScript is delivered to browser",
+      "remaining": "Maintainer election plus exact ELK source revision and generated-code build material mapping"
+    },
+    "lightningcss@1.32.0": {
+      "status": "pending",
+      "declaredLicense": "MPL-2.0",
+      "usageEvidence": [
+        "build-only",
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import",
+      "remaining": "Maintainer confirmation of combination and distribution obligations"
+    },
+    "lightningcss-android-arm64@1.32.0": {
+      "status": "pending",
+      "declaredLicense": "MPL-2.0",
+      "usageEvidence": [
+        "build-only",
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import",
+      "remaining": "Maintainer confirmation of combination and distribution obligations"
+    },
+    "lightningcss-darwin-arm64@1.32.0": {
+      "status": "pending",
+      "declaredLicense": "MPL-2.0",
+      "usageEvidence": [
+        "build-only",
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import",
+      "remaining": "Maintainer confirmation of combination and distribution obligations"
+    },
+    "lightningcss-darwin-x64@1.32.0": {
+      "status": "pending",
+      "declaredLicense": "MPL-2.0",
+      "usageEvidence": [
+        "build-only",
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import",
+      "remaining": "Maintainer confirmation of combination and distribution obligations"
+    },
+    "lightningcss-freebsd-x64@1.32.0": {
+      "status": "pending",
+      "declaredLicense": "MPL-2.0",
+      "usageEvidence": [
+        "build-only",
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import",
+      "remaining": "Maintainer confirmation of combination and distribution obligations"
+    },
+    "lightningcss-linux-arm-gnueabihf@1.32.0": {
+      "status": "pending",
+      "declaredLicense": "MPL-2.0",
+      "usageEvidence": [
+        "build-only",
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import",
+      "remaining": "Maintainer confirmation of combination and distribution obligations"
+    },
+    "lightningcss-linux-arm64-gnu@1.32.0": {
+      "status": "pending",
+      "declaredLicense": "MPL-2.0",
+      "usageEvidence": [
+        "build-only",
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import",
+      "remaining": "Maintainer confirmation of combination and distribution obligations"
+    },
+    "lightningcss-linux-arm64-musl@1.32.0": {
+      "status": "pending",
+      "declaredLicense": "MPL-2.0",
+      "usageEvidence": [
+        "build-only",
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import",
+      "remaining": "Maintainer confirmation of combination and distribution obligations"
+    },
+    "lightningcss-linux-x64-gnu@1.32.0": {
+      "status": "pending",
+      "declaredLicense": "MPL-2.0",
+      "usageEvidence": [
+        "build-only",
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import",
+      "remaining": "Maintainer confirmation of combination and distribution obligations"
+    },
+    "lightningcss-linux-x64-musl@1.32.0": {
+      "status": "pending",
+      "declaredLicense": "MPL-2.0",
+      "usageEvidence": [
+        "build-only",
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import",
+      "remaining": "Maintainer confirmation of combination and distribution obligations"
+    },
+    "lightningcss-win32-arm64-msvc@1.32.0": {
+      "status": "pending",
+      "declaredLicense": "MPL-2.0",
+      "usageEvidence": [
+        "build-only",
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import",
+      "remaining": "Maintainer confirmation of combination and distribution obligations"
+    },
+    "lightningcss-win32-x64-msvc@1.32.0": {
+      "status": "pending",
+      "declaredLicense": "MPL-2.0",
+      "usageEvidence": [
+        "build-only",
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import",
+      "remaining": "Maintainer confirmation of combination and distribution obligations"
+    }
+  }
+}

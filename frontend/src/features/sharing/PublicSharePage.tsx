@@ -2,7 +2,7 @@ import { OrbisLogo } from "../../shared/ui/OrbisLogo";
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
-import { BookOpen, RefreshCw } from "lucide-react";
+import { BookOpen, RefreshCw } from "@orbis/ui/icons";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { useReaderMetadata } from "../sites/reader/head-metadata";
 import { readPublicShare,readSharedDocument } from "./api";

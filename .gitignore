@@ -82,3 +82,6 @@ frontend/public/drawing-assets/
 
 # Generated self-hosted board icons
 frontend/public/board-icons/
+
+# UI component documentation build
+frontend/storybook-static/

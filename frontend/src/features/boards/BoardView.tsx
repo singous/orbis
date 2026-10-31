@@ -1,6 +1,6 @@
 import { reportError } from "../../shared/api/request-feedback";
 import { useEffect, useRef, useState } from "react";
-import { Shapes } from "lucide-react";
+import { Shapes } from "@orbis/ui/icons";
 import { type BoardViewData } from "./public-contract";
 import { EmbeddedSurface } from "../../shared/ui/EmbeddedSurface";
 import { BoardPreviewViewport } from "./BoardPreviewViewport";

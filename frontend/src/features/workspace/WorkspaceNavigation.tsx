@@ -1,5 +1,5 @@
 import { releaseFeatures } from "../../shared/release-features";
-import { StickyNote } from "lucide-react";
+import { StickyNote } from "@orbis/ui/icons";
 import { BookOpen, ChevronDown, ChevronRight, Clock3, Globe, Home, Pin, Search, Settings, Trash2, Users } from "../../shared/ui/icons";
 import { type ReactNode, useId, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";

@@ -6,7 +6,7 @@ import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { newUUID } from "../../shared/ids";
 import { sheetAPI } from "../sheets/api";
 import { boardAPI } from "../boards/api";
-import { Shapes, StickyNote, Table2 } from "lucide-react";
+import { Shapes, StickyNote, Table2 } from "@orbis/ui/icons";
 import { Dropdown } from "@heroui/react/dropdown";
 import { Label } from "@heroui/react/label";
 import type { WorkspaceSidebarConfig } from "../workspace/workspace-sidebar-config";

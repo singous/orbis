@@ -4,7 +4,7 @@ import { ApiError } from "../../shared/api/api-client";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { Button, buttonVariants } from "../../shared/ui/Button";
 import { ActionButton } from "../../shared/ui/ActionButton";
-import { Maximize2, Minimize2, Tag as TagIcon } from "lucide-react";
+import { Maximize2, Minimize2, Tag as TagIcon } from "@orbis/ui/icons";
 import { Plus, X } from "../../shared/ui/icons";
 import { Tag } from "../../shared/ui/Tag";
 import { saveQuickNote, type QuickNote, type QuickNoteTag } from "./api";

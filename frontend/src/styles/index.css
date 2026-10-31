@@ -4,11 +4,18 @@
 @import "./heroui-theme.css";
 @import "./design-tokens.css";
 @import "./surface-theme.css";
+@import "@orbis/ui/styles.css";
+@import "./brand-tokens.css";
+@import "./motion.css";
 @import "./ui-controls.css";
 @import "./document-tree.css";
 @import "./scrollbars.css";
 @import "./icons.css";
 @import "./loading.css";
+
+@source "../../packages/ui/src";
+@source not "../../packages/ui/src/**/*.stories.tsx";
+@source not "../../packages/ui/src/**/__tests__/**";
 
 @layer components {
   /* Feature controls keep their native layout while HeroUI owns interaction states. */

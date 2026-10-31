@@ -10,7 +10,10 @@ import { workspaceRoutes } from "./workspace-routes";
 
 const WorkspaceRoute = lazy(() => import("./WorkspaceRoute").then(module => ({ default: module.WorkspaceRoute })));
 
+const UICatalog = lazy(() => import("./catalog/UICatalog").then(module => ({ default: module.UICatalog })));
+
 export const router = createBrowserRouter([
+  ...(import.meta.env.DEV ? [{ path: "/__ui", element: <Suspense fallback={null}><UICatalog /></Suspense> }] : []),
   { element: <RequireAuth><Suspense fallback={<WorkspaceStartup />}><BoardNavigationGuard /><WorkspaceRoute /></Suspense></RequireAuth>, children: workspaceRoutes },
   ...publicRoutes,
   { path: "/", element: <Navigate to={DEFAULT_WORKSPACE_PATH} replace /> },

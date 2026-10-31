@@ -1,0 +1,34 @@
+@media (prefers-reduced-motion: reduce) {
+  :root, [data-theme="light"], [data-theme="dark"] {
+    --ob-motion-feedback: 0ms;
+    --ob-motion-popover: 0ms;
+    --ob-motion-dialog: 0ms;
+  }
+}
+@media (pointer: coarse) {
+  :root, [data-theme="light"], [data-theme="dark"] {
+    --ob-control-height-sm: var(--ob-control-height-touch);
+    --ob-control-height-md: var(--ob-control-height-touch);
+    --ob-control-height-lg: var(--ob-control-height-touch);
+  }
+}
+@media (forced-colors: active) {
+  :root, [data-theme="light"], [data-theme="dark"] {
+    --ob-background: Canvas;
+    --ob-surface: Canvas;
+    --ob-surface-raised: Canvas;
+    --ob-foreground: CanvasText;
+    --ob-muted-foreground: CanvasText;
+    --ob-primary: Highlight;
+    --ob-primary-foreground: HighlightText;
+    --ob-secondary: Canvas;
+    --ob-accent-surface: Canvas;
+    --ob-danger: LinkText;
+    --ob-danger-text: LinkText;
+    --ob-danger-foreground: Canvas;
+    --ob-border: ButtonText;
+    --ob-input: ButtonText;
+    --ob-ring: Highlight;
+  }
+  [data-slot^="ob-"] { box-shadow: none; }
+}

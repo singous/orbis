@@ -1,8 +1,7 @@
 import { reportError } from "../../shared/api/request-feedback";
 import { LoadingState } from "../../shared/ui/LoadingState";
-import { Avatar } from "@heroui/react/avatar";
+import { Avatar } from "@orbis/ui/avatar";
 import { Tag } from "../../shared/ui/Tag";
-import { ActionButton } from "../../shared/ui/ActionButton";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Crown, Mail, RefreshCw, Shield, Trash2, UserPlus, Users } from "../../shared/ui/icons";
 import { type FormEvent, useState } from "react";
@@ -10,13 +9,14 @@ import { useStore } from "zustand";
 
 import { authStore } from "../../shared/auth/auth-store";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
-import { Button } from "../../shared/ui/Button";
-import { TextInput } from "../../shared/ui/TextInput";
-import { SelectField } from "../../shared/ui/SelectField";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
+import { Select } from "@orbis/ui/select";
 
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
 import { PageContainer } from "../../shared/ui/PageContainer";
 import {
+  type Member,
   getMailStatus,
   currentOwnership,
   resendOwnership,
@@ -31,6 +31,8 @@ import {
   updateMemberRole,
 } from "./api";
 
+type AssignableRole = Exclude<Member["role"], "owner">;
+
 export function MemberSettingsPage() {
   const queryClient = useQueryClient();
   const auth = useAuthRequest();
@@ -38,7 +40,12 @@ export function MemberSettingsPage() {
   const [memberPage, setMemberPage] = useState(1);
   const [invitationPage, setInvitationPage] = useState(1);
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"admin" | "editor" | "viewer">("editor");
+  const [role, setRole] = useState<AssignableRole>("editor");
+  const roleOptions: Array<{ value: AssignableRole; label: string }> = [
+    ...(workspace?.role === "owner" ? [{ value: "admin" as const, label: "管理员" }] : []),
+    { value: "editor", label: "编辑者" },
+    { value: "viewer", label: "只读成员" },
+  ];
   const canManage = workspace?.role === "owner" || workspace?.role === "admin";
   const membersQuery = useQuery({ queryKey: ["members", memberPage], queryFn: () => listMembers(auth, memberPage) });
   const invitesQuery = useQuery({
@@ -97,12 +104,12 @@ export function MemberSettingsPage() {
           <section className="workbench-member-invite">
             <div className="mb-5 flex items-center gap-3">
               <div className="document-icon"><UserPlus aria-hidden="true" size={18} /></div>
-              <div><h2 className="text-base font-semibold">邀请成员</h2><p className="mt-1 text-xs text-[var(--muted)]">{mailQuery.data?.enabled ? "邀请链接会通过邮件发送。" : "当前邮件服务未启用，邀请发送不可用。"}</p></div>
+              <div><h2 className="text-base font-semibold">邀请成员</h2><p className="mt-1 text-xs text-ob-muted-foreground">{mailQuery.data?.enabled ? "邀请链接会通过邮件发送。" : "当前邮件服务未启用，邀请发送不可用。"}</p></div>
             </div>
             <form className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_150px_auto] sm:items-end" onSubmit={submitInvite}>
-              <TextInput label="邮箱" type="email" placeholder="member@example.com" value={email} onChange={(event) => setEmail(event.target.value)} />
-              <SelectField label="角色" value={role} onChange={(next) => setRole(next as typeof role)} options={[...(workspace?.role === "owner" ? [{ value: "admin", label: "管理员" }] : []), { value: "editor", label: "编辑者" }, { value: "viewer", label: "只读成员" }]} />
-              <Button type="submit" variant="primary" disabled={!mailQuery.data?.enabled || !email.trim() || invite.isPending} icon={<Mail aria-hidden="true" size={14} />}>发送邀请</Button>
+              <label className="grid gap-1.5 text-sm font-medium text-ob-foreground">邮箱<Input type="email" placeholder="member@example.com" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
+              <Select<AssignableRole> label="角色" value={role} onValueChange={next => { if (next !== null) setRole(next); }} options={roleOptions} />
+              <Button type="submit" variant="primary" disabled={!mailQuery.data?.enabled || !email.trim() || invite.isPending}><span className="inline-flex items-center gap-2"><Mail aria-hidden="true" size={14} />发送邀请</span></Button>
             </form>
           </section>
         ) : null}
@@ -115,14 +122,14 @@ export function MemberSettingsPage() {
               const actorCanChange = canManage && (workspace?.role === "owner" || member.role !== "admin");
               return (
                 <div key={member.user_id} className="workbench-member-row">
-                  <Avatar size="sm" className="h-9 w-9"><Avatar.Fallback>{(member.display_name || member.email).slice(0, 1).toUpperCase()}</Avatar.Fallback></Avatar>
-                  <div className="min-w-[180px] flex-1"><div className="text-sm font-semibold">{member.display_name || member.email}</div><div className="mt-1 text-xs text-[var(--muted)]">{member.email}</div></div>
+                  <Avatar size="sm" className="size-9" fallback={(member.display_name || member.email).slice(0, 1).toUpperCase()} />
+                  <div className="min-w-[180px] flex-1"><div className="text-sm font-semibold">{member.display_name || member.email}</div><div className="mt-1 text-xs text-ob-muted-foreground">{member.email}</div></div>
                   <div className="flex items-center gap-2">
                     {member.role === "owner" ? <Tag><Crown aria-hidden="true" className="mr-1" size={12} />所有者</Tag> : actorCanChange ? (
-                      <SelectField aria-label={`调整 ${member.email} 的角色`} className="member-role-select" value={member.role} disabled={roleMutation.isPending} onChange={(nextRole) => roleMutation.mutate({ id: member.user_id, version: member.version, nextRole: nextRole as "admin" | "editor" | "viewer" })} options={[...(workspace?.role === "owner" ? [{ value: "admin", label: "管理员" }] : []), { value: "editor", label: "编辑者" }, { value: "viewer", label: "只读成员" }]} />
+                      <Select<AssignableRole> aria-label={`调整 ${member.email} 的角色`} wrapperClassName="min-w-30" value={member.role} disabled={roleMutation.isPending} onValueChange={nextRole => { if (nextRole !== null) roleMutation.mutate({ id: member.user_id, version: member.version, nextRole }); }} options={roleOptions} />
                     ) : <Tag><Shield aria-hidden="true" className="mr-1" size={12} />{member.role}</Tag>}
                     {workspace?.role === "owner" && member.role === "admin" ? <Button variant="secondary" onClick={() => confirmTransfer(member.user_id)} disabled={!mailQuery.data?.enabled || transferMutation.isPending}>转让所有权</Button> : null}
-                    {member.role !== "owner" && actorCanChange ? <ActionButton type="button" className="icon-button danger-hover" aria-label={`移除 ${member.email}`} onClick={() => confirmRemove(member.user_id, member.version, member.email)}><Trash2 aria-hidden="true" size={14} /></ActionButton> : null}
+                    {member.role !== "owner" && actorCanChange ? <Button type="button" variant="ghost" size="sm" className="size-8 p-0 text-ob-destructive" aria-label={`移除 ${member.email}`} onClick={() => confirmRemove(member.user_id, member.version, member.email)}><Trash2 aria-hidden="true" size={14} /></Button> : null}
                   </div>
                 </div>
               );
@@ -137,10 +144,10 @@ export function MemberSettingsPage() {
             <div className="workbench-member-list">
               {pendingInvitations.map((item) => (
                 <div key={item.id} className="workbench-member-row">
-                  <Users aria-hidden="true" size={18} className="text-[var(--muted)]" />
-                  <div className="min-w-[200px] flex-1"><div className="text-sm font-semibold">{item.email}</div><div className="mt-1 text-xs text-[var(--muted)]">{item.role} · {item.email_sent ? "已发送" : "发送失败"}</div></div>
-                  <ActionButton type="button" className="icon-button" aria-label={`重发 ${item.email}`} onClick={() => resendMutation.mutate(item.id)}><RefreshCw aria-hidden="true" size={14} /></ActionButton>
-                  <ActionButton type="button" className="icon-button danger-hover" aria-label={`撤销 ${item.email} 的邀请`} onClick={() => revokeMutation.mutate(item.id)}><Trash2 aria-hidden="true" size={14} /></ActionButton>
+                  <Users aria-hidden="true" size={18} className="text-ob-muted-foreground" />
+                  <div className="min-w-[200px] flex-1"><div className="text-sm font-semibold">{item.email}</div><div className="mt-1 text-xs text-ob-muted-foreground">{item.role} · {item.email_sent ? "已发送" : "发送失败"}</div></div>
+                  <Button type="button" variant="ghost" size="sm" className="size-8 p-0" aria-label={`重发 ${item.email}`} onClick={() => resendMutation.mutate(item.id)}><RefreshCw aria-hidden="true" size={14} /></Button>
+                  <Button type="button" variant="ghost" size="sm" className="size-8 p-0 text-ob-destructive" aria-label={`撤销 ${item.email} 的邀请`} onClick={() => revokeMutation.mutate(item.id)}><Trash2 aria-hidden="true" size={14} /></Button>
                 </div>
               ))}
             </div>

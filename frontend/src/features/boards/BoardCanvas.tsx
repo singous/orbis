@@ -1,4 +1,4 @@
-import { TextArea } from "@heroui/react/textarea";
+import { Textarea as TextArea } from "@orbis/ui/textarea";
 import { useEffect, useRef, useState, type RefObject, type ReactNode } from "react";
 import { BoardSelectionToolbar } from "./BoardSelectionToolbar";
 import { BoardConnectionPorts } from "./BoardConnectionPorts";

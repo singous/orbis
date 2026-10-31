@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Skeleton } from "@heroui/react/skeleton";
-import { Spinner } from "@heroui/react/spinner";
+import { Skeleton } from "@orbis/ui/skeleton";
+import { Spinner } from "@orbis/ui/spinner";
 
 type LoadingStateProps = { label: string; variant?: "cards" | "rows" | "editor" | "editor-body"; compact?: boolean; delayMs?: number };
 

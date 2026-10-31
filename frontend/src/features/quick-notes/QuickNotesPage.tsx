@@ -3,7 +3,7 @@ import { newUUID } from "../../shared/ids";
 import { useEffect, useRef, useState } from "react";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useStore } from "zustand";
-import { StickyNote, Tags, LayoutGrid, List } from "lucide-react";
+import { StickyNote, Tags, LayoutGrid, List } from "@orbis/ui/icons";
 import { ToggleButton } from "@heroui/react/toggle-button";
 import { ToggleButtonGroup } from "@heroui/react/toggle-button-group";
 import { authStore, getAuthSessionKey } from "../../shared/auth/auth-store";

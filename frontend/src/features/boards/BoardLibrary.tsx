@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Search, Shapes, Smile, LayoutTemplate, Layers, X } from "lucide-react";
+import { Search, Shapes, Smile, LayoutTemplate, Layers, X } from "@orbis/ui/icons";
 import { Tabs } from "@heroui/react/tabs";
 import { TextInput } from "../../shared/ui/TextInput";
 import { SelectField } from "../../shared/ui/SelectField";

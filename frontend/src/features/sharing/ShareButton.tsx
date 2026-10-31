@@ -2,7 +2,7 @@ import { showToast } from "../../shared/ui/Toast";
 import { withRequestFeedback, reportError } from "../../shared/api/request-feedback";
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link2, Share2 } from "lucide-react";
+import { Link2, Share2 } from "@orbis/ui/icons";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { Button } from "../../shared/ui/Button";
 import { Dialog, DialogContent } from "../../shared/ui/Dialog";

@@ -40,7 +40,7 @@ import {
   Layers,
   LayoutTemplate,
   Network,
-} from "lucide-react";
+} from "@orbis/ui/icons";
 import {
   RiCursorLine,
   RiHand,

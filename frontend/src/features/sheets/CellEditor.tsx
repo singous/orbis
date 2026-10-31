@@ -6,7 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
-} from "lucide-react";
+} from "@orbis/ui/icons";
 import { useLayoutEffect, useRef, useState } from "react";
 import type { AuthRequestOptions } from "../../shared/auth/use-auth-request";
 import { ActionButton } from "../../shared/ui/ActionButton";

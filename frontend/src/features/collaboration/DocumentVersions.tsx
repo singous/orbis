@@ -1,6 +1,6 @@
 import { reportError } from "../../shared/api/request-feedback";
 import { useRef, useState, type FormEvent } from "react";
-import { TextArea } from "@heroui/react/textarea";
+import { Textarea as TextArea } from "@orbis/ui/textarea";
 import { ApiError } from "../../shared/api/api-client";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Button } from "../../shared/ui/Button";

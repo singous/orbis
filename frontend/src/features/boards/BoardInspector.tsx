@@ -2,7 +2,7 @@ import { newUUID } from "../../shared/ids";
 import { isMindmapTopic, reparentElement, toggleTopicCollapsed } from "./mindmap";
 import { removeMember, reorderLane, transformBranch } from "./transforms";
 import { useEffect, useRef, useState } from "react";
-import { Plus, Trash2, Shapes, X, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Trash2, Shapes, X, ArrowUp, ArrowDown } from "@orbis/ui/icons";
 import { Tabs } from "@heroui/react/tabs";
 import { Checkbox } from "@heroui/react/checkbox";
 import { TextInput } from "../../shared/ui/TextInput";

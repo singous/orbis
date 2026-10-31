@@ -1,3 +1,4 @@
+export { Envelope, Lock, Person, Pause, Play } from "@gravity-ui/icons";
 import {
   AlertTriangle as LucideAlertTriangle,
   Archive as LucideArchive,
@@ -110,11 +111,11 @@ import {
   Underline as LucideUnderline,
   Undo2 as LucideUndo2,
   type LucideIcon, type LucideProps,
-} from "lucide-react";
+} from "@orbis/ui/icons";
 import { forwardRef } from "react";
 import { navigationIconPaths } from "./navigation-icon-paths";
 
-export type { LucideIcon, LucideProps } from "lucide-react";
+export type { LucideIcon, LucideProps } from "@orbis/ui/icons";
 export type IconTone = "orange" | "cyan" | "blue" | "indigo" | "teal" | "violet" | "rose" | "amber" | "slate" | "success" | "danger" | "warning";
 const DEFAULT_ICON_SIZE = 16;
 const DEFAULT_STROKE_WIDTH = 1.8;

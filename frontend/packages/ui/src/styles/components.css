@@ -1,0 +1,10 @@
+:root, [data-theme="light"], [data-theme="dark"] {
+  --ob-components-button-primary-bg: var(--ob-primary);
+  --ob-components-button-primary-bg-hover: color-mix(in oklab, var(--ob-primary) 85%, var(--ob-background));
+  --ob-components-button-primary-text: var(--ob-primary-foreground);
+}
+@theme inline {
+  --color-ob-components-button-primary-bg: var(--ob-components-button-primary-bg);
+  --color-ob-components-button-primary-bg-hover: var(--ob-components-button-primary-bg-hover);
+  --color-ob-components-button-primary-text: var(--ob-components-button-primary-text);
+}

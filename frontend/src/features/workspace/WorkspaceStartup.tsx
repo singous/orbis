@@ -1,4 +1,4 @@
-import { Skeleton } from "@heroui/react/skeleton";
+import { Skeleton } from "@orbis/ui/skeleton";
 import { useLocation } from "react-router-dom";
 import { getAppSurface } from "../../shared/platform/app-surface";
 import { resolveWorkspaceArea } from "./workspace-areas";

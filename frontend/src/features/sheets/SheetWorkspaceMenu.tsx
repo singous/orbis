@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Columns3, Copy, FileInput, Filter, Group, LayoutGrid, Pencil, Table2, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Columns3, Copy, FileInput, Filter, Group, LayoutGrid, Pencil, Table2, Trash2 } from "@orbis/ui/icons";
 import { Fragment } from "react";
 import { releaseFeatures } from "../../shared/release-features";
 import { ActionButton } from "../../shared/ui/ActionButton";

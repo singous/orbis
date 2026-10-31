@@ -8,7 +8,7 @@ import { newUUID } from "../../shared/ids";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Dropdown } from "@heroui/react/dropdown";
 import { Label } from "@heroui/react/label";
-import { Hand, Pin } from "lucide-react";
+import { Hand, Pin } from "@orbis/ui/icons";
 import { ArrowLeft, Download, Globe2, Import, MoreHorizontal, Plus, Settings2 } from "../../shared/ui/icons";
 import { type ChangeEvent, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";

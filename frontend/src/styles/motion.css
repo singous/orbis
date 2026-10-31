@@ -1,0 +1,7 @@
+@theme {
+  --animate-ob-auth-orbit: ob-auth-orbit 6s ease-in-out infinite;
+  @keyframes ob-auth-orbit {
+    0%, 100% { transform: translate3d(0, 0, 0) rotate(-.6deg) scale(1); }
+    50% { transform: translate3d(0, -10px, 0) rotate(.6deg) scale(1.015); }
+  }
+}

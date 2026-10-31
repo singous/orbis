@@ -1,0 +1,21 @@
+/* 品牌插画区固定为明亮色板，独立于表单的浅/深主题。 */
+[data-ui="auth"] {
+  --ob-auth-showcase-background: #edf3cd;
+  --ob-auth-showcase-foreground: #25351c;
+  --ob-auth-showcase-muted: color-mix(in oklab, var(--ob-auth-showcase-foreground) 70%, var(--ob-auth-showcase-background));
+  --ob-auth-showcase-footer: color-mix(in oklab, var(--ob-auth-showcase-foreground) 66%, var(--ob-auth-showcase-background));
+  --ob-auth-showcase-border: color-mix(in oklab, var(--ob-auth-showcase-foreground) 16%, transparent);
+  --ob-auth-input-background: color-mix(in oklab, var(--ob-surface) 20.67%, var(--ob-secondary));
+  --ob-auth-input-focus-border: color-mix(in oklab, var(--ob-foreground) 24%, var(--ob-surface));
+  --ob-auth-input-focus-shadow: color-mix(in oklab, var(--ob-foreground) 6%, transparent);
+}
+@theme inline {
+  --color-ob-auth-showcase: var(--ob-auth-showcase-background);
+  --color-ob-auth-showcase-foreground: var(--ob-auth-showcase-foreground);
+  --color-ob-auth-showcase-muted: var(--ob-auth-showcase-muted);
+  --color-ob-auth-showcase-footer: var(--ob-auth-showcase-footer);
+  --color-ob-auth-showcase-border: var(--ob-auth-showcase-border);
+  --color-ob-auth-input-background: var(--ob-auth-input-background);
+  --color-ob-auth-input-focus-border: var(--ob-auth-input-focus-border);
+  --color-ob-auth-input-focus-shadow: var(--ob-auth-input-focus-shadow);
+}

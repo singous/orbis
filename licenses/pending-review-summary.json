@@ -1,0 +1,327 @@
+{
+  "schemaVersion": 1,
+  "lockfileSha256": "cf42d9c8648c5eead7f017c41d938e5f1a7370561677f127eda27ed3b57bb26b",
+  "releaseReady": false,
+  "materialGaps": [
+    {
+      "name": "@tybys/wasm-util",
+      "version": "0.10.2",
+      "license": "MIT",
+      "usage": [
+        "build-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "evidence": {
+        "declaredLicense": "MIT",
+        "checked": [
+          "npm release gitHead cded8e894fe40c7c6200a3fdb2bd33e328b7bb65 contains no LICENSE/NOTICE; README contains no full MIT notice",
+          "A later LICENSE was added at a16b188d44ae43cc91edb71996ba2b43ff0996d9, when package.json is version 0.10.3",
+          "The comparison from the 0.10.2 source to that license commit also changes src/wasi/preview1.ts, so the later file is not asserted to be the attributable release notice for 0.10.2"
+        ],
+        "evidence": [
+          "https://registry.npmjs.org/@tybys%2fwasm-util/0.10.2",
+          "https://github.com/toyobayashi/wasm-util/compare/cded8e894fe40c7c6200a3fdb2bd33e328b7bb65...a16b188d44ae43cc91edb71996ba2b43ff0996d9"
+        ],
+        "requestedAction": "Confirm applicability of the maintainer's later MIT notice to 0.10.2, or obtain the full notice for that release; keep this optional build dependency visible until then."
+      }
+    },
+    {
+      "name": "client-only",
+      "version": "0.0.1",
+      "license": "MIT",
+      "usage": [
+        "runtime"
+      ],
+      "distribution": "browser-js",
+      "evidence": {
+        "declaredLicense": "MIT",
+        "checked": [
+          "npm release 0.0.1 includes package.json, index.js and error.js; no LICENSE, NOTICE or copyright notice",
+          "The package metadata points to reactjs.org and Facebook React issues but supplies no source repository or gitHead"
+        ],
+        "evidence": [
+          "https://registry.npmjs.org/client-only/0.0.1"
+        ],
+        "requestedAction": "Obtain an attributable complete license notice/source mapping, or confirm the package is removed with the HeroUI migration; do not invent Facebook copyright from a different React release."
+      }
+    },
+    {
+      "name": "stackback",
+      "version": "0.0.2",
+      "license": "MIT",
+      "usage": [
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "evidence": {
+        "declaredLicense": "MIT",
+        "checked": [
+          "npm release package.json declares MIT and author Roman Shtylman",
+          "Release tag v0.0.2 resolves to 2963095372abf7b75ba55f01cef08ab1e62c2ff4; its tree contains no LICENSE/NOTICE and README has no full license text",
+          "Upstream master also contains no license file; GitHub license endpoint returns 404"
+        ],
+        "evidence": [
+          "https://registry.npmjs.org/stackback/0.0.2",
+          "https://github.com/shtylman/node-stackback/tree/2963095372abf7b75ba55f01cef08ab1e62c2ff4"
+        ],
+        "requestedAction": "Obtain the author's attributable full MIT notice for this release. The current record preserves the declared SPDX and author evidence without manufacturing a copyright line."
+      }
+    }
+  ],
+  "maintainerReviews": [
+    {
+      "name": "@axe-core/playwright",
+      "version": "4.14.0",
+      "declaredLicense": "MPL-2.0",
+      "usage": [
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "status": "pending",
+      "requestedDecisions": [
+        "Confirm the recorded build/test-only distribution scope",
+        "Confirm applicable combination and source availability obligations"
+      ],
+      "scopeEvidence": "Development/browser accessibility testing only; not imported by production app"
+    },
+    {
+      "name": "axe-core",
+      "version": "4.14.0",
+      "declaredLicense": "MPL-2.0",
+      "usage": [
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "status": "pending",
+      "requestedDecisions": [
+        "Confirm the recorded build/test-only distribution scope",
+        "Confirm applicable combination and source availability obligations"
+      ],
+      "scopeEvidence": "Development/browser accessibility testing only; not imported by production app"
+    },
+    {
+      "name": "caniuse-lite",
+      "version": "1.0.30001799",
+      "declaredLicense": "CC-BY-4.0",
+      "usage": [
+        "build-only",
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "status": "pending",
+      "requestedDecisions": [
+        "Confirm the recorded build/test-only distribution scope",
+        "Confirm applicable combination and source availability obligations"
+      ],
+      "scopeEvidence": "Browsers compatibility data used by CSS build tooling"
+    },
+    {
+      "name": "elkjs",
+      "version": "0.12.0",
+      "declaredLicense": "EPL-2.0 OR GPL-3.0-or-later",
+      "usage": [
+        "runtime"
+      ],
+      "distribution": "browser-js",
+      "status": "pending",
+      "requestedDecisions": [
+        "Elect EPL-2.0 or GPL-3.0-or-later",
+        "Confirm applicable source availability obligations",
+        "Confirm exact ELK source and generator/build material mapping before approving source pins"
+      ],
+      "scopeEvidence": "frontend/src/features/boards/layout imports elkjs; generated JavaScript is delivered to browser"
+    },
+    {
+      "name": "lightningcss",
+      "version": "1.32.0",
+      "declaredLicense": "MPL-2.0",
+      "usage": [
+        "build-only",
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "status": "pending",
+      "requestedDecisions": [
+        "Confirm the recorded build/test-only distribution scope",
+        "Confirm applicable combination and source availability obligations"
+      ],
+      "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import"
+    },
+    {
+      "name": "lightningcss-android-arm64",
+      "version": "1.32.0",
+      "declaredLicense": "MPL-2.0",
+      "usage": [
+        "build-only",
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "status": "pending",
+      "requestedDecisions": [
+        "Confirm the recorded build/test-only distribution scope",
+        "Confirm applicable combination and source availability obligations"
+      ],
+      "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import"
+    },
+    {
+      "name": "lightningcss-darwin-arm64",
+      "version": "1.32.0",
+      "declaredLicense": "MPL-2.0",
+      "usage": [
+        "build-only",
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "status": "pending",
+      "requestedDecisions": [
+        "Confirm the recorded build/test-only distribution scope",
+        "Confirm applicable combination and source availability obligations"
+      ],
+      "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import"
+    },
+    {
+      "name": "lightningcss-darwin-x64",
+      "version": "1.32.0",
+      "declaredLicense": "MPL-2.0",
+      "usage": [
+        "build-only",
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "status": "pending",
+      "requestedDecisions": [
+        "Confirm the recorded build/test-only distribution scope",
+        "Confirm applicable combination and source availability obligations"
+      ],
+      "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import"
+    },
+    {
+      "name": "lightningcss-freebsd-x64",
+      "version": "1.32.0",
+      "declaredLicense": "MPL-2.0",
+      "usage": [
+        "build-only",
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "status": "pending",
+      "requestedDecisions": [
+        "Confirm the recorded build/test-only distribution scope",
+        "Confirm applicable combination and source availability obligations"
+      ],
+      "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import"
+    },
+    {
+      "name": "lightningcss-linux-arm-gnueabihf",
+      "version": "1.32.0",
+      "declaredLicense": "MPL-2.0",
+      "usage": [
+        "build-only",
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "status": "pending",
+      "requestedDecisions": [
+        "Confirm the recorded build/test-only distribution scope",
+        "Confirm applicable combination and source availability obligations"
+      ],
+      "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import"
+    },
+    {
+      "name": "lightningcss-linux-arm64-gnu",
+      "version": "1.32.0",
+      "declaredLicense": "MPL-2.0",
+      "usage": [
+        "build-only",
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "status": "pending",
+      "requestedDecisions": [
+        "Confirm the recorded build/test-only distribution scope",
+        "Confirm applicable combination and source availability obligations"
+      ],
+      "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import"
+    },
+    {
+      "name": "lightningcss-linux-arm64-musl",
+      "version": "1.32.0",
+      "declaredLicense": "MPL-2.0",
+      "usage": [
+        "build-only",
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "status": "pending",
+      "requestedDecisions": [
+        "Confirm the recorded build/test-only distribution scope",
+        "Confirm applicable combination and source availability obligations"
+      ],
+      "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import"
+    },
+    {
+      "name": "lightningcss-linux-x64-gnu",
+      "version": "1.32.0",
+      "declaredLicense": "MPL-2.0",
+      "usage": [
+        "build-only",
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "status": "pending",
+      "requestedDecisions": [
+        "Confirm the recorded build/test-only distribution scope",
+        "Confirm applicable combination and source availability obligations"
+      ],
+      "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import"
+    },
+    {
+      "name": "lightningcss-linux-x64-musl",
+      "version": "1.32.0",
+      "declaredLicense": "MPL-2.0",
+      "usage": [
+        "build-only",
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "status": "pending",
+      "requestedDecisions": [
+        "Confirm the recorded build/test-only distribution scope",
+        "Confirm applicable combination and source availability obligations"
+      ],
+      "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import"
+    },
+    {
+      "name": "lightningcss-win32-arm64-msvc",
+      "version": "1.32.0",
+      "declaredLicense": "MPL-2.0",
+      "usage": [
+        "build-only",
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "status": "pending",
+      "requestedDecisions": [
+        "Confirm the recorded build/test-only distribution scope",
+        "Confirm applicable combination and source availability obligations"
+      ],
+      "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import"
+    },
+    {
+      "name": "lightningcss-win32-x64-msvc",
+      "version": "1.32.0",
+      "declaredLicense": "MPL-2.0",
+      "usage": [
+        "build-only",
+        "dev-only"
+      ],
+      "distribution": "not-in-frontend-runtime",
+      "status": "pending",
+      "requestedDecisions": [
+        "Confirm the recorded build/test-only distribution scope",
+        "Confirm applicable combination and source availability obligations"
+      ],
+      "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import"
+    }
+  ]
+}
