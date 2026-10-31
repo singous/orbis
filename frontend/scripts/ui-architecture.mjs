@@ -96,3 +96,28 @@ export function applyColorDataAllowlist(findings, entries) {
     return false;
   });
 }
+
+export function applyDomainStylesAllowlist(findings, entries, sources) {
+  const scopeFindings = [];
+  const remaining = new Map(entries.map(entry => {
+    if (!entry.reason || !/^\.[\w-]+$/.test(entry.scope ?? "") || !entry.detail.endsWith(".css") || !Number.isInteger(entry.maxOccurrences) || entry.maxOccurrences < 1) throw new Error(`Invalid domain stylesheet entry: ${entry.file}`);
+    const file = path.posix.normalize(path.posix.join(path.posix.dirname(entry.file), entry.detail));
+    const stylesheet = sources.get(file);
+    if (stylesheet === undefined) throw new Error(`Domain stylesheet is missing: ${file}`);
+    const boundary = new RegExp(`^\\${entry.scope}(?=$|[\\s:.>#\\[])`);
+    for (const match of stylesheet.replace(/\/\*[\s\S]*?\*\//g, "").matchAll(/([^{}]+)\{/g)) {
+      const rule = match[1].trim();
+      if (/^@(?:media|supports)\b/.test(rule)) continue;
+      for (const selector of rule.split(",")) if (!boundary.test(selector.trim())) scopeFindings.push({ file, rule: "domain-style-scope", detail: selector.trim() });
+    }
+    return [JSON.stringify([entry.file, entry.detail]), entry.maxOccurrences];
+  }));
+  return [...findings.filter(finding => {
+    if (finding.rule !== "css-import") return true;
+    const key = JSON.stringify([finding.file, finding.detail]);
+    const allowed = remaining.get(key) ?? 0;
+    if (!allowed) return true;
+    remaining.set(key, allowed - 1);
+    return false;
+  }), ...scopeFindings];
+}

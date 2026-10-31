@@ -1,0 +1,11 @@
+{
+  "entries": [
+    {
+      "file": "src/main.tsx",
+      "detail": "./styles/document-prose.css",
+      "maxOccurrences": 1,
+      "scope": ".document-prose",
+      "reason": "Authored document typography shared by the editor and published reader; ordinary application chrome is excluded."
+    }
+  ]
+}

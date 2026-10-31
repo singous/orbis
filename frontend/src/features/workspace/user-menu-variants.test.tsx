@@ -30,8 +30,9 @@ describe.each(["topbar", "rail"] as const)("UserMenu %s anchor", (variant) => {
     expect(screen.getByRole("menuitem", { name: "工作空间成员" })).toHaveAttribute("href", "/settings/members");
     expect(screen.getByRole("menuitem", { name: "账号" })).toHaveAttribute("href", "/settings/account");
     expect(screen.getByRole("menuitem", { name: "退出登录" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "开源许可" })).toHaveAttribute("href", "/licenses/");
     expect(screen.getByRole("menuitem", { name: "外观" })).toBeInTheDocument();
-    expect(screen.getAllByRole("menuitem")).toHaveLength(4);
+    expect(screen.getAllByRole("menuitem")).toHaveLength(5);
     await actor.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByRole("menu", { name: "用户操作" })).not.toBeInTheDocument());
     await waitFor(() => expect(trigger).toHaveFocus());
@@ -71,7 +72,7 @@ describe.each(["topbar", "rail"] as const)("UserMenu %s anchor", (variant) => {
     await screen.findByRole("menu", { name: "用户操作" });
     expect(screen.queryByRole("menuitem", { name: "工作空间成员" })).not.toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "外观" })).toBeInTheDocument();
-    expect(screen.getAllByRole("menuitem")).toHaveLength(3);
+    expect(screen.getAllByRole("menuitem")).toHaveLength(4);
     await userEvent.click(screen.getByRole("menuitem", { name: "退出登录" }));
     expect(logout).toHaveBeenCalledTimes(1);
   });

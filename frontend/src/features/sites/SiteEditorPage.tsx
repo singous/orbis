@@ -8,13 +8,15 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useBlocker, useNavigate, useParams } from "react-router-dom";
 import { useStore } from "zustand";
-import "../../styles/site-management.css";
+import { Button } from "../../shared/ui/Button";
+import { workbenchStyles } from "../../shared/ui/workbench-styles";
+import { SiteManagementScope, SiteSectionHeading, SitePagination, SiteDialogActions, SiteWideDialogContent } from "./SiteManagementLayout";
 
 import { authStore } from "../../shared/auth/auth-store";
 import { registerPendingNavigation } from "../../shared/navigation/pending-navigation";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { Dialog, DialogContent } from "../../shared/ui/Dialog";
-import { PageContainer } from "../../shared/ui/PageContainer";
+import { PageContainer, pageBaseColumnClassName } from "../../shared/ui/PageContainer";
 import { canManageWorkspaceMembers, canMutateWorkspaceContent } from "../workspace/capabilities";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
 import { activateSiteRelease, getSiteSources, previewSite, publishSite, saveSite, unpublishSite } from "./api";
@@ -23,8 +25,7 @@ import { siteConfigSchema, type Site, type SiteConfig, type SitePreview, type Si
 import { sourceOrManual } from "./source-model";
 import { SiteNavigationEditor } from "./SiteNavigationEditor";
 import { SitePublishPreview } from "./SitePublishPreview";
-import { SiteSettingsForm } from "./SiteSettingsForm";
-import { SiteSourceEditor } from "./SiteSourceEditor";
+import { SiteDraftFields } from "./SiteDraftFields";
 
 type ReleaseAction = ({ type: "unpublish" } | { type: "activate"; releaseId: string; number: number }) & {expectedVersion:number;operationId:string};
 type PreviewBundle = { preview: SitePreview; sources: SiteSources };
@@ -73,13 +74,13 @@ function SiteEditor({ site }: { site: Site }) {
   async function updateCache(next: Site) {
     client.setQueryData(["site", site.id], next);
     await Promise.all([
-      client.invalidateQueries({ queryKey: ["sites"] }),
-      client.invalidateQueries({ queryKey: ["global-search"] }),
-      client.invalidateQueries({ queryKey: ["site-releases", site.id] }),
-      client.invalidateQueries({ queryKey: ["site-preview", site.id] }),
-      client.invalidateQueries({ queryKey: ["site-sources", site.id] }),
-      client.invalidateQueries({ queryKey: ["public-site"] }),
-    ]);
+      ["sites"],
+      ["global-search"],
+      ["site-releases", site.id],
+      ["site-preview", site.id],
+      ["site-sources", site.id],
+      ["public-site"],
+    ].map((queryKey) => client.invalidateQueries({ queryKey })));
   }
 
   async function saveCurrent(notifySuccess = false): Promise<SiteConfig> {
@@ -113,26 +114,22 @@ function SiteEditor({ site }: { site: Site }) {
   }
 
   async function preparePublishPreview() {
-    setBusy(true);
-    try {
+    await perform(async () => {
       await saveCurrent();
       const [sources, preview] = await Promise.all([getSiteSources(site.id, auth), previewSite(site.id, auth)]);
       if (sources.source_fingerprint !== preview.source_fingerprint) throw new Error("来源在生成预览时发生变化，请重新预览后再发布。");
       setPreviewBundle({ sources, preview,siteVersion:versionRef.current,operationId:newUUID() });
-    } catch (cause) { reportError(cause); } finally { setBusy(false); }
+    });
   }
 
   async function confirmPublish() {
     if (!previewBundle) return;
-    setBusy(true);
-    try {
+    await perform(async () => {
       const next=await publishSite(site.id,auth,{operation_id:previewBundle.operationId,expected_version:previewBundle.siteVersion,expected_source_fingerprint:previewBundle.preview.source_fingerprint});
       observedVersion(next.config_version);
       await updateCache(next);
       setPreviewBundle(null);
-
-    } catch (cause) { reportError(cause); }
-    finally { setBusy(false); }
+    });
   }
 
   async function confirmReleaseAction() {
@@ -148,49 +145,46 @@ function SiteEditor({ site }: { site: Site }) {
 
   const draftSource = sourceOrManual(draft.source);
   const sourceReady = draftSource.kind === "manual" || draftSource.notebooks.length > 0;
-  const canPreparePublish = draftSource.kind === "notebooks" ? draftSource.notebooks.length > 0 : draft.navigation.length > 0;
+  const canPreparePublish = draftSource.kind === "notebooks" ? sourceReady : draft.navigation.length > 0;
 
-  return <WorkspaceShell><PageContainer title={site.name} description="管理站点设置、内容来源与公开版本。" actions={<Tag tone={site.published_release_id ? "success" : "neutral"}>{site.published_release_id ? "已发布" : "尚未发布"}</Tag>}><div className="workbench-site-editor site-management">
-    <Link className="workbench-back" to="/sites"><ArrowLeft aria-hidden="true" size={16} />所有站点</Link>
-    <div className="site-publishing-bar"><span><Globe size={18} />{site.published_slug ? <Link to={`/s/${site.published_slug}`} target="_blank" rel="noopener noreferrer">查看公开站点<ExternalLink size={14} /></Link> : "站点将在发布后对外开放"}</span><div><ActionButton variant="secondary" type="button" className="mvp-button" disabled={busy} onClick={() => void openReaderPreview()}><Eye size={16} />预览</ActionButton>{canPublish ? <ActionButton variant="primary" type="button" className="mvp-button primary" disabled={busy || !canPreparePublish} onClick={() => void preparePublishPreview()}><Rocket size={16} />发布站点</ActionButton> : <span className="mvp-muted">由所有者或管理员发布</span>}</div></div>
+  return <PageContainer title={site.name} description="管理站点设置、内容来源与公开版本。" actions={<Tag tone={site.published_release_id ? "success" : "neutral"}>{site.published_release_id ? "已发布" : "尚未发布"}</Tag>}><SiteManagementScope appearance="editor"><div data-ui="site-management">
+    <Link className={workbenchStyles.back} to="/sites"><ArrowLeft aria-hidden="true" size={16} />所有站点</Link>
+    <div className="mb-8 flex items-center justify-between gap-5 border-b border-ob-border pb-6 max-[850px]:flex-col max-[850px]:items-start max-[850px]:gap-[17px]"><span className="flex items-center gap-[9px] text-xs text-ob-muted-foreground"><Globe size={18} />{site.published_slug ? <Link className="flex items-center gap-[9px] text-ob-primary" to={`/s/${site.published_slug}`} target="_blank" rel="noopener noreferrer">查看公开站点<ExternalLink size={14} /></Link> : "站点将在发布后对外开放"}</span><div className="flex items-center gap-[9px]"><Button disabled={busy} onClick={openReaderPreview}><Eye size={16} />预览</Button>{canPublish ? <Button variant="primary" disabled={busy || !canPreparePublish} onClick={preparePublishPreview}><Rocket size={16} />发布站点</Button> : <span className="text-sm text-ob-muted-foreground">由所有者或管理员发布</span>}</div></div>
 
     <form onSubmit={submit}>
-      <div className="site-editor-layout">
-        <section className="site-settings-section"><div className="site-section-heading"><div><h2>站点设置</h2><p>名称、场景、品牌与阅读外观。</p></div></div><SiteSettingsForm value={draft} onChange={setDraft} disabled={!canEdit || busy} /></section>
-        <div className="site-content-settings">
-          <SiteSourceEditor value={draft.source} onChange={(source) => setDraft({ ...draft, source })} disabled={!canEdit || busy} saved={sourceIsSaved} sources={sourceIsSaved ? sourceState.data : undefined} savedAtMs={savedAtMs} />
-
-          {draftSource.kind === "manual" ? <SiteNavigationEditor value={draft.navigation} onChange={(navigation) => setDraft({ ...draft, navigation })} disabled={!canEdit || busy} /> : null}
-        </div>
-      </div>
-      <div className="site-save-row"><span className="mvp-muted">{!sourceReady ? "请添加来源或切换到手动选择" : dirty ? "有尚未保存的设置" : "设置已与服务器同步"}</span>{canEdit ? <ActionButton variant="primary" className="mvp-button primary" type="submit" disabled={busy || !sourceReady}>{busy ? "处理中…" : "保存设置"}</ActionButton> : null}</div>
+      <SiteDraftFields value={draft} onChange={setDraft} onSourceChange={(source) => setDraft({ ...draft, source })} disabled={!canEdit || busy} saved={sourceIsSaved} sources={sourceIsSaved ? sourceState.data : undefined} savedAtMs={savedAtMs}>
+        {draftSource.kind === "manual" && <SiteNavigationEditor value={draft.navigation} onChange={(navigation) => setDraft({ ...draft, navigation })} disabled={!canEdit || busy} />}
+      </SiteDraftFields>
+      <div className="mt-9 flex items-center justify-between border-t border-ob-border pt-5"><span className="text-sm text-ob-muted-foreground">{!sourceReady ? "请添加来源或切换到手动选择" : dirty ? "有尚未保存的设置" : "设置已与服务器同步"}</span>{canEdit && <Button variant="primary" type="submit" disabled={busy || !sourceReady}>{busy ? "处理中…" : "保存设置"}</Button>}</div>
     </form>
-    <section className="site-releases"><div className="site-section-heading"><div><h2><History size={18} />发布历史</h2><p>切换版本只改变公开站点，草稿仍可继续编辑。</p></div>{canPublish && site.published_release_id ? <ActionButton variant="secondary" className="mvp-button danger-text" type="button" disabled={busy} onClick={() => setPendingAction({ type: "unpublish",expectedVersion:versionRef.current,operationId:newUUID() })}>撤回站点</ActionButton> : null}</div>
+    <section className="mt-[44px] border-t border-ob-border pt-7"><SiteSectionHeading title={<><History size={18} />发布历史</>} description="切换版本只改变公开站点，草稿仍可继续编辑。" actions={canPublish && site.published_release_id && <Button className="text-(--ob-page-danger)" disabled={busy} onClick={() => setPendingAction({ type: "unpublish",expectedVersion:versionRef.current,operationId:newUUID() })}>撤回站点</Button>} />
       {releases.isPending ? <LoadingState label="正在加载发布记录…" compact /> : releases.isError ? null : releases.data.items.length ? <>
-        {releases.data.items.map((release) => <div className="site-release-row" key={release.id}><span className="site-release-number">v{release.release_number}</span><span>{new Date(release.published_at_ms).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })}</span>{release.is_active ? <Tag tone="success">当前公开版本</Tag> : canPublish ? <ActionButton variant="secondary" className="mvp-button" type="button" disabled={busy} onClick={() => setPendingAction({ type: "activate", releaseId: release.id, number: release.release_number,expectedVersion:versionRef.current,operationId:newUUID() })}><RotateCcw size={14} />切换到此版本</ActionButton> : null}</div>)}
-        <div className="mvp-pagination"><ActionButton type="button" disabled={!releases.data.pagination.has_previous} onClick={() => setReleasePage(releasePage - 1)}>上一页</ActionButton><span>第 {releasePage} 页</span><ActionButton type="button" disabled={!releases.data.pagination.has_next} onClick={() => setReleasePage(releasePage + 1)}>下一页</ActionButton></div>
-      </> : <p className="site-empty-history">第一次发布后，版本会保存在这里。</p>}
+        {releases.data.items.map((release) => <div className="flex items-center gap-[22px] border-b border-ob-border py-3.5 text-xs text-ob-muted-foreground [&>:last-child]:ml-auto max-[800px]:flex-wrap max-[800px]:gap-3" key={release.id}><span className="min-w-[34px] font-semibold text-ob-foreground">v{release.release_number}</span><span>{new Date(release.published_at_ms).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })}</span>{release.is_active ? <Tag tone="success">当前公开版本</Tag> : canPublish && <Button disabled={busy} onClick={() => setPendingAction({ type: "activate", releaseId: release.id, number: release.release_number,expectedVersion:versionRef.current,operationId:newUUID() })}><RotateCcw size={14} />切换到此版本</Button>}</div>)}
+        <SitePagination hasPrevious={releases.data.pagination.has_previous} hasNext={releases.data.pagination.has_next} onPrevious={() => setReleasePage(releasePage - 1)} onNext={() => setReleasePage(releasePage + 1)}>第 {releasePage} 页</SitePagination>
+      </> : <p className="py-[15px] text-xs text-ob-muted-foreground">第一次发布后，版本会保存在这里。</p>}
     </section>
-    <Dialog open={previewBundle !== null} onOpenChange={(open) => { if (!open && !busy) { setPreviewBundle(null);  } }}><DialogContent className="site-publish-dialog" title="确认发布站点" description="核对来源变化与冻结正文。确认后只会发布这里显示的版本。">{previewBundle ? <SitePublishPreview siteId={site.id} preview={previewBundle.preview} sources={previewBundle.sources} busy={busy} onConfirm={() => void confirmPublish()} onRefresh={() => void preparePublishPreview()} onCancel={() => { setPreviewBundle(null);  }} /> : null}</DialogContent></Dialog>
+    <Dialog open={previewBundle !== null} onOpenChange={(open) => { if (!open && !busy) { setPreviewBundle(null);  } }}><SiteWideDialogContent title="确认发布站点" description="核对来源变化与冻结正文。确认后只会发布这里显示的版本。">{previewBundle && <SitePublishPreview siteId={site.id} preview={previewBundle.preview} sources={previewBundle.sources} busy={busy} onConfirm={confirmPublish} onRefresh={preparePublishPreview} onCancel={() => setPreviewBundle(null)} />}</SiteWideDialogContent></Dialog>
     <Dialog open={pendingAction !== null} onOpenChange={(open) => { if (!open && !busy) setPendingAction(null); }}><DialogContent title={pendingAction?.type === "unpublish" ? "确认撤回站点" : "切换公开版本"} description={pendingAction?.type === "unpublish" ? "公开链接将不再提供内容，内部文档和发布历史会保留。" : `将公开站点切换到版本 ${pendingAction?.type === "activate" ? pendingAction.number : ""}，内部草稿保持不变。`}>
-      <div className="site-dialog-actions"><ActionButton variant="secondary" className="mvp-button" type="button" disabled={busy} onClick={() => setPendingAction(null)}>取消</ActionButton><ActionButton variant="primary" className="mvp-button primary" type="button" disabled={busy} onClick={() => void confirmReleaseAction()}>{busy ? "处理中…" : "确认操作"}</ActionButton></div>
+      <SiteDialogActions><Button disabled={busy} onClick={() => setPendingAction(null)}>取消</Button><Button variant="primary" disabled={busy} onClick={confirmReleaseAction}>{busy ? "处理中…" : "确认操作"}</Button></SiteDialogActions>
     </DialogContent></Dialog>
     <Dialog open={navigationBlocker.state === "blocked"} onOpenChange={(open) => { if (!open && !busy && navigationBlocker.state === "blocked") navigationBlocker.reset(); }}>
       <DialogContent title="站点设置尚未保存" description="离开前可以保存设置、放弃本次修改，或返回继续编辑。保存设置不会发布站点。">
-        <div className="site-dialog-actions">
-          <ActionButton type="button" disabled={busy} onClick={() => { if (navigationBlocker.state === "blocked") navigationBlocker.reset(); }}>继续编辑</ActionButton>
-          <ActionButton type="button" disabled={busy} onClick={() => { if (navigationBlocker.state === "blocked") navigationBlocker.proceed(); }}>放弃修改并离开</ActionButton>
-          <ActionButton type="button" variant="primary" isPending={busy} disabled={busy} onClick={() => void perform(async () => { await saveCurrent(); if (navigationBlocker.state === "blocked") navigationBlocker.proceed(); })}>保存并离开</ActionButton>
-        </div>
+        <SiteDialogActions>
+          <ActionButton disabled={busy} onClick={() => { if (navigationBlocker.state === "blocked") navigationBlocker.reset(); }}>继续编辑</ActionButton>
+          <ActionButton disabled={busy} onClick={() => { if (navigationBlocker.state === "blocked") navigationBlocker.proceed(); }}>放弃修改并离开</ActionButton>
+          <ActionButton variant="primary" isPending={busy} disabled={busy} onClick={() => void perform(async () => { await saveCurrent(); if (navigationBlocker.state === "blocked") navigationBlocker.proceed(); })}>保存并离开</ActionButton>
+        </SiteDialogActions>
       </DialogContent>
     </Dialog>
-  </div></PageContainer></WorkspaceShell>;
+  </div></SiteManagementScope></PageContainer>;
 }
 
 export function SiteEditorPage() {
   const { siteId = "" } = useParams();
   const query = useSite(siteId);
-  if (query.isPending) return <WorkspaceShell><PageContainer title="站点设置"><LoadingState label="正在打开站点…" variant="editor" /></PageContainer></WorkspaceShell>;
-  if (!query.data) return <WorkspaceShell><div className="mvp-page"><h1>{query.isPending ? "正在打开站点…" : "无法打开站点"}</h1><Link to="/sites">返回所有站点</Link></div></WorkspaceShell>;
-  return <SiteEditor key={siteId} site={query.data} />;
+  return <WorkspaceShell>{query.isPending
+    ? <PageContainer title="站点设置"><LoadingState label="正在打开站点…" variant="editor" /></PageContainer>
+    : query.data ? <SiteEditor key={siteId} site={query.data} />
+      : <div className={`${pageBaseColumnClassName} max-[1150px]:p-[30px] max-[800px]:px-5 max-[800px]:pt-[25px] max-[800px]:pb-[45px]`}><h1 className="mb-2.5 text-2xl font-semibold tracking-[-.04em]">无法打开站点</h1><Link to="/sites">返回所有站点</Link></div>
+  }</WorkspaceShell>;
 }

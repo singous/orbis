@@ -1,3 +1,5 @@
+import { cn } from "@orbis/ui/cn";
+import { workspaceFunctionMenuClassName, workspaceFunctionLinkClassName } from "../workspace/workspace-navigation-styles";
 import { releaseFeatures } from "../../shared/release-features";
 import { reportError } from "../../shared/api/request-feedback";
 import { useState, useRef } from "react";
@@ -16,7 +18,7 @@ import { authStore } from "../../shared/auth/auth-store";
 import { ArrowLeft, FilePlus2, Home, MoreHorizontal, Pin, Plus } from "../../shared/ui/icons";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { usePinnedNotebooks } from "./pinned-notebooks";
-import { NotebookIcon } from "./NotebookIcon";
+import { NotebookIdentity } from "./NotebookIdentity";
 import { DocumentContextPanel } from "./DocumentContextPanel";
 import { useCreateNote, useNotebook, useNoteTree } from "./queries";
 
@@ -39,7 +41,7 @@ export function createNotebookSidebar(
     title: <NotebookSidebarTitle notebookId={notebookId} />,
     titlePlacement: "below-header",
     leadingActions: (
-      <Link to="/documents" className="notebook-menu-back" aria-label="返回文档中心" title="返回文档中心">
+      <Link to="/documents" className="notebook-menu-back ob-focus-ring m-0 grid size-(--ob-control-height-sm) shrink-0 place-items-center gap-[5px] rounded-ob-xl px-1 py-0.5 text-sm font-medium leading-5 transition-colors duration-(--ob-motion-feedback) ease-[ease] motion-reduce:transition-none text-(--ob-page-muted-foreground) hover:bg-(--ob-item-hover-bg) hover:text-ob-foreground" aria-label="返回文档中心" title="返回文档中心">
         <ArrowLeft aria-hidden="true" size={18} />
       </Link>
     ),
@@ -61,9 +63,8 @@ export function createNotebookSidebar(
 function NotebookSidebarTitle({ notebookId }: { notebookId: string }) {
   const notebook = useNotebook(notebookId).data;
   return (
-    <Link to={`/collections/${notebookId}`} className="notebook-menu-title" title={notebook?.title}>
-      <NotebookIcon icon={notebook?.icon} size="sm" />
-      <span className="truncate">{notebook?.title ?? "正在加载…"}</span>
+    <Link to={`/collections/${notebookId}`} className="notebook-menu-title ob-focus-ring mt-1.5 flex min-h-(--ob-control-height-md) min-w-0 items-center gap-2 text-base font-semibold leading-6 tracking-[-.01em] text-ob-foreground hover:text-ob-primary [&>.notebook-icon]:shrink-0" title={notebook?.title}>
+      <NotebookIdentity notebook={notebook} variant="sidebar" />
     </Link>
   );
 }
@@ -135,12 +136,12 @@ function NotebookCreateAction({ notebookId }: { notebookId: string }) {
   const creating = createNote.isPending || creatingTable || creatingBoard;
   return canMutateWorkspaceContent(workspace) ? (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild disabled={creating}><MenuButton appearance="unstyled" type="button" className="notebook-menu-create" aria-label="创建内容" title="创建内容"><Plus aria-hidden="true" size={18} /></MenuButton></DropdownMenuTrigger>
-      <DropdownMenuContent align="start" sideOffset={6} className="notebook-create-popover" aria-label="创建内容">
-        <DropdownMenuItem textValue="随手记" onSelect={() => navigate("/documents/quick-notes")}><StickyNote aria-hidden="true" size={16} className="notebook-create-quick-note" /><span>随手记</span></DropdownMenuItem>
-        <DropdownMenuItem textValue="文档" disabled={!tree.isSuccess} onSelect={() => { void createDocument(); }}><FilePlus2 aria-hidden="true" size={16} className="notebook-create-document" /><span>文档</span></DropdownMenuItem>
-        {releaseFeatures.boardCreation && <DropdownMenuItem textValue="画板" disabled={!tree.isSuccess} onSelect={() => { void createBoard(); }}><Shapes aria-hidden="true" size={16} className="notebook-create-board" /><span>画板</span></DropdownMenuItem>}
-        <DropdownMenuItem textValue="数据表" disabled={!tree.isSuccess} onSelect={() => { void createTable(); }}><Table2 aria-hidden="true" size={16} className="notebook-create-table" /><span>数据表</span></DropdownMenuItem>
+      <DropdownMenuTrigger asChild disabled={creating}><MenuButton appearance="unstyled" type="button" className="notebook-menu-create grid size-(--ob-control-height-sm) shrink-0 place-items-center rounded-ob-xl border border-ob-workspace-outline bg-ob-card text-ob-foreground" aria-label="创建内容" title="创建内容"><Plus aria-hidden="true" size={18} /></MenuButton></DropdownMenuTrigger>
+      <DropdownMenuContent align="start" sideOffset={6} className="notebook-create-popover w-45 p-1 [&_[role=menuitem]]:min-h-(--ob-control-height-lg) [&_[role=menuitem]]:gap-3 [&_svg]:size-4.5 [&_svg]:shrink-0" aria-label="创建内容">
+        <DropdownMenuItem textValue="随手记" onSelect={() => navigate("/documents/quick-notes")}><StickyNote aria-hidden="true" size={16} className="notebook-create-quick-note text-(--ob-icon-mint)" /><span>随手记</span></DropdownMenuItem>
+        <DropdownMenuItem textValue="文档" disabled={!tree.isSuccess} onSelect={() => { void createDocument(); }}><FilePlus2 aria-hidden="true" size={16} className="notebook-create-document text-(--ob-icon-blue)" /><span>文档</span></DropdownMenuItem>
+        {releaseFeatures.boardCreation && <DropdownMenuItem textValue="画板" disabled={!tree.isSuccess} onSelect={() => { void createBoard(); }}><Shapes aria-hidden="true" size={16} className="notebook-create-board text-(--ob-icon-violet)" /><span>画板</span></DropdownMenuItem>}
+        <DropdownMenuItem textValue="数据表" disabled={!tree.isSuccess} onSelect={() => { void createTable(); }}><Table2 aria-hidden="true" size={16} className="notebook-create-table text-(--ob-icon-cyan)" /><span>数据表</span></DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   ) : null;
@@ -154,21 +155,21 @@ export function NotebookSectionMenu({
   const workspace = useStore(authStore, (state) => state.workspace);
   const { isPinned, togglePin } = usePinnedNotebooks(workspace?.id);
   return (
-    <nav className="workspace-function-menu" aria-label="笔记本目录">
-      <div className="notebook-home-row">
+    <nav className={workspaceFunctionMenuClassName} aria-label="笔记本目录">
+      <div className="notebook-home-row flex items-center gap-1">
         <NavLink
           end
           to={`/collections/${notebookId}`}
           aria-label="笔记本首页"
           className={({ isActive }) =>
-            `workspace-function-link notebook-home-link${isActive ? " is-active" : ""}`
+            cn(workspaceFunctionLinkClassName({ isActive }), "notebook-home-link mt-0 flex-1")
           }
         >
           <Home aria-hidden="true" size={16} />
           <span>首页</span>
         </NavLink>
         {releaseFeatures.documentFavorites && <DropdownMenu>
-          <DropdownMenuTrigger asChild><MenuButton appearance="unstyled" type="button" className="notebook-home-more" aria-label="笔记本快捷操作" title="笔记本快捷操作"><MoreHorizontal aria-hidden="true" size={18} /></MenuButton></DropdownMenuTrigger>
+          <DropdownMenuTrigger asChild><MenuButton appearance="unstyled" type="button" className="notebook-home-more grid size-(--ob-control-height-sm) shrink-0 place-items-center text-(--ob-page-muted-foreground)" aria-label="笔记本快捷操作" title="笔记本快捷操作"><MoreHorizontal aria-hidden="true" size={18} /></MenuButton></DropdownMenuTrigger>
           <DropdownMenuContent align="end" sideOffset={4} aria-label="笔记本快捷操作">
             <DropdownMenuItem textValue={isPinned(notebookId) ? "取消常用" : "设为常用"} onSelect={() => togglePin(notebookId)}><Pin aria-hidden="true" size={16} /><span>{isPinned(notebookId) ? "取消常用" : "设为常用"}</span></DropdownMenuItem>
           </DropdownMenuContent>

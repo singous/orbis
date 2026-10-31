@@ -52,7 +52,7 @@ export function PublicSharePage() {
           <BookOpen size={19} aria-hidden="true" />
           {manifest.data.title}
         </Link>
-        <span className="orbis-attribution"><OrbisLogo size={20} />Orbis · 实时文档分享</span>
+        <span className="inline-flex items-center gap-1.5"><OrbisLogo size={20} />Orbis · 实时文档分享</span>
         <ActionButton
           aria-label="刷新目录与正文"
           onClick={() => {

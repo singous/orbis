@@ -1,3 +1,7 @@
+import { iconActionVariants } from "../../../shared/ui/control-styles";
+import { documentActionsMenuClassName } from "@/features/documents/document-layout";
+import { pageColumnClassName } from "../../../shared/ui/PageContainer";
+import { documentBreadcrumbClassName, documentHeaderActionsClassName, documentSaveStateClassName, documentHeaderDividerClassName, documentCommentTriggerClassName, documentSaveSpinnerClassName, editorCanvasClassName, editorTitleClassName } from "./document-chrome";
 import { releaseFeatures } from "../../../shared/release-features";
 import { ConfirmAction } from "../../../shared/ui/ConfirmAction";
 import { markErrorHandled, reportError, reportRequestError } from "../../../shared/api/request-feedback";
@@ -767,7 +771,7 @@ export function LegacyDocumentEditorPage() {
   }
 
   const breadcrumb = (
-    <nav className="document-breadcrumb" aria-label="文档位置">
+    <nav className={documentBreadcrumbClassName} aria-label="文档位置">
       <Link to={noteQuery.data ? `/collections/${noteQuery.data.notebook_id}` : "/documents"} title={notebook?.title ?? "笔记本"}>
         <BookOpen aria-hidden="true" size={15} /><span>{notebook?.title ?? "笔记本"}</span>
       </Link>
@@ -776,22 +780,22 @@ export function LegacyDocumentEditorPage() {
     </nav>
   );
   const toolbar = (
-    <div className="document-header-actions">{(retainedDraft) || (checkpoints.candidates.length) || (checkpoints.status.status === "failed" && autosaveState !== "saved") || (draft && saveState === "conflict") || (saveState === "error" && !editorError) ? <DraftActions>{retainedDraft ? <section><h3 className="mb-2 text-sm font-semibold">保留的草稿</h3><div className="mt-3 flex flex-wrap gap-2"><Button onClick={()=>{
+    <div className={documentHeaderActionsClassName}>{(retainedDraft) || (checkpoints.candidates.length) || (checkpoints.status.status === "failed" && autosaveState !== "saved") || (draft && saveState === "conflict") || (saveState === "error" && !editorError) ? <DraftActions>{retainedDraft ? <section><h3 className="mb-2 text-sm font-semibold">保留的草稿</h3><div className="mt-3 flex flex-wrap gap-2"><Button onClick={()=>{
         const url=URL.createObjectURL(new Blob([JSON.stringify(retainedDraft.record)],{type:"application/json"}));const link=document.createElement("a");link.href=url;link.download=`orbis-local-draft-${noteId}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),0);
       }}>下载本机草稿</Button></div></section> : null}
 {checkpoints.candidates.length ? <section><h3 className="mb-2 text-sm font-semibold">其他窗口的草稿</h3><div className="mt-3 flex flex-wrap gap-2">{checkpoints.candidates.map(record => <Button key={record.scopeKey} size="sm" variant="secondary" disabled={autosaveState !== "saved"} onClick={() => void recoverLocalDraft(record)}>恢复“{record.current.title || "未命名文档"}”（基础版本 {record.saved.version}）</Button>)}<Button size="sm" variant="ghost" onClick={checkpoints.dismissCandidates}>稍后处理</Button></div></section> : null}
 {checkpoints.status.status === "failed" && autosaveState !== "saved" ? <section><h3 className="mb-2 text-sm font-semibold">保存副本</h3><Button variant="ghost" onClick={() => void checkpoints.controller.flush().catch(() => {})}>重试保存到本机</Button></section> : null}
 {draft && saveState === "conflict" ? <section><h3 className="mb-2 text-sm font-semibold">当前修改</h3><div className="mt-3 flex flex-wrap gap-2"><Button variant="secondary" icon={<Download aria-hidden="true" size={14} />} onClick={() => void loadCompleteContent().then(() => navigator.clipboard?.writeText(v2ToMarkdown((coordinatorRef.current?.current ?? draft).blocks.blocks))).catch(() => {})}>复制本地 Markdown</Button><ConfirmAction title="载入服务端版本" description="当前未保存的正文和标题将被服务端版本替换。需要保留时，请先复制本地 Markdown。" confirmLabel="替换本地修改" disabled={restoring || archiving} onConfirm={reloadServer}><Button variant="secondary" icon={<RotateCcw aria-hidden="true" size={14} />}>载入服务端版本</Button></ConfirmAction></div></section> : null}
 {saveState === "error" && !editorError ? <section><h3 className="mb-2 text-sm font-semibold">保存修改</h3><div className="mt-3"><Button variant="secondary" icon={<RefreshCw aria-hidden="true" size={14} />} onClick={() => coordinatorRef.current?.retry()}>重试保存</Button></div></section> : null}</DraftActions> : null}
-      <span className={`document-save-state is-${saveState}`} role="status" aria-live="polite" aria-atomic="true">
-        <StateIcon aria-hidden="true" size={14} className={saveState === "saving" ? "document-save-spinner" : ""} /><span>{canEdit ? checkpointCopy ?? stateCopy.label : "只读"}</span>
+      <span className={`${documentSaveStateClassName} is-${saveState}`} role="status" aria-live="polite" aria-atomic="true">
+        <StateIcon aria-hidden="true" size={14} className={saveState === "saving" ? documentSaveSpinnerClassName : ""} /><span>{canEdit ? checkpointCopy ?? stateCopy.label : "只读"}</span>
       </span>
-      <span className="document-header-divider" aria-hidden="true" />
+      <span className={documentHeaderDividerClassName} aria-hidden="true" />
       {canEdit && noteQuery.data ? (releaseFeatures.documentSharing ? <ShareButton notebookId={noteQuery.data.notebook_id!} noteId={noteId} title={draft?.title || noteQuery.data.title} /> : null) : null}
-      {releaseFeatures.documentCollaboration && <ActionButton ref={collaborationTriggerRef} type="button" className="document-comment-trigger" aria-label="评论与历史" aria-haspopup="dialog" aria-expanded={collaborationOpen} disabled={!draft || archiving} onClick={() => { setCollaborationMounted(true); setCollaborationSession(value => value + 1); setCollaborationOpen(true); }}><MessageSquare aria-hidden="true" size={16} /><span>评论</span></ActionButton>}
+      {releaseFeatures.documentCollaboration && <ActionButton ref={collaborationTriggerRef} type="button" className={documentCommentTriggerClassName} aria-label="评论与历史" aria-haspopup="dialog" aria-expanded={collaborationOpen} disabled={!draft || archiving} onClick={() => { setCollaborationMounted(true); setCollaborationSession(value => value + 1); setCollaborationOpen(true); }}><MessageSquare aria-hidden="true" size={16} /><span>评论</span></ActionButton>}
       {canEdit ? <DropdownMenu>
-        <DropdownMenuTrigger asChild disabled={!draft || editorBusy}><MenuButton appearance="unstyled" type="button" className="icon-button" aria-label="更多文档操作"><MoreHorizontal aria-hidden="true" size={18} /></MenuButton></DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="document-actions-popover" sideOffset={6} aria-label="文档操作">
+        <DropdownMenuTrigger asChild disabled={!draft || editorBusy}><MenuButton appearance="unstyled" type="button" className={iconActionVariants()} aria-label="更多文档操作"><MoreHorizontal aria-hidden="true" size={18} /></MenuButton></DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className={documentActionsMenuClassName} sideOffset={6} aria-label="文档操作">
           <DropdownMenuItem textValue="归档文档" disabled={!draft || editorBusy} onSelect={() => { void handleArchive(); }}><Archive aria-hidden="true" size={16} /><span>归档文档</span></DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu> : null}
@@ -800,12 +804,12 @@ export function LegacyDocumentEditorPage() {
 
   return (
     <DocumentShell editorLayout breadcrumb={breadcrumb} toolbar={toolbar} notebookId={noteQuery.data?.notebook_id} activeNoteId={noteId}>
-      {!draft || !noteQuery.data || hydratedNoteRef.current !== draftKey ? <div className="page-container"><LoadingState label="正在打开文档…" variant="editor" /></div> : (
+      {!draft || !noteQuery.data || hydratedNoteRef.current !== draftKey ? <div className={pageColumnClassName}><LoadingState label="正在打开文档…" variant="editor" /></div> : (
         <EditorLayout outlineStore={outlineStore} loadOutlineContent={loadCompleteContent}>
-          <article className="editor-canvas">
+          <article className={editorCanvasClassName}>
             <Input
               aria-label="文档标题"
-              className="orbis-embedded-input editor-title"
+              className={editorTitleClassName}
               placeholder="无标题"
               value={draft.title}
               readOnly={!canEdit || editorBusy}

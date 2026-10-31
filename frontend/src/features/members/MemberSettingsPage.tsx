@@ -1,3 +1,4 @@
+import { SectionHeading } from "../../shared/ui/SectionHeading";
 import { reportError } from "../../shared/api/request-feedback";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { Avatar } from "@orbis/ui/avatar";
@@ -101,9 +102,9 @@ export function MemberSettingsPage() {
       <PageContainer title="成员与权限" description="管理工作空间中的协作者与访问权限。">
 
         {canManage ? (
-          <section className="workbench-member-invite">
+          <section className="workbench-member-invite mb-[34px] max-w-[860px] border-b border-ob-workspace-divider pb-7">
             <div className="mb-5 flex items-center gap-3">
-              <div className="document-icon"><UserPlus aria-hidden="true" size={18} /></div>
+              <div className="grid size-[38px] place-items-center rounded-ob-xl bg-(--ob-item-hover-bg) text-ob-foreground"><UserPlus aria-hidden="true" size={18} /></div>
               <div><h2 className="text-base font-semibold">邀请成员</h2><p className="mt-1 text-xs text-ob-muted-foreground">{mailQuery.data?.enabled ? "邀请链接会通过邮件发送。" : "当前邮件服务未启用，邀请发送不可用。"}</p></div>
             </div>
             <form className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_150px_auto] sm:items-end" onSubmit={submitInvite}>
@@ -115,13 +116,13 @@ export function MemberSettingsPage() {
         ) : null}
 
         <section className="mb-10">
-          <div className="section-heading"><div><h2>工作空间成员</h2><p>{membersQuery.data?.pagination.total ?? 0} 位活跃成员</p></div></div>
+          <SectionHeading title="工作空间成员" description={`${membersQuery.data?.pagination.total ?? 0} 位活跃成员`} />
           {membersQuery.isLoading ? <LoadingState label="正在加载成员…" /> : null}
-          <div className="workbench-member-list">
+          <div className="workbench-member-list overflow-hidden">
             {membersQuery.data?.items.map((member) => {
               const actorCanChange = canManage && (workspace?.role === "owner" || member.role !== "admin");
               return (
-                <div key={member.user_id} className="workbench-member-row">
+                <div key={member.user_id} className="workbench-member-row flex flex-wrap items-center gap-4 border-b border-ob-workspace-divider px-1 py-[19px]">
                   <Avatar size="sm" className="size-9" fallback={(member.display_name || member.email).slice(0, 1).toUpperCase()} />
                   <div className="min-w-[180px] flex-1"><div className="text-sm font-semibold">{member.display_name || member.email}</div><div className="mt-1 text-xs text-ob-muted-foreground">{member.email}</div></div>
                   <div className="flex items-center gap-2">
@@ -140,10 +141,10 @@ export function MemberSettingsPage() {
         {workspace?.role === "owner" && ownershipQuery.data?.status === "pending" ? <section aria-label="待确认所有权转让"><h2>所有权转让待确认</h2><p>当前所有者通过邮件确认后，目标管理员成为所有者。</p><dl><dt>确认邮件</dt><dd>{ownershipQuery.data.email_sent ? "已发送" : "未发送"}</dd></dl><Button disabled={resendTransfer.isPending} onClick={() => resendTransfer.mutate(ownershipQuery.data!.id)}>重发所有权确认邮件</Button><Button disabled={cancelTransfer.isPending} onClick={() => cancelTransfer.mutate(ownershipQuery.data!.id)}>取消所有权转让</Button></section> : null}
         {canManage && (pendingInvitations.length || (invitesQuery.data?.pagination.total ?? 0) > 0) ? (
           <section>
-            <div className="section-heading"><div><h2>待处理邀请</h2><p>过期后需要重新发送</p></div></div>
-            <div className="workbench-member-list">
+            <SectionHeading title="待处理邀请" description="过期后需要重新发送" />
+            <div className="workbench-member-list overflow-hidden">
               {pendingInvitations.map((item) => (
-                <div key={item.id} className="workbench-member-row">
+                <div key={item.id} className="workbench-member-row flex flex-wrap items-center gap-4 border-b border-ob-workspace-divider px-1 py-[19px]">
                   <Users aria-hidden="true" size={18} className="text-ob-muted-foreground" />
                   <div className="min-w-[200px] flex-1"><div className="text-sm font-semibold">{item.email}</div><div className="mt-1 text-xs text-ob-muted-foreground">{item.role} · {item.email_sent ? "已发送" : "发送失败"}</div></div>
                   <Button type="button" variant="ghost" size="sm" className="size-8 p-0" aria-label={`重发 ${item.email}`} onClick={() => resendMutation.mutate(item.id)}><RefreshCw aria-hidden="true" size={14} /></Button>

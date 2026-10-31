@@ -4,7 +4,7 @@ import { ImagePlus, RotateCcw, Check, LoaderCircle } from "../../shared/ui/icons
 import { type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
 
 import { Button } from "../../shared/ui/Button";
-import { NotebookIcon } from "./NotebookIcon";
+import { NotebookIcon, NOTEBOOK_ICON_COLOR_CLASSES } from "./NotebookIcon";
 import type { UploadedNotebookIcon } from "./notebook-icon-api";
 import {
   DEFAULT_NOTEBOOK_ICON, NOTEBOOK_ICON_COLORS, NOTEBOOK_ICON_MIME_TYPES,
@@ -95,7 +95,7 @@ export function NotebookIconPicker({ value, onChange, uploadFile, onPendingChang
       if (color) chooseIcon({ type: "preset", name: selected.name, color: color.name });
     }}>
       {NOTEBOOK_ICON_COLORS.map(({ name, label }) => <RadioGroupItem key={name} value={name} aria-label={label} title={label} appearance="choice" className="notebook-icon-color-choice">
-        <span className={`notebook-icon-swatch notebook-icon--${name}`}>
+        <span className={`notebook-icon-swatch notebook-icon--${name} ${NOTEBOOK_ICON_COLOR_CLASSES[name]}`}>
           {value?.type !== "image" && selected.color === name ? <Check size={14} strokeWidth={2.5} aria-hidden="true" /> : null}
         </span>
       </RadioGroupItem>)}

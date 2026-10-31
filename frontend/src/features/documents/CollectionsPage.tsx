@@ -1,3 +1,7 @@
+import { iconActionVariants, textActionClassName } from "@/shared/ui/control-styles";
+import { emptyPanelClassName } from "../../shared/ui/surface-styles";
+import { cn } from "@orbis/ui/cn";
+import { workbenchStyles } from "@/shared/ui/workbench-styles";
 import { releaseFeatures } from "../../shared/release-features";
 import { reportError } from "../../shared/api/request-feedback";
 import { LoadingState } from "../../shared/ui/LoadingState";
@@ -12,13 +16,12 @@ import {
   Plus,
 } from "../../shared/ui/icons";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
 import { z } from "zod";
 
 import type { DocumentGroup, Notebook } from "../../shared/api/schemas";
 import { authStore } from "../../shared/auth/auth-store";
-import { formatDate } from "../../shared/format/date";
 import { Button } from "../../shared/ui/Button";
 import { PageContainer } from "../../shared/ui/PageContainer";
 import { DocumentShell } from "./DocumentShell";
@@ -26,7 +29,7 @@ import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { usePinnedNotebooks } from "./pinned-notebooks";
 import { useCollapsedGroups } from "./collapsed-groups";
 import { NotebookDialog } from "./NotebookDialog";
-import { NotebookIcon } from "./NotebookIcon";
+import { NotebookCard } from "./NotebookCard";
 import type { NotebookIconValue } from "./notebook-icons";
 import { ResourceDialog } from "./ResourceDialog";
 import { SearchGroupTarget } from "../search/SearchGroupTarget";
@@ -178,15 +181,15 @@ export function CollectionsPage() {
         }
       >
 
-        <section className="workbench-section" aria-label="笔记本">
+        <section className={workbenchStyles.section} aria-label="笔记本">
           {targetGroupId && !groupsQuery.isLoading && !groups.some(group => group.id === targetGroupId) ? <SearchGroupTarget id={targetGroupId} canCreate={canEdit} onCreate={() => setDialog({ kind: "notebook", groupId: targetGroupId })} /> : null}
           {groupsQuery.isLoading || notebooksQuery.isLoading ? (
             <LoadingState label="正在加载笔记本…" variant="cards" />
           ) : null}
           {!groupsQuery.isLoading && !notebooks.length ? (
-            <div className="empty-panel">
+            <div className={emptyPanelClassName}>
               <BookOpen aria-hidden="true" className="mx-auto mb-3" size={24} />
-              <div className="font-semibold text-[var(--text-primary)]">还没有笔记本</div>
+              <div className="font-semibold text-ob-foreground">还没有笔记本</div>
               <p className="mt-1">先在默认分组下创建一个笔记本。</p>
               {canEdit && groups[0] ? (
                 <Button
@@ -201,7 +204,7 @@ export function CollectionsPage() {
               ) : null}
             </div>
           ) : null}
-          <div className="workbench-collection-groups">
+          <div className="workbench-collection-groups flex flex-col gap-9">
             {groups.map((group) => {
               const groupNotebooks = notebooks.filter(
                 (notebook) => notebook.group_id === group.id,
@@ -210,21 +213,21 @@ export function CollectionsPage() {
               const contentId = `notebook-group-${group.id}`;
               return (
                 <div key={group.id} id={`group-${group.id}`} tabIndex={targetGroupId === group.id ? -1 : undefined} className={`workbench-collection-group${collapsed ? " is-collapsed" : ""}`}>
-                  <div className="workbench-section-heading">
-                    <h3 className="workbench-group-heading"><ActionButton type="button" className="workbench-group-toggle" aria-expanded={!collapsed} aria-controls={contentId} aria-label={`${collapsed ? "展开" : "收起"}分组 ${group.name}`} onClick={() => toggleGroup(group.id)}>
-                      <ChevronDown size={16} aria-hidden="true" className="workbench-group-chevron" />
-                      <span className="workbench-group-name" title={group.name}>{group.name}</span>
+                  <div className={cn(workbenchStyles.sectionHeading, collapsed && "mb-0")}>
+                    <h2 className={`${workbenchStyles.sectionTitle} workbench-group-heading min-w-0 flex-1`}><ActionButton type="button" className="workbench-group-toggle group/workbench-group flex min-h-(--ob-control-height-md) w-full min-w-0 flex-1 items-center gap-2 text-start [&>span:not(.workbench-group-name)]:shrink-0" aria-expanded={!collapsed} aria-controls={contentId} aria-label={`${collapsed ? "展开" : "收起"}分组 ${group.name}${group.is_default ? " 默认" : ""} ${groupNotebooks.length}`} onClick={() => toggleGroup(group.id)}>
+                      <ChevronDown size={16} aria-hidden="true" className="workbench-group-chevron shrink-0 text-(--ob-page-muted-foreground) transition-transform duration-(--ob-motion-feedback) group-aria-[expanded=false]/workbench-group:-rotate-90 motion-reduce:transition-none" />
+                      <span className="workbench-group-name min-w-0 flex-[0_1_auto] truncate group-hover/workbench-group:text-ob-foreground" title={group.name}>{group.name}</span>
                       {group.is_default ? (
-                        <span className="workbench-group-default">默认</span>
+                        <span className={`workbench-group-default ${workbenchStyles.sectionCount}`}>默认</span>
                       ) : null}
-                      <span className="text-xs text-[var(--muted-light)]">
+                      <span className="text-xs text-ob-muted-foreground">
                         {groupNotebooks.length}
                       </span>
-                    </ActionButton></h3>
+                    </ActionButton></h2>
                     {canEdit ? (
                       <div className="flex items-center gap-1">
                         <ActionButton
-                          className="text-action"
+                          className={textActionClassName}
                           type="button"
                           aria-label="+ 笔记本"
                           onClick={() =>
@@ -234,7 +237,7 @@ export function CollectionsPage() {
                           <Plus aria-hidden="true" size={16} />笔记本
                         </ActionButton>
                         <ActionButton
-                          className="icon-button"
+                          className={iconActionVariants()}
                           type="button"
                           aria-label={`重命名 ${group.name}`}
                           onClick={() =>
@@ -245,7 +248,7 @@ export function CollectionsPage() {
                         </ActionButton>
                         {!group.is_default ? (
                           <ActionButton
-                            className="icon-button danger-hover"
+                            className={iconActionVariants({ tone: "danger" })}
                             type="button"
                             aria-label={`归档 ${group.name}`}
                             onClick={() =>
@@ -264,20 +267,12 @@ export function CollectionsPage() {
                   </div>
                   <div id={contentId} hidden={collapsed}>
                   {groupNotebooks.length ? (
-                    <div className="workbench-resource-grid">
+                    <div className={workbenchStyles.resourceGrid}>
                       {groupNotebooks.map((notebook) => (
-                        <article key={notebook.id} className="workbench-collection-card">
-                          <Link to={`/collections/${notebook.id}`} className="workbench-collection-link">
-                            <NotebookIcon icon={notebook.icon} />
-                            <span className="workbench-resource-copy">
-                              <strong>{notebook.title}</strong>
-                              <span>{notebookCounts.get(notebook.id) ?? 0} 篇文档 · 更新于 {formatDate(notebook.updated_at_ms)}</span>
-                            </span>
-                          </Link>
-                          <div className="workbench-collection-actions">
+                        <NotebookCard key={notebook.id} notebook={notebook} variant="collection" noteCount={notebookCounts.get(notebook.id) ?? 0} actions={<>
                             {releaseFeatures.documentFavorites && <ActionButton
                               type="button"
-                              className={`icon-button${isPinned(notebook.id) ? " is-pinned" : ""}`}
+                              className={cn(iconActionVariants(), isPinned(notebook.id) && "is-pinned")}
                               aria-label={isPinned(notebook.id) ? `取消常用 ${notebook.title}` : `设为常用 ${notebook.title}`}
                               aria-pressed={isPinned(notebook.id)}
                               onClick={() => togglePin(notebook.id)}
@@ -285,18 +280,16 @@ export function CollectionsPage() {
                               <Pin aria-hidden="true" size={14} />
                             </ActionButton>}
                             {canEdit ? <>
-                              <ActionButton type="button" className="icon-button" aria-label={`编辑笔记本 ${notebook.title}`} title="编辑名称和图标" onClick={() => setDialog({ kind: "edit-notebook", resource: notebook })}>
+                              <ActionButton type="button" className={iconActionVariants()} aria-label={`编辑笔记本 ${notebook.title}`} title="编辑名称和图标" onClick={() => setDialog({ kind: "edit-notebook", resource: notebook })}>
                                 <MoreHorizontal aria-hidden="true" size={16} />
                               </ActionButton>
-                              <ActionButton type="button" className="icon-button danger-hover" aria-label={`归档 ${notebook.title}`} onClick={() => archiveNotebook.mutate({ id: notebook.id, expected_directory_version:notebook.directory_version, archived: true })}>
+                              <ActionButton type="button" className={iconActionVariants({ tone: "danger" })} aria-label={`归档 ${notebook.title}`} onClick={() => archiveNotebook.mutate({ id: notebook.id, expected_directory_version:notebook.directory_version, archived: true })}>
                                 <Archive aria-hidden="true" size={14} />
                               </ActionButton>
                             </> : null}
-                          </div>
-                          {canEdit && (notebookCounts.get(notebook.id) ?? 0) === 0 ? (
-                            <div className="workbench-collection-footer"><Button variant="ghost" className="workbench-collection-create" icon={<Plus aria-hidden="true" size={16} />} onClick={() => createFirstDocument(notebook)}>新建文档</Button></div>
-                          ) : null}
-                        </article>
+                        </>} footer={canEdit && (notebookCounts.get(notebook.id) ?? 0) === 0 ? (
+                            <Button variant="ghost" className="workbench-collection-create ms-[54px] enabled:hover:text-ob-foreground" icon={<Plus aria-hidden="true" size={16} />} onClick={() => createFirstDocument(notebook)}>新建文档</Button>
+                          ) : null} />
                       ))}
                     </div>
                   ) : (
@@ -306,7 +299,7 @@ export function CollectionsPage() {
                       onClick={() =>
                         setDialog({ kind: "notebook", groupId: group.id })
                       }
-                      className="workbench-empty-group"
+                      className="workbench-empty-group w-full border border-dashed border-ob-workspace-outline p-6 text-start text-sm leading-5 text-(--ob-page-muted-foreground) enabled:hover:border-ob-workspace-hover-outline enabled:hover:bg-(--ob-item-hover-bg) disabled:cursor-default"
                     >
                       此分组暂无笔记本{canEdit ? "，点击创建" : ""}
                     </ActionButton>

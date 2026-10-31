@@ -19,3 +19,53 @@
   --color-ob-auth-input-focus-border: var(--ob-auth-input-focus-border);
   --color-ob-auth-input-focus-shadow: var(--ob-auth-input-focus-shadow);
 }
+
+/* 正文代码与引用的既有默认底色；阅读器主题仍可通过 --reading-* 覆盖。 */
+.document-prose {
+  --ob-content-inline-code-bg: #f5f8f6;
+  --ob-content-code-block-bg: #f7f9f8;
+  --ob-content-plain-background: var(--ob-gray-0);
+}
+
+[data-ui="site-management"] {
+  --ob-site-preview-active-shadow: 0 1px 3px rgb(29 30 34 / 7%);
+}
+
+/* 导航与内容类型图标沿用现有浅/深主题色板。 */
+:root, .light, .default, [data-theme="light"], [data-theme="default"] {
+  --ob-icon-cyan: #0891b2;
+  --ob-icon-mint: #059669;
+  --ob-icon-orange: #ea580c;
+  --ob-icon-blue: #2563eb;
+  --ob-icon-indigo: #4f46e5;
+  --ob-icon-teal: #0d9488;
+  --ob-icon-violet: #7c3aed;
+  --ob-icon-rose: #db2777;
+  --ob-icon-amber: #b97705;
+  --ob-icon-slate: #64748b;
+}
+.dark, [data-theme="dark"] {
+  --ob-icon-cyan: #67e8f9;
+  --ob-icon-mint: #6ee7b7;
+  --ob-icon-orange: #fdba74;
+  --ob-icon-blue: #93b4ff;
+  --ob-icon-indigo: #b4b4ff;
+  --ob-icon-teal: #5eead4;
+  --ob-icon-violet: #c4b5fd;
+  --ob-icon-rose: #f9a8d4;
+  --ob-icon-amber: #fcd34d;
+  --ob-icon-slate: #a8b7cc;
+}
+
+:root, .light, .default, [data-theme="light"], [data-theme="default"], .dark, [data-theme="dark"] {
+  --orbis-icon-cyan: var(--ob-icon-cyan);
+  --orbis-icon-mint: var(--ob-icon-mint);
+  --orbis-icon-orange: var(--ob-icon-orange);
+  --orbis-icon-blue: var(--ob-icon-blue);
+  --orbis-icon-indigo: var(--ob-icon-indigo);
+  --orbis-icon-teal: var(--ob-icon-teal);
+  --orbis-icon-violet: var(--ob-icon-violet);
+  --orbis-icon-rose: var(--ob-icon-rose);
+  --orbis-icon-amber: var(--ob-icon-amber);
+  --orbis-icon-slate: var(--ob-icon-slate);
+}

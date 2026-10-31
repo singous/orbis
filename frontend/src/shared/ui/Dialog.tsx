@@ -1,5 +1,5 @@
 import { Dialog as PrimitiveDialog, DialogTrigger as PrimitiveTrigger, DialogClose as PrimitiveClose, DialogPopup, DialogTitle, DialogFooter as PrimitiveFooter } from "@orbis/ui/dialog";
-import { Children, isValidElement, useId, type ReactElement, type ReactNode } from "react";
+import { Children, isValidElement, useId, type ComponentProps, type ReactElement, type ReactNode } from "react";
 import { cn } from "./cn";
 import { X } from "./icons";
 import { Button } from "@orbis/ui/button";
@@ -17,9 +17,9 @@ export function Dialog({ open, defaultOpen, onOpenChange, children }: DialogProp
 }
 export function DialogTrigger({ children }: { asChild?: boolean; children: ReactElement }) { return <PrimitiveTrigger asChild>{children}</PrimitiveTrigger>; }
 export function DialogClose({ children }: { asChild?: boolean; children: ReactElement }) { return <PrimitiveClose asChild>{children}</PrimitiveClose>; }
-export function DialogContent({ title, description, className, children, hideCloseButton = false }: { title: string; description?: string; className?: string; children?: ReactNode; hideCloseButton?: boolean }) {
+export function DialogContent({ title, description, className, children, hideCloseButton = false, finalFocus }: { title: string; description?: string; className?: string; children?: ReactNode; hideCloseButton?: boolean; finalFocus?: ComponentProps<typeof DialogPopup>["finalFocus"] }) {
   const descriptionId = useId();
-  return <DialogPopup aria-describedby={description ? descriptionId : undefined} className={cn("max-w-112 max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain p-[clamp(20px,4vw,28px)]", className)}>
+  return <DialogPopup aria-describedby={description ? descriptionId : undefined} finalFocus={finalFocus} className={cn("max-w-112 max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain p-[clamp(20px,4vw,28px)]", className)}>
     <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2">
       <DialogTitle className="min-w-0 wrap-anywhere font-semibold tracking-tight">{title}</DialogTitle>
       {hideCloseButton ? null : <PrimitiveClose asChild><Button appearance="unstyled" aria-label="关闭" className="col-start-2 row-start-1 grid size-8 place-items-center rounded-ob-sm text-ob-muted-foreground hover:bg-ob-accent hover:text-ob-foreground"><X aria-hidden="true" size={14} /></Button></PrimitiveClose>}

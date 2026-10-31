@@ -1,0 +1,1 @@
+export const emptyPanelClassName = "empty-panel rounded-[14px] border border-ob-border bg-ob-card px-[30px] py-[34px] text-center text-sm text-(--ob-page-muted-foreground) in-[.workspace-shell]:border-ob-workspace-outline";

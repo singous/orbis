@@ -12,8 +12,8 @@ export function EditorToolbarFrame({ children }: { children: ReactNode }) {
   const [host, setHost] = useState<HTMLDivElement | null>(null);
   return (
     <EditorToolbarHostContext.Provider value={host}>
-      <div className="document-format-host" ref={setHost} />
-      <div className="document-scroll-region" data-document-scroll="true">{children}</div>
+      <div className="document-format-host relative z-[11] min-w-0 flex-none border-b border-ob-workspace-divider bg-ob-card empty:hidden" ref={setHost} />
+      <div className="document-scroll-region min-h-0 min-w-0 flex-1 overflow-auto overscroll-contain [scrollbar-gutter:stable] scroll-py-6" data-document-scroll="true">{children}</div>
     </EditorToolbarHostContext.Provider>
   );
 }

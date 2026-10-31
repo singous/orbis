@@ -1,3 +1,5 @@
+import { cn } from "@orbis/ui/cn";
+import { railControlClassName } from "./workspace-chrome";
 import { BookOpen, FilePlus2, Plus } from "../../shared/ui/icons";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -21,7 +23,7 @@ export function RailCreateMenu() {
   const [open, setOpen] = useState(false);
   const [notebookDialogOpen, setNotebookDialogOpen] = useState(false);
   return <>
-    <ActionButton type="button" className="rail-create-trigger" aria-label="新建资产" aria-haspopup="dialog" aria-expanded={open || notebookDialogOpen} onClick={() => setOpen(true)}><Plus size={18} aria-hidden="true" /></ActionButton>
+    <ActionButton type="button" className={cn(railControlClassName, "rail-create-trigger border border-ob-workspace-hover-outline shadow-ob-card")} aria-label="新建资产" aria-haspopup="dialog" aria-expanded={open || notebookDialogOpen} onClick={() => setOpen(true)}><Plus size={18} aria-hidden="true" /></ActionButton>
     {open || notebookDialogOpen ? <RailCreateActions open={open} onOpenChange={setOpen} notebookDialogOpen={notebookDialogOpen} onNotebookDialogChange={setNotebookDialogOpen} /> : null}
   </>;
 }

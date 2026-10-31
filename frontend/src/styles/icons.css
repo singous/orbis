@@ -1,28 +1,4 @@
 /* Semantic color and consistent glyph geometry for Orbis application icons. */
-:root, .light, .default, [data-theme="light"], [data-theme="default"] {
-  --orbis-icon-cyan: #0891b2;
-  --orbis-icon-mint: #059669;
-  --orbis-icon-orange: #ea580c;
-  --orbis-icon-blue: #2563eb;
-  --orbis-icon-indigo: #4f46e5;
-  --orbis-icon-teal: #0d9488;
-  --orbis-icon-violet: #7c3aed;
-  --orbis-icon-rose: #db2777;
-  --orbis-icon-amber: #b97705;
-  --orbis-icon-slate: #64748b;
-}
-.dark, [data-theme="dark"] {
-  --orbis-icon-cyan: #67e8f9;
-  --orbis-icon-mint: #6ee7b7;
-  --orbis-icon-orange: #fdba74;
-  --orbis-icon-blue: #93b4ff;
-  --orbis-icon-indigo: #b4b4ff;
-  --orbis-icon-teal: #5eead4;
-  --orbis-icon-violet: #c4b5fd;
-  --orbis-icon-rose: #f9a8d4;
-  --orbis-icon-amber: #fcd34d;
-  --orbis-icon-slate: #a8b7cc;
-}
 /* Color is opt-in for destination accents; controls inherit their container. */
 .orbis-icon { display: inline-block; flex-shrink: 0; vertical-align: middle; color: currentColor; pointer-events: none; }
 .icon-accent > .orbis-icon { color: var(--orbis-icon-ink, currentColor); }
@@ -43,7 +19,6 @@
 .icon-accent:has(> .orbis-icon[data-icon-tone="cyan"]) { --orbis-icon-ink: var(--orbis-icon-cyan); }
 
 /* Selected navigation swaps silhouettes; other icon contexts stay outlined. */
-.rail-action { border-radius: var(--radius-3xl); }
 .orbis-icon-solid { display: none; }
 :is(.rail-action, .workspace-function-link).is-active > .orbis-icon:has(> .orbis-icon-solid) > :not(.orbis-icon-solid) { display: none; }
 :is(.rail-action, .workspace-function-link).is-active > .orbis-icon > .orbis-icon-solid { display: block; }

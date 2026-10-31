@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { analyzeUI, newFindings, isProduction, findingCounts, applyColorDataAllowlist } from "./ui-architecture.mjs";
+import { analyzeUI, newFindings, isProduction, findingCounts, applyColorDataAllowlist, applyDomainStylesAllowlist } from "./ui-architecture.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const sources = new Map();
@@ -16,7 +16,8 @@ collect("src");
 collect("packages/ui/src");
 const manifest = JSON.parse(readFileSync(path.join(root, "packages/ui/package.json"), "utf8"));
 const colorData = JSON.parse(readFileSync(path.join(root, "ui-color-data-allowlist.json"), "utf8"));
-const findings = applyColorDataAllowlist(analyzeUI(sources, manifest.exports), colorData.entries);
+const domainStyles = JSON.parse(readFileSync(path.join(root, "ui-domain-styles.json"), "utf8"));
+const findings = applyDomainStylesAllowlist(applyColorDataAllowlist(analyzeUI(sources, manifest.exports), colorData.entries), domainStyles.entries, sources);
 const baseline = JSON.parse(readFileSync(path.join(root, "ui-migration-baseline.json"), "utf8"));
 if (process.argv.includes("--prune")) {
   const current = findingCounts(findings);

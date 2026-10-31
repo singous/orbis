@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { analyzeUI, findingCounts, newFindings, applyColorDataAllowlist } from "../../scripts/ui-architecture.mjs";
+import { analyzeUI, findingCounts, newFindings, applyColorDataAllowlist, applyDomainStylesAllowlist } from "../../scripts/ui-architecture.mjs";
 
 const inspect = (file, text) => analyzeUI(new Map([[file, text]]), {});
 test("detects primitive and internal imports through static, lazy, type and re-export paths", () => {
@@ -49,4 +49,15 @@ test("CSS HeroUI imports and direct color-picker dependencies cannot bypass the 
   assert.deepEqual(inspect("src/styles/index.css", '/* @import "@heroui/styles"; */'), []);
   assert.equal(inspect("src/features/boards/Panel.tsx", 'import { HexColorPicker } from "react-colorful";').filter(item => item.rule === "primitive-boundary").length, 1);
   assert.equal(inspect("packages/ui/src/color-picker/index.tsx", 'import { HexColorPicker } from "react-colorful";').filter(item => item.rule === "primitive-boundary").length, 0);
+});
+
+test("domain stylesheet imports need exact ownership and a documented content scope", () => {
+  const entries = [{ file: "src/main.tsx", detail: "./styles/document-prose.css", maxOccurrences: 1, scope: ".document-prose", reason: "Authored document typography" }];
+  const sources = new Map([["src/styles/document-prose.css", ".document-prose { color: inherit; } @media (max-width: 640px) { .document-prose p, .document-prose h2 { margin: 0; } }"]]);
+  const findings = inspect("src/main.tsx", 'import "./styles/document-prose.css"; import "./styles/document-prose.css"; import "./styles/page.css";');
+  assert.deepEqual(applyDomainStylesAllowlist(findings, entries, sources).map(item => item.detail), ["./styles/document-prose.css", "./styles/page.css"]);
+  assert.equal(applyDomainStylesAllowlist(inspect("src/features/home/Page.tsx", 'import "./styles/document-prose.css";'), entries, sources).length, 1);
+  assert.throws(() => applyDomainStylesAllowlist(findings, [{ ...entries[0], scope: undefined }], sources), /Invalid domain stylesheet/);
+  sources.set("src/styles/document-prose.css", ".document-prose h2, .site-page { margin: 0; } .document-prose-other { padding: 0; }");
+  assert.deepEqual(applyDomainStylesAllowlist([], entries, sources).map(item => item.detail), [".site-page", ".document-prose-other"]);
 });

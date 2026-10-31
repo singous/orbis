@@ -1,3 +1,5 @@
+import { documentActionsMenuClassName } from "@/features/documents/document-layout";
+import { documentBreadcrumbClassName, documentHeaderActionsClassName, documentHeaderDividerClassName, documentCommentTriggerClassName } from "../documents/editor/document-chrome";
 import { releaseFeatures } from "../../shared/release-features";
 import { reportError } from "../../shared/api/request-feedback";
 import { ConfirmAction } from "../../shared/ui/ConfirmAction";
@@ -296,7 +298,7 @@ export function SheetWorkspace({
     if (action === "filter") setSettings({ mode: "filter", anchor, fieldID: field.id });
   }
   const breadcrumb = (
-    <nav className="document-breadcrumb sheet-breadcrumb" aria-label="文档位置">
+    <nav className={`${documentBreadcrumbClassName} sheet-breadcrumb`} aria-label="文档位置">
       <Link to={`/collections/${sheet.collection_id}`}>
         <BookOpen size={15} />
         <span>{notebook.data?.title ?? "笔记本"}</span>
@@ -364,7 +366,7 @@ export function SheetWorkspace({
             </div>
           </section></DraftActions> : null;
   const actions = (
-    <div className="document-header-actions">{draftActions}
+    <div className={documentHeaderActionsClassName}>{draftActions}
       <span className="sheet-save-state">
         {c.busy ? (
           "保存中…"
@@ -377,7 +379,7 @@ export function SheetWorkspace({
           </>
         )}
       </span>
-      <span className="document-header-divider" aria-hidden="true" />
+      <span className={documentHeaderDividerClassName} aria-hidden="true" />
       {canEdit && (
         (releaseFeatures.documentSharing ? <ShareButton
           notebookId={sheet.collection_id}
@@ -386,7 +388,7 @@ export function SheetWorkspace({
         /> : null)
       )}
       {releaseFeatures.documentCollaboration && <ActionButton
-        className="document-comment-trigger"
+        className={documentCommentTriggerClassName}
         aria-label="评论"
         aria-expanded={commentsOpen}
         onClick={() => setCommentsOpen(!commentsOpen)}
@@ -398,7 +400,7 @@ export function SheetWorkspace({
         <DropdownMenuTrigger asChild><ActionButton aria-label="更多文档操作">
           <MoreHorizontal size={18} />
         </ActionButton></DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="document-actions-popover" aria-label="文档操作">
+        <DropdownMenuContent align="end" className={documentActionsMenuClassName} aria-label="文档操作">
           <DropdownMenuItem textValue="复制链接" onSelect={() => { void navigator.clipboard.writeText(location.href).catch(fail); }}>
             <Copy size={15} /><span>复制链接</span>
           </DropdownMenuItem>

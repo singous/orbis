@@ -45,7 +45,7 @@ export function DocumentShell({ children, loading = false, toolbar, breadcrumb, 
       toolbar={toolbar}
       sectionTitle={breadcrumb}
       contentLayout={editorLayout ? "document" : "page"}
-      contextPanel={contextPanel ? <div className="document-context-shell">{contextPanel}{isContextOpen ? <ActionButton type="button" className="document-context-close" aria-label="收起上下文面板" onClick={() => setContextOpen(false)}><PanelRightClose aria-hidden="true" size={16} /></ActionButton> : null}</div> : undefined}
+      contextPanel={contextPanel ? <div className="document-context-shell relative h-full">{contextPanel}{isContextOpen ? <ActionButton type="button" className="document-context-close absolute top-3.5 end-3 grid size-(--ob-control-height-sm) place-items-center border border-ob-border bg-ob-card text-(--ob-page-muted-foreground)" aria-label="收起上下文面板" onClick={() => setContextOpen(false)}><PanelRightClose aria-hidden="true" size={16} /></ActionButton> : null}</div> : undefined}
       contextOpen={isContextOpen}
       onOpenContext={isContextOpen ? undefined : () => { setContextOpen(true); onOpenContext?.(); }}
     >

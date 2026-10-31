@@ -1,3 +1,4 @@
+import { blockMenuItemClassName, editorControlItemVariants } from "../editor-control-styles";
 import { NAVIGATE_OUTLINE_EVENT } from "../outline-navigation";
 import { BOARD_REMOVAL_EVENT, confirmBoardRemoval, type BoardRemovalRequest } from "./board-removal";
 import { BoardDiscardDialog } from "../../../boards/BoardDiscardDialog";
@@ -335,7 +336,7 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
  const availability=(action:BlockAction)=>blockActionAvailability(source,ids,action,actionContext);
  const actionItem=(label:string,action:BlockAction,icon?:React.ReactNode)=>{
   const allowed=availability(action);
-  return <ActionButton key={label} role="menuitem" className={action.type==='delete'?'block-action-danger':''} disabled={!allowed.ok} title={allowed.message} onClick={()=>run(action)}>{icon}<span>{label}</span></ActionButton>;
+  return <ActionButton key={label} role="menuitem" className={editorControlItemVariants({ surface: 'block-menu', tone: action.type === 'delete' ? 'danger' : undefined })} disabled={!allowed.ok} title={allowed.message} onClick={()=>run(action)}>{icon}<span>{label}</span></ActionButton>;
  };
  const convertOptions=open?CONVERSIONS.filter(option=>{const [target,level]=option.value.split(':');return availability({type:'convert',target,level:level?Number(level):undefined}).ok;}):[];
  return <>
@@ -370,12 +371,12 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
    if(['ArrowDown','ArrowUp','Home','End'].includes(event.key)&&!(event.target instanceof Element&&event.target.closest('[role="listbox"]'))){const buttons=Array.from(menuRef.current?.querySelectorAll<HTMLButtonElement>('button[role="menuitem"]:not(:disabled)')??[]);if(!buttons.length)return;event.preventDefault();const current=buttons.indexOf(document.activeElement as HTMLButtonElement);const next=event.key==='Home'?0:event.key==='End'?buttons.length-1:(current+(event.key==='ArrowUp'?-1:1)+buttons.length)%buttons.length;buttons[next].focus();}
   }}>
    <div className="block-menu-heading">{ids.length>1?`已选择 ${ids.length} 个块`:LABELS[current.type]??current.type}<span>块操作</span></div>
-   {parentBlock?<ActionButton role="menuitem" onClick={()=>{setBlockSelection(editor,[parentBlock.id]);setActiveId(parentBlock.id);}}><ArrowUp size={15}/><span>选择父块：{LABELS[parentBlock.type]??parentBlock.type}</span></ActionButton>:null}
-   <ActionButton role="menuitem" onClick={()=>copySelected()}><Copy size={15}/><span>复制块</span><kbd aria-hidden="true">⌘ C</kbd></ActionButton>
-   {!readOnly?<ActionButton role="menuitem" onClick={()=>{editor.view.focus();void pasteBlocks(editor,ids).then(receive);setOpen(false);}}><Copy size={15}/><span>粘贴块</span><kbd aria-hidden="true">⌘ V</kbd></ActionButton>:null}
-   <ActionButton role="menuitem" disabled={!noteId} onClick={()=>void copyLink()}><Link2 size={15}/><span>复制块链接</span></ActionButton>
+   {parentBlock?<ActionButton className={blockMenuItemClassName} role="menuitem" onClick={()=>{setBlockSelection(editor,[parentBlock.id]);setActiveId(parentBlock.id);}}><ArrowUp size={15}/><span>选择父块：{LABELS[parentBlock.type]??parentBlock.type}</span></ActionButton>:null}
+   <ActionButton className={blockMenuItemClassName} role="menuitem" onClick={()=>copySelected()}><Copy size={15}/><span>复制块</span><kbd aria-hidden="true">⌘ C</kbd></ActionButton>
+   {!readOnly?<ActionButton className={blockMenuItemClassName} role="menuitem" onClick={()=>{editor.view.focus();void pasteBlocks(editor,ids).then(receive);setOpen(false);}}><Copy size={15}/><span>粘贴块</span><kbd aria-hidden="true">⌘ V</kbd></ActionButton>:null}
+   <ActionButton className={blockMenuItemClassName} role="menuitem" disabled={!noteId} onClick={()=>void copyLink()}><Link2 size={15}/><span>复制块链接</span></ActionButton>
    {!readOnly?<>
-    <ActionButton role="menuitem" onClick={()=>copySelected(true)}><span className="block-menu-icon">✂</span><span>剪切块</span><kbd aria-hidden="true">⌘ X</kbd></ActionButton>
+    <ActionButton className={blockMenuItemClassName} role="menuitem" onClick={()=>copySelected(true)}><span className="block-menu-icon">✂</span><span>剪切块</span><kbd aria-hidden="true">⌘ X</kbd></ActionButton>
     {actionItem('创建副本',{type:'duplicate'},<Copy size={15}/>)}
     <div className="block-menu-separator"/>
     {convertOptions.length?<SelectField aria-label="转换块类型" value={current.type==='heading'?`heading:${current.props.level??1}`:current.type} options={convertOptions} onChange={value=>{const [target,level]=value.split(':');run({type:'convert',target,level:level?Number(level):undefined});}}/>:null}

@@ -1,6 +1,7 @@
+import { cn } from "@orbis/ui/cn";
 import type { CSSProperties } from "react";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { LoadingState } from "../../shared/ui/LoadingState";
+import { LoadingState, loadingLineClassName } from "../../shared/ui/LoadingState";
 import { HomeCard, HomeCardHeading } from "./HomeLayout";
 import type { buildActivityCalendar } from "./home-activity";
 
@@ -15,9 +16,9 @@ type HomeActivityProps = { state: "skeleton" } | {
 
 /** 启动占位和已加载首页共用足迹卡片，数据与查询仍由页面拥有。 */
 export function HomeActivityCard(props: HomeActivityProps) {
-  if (props.state === "skeleton") return <HomeCard className="workspace-loading-panel">
-    <Skeleton animationType="pulse" className="loading-line loading-line--short" />
-    {[0, 1, 2].map(row => <Skeleton animationType="pulse" className="loading-line" key={row} />)}
+  if (props.state === "skeleton") return <HomeCard className="workspace-loading-panel grid min-h-60 gap-6">
+    <Skeleton animationType="pulse" className={cn(loadingLineClassName, "loading-line--short w-[64%]")} />
+    {[0, 1, 2].map(row => <Skeleton animationType="pulse" className={loadingLineClassName} key={row} />)}
   </HomeCard>;
   const { state, activity, noteCount, quickNoteCount } = props;
   const ready = state === "ready";

@@ -6,7 +6,24 @@ import { authStore, getAuthSessionKey } from "../../shared/auth/auth-store";
 import { useOptionalAuthRequest } from "../../shared/auth/use-auth-request";
 import { cn } from "../../shared/ui/cn";
 import { getNotebookIcon } from "./notebook-icon-api";
-import { DEFAULT_NOTEBOOK_ICON, NOTEBOOK_ICON_PRESETS, type NotebookIconValue } from "./notebook-icons";
+import { DEFAULT_NOTEBOOK_ICON, NOTEBOOK_ICON_PRESETS, type NotebookIconColor, type NotebookIconValue } from "./notebook-icons";
+
+export const NOTEBOOK_ICON_COLOR_CLASSES = {
+  blue: "[--notebook-icon-fg:var(--ob-icon-blue)]",
+  mint: "[--notebook-icon-fg:var(--ob-icon-mint)]",
+  violet: "[--notebook-icon-fg:var(--ob-icon-violet)]",
+  amber: "[--notebook-icon-fg:var(--ob-icon-amber)]",
+  rose: "[--notebook-icon-fg:var(--ob-icon-rose)]",
+  cyan: "[--notebook-icon-fg:var(--ob-icon-cyan)]",
+  slate: "[--notebook-icon-fg:var(--ob-icon-slate)]",
+} as const satisfies Record<NotebookIconColor, string>;
+
+const iconFrameClassName = "notebook-icon inline-flex flex-none items-center justify-center overflow-hidden";
+const iconSizeClasses = {
+  sm: "notebook-icon--sm size-4.5 rounded-[5px] [&>svg]:size-3.5",
+  md: "notebook-icon--md size-10 rounded-[11px] [&>svg]:size-5.5",
+  lg: "notebook-icon--lg size-13 rounded-[14px] [&>svg]:size-7",
+};
 
 export type NotebookIconProps = {
   icon?: NotebookIconValue | null;
@@ -15,11 +32,11 @@ export type NotebookIconProps = {
   previewUrl?: string;
 };
 
-function ImageIcon({ src, className, size }: { src: string; className?: string; size: NotebookIconProps["size"] }) {
+function ImageIcon({ src, className, size = "md" }: { src: string; className?: string; size: NotebookIconProps["size"] }) {
   const [failed, setFailed] = useState(false);
   if (failed) return <NotebookIcon size={size} className={className} />;
-  return <span className={cn("notebook-icon notebook-icon--image", `notebook-icon--${size}`, className)}>
-    <img alt="自定义笔记本图标" src={src} onError={() => setFailed(true)} />
+  return <span className={cn(iconFrameClassName, "notebook-icon--image bg-(--ob-item-hover-bg) text-(--ob-icon-blue)", iconSizeClasses[size], className)}>
+    <img className="size-full object-cover" alt="自定义笔记本图标" src={src} onError={() => setFailed(true)} />
   </span>;
 }
 
@@ -47,7 +64,7 @@ export function NotebookIcon({ icon, size = "md", className, previewUrl }: Noteb
   const selected = icon ?? DEFAULT_NOTEBOOK_ICON;
   const Icon = NOTEBOOK_ICON_PRESETS.find((preset) => preset.name === selected.name)?.Icon ?? NOTEBOOK_ICON_PRESETS[0].Icon;
   return (
-    <span aria-hidden="true" className={cn("notebook-icon", `notebook-icon--${selected.color}`, `notebook-icon--${size}`, className)}>
+    <span aria-hidden="true" className={cn(iconFrameClassName, `notebook-icon--${selected.color}`, NOTEBOOK_ICON_COLOR_CLASSES[selected.color], iconSizeClasses[size], "bg-[color-mix(in_oklab,var(--notebook-icon-fg)_13%,var(--ob-surface))] text-[color:var(--notebook-icon-fg)]", className)}>
       <Icon strokeWidth={1.8} />
     </span>
   );

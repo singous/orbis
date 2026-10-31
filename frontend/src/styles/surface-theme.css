@@ -25,22 +25,3 @@
 }
 .tooltip { box-shadow: var(--orbis-panel-shadow); }
 .orbis-auth-layout { background: var(--orbis-canvas-bg); }
-.workspace-shell .workspace-main-navigation,
-.workspace-shell .workspace-toolbar,
-.workspace-shell .workspace-context-panel { background: var(--orbis-panel-bg); }
-.workspace-shell .workspace-main-area { background: transparent; }
-.workspace-shell .workspace-content { background: var(--orbis-canvas-bg); }
-.workspace-shell .workspace-route-content,
-.workspace-shell .workspace-route-content > .page-container,
-.workspace-shell .workspace-content > .page-container { background: transparent; }
-.workspace-shell .workspace-document-content { background: var(--orbis-panel-bg); }
-.workspace-shell :is(.workbench-resource-card, .workbench-collection-card, .notebook-overview-card, .document-card, .collection-card, .card) {
-  background: var(--orbis-card-bg);
-  border-color: var(--orbis-surface-edge);
-  box-shadow: var(--orbis-card-shadow);
-}
-.workspace-shell :is(.workbench-resource-card, .workbench-collection-card, .notebook-overview-card, .document-card, .collection-card, .card):hover {
-  background: var(--orbis-card-bg);
-  border-color: var(--border);
-  box-shadow: var(--orbis-card-hover-shadow);
-}

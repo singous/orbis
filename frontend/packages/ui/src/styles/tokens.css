@@ -30,6 +30,8 @@
   --ob-ring: oklch(0 0 0);
   --ob-scrim: rgb(16 24 40 / 28%);
   --ob-canvas: #f2f4f7;
+  --ob-workspace-drawer-scrim: #1f202440;
+  --ob-workspace-drawer-shadow-color: #2222;
   --ob-surface-secondary: oklch(95.24% 0 0);
   --ob-surface-tertiary: oklch(93.73% 0 0);
   --ob-separator: oklch(92% 0 0);
@@ -115,6 +117,9 @@
   --ob-secondary-foreground: var(--ob-foreground);
   --ob-accent-surface-foreground: var(--ob-foreground);
   --ob-item-selected-bg: var(--ob-item-hover-bg);
+  --ob-workspace-outline: color-mix(in oklab, var(--ob-foreground) 6%, var(--ob-surface));
+  --ob-workspace-divider: color-mix(in oklab, var(--ob-foreground) 3%, var(--ob-surface));
+  --ob-workspace-hover-outline: color-mix(in oklab, var(--ob-foreground) 10%, var(--ob-surface));
   --ob-surface-edge: color-mix(in oklab, var(--ob-foreground) 8%, var(--ob-surface));
   --ob-shadow-panel: 0 1px 2px var(--ob-shadow-color);
   --ob-shadow-card: 0 2px 4px var(--ob-shadow-color);
@@ -129,6 +134,9 @@
   --text-ob-caption--line-height: var(--ob-text-caption-leading);
   --font-ob-sans: var(--ob-font-sans);
   --color-ob-canvas: var(--ob-canvas);
+  --color-ob-workspace-outline: var(--ob-workspace-outline);
+  --color-ob-workspace-divider: var(--ob-workspace-divider);
+  --color-ob-workspace-hover-outline: var(--ob-workspace-hover-outline);
   --color-ob-surface-secondary: var(--ob-surface-secondary);
   --color-ob-surface-tertiary: var(--ob-surface-tertiary);
   --color-ob-surface-edge: var(--ob-surface-edge);

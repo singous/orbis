@@ -1,9 +1,10 @@
+import { cn } from "@orbis/ui/cn";
+import { workbenchStyles } from "@/shared/ui/workbench-styles";
 import { releaseFeatures } from "../../shared/release-features";
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
 import { authStore } from "../../shared/auth/auth-store";
-import { formatDate } from "../../shared/format/date";
 import { Button } from "../../shared/ui/Button";
 import { IconButton } from "../../shared/ui/IconButton";
 import { Tooltip } from "../../shared/ui/Tooltip";
@@ -15,7 +16,7 @@ import type { Notebook } from "../../shared/api/schemas";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { DocumentShell } from "./DocumentShell";
 import { NotebookDialog } from "./NotebookDialog";
-import { NotebookIcon } from "./NotebookIcon";
+import { NotebookCard } from "./NotebookCard";
 import { usePinnedNotebooks } from "./pinned-notebooks";
 import { useCollapsedGroups } from "./collapsed-groups";
 import { useCreateNotebook, useDocumentGroups, useNotebooks, useDocumentIndex } from "./queries";
@@ -44,26 +45,21 @@ export function DocumentOverviewPage() {
   const ungrouped = notebooks.filter((notebook) => !knownGroups.has(notebook.group_id));
   if (ungrouped.length) grouped.push({ id: "ungrouped", title: "其他笔记本", notebooks: ungrouped });
 
+  // 保留三个等宽卡片与 260px 可读宽度下限；窄屏改为单列。
   function card(notebook: Notebook, compact = false) {
-    return <div key={notebook.id} className={`notebook-overview-card${compact ? " is-compact" : ""}`}>
-      <Link to={`/collections/${notebook.id}`} title={notebook.title} className="notebook-overview-card-link">
-        <NotebookIcon icon={notebook.icon} />
-        <span className="notebook-overview-card-copy"><strong>{notebook.title}</strong><span>更新于 {formatDate(notebook.updated_at_ms)}</span>{!compact && notesQuery.isSuccess ? <span className="notebook-overview-count">文档 {counts.get(notebook.id) ?? 0}</span> : null}</span>
-      </Link>
-      {releaseFeatures.documentFavorites && <Tooltip label={isPinned(notebook.id) ? "取消常用" : "设为常用"}><IconButton size="sm" className={`notebook-overview-pin${isPinned(notebook.id) ? " is-pinned" : ""}`} aria-label={`${isPinned(notebook.id) ? "取消常用" : "设为常用"}：${notebook.title}`} aria-pressed={isPinned(notebook.id)} onClick={() => togglePin(notebook.id)}><Pin aria-hidden="true" /></IconButton></Tooltip>}
-    </div>;
+    return <NotebookCard key={notebook.id} notebook={notebook} variant={compact ? "compact" : "overview"} noteCount={!compact && notesQuery.isSuccess ? counts.get(notebook.id) ?? 0 : undefined} actions={releaseFeatures.documentFavorites && <Tooltip label={isPinned(notebook.id) ? "取消常用" : "设为常用"}><IconButton size="sm" className={cn("notebook-overview-pin absolute end-2 top-3 text-(--ob-page-muted-foreground) enabled:hover:bg-ob-surface-secondary enabled:hover:text-ob-foreground", isPinned(notebook.id) && "is-pinned bg-ob-surface-secondary text-ob-foreground")} aria-label={`${isPinned(notebook.id) ? "取消常用" : "设为常用"}：${notebook.title}`} aria-pressed={isPinned(notebook.id)} onClick={() => togglePin(notebook.id)}><Pin aria-hidden="true" /></IconButton></Tooltip>} />;
   }
   return <DocumentShell>
     <div className="notebook-overview">
-      <PageContainer title="在线文档" description={`${notebooks.length} 个笔记本`} actions={<>{canEdit ? <Button variant="primary" icon={<Plus size={16} />} onClick={() => setCreating(true)}>新建笔记本</Button> : null}<Link to="/documents/collections" className="workbench-more">管理笔记本</Link></>}>
+      <PageContainer headerClassName="mb-6 pb-4 max-[641px]:pb-4" title="在线文档" description={`${notebooks.length} 个笔记本`} actions={<>{canEdit ? <Button variant="primary" icon={<Plus size={16} />} onClick={() => setCreating(true)}>新建笔记本</Button> : null}<Link to="/documents/collections" className={workbenchStyles.more}>管理笔记本</Link></>}>
 
         {notebooksQuery.isLoading ? <LoadingState label="正在加载笔记本…" variant="cards" /> : null}
-        {releaseFeatures.documentFavorites ? <section className="notebook-overview-common" aria-label="常用">
-          <header className="workbench-section-heading"><h2>常用</h2>{common.length ? <Button variant="ghost" size="sm" aria-label={isCollapsed("common") ? "展开常用区域" : "收起常用区域"} aria-expanded={!isCollapsed("common")} onClick={() => toggleGroup("common")}>{isCollapsed("common") ? "展开" : "收起"}</Button> : null}</header>
-          {common.length ? (!isCollapsed("common") ? <div className="notebook-overview-grid">{common.map((notebook) => card(notebook, true))}</div> : null) : !notebooksQuery.isLoading && !notebooksQuery.isError ? <p className="notebook-overview-common-empty">将笔记本设为常用，便可在这里和左侧快速打开。</p> : null}
+        {releaseFeatures.documentFavorites ? <section className="notebook-overview-common mb-8 rounded-ob-lg bg-ob-surface-secondary p-6" aria-label="常用">
+          <header className={workbenchStyles.sectionHeading}><h2 className={workbenchStyles.sectionTitle}>常用</h2>{common.length ? <Button variant="ghost" size="sm" aria-label={isCollapsed("common") ? "展开常用区域" : "收起常用区域"} aria-expanded={!isCollapsed("common")} onClick={() => toggleGroup("common")}>{isCollapsed("common") ? "展开" : "收起"}</Button> : null}</header>
+          {common.length ? (!isCollapsed("common") ? <div className="notebook-overview-grid grid grid-cols-[repeat(auto-fit,minmax(min(100%,max(260px,calc((100%_-_32px)/3))),1fr))] gap-4 max-[767px]:grid-cols-[minmax(0,1fr)]">{common.map((notebook) => card(notebook, true))}</div> : null) : !notebooksQuery.isLoading && !notebooksQuery.isError ? <p className="m-0 text-sm leading-5 text-ob-foreground/65">将笔记本设为常用，便可在这里和左侧快速打开。</p> : null}
         </section> : null}
-        {grouped.map((group) => <section key={group.id} className="notebook-overview-group" aria-label={group.title}><header className="workbench-section-heading"><h2>{group.title}</h2></header><div className="notebook-overview-grid">{group.notebooks.map((notebook) => card(notebook))}</div></section>)}
-        {!notebooksQuery.isLoading && !notebooksQuery.isError && !notebooks.length ? <div className="workbench-empty-section"><BookOpen size={28} /><h3>还没有笔记本</h3><p>创建笔记本，开始整理你的文档。</p>{canEdit ? <Button variant="secondary" onClick={() => setCreating(true)}>新建笔记本</Button> : null}</div> : null}
+        {grouped.map((group) => <section key={group.id} className="notebook-overview-group mb-8" aria-label={group.title}><header className={workbenchStyles.sectionHeading}><h2 className={workbenchStyles.sectionTitle}>{group.title}</h2></header><div className="notebook-overview-grid grid grid-cols-[repeat(auto-fit,minmax(min(100%,max(260px,calc((100%_-_32px)/3))),1fr))] gap-4 max-[767px]:grid-cols-[minmax(0,1fr)]">{group.notebooks.map((notebook) => card(notebook))}</div></section>)}
+        {!notebooksQuery.isLoading && !notebooksQuery.isError && !notebooks.length ? <div className={workbenchStyles.emptySection}><BookOpen size={28} /><h3 className={workbenchStyles.emptyTitle}>还没有笔记本</h3><p className={workbenchStyles.emptyDescription}>创建笔记本，开始整理你的文档。</p>{canEdit ? <Button variant="secondary" onClick={() => setCreating(true)}>新建笔记本</Button> : null}</div> : null}
       </PageContainer>
     </div>
     <NotebookDialog open={creating} pending={createNotebook.isPending} onClose={() => setCreating(false)} onSubmit={async ({ title, icon }) => { const notebook = await createNotebook.mutateAsync({ title, icon, sort_order: notebooks.length }); setCreating(false); navigate(`/collections/${notebook.id}`); }} />

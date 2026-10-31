@@ -1,0 +1,50 @@
+import { expect, test } from "@playwright/test";
+
+for (const touch of [false, true]) test.describe(touch ? "touch document canvas" : "desktop document canvas", () => {
+  test.use({ hasTouch: touch });
+  for (const theme of ["light", "dark"]) test(`keeps title and content gutters in ${theme}`, async ({ page }) => {
+    await page.addInitScript(theme => localStorage.setItem("orbis.appearance", theme), theme);
+    await page.goto("/__ui");
+    await page.evaluate(async () => {
+      const source = await (await fetch("/src/main.tsx")).text();
+      const reactURL = source.match(/from\s*["']([^"']*\/react\.js[^"']*)["']/)![1];
+      const domURL = source.match(/from\s*["']([^"']*react-dom_client\.js[^"']*)["']/)![1];
+      const inputURL = "/packages/ui/src/input/index.tsx";
+      const chromeURL = "/src/features/documents/editor/document-chrome.ts";
+      const [{ default: React }, { default: ReactDOM }, { Input }, chrome] = await Promise.all([import(reactURL), import(domURL), import(inputURL), import(chromeURL)]);
+      const host = document.createElement("div");
+      host.dataset.testid = "document-canvas-preview";
+      host.className = "grid w-full justify-items-center";
+      document.body.append(host);
+      ReactDOM.createRoot(host).render(React.createElement("article", { className: chrome.editorCanvasClassName },
+        React.createElement("button", { type: "button" }, "标题前的操作"),
+        React.createElement(Input, { "aria-label": "布局文档标题", placeholder: "无标题", defaultValue: "文档标题", className: chrome.editorTitleClassName }),
+        React.createElement("div", { "data-testid": "document-body-preview" }, "正文起点"),
+      ));
+    });
+    const host = page.getByTestId("document-canvas-preview");
+    const title = host.getByRole("textbox", { name: "布局文档标题", exact: true });
+    await expect(title).toBeVisible();
+    for (const width of [1280, 900, 640, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      await expect(title).toHaveCSS("font-size", "28px");
+      await expect(title).toHaveCSS("line-height", "42px");
+      await expect(title).toHaveCSS("border-width", "0px");
+      await expect(title).toHaveCSS("border-radius", "0px");
+      const gutter = touch ? 100 : 76;
+      const inset = width <= 640 ? 20 : gutter;
+      await expect(title).toHaveCSS("padding-left", `${inset}px`);
+      await expect(host.getByTestId("document-body-preview")).toHaveCSS("margin-left", `${inset}px`);
+      await expect(host.locator("article")).toHaveCSS("padding-bottom", width <= 640 ? "52px" : width <= 1023 ? "64px" : "0px");
+      expect(await host.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+    }
+    await host.getByRole("button", { name: "标题前的操作", exact: true }).focus();
+    await page.keyboard.press("Tab");
+    await expect(title).toBeFocused();
+    await expect(title).toHaveCSS("outline-style", "none");
+    const contentCSS = "/src/styles/block-controls.css";
+    await page.evaluate(url => import(url), contentCSS);
+    await expect(title).toHaveCSS("padding-left", `${touch ? 100 : 76}px`);
+    await expect(host.getByTestId("document-body-preview")).toHaveCSS("margin-left", `${touch ? 100 : 76}px`);
+  });
+});

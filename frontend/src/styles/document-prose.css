@@ -1,0 +1,22 @@
+/* Authored content typography: shared by document rendering and reading surfaces. */
+.document-prose { font-size: var(--orbis-prose-body-size); line-height: var(--orbis-prose-body-leading); overflow-wrap: anywhere; color: var(--reading-text, var(--ob-foreground)); }
+.document-prose h1, .document-prose h2, .document-prose h3, .document-prose h4, .document-prose h5, .document-prose h6 { font-weight: 680; letter-spacing: -.026em; line-height: 1.5; margin: 34px 0 16px; scroll-margin-top: 100px; }
+.document-prose h1 { font-size: var(--orbis-prose-h1-size); }.document-prose h2 { font-size: var(--orbis-prose-h2-size); }.document-prose h3 { font-size: var(--orbis-prose-h3-size); }.document-prose h4 { font-size: var(--orbis-prose-h4-size); }.document-prose h5 { font-size: var(--orbis-prose-h5-size); }.document-prose h6 { font-size: var(--orbis-prose-h6-size); }
+.document-prose h4, .document-prose h6 { font-weight: var(--orbis-weight-heading); }.document-prose h5 { font-weight: var(--orbis-weight-action); }
+.document-prose h2 { margin-top: 43px; margin-bottom: 15px; }
+.document-prose p { margin: 15px 0; }.document-prose > :first-child { margin-top: 0; }
+.document-prose ul, .document-prose ol { padding-left: 25px; margin: 18px 0; }.document-prose ul { list-style: disc; }.document-prose ol { list-style: decimal; }
+.document-prose li { padding-left: 4px; margin: 7px 0; }.document-prose li > p { margin: 0; }
+.document-prose a { color: var(--reading-accent, var(--ob-primary)); text-decoration: underline; text-underline-offset: 4px; }
+.document-prose code { font-family: "SFMono-Regular", Consolas, monospace; font-size: var(--orbis-prose-caption-size); padding: 3px 5px; border: 1px solid var(--reading-border, var(--ob-border)); border-radius: 4px; background: var(--reading-muted-bg, var(--ob-content-inline-code-bg)); }
+.document-prose .content-code { border: 1px solid var(--reading-border, var(--ob-border)); border-radius: 8px; margin: 23px 0; overflow: hidden; background: var(--reading-muted-bg, var(--ob-content-code-block-bg)); }
+.document-prose .content-code-language { font-size: var(--orbis-prose-caption-size); color: var(--reading-muted, var(--ob-page-muted-foreground)); border-bottom: 1px solid var(--reading-border, var(--ob-border)); padding: 9px 16px; }
+.document-prose pre { margin: 0; padding: 18px; overflow-x: auto; white-space: pre; line-height: 1.8; }.document-prose pre code { padding: 0; border: 0; background: none; }
+.document-prose blockquote { padding: 13px 18px; margin: 22px 0; border-left: 3px solid var(--reading-accent, var(--ob-primary)); background: color-mix(in srgb, var(--reading-accent, var(--ob-primary)) 5%, var(--reading-bg, var(--ob-content-plain-background))); }
+.document-prose blockquote > p { margin: 0; }
+.document-prose hr { border: 0; border-top: 1px solid var(--reading-border, var(--ob-border)); margin: 30px 0; }
+.document-prose .content-table-scroll { max-width: 100%; overflow-x: auto; margin: 24px 0; }.document-prose table { border-collapse: collapse; width: 100%; font-size: var(--orbis-prose-table-size); }
+.document-prose td, .document-prose th { border: 1px solid var(--reading-border, var(--ob-border)); text-align: left; padding: 10px 14px; min-width: 90px; }.document-prose th { background: var(--reading-muted-bg, var(--ob-content-inline-code-bg)); font-weight: 600; }.document-prose td p, .document-prose th p { margin: 0; }
+.document-prose figure { margin: 25px 0; }.document-prose img, .document-prose video { max-width: 100%; border-radius: 8px; }.document-prose audio { max-width: 100%; }.document-prose figcaption { color: var(--reading-muted, var(--ob-page-muted-foreground)); font-size: var(--orbis-prose-caption-size); margin-top: 9px; text-align: center; }
+.document-prose details { border: 1px solid var(--reading-border, var(--ob-border)); padding: 12px 16px; border-radius: 7px; margin: 15px 0; }.document-prose summary { cursor: pointer; list-style: disclosure-closed; }.document-prose details[open] summary { list-style: disclosure-open; }
+.document-prose .content-task-list { padding-left: 0; list-style: none; }.document-prose .content-task { display: flex; align-items: flex-start; gap: 10px; }.document-prose .content-task input { margin-top: 8px; accent-color: var(--reading-accent, var(--ob-primary)); }.document-prose .content-unavailable { color: var(--reading-muted, var(--ob-page-muted-foreground)); font-size: var(--orbis-prose-caption-size); }
