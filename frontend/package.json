@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit -p tsconfig.json && vite build",
+    "build:release": "npm run check:licenses && npm run build && npm run licenses:bundle -- dist/licenses && npm run check:license-bundle",
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",
@@ -26,6 +27,8 @@
     "storybook:build": "storybook build -c packages/ui/.storybook -o storybook-static --disable-telemetry",
     "test:storybook": "vitest run --config packages/ui/vite.config.ts",
     "test:ui": "playwright test --config playwright.ui.config.ts",
+    "test:visual": "playwright test --config playwright.visual.config.ts",
+    "test:visual:container": "sh scripts/test-visual.sh",
     "test:types": "tsc --noEmit -p tsconfig.json",
     "licenses:generate": "node scripts/license-inventory.mjs",
     "check:licenses": "node scripts/license-inventory.mjs --check --release",
@@ -33,6 +36,7 @@
     "check:bundle": "node scripts/check-bundle.mjs",
     "test:a11y": "playwright test --config playwright.ui.config.ts --grep accessibility:",
     "licenses:bundle": "node scripts/license-inventory.mjs --bundle",
+    "check:license-bundle": "node scripts/check-license-bundle.mjs",
     "test:licenses": "node --test tests/licenses/*.node-test.mjs"
   },
   "dependencies": {

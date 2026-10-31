@@ -74,7 +74,7 @@ export default defineConfig({
     proxy,
   },
   test: {
-    exclude: [...configDefaults.exclude, "tests/e2e/**", "tests/ui-browser/**", "test-results/**", "docs/**", "packages/ui/**"],
+    exclude: [...configDefaults.exclude, "tests/e2e/**", "tests/ui-browser/**", "tests/visual/**", "test-results/**", "docs/**", "packages/ui/**"],
     environment: "jsdom",
     globals: true,
     setupFiles: "./vitest.setup.ts",

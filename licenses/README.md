@@ -6,7 +6,8 @@ The frontend license inventory is derived from `frontend/package-lock.json`. It 
 npm run licenses:generate
 npm run report:licenses
 npm run check:licenses
-npm run licenses:bundle -- dist/licenses
+ORBIS_SOURCE_REVISION="$(git rev-parse HEAD)" npm run build:release
+npm run check:license-bundle
 ```
 
 `licenses:generate` updates the manifest, the generated table in `THIRD_PARTY_NOTICES.md`, and public font/icon notices. It freezes texts by package name/version/integrity. Generation reads the available installed artifact's license, NOTICE and acknowledgement files, and retains the previous frozen material when an optional platform package is unavailable. Checking reads only the frozen inventory and works without node_modules. Packages whose tarballs omit their license text need an explicit entry in `supplemental-texts.json`, with a fixed upstream commit, URL and content checksum. The generator does not download or invent missing text.
@@ -14,6 +15,12 @@ npm run licenses:bundle -- dist/licenses
 `report:licenses` is an offline snapshot check. It verifies the lockfile hash, every package version/license/integrity, text checksums, public asset notices and copied-code snapshots. It reports unresolved items without treating them as approved.
 
 `check:licenses` adds the release policy: no missing text, unknown/denied licenses, pending review or missing approved corresponding-source pin. It intentionally fails for the unresolved items in the current inventory. `licenses:bundle` runs that strict check before creating output, then copies `LICENSE`, `THIRD_PARTY_NOTICES.md` and this directory and downloads only the separately pinned, approved corresponding-source archives. Each archive is checked against its SHA-256.
+
+`build:release` performs the strict check, production build, license bundling and artifact verification. `ORBIS_SOURCE_REVISION` must be the full commit SHA whose complete source and build materials have been published in the Orbis repository. The generated `/licenses/` page links to that exact revision and its source archive. Use a clean checkout of that published commit for a release. The ordinary `build` command remains available for development previews.
+
+The frontend Docker target uses the same release build. Supply `--build-arg ORBIS_SOURCE_REVISION="$(git rev-parse HEAD)"` when building it. The final image carries the bundle at `/usr/share/nginx/html/licenses/`; CI extracts that directory from the built image and runs the same verifier against its files. The independent PR license gate runs offline, so a pending review remains visible while ordinary frontend checks can still report their own results.
+
+`check:license-bundle [directory]` verifies the shipped file hashes, dependency notices, asset notices, corresponding-source archives, source links and lockfile identity. The bundle preserves repository-relative notice links, including the copied-code provenance and public font/icon texts. Its generated `distribution.json` records every bundled file's checksum.
 
 ## Files and ownership
 

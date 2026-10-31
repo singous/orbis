@@ -6,6 +6,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { distributionSource, verifyLicenseBundle, writeLicenseBundleIndex } from "../../scripts/license-bundle.mjs";
 
 const script = fileURLToPath(new URL("../../scripts/license-inventory.mjs", import.meta.url));
 function fixture(t, license = "MIT") {
@@ -26,7 +27,7 @@ function fixture(t, license = "MIT") {
   write("licenses/texts/copied.txt", "Copied code license\n");
   write("licenses/copied-code/shadcn-button.registry.json", "source snapshot");
   write("frontend/packages/ui/ui.registry.json", { license: "MIT", copyright: "Fixture author", licenseFile: "licenses/texts/copied.txt", components: { button: { source: "https://example.com/button.json", sourceChecksum: `sha256:${createHash("sha256").update("source snapshot").digest("hex")}`, modifications: "fixture" } } });
-  const run = (...args) => spawnSync(process.execPath, [script, ...args], { env: { ...process.env, ORBIS_LICENSE_ROOT: root }, encoding: "utf8" });
+  const run = (...args) => spawnSync(process.execPath, [script, ...args], { env: { ...process.env, ORBIS_LICENSE_ROOT: root, ORBIS_SOURCE_REVISION: "a".repeat(40) }, encoding: "utf8" });
   return { root, write, run };
 }
 
@@ -59,6 +60,41 @@ test("an approved permissive inventory produces a readable distribution bundle",
   assert.ok(readFileSync(path.join(root, "frontend/dist/licenses/THIRD_PARTY_NOTICES.md"), "utf8").includes("Locked npm components"));
   assert.ok(JSON.parse(readFileSync(path.join(root, "frontend/dist/licenses/licenses/npm-manifest.json"), "utf8")).packages.length > 0);
   assert.equal(JSON.parse(readFileSync(path.join(root, "frontend/dist/licenses/index.json"), "utf8")).assets.length, 5);
+  const bundle = path.join(root, "frontend/dist/licenses");
+  assert.equal(verifyLicenseBundle(bundle).sourceRevision, "a".repeat(40));
+  const html = readFileSync(path.join(bundle, "index.html"), "utf8");
+  assert.match(html, /开源许可/);
+  assert.ok(html.includes(`https://github.com/singous/orbis/archive/${"a".repeat(40)}.tar.gz`));
+  assert.ok(existsSync(path.join(bundle, "frontend/public/licenses/inter-OFL-1.1.txt")));
+  assert.ok(existsSync(path.join(bundle, "frontend/packages/ui/ui.registry.json")));
+});
+
+test("release source links require a full immutable commit identity", () => {
+  for (const revision of [undefined, "main", "a1b2c3d", "https://example.com"]) assert.throws(() => distributionSource(revision), /ORBIS_SOURCE_REVISION/);
+});
+
+test("distribution verification detects changed and omitted files after packaging", t => {
+  const { root, run } = fixture(t);
+  assert.equal(run().status, 0);
+  const bundled = run("--bundle", "dist/licenses");
+  assert.equal(bundled.status, 0, bundled.stderr);
+  const bundle = path.join(root, "frontend/dist/licenses");
+  writeFileSync(path.join(bundle, "LICENSE"), "replaced project license");
+  assert.throws(() => verifyLicenseBundle(bundle), /checksum mismatch: LICENSE/);
+  rmSync(path.join(bundle, "LICENSE"));
+  assert.throws(() => verifyLicenseBundle(bundle), /files missing: LICENSE/);
+});
+
+test("distribution notice content must match its frozen dependency identity", t => {
+  const { root, run } = fixture(t);
+  assert.equal(run().status, 0);
+  const bundled = run("--bundle", "dist/licenses");
+  assert.equal(bundled.status, 0, bundled.stderr);
+  const bundle = path.join(root, "frontend/dist/licenses");
+  const inventory = JSON.parse(readFileSync(path.join(bundle, "licenses/npm-manifest.json"), "utf8"));
+  writeFileSync(path.join(bundle, inventory.packages[0].texts[0].file), "different upstream license");
+  writeLicenseBundleIndex(bundle, distributionSource("a".repeat(40)));
+  assert.throws(() => verifyLicenseBundle(bundle), /notice differs from inventory/);
 });
 
 test("tampering with frozen upstream license text is rejected offline", t => {

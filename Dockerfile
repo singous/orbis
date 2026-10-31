@@ -78,7 +78,10 @@ COPY --chmod=644 internal/publishing/reader/reader.js /app/internal/publishing/r
 CMD ["npm", "run", "test:run"]
 
 FROM frontend-source AS frontend-build
-RUN npm run build
+COPY --chmod=644 LICENSE THIRD_PARTY_NOTICES.md /app/
+COPY --chmod=755 licenses/ /app/licenses/
+ARG ORBIS_SOURCE_REVISION
+RUN ORBIS_SOURCE_REVISION="${ORBIS_SOURCE_REVISION}" npm run build:release
 
 FROM nginx:stable-alpine@sha256:0985e772fb9f729e6fa0980da05fca5d9c468e870eed43071545afa9d2e27d94 AS frontend
 COPY --from=frontend-build --chmod=755 /app/frontend/dist/ /usr/share/nginx/html/

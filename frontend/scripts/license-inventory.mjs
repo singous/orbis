@@ -3,6 +3,7 @@ import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statS
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { dependencyUsage, distributionArtifact, licensePolicy, packageName, parseSourcePins } from "./license-core.mjs";
+import { distributionSource, writeLicenseBundleIndex, verifyLicenseBundle } from "./license-bundle.mjs";
 
 const root = process.env.ORBIS_LICENSE_ROOT ?? fileURLToPath(new URL("../../", import.meta.url));
 const args = process.argv.slice(2);
@@ -180,12 +181,16 @@ function syncAssetNotices() {
 }
 
 async function bundle(destination, pins) {
+  const source = distributionSource(process.env.ORBIS_SOURCE_REVISION);
   const target = path.resolve(root, "frontend", destination);
   const outputRoot = path.resolve(root, "frontend", "dist");
   if (!target.startsWith(`${outputRoot}${path.sep}`)) throw new Error("License bundle destination must be below frontend/dist/");
   rmSync(target, { recursive: true, force: true });
   mkdirSync(target, { recursive: true });
   cpSync(path.join(root, "frontend/public/licenses"), target, { recursive: true });
+  mkdirSync(path.join(target, "frontend/packages/ui"), { recursive: true });
+  cpSync(path.join(root, "frontend/public/licenses"), path.join(target, "frontend/public/licenses"), { recursive: true });
+  cpSync(path.join(root, "frontend/packages/ui/ui.registry.json"), path.join(target, "frontend/packages/ui/ui.registry.json"));
   for (const file of ["LICENSE", "THIRD_PARTY_NOTICES.md"]) cpSync(path.join(root, file), path.join(target, file));
   cpSync(path.join(root, "licenses"), path.join(target, "licenses"), { recursive: true });
   for (const pin of pins) {
@@ -195,5 +200,7 @@ async function bundle(destination, pins) {
     if (sha256(contents) !== pin.sourceSHA256) throw new Error(`Corresponding-source checksum mismatch: ${pin.name}`);
     writeFileSync(path.join(target, "licenses", "sources", pin.destination), contents);
   }
+  writeLicenseBundleIndex(target, source);
+  verifyLicenseBundle(target);
   console.log(`License bundle written to ${path.relative(root, target)}`);
 }
