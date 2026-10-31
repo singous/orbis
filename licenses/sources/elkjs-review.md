@@ -19,3 +19,7 @@ Verified upstream material:
 - ELK's `v0.12.0` tag resolves to `323312916048544e4e594eab3303cdb0d01e2929`. Matching version numbers alone do not prove that it generated this elkjs artifact. It is a candidate for review, not an approved source pin.
 
 Before this entry can satisfy the release gate, the maintainer must choose the license branch and confirm the applicable source availability obligations. The exact ELK source revision and required generator/build materials must then be mapped to the delivered artifact. Only verified corresponding-source archives, with immutable revisions and SHA-256, belong in `packages.tsv`.
+
+## Release provenance follow-up
+
+The [successful publish run for this exact elkjs revision](https://github.com/kieler/elkjs/actions/runs/29565358187) started on 2026-07-17. The public Actions API currently reports no artifacts for that run. Its checked-in workflow checks out the release ref and executes `npm publish`; the package has no prepublish build hook. This run therefore does not establish the ELK revision that produced the checked-in generated JavaScript. The source/build mapping above remains unresolved; a successful npm publication is not recorded as approval of a corresponding-source archive.
