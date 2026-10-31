@@ -3,7 +3,7 @@ import { Fragment, type Node as PMNode, type ResolvedPos } from "@tiptap/pm/mode
 import { NodeSelection, Plugin, PluginKey, TextSelection } from "@tiptap/pm/state";
 
 import { documentBlockDefinition } from "../../content/model/document-components";
-import { newBlockId } from "../../content/model/blocks";
+import { newBlockId } from "../../content/blocks";
 import { inlineTransactionsOnly } from "./tiptap-inline-change";
 
 function childKind(node: PMNode): string {

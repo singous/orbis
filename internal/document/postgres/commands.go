@@ -119,6 +119,47 @@ func RequireBlockReferences(ctx context.Context, tx *gorm.DB, scope document.Dir
 	return blockReferences(ctx, tx, scope, blocks, true)
 }
 func blockReferences(ctx context.Context, tx *gorm.DB, scope document.DirectoryScope, blocks []document.Block, lock bool) error {
+	for _, ref := range document.BoardReferences(blocks) {
+		var source struct {
+			DocumentID string
+			Revision   int64
+		}
+		if err := tx.WithContext(ctx).Table("boards").Select("document_id,revision").Where("workspace_id=? AND id=?", scope.WorkspaceID, ref.ID).Take(&source).Error; err != nil {
+			return missing(err)
+		}
+		if _, err := New(tx).Get(ctx, scope.WorkspaceID, source.DocumentID); err != nil {
+			return err
+		}
+		version := ref.Revision
+		if ref.Mode == "live" {
+			version = source.Revision
+		}
+		var exists int64
+		if err := tx.WithContext(ctx).Table("board_revisions").Where("board_id=? AND revision=? AND pages @> ?::jsonb", ref.ID, version, `[{"id":"`+ref.PageID+`"}]`).Count(&exists).Error; err != nil {
+			return err
+		}
+		if exists != 1 {
+			return fault.Missing()
+		}
+		if ref.FrameID != nil {
+			var frames int64
+			if err := tx.WithContext(ctx).Table("board_element_versions").Where("board_id=? AND page_id=? AND id=? AND valid_from<=? AND (valid_to IS NULL OR valid_to>?) AND payload->>'shape_type'='basic.frame' AND (payload->'geometry'->>'rotation_rad')::numeric=0", ref.ID, ref.PageID, *ref.FrameID, version, version).Count(&frames).Error; err != nil {
+				return err
+			}
+			if frames != 1 {
+				return fault.Missing()
+			}
+		}
+	}
+	for _, ref := range document.SheetReferences(blocks) {
+		var count int64
+		if err := tx.WithContext(ctx).Table("sheets s").Joins("JOIN collections c ON c.id=s.collection_id").Joins("JOIN collection_groups g ON g.id=c.group_id").Where("s.id=? AND s.workspace_id=? AND c.archived_at_ms IS NULL AND g.archived_at_ms IS NULL", ref.ID, scope.WorkspaceID).Count(&count).Error; err != nil {
+			return err
+		}
+		if count != 1 {
+			return fault.Missing()
+		}
+	}
 	references := document.MediaReferences(blocks)
 	ids := []string{}
 	for _, ref := range references {

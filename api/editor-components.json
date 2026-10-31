@@ -105,12 +105,12 @@
       "props": {}
     },
     "dataTable": {
-      "label": "多维表格",
+      "label": "数据表",
       "content": "none",
       "children": [],
       "props": {
         "title": {
-          "default": "多维表格",
+          "default": "数据表",
           "maxLength": 240
         },
         "table_id": {
@@ -127,6 +127,14 @@
         "field_names": {
           "default": "",
           "maxLength": 8192
+        },
+        "sheet_id": {
+          "default": "",
+          "maxLength": 36
+        },
+        "sheet_view_id": {
+          "default": "",
+          "maxLength": 36
         }
       }
     }

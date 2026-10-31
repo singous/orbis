@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import {preparePendingNavigation} from "../../shared/navigation/pending-navigation";
 import {newUUID} from "../../shared/ids";
 import {ApiError} from "../../shared/api/api-client";
@@ -8,21 +9,18 @@ import { Label } from "@heroui/react/label";
 import { DragDropProvider } from "@dnd-kit/react";
 import { isSortable, useSortable } from "@dnd-kit/react/sortable";
 import { useIsMutating,useQueryClient } from "@tanstack/react-query";
-import { Archive, ChevronDown, Eye, FilePlus2, ListCollapse, ListTree, LocateFixed, MoreVertical, Pencil, Plus } from "../../shared/ui/icons";
+import { Archive, ChevronDown, FilePlus2, ListCollapse, ListTree, LocateFixed, MoreVertical, Pencil, Plus } from "../../shared/ui/icons";
 import { type CSSProperties, type KeyboardEvent, type ReactNode, createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
 
 import type { Note,NoteTreeItem } from "../../shared/api/schemas";
 import { authStore,getAuthSessionKey } from "../../shared/auth/auth-store";
-import { formatDate } from "../../shared/format/date";
+import { formatNotebookUpdateTime } from "./notebook-update-time";
 import { Button } from "../../shared/ui/Button";
-import { StatusMessage } from "../../shared/ui/StatusMessage";
-import { dismissToast, showToast } from "../../shared/ui/Toast";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { ResourceDialog } from "./ResourceDialog";
 import { DocumentLink } from "./DocumentLink";
-import { DocumentPreviewDialog } from "./DocumentPreviewDialog";
 import { documentRowSensors, documentTreePlugins } from "./document-row-drag";
 import { useDocumentTreeExpansion } from "./document-tree-expansion";
 import { useArchiveNote, useCreateNote, useNoteTree, useReorderNotes, useUpdateNote } from "./queries";
@@ -89,7 +87,6 @@ type TreeNodeProps = {
   onCreateChild: (noteId: string) => void;
   onRename: (note: NoteTreeItem) => void;
   onArchive: (note: NoteTreeItem) => void;
-  onPreview: (note: NoteTreeItem) => void;
   isExpanded: (noteId: string) => boolean;
   onToggle: (noteId: string) => void;
   onKeyboardMove: (noteId: string, delta: -1 | 1, link: HTMLAnchorElement) => void;
@@ -136,31 +133,28 @@ function SortableDocumentItem(props: DocumentItemProps) {
   return <DocumentItem {...props} sortable={sortable} />;
 }
 
-function DocumentRowActions({ note, canEdit, reordering, onCreateChild, onRename, onArchive, onPreview }: Pick<DocumentItemProps, "note" | "canEdit" | "reordering" | "onCreateChild" | "onRename" | "onArchive" | "onPreview">) {
+function DocumentRowActions({ note, reordering, onCreateChild, onRename, onArchive }: Pick<DocumentItemProps, "note" | "reordering" | "onCreateChild" | "onRename" | "onArchive">) {
   const [open, setOpen] = useState(false);
   return <div className="document-context-actions" data-document-row-action data-menu-open={open}>
-    {canEdit ? <Dropdown onOpenChange={setOpen}>
+    <Dropdown onOpenChange={setOpen}>
       <ActionButton type="button" className="icon-button" aria-label={`文档操作 ${note.title}`} title="更多操作" disabled={reordering}><MoreVertical aria-hidden="true" size={16} /></ActionButton>
       <Dropdown.Popover placement="bottom end" offset={4} className="document-actions-popover">
         <Dropdown.Menu aria-label={`文档操作 ${note.title}`} onAction={(key) => {
-          if (key === "preview") onPreview(note);
           if (key === "create") onCreateChild(note.id);
           if (key === "rename") onRename(note);
           if (key === "archive") onArchive(note);
         }}>
-          <Dropdown.Item id="preview" textValue="预览文档"><Eye aria-hidden="true" /><Label>预览文档</Label></Dropdown.Item>
           <Dropdown.Item id="create" textValue="新建子文档" isDisabled={reordering}><Plus aria-hidden="true" /><Label>新建子文档</Label></Dropdown.Item>
           <Dropdown.Item id="rename" textValue="重命名" isDisabled={reordering}><Pencil aria-hidden="true" /><Label>重命名</Label></Dropdown.Item>
           <Dropdown.Item id="archive" textValue="归档" isDisabled={reordering} className="document-archive-action"><Archive aria-hidden="true" /><Label>归档</Label></Dropdown.Item>
         </Dropdown.Menu>
       </Dropdown.Popover>
-    </Dropdown> : null}
-    <ActionButton type="button" className="icon-button document-preview-action" aria-label={`预览文档 ${note.title}`} title="预览文档" onClick={() => onPreview(note)}><Eye aria-hidden="true" size={16} /></ActionButton>
-    {canEdit ? <ActionButton type="button" className="icon-button document-create-child" aria-label={`新建子文档 ${note.title}`} title="新建子文档" disabled={reordering} onClick={() => onCreateChild(note.id)}><Plus aria-hidden="true" size={16} /></ActionButton> : null}
+    </Dropdown>
+    <ActionButton type="button" className="icon-button document-create-child" aria-label={`新建子文档 ${note.title}`} title="新建子文档" disabled={reordering} onClick={() => onCreateChild(note.id)}><Plus aria-hidden="true" size={16} /></ActionButton>
   </div>;
 }
 
-function DocumentItem({ note, depth, parentId, activeNoteId, canEdit, reordering, main = false, onNavigate, onCreateChild, onRename, onArchive, onPreview, onKeyboardMove, dragInstructionsId, isExpanded, onToggle, sortable }: DocumentItemProps & { sortable?: SortableBinding }) {
+function DocumentItem({ note, depth, parentId, activeNoteId, canEdit, reordering, main = false, onNavigate, onCreateChild, onRename, onArchive, onKeyboardMove, dragInstructionsId, isExpanded, onToggle, sortable }: DocumentItemProps & { sortable?: SortableBinding }) {
   const group = parentId ?? "root";
   const childrenId = useId();
   const expanded = isExpanded(note.id);
@@ -178,8 +172,8 @@ function DocumentItem({ note, depth, parentId, activeNoteId, canEdit, reordering
   const prefix = <div className="document-tree-prefix">
     {note.children.length ? <ActionButton type="button" className="document-tree-disclosure" aria-label={`${expanded ? "收起" : "展开"}子目录 ${note.title}`} aria-expanded={expanded} aria-controls={childrenId} disabled={reordering} onClick={() => onToggle(note.id)}><ChevronDown aria-hidden="true" size={14} /></ActionButton> : <span className="document-disclosure-placeholder" aria-hidden="true" />}
   </div>;
-  const actions = !main ? <DocumentRowActions note={note} canEdit={canEdit} reordering={reordering} onCreateChild={onCreateChild} onRename={onRename} onArchive={onArchive} onPreview={onPreview} /> : null;
-  const children = note.children.length && expanded ? <DocumentTree items={note.children} depth={depth + 1} parentId={note.id} activeNoteId={activeNoteId} canEdit={canEdit} reordering={reordering} main={main} onNavigate={onNavigate} onCreateChild={onCreateChild} onRename={onRename} onArchive={onArchive} onPreview={onPreview} onKeyboardMove={onKeyboardMove} dragInstructionsId={dragInstructionsId} isExpanded={isExpanded} onToggle={onToggle} /> : null;
+  const actions = !main && canEdit ? <DocumentRowActions note={note} reordering={reordering} onCreateChild={onCreateChild} onRename={onRename} onArchive={onArchive} /> : null;
+  const children = note.children.length && expanded ? <DocumentTree items={note.children} depth={depth + 1} parentId={note.id} activeNoteId={activeNoteId} canEdit={canEdit} reordering={reordering} main={main} onNavigate={onNavigate} onCreateChild={onCreateChild} onRename={onRename} onArchive={onArchive} onKeyboardMove={onKeyboardMove} dragInstructionsId={dragInstructionsId} isExpanded={isExpanded} onToggle={onToggle} /> : null;
 
   if (main) return <div ref={sortable?.ref} className="document-main-item" data-note-id={note.id} data-parent-id={group} data-dragging={sortable?.isDragSource} data-drop-target={sortable?.isDropTarget}>
     <div className="document-main-row">
@@ -187,7 +181,7 @@ function DocumentItem({ note, depth, parentId, activeNoteId, canEdit, reordering
       <DocumentLink noteId={note.id} to={`/documents/${note.id}`} draggable={false} aria-label={note.title} aria-current={note.id === activeNoteId ? "page" : undefined} className="document-main-link" onClick={onNavigate}>
         <span className="document-main-title" title={note.title}>{note.title}</span>
         <span className="document-main-leader" aria-hidden="true" />
-        <time>{formatDate(note.updated_at_ms)}</time>
+        <time dateTime={new Date(note.updated_at_ms).toISOString()} title={new Date(note.updated_at_ms).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })}>{formatNotebookUpdateTime(note.updated_at_ms)}</time>
       </DocumentLink>
       {actions}
     </div>
@@ -231,7 +225,6 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
   const [createParent, setCreateParent] = useState<string | null | undefined>(undefined);
   const [renameTarget, setRenameTarget] = useState<NoteTreeItem | null>(null);
   const renameIntent=useRef<{title:string;operation_id:string;uncertain:boolean}|null>(null);
-  const [previewTarget, setPreviewTarget] = useState<NoteTreeItem | null>(null);
   const [sortAnnouncement, setSortAnnouncement] = useState("");
   const treeRef = useRef<HTMLElement>(null);
   const dragInstructionsId = useId();
@@ -303,27 +296,8 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
     await preparePendingNavigation();
     if(!panelOwner.active)return;
     if (!treeQuery.data?.directory_version) throw new Error("目录版本尚未载入，请重新载入。");
-    const archived = await archiveNote.mutateAsync({ id: note.id, archived: true,expected_directory_version:treeQuery.data.directory_version });
+    await archiveNote.mutateAsync({ id: note.id, archived: true,expected_directory_version:treeQuery.data.directory_version });
     if(!panelOwner.active)return;
-    let undoPending = false;
-    const toastId = showToast({
-      title: "文档已归档",
-      description: note.title,
-      tone: "success",
-      timeout: 0,
-      action: {
-        label: "撤销",
-        onPress: () => {
-          if (undoPending) return;
-          if(getAuthSessionKey(authStore.getState())!==sessionKey){dismissToast(toastId);return;}
-          undoPending = true;
-          void archiveNote.mutateAsync({ id: note.id, archived: false,expected_directory_version:archived.directory_version })
-            .then(() => dismissToast(toastId))
-            .catch((error) => showToast({ title: "恢复文档失败", description: error instanceof Error ? error.message : "请稍后重试。", tone: "danger" }))
-            .finally(() => { undoPending = false; });
-        },
-      },
-    });
     if (note.id === activeNoteId) navigate(`/collections/${notebookId}`, { replace: true });
   }
 
@@ -341,7 +315,7 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
       await reorderNotes.mutateAsync({ parent_id: group.parentId,expected_directory_version:treeQuery.data!.directory_version, expected_note_ids: currentIds, note_ids: noteIds });
       setSortAnnouncement(`已将 ${findNote(treeItems, noteId)?.title ?? "文档"} 移至同级第 ${targetIndex + 1} 位`);
     } catch (error) {
-      showToast({ title: "排序未保存", description: error instanceof Error ? error.message : "请刷新后重试。", tone: "danger" });
+      reportError(error);
     } finally {
       const focusMayBeRestored = document.activeElement === focusLink || document.activeElement === document.body;
       if (focusLink && focusMayBeRestored) {
@@ -371,7 +345,7 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
           </div>
         </div>
       )}
-      {treeQuery.isError ? <StatusMessage tone="error" title="目录加载失败"><Button className="mt-3" variant="secondary" onClick={() => void treeQuery.refetch()}>重试加载目录</Button></StatusMessage> : null}
+
       {treeQuery.isLoading ? <LoadingState label="正在加载文档目录…" compact={!main} /> : null}
       {!treeQuery.isLoading && !treeQuery.isError && !treeItems.length ? (
         main ? (
@@ -390,10 +364,9 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
         const source = event.operation.source;
         if (event.canceled || !isSortable(source) || source.initialGroup !== source.group || source.initialIndex === source.index) return;
         void handleReorder(String(source.id), source.index);
-      }}><nav ref={treeRef} className={main ? "document-main-list" : "document-context-tree"} aria-label={main ? "文档列表" : "笔记本文档"}><DocumentTree items={treeItems} depth={0} parentId={null} activeNoteId={activeNoteId} canEdit={canEdit} reordering={reordering} main={main} onNavigate={mobile ? onNavigate : undefined} onCreateChild={setCreateParent} onRename={note=>{void openRename(note).catch(error=>{if(panelOwner.active)showToast({title:"无法重命名文档",description:error instanceof Error?error.message:"请稍后重试。",tone:"danger"});});}} onArchive={(note) => void handleArchive(note).catch((error) => showToast({ title: "归档失败", description: error instanceof Error ? error.message : "请稍后重试。", tone: "danger" }))} onPreview={setPreviewTarget} onKeyboardMove={(noteId, delta, link) => void handleReorder(noteId, (findSiblingGroup(treeItems, noteId)?.items.findIndex((item) => item.id === noteId) ?? -1) + delta, link)} dragInstructionsId={dragInstructionsId} isExpanded={isExpanded} onToggle={toggle} /></nav></DragDropProvider> : null}
+      }}><nav ref={treeRef} className={main ? "document-main-list" : "document-context-tree"} aria-label={main ? "文档列表" : "笔记本文档"}><DocumentTree items={treeItems} depth={0} parentId={null} activeNoteId={activeNoteId} canEdit={canEdit} reordering={reordering} main={main} onNavigate={mobile ? onNavigate : undefined} onCreateChild={setCreateParent} onRename={note=>{void openRename(note).catch(error=>{if(panelOwner.active)reportError(error);});}} onArchive={(note) => void handleArchive(note).catch((error) => reportError(error))} onKeyboardMove={(noteId, delta, link) => void handleReorder(noteId, (findSiblingGroup(treeItems, noteId)?.items.findIndex((item) => item.id === noteId) ?? -1) + delta, link)} dragInstructionsId={dragInstructionsId} isExpanded={isExpanded} onToggle={toggle} /></nav></DragDropProvider> : null}
       <ResourceDialog open={createParent !== undefined} title={createParent ? "新建子文档" : "新建文档"} label="文档标题" placeholder="未命名文档" submitLabel="创建并打开" pending={createNote.isPending} onClose={() => setCreateParent(undefined)} onSubmit={handleCreate} />
       <ResourceDialog open={Boolean(renameTarget)} title="重命名文档" label="文档标题" placeholder="文档标题" initialValue={renameTarget?.title ?? ""} submitLabel="保存" pending={updateNote.isPending} onClose={() => {renameIntent.current=null;setRenameTarget(null);}} onSubmit={handleRename} />
-      <DocumentPreviewDialog noteId={previewTarget?.id ?? null} title={previewTarget?.title} onClose={() => setPreviewTarget(null)} />
     </section>
   );
 }

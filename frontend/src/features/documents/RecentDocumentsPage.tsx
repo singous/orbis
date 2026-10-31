@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 
 import { formatDate } from "../../shared/format/date";
 import { PageContainer } from "../../shared/ui/PageContainer";
-import { StatusMessage } from "../../shared/ui/StatusMessage";
+
 import { DocumentShell } from "./DocumentShell";
 import { useDocumentIndex } from "./queries";
 
@@ -21,11 +21,7 @@ export function RecentDocumentsPage() {
         title="最近文档"
         description="按最近更新时间继续你的工作。"
       >
-        {notesQuery.isError ? (
-          <StatusMessage tone="error" title="最近文档加载失败">
-            请检查 API 服务后重试。
-          </StatusMessage>
-        ) : null}
+
         {notesQuery.isLoading ? (
           <LoadingState label="正在加载文档…" />
         ) : null}

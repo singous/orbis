@@ -1,5 +1,5 @@
 import contract from "./document-blocks.json";
-import type { OrbisBlock } from "./blocks";
+import type { OrbisBlock } from "./block-model";
 import { markdownDestination } from "./markdown-urls";
 
 export type DocumentBlockKind = keyof typeof contract.blocks;
@@ -28,7 +28,7 @@ export function documentBlockMarkdown(block: OrbisBlock, inline: string, render:
   if (!documentBlockDefinition(block.type)) return null;
   const children = block.children ?? [];
   const title = markdownTitle(documentBlockTitle(block));
-  if (block.type === "dataTable") return `### ${title}\n\n[多维表格：请使用表格或文档导出获取完整记录]`;
+  if (block.type === "dataTable") return `### ${title}\n\n[数据表：请使用表格或文档导出获取完整记录]`;
   if (block.type === "callout") {
     return [title ? "**" + title + "**" : "", inline, render(children)].filter(Boolean).join("\n\n")
       .split("\n").map((line) => line ? "> " + line : ">").join("\n");

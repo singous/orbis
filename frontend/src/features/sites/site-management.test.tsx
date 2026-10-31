@@ -2,12 +2,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { toast as heroToast } from "@heroui/react/toast";
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { authStore } from "../../shared/auth/auth-store";
 import { Toaster } from "../../shared/ui/Toast";
 import { SiteEditorPage } from "./SiteEditorPage";
+import { BrowserRequest } from "../../../tests/support/browser-request";
 
 const id = "018ff7c4-a5b6-7000-8000-000000000001";
 const baseSite = { workspace_id:id,version:2,source:{kind:"manual",collections:[],excluded_document_ids:[],page_overrides:[]},branding:{logo:null,links:[],footer_links:[],cta:null,theme:"system"},id, name: "产品手册", slug: "guide", description: "产品知识", site_kind: "handbook", accent_color: "#0f766e", navigation: [], published_release_id: null, published_slug: null, created_at_ms: 1, updated_at_ms: 2 };
@@ -16,6 +17,7 @@ const response = (data: unknown, status = 200) => new Response(JSON.stringify({ 
 let requests: Array<{ path: string; method: string; body: Record<string, unknown> }>;
 
 beforeEach(() => {
+  vi.stubGlobal("Request", BrowserRequest);
   requests = [];
   authStore.setState({ accessToken: "test-token", refreshToken: "refresh-token", workspace: { id, name: "测试空间", role: "owner", created_at_ms: 1, updated_at_ms: 1 } });
   vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
@@ -32,7 +34,7 @@ afterEach(() => { act(() => heroToast.clear()); cleanup(); vi.unstubAllGlobals()
 
 function renderEditor() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
-  return render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[`/sites/${id}`]}><Routes><Route path="/sites/:siteId" element={<SiteEditorPage />} /><Route path="/sites/:siteId/preview" element={<h1>站点预览</h1>} /></Routes></MemoryRouter><Toaster /></QueryClientProvider>);
+  return render(<QueryClientProvider client={client}><RouterProvider router={createMemoryRouter([{ path: "/sites/:siteId", element: <SiteEditorPage /> }, { path: "/sites/:siteId/preview", element: <h1>站点预览</h1> }], { initialEntries: [`/sites/${id}`] })} /><Toaster /></QueryClientProvider>);
 }
 
 describe("site editing", () => {
@@ -73,7 +75,7 @@ describe("site editing", () => {
     await userEvent.click(screen.getByRole("button", { name: "保存设置" }));
     await waitFor(() => expect(requests.find((item) => item.method === "PUT")?.body).toMatchObject({ name: "团队使用手册", expected_version: 2 }));
     expect(requests.some((item) => item.path.endsWith("/publish"))).toBe(false);
-    expect(await screen.findByText("设置已保存")).toBeInTheDocument();
+    expect(await screen.findByText("成功")).toBeInTheDocument();
     expect(input.closest("form")).not.toHaveTextContent("设置已保存");
   });
 
@@ -87,7 +89,7 @@ describe("site editing", () => {
     await userEvent.clear(input);
     await userEvent.type(input, "我的修改");
     await userEvent.click(screen.getByRole("button", { name: "保存设置" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("站点设置已被其他人修改");
+    expect(await screen.findByRole("alertdialog")).toHaveTextContent("站点设置已被其他人修改");
     expect(input).toHaveValue("我的修改");
   });
 
@@ -98,4 +100,31 @@ describe("site editing", () => {
     expect(screen.queryByRole("button", { name: "发布站点" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "保存设置" })).not.toBeInTheDocument();
   });
+});
+
+it("warns before leaving a site with unsaved settings and releases the warning after save", async () => {
+  renderEditor();
+  const input = await screen.findByRole("textbox", { name: "站点名称" });
+  const clean = new Event("beforeunload", { cancelable: true });
+  window.dispatchEvent(clean);
+  expect(clean.defaultPrevented).toBe(false);
+  await userEvent.type(input, "草稿");
+  const dirty = new Event("beforeunload", { cancelable: true });
+  window.dispatchEvent(dirty);
+  expect(dirty.defaultPrevented).toBe(true);
+  await userEvent.click(screen.getByRole("button", { name: "保存设置" }));
+  await screen.findByText("成功");
+  const saved = new Event("beforeunload", { cancelable: true });
+  window.dispatchEvent(saved);
+  expect(saved.defaultPrevented).toBe(false);
+});
+
+it("saves a dirty site before explicit preview without blocking its own navigation", async () => {
+  renderEditor();
+  await userEvent.type(await screen.findByRole("textbox", { name: "站点名称" }), "待预览");
+  await userEvent.click(screen.getByRole("button", { name: "预览" }));
+  expect(await screen.findByRole("heading", { name: "站点预览" })).toBeInTheDocument();
+  expect(requests.filter(item => item.method === "PUT")).toHaveLength(1);
+  expect(requests.some(item => item.path.endsWith("/publish"))).toBe(false);
+  expect(screen.queryByRole("dialog", { name: "站点设置尚未保存" })).not.toBeInTheDocument();
 });

@@ -18,7 +18,7 @@ vi.mock("../documents/queries", async importOriginal => ({
   useArchiveNotebook: () => ({ mutateAsync: mocks.restore, isPending: false }),
   useArchiveNote: () => ({ mutateAsync: mocks.restore, isPending: false }),
 }));
-vi.mock("../../shared/ui/Toast", () => ({ showToast: vi.fn() }));
+vi.mock("../../shared/ui/Toast", async importOriginal => ({ ...await importOriginal<typeof import("../../shared/ui/Toast")>(), showToast: vi.fn() }));
 const id = "018ff7c4-a5b6-7000-8000-000000000001";
 const workspaceId = "018ff7c4-a5b6-7000-8000-000000000002";
 function fetchTarget(type = "document") {
@@ -51,7 +51,7 @@ it.each([false, true])("locates an archived resource independently of loaded pag
   await screen.findByText("目标资源");
   expect(screen.getAllByText("目标资源")).toHaveLength(1);
   expect(screen.getByText("父目录")).toBeVisible();
-  expect(screen.getByLabelText("搜索定位的归档内容")).toHaveFocus();
+  expect(screen.getByLabelText("搜索定位的回收站内容")).toHaveFocus();
   await userEvent.click(await screen.findByRole("button", { name: "恢复 目标资源" }));
   expect(mocks.restore).toHaveBeenCalledWith({ id, archived: false,expected_directory_version:7 });
 });

@@ -2,7 +2,7 @@ import {ownerSession,openWithSession,createCollection,createDocument,workspacePa
 import {expect,test} from "@playwright/test";
 const apiOrigin=`http://127.0.0.1:${process.env.ORBIS_E2E_API_PORT||"9311"}`;
 const password="Orbis-browser-test-2026!";
-test("Document writing, comments and anonymous live sharing work through the application",async({page,request,browser})=>{
+test("Document writing and renaming work while deferred comment and share entries remain hidden",async({page,request})=>{
   const errors:string[]=[];page.on("pageerror",error=>errors.push(error.message));
   const status=await (await request.get(`${apiOrigin}/api/v1/setup`)).json();
   const initialized=Boolean(status.data.initialized);
@@ -31,24 +31,7 @@ test("Document writing, comments and anonymous live sharing work through the app
     const value=(await response.json()).data;
     return {title:value.revision?.title,text:value.blocks?.map((block:{content:Array<{text:string}>})=>block.content.map(run=>run.text).join("")).join("\n")};
   }).toEqual({title:"Go 原生文档验收",text:"经 Go 接口保存的正文。"});
-  await page.getByRole("button",{name:"评论与历史",exact:true}).click();
-  await page.getByLabel("新评论",{exact:true}).fill("评论也通过工作空间接口保存。");
-  await page.getByRole("button",{name:"发表评论",exact:true}).click();
-  await expect(page.getByText("评论也通过工作空间接口保存。",{exact:true})).toBeVisible();
-  await page.getByRole("button",{name:"关闭评论与历史"}).click();
-  await page.getByRole("button",{name:"分享",exact:true}).click();
-  await page.getByRole("button",{name:"创建公开链接"}).click();
-  const link=page.getByRole("textbox",{name:"公开链接",exact:true});await expect(link).toBeVisible();
-  const anonymous=await browser.newContext(),reader=await anonymous.newPage();
-  const url=await link.inputValue();await reader.goto(url);
-  await expect(reader.getByRole("heading",{name:"Go 原生文档验收",exact:true})).toBeVisible();
-  await expect(reader.getByText("经 Go 接口保存的正文。",{exact:true})).toBeVisible();
-  await page.getByRole("button",{name:"撤销链接"}).click();
-  await expect(page.getByText("链接已撤销，后续访问立即失效。")).toBeVisible();
-  await reader.reload();
-  await expect(reader.getByRole("heading",{name:"分享已失效或文档不可访问"})).toBeVisible();
-  await anonymous.close();
-  await page.getByRole("button",{name:"关闭",exact:true}).click();
+  await expect(page.getByRole("button",{name:/评论与历史|分享/})).toHaveCount(0);
   await page.getByRole("link",{name:"Go 原生文档验收",exact:true}).hover();
   await page.getByRole("button",{name:"文档操作 Go 原生文档验收",exact:true}).click();
   await page.getByRole("menuitem",{name:"重命名",exact:true}).click();
@@ -85,7 +68,8 @@ test("Recent document pages and a lost Markdown import response preserve the ori
   const listPath=workspacePath(session,`/collections/${collection.id}/documents?page=1&page_size=20`),headers=sessionHeaders(session);
   const before=await responseData(await request.get(listPath,{headers}));
   await page.locator('input[type="file"]').setInputFiles({name:"恢复导入.md",mimeType:"text/markdown",buffer:Buffer.from("# Markdown 重试回执\n\n同一文件只应创建一份文档。")});
-  await expect(page.getByText("导入结果尚未确认",{exact:true})).toBeVisible();
+  await expect(page.getByRole("alertdialog", { name: "网络异常，请稍后重试", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "导入操作", exact: true }).click();
   await page.getByRole("button",{name:"重试导入",exact:true}).click();
   await expect(page).toHaveURL(/\/documents\/[0-9a-f-]+$/);
   await expect(page.getByText("同一文件只应创建一份文档。",{exact:true})).toBeVisible();

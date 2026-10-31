@@ -30,3 +30,15 @@ func TestNumberedItemsAndCardGroupsPreserveDeclaredLayout(t *testing.T) {
 		t.Fatal("declared numbering or columns changed")
 	}
 }
+
+func TestRetiredDrawingsDoNotRenderTheirPreview(t *testing.T) {
+	var output writer
+	blocks(&output, []publicview.Block{
+		{ID: "before", Type: "paragraph", Content: []document.TextRun{{Text: "Before"}}},
+		{ID: "retired", Type: "drawing", Props: map[string]any{"caption": "Retired caption", "source": map[string]any{"type": "external", "url": "https://example.test/retired.png"}}},
+		{ID: "after", Type: "paragraph", Content: []document.TextRun{{Text: "After"}}},
+	}, nil)
+	if strings.Contains(output.String(), "retired.png") || strings.Contains(output.String(), "Retired caption") || !strings.Contains(output.String(), "Before") || !strings.Contains(output.String(), "After") {
+		t.Fatalf("retired drawing changed surrounding content: %s", output.String())
+	}
+}

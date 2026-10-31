@@ -76,8 +76,8 @@
 
 .document-prose { font-size: var(--orbis-prose-body-size); line-height: var(--orbis-prose-body-leading); overflow-wrap: anywhere; color: var(--reading-text, var(--text-primary)); }
 .document-prose h1, .document-prose h2, .document-prose h3, .document-prose h4, .document-prose h5, .document-prose h6 { font-weight: 680; letter-spacing: -.026em; line-height: 1.5; margin: 34px 0 16px; scroll-margin-top: 100px; }
-.document-prose h1 { font-size: var(--orbis-prose-h1-size); }.document-prose h2 { font-size: var(--orbis-prose-h2-size); }.document-prose h3, .document-prose h4, .document-prose h5, .document-prose h6 { font-size: var(--orbis-prose-h3-size); }
-.document-prose h4 { font-weight: var(--orbis-weight-heading); }.document-prose h5, .document-prose h6 { font-weight: var(--orbis-weight-action); }
+.document-prose h1 { font-size: var(--orbis-prose-h1-size); }.document-prose h2 { font-size: var(--orbis-prose-h2-size); }.document-prose h3 { font-size: var(--orbis-prose-h3-size); }.document-prose h4 { font-size: var(--orbis-prose-h4-size); }.document-prose h5 { font-size: var(--orbis-prose-h5-size); }.document-prose h6 { font-size: var(--orbis-prose-h6-size); }
+.document-prose h4, .document-prose h6 { font-weight: var(--orbis-weight-heading); }.document-prose h5 { font-weight: var(--orbis-weight-action); }
 .document-prose h2 { margin-top: 43px; margin-bottom: 15px; }
 .document-prose p { margin: 15px 0; }.document-prose > :first-child { margin-top: 0; }
 .document-prose ul, .document-prose ol { padding-left: 25px; margin: 18px 0; }.document-prose ul { list-style: disc; }.document-prose ol { list-style: decimal; }

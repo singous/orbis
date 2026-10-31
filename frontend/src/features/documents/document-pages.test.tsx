@@ -1,17 +1,18 @@
+import { Toaster } from "../../shared/ui/Toast";
 import {QueryClient,QueryClientProvider} from "@tanstack/react-query";
 import {authStore} from "../../shared/auth/auth-store";
 import { transferableAbortController } from "node:util";
 import { render as renderTestingLibrary, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Route, RouterProvider, Routes, useLocation } from "react-router-dom";
+import { MemoryRouter, Route, RouterProvider, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CollectionsPage } from "./CollectionsPage";
-import { DocumentEditorPage } from "./editor/DocumentEditorPage";
+import { DocumentRoute } from "../../app/DocumentRoute";
 import { NotebookPage } from "./NotebookPage";
 import { ApiError } from "../../shared/api/api-client";
 
-function render(ui:React.ReactElement){return renderTestingLibrary(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}>{ui}</QueryClientProvider>);}
+function render(ui:React.ReactElement){return renderTestingLibrary(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}>{ui}<Toaster /></QueryClientProvider>);}
 
 const mocks = vi.hoisted(() => ({
   metadata:{} as Record<string,unknown>,
@@ -52,11 +53,11 @@ const mocks = vi.hoisted(() => ({
   }>,
 }));
 
-vi.mock("../../shared/ui/Toast", () => ({
+vi.mock("../../shared/ui/Toast", async importOriginal => ({
+  ...await importOriginal<typeof import("../../shared/ui/Toast")>(),
   showToast: mocks.toast,
   dismissToast: vi.fn(),
   useToast: () => ({ toast: mocks.toast }),
-  Toaster: () => null,
 }));
 
 vi.mock("./queries", () => {
@@ -257,7 +258,7 @@ vi.mock("./queries", () => {
           : (mocks.activeNotebooks ?? notebooks),
       );
     },
-    useDocumentIndex: (status="active",options?:{page?:number}) => result(status==="archived"?archivedNotes:mocks.activeNotes??notes),
+    useDocumentIndex: (status="active") => result(status==="archived"?archivedNotes:mocks.activeNotes??notes),
     useNoteTree: () => result([]),
     useNote: () =>
       mocks.noteQueryResult ?? {
@@ -412,7 +413,7 @@ describe("document function pages", () => {
     ["/documents", "在线文档", "heading"],
     ["/documents/recent", "最近文档", "heading"],
     ["/documents/collections", "我的笔记本", "heading"],
-    ["/documents/archive", "归档", "heading"],
+    ["/documents/archive", "回收站", "heading"],
   ] as const)("renders %s as the %s page", async (path, name, role) => {
     await renderRoute(path);
     expect(await screen.findByRole(role, { name, level: 1 })).toBeVisible();
@@ -435,7 +436,7 @@ describe("document function pages", () => {
     await renderRoute(path);
     expect(await screen.findByRole("heading", { name: "首页", level: 1 })).toBeVisible();
     expect(window.location.pathname).toBe("/home");
-    const rail = screen.getByRole("navigation", { name: "业务板块" });
+    const rail = await screen.findByRole("navigation", { name: "业务板块" });
     expect(within(rail).getByRole("link", { name: "首页" })).toHaveAttribute("aria-current", "page");
     expect(within(rail).getByRole("link", { name: "首页" })).toHaveAttribute("href", "/home");
     expect(screen.getByRole("button", { name: "切换工作空间" })).toBeInTheDocument();
@@ -479,8 +480,7 @@ describe("document function pages", () => {
 
     expect(await screen.findByRole("heading", { name: "我的笔记本" })).toBeVisible();
     await waitFor(() => expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({
-      title: "无法打开资源",
-      description: expect.stringContaining("无法打开笔记本"),
+      title: expect.stringContaining("无法打开笔记本"),
       tone: "danger",
     })));
     expect(screen.queryByRole("button", { name: "关闭提示" })).not.toBeInTheDocument();
@@ -497,7 +497,7 @@ describe("document function pages", () => {
     render(
       <MemoryRouter initialEntries={["/documents/018ff7c4-a5b6-7000-8000-000000000099"]}>
         <Routes>
-          <Route path="/documents/:noteId" element={<DocumentEditorPage />} />
+          <Route path="/documents/:noteId" element={<DocumentRoute />} />
           <Route path="/documents/collections" element={<CollectionsPage />} />
         </Routes>
       </MemoryRouter>,
@@ -505,8 +505,7 @@ describe("document function pages", () => {
 
     expect(await screen.findByRole("heading", { name: "我的笔记本" })).toBeVisible();
     await waitFor(() => expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({
-      title: "无法打开资源",
-      description: expect.stringContaining("无法打开文档"),
+      title: expect.stringContaining("无法打开文档"),
       tone: "danger",
     })));
   });
@@ -521,7 +520,7 @@ describe("document function pages", () => {
     };
     await renderRoute("/documents/018ff7c4-a5b6-7000-8000-000000000099");
 
-    expect(await screen.findByText("无法打开文档")).toBeVisible();
+    expect(await screen.findByRole("link", { name: "返回文档中心" })).toBeVisible();
     expect(screen.queryByRole("heading", { name: "我的笔记本" })).not.toBeInTheDocument();
   });
 
@@ -625,8 +624,7 @@ describe("document function pages", () => {
     await renderRoute("/documents/archive");
     await actor.click(await screen.findByRole("button", { name: "恢复 活跃笔记本中的已归档文档" }));
     await waitFor(() => expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({
-      title: "恢复失败",
-      description: error.message,
+      title: error.message,
       tone: "danger",
     })));
   });
@@ -634,7 +632,7 @@ describe("document function pages", () => {
   it("does not offer restore controls to a normal member", async () => {
     await renderRoute("/documents/archive", "viewer");
 
-    await screen.findByRole("heading", { name: "归档" });
+    await screen.findByRole("heading", { name: "回收站" });
     expect(
       screen.queryByRole("button", { name: /恢复/ }),
     ).not.toBeInTheDocument();
@@ -643,7 +641,7 @@ describe("document function pages", () => {
   it("does not offer restore controls without a current workspace", async () => {
     await renderRoute("/documents/archive", "owner", null);
 
-    await screen.findByRole("heading", { name: "归档" });
+    await screen.findByRole("heading", { name: "回收站" });
     expect(screen.queryByRole("button", { name: /恢复/ })).not.toBeInTheDocument();
   });
 });

@@ -13,6 +13,22 @@ import (
 	wsstore "orbis.local/orbis/internal/workspace/postgres"
 )
 
+// LockDocumentDirectoryForRead prevents archive, movement and access revocation
+// while an independently versioned resource is written. It does not serialize
+// record writes on the document body lock.
+func LockDocumentDirectoryForRead(ctx context.Context, tx *gorm.DB, scope document.DirectoryScope) error {
+	if scope.ActorID != "" {
+		if err := wsstore.RequireLocked(ctx, tx, scope.WorkspaceID, scope.ActorID, workspace.Edit); err != nil {
+			return err
+		}
+	}
+	if _, err := collectionFor(tx.WithContext(ctx), scope, "SHARE", true); err != nil {
+		return err
+	}
+	_, err := New(tx).Get(ctx, scope.WorkspaceID, scope.DocumentID)
+	return err
+}
+
 // LockContent is shared by whole-document writes and commands that atomically update an embedded resource.
 func LockContent(ctx context.Context, tx *gorm.DB, scope document.DirectoryScope) (document.Document, error) {
 	if err := wsstore.RequireLocked(ctx, tx, scope.WorkspaceID, scope.ActorID, workspace.Edit); err != nil {

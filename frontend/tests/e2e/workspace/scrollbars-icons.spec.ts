@@ -95,18 +95,18 @@ test("the restored home keeps its rail while hiding the function sidebar", async
   }
   expect(await page.locator('.rail-action.is-active > svg').evaluate(element => getComputedStyle(element).animationName)).toBe("none");
   await page.emulateMedia({ reducedMotion: "no-preference" });
-  await page.getByRole("link", { name: "站点", exact: true }).click();
-  const selectedSiteIcon = page.locator('.rail-action[aria-label="站点"] > svg');
-  await expect(page.locator('.rail-action[aria-label="站点"]')).toHaveAttribute("aria-current", "page");
-  await expect.poll(() => selectedSiteIcon.evaluate(element => ({ name: getComputedStyle(element).animationName, duration: getComputedStyle(element).animationDuration }))).toEqual({ name: "navigation-icon-select", duration: "0.24s" });
+  await page.getByRole("link", { name: "在线文档", exact: true }).click();
+  const selectedDocumentIcon = page.locator('.rail-action[aria-label="在线文档"] > svg');
+  await expect(page.locator('.rail-action[aria-label="在线文档"]')).toHaveAttribute("aria-current", "page");
+  await expect.poll(() => selectedDocumentIcon.evaluate(element => ({ name: getComputedStyle(element).animationName, duration: getComputedStyle(element).animationDuration }))).toEqual({ name: "navigation-icon-select", duration: "0.24s" });
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await expect.poll(() => selectedSiteIcon.evaluate(element => getComputedStyle(element).animationName)).toBe("none");
+  await expect.poll(() => selectedDocumentIcon.evaluate(element => getComputedStyle(element).animationName)).toBe("none");
   await page.goto("/sites");
   const preferredWidth = await page.locator(".workspace-main-navigation").evaluate(element => element.getBoundingClientRect().width);
   await page.getByRole("button", { name: "收起侧栏", exact: true }).click();
   await page.getByRole("link", { name: "首页", exact: true }).click();
   await expect(page.getByRole("button", { name: "展开侧栏", exact: true })).toHaveCount(0);
-  await page.getByRole("link", { name: "站点", exact: true }).click();
+  await page.getByRole("link", { name: "在线文档", exact: true }).click();
   await expect(page.getByRole("button", { name: "展开侧栏", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "收起侧栏", exact: true })).toBeVisible();
   await expect.poll(() => page.locator(".workspace-main-navigation").evaluate(element => element.getBoundingClientRect().width)).toBe(preferredWidth);
@@ -119,7 +119,7 @@ test("the restored home keeps its rail while hiding the function sidebar", async
   await expect(page.getByRole("button", { name: "打开主导航", exact: true })).toBeFocused();
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/documents/search");
-  await expect(page.getByRole("button", { name: "搜索", exact: true })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByRole("navigation", { name: "业务板块", exact: true }).getByRole("button", { name: "搜索", exact: true })).toHaveAttribute("aria-current", "page");
   await expect(page.locator('.rail-action[aria-label="搜索"] .orbis-icon-solid')).toBeVisible();
   await page.goto("/sites");
   await expect(page.locator('.rail-action[aria-label="搜索"]')).not.toHaveAttribute("aria-current", "page");

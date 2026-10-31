@@ -2,7 +2,7 @@ import { Editor } from "@tiptap/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { EditorState } from "@tiptap/pm/state";
 
-import type { OrbisBlock } from "../../content/model/blocks";
+import type { OrbisBlock } from "../../content/blocks";
 import { tiptapExtensions } from "./tiptap-extensions";
 import { createDocumentBlock } from "./tiptap-insert";
 import { fromTiptapDocument, toTiptapDocument } from "./tiptap-model";
@@ -18,6 +18,16 @@ function open(blocks: OrbisBlock[]) {
 function storedIds(blocks: OrbisBlock[]): string[] { return blocks.flatMap((block) => [block.id, ...storedIds(block.children)]); }
 
 describe("Tiptap persisted block identities", () => {
+  it("assigns a copied board a new block identity while preserving its binding", () => {
+    const board: OrbisBlock = { id: "board", type: "board", props: { board_id: "resource", page_id: "page", mode: "live" }, content: [], children: [] };
+    const editor = open([paragraph("text", "Keep"), board]);
+    editor.commands.insertContentAt(editor.state.doc.content.size, toTiptapDocument({ schema_version: 2, editor: "blocknote", blocks: [board] }).content!);
+    const boards = fromTiptapDocument(editor.state.doc).blocks.filter(block => block.type === "board");
+    expect(boards).toHaveLength(2);
+    expect(boards[0].id).toBe("board");
+    expect(boards[1].id).not.toBe("board");
+    expect(boards[1].props).toEqual(board.props);
+  });
   it("edits inline text in a validated document without walking old or new block trees", () => {
     const editor = open([paragraph("original", "First"), paragraph("untouched", "Keep")]);
     const before = editor.state;

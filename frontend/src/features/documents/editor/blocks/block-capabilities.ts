@@ -1,5 +1,5 @@
 import { documentBlockDefinition } from "../../../content/model/document-components";
-import type { OrbisBlock } from "../../../content/model/blocks";
+import type { OrbisBlock } from "../../../content/blocks";
 import { indexBlocks, normalizeBlockSelection, type BlockAction, type BlockAddress } from "./block-tree";
 
 export type { BlockAction } from "./block-tree";
@@ -14,9 +14,9 @@ const no = (message: string): BlockAvailability => ({ ok: false, message });
 export function blockCapabilities(type: string) {
   const definition = documentBlockDefinition(type);
   return {
-    children: type === "drawing" ? [] : definition?.children ?? "any" as const,
+    children: ["drawing","board"].includes(type) ? [] : definition?.children ?? "any" as const,
     conversionTargets: (TEXT_CONVERSION_TARGETS as readonly string[]).includes(type) ? TEXT_CONVERSION_TARGETS : [],
-    interaction: ["table", "codeBlock", "image", "video", "audio", "file", "drawing"].includes(type) ? "embedded" as const : "text" as const,
+    interaction: ["table", "codeBlock", "image", "video", "audio", "file", "drawing", "board"].includes(type) ? "embedded" as const : "text" as const,
     copy: "author-content-and-resource-references" as const,
     readonly: "render" as const,
   };

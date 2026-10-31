@@ -11,8 +11,11 @@ import (
 	"orbis.local/orbis/internal/platform/tasks"
 	"sync"
 
+	"orbis.local/orbis/api"
 	appstore "orbis.local/orbis/internal/app/postgres"
 	"orbis.local/orbis/internal/asset"
+	"orbis.local/orbis/internal/board"
+	boardstore "orbis.local/orbis/internal/board/postgres"
 	"orbis.local/orbis/internal/document"
 	"orbis.local/orbis/internal/document/crdtengine"
 	docstore "orbis.local/orbis/internal/document/postgres"
@@ -29,10 +32,14 @@ import (
 	"orbis.local/orbis/internal/platform/thumbnail"
 	"orbis.local/orbis/internal/publishing"
 	pubstore "orbis.local/orbis/internal/publishing/postgres"
+	"orbis.local/orbis/internal/quicknote"
+	quickstore "orbis.local/orbis/internal/quicknote/postgres"
 	"orbis.local/orbis/internal/search"
 	searchstore "orbis.local/orbis/internal/search/postgres"
 	"orbis.local/orbis/internal/sharing"
 	sharestore "orbis.local/orbis/internal/sharing/postgres"
+	"orbis.local/orbis/internal/sheet"
+	sheetstore "orbis.local/orbis/internal/sheet/postgres"
 	"orbis.local/orbis/internal/table"
 	httpapi "orbis.local/orbis/internal/transport/http"
 	"orbis.local/orbis/internal/workspace"
@@ -49,6 +56,7 @@ type Application struct {
 	objects              *storage.Local
 	assets               *asset.Service
 	imports              *tasks.Imports
+	versions             *tasks.Versions
 	importStore          *appstore.Imports
 }
 
@@ -121,21 +129,32 @@ func NewWithClock(ctx context.Context, cfg config.Config, logger *slog.Logger, w
 		}
 		engine = collaborationEngine
 	}
+	documentRepo := docstore.NewWithCollaboration(db, engine)
 	documents := document.New(
-		docstore.NewWithCollaboration(db, engine),
+		documentRepo,
 		workspaces,
 		wallClock,
 		security.NewCursorSigner(cfg.SigningKey),
 	)
 	assets := asset.New(appstore.NewAssets(db, wallClock), workspaces, objects, thumbnail.Normalizer{}, wallClock, cfg.MaxUploadBytes)
-	publishingRepo, err := pubstore.New(db, publicBaseURL)
+	boardCatalog, err := board.ParseCatalog(api.BoardCatalog)
+	if err != nil {
+		return cleanup(fmt.Errorf("load board catalog: %w", err))
+	}
+	boardRenderer, err := board.NewRenderer(boardCatalog, api.BoardIcons)
+	if err != nil {
+		return cleanup(fmt.Errorf("load board resources: %w", err))
+	}
+	boardProjector := boardstore.NewProjector(boardRenderer)
+	publishingRepo, err := pubstore.New(db, publicBaseURL, boardProjector)
 	if err != nil {
 		return cleanup(err)
 	}
-	shares := sharing.New(sharestore.New(db, wallClock, publicBaseURL), workspaces, wallClock, cfg.SigningKey, cfg.LegacyActionSecret)
+	shares := sharing.New(sharestore.New(db, wallClock, publicBaseURL, boardProjector), workspaces, wallClock, cfg.SigningKey, cfg.LegacyActionSecret)
 	libraryRepo := appstore.NewLibraryWithCollaboration(db, wallClock, cfg.SigningKey, engine)
 	importsRepo := appstore.NewImports(db, libraryRepo, objects, wallClock)
 	var importWorkers *tasks.Imports
+	var versionWorkers *tasks.Versions
 	if cfg.RedisURL != "" {
 		source, _ := url.Parse(cfg.DatabaseURL)
 		namespace := security.Digest(source.Host + source.Path)[:16]
@@ -146,23 +165,37 @@ func NewWithClock(ctx context.Context, cfg config.Config, logger *slog.Logger, w
 		cleanup = func(err error) (*Application, error) {
 			return nil, errors.Join(err, importWorkers.Close(), objects.Close(), pool.Close())
 		}
+		versionWorkers, err = tasks.StartVersions(ctx, cfg.RedisURL, namespace, documentRepo, wallClock, logger)
+		if err != nil {
+			return cleanup(err)
+		}
+		cleanup = func(err error) (*Application, error) {
+			return nil, errors.Join(err, versionWorkers.Close(), importWorkers.Close(), objects.Close(), pool.Close())
+		}
 	}
 	collaborationSockets := httpapi.NewCollaborationSockets()
+	boards := board.New(boardstore.New(db, boardCatalog, security.NewCursorSigner(cfg.SigningKey)), workspaces, wallClock, boardCatalog, boardRenderer)
 	router, err := httpapi.New(httpapi.Dependencies{
+		Boards:               boards,
+		AgentBoards:          integration.NewBoards(appstore.NewAgentBoards(db, wallClock, cfg.SigningKey, boardCatalog, boardRenderer)),
+		QuickNotes:           quicknote.New(quickstore.New(db, engine), workspaces, wallClock),
 		CollaborationSockets: collaborationSockets,
 		Identity:             accounts, Workspaces: workspaces, Documents: documents,
-		Imports:           integration.NewImports(importsRepo, wallClock, importWorkers != nil),
-		IntegrationTokens: integration.NewTokens(itstore.New(db, wallClock), workspaces, wallClock),
-		Library:           integration.NewLibrary(libraryRepo, wallClock, objects, cfg.MaxUploadBytes, shares),
-		Preferences:       identity.NewPreferences(appstore.NewPreferences(db), wallClock),
-		Publishing:        publishing.New(publishingRepo, workspaces, wallClock),
-		Sharing:           shares,
-		PublicBaseURL:     publicBaseURL,
-		Search:            search.New(searchstore.New(db), workspaces),
-		Transfers:         integration.NewTransfers(appstore.NewTransfers(db), workspaces, wallClock),
-		Tables:            table.New(appstore.NewTablesWithCollaboration(db, engine), workspaces, wallClock),
-		Actions:           actions,
-		Assets:            assets, MaxUploadBytes: cfg.MaxUploadBytes,
+		Versions:              document.NewVersions(documentRepo, documents, workspaces, wallClock, security.NewCursorSigner(cfg.SigningKey)),
+		VersionHistoryEnabled: versionWorkers != nil,
+		Imports:               integration.NewImports(importsRepo, wallClock, importWorkers != nil),
+		IntegrationTokens:     integration.NewTokens(itstore.New(db, wallClock), workspaces, wallClock),
+		Library:               integration.NewLibrary(libraryRepo, wallClock, objects, cfg.MaxUploadBytes, shares),
+		Preferences:           identity.NewPreferences(appstore.NewPreferences(db), wallClock),
+		Publishing:            publishing.New(publishingRepo, workspaces, wallClock),
+		Sharing:               shares,
+		PublicBaseURL:         publicBaseURL,
+		Search:                search.New(searchstore.New(db), workspaces),
+		Transfers:             integration.NewTransfers(appstore.NewTransfers(db), workspaces, wallClock),
+		Sheets:                sheet.New(sheetstore.New(db, cfg.SigningKey, engine), workspaces, wallClock),
+		Tables:                table.New(appstore.NewTablesWithCollaboration(db, engine), workspaces, wallClock),
+		Actions:               actions,
+		Assets:                assets, MaxUploadBytes: cfg.MaxUploadBytes,
 		Catalog:  document.NewCatalog(docstore.New(db), workspaces, wallClock),
 		Comments: document.NewComments(docstore.New(db), workspaces, wallClock),
 		Setup:    NewSetup(appstore.NewSetup(db), accounts), Ready: pool.PingContext,
@@ -175,7 +208,7 @@ func NewWithClock(ctx context.Context, cfg config.Config, logger *slog.Logger, w
 		}
 		return cleanup(err)
 	}
-	return &Application{Handler: router, pool: pool, objects: objects, assets: assets, imports: importWorkers, importStore: importsRepo, collaborationEngine: collaborationEngine, collaborationSockets: collaborationSockets}, nil
+	return &Application{Handler: router, pool: pool, objects: objects, assets: assets, imports: importWorkers, versions: versionWorkers, importStore: importsRepo, collaborationEngine: collaborationEngine, collaborationSockets: collaborationSockets}, nil
 }
 
 // Close releases the database pool after request processing has stopped.
@@ -187,7 +220,7 @@ func (a *Application) Close() error {
 		if a.collaborationEngine != nil {
 			a.collaborationEngine.Close()
 		}
-		a.closeErr = errors.Join(a.imports.Close(), a.objects.Close(), a.pool.Close())
+		a.closeErr = errors.Join(a.versions.Close(), a.imports.Close(), a.objects.Close(), a.pool.Close())
 	})
 	return a.closeErr
 }

@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
@@ -8,7 +9,7 @@ import { authRequestOptions, useAuthRequest } from "../../shared/auth/use-auth-r
 import { Button } from "../../shared/ui/Button";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { PageContainer } from "../../shared/ui/PageContainer";
-import { StatusMessage } from "../../shared/ui/StatusMessage";
+
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
 import { lookupSearchResource, searchTypeSchema } from "./api";
 import { resultDestination } from "./search-state";
@@ -41,7 +42,7 @@ export function SearchOpenPage() {
   const [filename, setFilename] = useState((params.get("name") || "文件").slice(0, 512));
 
   useEffect(() => {
-    if (!target.success) return;
+    if (!target.success) { reportError("搜索结果地址无效"); return; }
     let active = true;
     const controller = new AbortController();
     setError(null);
@@ -62,7 +63,7 @@ export function SearchOpenPage() {
         setFilename(resource.title || "文件");
         setReady(true);
       } else navigate(resultDestination({ ...resource, matched_comment_id: destination.comment ?? resource.matched_comment_id }), { replace: true });
-    })().catch((cause: unknown) => { if (active && !controller.signal.aborted) setError(cause instanceof Error ? cause.message : "无法打开搜索结果，请返回重试。"); });
+    })().catch((cause: unknown) => { if (active && !controller.signal.aborted) { reportError(cause); setError(cause instanceof Error ? cause.message : "无法打开搜索结果，请返回重试。"); } });
     return () => { active = false; controller.abort(); downloadRequest.current?.abort(); };
   }, [sessionKey, navigate, target]);
 
@@ -83,15 +84,14 @@ export function SearchOpenPage() {
       link.click();
       window.setTimeout(() => URL.revokeObjectURL(url), DOWNLOAD_URL_LIFETIME_MS);
       setDownloaded(true);
-    } catch (cause) {
+    } catch (cause) { reportError(cause);
       if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "文件下载失败，请重试。");
     } finally { if (!controller.signal.aborted) setDownloading(false); }
   }
 
   return <WorkspaceShell><PageContainer title={target.success && target.data.type === "file" ? filename : "打开搜索结果"}>
     <div className="global-search-open">
-      {!target.success ? <StatusMessage tone="error" title="搜索结果地址无效">请返回搜索页重新选择结果。</StatusMessage> : null}
-      {error ? <StatusMessage tone="error" title="无法打开内容">{error}</StatusMessage> : null}
+
       {target.success && !ready && !error ? <LoadingState label="正在打开内容…" /> : null}
       {ready ? <><p>文件内容仅在下载时读取。</p><Button variant="primary" isPending={downloading} onClick={() => void download()}>下载文件</Button>{downloaded ? <p role="status">已开始下载。</p> : null}</> : null}
       <Link to="/search">返回全局搜索</Link>

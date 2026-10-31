@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"orbis.local/orbis/api"
+	"orbis.local/orbis/internal/board"
 	"orbis.local/orbis/internal/document"
 	"orbis.local/orbis/internal/document/markdown"
 	"orbis.local/orbis/internal/integration"
@@ -18,7 +19,7 @@ func (h *handler) agentMe(c *gin.Context) {
 }
 func (h *handler) agentCapabilities(c *gin.Context) {
 	p := integrationPrincipal(c)
-	success(c, http.StatusOK, gin.H{"protocol_version": "2.0", "content_schema": "orbis.blocks.v1", "permissions": p.Permissions, "scope": gin.H{"workspace_id": p.Token.WorkspaceID, "collection_id": p.Token.CollectionID, "document_id": p.Token.DocumentID}, "limits": gin.H{"page_size": 100, "operations": document.MaxOperations, "operation_bytes": document.MaxAgentOperationBytes, "document_bytes": document.MaxContentBytes, "export_bytes": markdown.MaxExportBytes}, "operations": []string{"update_block", "replace_text", "insert_blocks", "move_block", "delete_block", "update_metadata"}, "features": gin.H{"read": true, "preview": true, "idempotency": true, "create": true, "files": true, "live_shares": true, "large_markdown_import": h.deps.Imports.Enabled(), "sites": false, "datasets": false}})
+	success(c, http.StatusOK, gin.H{"protocol_version": "2.0", "content_schema": "orbis.blocks.v1", "permissions": p.Permissions, "scope": gin.H{"workspace_id": p.Token.WorkspaceID, "collection_id": p.Token.CollectionID, "document_id": p.Token.DocumentID}, "limits": gin.H{"page_size": 100, "operations": document.MaxOperations, "operation_bytes": document.MaxAgentOperationBytes, "board_schema_version": board.SchemaVersion, "board_batch_elements": board.MaxBatch, "board_page_elements": board.MaxPageElements, "document_bytes": document.MaxContentBytes, "export_bytes": markdown.MaxExportBytes}, "operations": []string{"update_block", "replace_text", "insert_blocks", "move_block", "delete_block", "update_metadata"}, "features": gin.H{"read": true, "preview": true, "idempotency": true, "create": true, "files": true, "live_shares": true, "large_markdown_import": h.deps.Imports.Enabled(), "sites": false, "datasets": false, "boards": true}})
 }
 func (h *handler) agentSchema(c *gin.Context) {
 	var contract map[string]any

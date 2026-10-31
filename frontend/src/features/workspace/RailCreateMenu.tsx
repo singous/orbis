@@ -5,7 +5,7 @@ import { ActionButton } from "../../shared/ui/ActionButton";
 import { Button } from "../../shared/ui/Button";
 import { Dialog, DialogContent } from "../../shared/ui/Dialog";
 
-import { useToast } from "../../shared/ui/Toast";
+import { reportError } from "../../shared/api/request-feedback";
 import { NotebookDialog } from "../documents/NotebookDialog";
 import type { NotebookIconValue } from "../documents/notebook-icons";
 import {
@@ -21,14 +21,13 @@ export function RailCreateMenu() {
   const [open, setOpen] = useState(false);
   const [notebookDialogOpen, setNotebookDialogOpen] = useState(false);
   return <>
-    <ActionButton type="button" className="rail-create-trigger" aria-label="新建资产" aria-haspopup="dialog" onClick={() => setOpen(true)}><Plus size={18} aria-hidden="true" /></ActionButton>
+    <ActionButton type="button" className="rail-create-trigger" aria-label="新建资产" aria-haspopup="dialog" aria-expanded={open || notebookDialogOpen} onClick={() => setOpen(true)}><Plus size={18} aria-hidden="true" /></ActionButton>
     {open || notebookDialogOpen ? <RailCreateActions open={open} onOpenChange={setOpen} notebookDialogOpen={notebookDialogOpen} onNotebookDialogChange={setNotebookDialogOpen} /> : null}
   </>;
 }
 
 function RailCreateActions({ open, onOpenChange, notebookDialogOpen, onNotebookDialogChange }: { open: boolean; onOpenChange: (open: boolean) => void; notebookDialogOpen: boolean; onNotebookDialogChange: (open: boolean) => void }) {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const groupsQuery = useDocumentGroups();
   const notebooksQuery = useNotebooks();
   const createNote = useCreateNote();
@@ -73,7 +72,7 @@ function RailCreateActions({ open, onOpenChange, notebookDialogOpen, onNotebookD
       <Dialog open={open} onOpenChange={(next) => { if (!createNote.isPending) onOpenChange(next); }}>
         <DialogContent title="新建资产" description="选择要创建的内容。">
           <div className="grid gap-3">
-            <Button icon={<FilePlus2 aria-hidden="true" size={18} />} isPending={createNote.isPending} disabled={notebooksQuery.isLoading || notebooksQuery.isError || Boolean(targetNotebook && !treeQuery.isSuccess)} onClick={() => void createDocument().catch(() => toast({ title: "文档创建失败，请重试", tone: "danger" }))}>文档</Button>
+            <Button icon={<FilePlus2 aria-hidden="true" size={18} />} isPending={createNote.isPending} disabled={notebooksQuery.isLoading || notebooksQuery.isError || Boolean(targetNotebook && !treeQuery.isSuccess)} onClick={() => void createDocument().catch(reportError)}>文档</Button>
             <Button icon={<BookOpen aria-hidden="true" size={18} />} onClick={() => { onNotebookDialogChange(true); onOpenChange(false); }}>笔记本</Button>
           </div>
         </DialogContent>

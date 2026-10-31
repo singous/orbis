@@ -1,3 +1,4 @@
+import { releaseFeatures } from "../../../src/shared/release-features";
 import { expect, test, type APIRequestContext, type Browser, type Page } from "@playwright/test";
 import { createCollection, createDocument, openWithSession, ownerSession, responseData, sessionHeaders, workspacePath, type TestSession } from "../helpers/api-fixtures";
 
@@ -32,7 +33,23 @@ async function openPair(browser: Browser, session: TestSession, id: string) {
 }
 async function append(page: Page, id: string, value: string) {
   const block = page.locator(`.ProseMirror [data-orbis-block-id="${id}"]`).first();
-  await block.click(); await page.keyboard.press("End"); await page.keyboard.type(value);
+  await block.click(); await lineBoundary(page, "end"); await page.keyboard.type(value);
+}
+async function lineBoundary(page: Page, edge: "start" | "end") {
+  const apple = await page.evaluate(() => /Mac|iPhone|iPad/.test(navigator.platform));
+  await page.keyboard.press(apple ? edge === "start" ? "Meta+ArrowLeft" : "Meta+ArrowRight" : edge === "start" ? "Home" : "End");
+}
+async function pastePlainText(page: Page) {
+  const apple = await page.evaluate(() => /Mac|iPhone|iPad/.test(navigator.platform));
+  if (!apple) { await page.keyboard.press("ControlOrMeta+Shift+V"); return; }
+  // Playwright's macEditingCommands maps Meta+KeyV, but omits Shift+Meta+KeyV.
+  // Ask Chromium to perform the real native edit command; its trusted paste
+  // event still reads the actual system clipboard and enters the editor path.
+  const cdp = await page.context().newCDPSession(page);
+  try {
+    await cdp.send("Input.dispatchKeyEvent", { type: "rawKeyDown", modifiers: 12, key: "V", code: "KeyV", windowsVirtualKeyCode: 86, commands: ["pasteAndMatchStyle"] });
+    await cdp.send("Input.dispatchKeyEvent", { type: "keyUp", modifiers: 0, key: "V", code: "KeyV", windowsVirtualKeyCode: 86 });
+  } finally { await cdp.detach(); }
 }
 async function caret(page: Page) {
   // Native arrow keys update the DOM before the selectionchange observer has
@@ -56,6 +73,60 @@ async function localOperations(page: Page, id: string): Promise<string[]> {
 
 // Real WebSocket transport, persisted Yjs state, Go transactions and the actual
 // editor are all exercised here; only disposable synthetic accounts are used.
+test("named document versions fix content and restore into an editable collaboration session", async ({ page, request }, testInfo) => {
+  test.skip(!releaseFeatures.documentCollaboration, "Version-history entry points are deferred in this release; API and restoration coverage remains active.");
+  const { session, document, blocks } = await fixture(request, "文档版本管理", ["Version baseline"]);
+  await openWithSession(page, session, `/documents/${document.id}`);
+  await expect(page.locator(".ProseMirror")).toBeVisible();
+  await expect(page.locator(".document-save-state")).toHaveText("已保存");
+  await expect(page.getByText(/^版本 \d+$/)).toHaveCount(0);
+  async function openVersions() {
+    await page.getByRole("button", { name: "评论与历史", exact: true }).click();
+    await page.getByRole("tab", { name: "历史版本", exact: true }).click();
+    await expect(page.getByLabel("新评论", { exact: true })).toBeHidden();
+  }
+  async function saveNamed(name: string) {
+    await page.getByRole("button", { name: "新建命名版本", exact: true }).click();
+    await page.getByLabel("新版本名称", { exact: true }).fill(name);
+    await page.getByRole("button", { name: "保存命名版本", exact: true }).click();
+    await expect(page.getByRole("button", { name: `查看版本 ${name}`, exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+  }
+  await openVersions();
+  await saveNamed("评审稿");
+  await page.getByRole("button", { name: "关闭评论与历史", exact: true }).click();
+  await append(page, blocks[0].id, " revised");
+  await expect.poll(async () => text((await content(request, session, document.id)).blocks[0])).toBe("Version baseline revised");
+  await openVersions();
+  await saveNamed("修订稿");
+  const saved = await responseData<{ items: Array<{ id: string; name: string; source_revision: number }> }>(await request.get(workspacePath(session, `/documents/${document.id}/versions`), { headers: sessionHeaders(session) }));
+  const review = saved.items.find(version => version.name === "评审稿")!;
+  const revised = saved.items.find(version => version.name === "修订稿")!;
+  const fixed = await responseData<{ content: { blocks: NativeBlock[] } }>(await request.get(workspacePath(session, `/documents/${document.id}/versions/${review.id}/content`), { headers: sessionHeaders(session) }));
+  expect(text(fixed.content.blocks[0])).toBe("Version baseline");
+  const compared = await responseData<{ items: Array<{ change: string; before_text: string; after_text: string }> }>(await request.get(workspacePath(session, `/documents/${document.id}/versions/${revised.id}/compare?from_id=${review.id}`), { headers: sessionHeaders(session) }));
+  expect(compared.items).toHaveLength(1);
+  expect(compared.items[0]).toMatchObject({ change: "modified", before_text: "Version baseline", after_text: "Version baseline revised" });
+  await page.locator('.document-versions [data-slot="select-trigger"]').click();
+  await page.getByRole("option", { name: /评审稿/ }).click();
+  await expect(page.getByRole("heading", { name: "内容差异", exact: true })).toBeVisible();
+  await expect(page.getByText("Version baseline", { exact: true })).toBeVisible();
+  await page.setViewportSize({ width: 375, height: 812 });
+  expect((await page.getByRole("button", { name: "新建命名版本", exact: true }).boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await expect(page.getByRole("button", { name: "恢复此版本", exact: true })).toBeVisible();
+  expect(await page.locator(".collaboration-panel").evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+  await page.getByRole("heading", { name: "修订稿", exact: true }).scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath("document-versions-mobile.png"), fullPage: true });
+  await page.getByRole("button", { name: "查看版本 评审稿", exact: true }).click();
+  await page.getByRole("button", { name: "恢复此版本", exact: true }).click();
+  await expect(page.getByRole("alertdialog", { name: "请求成功", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "关闭评论与历史", exact: true }).click();
+  await expect(page.locator(".ProseMirror")).toHaveText("Version baseline");
+  await append(page, blocks[0].id, " after restore");
+  await expect.poll(async () => text((await content(request, session, document.id)).blocks[0])).toBe("Version baseline after restore");
+  await expect(page.locator(".document-save-state")).toHaveText("已保存");
+});
+
 test("same-paragraph offline text and formatting converge in two real editors", async ({ browser, request }) => {
   const { session, document, blocks } = await fixture(request, "同段协作", ["Shared base"]);
   const pair = await openPair(browser, session, document.id);
@@ -64,7 +135,7 @@ test("same-paragraph offline text and formatting converge in two real editors", 
     await Promise.all([pair.first.setOffline(true), pair.second.setOffline(true)]);
     await append(pair.a, blocks[0].id, " A-tail");
     await pair.b.locator(`.ProseMirror [data-orbis-block-id="${blocks[0].id}"]`).click();
-    await pair.b.keyboard.press("Home"); await pair.b.keyboard.press("Control+B"); await pair.b.keyboard.type("B-bold "); await pair.b.keyboard.press("Control+B");
+    await lineBoundary(pair.b, "start"); await pair.b.keyboard.press("ControlOrMeta+B"); await pair.b.keyboard.type("B-bold "); await pair.b.keyboard.press("ControlOrMeta+B");
     await expect(pair.b.locator(".ProseMirror strong")).toHaveText("B-bold ");
     await Promise.all([pair.first.setOffline(false), pair.second.setOffline(false)]);
     await expect.poll(async () => text((await content(request, session, document.id)).blocks[0]), { timeout: 30000 }).toBe("B-bold Shared base A-tail");
@@ -108,7 +179,7 @@ test("two first-open editors create one paragraph in a blank document", async ({
     expect((await content(request, session, document.id)).blocks).toHaveLength(0);
     await pair.a.locator(".ProseMirror").click(); await pair.a.keyboard.type("First paragraph");
     await expect(pair.b.locator(".ProseMirror")).toContainText("First paragraph");
-    await pair.b.locator(".ProseMirror").click(); await pair.b.keyboard.press("End"); await pair.b.keyboard.type(" from peer");
+    await pair.b.locator(".ProseMirror").click(); await lineBoundary(pair.b, "end"); await pair.b.keyboard.type(" from peer");
     await expect.poll(async () => (await content(request, session, document.id)).blocks.map(text)).toEqual(["First paragraph from peer"]);
     await expect(pair.a.locator(".ProseMirror p")).toHaveCount(1);
     await expect(pair.b.locator(".ProseMirror p")).toHaveCount(1);
@@ -123,7 +194,7 @@ test("a 5,500-block Markdown paste renders, saves completely and undoes once", a
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   const markdown = '# Long document\n\n| Key | Value |\n| --- | --- |\n| A | B |\n\n- First\n- Second\n\n```go\nfmt.Println("hello")\n```\n\n' + Array.from({ length: 5495 }, (_, index) => `Paragraph ${index} with **marked text**.`).join("\n\n");
   await page.evaluate(value => navigator.clipboard.writeText(value), markdown);
-  await page.locator(".ProseMirror").click(); await page.keyboard.press("Control+V");
+  await page.locator(".ProseMirror").click(); await page.keyboard.press("ControlOrMeta+V");
   await expect(page.locator(".ProseMirror h1")).toHaveText("Long document");
   await expect(page.locator(".ProseMirror table")).toHaveCount(1);
   await expect(page.locator(".ProseMirror pre code")).toContainText('fmt.Println("hello")');
@@ -149,7 +220,10 @@ test("paste as plain text preserves inline Markdown markers through save and und
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   const source = "**Literal bold** with `literal code`";
   await page.evaluate(value => navigator.clipboard.writeText(value), source);
-  await page.locator(".ProseMirror").click(); await page.keyboard.press("Control+Shift+V");
+  const editor = page.locator(".ProseMirror");
+  await editor.evaluate(element => element.addEventListener("paste", event => element.setAttribute("data-native-paste-trusted", String(event.isTrusted)), { once: true }));
+  await editor.click(); await pastePlainText(page);
+  await expect(editor).toHaveAttribute("data-native-paste-trusted", "true");
   await expect(page.locator(".ProseMirror")).toHaveText(source);
   await expect(page.locator(".ProseMirror strong, .ProseMirror code")).toHaveCount(0);
   await expect.poll(async () => (await content(request, session, document.id)).blocks.map(text)).toEqual([source]);
@@ -187,6 +261,7 @@ test("a committed update retries its original operation ID after a dropped WebSo
 });
 
 test("explicit history restore opens the new epoch and remains editable", async ({ page, request }) => {
+  test.skip(!releaseFeatures.documentCollaboration, "The history-panel entry is deferred; external restore and recovery journeys remain active.");
   const { session, document, blocks } = await fixture(request, "恢复历史协作", ["Historical body"]);
   const source = await content(request, session, document.id);
   await openWithSession(page, session, `/documents/${document.id}`);
@@ -195,9 +270,10 @@ test("explicit history restore opens the new epoch and remains editable", async 
   await expect.poll(async () => text((await content(request, session, document.id)).blocks[0])).toBe("Historical body current");
   await page.getByRole("button", { name: "评论与历史", exact: true }).click();
   await page.getByRole("tab", { name: "历史版本", exact: true }).click();
-  await page.getByRole("button", { name: `查看版本 ${source.revision.version}`, exact: true }).click();
+  await page.getByRole("button", { name: "查看全部保存记录", exact: true }).click();
+  await page.getByRole("button", { name: `查看保存记录 ${source.revision.version}`, exact: true }).click();
   await page.getByRole("button", { name: "恢复此版本", exact: true }).click();
-  await expect(page.getByText("历史版本已恢复", { exact: true })).toBeVisible();
+  await expect(page.getByRole("alertdialog", { name: "请求成功", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "关闭评论与历史", exact: true }).click();
   await expect(page.locator(".ProseMirror")).toHaveText("Historical body");
   await append(page, blocks[0].id, " after restore");
@@ -219,7 +295,8 @@ test("an external restore preserves offline edits for explicit recovery across r
     const latest = await content(request, session, document.id);
     await responseData(await request.post(workspacePath(session, `/documents/${document.id}/restore`), { headers: sessionHeaders(session), data: { operation_id: crypto.randomUUID(), expected_version: latest.revision.version, source_version: source.revision.version } }));
     await pair.second.setOffline(false);
-    await expect(pair.b.getByText("本机协作草稿需要手动恢复", { exact: true })).toBeVisible({ timeout: 30000 });
+    await expect(pair.b.getByRole("button", { name: "本机修改", exact: true })).toBeVisible({ timeout: 30000 });
+    await pair.b.getByRole("button", { name: "本机修改", exact: true }).click();
     await expect(pair.b.locator(".ProseMirror")).toContainText("offline-preserved");
     const download = pair.b.waitForEvent("download");
     await pair.b.getByRole("button", { name: "下载本机草稿", exact: true }).click();
@@ -229,7 +306,7 @@ test("an external restore preserves offline edits for explicit recovery across r
     const exported = JSON.parse(Buffer.concat(chunks).toString());
     expect(exported.pending.length + exported.previous_epochs.reduce((count: number, entry: { pending: unknown[] }) => count + entry.pending.length, 0)).toBeGreaterThan(0);
     await pair.b.reload();
-    await expect(pair.b.getByText("本机协作草稿需要手动恢复", { exact: true })).toBeVisible();
+    await expect(pair.b.getByRole("button", { name: "本机修改", exact: true })).toBeVisible();
     await expect(pair.b.locator(".ProseMirror")).toHaveText("Original");
     expect(text((await content(request, session, document.id)).blocks[0])).toBe("Original");
   } finally { await pair.close(); }
@@ -289,21 +366,28 @@ test("a rejected target edit stays exportable after opening a fresh server lane"
     operations: [{ type: "delete_block", block_id: blocks[0].id, delete_subtree: true }],
   } }));
   online = true;
+  await expect(page.locator(".document-save-state")).toHaveText("本机草稿需要恢复", { timeout: 30000 });
+  await page.getByRole("button", { name: "本机修改", exact: true }).click();
   await expect(page.getByRole("button", { name: "保留本机草稿并载入服务端", exact: true })).toBeVisible({ timeout: 30000 });
   await expect(page.locator(".ProseMirror")).toContainText("Target original retained");
   await page.getByRole("button", { name: "保留本机草稿并载入服务端", exact: true }).click();
   await expect(page.locator(".ProseMirror")).toHaveText("Other block");
+  const draftModal = page.getByRole("dialog", { name: "本机修改", exact: true });
+  if (await draftModal.isVisible()) await draftModal.getByRole("button", { name: "关闭", exact: true }).click();
+  await page.getByRole("button", { name: "本机修改", exact: true }).click();
   const markdown = page.getByRole("button", { name: /下载草稿 Markdown/ }).first();
   await expect(markdown).toBeVisible();
   const download = page.waitForEvent("download"); await markdown.click();
   const stream = await (await download).createReadStream();
   const chunks: Buffer[] = []; for await (const chunk of stream!) chunks.push(Buffer.from(chunk));
   expect(Buffer.concat(chunks).toString()).toContain("Target original retained");
+  await page.getByRole("dialog", { name: "本机修改", exact: true }).getByRole("button", { name: "关闭", exact: true }).click();
   await append(page, blocks[1].id, " continued");
   await expect.poll(async () => (await content(request, session, document.id)).blocks.map(text)).toEqual(["Other block continued"]);
   await expect(page.locator(".document-save-state")).toHaveText("已保存");
   await page.reload();
   await expect(page.locator(".ProseMirror")).toHaveText("Other block continued");
+  await page.getByRole("button", { name: "本机修改", exact: true }).click();
   await expect(page.getByRole("button", { name: /下载草稿 Markdown/ }).first()).toBeVisible();
   await expect(page.getByRole("button", { name: "保留本机草稿并载入服务端", exact: true })).not.toBeVisible();
 });
@@ -313,7 +397,7 @@ test("paragraph split undo redo and continued typing retain stable saved blocks"
   await openWithSession(page, session, `/documents/${document.id}`);
   await expect(page.locator(".ProseMirror")).toBeVisible();
   await page.locator(`.ProseMirror [data-orbis-block-id="${blocks[0].id}"]`).click();
-  await page.keyboard.press("Home");
+  await lineBoundary(page, "start");
   await expect.poll(() => caret(page)).toEqual({ dom: 0, editor: 0 });
   for (let index = 0; index < 5; index += 1) await page.keyboard.press("ArrowRight");
   await expect.poll(() => caret(page)).toEqual({ dom: 5, editor: 5 });
@@ -327,7 +411,7 @@ test("paragraph split undo redo and continued typing retain stable saved blocks"
   expect(split.blocks[0].id).toBe(blocks[0].id);
   expect(split.blocks[1].id).not.toBe(blocks[0].id);
   await page.locator(`.ProseMirror [data-orbis-block-id="${split.blocks[1].id}"]`).click();
-  await page.keyboard.press("Home"); await page.keyboard.type("Next ");
+  await lineBoundary(page, "start"); await page.keyboard.type("Next ");
   await expect.poll(async () => (await content(request, session, document.id)).blocks.map(text)).toEqual(["Split", "Next Here"]);
   await expect(page.locator(".document-save-state")).toHaveText("已保存");
   await page.reload();

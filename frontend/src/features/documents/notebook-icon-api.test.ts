@@ -19,6 +19,13 @@ function envelope(data: unknown, status = 200) {
   });
 }
 
+function imageResponse() {
+  // Node Response.blob() 属于另一个 realm，浏览器 fetch 与 FileReader 使用同一 Blob。
+  return Object.assign(new Response("icon", { headers: { "Content-Type": "image/png" } }), {
+    blob: async () => new Blob(["icon"], { type: "image/png" }),
+  });
+}
+
 afterEach(() => { vi.unstubAllGlobals(); vi.clearAllMocks(); });
 
 describe("notebook icon API", () => {
@@ -44,7 +51,7 @@ describe("notebook icon API", () => {
 
   it("uses token refresh for authenticated custom image reads", async () => {
     const data = { data_url: "data:image/png;base64,aWNvbg==" };
-    const fetchMock = vi.fn().mockResolvedValueOnce(envelope(null, 401)).mockResolvedValueOnce(envelope({ access_token: "renewed",refresh_token:"renewed-icon-refresh" })).mockResolvedValueOnce(new Response("icon",{headers:{"Content-Type":"image/png"}}));
+    const fetchMock = vi.fn().mockResolvedValueOnce(envelope(null, 401)).mockResolvedValueOnce(envelope({ access_token: "renewed",refresh_token:"renewed-icon-refresh" })).mockResolvedValueOnce(imageResponse());
     vi.stubGlobal("fetch", fetchMock);
     expect(await getNotebookIcon(fileId, auth)).toEqual(data);
     expect(fetchMock).toHaveBeenNthCalledWith(3, `/api/v1/workspaces/${notebook.workspace_id}/assets/${fileId}/content`, expect.objectContaining({ headers: { authorization: "Bearer renewed" } }));

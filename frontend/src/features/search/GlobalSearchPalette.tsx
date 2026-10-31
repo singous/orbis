@@ -1,5 +1,7 @@
+import { releaseFeatures } from "../../shared/release-features";
+import { reportError } from "../../shared/api/request-feedback";
 import { Modal } from "@heroui/react/modal";
-import { useEffect, useId, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
 import { authStore, getAuthSessionKey } from "../../shared/auth/auth-store";
@@ -12,6 +14,7 @@ import { BookOpen, FileText, Folder, Globe, Paperclip, Search, X } from "../../s
 import type { SearchFilters, SearchResult } from "./api";
 import { resultHref, SEARCH_MAX_LENGTH, SEARCH_TYPE_LABELS } from "./search-state";
 import { matchPaletteCategories, parsePaletteInput, SEARCH_PALETTE_CATEGORIES, type SearchPaletteCategory } from "./search-palette-model";
+import { PalettePresenceObserver } from "./palette-presence";
 import { usePaletteSearch } from "./use-palette-search";
 import "./search-palette.css";
 
@@ -25,7 +28,7 @@ function initialInput(filters: Partial<SearchFilters>) {
   return category ? `${category.alias} ${filters.q ?? ""}` : filters.q ?? "";
 }
 
-export function GlobalSearchPalette({ initialFilters, onClose }: { initialFilters: Partial<SearchFilters>; onClose: () => void }) {
+export function GlobalSearchPalette({ initialFilters, onClose, isOpen = true, onExited = () => {} }: { initialFilters: Partial<SearchFilters>; onClose: () => void; isOpen?: boolean; onExited?: () => void }) {
   const navigate = useNavigate();
   const sessionKey = useStore(authStore, getAuthSessionKey);
   const [input, setInput] = useState(() => initialInput(initialFilters));
@@ -34,7 +37,7 @@ export function GlobalSearchPalette({ initialFilters, onClose }: { initialFilter
   const [composing, setComposing] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [opening, setOpening] = useState(false);
-  const [openError, setOpenError] = useState<string | null>(null);
+
   const openingRequest = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -43,8 +46,8 @@ export function GlobalSearchPalette({ initialFilters, onClose }: { initialFilter
   const categories = matchPaletteCategories(input);
   const categoryMode = !input.trim() || (!parsed.hasPrefix && /^@\S*$/.test(input.trim()) && categories.length > 0);
   const filters: SearchFilters = { q: categoryMode ? "" : parsed.q, type: parsed.type, status, page };
-  const { results, pendingInput } = usePaletteSearch(filters, { enabled: true, composing });
-  const resultItems = !pendingInput && !results.isError && filters.q ? results.data?.items ?? [] : [];
+  const { results, pendingInput } = usePaletteSearch(filters, { enabled: isOpen, composing });
+  const resultItems = !pendingInput && !results.isError && filters.q ? results.data?.items.filter(item => releaseFeatures.sites || item.type !== "site") ?? [] : [];
   const options = categoryMode ? categories.map(item => item.type) : resultItems.map(resultKey);
   const selectedIndex = Math.max(0, selected ? options.indexOf(selected) : 0);
   const activeKey = options[selectedIndex];
@@ -52,8 +55,9 @@ export function GlobalSearchPalette({ initialFilters, onClose }: { initialFilter
   const waiting = Boolean(filters.q && (pendingInput || results.isPending));
   const shortcut = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘ K" : "Ctrl K";
 
-  useEffect(() => { setSelected(null); setOpenError(null); }, [input, status, page]);
+  useEffect(() => { setSelected(null);  }, [input, status, page]);
   useEffect(() => () => { openingRequest.current?.abort(); }, []);
+  useLayoutEffect(() => { if (!isOpen) openingRequest.current?.abort(); }, [isOpen]);
 
   function close() {
     openingRequest.current?.abort();
@@ -64,7 +68,7 @@ export function GlobalSearchPalette({ initialFilters, onClose }: { initialFilter
     openingRequest.current?.abort();
     openingRequest.current = null;
     setOpening(false);
-    setOpenError(null);
+
   }
 
   function changeInput(value: string) {
@@ -83,7 +87,7 @@ export function GlobalSearchPalette({ initialFilters, onClose }: { initialFilter
     const controller = new AbortController();
     openingRequest.current = controller;
     setOpening(true);
-    setOpenError(null);
+
     const sourceSession = sessionKey;
     try {
       await preparePendingNavigation(controller.signal);
@@ -93,7 +97,7 @@ export function GlobalSearchPalette({ initialFilters, onClose }: { initialFilter
       navigate(href);
     } catch (error) {
       if (!controller.signal.aborted && !(error instanceof DOMException && error.name === "AbortError")) {
-        setOpenError(error instanceof Error ? error.message : "请关闭搜索，检查当前内容后重试。");
+        reportError(error);
       }
     } finally {
       if (openingRequest.current === controller) openingRequest.current = null;
@@ -131,10 +135,10 @@ export function GlobalSearchPalette({ initialFilters, onClose }: { initialFilter
     listRef.current?.querySelectorAll<HTMLElement>('[role="option"]')[next]?.scrollIntoView?.({ block: "nearest" });
   }
 
-
-  return <Modal.Backdrop className="orbis-modal-backdrop search-palette-backdrop" isOpen onOpenChange={open => { if (!open) close(); }}>
+  return <Modal.Backdrop className="orbis-modal-backdrop search-palette-backdrop" isOpen={isOpen} onOpenChange={open => { if (!open) close(); }}>
     <Modal.Container className="orbis-modal-container search-palette-container">
-      <Modal.Dialog className="orbis-modal-dialog search-palette">
+      <Modal.Dialog className="orbis-modal-dialog search-palette" inert={!isOpen ? true : undefined}>
+        <PalettePresenceObserver onExited={onExited} />
         <Modal.Heading className="sr-only">全局搜索</Modal.Heading>
         <div className="search-palette-input-row">
           <Search aria-hidden="true" size={20} />
@@ -147,11 +151,11 @@ export function GlobalSearchPalette({ initialFilters, onClose }: { initialFilter
           {parsed.category ? <ActionButton className="search-palette-type" aria-label="清除类型筛选" onClick={() => { changeInput(parsed.q); inputRef.current?.focus(); }}>{parsed.category.label}<X size={12} /></ActionButton> : null}
         </div>
         <div className="search-palette-content">
-          {openError ? <div className="search-palette-error" role="alert">{openError}</div> : null}
+
           {categoryMode ? <p className="search-palette-heading">选择搜索内容</p> : null}
           {!categoryMode && !filters.q ? <p className="search-palette-empty">输入关键词，搜索{parsed.category?.label ?? "全部内容"}。</p> : null}
           {waiting ? <LoadingState label="正在搜索…" compact /> : null}
-          {!pendingInput && filters.q && results.isError ? <div className="search-palette-error" role="alert">{results.error instanceof Error ? results.error.message : "搜索失败，请重试。"}<ActionButton onClick={() => void results.refetch()}>重试搜索</ActionButton></div> : null}
+
           {!waiting && filters.q && !results.isError && results.data ? <p className="search-palette-heading" role="status">找到 {results.data.pagination.total} 条结果</p> : null}
           {!waiting && filters.q && !results.isError && results.data && !resultItems.length ? <p className="search-palette-empty">没有匹配的内容。试试其他关键词。</p> : null}
           <div ref={listRef} id={listId} role="listbox" aria-label={categoryMode ? "搜索内容类型" : "搜索结果"} aria-busy={waiting || opening} className={categoryMode ? "search-palette-categories" : "search-palette-results"}>

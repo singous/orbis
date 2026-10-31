@@ -1,6 +1,31 @@
 # Orbis CLI
 
-独立的 Go 命令行应用，通过公开的工作空间 Agent API 访问 Orbis。它不导入后端内部包、不连接数据库，也不需要 Python。当前 CLI 版本为 `0.1.0`，使用 Agent 协议 `2.0` 和内容格式 `orbis.blocks.v1`。
+### 文档版本
+
+文档的内部提交序号用于定位已保存内容。命名版本拥有独立 UUID，名称和说明可以修改，固定的内容保持不变。
+
+```bash
+orbis versions list --document DOCUMENT_ID --page-size 20
+orbis versions save --document DOCUMENT_ID --source-revision COMMITTED_REVISION \
+  --name "评审稿" --description "本轮确认的内容" --operation-id OPERATION_ID
+orbis versions get VERSION_ID --document DOCUMENT_ID
+orbis versions rename VERSION_ID --document DOCUMENT_ID \
+  --expected-metadata-version METADATA_VERSION --name "评审通过" --operation-id OPERATION_ID
+orbis versions compare TARGET_VERSION_ID --document DOCUMENT_ID --from SOURCE_VERSION_ID
+orbis versions restore VERSION_ID --document DOCUMENT_ID \
+  --expected-revision CURRENT_COMMITTED_REVISION --operation-id OPERATION_ID
+```
+
+`versions list` 和 `versions compare` 使用 `--cursor` 继续读取。版本操作沿用工作空间和令牌的当前权限；写入需要文档编辑授权。
+同一写入重试必须保留原操作 ID 和全部参数，可通过 `orbis operations get OPERATION_ID` 查询 Agent 回执。
+
+恢复会创建新修订，同时保留恢复前后的版本节点。文档拥有的附件与版本化内嵌表格会保留引用；共享 Sheet 和外部 URL 继续按链接访问，恢复文档不会回滚共享资源。
+
+自动历史在内容变化后空闲一分钟或连续编辑五分钟时进入后台处理，依赖服务端 Redis 任务配置。底层逐次修订仍由原 API 保留，自动节点的数量不随每次保存递增。
+
+升级需执行新增 SQL migration。已有版本历史或操作回执时，版本 migration 的降级会主动拒绝执行，需先准备经审核的数据保留方案。
+
+独立的 Go 命令行应用，通过公开的工作空间 Agent API 访问 Orbis。它不导入后端内部包、不连接数据库，也不需要 Python。当前 CLI 版本为 `0.1.1`，使用 Agent 协议 `2.0` 和内容格式 `orbis.blocks.v1`。
 
 ## 构建与安装
 
@@ -136,3 +161,32 @@ orbis --json shares revoke SHARE_UUID --expected-version 1
 兼容命令别名：`notes`/`documents`、`notebooks`/`collections`、`--note`/`--document`、`--notebook`/`--collection`、`--limit`/`--page-size`。
 
 产品 Skill 位于独立目录 `skills/orbis`，可单独分发；`0.1.x` Skill 配合 `0.1.x` CLI 和 Agent 协议 `2.0` 使用。
+
+## 原生画板
+
+开发分支的原生画板使用同一套服务端命令和令牌范围校验：
+
+```sh
+orbis --json boards list --collection COLLECTION_UUID
+orbis --json boards catalog
+orbis --json boards templates
+orbis --json boards template BOARD_UUID --template flow.approval --board-page PAGE_UUID --operation-id OPERATION_UUID
+orbis --json boards create --file create-board.json
+orbis --json boards get BOARD_UUID
+orbis --json boards elements BOARD_UUID --board-page PAGE_UUID --revision 3
+orbis --json boards apply BOARD_UUID --file board-commands.json
+orbis --json boards changes BOARD_UUID --after 3
+orbis --json boards history BOARD_UUID
+orbis --json boards export BOARD_UUID --revision 3 --out diagram.orbis-board.json
+```
+
+创建请求包含固定的 `id`、`operation_id`、`collection_id`、`page_id`、
+`parent_id`、`title` 与 `elements`；命令请求包含固定的 `operation_id`、
+`schema_version: 1` 与 `commands`。图元与版本字段依实例 OpenAPI 和图形目录构造。
+普通写入最多 500 个图元、1 MiB；失败后查询原始 `operations get OPERATION_UUID`，
+保留原操作标识与意图重试。
+
+读取要求 `documents:read`，写入要求 `documents:write`。单文档令牌不能创建新的目录画板。
+图片导出还需要 `assets:read`；图片上传使用画板所属文档的 `files upload`。
+导出固定版本后按页面游标读取，包含图片资产，文件最多 32 MiB、图片总量最多 16 MiB。
+网页导入当前限制为单次 500 个页面与图元，超限整体拒绝，不截断内容。

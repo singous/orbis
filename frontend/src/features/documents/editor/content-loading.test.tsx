@@ -4,7 +4,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import type { Editor } from "@tiptap/core";
 import { TiptapEditor } from "./TiptapEditor";
 import type { EditorContentHandle } from "./editor-content-handle";
-import type { NoteBlocksV2, OrbisBlock } from "../../content/model/blocks";
+import type { NoteBlocksV2, OrbisBlock } from "../../content/blocks";
 
 const paragraph = (id: string, text = id): OrbisBlock => ({ id, type: "paragraph", props: {}, content: [{ type: "text", text }], children: [] });
 afterEach(cleanup);
@@ -16,11 +16,9 @@ it("keeps a shallow tab's loader visible in its selected panel without counting 
   const { container } = render(<TiptapEditor blocks={blocks} loadStates={states} onChange={vi.fn()} />);
   const linuxLoader = () => container.querySelector('[data-block-loader="Linux"]') as HTMLElement;
   const macLoader = () => container.querySelector('[data-block-loader="macOS"]') as HTMLElement;
-  await waitFor(() => expect(linuxLoader()).toBeVisible());
-  expect(macLoader()).not.toBeVisible();
+  await waitFor(() => { expect(linuxLoader()).toBeVisible(); expect(macLoader()).not.toBeVisible(); });
   await userEvent.click(screen.getByRole("tab", { name: "macOS" }));
-  await waitFor(() => expect(macLoader()).toBeVisible());
-  expect(linuxLoader()).not.toBeVisible();
+  await waitFor(() => { expect(macLoader()).toBeVisible(); expect(linuxLoader()).not.toBeVisible(); });
   expect(container.querySelector('[data-orbis-block-id="macOS"]')).toBeVisible();
 });
 

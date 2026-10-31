@@ -27,7 +27,8 @@ import { createDocumentBlock } from "./tiptap-insert";
 import { clipboardPropsAttribute, parseClipboardProps } from "./tiptap-clipboard";
 import { OrbisBlockIds } from "./tiptap-block-ids";
 import { OrbisGroupEditing } from "./tiptap-group-editing";
-import { OrbisDrawing } from "./tiptap-drawing";
+import { RetiredDrawing } from "./tiptap-retired";
+import { OrbisBoard } from "./tiptap-board";
 import { OrbisCodeHighlight } from "./tiptap-code-highlight";
 import { OrbisMarkdownPaste } from "./markdown-paste";
 import { toTiptapDocumentForSchema } from "./tiptap-model";
@@ -69,10 +70,12 @@ const GROUP_CHILD: Partial<Record<DocumentBlockKind, DocumentBlockKind | "codeBl
 const PROP_LABELS: Record<string, string> = { title: "标题", href: "链接", tone: "提示类型", columns: "每行卡片数量" };
 const VALUE_LABELS: Record<string, string> = { info: "说明", success: "成功", warning: "注意", danger: "警告" };
 
+const LazySheetEmbed=lazy(()=>import("../../sheets/SheetEmbed").then(m=>({default:m.SheetEmbed})));
 const LazyDataTableBlock = lazy(() => import("../../data-tables/DataTable").then(module => ({ default: module.DataTableBlock })));
 function ComponentNodeView(props: NodeViewProps) {
   const readOnly = useContext(EditorReadOnlyContext);
-  if (props.node.attrs.kind === "dataTable") return <NodeViewWrapper data-orbis-block-id={props.node.attrs.orbisId} contentEditable={false} className="orbis-data-table"><Suspense fallback={<div>正在准备多维表格…</div>}><LazyDataTableBlock blockId={String(props.node.attrs.orbisId)} props={props.node.attrs.orbisProps ?? {}} readOnly={readOnly} /></Suspense></NodeViewWrapper>;
+  if (props.node.attrs.kind === "dataTable" && !props.node.attrs.orbisProps?.table_id) return <NodeViewWrapper data-orbis-block-id={props.node.attrs.orbisId} contentEditable={false} data-orbis-embedded-editor className="orbis-data-table"><Suspense fallback={<div>正在准备数据表…</div>}><LazySheetEmbed blockId={String(props.node.attrs.orbisId)} id={props.node.attrs.orbisProps?.sheet_id} viewId={props.node.attrs.orbisProps?.sheet_view_id} readOnly={readOnly} onBind={(sheet_id,sheet_view_id)=>props.updateAttributes({orbisProps:{...props.node.attrs.orbisProps,sheet_id,sheet_view_id}})} /></Suspense></NodeViewWrapper>;
+  if (props.node.attrs.kind === "dataTable") return <NodeViewWrapper data-orbis-block-id={props.node.attrs.orbisId} contentEditable={false} data-orbis-embedded-editor className="orbis-data-table"><Suspense fallback={<div>正在准备数据表…</div>}><LazyDataTableBlock blockId={String(props.node.attrs.orbisId)} props={props.node.attrs.orbisProps ?? {}} readOnly={readOnly} /></Suspense></NodeViewWrapper>;
   return <ComponentView {...props} />;
 }
 
@@ -159,7 +162,7 @@ const OrbisComponent = Node.create({
   addNodeView() { return ReactNodeViewRenderer(ComponentNodeView); },
 });
 
-function MediaView({ node, editor, updateAttributes }: NodeViewProps) {
+function MediaView({ node, updateAttributes }: NodeViewProps) {
   const readOnly = useContext(EditorReadOnlyContext);
   const kind = node.attrs.kind as "image" | "video" | "audio" | "file";
   const props = (node.attrs.orbisProps ?? {}) as Record<string, unknown>;
@@ -209,7 +212,7 @@ const OrbisContainer = Node.create({
   renderHTML({ node, HTMLAttributes }) { return ["div", mergeAttributes(HTMLAttributes, { "data-orbis-container": node.attrs.kind }), 0]; },
 });
 
-function CodeView({ node, editor, updateAttributes }: NodeViewProps) {
+function CodeView({ node, updateAttributes }: NodeViewProps) {
   const readOnly = useContext(EditorReadOnlyContext);
   const language = String(node.attrs.language ?? "text");
   return <NodeViewWrapper as="div" data-orbis-block-id={node.attrs.orbisOwn ? undefined : node.attrs.orbisId} className="orbis-code">
@@ -232,5 +235,5 @@ export const tiptapExtensions = [
   Placeholder.configure({ placeholder: "输入正文，或输入 / 插入内容…" }),
   TaskList, TaskItem.configure({ nested: true }),
   ScrollableTable.configure({ resizable: false }), TableRow, TableHeader, TableCell,
-  OrbisMetadata, OrbisStyle, OrbisComponent, OrbisMedia, OrbisDrawing, OrbisToggle, OrbisToggleSummary, OrbisContainer, OrbisBlockIds, OrbisGroupEditing, OrbisCodeHighlight, OrbisMarkdownPaste,
+  OrbisMetadata, OrbisStyle, OrbisComponent, OrbisMedia, RetiredDrawing, OrbisBoard, OrbisToggle, OrbisToggleSummary, OrbisContainer, OrbisBlockIds, OrbisGroupEditing, OrbisCodeHighlight, OrbisMarkdownPaste,
 ];

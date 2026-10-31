@@ -268,15 +268,24 @@ func blocks(w *writer, items []publicview.Block, anchors map[string]string) {
 			w.emit("</details>")
 		case "divider":
 			w.emit("<hr" + attrs + ">")
-		case "image", "drawing", "file", "audio", "video":
+		case "image", "file", "audio", "video":
 			media(w, b, attrs)
+		case "board":
+			if b.Board != nil && !b.Board.Restricted {
+				w.emit(`<figure class="native-board"` + attrs + ` aria-label="` + escape(b.Board.Title) + `">`)
+				// SVG is generated from validated primitives and escaped labels by the board projector.
+				w.emit(b.Board.SVG)
+				w.emit("<figcaption>" + escape(b.Board.Title) + "</figcaption></figure>")
+			} else {
+				w.emit(`<p class="muted">画板需要工作空间访问权限</p>`)
+			}
 		case "table":
 			grid(w, b.Table)
 		case "data_table":
 			if b.DataTable != nil {
 				publicTable(w, *b.DataTable)
 			} else {
-				w.emit(`<p class="muted">多维表格尚未初始化</p>`)
+				w.emit(`<p class="muted">数据表尚未初始化</p>`)
 			}
 		case "card", "step":
 			class := b.Type
@@ -328,7 +337,7 @@ func media(w *writer, b publicview.Block, attrs string) {
 	}
 	w.emit(`<figure class="media"` + attrs + `>`)
 	switch b.Type {
-	case "image", "drawing":
+	case "image":
 		w.emit(`<img src="` + escape(target) + `" alt="` + escape(label) + `" loading="lazy" decoding="async" referrerpolicy="no-referrer">`)
 	case "audio", "video":
 		w.emit(`<` + b.Type + ` controls preload="metadata" src="` + escape(target) + `"><a href="` + escape(target) + `">` + escape(label) + `</a></` + b.Type + `>`)
@@ -463,7 +472,7 @@ func tableRecords(w *writer, data publicview.TableRef) {
 // TableHTML provides bounded server-rendered pagination without requiring JavaScript.
 func TableHTML(page publishing.TablePage, number int, basePath string) ([]byte, error) {
 	var w writer
-	w.emit(`<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>` + escape(page.Title) + `</title><link rel="stylesheet" href="/api/v1/public/reader.css"></head><body><main class="article"><h1>` + escape(page.Title) + `</h1>`)
+	w.emit(`<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>` + escape(page.Title) + `</title>` + brandIcons + `<link rel="stylesheet" href="/api/v1/public/reader.css"></head><body><main class="article"><h1>` + escape(page.Title) + `</h1>`)
 	tableRecords(&w, publicview.TableRef{Title: page.Title, Fields: page.Fields, View: page.View, Items: page.Items, Groups: page.Groups, Total: page.Total})
 	w.emit(`<nav aria-label="表格分页">`)
 	link := func(target int, label string) {
@@ -496,7 +505,7 @@ func HTML(snapshot publishing.Snapshot, page publishing.Page, base string, searc
 	if snapshot.Branding.Theme != "system" {
 		w.emit(` data-theme="` + escape(snapshot.Branding.Theme) + `"`)
 	}
-	w.emit(`><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>` + escape(title) + `</title><meta name="description" content="` + escape(description) + `"><link rel="canonical" href="` + escape(canonical) + `"><meta property="og:title" content="` + escape(title) + `"><meta property="og:description" content="` + escape(description) + `"><meta property="og:url" content="` + escape(canonical) + `"><meta property="og:type" content="article"><link rel="stylesheet" href="/api/v1/public/reader.css"><script defer src="/api/v1/public/reader.js"></script></head><body style="--accent:` + escape(snapshot.AccentColor) + `"><a class="skip" href="#content">跳到正文</a><header><button type="button" class="site-menu" data-menu-toggle aria-controls="site-navigation" aria-expanded="false">目录</button><a class="brand" href="/s/` + escape(snapshot.Slug) + `">`)
+	w.emit(`><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>` + escape(title) + `</title>` + brandIcons + `<meta name="description" content="` + escape(description) + `"><link rel="canonical" href="` + escape(canonical) + `"><meta property="og:title" content="` + escape(title) + `"><meta property="og:description" content="` + escape(description) + `"><meta property="og:url" content="` + escape(canonical) + `"><meta property="og:type" content="article"><link rel="stylesheet" href="/api/v1/public/reader.css"><script defer src="/api/v1/public/reader.js"></script></head><body style="--accent:` + escape(snapshot.AccentColor) + `"><a class="skip" href="#content">跳到正文</a><header><button type="button" class="site-menu" data-menu-toggle aria-controls="site-navigation" aria-expanded="false">目录</button><a class="brand" href="/s/` + escape(snapshot.Slug) + `">`)
 	if snapshot.Branding.LogoURL != nil {
 		w.emit(`<img src="` + escape(*snapshot.Branding.LogoURL) + `" alt="">`)
 	}
@@ -572,11 +581,11 @@ func HTML(snapshot publishing.Snapshot, page publishing.Page, base string, searc
 	for _, link := range snapshot.Branding.FooterLinks {
 		w.emit(`<a href="` + escape(link.URL) + `" rel="noopener noreferrer">` + escape(link.Label) + `</a>`)
 	}
-	w.emit(`</footer></body></html>`)
+	w.emit(brandAttribution() + `</footer></body></html>`)
 	return w.Bytes(), w.err
 }
 func Error(code, message string) []byte {
-	return []byte(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>` + escape(message) + `</title><link rel="stylesheet" href="/api/v1/public/reader.css"><main class="error"><h1>` + escape(message) + `</h1><p>` + escape(code) + `</p></main></html>`)
+	return []byte(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>` + escape(message) + `</title>` + brandIcons + `<link rel="stylesheet" href="/api/v1/public/reader.css"><main class="error"><h1>` + escape(message) + `</h1><p>` + escape(code) + `</p></main></html>`)
 }
 func Sitemap(snapshot publishing.Snapshot, base string) ([]byte, error) {
 	type entry struct {

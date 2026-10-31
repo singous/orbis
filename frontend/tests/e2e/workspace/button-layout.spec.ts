@@ -59,7 +59,7 @@ test("workspace actions share sizing and notebook headings retain breathing room
     const main = page.getByRole("region", { name: "主工作区", exact: true });
     const sidebar = page.getByRole("region", { name: "笔记本目录栏", exact: true });
     const primary = await actionMetrics(main.getByRole("button", { name: "新建文档", exact: true }));
-    const secondary = await actionMetrics(sidebar.locator(".workspace-sidebar-header").getByRole("button", { name: "新建文档", exact: true }));
+    const secondary = await actionMetrics(sidebar.locator(".workspace-sidebar-header").getByRole("button", { name: "创建内容", exact: true }));
     measurements[`create-${width}`] = { main: primary, sidebar: secondary };
     expect.soft(primary.height, `${width}px: the primary action uses standard sizing`).toBe(36);
     expect.soft(primary.fontSize, `${width}px: primary action typography`).toBe("14px");
@@ -80,20 +80,28 @@ test("workspace actions share sizing and notebook headings retain breathing room
       const icon = identity.querySelector(".notebook-icon")!;
       const actions = header.querySelector(".page-actions")!;
       const copyBox = copy.getBoundingClientRect();
+      const titleBox = element.getBoundingClientRect();
+      const statsBox = copy.querySelector(".notebook-home-stats")!.getBoundingClientRect();
       const iconBox = icon.getBoundingClientRect();
       const identityBox = identity.getBoundingClientRect();
       const actionBox = actions.getBoundingClientRect();
       const overlaps = identityBox.left < actionBox.right && identityBox.right > actionBox.left && identityBox.top < actionBox.bottom && identityBox.bottom > actionBox.top;
       return {
-        topInset: copyBox.top - iconBox.top,
-        bottomInset: iconBox.bottom - copyBox.bottom,
+        topOffset: copyBox.top - iconBox.top,
+        titleCenter: titleBox.top + titleBox.height / 2 - iconBox.top,
+        iconHeight: iconBox.height,
+        statsGap: statsBox.top - titleBox.bottom,
+        statsAlignment: statsBox.left - titleBox.left,
         gap: copyBox.left - iconBox.right,
         overlaps,
       };
     });
     measurements[`heading-${width}`] = geometry;
-    expect.soft(geometry.topInset, `${width}px: text starts inside the icon's upper edge`).toBeGreaterThanOrEqual(2);
-    expect.soft(geometry.bottomInset, `${width}px: text ends inside the icon's lower edge`).toBeGreaterThanOrEqual(2);
+    expect.soft(geometry.topOffset, `${width}px: cover copy aligns with the icon's top edge`).toBeCloseTo(0, 0);
+    expect.soft(geometry.titleCenter, `${width}px: title stays beside the icon`).toBeGreaterThan(0);
+    expect.soft(geometry.titleCenter, `${width}px: title stays within the icon's vertical span`).toBeLessThan(geometry.iconHeight);
+    expect.soft(geometry.statsGap, `${width}px: metadata has space below the title`).toBeGreaterThanOrEqual(8);
+    expect.soft(geometry.statsAlignment, `${width}px: metadata aligns with the title`).toBeCloseTo(0, 0);
     expect.soft(geometry.gap, `${width}px: icon-to-text spacing`).toBeGreaterThanOrEqual(16);
     expect.soft(geometry.overlaps, `${width}px: header actions do not overlap notebook identity`).toBe(false);
   }
@@ -114,7 +122,7 @@ test("workspace actions share sizing and notebook headings retain breathing room
   await notebookDialog.getByRole("button", { name: "取消", exact: true }).click();
 
   await page.goto("/home");
-  const homeAction = await actionMetrics(page.getByRole("link", { name: "新建笔记本", exact: true }));
+  const homeAction = await actionMetrics(page.getByRole("button", { name: "写篇文档", exact: true }));
   measurements.home = homeAction;
   expect.soft(homeAction.height, "home primary action height").toBe(36);
   expect.soft(homeAction.fontSize, "home primary action font").toBe("14px");

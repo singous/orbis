@@ -1,5 +1,5 @@
 import type {DocumentCopyOrigin} from "../table-copy";
-import { newBlockId, type OrbisBlock } from "../../../content/model/blocks";
+import { newBlockId, type OrbisBlock } from "../../../content/blocks";
 
 export type BlockAddress = { id: string; block: OrbisBlock; parentId: string | null; index: number; path: number[] };
 export type BlockAction =

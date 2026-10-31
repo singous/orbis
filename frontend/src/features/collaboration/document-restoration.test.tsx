@@ -8,9 +8,12 @@ import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { authStore } from "../../shared/auth/auth-store";
 import { Toaster } from "../../shared/ui/Toast";
-import type { NoteBlocksV2 } from "../content/model/blocks";
-import { DocumentEditorPage } from "../documents/editor/DocumentEditorPage";
-import { NOTE_ID, NOTEBOOK_ID, REVISION_ID, WORKSPACE_ID, USER_ID, blocks, content, http, page, response, revision, session } from "./collaboration.test-utils";
+import type { NoteBlocksV2 } from "../content/blocks";
+import { DocumentRoute } from "../../app/DocumentRoute";
+import { NOTE_ID, NOTEBOOK_ID, USER_ID, blocks, http, page, response, revision, session } from "./collaboration.test-utils";
+
+// Exercise the retained restoration workflow with its deferred entry enabled.
+vi.mock("../../shared/release-features", () => ({ releaseFeatures: { documentCollaboration: true } }));
 
 vi.mock("../documents/DocumentShell", () => ({ DocumentShell: ({ toolbar, children }: { toolbar: React.ReactNode; children: React.ReactNode }) => <main>{toolbar}{children}</main> }));
 vi.mock("../documents/editor/TiptapEditor", () => ({ TiptapEditor: ({ blocks: value, onChange, readOnly }: { blocks: NoteBlocksV2; onChange: (next: { blocks: ReturnType<typeof blocks> }) => void; readOnly: boolean }) => {
@@ -25,7 +28,7 @@ let client: QueryClient;
 beforeEach(() => { act(() => authStore.setState(session)); client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } }); });
 afterEach(() => { act(() => heroToast.clear()); cleanup(); client.clear(); vi.unstubAllGlobals(); act(() => authStore.getState().clearSession()); });
 function showEditor() {
-  return render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[`/documents/${NOTE_ID}`]}><Routes><Route path="/documents/:noteId" element={<DocumentEditorPage />} /></Routes></MemoryRouter><Toaster /></QueryClientProvider>);
+  return render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[`/documents/${NOTE_ID}`]}><Routes><Route path="/documents/:noteId" element={<DocumentRoute />} /></Routes></MemoryRouter><Toaster /></QueryClientProvider>);
 }
 const commandResult=(version:number)=>({document_id:NOTE_ID,operation_id:USER_ID,base_version:version-1,content_version:version,title:"产品计划",changed_block_ids:[],deleted_block_ids:[]});
 function server(mutate: (url: URL, init: RequestInit) => Response | Promise<Response>) {
@@ -45,7 +48,8 @@ function server(mutate: (url: URL, init: RequestInit) => Response | Promise<Resp
 async function openHistory(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole("button", { name: "评论与历史" }));
   await user.click(await screen.findByRole("tab", { name: "历史版本" }));
-  await user.click(await screen.findByRole("button", { name: /查看版本 2/ }));
+    await user.click(await screen.findByRole("button", { name: "查看全部保存记录" }));
+  await user.click(await screen.findByRole("button", { name: /查看保存记录 2/ }));
   await screen.findByText("历史正文");
 }
 
@@ -65,12 +69,12 @@ describe("restoring from the editor", () => {
     expect(screen.getByRole("button", { name: "关闭评论与历史" })).toBeDisabled();
     expect(screen.getByRole("tab", { name: "评论" })).toHaveAttribute("aria-disabled", "true");
     await act(async () => { finishSave(response(commandResult(5))); });
-    await screen.findByText("历史版本已恢复");
+    await screen.findByRole("alertdialog", { name: "ok" });
     expect(requests.find(request=>request.path.endsWith("/operations"))?.body).toMatchObject({expected_version:4,operation_id:expect.any(String),operations:[{type:"update_block",block:{content:[{text:"恢复前草稿"}]}}]});
     expect(requests.find((request) => request.path.endsWith("/restore"))?.body).toEqual({ expected_version: 5,source_version:2,operation_id:expect.any(String) });
     await user.click(screen.getByRole("button", { name: "关闭评论与历史" }));
     expect(screen.getByLabelText("编辑正文")).toHaveValue("历史正文");
-    expect(screen.getByText("版本 6")).toBeInTheDocument();
+    expect(screen.queryByText("版本 6")).not.toBeInTheDocument();
   });
 
   it.each([409, 500])("blocks restore when saving fails with %s and keeps the local draft", async (status) => {
@@ -81,7 +85,7 @@ describe("restoring from the editor", () => {
     await user.clear(editor); await user.type(editor, "不能丢失的草稿");
     await openHistory(user);
     await user.click(screen.getByRole("button", { name: "恢复此版本" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(/保存|冲突/);
+    expect(await screen.findByRole("alertdialog", { name: status === 409 ? "版本冲突" : "网络错误" })).toHaveTextContent(/网络错误|版本冲突/);
     expect(requests.some((request) => request.path.endsWith("/restore"))).toBe(false);
     const saveCount = requests.filter((request) => request.path.endsWith("/operations")).length;
     await user.click(screen.getByRole("button", { name: "恢复此版本" }));
@@ -119,12 +123,13 @@ describe("restoring from the editor", () => {
     await user.clear(editor); await user.type(editor, "本地编辑");
     await openHistory(user);
     await user.click(screen.getByRole("button", { name: "恢复此版本" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(/冲突/);
+    expect(await screen.findByRole("alertdialog", { name: "版本已更新" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "恢复此版本" }));
     expect(requests.filter((request) => request.path.endsWith("/restore"))).toHaveLength(1);
     await user.click(screen.getByRole("button", { name: "关闭评论与历史" }));
     expect(screen.getByLabelText("编辑正文")).toHaveValue("本地编辑");
-    expect(screen.getByText("检测到其他窗口的更新")).toBeInTheDocument();
+    expect(screen.getByText("版本冲突")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "本机修改" }));
     expect(screen.getByRole("button", { name: "复制本地 Markdown" })).toBeInTheDocument();
   });
 

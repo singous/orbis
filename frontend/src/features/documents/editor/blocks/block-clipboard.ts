@@ -1,12 +1,11 @@
 import {documentCopyOrigin,prepareTableCopy,prepareTablePaste,selectedTableBlocks,hasInitializedTables} from "./block-copy-context";
 import {copyOrigin,type DocumentCopyOrigin} from "../table-copy";
-import { parseDrawingScene } from "../../../drawing/drawing-scene";
 import type { Editor } from '@tiptap/core';
 import { DOMParser as ProseMirrorDOMParser, DOMSerializer } from '@tiptap/pm/model';
 import { safeContentUrl } from '../../../content/ContentRenderer';
 import { documentBlockDefinition } from '../../../content/model/document-components';
 import { parseFileReference } from '../../../files/managed-files';
-import { canonicalJSON, extractPlainTextV2, newBlockId, type OrbisBlock, type OrbisInline, type OrbisTableCell } from '../../../content/model/blocks';
+import { canonicalJSON, extractPlainTextV2, newBlockId, type OrbisBlock, type OrbisInline, type OrbisTableCell } from '../../../content/blocks';
 import { clipboardProps } from '../tiptap-clipboard';
 import { markdownClipboardDocument, markdownSourceClipboard, plainTextPasteRequested } from '../markdown-paste';
 import { fromTiptapDocument, toTiptapDocumentForSchema } from '../tiptap-model';
@@ -19,8 +18,8 @@ export const BLOCK_CLIPBOARD_MIME = 'application/x-orbis-blocks+json';
 const MAX_BYTES = 16 * 1024 * 1024;
 const MAX_NODES = 100_000;
 const MAX_DEPTH = 40;
-const BASIC_TYPES = new Set(['paragraph','heading','bulletListItem','numberedListItem','checkListItem','toggleListItem','quote','codeBlock','divider','table','image','video','audio','file','drawing']);
-export type BlockClipboardResult = { ok: boolean; selectedIds?: string[]; message?: string };
+const BASIC_TYPES = new Set(['paragraph','heading','bulletListItem','numberedListItem','checkListItem','toggleListItem','quote','codeBlock','divider','table','image','video','audio','file','board']);
+export type BlockClipboardResult = { ok: boolean; selectedIds?: string[]; message?: string; error?: unknown };
 type Payload = { version: 1; blocks: OrbisBlock[]; cutToken?: string;origin?:DocumentCopyOrigin;parsedMarkdown?:boolean };
 type Serialized = { structured: string; html: string; text: string; payload: Payload };
 const cutSessions = new WeakMap<Editor, { token: string; blocks: string }>();
@@ -29,7 +28,7 @@ const INTERNAL_METADATA = new Set(['orbisOriginal', 'orbisSignature', 'orbisCell
 class ClipboardSerializationError extends Error {}
 const LOSSY_COPY_MESSAGE = '无法完整保留选区中的资源、链接或格式，已取消复制/剪切，原内容已保留。请先将临时签名链接替换为文件引用或稳定链接，并检查不支持的内容。';
 function authoredSemanticValue(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(authoredSemanticValue);
+  if (Array.isArray(value)) return value.filter(item => !record(item) || item.type !== "drawing").map(authoredSemanticValue);
   if (!record(value)) return value;
   const normalized = Object.fromEntries(Object.entries(value).filter(([key]) => !INTERNAL_METADATA.has(key)).map(([key, item]) => [key, authoredSemanticValue(item)]));
   // API and legacy shapes may omit these optional fields or emit empty defaults.
@@ -47,7 +46,8 @@ function authoredSemanticValue(value: unknown): unknown {
   return normalized;
 }
 function copyFailure(error: unknown, fallback: string): BlockClipboardResult {
-  return { ok: false, message: error instanceof ClipboardSerializationError ? error.message : fallback };
+  return { ok: false, message: error instanceof ClipboardSerializationError ? error.message : fallback,
+    error: error instanceof ClipboardSerializationError ? error : new Error(fallback, { cause: error }) };
 }
 
 const envelope = (blocks: OrbisBlock[]) => ({schema_version: 2 as const, editor: 'blocknote' as const, blocks});
@@ -65,6 +65,17 @@ function safeUrl(value: unknown, media = false): string {
   return safe;
 }
 function authoredProps(value: unknown, type?:string) {
+  if (type === "board" && record(value)) {
+    const binding: Record<string, string | number | null> = {};
+    // Board resource IDs are authored references, not editor/session IDs.
+    for (const key of ["board_id", "page_id", "frame_id"]) {
+      const item = value[key];
+      if (item === null || typeof item === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item)) binding[key] = item;
+    }
+    if (value.mode === "live" || value.mode === "snapshot") binding.mode = value.mode;
+    if (value.revision === null || typeof value.revision === "number" && Number.isSafeInteger(value.revision) && value.revision > 0) binding.revision = value.revision;
+    return binding;
+  }
   const props = clipboardProps(value);
   if(type==="dataTable"&&record(value)){
     for(const [key,rule] of Object.entries(documentBlockDefinition(type)!.props)){
@@ -111,12 +122,10 @@ function sanitizeBlocks(input: unknown): OrbisBlock[] {
   }
   function blocks(input: unknown, depth: number): OrbisBlock[] {
     if (!Array.isArray(input)) throw new Error('Invalid blocks');
-    return input.map((value): OrbisBlock => {
+    return input.filter(value => !record(value) || value.type !== "drawing").map((value): OrbisBlock => {
       check(depth);
       if (!record(value) || typeof value.type !== 'string' || !BASIC_TYPES.has(value.type) && !documentBlockDefinition(value.type)) throw new Error('Invalid block');
-      if (value.type === "drawing") parseDrawingScene(record(value.props) ? value.props.scene : undefined);
       const children = blocks(value.children ?? [],depth+1);
-      if (value.type === "drawing" && (children.length || (value.content != null && (!Array.isArray(value.content) || value.content.length)))) throw new Error("Drawing content is unsupported");
       const definition = documentBlockDefinition(value.type);
       if (Array.isArray(definition?.children) && children.some(child=>!definition.children.includes(child.type))) throw new Error('Invalid children');
       let content: OrbisBlock['content'];
@@ -281,7 +290,7 @@ export async function pasteBlocks(editor: Editor, ids?: string[]): Promise<Block
     if(!payload)return {ok:false,message:'剪贴板为空或块数据无效，内容未修改'};
     if(hasInitializedTables(payload.blocks))await prepareTablePaste(editor);
     return applyClipboardPayload(editor,targets,payload);
-  } catch {return {ok:false,message:PASTE_READ_FALLBACK};}
+  } catch (error) { return copyFailure(error, PASTE_READ_FALLBACK); }
 }
 export function installBlockClipboard(editor:Editor,onResult:(result:BlockClipboardResult)=>void):()=>void {
   const dom=editor.view.dom;
@@ -293,7 +302,6 @@ export function installBlockClipboard(editor:Editor,onResult:(result:BlockClipbo
       if(event.type==='cut'&&!editor.isEditable){event.preventDefault();return;}
       if(blockActionNeedsRead(editor,ids)||selectedTableBlocks(editor,ids)) {
         event.preventDefault();event.stopImmediatePropagation();
-        onResult({ok:false,message:'正在读取所选块的完整子内容…'});
         void copyBlocks(editor,[...ids],event.type==='cut').then(onResult);
         return;
       }
@@ -311,7 +319,7 @@ export function installBlockClipboard(editor:Editor,onResult:(result:BlockClipbo
     }
     event.preventDefault();event.stopImmediatePropagation();
     if(hasInitializedTables(payload.blocks)){
-      void prepareTablePaste(editor).then(()=>onResult(applyClipboardPayload(editor,[...ids],payload))).catch(error=>onResult({ok:false,message:error instanceof Error?error.message:'粘贴准备失败，原内容已保留'}));
+      void prepareTablePaste(editor).then(()=>onResult(applyClipboardPayload(editor,[...ids],payload))).catch(error=>onResult(copyFailure(error,'粘贴准备失败，原内容已保留')));
       return;
     }
     onResult(applyClipboardPayload(editor,ids,payload));

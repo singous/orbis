@@ -21,7 +21,7 @@ describe("global search state", () => {
   it("keeps resource URLs independent of workspace selection", () => {
     const result = { id, type: "document", status: "active", workspace_id: workspace, matched_comment_id: null } as SearchResult;
     expect(resultHref(result)).toBe(`/documents/${id}`);
-    expect(resultHref({ ...result, matched_comment_id: id })).toBe(`/documents/${id}?comment=${id}`);
+    expect(resultHref({ ...result, matched_comment_id: id })).toBe(`/documents/${id}`);
     expect(resultHref({ ...result, type: "file", title: "报告.pdf" })).toContain("/search/open?type=file");
     expect(resultHref({ ...result, status: "archived" })).toBe(`/documents/archive?resource=${id}&type=document`);
   });

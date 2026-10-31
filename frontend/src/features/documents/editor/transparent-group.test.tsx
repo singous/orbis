@@ -5,7 +5,7 @@ import { Editor, getSchema } from "@tiptap/core";
 import { afterEach, expect, it } from "vitest";
 import { ContentRenderer } from "../../content/ContentRenderer";
 import { documentBlockDefinition } from "../../content/model/document-components";
-import { extractPlainTextV2, v2ToMarkdown, type NoteBlocksV2, type OrbisBlock } from "../../content/model/blocks";
+import { extractPlainTextV2, v2ToMarkdown, type NoteBlocksV2, type OrbisBlock } from "../../content/blocks";
 import { TiptapEditor } from "./TiptapEditor";
 import { tiptapExtensions } from "./tiptap-extensions";
 import { createDocumentBlock } from "./tiptap-insert";

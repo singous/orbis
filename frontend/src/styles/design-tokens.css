@@ -1,4 +1,4 @@
-/* Orbis semantic scale. DESIGN.md owns role definitions; values live here. */
+/* Orbis semantic scale. frontend/README.md documents roles; values live here. */
 :root {
   --orbis-text-caption-size: .75rem;
   --orbis-text-caption-leading: 1.125rem;
@@ -27,16 +27,27 @@
   --orbis-space-6: 1.5rem;
   --orbis-space-8: 2rem;
   --orbis-space-12: 3rem;
+  --orbis-motion-feedback: 120ms;
+  --orbis-motion-popover: 180ms;
+  --orbis-motion-dialog: 220ms;
+  --orbis-ease-out: cubic-bezier(.2, .8, .2, 1);
+  --orbis-dialog-gutter: var(--orbis-space-4);
+  --layer-dialog: 80;
+  --layer-popover: 90;
+  --layer-tooltip: 100;
   --orbis-tree-indent: 1.25rem;
   /* Default reading typography follows the shared scale; authored sizes remain content. */
-  --orbis-prose-body-size: var(--orbis-text-ui-size);
+  --orbis-prose-body-size: 14px;
   --orbis-prose-body-leading: 1.9;
-  --orbis-prose-h1-size: var(--orbis-text-page-title-size);
-  --orbis-prose-h2-size: var(--orbis-text-section-size);
-  --orbis-prose-h3-size: var(--orbis-text-ui-size);
+  --orbis-prose-h1-size: 26px;
+  --orbis-prose-h2-size: 23px;
+  --orbis-prose-h3-size: 20px;
+  --orbis-prose-h4-size: 18px;
+  --orbis-prose-h5-size: 16px;
+  --orbis-prose-h6-size: 15px;
   --orbis-prose-table-size: var(--orbis-text-ui-size);
   --orbis-prose-caption-size: var(--orbis-text-caption-size);
-  --orbis-prose-title-size: var(--orbis-text-page-title-size);
+  --orbis-prose-title-size: 28px;
   font-size: 100%;
 }
 

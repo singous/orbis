@@ -75,6 +75,8 @@ func collectionResponse(c document.Collection) collectionDTO {
 }
 
 type documentDTO struct {
+	BoardID                *string `json:"board_id"`
+	SheetID                *string `json:"sheet_id"`
 	CollaborationAvailable bool    `json:"collaboration_available"`
 	IsArchived             bool    `json:"is_archived"`
 	ID                     string  `json:"id"`
@@ -91,7 +93,9 @@ type documentDTO struct {
 
 func documentResponse(d document.Document) documentDTO {
 	return documentDTO{
-		ID: d.ID, WorkspaceID: d.WorkspaceID, CollectionID: d.CollectionID, Title: d.Title,
+		BoardID: d.BoardID,
+		SheetID: d.SheetID,
+		ID:      d.ID, WorkspaceID: d.WorkspaceID, CollectionID: d.CollectionID, Title: d.Title,
 		ContentVersion: d.ContentVersion, ArchivedAtMS: d.ArchivedAtMS, IsArchived: d.IsArchived,
 		CreatedAtMS: d.CreatedAtMS, UpdatedAtMS: d.UpdatedAtMS,
 		ParentID: d.ParentID, Position: d.Position,

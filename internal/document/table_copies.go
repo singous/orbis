@@ -27,7 +27,7 @@ type ResolvedBlock struct {
 
 func validateTableCopies(input CommandsInput) error {
 	if len(input.TableCopies) > MaxCopiedTables {
-		return fault.Field("body.table_copies", "单次最多复制 100 个多维表格")
+		return fault.Field("body.table_copies", "单次最多复制 100 个数据表")
 	}
 	if len(input.TableCopies) == 0 {
 		return nil

@@ -14,13 +14,16 @@ import (
 
 	"orbis.local/orbis/api"
 	"orbis.local/orbis/internal/asset"
+	"orbis.local/orbis/internal/board"
 	"orbis.local/orbis/internal/document"
 	"orbis.local/orbis/internal/identity"
 	"orbis.local/orbis/internal/integration"
 	"orbis.local/orbis/internal/platform/fault"
 	"orbis.local/orbis/internal/publishing"
+	"orbis.local/orbis/internal/quicknote"
 	"orbis.local/orbis/internal/search"
 	"orbis.local/orbis/internal/sharing"
+	"orbis.local/orbis/internal/sheet"
 	"orbis.local/orbis/internal/table"
 	"orbis.local/orbis/internal/workspace"
 )
@@ -31,30 +34,36 @@ type SetupService interface {
 }
 
 type Dependencies struct {
-	CollaborationSockets *CollaborationSockets
-	Imports              *integration.Imports
-	Library              *integration.Library
-	IntegrationTokens    *integration.Tokens
-	Preferences          *identity.Preferences
-	Sharing              *sharing.Service
-	Publishing           *publishing.Service
-	PublicBaseURL        string
-	Search               *search.Service
-	Transfers            *integration.Transfers
-	Tables               *table.Service
-	Assets               *asset.Service
-	MaxUploadBytes       int64
-	Identity             *identity.Service
-	Workspaces           *workspace.Service
-	Actions              *workspace.Actions
-	Documents            *document.Service
-	Catalog              *document.Catalog
-	Comments             *document.Comments
-	Setup                SetupService
-	Ready                func(context.Context) error
-	Logger               *slog.Logger
-	MaxBodyBytes         int64
-	RequestTimeout       time.Duration
+	CollaborationSockets  *CollaborationSockets
+	Imports               *integration.Imports
+	Versions              *document.Versions
+	VersionHistoryEnabled bool
+	Library               *integration.Library
+	IntegrationTokens     *integration.Tokens
+	Preferences           *identity.Preferences
+	Sharing               *sharing.Service
+	Publishing            *publishing.Service
+	PublicBaseURL         string
+	Search                *search.Service
+	Transfers             *integration.Transfers
+	Tables                *table.Service
+	Sheets                *sheet.Service
+	Assets                *asset.Service
+	MaxUploadBytes        int64
+	Identity              *identity.Service
+	Workspaces            *workspace.Service
+	Actions               *workspace.Actions
+	Documents             *document.Service
+	Catalog               *document.Catalog
+	Comments              *document.Comments
+	Setup                 SetupService
+	Ready                 func(context.Context) error
+	Logger                *slog.Logger
+	MaxBodyBytes          int64
+	RequestTimeout        time.Duration
+	Boards                *board.Service
+	AgentBoards           *integration.Boards
+	QuickNotes            *quicknote.Service
 }
 
 type handler struct {
@@ -90,6 +99,7 @@ func New(deps Dependencies) (*gin.Engine, error) {
 	r.GET("/openapi.json", func(c *gin.Context) { c.Data(http.StatusOK, "application/json", api.Contract) })
 	v1 := r.Group("/api/v1")
 	v1.GET("/workspaces/:workspace_id/documents/:document_id/collaboration/socket", h.pathIDs(), h.documentCollaborationSocket)
+	v1.GET("/workspaces/:workspace_id/boards/:board_id/sync", h.pathIDs(), h.boardSocket)
 
 	r.GET("/s/:slug", h.publicResponseLimit(true), h.siteWeb)
 	r.HEAD("/s/:slug", h.publicResponseLimit(true), h.siteWeb)
@@ -119,6 +129,9 @@ func New(deps Dependencies) (*gin.Engine, error) {
 	v1.GET("/public/sites/:slug/tables/:table_id/records", h.publicResponseLimit(false), h.publicSiteTable)
 	v1.GET("/public/sites/:slug/assets/:asset_id", h.publicSiteAsset)
 	v1.HEAD("/public/sites/:slug/assets/:asset_id", h.publicSiteAsset)
+	v1.POST("/public/forms/:token/fields/:field_id/assets", h.publicResponseLimit(false), h.uploadSheetForm)
+	v1.GET("/public/forms/:token", h.publicResponseLimit(false), h.publicSheetForm)
+	v1.POST("/public/forms/:token/submissions", h.publicResponseLimit(false), h.submitSheetForm)
 	v1.GET("/setup", h.setupStatus)
 	v1.POST("/setup", h.setup)
 	v1.POST("/auth/login", h.login)
@@ -136,6 +149,17 @@ func New(deps Dependencies) (*gin.Engine, error) {
 	agent.GET("/workspaces", h.agentWorkspaces)
 	agent.GET("/capabilities", h.agentCapabilities)
 	agent.GET("/schema", h.agentSchema)
+	agent.GET("/boards", h.agentBoardsList)
+	agent.POST("/boards", h.agentBoardCreate)
+	agent.GET("/board-catalog", h.agentBoardCatalog)
+	agent.GET("/board-templates", h.agentBoardTemplates)
+	agent.GET("/boards/:board_id", h.agentBoardMetadata)
+	agent.GET("/boards/:board_id/snapshot", h.agentBoardSnapshot)
+	agent.GET("/boards/:board_id/pages/:page_id/elements", h.agentBoardElements)
+	agent.POST("/boards/:board_id/commands", h.agentBoardChange)
+	agent.GET("/boards/:board_id/changes", h.agentBoardChanges)
+	agent.GET("/boards/:board_id/history", h.agentBoardHistory)
+	agent.GET("/boards/:board_id/operations/:operation_id", h.agentBoardReceipt)
 	agent.GET("/collections", h.agentCollections)
 	agent.GET("/documents", h.agentDocuments)
 	agent.GET("/search", h.agentSearch)
@@ -149,6 +173,12 @@ func New(deps Dependencies) (*gin.Engine, error) {
 	agent.GET("/documents/:document_id/blocks/:block_id", h.agentBlock)
 	agent.GET("/documents/:document_id/outline", h.agentOutline)
 	agent.GET("/documents/:document_id/changes", h.agentChanges)
+	agent.GET("/documents/:document_id/versions", h.agentDocumentVersions)
+	agent.POST("/documents/:document_id/versions", h.agentSaveDocumentVersion)
+	agent.PUT("/documents/:document_id/versions/:version_id", h.agentEditDocumentVersion)
+	agent.GET("/documents/:document_id/versions/:version_id/content", h.agentDocumentVersionContent)
+	agent.GET("/documents/:document_id/versions/:version_id/compare", h.agentCompareDocumentVersions)
+	agent.POST("/documents/:document_id/versions/:version_id/restore", h.agentRestoreDocumentVersion)
 	agent.POST("/documents/:document_id/operations", h.agentApply)
 	agent.POST("/documents/:document_id/operations/preview", h.agentPreview)
 	agent.GET("/operations/:operation_id", h.agentOperation)
@@ -172,6 +202,15 @@ func New(deps Dependencies) (*gin.Engine, error) {
 	private.POST("/workspaces", h.createWorkspace)
 	scope := private.Group("/workspaces/:workspace_id", h.pathIDs())
 
+	scope.GET("/sheets", h.listSheets)
+	scope.POST("/sheets", h.createSheet)
+	scope.GET("/sheets/:sheet_id", h.getSheet)
+	scope.PUT("/sheets/:sheet_id", h.updateSheet)
+	scope.GET("/sheets/:sheet_id/records", h.sheetRecords)
+	scope.GET("/sheets/:sheet_id/stats", h.sheetStats)
+	scope.POST("/sheets/:sheet_id/changes", h.changeSheet)
+	scope.GET("/sheets/:sheet_id/forms", h.sheetForms)
+	scope.PUT("/sheets/:sheet_id/forms", h.saveSheetForm)
 	scope.GET("/integration-tokens", h.integrationTokens)
 	scope.POST("/integration-tokens", h.createIntegrationToken)
 	scope.POST("/integration-tokens/:token_id/revoke", h.revokeIntegrationToken)
@@ -193,6 +232,19 @@ func New(deps Dependencies) (*gin.Engine, error) {
 	scope.GET("/documents/:document_id/export/markdown", h.exportDocument)
 	scope.HEAD("/documents/:document_id/export/markdown", h.exportDocument)
 	scope.GET("/assets", h.assets)
+	scope.GET("/quick-notes", h.quickNotes)
+	scope.POST("/quick-notes", h.writeQuickNote)
+	scope.GET("/quick-notes/summary", h.quickNoteSummary)
+	scope.GET("/quick-notes/:quick_note_id", h.quickNote)
+	scope.PUT("/quick-notes/:quick_note_id", h.writeQuickNote)
+	scope.PATCH("/quick-notes/:quick_note_id", h.patchQuickNote)
+	scope.GET("/quick-note-tags", h.quickNoteTags)
+	scope.POST("/quick-note-tags", h.writeQuickNoteTag)
+	scope.PUT("/quick-note-tags/:tag_id", h.writeQuickNoteTag)
+	scope.DELETE("/quick-note-tags/:tag_id", h.writeQuickNoteTag)
+	scope.POST("/quick-note-assets", h.uploadQuickNoteAsset)
+	scope.GET("/quick-note-assets/:asset_id/content", h.quickNoteAssetContent)
+	scope.HEAD("/quick-note-assets/:asset_id/content", h.quickNoteAssetContent)
 	scope.POST("/collection-icons", h.uploadCollectionIcon)
 	scope.POST("/assets", h.uploadAsset)
 	scope.GET("/assets/:asset_id", h.asset)
@@ -216,6 +268,17 @@ func New(deps Dependencies) (*gin.Engine, error) {
 	scope.PATCH("/collection-groups/:group_id", h.updateGroup)
 	scope.PUT("/collection-groups/:group_id/archive", h.archiveGroup)
 	scope.GET("/collections", h.collections)
+	scope.POST("/boards", h.createBoard)
+	scope.GET("/boards", h.listBoards)
+	scope.GET("/boards/:board_id", h.getBoard)
+	scope.GET("/boards/:board_id/pages/:page_id/elements", h.boardElements)
+	scope.POST("/boards/:board_id/commands", h.changeBoard)
+	scope.GET("/boards/:board_id/changes", h.boardChanges)
+	scope.GET("/boards/:board_id/operations/:operation_id", h.boardReceipt)
+	scope.GET("/boards/:board_id/history", h.boardHistory)
+	scope.GET("/boards/:board_id/snapshot", h.boardSnapshot)
+	scope.GET("/boards/:board_id/preview", h.boardPreview)
+	scope.HEAD("/boards/:board_id/preview", h.boardPreview)
 	scope.POST("/collections", h.createCollection)
 	scope.GET("/collections/:collection_id", h.collection)
 	scope.PATCH("/collections/:collection_id", h.updateCollection)
@@ -241,6 +304,13 @@ func New(deps Dependencies) (*gin.Engine, error) {
 	scope.GET("/documents/:document_id/content", h.content)
 	scope.PUT("/documents/:document_id/content", h.writeContent)
 	scope.GET("/documents/:document_id/revisions", h.revisions)
+	scope.GET("/documents/:document_id/versions", h.documentVersions)
+	scope.POST("/documents/:document_id/versions", h.createDocumentVersion)
+	scope.GET("/documents/:document_id/versions/:version_id", h.documentVersion)
+	scope.PUT("/documents/:document_id/versions/:version_id", h.editDocumentVersion)
+	scope.GET("/documents/:document_id/versions/:version_id/content", h.documentVersionContent)
+	scope.GET("/documents/:document_id/versions/:version_id/compare", h.compareDocumentVersions)
+	scope.POST("/documents/:document_id/versions/:version_id/restore", h.restoreDocumentVersion)
 	scope.POST("/documents/:document_id/restore", h.restore)
 	scope.GET("/documents/:document_id/blocks", h.blocks)
 	scope.GET("/documents/:document_id/blocks/:block_id", h.readDocumentBlock)
@@ -269,12 +339,12 @@ func (h *handler) requestContext() gin.HandlerFunc {
 		c.Header("X-Request-ID", requestID)
 		c.Header("X-Content-Type-Options", "nosniff")
 		c.Header("Cache-Control", "no-store")
-		if c.FullPath() == "/api/v1/me/avatar" || c.FullPath() == "/api/v1/workspaces/:workspace_id/assets/:asset_id/content" {
+		if c.FullPath() == "/api/v1/me/avatar" || c.FullPath() == "/api/v1/workspaces/:workspace_id/assets/:asset_id/content" || c.FullPath() == "/api/v1/workspaces/:workspace_id/quick-note-assets/:asset_id/content" {
 			secureContentHeaders(c)
 		}
 		ctx := c.Request.Context()
 		cancel := func() {}
-		if c.FullPath() != collaborationSocketPath {
+		if c.FullPath() != collaborationSocketPath && c.FullPath() != boardSocketPath {
 			ctx, cancel = context.WithTimeout(ctx, h.deps.RequestTimeout)
 		}
 		defer cancel()
@@ -286,7 +356,7 @@ func (h *handler) requestContext() gin.HandlerFunc {
 		if c.FullPath() == "/api/v1/agent/workspaces/:workspace_id/documents/:document_id/assets" && c.Request.Method == http.MethodPost {
 			bodyLimit = min(h.deps.MaxUploadBytes, integration.MaxAgentUploadBytes) + MultipartOverhead
 		}
-		if c.FullPath() == "/api/v1/workspaces/:workspace_id/assets" && c.Request.Method == http.MethodPost {
+		if (c.FullPath() == "/api/v1/workspaces/:workspace_id/assets" || c.FullPath() == "/api/v1/workspaces/:workspace_id/quick-note-assets") && c.Request.Method == http.MethodPost {
 			bodyLimit = h.deps.MaxUploadBytes + MultipartOverhead
 		}
 		if c.FullPath() == "/api/v1/workspaces/:workspace_id/collection-icons" && c.Request.Method == http.MethodPost {

@@ -1,0 +1,160 @@
+import { expect, test } from "@playwright/test";
+import { randomUUID } from "node:crypto";
+import { openWithSession, ownerSession, responseData, sessionHeaders, workspacePath } from "../helpers/api-fixtures";
+
+test("empty quick notes use native tag toggles without an editor frame or duplicate search icon", async ({ page, request }, testInfo) => {
+  const session = await ownerSession(request);
+  // This visual state must not depend on notes created by earlier journeys.
+  await page.route(/\/api\/v1\/workspaces\/[^/]+\/quick-note(?:s(?:\/summary)?|-tags)(?:\?|$)/, async route => {
+    const response = await route.fetch();
+    const envelope = await response.json();
+    envelope.data = Array.isArray(envelope.data.items)
+      ? { ...envelope.data, items: [], pagination: { ...envelope.data.pagination, total: 0 } }
+      : { total: 0, untagged: 0, deleted: 0 };
+    await route.fulfill({ response, json: envelope });
+  });
+  await openWithSession(page, session, "/documents/quick-notes");
+  const filters = page.getByRole("radiogroup", { name: "按标签筛选", exact: true });
+  const all = filters.getByRole("radio", { name: "全部 (0)", exact: true });
+  await expect(all).toBeVisible();
+  await expect(all).toHaveClass(/toggle-button/);
+  await expect(all).toHaveAttribute("aria-checked", "true");
+  await expect(filters.getByRole("radio")).toHaveCount(1);
+  await expect(page.getByRole("button", { name: /无标签/ })).toHaveCount(0);
+  await expect(page.locator(".quick-notes-search svg")).toHaveCount(0);
+  await expect(page.getByRole("textbox", { name: "搜索随手记" })).toBeVisible();
+  const editor = page.getByRole("textbox", { name: "随手记正文" });
+  await editor.click();
+  await expect(editor).toBeFocused();
+  await expect(editor).toHaveCSS("box-shadow", "none");
+  await expect(editor).toHaveCSS("outline-style", "none");
+  await page.screenshot({ path: testInfo.outputPath("clean-editor-light.png"), fullPage: true, animations: "disabled" });
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(editor).toHaveCSS("box-shadow", "none");
+  await page.screenshot({ path: testInfo.outputPath("clean-editor-dark.png"), fullPage: true, animations: "disabled" });
+});
+
+test("capture, organize, edit and recover a personal note", async ({ page, request }, testInfo) => {
+  const session = await ownerSession(request);
+  await openWithSession(page, session, "/documents/quick-notes");
+  await expect(page.getByRole("heading", { name: "随手记", exact: true })).toBeVisible();
+  const text = `会议灵感 ${randomUUID().slice(0, 8)}`;
+  const composer = page.getByRole("region", { name: "快速记录" });
+  await composer.getByRole("textbox", { name: "随手记正文" }).fill(text);
+  await expect(composer.getByText("未保存", { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(composer.getByRole("textbox", { name: "随手记正文" })).toContainText(text);
+  await page.getByRole("button", { name: "管理标签", exact: true }).click();
+  const tagName = `工作 ${randomUUID().slice(0, 6)}`;
+  await page.getByRole("textbox", { name: "新标签名称" }).fill(tagName);
+  await page.getByRole("button", { name: "添加标签", exact: true }).click();
+  await expect(page.getByRole("button", { name: `重命名标签 ${tagName}` })).toBeVisible();
+  await page.getByRole("dialog").getByRole("button", { name: "关闭", exact: true }).click();
+  await composer.locator("summary").click();
+  await composer.getByRole("button", { name: tagName, exact: true }).click();
+  await composer.locator("summary").click();
+  await composer.getByRole("textbox", { name: "随手记正文" }).press("Control+Enter");
+  const card = page.getByRole("article", { name: "随手记记录" }).filter({ hasText: text });
+  await expect(card).toBeVisible();
+  await expect(card.getByText(tagName, { exact: true })).toBeVisible();
+  const filters = page.getByRole("radiogroup", { name: "按标签筛选", exact: true });
+  const tagged = filters.getByRole("radio", { name: `${tagName} (1)`, exact: true });
+  const filteredRequest = page.waitForRequest(request => {
+    const url = new URL(request.url());
+    return url.pathname.endsWith("/quick-notes") && url.searchParams.has("tag_id");
+  });
+  await tagged.click();
+  await filteredRequest;
+  await expect(tagged).toHaveAttribute("aria-checked", "true");
+  await expect(filters.getByRole("radio", { name: /^全部/ })).toHaveAttribute("aria-checked", "false");
+  await tagged.click();
+  await expect(tagged).toHaveAttribute("aria-checked", "true");
+  await tagged.focus();
+  await page.keyboard.press("ArrowLeft");
+  await expect(filters.getByRole("radio", { name: /^全部/ })).toBeFocused();
+  await page.keyboard.press("Space");
+  await expect(filters.getByRole("radio", { name: /^全部/ })).toHaveAttribute("aria-checked", "true");
+  await expect(card).toBeVisible();
+  await card.getByRole("button", { name: "置顶记录", exact: true }).click();
+  await expect(card.getByRole("button", { name: "取消置顶" })).toBeVisible();
+  await card.getByRole("button", { name: "编辑记录" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("textbox", { name: "随手记正文" }).fill(`${text}，整理为行动项`);
+  await dialog.getByRole("button", { name: "保存修改" }).click();
+  await expect(dialog).not.toBeVisible();
+  await expect(card).toContainText("整理为行动项");
+  await page.getByRole("textbox", { name: "搜索随手记" }).fill(text);
+  await expect(page.getByRole("article", { name: "随手记记录" })).toHaveCount(1);
+  await page.screenshot({ path: testInfo.outputPath("desktop.png"), fullPage: true, animations: "disabled" });
+  await card.getByRole("button", { name: "移入回收站" }).click();
+  await expect(card).toHaveCount(0);
+  await page.getByRole("button", { name: "查看回收站" }).click();
+  await card.getByRole("button", { name: "恢复记录" }).click();
+  await page.getByRole("button", { name: "返回全部记录" }).click();
+  await expect(card).toBeVisible();
+  await page.getByRole("button", { name: "管理标签", exact: true }).click();
+  await page.getByRole("button", { name: `删除标签 ${tagName}` }).click();
+  await page.getByRole("button", { name: "确认删除标签" }).click();
+  await expect(page.getByRole("button", { name: `删除标签 ${tagName}` })).toHaveCount(0);
+  await page.getByRole("dialog").getByRole("button", { name: "关闭", exact: true }).click();
+  await expect(card.getByText(tagName, { exact: true })).toHaveCount(0);
+  await expect(card).toContainText(text);
+});
+
+test("a lost creation response survives reload and retries the same operation", async ({ page, request }) => {
+  const session = await ownerSession(request);
+  await openWithSession(page, session, "/documents/quick-notes");
+  const text = `重试保留 ${randomUUID().slice(0, 8)}`;
+  const composer = page.getByRole("region", { name: "快速记录" });
+  await composer.getByRole("textbox", { name: "随手记正文" }).fill(text);
+  let operation = "";
+  await page.route("**/api/v1/workspaces/*/quick-notes", async route => {
+    if (route.request().method() !== "POST") { await route.continue(); return; }
+    operation = route.request().postDataJSON().operation_id;
+    const response = await route.fetch();
+    expect(response.status()).toBe(201);
+    await route.abort("failed");
+  });
+  await composer.getByRole("button", { name: "记一下", exact: true }).click();
+  await expect(composer.getByRole("button", { name: "重试保存" })).toBeVisible();
+  await expect(composer.getByRole("button", { name: "重试保存" })).toBeEnabled();
+  await page.unrouteAll({ behavior: "wait" });
+  await page.reload();
+  await expect(composer.getByRole("textbox", { name: "随手记正文" })).toContainText(text);
+  const retried = page.waitForRequest(req => req.method() === "POST" && req.url().endsWith("/quick-notes"));
+  await composer.getByRole("button", { name: "重试保存" }).click();
+  expect((await retried).postDataJSON().operation_id).toBe(operation);
+  await expect(composer.getByText("已记下", { exact: true })).toBeVisible();
+  const result = await responseData(await request.get(workspacePath(session, `/quick-notes?q=${encodeURIComponent(text)}`), { headers: sessionHeaders(session) }));
+  expect(result.pagination.total).toBe(1);
+});
+
+test("rich content and attachments remain usable on narrow and dark layouts", async ({ page, request }, testInfo) => {
+  const session = await ownerSession(request);
+  await openWithSession(page, session, "/documents/quick-notes");
+  const composer = page.getByRole("region", { name: "快速记录" });
+  await composer.getByRole("button", { name: "待办清单" }).click();
+  const text = `复盘检查 ${randomUUID().slice(0, 8)}`;
+  await composer.getByRole("textbox", { name: "随手记正文" }).pressSequentially(text);
+  await composer.locator('input[type="file"][aria-label="选择随手记附件"]').setInputFiles({ name: "review.txt", mimeType: "text/plain", buffer: Buffer.from("personal review attachment") });
+  await expect(composer.getByText("正在上传附件…")).toHaveCount(0);
+  await composer.getByRole("button", { name: "记一下", exact: true }).click();
+  const card = page.getByRole("article", { name: "随手记记录" }).filter({ hasText: text });
+  await expect(card).toBeVisible();
+  await expect(card).toContainText("review.txt");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByRole("button", { name: "打开主导航" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "文档导航" })).not.toBeVisible();
+  await expect(composer).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath("mobile.png"), fullPage: true, animations: "disabled" });
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.screenshot({ path: testInfo.outputPath("mobile-dark.png"), fullPage: true, animations: "disabled" });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await composer.getByRole("button", { name: "展开编辑区" }).click();
+  await expect(page.getByRole("region", { name: "历史记录" })).not.toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("region", { name: "历史记录" })).toBeVisible();
+});

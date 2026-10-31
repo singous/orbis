@@ -15,8 +15,9 @@ function renderRows(root, data) {
   const host = root.querySelector('[data-records]'); host.replaceChildren();
   if (data.view.kind === 'kanban' && data.view.group_field_id) {
     host.className = 'board'; const field = data.fields.find((item) => item.id === data.view.group_field_id);
-    for (const group of [...(field?.options ?? []).map((item) => ({id: item.id, name: item.label})), {id: null, name: '未分组'}]) {
-      const column = document.createElement('section'); column.className = 'board-column'; const title = document.createElement('h4'); const count = data.groups?.find((item) => (item.option_id ?? null) === group.id)?.count ?? 0; title.textContent = `${group.name} (${count})`; column.append(title);
+    const groups = data.groups?.length ? data.groups.map((item) => ({id: item.option_id ?? null, name: item.name, count: item.count})) : [...(field?.options ?? []).map((item) => ({id: item.id, name: item.label, count: 0})), {id: null, name: '未分组', count: 0}];
+    for (const group of groups) {
+      const column = document.createElement('section'); column.className = 'board-column'; const title = document.createElement('h4'); title.textContent = `${group.name} (${group.count})`; column.append(title);
       for (const record of data.items.filter((item) => (item.values[data.view.group_field_id] ?? null) === group.id)) { const card = document.createElement('div'); card.className = 'record-card'; for (const field of data.fields) { const label = document.createElement('div'); label.className = 'record-field'; label.textContent = field.name; const content = document.createElement('div'); content.textContent = display(field, record.values[field.id]); card.append(label, content); } column.append(card); }
       host.append(column);
     }

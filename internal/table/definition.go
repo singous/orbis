@@ -248,7 +248,7 @@ func DefaultDefinition() Definition {
 		GroupFieldID: &status.ID,
 	}
 	return Definition{
-		Title:          "多维表格",
+		Title:          "数据表",
 		Fields:         []Field{title, status, due},
 		Views:          []View{grid, board},
 		PublicViewID:   grid.ID,

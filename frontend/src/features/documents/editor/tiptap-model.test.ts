@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { getSchema } from "@tiptap/core";
 import { tiptapExtensions } from "./tiptap-extensions";
 import { fromTiptapDocument, toTiptapDocument } from "./tiptap-model";
-import type { NoteBlocksV2, OrbisBlock } from "../../content/model/blocks";
+import type { NoteBlocksV2, OrbisBlock } from "../../content/blocks";
 
 const block = (id: string, type: string, content: OrbisBlock["content"] = [], props: Record<string, unknown> = {}, children: OrbisBlock[] = []): OrbisBlock => ({ id, type, props, content, children });
 const text = (value: string) => [{ type: "text" as const, text: value }];

@@ -1,37 +1,28 @@
-import { LoadingState } from "../../shared/ui/LoadingState";
-import { buttonVariants } from "../../shared/ui/Button";
-import { InputGroup } from "@heroui/react/input-group";
-import { ActionButton } from "../../shared/ui/ActionButton";
-import {
-  ArrowRight,
-  BookOpen,
-  ChevronRight,
-  Clock3,
-  FileText,
-  Notebook,
-  Plus,
-  Search,
-} from "../../shared/ui/icons";
-import { type FormEvent, useState } from "react";
-import { Link } from "react-router-dom";
+import { type FormEvent, useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
-
+import { InputGroup } from "@heroui/react/input-group";
 import { authStore } from "../../shared/auth/auth-store";
+import { reportError } from "../../shared/api/request-feedback";
 import { formatDate } from "../../shared/format/date";
-import { PageContainer } from "../../shared/ui/PageContainer";
-import { StatusMessage } from "../../shared/ui/StatusMessage";
+import { Button, buttonVariants } from "../../shared/ui/Button";
+import { IconButton } from "../../shared/ui/IconButton";
+import { ArrowRight, FileText, Search } from "../../shared/ui/icons";
+import { LoadingState } from "../../shared/ui/LoadingState";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
 import { useSearchPalette } from "../search/search-palette-context";
 import { NotebookIcon } from "../documents/NotebookIcon";
-import { useDocumentGroups, useNotebooks, useDocumentIndex } from "../documents/queries";
+import { useCreateNote, useNotebooks, useDocumentIndex } from "../documents/queries";
+import { QuickNoteComposer } from "../quick-notes/QuickNoteComposer";
+import { QuickNoteTags } from "../quick-notes/QuickNoteTags";
+import { buildActivityCalendar, memberDays } from "./home-activity";
+import { useHomeQuickNotes } from "./home-queries";
+import "../quick-notes/quick-notes.css";
+import "./home.css";
 
-type WorkspaceArea = {
-  title: string;
-  description: string;
-  to: string;
-  icon: typeof BookOpen;
-};
+const greetingDate = new Intl.DateTimeFormat("zh-CN", { timeZone: "Asia/Shanghai", month: "long", day: "numeric", weekday: "long" });
+const CLOCK_REFRESH_MS = 60_000;
 
 function HomeInlineSearch() {
   const { openSearch } = useSearchPalette();
@@ -40,102 +31,106 @@ function HomeInlineSearch() {
     event.preventDefault();
     openSearch({ q: keyword.trim(), type: "document" });
   }
-  return <form className="workbench-inline-search" onSubmit={submitSearch} role="search">
-    <InputGroup fullWidth className="workbench-search-group orbis-compact-search"><InputGroup.Prefix><Search aria-hidden="true" size={16} /></InputGroup.Prefix>
-      <InputGroup.Input type="search" aria-label="搜索文档" placeholder="搜索文档…" value={keyword} onChange={(event) => setKeyword(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && event.nativeEvent.isComposing) event.preventDefault(); }} />
-      <InputGroup.Suffix><ActionButton type="submit" aria-label="搜索"><ArrowRight aria-hidden="true" size={16} /></ActionButton></InputGroup.Suffix>
+  return <form className="home-search" onSubmit={submitSearch} role="search">
+    <InputGroup fullWidth className="home-search-group orbis-compact-search"><InputGroup.Prefix><Search aria-hidden="true" className="home-ui-icon" /></InputGroup.Prefix>
+      <InputGroup.Input type="search" aria-label="搜索文档" placeholder="搜索你的知识…" value={keyword} onChange={event => setKeyword(event.target.value)} onKeyDown={event => { if (event.key === "Enter" && event.nativeEvent.isComposing) event.preventDefault(); }} />
+      <InputGroup.Suffix><IconButton type="submit" size="sm" aria-label="搜索"><ArrowRight aria-hidden="true" /></IconButton></InputGroup.Suffix>
     </InputGroup>
   </form>;
 }
 
-function HomeSearchCard({ title, description, icon: Icon }: Pick<WorkspaceArea, "title" | "description" | "icon">) {
-  const { isOpen, openSearch } = useSearchPalette();
-  return <ActionButton type="button" className="workbench-resource-card" aria-haspopup="dialog" aria-expanded={isOpen} onClick={() => openSearch()}>
-    <span className="workbench-resource-icon icon-accent"><Icon aria-hidden="true" size={24} /></span>
-    <span className="workbench-resource-copy"><strong>{title}</strong><span>{description}</span></span>
-    <ChevronRight className="workbench-resource-chevron" aria-hidden="true" size={18} />
-  </ActionButton>;
-}
-
 export function HomePage() {
-  const workspace = useStore(authStore, (state) => state.workspace);
-  const groupsQuery = useDocumentGroups();
+  const user = useStore(authStore, state => state.user);
+  const workspace = useStore(authStore, state => state.workspace);
+  const canEdit = canMutateWorkspaceContent(workspace);
   const notebooksQuery = useNotebooks();
   const notesQuery = useDocumentIndex();
-  const groups = groupsQuery.data?.items ?? [];
+  const quickNotes = useHomeQuickNotes();
+  const [tagManager, setTagManager] = useState(false);
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), CLOCK_REFRESH_MS); return () => window.clearInterval(timer); }, []);
   const notebooks = notebooksQuery.data?.items ?? [];
   const notes = notesQuery.data?.items ?? [];
+  const recentNotebooks = [...notebooks].sort((a, b) => b.updated_at_ms - a.updated_at_ms).slice(0, 3);
+  const notebookById = new Map(notebooks.map(notebook => [notebook.id, notebook]));
+  const createNote = useCreateNote();
+  const targetNotebook = recentNotebooks[0];
+  const creating = useRef(false);
+  const navigate = useNavigate();
+  async function startDocument() {
+    if (!canEdit || creating.current) return;
+    if (!targetNotebook) { navigate("/documents/collections"); return; }
+    creating.current = true;
+    try {
+      const note = await createNote.mutateAsync({ notebook_id: targetNotebook.id, title: "未命名文档", parent_id: null });
+      navigate(`/documents/${note.id}`);
+    } catch (error) { reportError(error); }
+    finally { creating.current = false; }
+  }
+  const activity = buildActivityCalendar([...notes, ...(quickNotes.recent.data?.items ?? [])], now);
+  const activityReady = notesQuery.isSuccess && quickNotes.recent.isSuccess;
+  const failedQueries = [notebooksQuery, notesQuery, quickNotes.summary, quickNotes.tags, quickNotes.recent].filter(query => query.isError);
 
-  // The search endpoint owns recency ordering; preserve its returned sequence.
-  const recentNotes = notes.slice(0, 5);
-  const recentNotebooks = [...notebooks]
-    .sort((left, right) => right.updated_at_ms - left.updated_at_ms)
-    .slice(0, 4);
-  const areas: WorkspaceArea[] = [
-    { title: "在线文档", description: `${groups.length} 个分组 · ${notebooks.length} 个笔记本 · ${notes.length} 篇文档`, to: "/documents", icon: BookOpen },
-    { title: "我的笔记本", description: "按主题整理文档，维护目录与层级。", to: "/documents/collections", icon: Notebook },
-    { title: "最近编辑", description: "继续上次的写作。", to: "/documents/recent", icon: Clock3 },
-    { title: "全局搜索", description: "快速查找文档、笔记本、站点和文件。", to: "/search", icon: Search },
-  ];
+  return <WorkspaceShell>
+    <div className="home-page">
+      <header className="home-header"><h1>首页</h1><HomeInlineSearch /></header>
+      {failedQueries.length ? <div className="home-error" role="alert">部分内容加载失败。<Button size="sm" onClick={() => failedQueries.forEach(query => void query.refetch())}>重新加载</Button></div> : null}
+      <div className="home-grid">
+        <section className="home-card home-welcome" aria-label="欢迎回来">
+          <div className="home-welcome-main">
+            <div className="home-welcome-copy">
+              <time dateTime={new Date(now).toISOString()}>{greetingDate.format(now)}</time>
+              <h2>嗨，欢迎回来。</h2>
+              <p className="home-welcome-subtitle">每个小想法，都值得有个家。</p>
+              <p className="home-welcome-detail">和 Orbis 一起，记录生活的第 {user ? memberDays(user.created_at_ms, now) : 1} 天</p>
+              <nav className="home-welcome-actions" aria-label="功能入口">
+                {canEdit ? <Button variant="primary" icon={<FileText aria-hidden="true" />} isPending={createNote.isPending} disabled={notebooksQuery.isPending || notebooksQuery.isError} onClick={() => void startDocument()}>写篇文档</Button> : <Link className={buttonVariants({ variant: "ghost" })} to="/documents">浏览文档<ArrowRight aria-hidden="true" /></Link>}
+                <Link className={buttonVariants({ variant: "ghost" })} to="/documents/collections">去逛逛笔记本<ArrowRight aria-hidden="true" /></Link>
+              </nav>
+            </div>
+            <img className="home-welcome-art" src="/images/home/welcome-stationery.webp" alt="" width="320" height="320" />
+          </div>
+          <nav className="home-stats" aria-label="内容统计">
+            <Link to="/documents"><strong>{notesQuery.isSuccess ? notesQuery.data.pagination.total : "—"}</strong><span>篇文档</span></Link>
+            <Link to="/documents/collections"><strong>{notebooksQuery.isSuccess ? notebooksQuery.data.pagination.total : "—"}</strong><span>本笔记本</span></Link>
+            <Link to="/documents/quick-notes"><strong>{quickNotes.summary.isSuccess ? quickNotes.summary.data.total : "—"}</strong><span>条随手记</span></Link>
+          </nav>
+        </section>
 
-  return (
-    <WorkspaceShell>
-      <PageContainer
-        title="首页"
-        actions={canMutateWorkspaceContent(workspace) ? (
-          <Link className={buttonVariants({ variant: "primary" })} to="/documents/collections">
-            <Plus aria-hidden="true" size={16} />新建笔记本
-          </Link>
-        ) : null}
-      >
-        <section className="workbench-section" aria-label="功能入口">
-          <header className="workbench-section-heading">
-            <h2>功能入口</h2>
-            <HomeInlineSearch />
-          </header>
-          <div className="workbench-resource-grid">
-            {areas.map(({ title, description, to, icon: Icon }) => to === "/search" ? <HomeSearchCard key={title} title={title} description={description} icon={Icon} /> : (
-              <Link key={title} to={to} className="workbench-resource-card">
-                <span className="workbench-resource-icon icon-accent"><Icon aria-hidden="true" size={24} /></span>
-                <span className="workbench-resource-copy"><strong>{title}</strong><span>{description}</span></span>
-                <ChevronRight className="workbench-resource-chevron" aria-hidden="true" size={18} />
-              </Link>
-            ))}
+        {user && workspace ? <QuickNoteComposer key={`${user.id}:${workspace.id}`} appearance="home" userId={user.id} workspaceId={workspace.id} tags={quickNotes.tags.data?.items ?? []} canEdit={canEdit} onManageTags={() => setTagManager(true)} onSaved={quickNotes.refresh} /> : null}
+
+        <section className="home-card home-recent" aria-label="最近编辑">
+          <header className="home-card-heading"><h2>接着上次的灵感</h2><Link className={buttonVariants({ variant: "ghost", size: "sm" })} to="/documents/recent">查看全部<ArrowRight aria-hidden="true" /></Link></header>
+          {notesQuery.isPending ? <LoadingState label="正在加载最近文档…" /> : null}
+          {notesQuery.isSuccess && !notes.length ? <div className="home-empty"><FileText className="home-ui-icon" aria-hidden="true" /><p>还没有可继续的文档</p><Link className={buttonVariants({ variant: "ghost" })} to="/documents/collections">从第一个笔记本开始<ArrowRight aria-hidden="true" /></Link></div> : null}
+          <ul className="home-document-list">{notes.slice(0, 3).map(note => {
+            const notebook = notebookById.get(note.notebook_id);
+            return <li key={note.id}><Link to={`/documents/${note.id}`} className="home-document-row">
+              <FileText className="home-ui-icon" aria-hidden="true" />
+              <span className="home-document-copy"><strong>{note.title || "未命名文档"}</strong><span>{notebook ? <><NotebookIcon icon={notebook.icon} size="sm" />{notebook.title}</> : "在线文档"}</span></span>
+              <time dateTime={new Date(note.updated_at_ms).toISOString()}>{formatDate(note.updated_at_ms)}</time><ArrowRight className="home-document-arrow home-ui-icon" aria-hidden="true" />
+            </Link></li>;
+          })}</ul>
+          <div className="home-notebooks"><h3>常去的小角落</h3>
+            {notebooksQuery.isPending ? <LoadingState label="正在加载笔记本…" /> : null}
+            {notebooksQuery.isSuccess && !notebooks.length ? <Link className={buttonVariants({ variant: "ghost" })} to="/documents/collections">为你的想法创建一个笔记本<ArrowRight aria-hidden="true" /></Link> : null}
+            <div className="home-notebook-grid">{recentNotebooks.map(notebook => <Link key={notebook.id} className="home-notebook" to={`/collections/${notebook.id}`}><NotebookIcon icon={notebook.icon} /><span><strong>{notebook.title}</strong><span>更新于 {formatDate(notebook.updated_at_ms)}</span></span></Link>)}</div>
           </div>
         </section>
 
-        {recentNotebooks.length ? (
-          <section className="workbench-section" aria-label="常用笔记本">
-            <header className="workbench-section-heading"><h2>最近使用的笔记本</h2><Link className="workbench-more" to="/documents/collections">查看全部<ChevronRight aria-hidden="true" size={14} /></Link></header>
-            <div className="workbench-notebook-shortcuts">
-              {recentNotebooks.map((notebook) => (
-                <Link key={notebook.id} to={`/collections/${notebook.id}`}><NotebookIcon icon={notebook.icon} size="sm" /><span>{notebook.title}</span></Link>
-              ))}
-            </div>
-          </section>
-        ) : null}
-
-        <section className="workbench-section" aria-label="最近编辑">
-          <header className="workbench-section-heading"><h2>最近编辑</h2><Link className="workbench-more" to="/documents/recent">查看全部<ChevronRight aria-hidden="true" size={14} /></Link></header>
-          {notesQuery.isError ? <StatusMessage tone="error" title="最近文档加载失败">请稍后重试。</StatusMessage> : null}
-          {notesQuery.isLoading ? <LoadingState label="正在加载最近文档…" /> : null}
-          {!notesQuery.isLoading && !notesQuery.isError && !recentNotes.length ? (
-            <div className="empty-panel">还没有可继续的文档。<Link to="/documents/collections" className="mt-3 inline-flex text-sm font-semibold">前往我的笔记本</Link></div>
-          ) : null}
-          {recentNotes.length ? (
-            <ul className="workbench-document-list">
-              {recentNotes.map((note) => (
-                <li key={note.id}><Link to={`/documents/${note.id}`} className="workbench-document-row">
-                  <FileText aria-hidden="true" size={18} />
-                  <span className="workbench-resource-copy"><strong>{note.title}</strong><span>{note.summary || "打开文档"}</span></span>
-                  <time>{formatDate(note.updated_at_ms)}</time>
-                  <ChevronRight className="workbench-resource-chevron" aria-hidden="true" size={16} />
-                </Link></li>
-              ))}
-            </ul>
-          ) : null}
+        <section className="home-card home-activity" aria-label="灵感足迹">
+          <header className="home-card-heading"><div><h2>灵感足迹</h2><p>认真记录的日子，都在这里。</p></div><span className="home-activity-summary">本月记录了 {activityReady ? activity.activeDays : "—"} 天</span></header>
+          {!activityReady && !notesQuery.isError && !quickNotes.recent.isError ? <LoadingState label="正在加载灵感足迹…" /> : null}
+          <div className="home-calendar" role="img" aria-label={activityReady ? `近期内容足迹，本月有 ${activity.activeDays} 个记录日。按当前内容的创建和最近编辑日期统计。` : "灵感足迹尚未加载"}>
+            <div className="home-calendar-days">{activity.days.map(day => <span key={day.date} className={`home-calendar-day${day.future ? " is-future" : ""}`} data-level={activityReady && !day.future ? Math.min(day.count, 4) : 0} title={day.future ? `${day.date}：尚未到来` : activityReady ? `${day.date}：${day.count} 条内容` : "尚未加载"} />)}</div>
+            <div className="home-calendar-months">{activity.months.map(month => <span key={month.date}>{month.label}</span>)}</div>
+          </div>
+          <div className="home-calendar-legend" aria-hidden="true"><span>少</span>{[0, 1, 2, 3, 4].map(level => <span key={level} className="home-calendar-day" data-level={level} />)}<span>多</span></div>
+          <p className="home-activity-scope">依据最近 {notes.length} 篇文档与 {quickNotes.recent.data?.items.length ?? 0} 条随手记的创建及最近编辑日期</p>
+          <footer className="home-activity-footer"><span>今天，也给想法留一点位置。</span></footer>
         </section>
-      </PageContainer>
-    </WorkspaceShell>
-  );
+      </div>
+      {user && workspace ? <QuickNoteTags key={`tags:${user.id}:${workspace.id}`} open={tagManager && canEdit} onOpenChange={setTagManager} tags={quickNotes.tags.data?.items ?? []} onChanged={quickNotes.refresh} /> : null}
+    </div>
+  </WorkspaceShell>;
 }

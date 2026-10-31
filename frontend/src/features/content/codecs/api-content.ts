@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { OrbisBlock, OrbisInline, OrbisInlineStyle, OrbisTableCell, OrbisTableContent } from "../model/blocks";
+import type { OrbisBlock, OrbisInline, OrbisInlineStyle, OrbisTableCell, OrbisTableContent } from "../blocks";
 
 const runSchema = z.object({ text: z.string(), marks: z.array(z.enum(["bold", "italic", "underline", "strike", "code"])), href: z.string().nullable(), text_color: z.string().nullable().optional(), background_color: z.string().nullable().optional() }).strict();
 const cellSchema = z.object({ content: z.array(runSchema), row_span: z.number().int(), column_span: z.number().int(), alignment: z.string(), text_color: z.string().nullable(), background_color: z.string().nullable() }).strict();
@@ -10,7 +10,7 @@ export type NativePayload = z.infer<typeof nativePayloadSchema>;
 export type NativeBlock = NativePayload & { id: string; children: NativeBlock[] };
 export const nativeBlockSchema: z.ZodType<NativeBlock> = nativePayloadSchema.extend({ id: z.string().uuid(), children: z.lazy(() => z.array(nativeBlockSchema)) });
 const BLOCK_TYPES: Record<string, string> = {
-  paragraph: "paragraph", heading: "heading", quote: "quote", bullet_list_item: "bulletListItem", numbered_list_item: "numberedListItem", check_list_item: "checkListItem", toggle_list_item: "toggleListItem", code_block: "codeBlock", table: "table", divider: "divider", group: "group", image: "image", audio: "audio", video: "video", file: "file", drawing: "drawing", data_table: "dataTable", callout: "callout", card: "card", card_group: "cardGroup", steps: "steps", step: "step", tabs: "tabs", tab: "tab", code_group: "codeGroup",
+  paragraph: "paragraph", heading: "heading", quote: "quote", bullet_list_item: "bulletListItem", numbered_list_item: "numberedListItem", check_list_item: "checkListItem", toggle_list_item: "toggleListItem", code_block: "codeBlock", table: "table", divider: "divider", group: "group", image: "image", audio: "audio", video: "video", file: "file", drawing: "drawing", board: "board", data_table: "dataTable", callout: "callout", card: "card", card_group: "cardGroup", steps: "steps", step: "step", tabs: "tabs", tab: "tab", code_group: "codeGroup",
 };
 const NATIVE_TYPES = Object.fromEntries(Object.entries(BLOCK_TYPES).map(([key, value]) => [value, key]));
 const PROP_NAMES: Record<string, string> = { text_alignment: "textAlignment", text_color: "textColor", background_color: "backgroundColor", show_preview: "showPreview", width: "previewWidth", height: "previewHeight" };
@@ -96,7 +96,8 @@ export function nativePayload(block: Omit<OrbisBlock, "children">): NativePayloa
     if (MEDIA_TYPES.has(block.type) && key === "url") props.source = nativeSource(value);
     else if (MEDIA_TYPES.has(block.type) && ["previewWidth", "previewHeight"].includes(key) && value === 0) continue;
     else if (block.type === "dataTable") {
-      if (key === "table_id") props.table_id = value || null;
+      if (key === "sheet_id" || key === "sheet_view_id") { if(value) props[key]=value; }
+      else if (key === "table_id") props.table_id = value || null;
       else if (key === "table_revision") props.table_version = value || null;
       else if (!["title", "default_view_id", "field_names"].includes(key)) throw new Error("表格引用包含不支持的字段。");
     } else props[NATIVE_PROP_NAMES[key] ?? key] = key === "href" && typeof value === "string" ? nativeLink(value) : value;

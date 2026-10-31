@@ -1,15 +1,67 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { Toaster } from "../../../shared/ui/Toast";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import { TiptapEditor } from "./TiptapEditor";
-import type { NoteBlocksV2 } from "../../content/model/blocks";
+import type { NoteBlocksV2 } from "../../content/blocks";
 import * as model from "./tiptap-model";
+import type { EditorContentHandle } from "./editor-content-handle";
+import { EditorToolbarFrame } from "./EditorToolbarHost";
 
 const initial: NoteBlocksV2 = { schema_version: 2, editor: "blocknote", blocks: [
   { id: "paragraph", type: "paragraph", props: {}, content: [{ type: "text", text: "已有正文" }], children: [] },
 ] };
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+
+it("combines and clears text styles while retaining the editor selection", async () => {
+  const user = userEvent.setup();
+  let handle: EditorContentHandle | null = null;
+  let latest = initial;
+  render(<TiptapEditor blocks={initial} onContentReady={value => { handle = value; }} onChange={({ blocks }) => { latest = blocks; }} />);
+  await waitFor(() => expect(handle).not.toBeNull());
+  act(() => { handle!.selectAll(); });
+  const bold = screen.getByRole("button", { name: "粗体" });
+  const italic = screen.getByRole("button", { name: "斜体" });
+  await user.click(bold);
+  await user.click(italic);
+  expect(bold).toHaveAttribute("aria-pressed", "true");
+  expect(italic).toHaveAttribute("aria-pressed", "true");
+  expect(latest.blocks[0].content).toEqual([{ type: "text", text: "已有正文", styles: { bold: true, italic: true } }]);
+  await user.click(bold);
+  expect(bold).toHaveAttribute("aria-pressed", "false");
+  expect(italic).toHaveAttribute("aria-pressed", "true");
+  expect(latest.blocks[0].content).toEqual([{ type: "text", text: "已有正文", styles: { italic: true } }]);
+});
+
+it("synchronizes text-style toggles after toolbar undo and redo", async () => {
+  const user = userEvent.setup();
+  let handle: EditorContentHandle | null = null;
+  render(<TiptapEditor blocks={initial} onContentReady={value => { handle = value; }} onChange={() => {}} />);
+  await waitFor(() => expect(handle).not.toBeNull());
+  act(() => { handle!.selectAll(); });
+  const bold = screen.getByRole("button", { name: "粗体" });
+  await user.click(bold);
+  expect(bold).toHaveAttribute("aria-pressed", "true");
+  await user.click(screen.getByRole("button", { name: "撤销" }));
+  expect(bold).toHaveAttribute("aria-pressed", "false");
+  await user.click(screen.getByRole("button", { name: "重做" }));
+  expect(bold).toHaveAttribute("aria-pressed", "true");
+});
+
+it("navigates the portaled toolbar with arrow keys without editing content", async () => {
+  const user = userEvent.setup();
+  const changed = vi.fn();
+  render(<EditorToolbarFrame><TiptapEditor blocks={initial} onChange={changed} /></EditorToolbarFrame>);
+  const bold = await screen.findByRole("button", { name: "粗体" });
+  expect(bold.closest(".document-format-host")).not.toBeNull();
+  act(() => { bold.focus(); });
+  await user.keyboard("{ArrowRight}");
+  expect(screen.getByRole("button", { name: "斜体" })).toHaveFocus();
+  await user.keyboard("{ArrowLeft}{ArrowLeft}");
+  expect(screen.getByRole("button", { name: "重做" })).toHaveFocus();
+  expect(changed).not.toHaveBeenCalled();
+});
 
 it("does not emit a save when opening a document or toggling permissions", async () => {
   const changed = vi.fn();
@@ -37,7 +89,7 @@ it("selects insertion commands with the keyboard and dismisses the menu", async 
 it("reports conversion failures and retries the retained live document", async () => {
   const changed = vi.fn();
   const failed = vi.fn();
-  render(<TiptapEditor blocks={initial} onChange={changed} onError={failed} />);
+  render(<><TiptapEditor blocks={initial} onChange={changed} onError={failed} /><Toaster /></>);
   await screen.findByText("已有正文");
   vi.spyOn(model, "fromTiptapDocument").mockImplementationOnce(() => { throw new Error("Conversion failure"); });
   await userEvent.click(screen.getByRole("button", { name: /段落类型/ }));
@@ -45,7 +97,8 @@ it("reports conversion failures and retries the retained live document", async (
   expect(await screen.findByRole("alert")).toHaveTextContent("正文暂未保存");
   expect(changed).not.toHaveBeenCalled();
   expect(failed).toHaveBeenCalledWith(expect.stringContaining("正文暂未保存"));
-  await userEvent.click(screen.getByRole("button", { name: "重试保存正文" }));
+  await userEvent.click(screen.getByRole("button", { name: /段落类型/ }));
+  await userEvent.click(screen.getByRole("option", { name: "标题 2" }));
   expect(changed.mock.calls[0][0].blocks.blocks[0]).toMatchObject({ type: "heading", content: [{ type: "text", text: "已有正文" }] });
   expect(failed).toHaveBeenLastCalledWith(null);
 });

@@ -1,3 +1,4 @@
+import { withRequestFeedback } from "../../shared/api/request-feedback";
 import {z} from "zod";
 import {ApiError,apiRequest,workspacePath} from "../../shared/api/api-client";
 import {paginationSchema} from "../../shared/api/schemas";
@@ -9,16 +10,23 @@ const sitePath=(id:string,auth:AuthRequestOptions)=>workspacePath(auth,`/sites/$
 export async function listSites(auth:AuthRequestOptions,page=1){const data=z.object({items:z.array(z.unknown()),pagination:paginationSchema}).parse(await apiRequest(workspacePath(auth,`/sites?page=${page}&page_size=20`),authRequestOptions(auth)));return {...data,items:data.items.map(nativeSite)};}
 export async function getSite(id:string,auth:AuthRequestOptions){return nativeSite(await apiRequest(sitePath(id,auth),authRequestOptions(auth)));}
 export async function createSite(config:SiteConfig,auth:AuthRequestOptions){return nativeSite(await apiRequest(workspacePath(auth,"/sites"),{...authRequestOptions(auth),method:"POST",body:wireSiteConfig(config)}));}
-export async function saveSite(id:string,config:SiteConfig,expectedVersion:number,auth:AuthRequestOptions){return nativeSite(await apiRequest(sitePath(id,auth),{...authRequestOptions(auth),method:"PUT",body:{...wireSiteConfig(config),expected_version:expectedVersion}}));}
+export async function saveSite(id:string,config:SiteConfig,expectedVersion:number,auth:AuthRequestOptions){
+  return withRequestFeedback(auth, async auth => {
+return nativeSite(await apiRequest(sitePath(id,auth),{...authRequestOptions(auth),method:"PUT",body:{...wireSiteConfig(config),expected_version:expectedVersion}}));
+  });
+}
 export async function previewSite(id:string,auth:AuthRequestOptions){return nativePreview(await apiRequest(`${sitePath(id,auth)}/preview`,authRequestOptions(auth)),auth.workspaceId??undefined);}
 export async function getSiteSources(id:string,auth:AuthRequestOptions){return nativeSources(await apiRequest(`${sitePath(id,auth)}/sources`,authRequestOptions(auth)));}
 async function post(id:string,suffix:string,body:Record<string,unknown>,auth:AuthRequestOptions){
+  return withRequestFeedback({ ...auth, feedback: { ...auth.feedback, success: true } }, async auth => {
   let uncertain=false;
   for(let attempt=0;attempt<2;attempt+=1){
     try{return nativeSite(z.object({site:z.unknown()}).parse(await apiRequest(`${sitePath(id,auth)}${suffix}`,{...authRequestOptions(auth),method:"POST",body})).site);}
-    catch(error){const rejected=error instanceof ApiError&&error.status>=400&&error.status<500;if(rejected&&!uncertain)throw error;uncertain=true;if(attempt===1||rejected)throw new ApiError(503,"站点操作结果尚未确认，请重试原操作。","SITE_OPERATION_RESULT_UNKNOWN","",{operation_id:body.operation_id});}
+    catch(error){const rejected=error instanceof ApiError&&error.status>=400&&error.status<500;if(rejected&&!uncertain)throw error;uncertain=true;if(attempt===1||rejected)throw new ApiError(503, "站点操作结果尚未确认，请重试原操作。", "SITE_OPERATION_RESULT_UNKNOWN", "", {operation_id:body.operation_id}, { cause: error });}
   }
   throw new Error("Unreachable site command recovery");
+
+  });
 }
 export function publishSite(id:string,auth:AuthRequestOptions,input:{operation_id:string;expected_version:number;expected_source_fingerprint:string}){return post(id,"/publish",input,auth);}
 export async function listSiteReleases(id:string,auth:AuthRequestOptions,page=1){return siteReleaseListSchema.parse(await apiRequest(`${sitePath(id,auth)}/releases?page=${page}&page_size=20`,authRequestOptions(auth)));}

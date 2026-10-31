@@ -97,10 +97,8 @@
 
 .site-source-manual-note,
 .site-source-status,
-.site-source-query-error,
 .site-source-empty-selection,
-.site-preview-empty,
-.site-preview-error {
+.site-preview-empty {
   border: 1px solid var(--border-subtle);
   border-radius: 10px;
   background: var(--surface-hover);
@@ -253,7 +251,6 @@
   place-items: center;
 }
 
-
 .site-source-check .checkbox__indicator svg {
   width: 10px;
   height: 10px;
@@ -329,15 +326,12 @@
   line-height: var(--orbis-text-caption-leading);
 }
 
-.site-source-query-error,
-.site-source-inline-error,
-.site-preview-error {
+.site-source-inline-error {
   color: var(--danger-text);
   font-size: var(--orbis-text-caption-size);
   line-height: var(--orbis-text-caption-leading);
 }
 
-.site-source-query-error button,
 .site-source-inline-error button {
   margin-left: 8px;
   text-decoration: underline;
@@ -506,8 +500,7 @@
   line-height: var(--orbis-text-caption-leading);
 }
 
-.site-preview-empty,
-.site-preview-error {
+.site-preview-empty {
   display: flex;
   align-items: flex-start;
   gap: 10px;
@@ -555,5 +548,11 @@
 
   .site-source-description {
     grid-column: auto;
+  }
+}
+
+@media (pointer: coarse) and (min-width: 721px) {
+  .site-branding-link-list > div {
+    grid-template-columns: minmax(90px, .65fr) minmax(140px, 1.35fr) var(--orbis-control-touch-height);
   }
 }

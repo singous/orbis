@@ -1,12 +1,14 @@
+import { Toaster } from "../../shared/ui/Toast";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { authStore } from "../../shared/auth/auth-store";
 import { NotebookPage } from "../documents/NotebookPage";
 import { SiteEditorPage } from "./SiteEditorPage";
+import { BrowserRequest } from "../../../tests/support/browser-request";
 import { SitesPage } from "./SitesPage";
 import type { wireSiteConfig } from "./site-codec";
 
@@ -162,16 +164,16 @@ function installFetch() {
 
 function renderRoute(route: string, element: React.ReactNode, pattern: string) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
-  return render(
+  const view = render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={[route]}>
-        <Routes><Route path={pattern} element={element} /></Routes>
-      </MemoryRouter>
-    </QueryClientProvider>,
+      <RouterProvider router={createMemoryRouter([{ path: pattern, element }], { initialEntries: [route] })} />
+    <Toaster /></QueryClientProvider>,
   );
+  return { ...view, client };
 }
 
 beforeEach(() => {
+  vi.stubGlobal("Request", BrowserRequest);
   requests = [];
   siteResponse = baseSite;
   publishConflict = false;
@@ -230,7 +232,7 @@ describe("notebook-backed site management", () => {
     expect(within(dialog).getByText("新增 1")).toBeVisible();
     await userEvent.click(within(dialog).getByRole("button", { name: "确认发布" }));
 
-    expect(await within(dialog).findByRole("alert")).toHaveTextContent("来源内容已变化");
+    expect(await screen.findByRole("alertdialog")).toHaveTextContent("来源内容已变化");
     const publishRequests = requests.filter((request) => request.path.endsWith("/publish"));
     expect(publishRequests).toHaveLength(1);
     expect(publishRequests[0].body).toEqual({expected_source_fingerprint:FINGERPRINT,expected_version:2,operation_id:expect.any(String)});
@@ -276,7 +278,7 @@ describe("notebook-backed site management", () => {
     expect(within(dialog).getAllByText("冻结正文")).not.toHaveLength(0);
     await userEvent.click(within(dialog).getByRole("button", { name: "确认发布" }));
 
-    expect(await within(dialog).findByRole("alert")).toHaveTextContent("来源内容已变化");
+    expect(await screen.findByRole("alertdialog")).toHaveTextContent("来源内容已变化");
     expect(requests.find((request) => request.path.endsWith("/publish"))?.body).toEqual({expected_source_fingerprint:FINGERPRINT,expected_version:2,operation_id:expect.any(String)});
     expect(requests.filter((request) => request.path.endsWith("/preview"))).toHaveLength(1);
     expect(within(dialog).getAllByText("冻结正文")).not.toHaveLength(0);
@@ -333,12 +335,12 @@ describe("notebook-backed site management", () => {
         collections: [{ collection_id: INVALID_NOTEBOOK_ID, root_document_id: null, label: null }],
       },
     };
-    renderRoute(`/sites/${SITE_ID}`, <SiteEditorPage />, "/sites/:siteId");
+    const { client } = renderRoute(`/sites/${SITE_ID}`, <SiteEditorPage />, "/sites/:siteId");
 
     expect(await screen.findByRole("button", { name: /来源笔记本 1/ })).toHaveTextContent("当前来源不可用");
     await userEvent.click(screen.getByRole("button", { name: "移除来源 1" }));
     expect(screen.queryByRole("button", { name: /来源笔记本 1/ })).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "重试" }));
+    await act(async () => { await client.invalidateQueries({ queryKey: ["notebooks"] }); });
 
     expect(await screen.findByRole("button", { name: "添加来源" })).toBeVisible();
     expect(screen.queryByRole("button", { name: /来源笔记本 1/ })).not.toBeInTheDocument();
@@ -357,11 +359,10 @@ describe("notebook entry points", () => {
     expect(requests.some((request) => request.method === "POST" && request.path === `/api/v1/workspaces/${WORKSPACE_ID}/sites`)).toBe(false);
   });
 
-  it("links notebook management to a prefilled site draft", async () => {
+  it("hides the deferred site creation entry in notebook management", async () => {
     renderRoute(`/documents/collections/${NOTEBOOK_ID}`, <NotebookPage />, "/documents/collections/:collectionId");
 
     await userEvent.click(await screen.findByRole("button", { name: "笔记本操作" }));
-    const link = screen.getByRole("menuitem", { name: "创建文档站点" });
-    expect(link).toHaveAttribute("href", `/sites?notebook=${NOTEBOOK_ID}`);
+    expect(screen.queryByRole("menuitem", { name: "创建文档站点" })).not.toBeInTheDocument();
   });
 });

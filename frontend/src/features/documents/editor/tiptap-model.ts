@@ -3,7 +3,7 @@ import { Node as ProseMirrorNode } from "@tiptap/pm/model";
 
 import { documentBlockDefinition } from "../../content/model/document-components";
 import { fingerprintText } from "../../content/codecs/collaboration-fingerprint";
-import { canonicalJSON, newBlockId, type NoteBlocksV2, type OrbisBlock, type OrbisInline, type OrbisTableCell, type OrbisTableContent } from "../../content/model/blocks";
+import { canonicalJSON, newBlockId, type NoteBlocksV2, type OrbisBlock, type OrbisInline, type OrbisTableCell, type OrbisTableContent } from "../../content/blocks";
 
 const INLINE_MARKS = ["bold", "italic", "underline", "strike", "code"] as const;
 const LIST_TYPES = { bulletListItem: "bulletList", numberedListItem: "orderedList", checkListItem: "taskList" } as const;
@@ -255,6 +255,7 @@ function codeContent(node: JSONContent): OrbisBlock["content"] {
 function singleNode(value: OrbisBlock, cacheMetadata = true): StoredNode {
   const meta = metadata(value);
   if (value.type === "drawing") return own({ type: "orbisDrawing", attrs: meta }, value, cacheMetadata);
+  if (value.type === "board") return own({ type: "orbisBoard", attrs: meta }, value, cacheMetadata);
   if (documentBlockDefinition(value.type)) {
     const definition = documentBlockDefinition(value.type)!;
     return own({ type: "orbisComponent", attrs: { ...meta, kind: value.type }, content: [
@@ -328,6 +329,7 @@ function nodeToBlock(node: JSONContent): OrbisBlock[] {
     return [block(id(node), kind, props(node), ownFirst ? nodesToInline(content[0]?.content) : [], nodesToBlocks(content.slice(ownFirst ? 1 : 0)))];
   }
   if (type === "orbisDrawing") return [original(node, "drawing") ?? block(id(node), "drawing", props(node), [])];
+  if (type === "orbisBoard") return [original(node, "board") ?? block(id(node), "board", props(node), [])];
   if (type === "orbisMedia") {
     const kind = String(attrs(node).kind);
     const saved = original(node, kind);

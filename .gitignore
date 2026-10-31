@@ -77,5 +77,8 @@ out/
 # Go
 bin/
 
-# Generated self-hosted drawing fonts
+# Retired generated drawing fonts
 frontend/public/drawing-assets/
+
+# Generated self-hosted board icons
+frontend/public/board-icons/

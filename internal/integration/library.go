@@ -44,6 +44,12 @@ type OperationRecord struct {
 	UpdatedAtMS int64           `json:"updated_at_ms"`
 }
 type LibraryRepository interface {
+	DocumentVersions(context.Context, LibraryQuery) (document.VersionPage, error)
+	DocumentVersion(context.Context, LibraryQuery, string) (document.Version, document.Content, error)
+	CompareDocumentVersions(context.Context, LibraryQuery, string, string) (document.VersionComparison, error)
+	SaveDocumentVersion(context.Context, Principal, string, document.CreateVersion) (document.Version, error)
+	EditDocumentVersion(context.Context, Principal, string, string, document.EditVersion) (document.Version, error)
+	RestoreDocumentVersion(context.Context, Principal, string, string, string, int64) (document.Content, error)
 	Search(context.Context, LibraryQuery) ([]SearchHit, int64, error)
 	CreateShare(context.Context, Principal, sharing.Created) (sharing.Created, error)
 	Shares(context.Context, Principal, sharing.ListQuery) ([]sharing.Share, int64, error)

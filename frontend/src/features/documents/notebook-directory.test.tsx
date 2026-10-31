@@ -29,7 +29,7 @@ it("retains the tree while collapsed and supports public keyboard resizing", () 
   render(shell(createNotebookSidebar("notebook")));
   const resize = screen.getByRole("separator", { name: "调整笔记本目录宽度" });
   expect(screen.getByRole("link", { name: "当前笔记本" })).toHaveAttribute("href", "/collections/notebook");
-  expect(screen.getByRole("button", { name: "新建文档" })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "创建内容" })).toBeEnabled();
   fireEvent.keyDown(resize, { key: "ArrowRight" });
   expect(localStorage.getItem("orbis.notebookDirectoryWidth")).toBe("248");
   fireEvent.click(screen.getByRole("button", { name: "收起笔记本目录" }));

@@ -1,6 +1,6 @@
 import {createContext} from "react";
 import type {Editor} from "@tiptap/core";
-import type {OrbisBlock} from "../../../content/model/blocks";
+import type {OrbisBlock} from "../../../content/blocks";
 import {fromTiptapDocument} from "../tiptap-model";
 import {indexBlocks,normalizeBlockSelection} from "./block-tree";
 import {captureBlockActionSession,prepareBlockAction} from "./block-action-read";
@@ -58,6 +58,6 @@ export function stageTableCopies(editor:Editor,sources:OrbisBlock[],targets:Orbi
   }
   visit(sources,targets);
   if(!copies.length)return null;
-  if(copies.length>MAX_COPIED_TABLES)throw new Error("单次最多复制100个多维表格，请缩小选区。");
+  if(copies.length>MAX_COPIED_TABLES)throw new Error("单次最多复制100个数据表，请缩小选区。");
   return {rollback:port.stage(copies),commit:port.commit};
 }

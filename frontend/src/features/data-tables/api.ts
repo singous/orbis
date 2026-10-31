@@ -1,9 +1,10 @@
+import { withRequestFeedback } from "../../shared/api/request-feedback";
 import {z} from "zod";
 import {ApiError,apiBlobRequest,apiRequest,workspacePath} from "../../shared/api/api-client";
 import {paginationSchema} from "../../shared/api/schemas";
 import {authRequestOptions,type AuthRequestOptions} from "../../shared/auth/use-auth-request";
 import {TABLE_PAGE_SIZE,type TableChanges,type TableMutation,type TablePage,type TableDefinition} from "./model";
-import type {OrbisBlock} from "../content/model/blocks";
+import type {OrbisBlock} from "../content/blocks";
 
 const cellSchema=z.union([z.string(),z.number().finite(),z.boolean(),z.array(z.string()),z.null()]);
 const optionSchema=z.object({id:z.string().uuid(),label:z.string(),color:z.string()});
@@ -34,6 +35,7 @@ export async function readTable(noteId:string,tableId:string,auth:AuthRequestOpt
   return {table_id:value.table.table_id,block_id:value.table.block_id,revision:value.table.table_version,content_version:value.table.content_version,definition:value.table.definition,view_id:value.view_id,records:value.items,groups:value.groups.map(group=>({id:group.option_id,name:group.name,count:group.count})),total:value.pagination.total,offset:(value.pagination.page-1)*value.pagination.page_size,next_offset:value.pagination.page*value.pagination.page_size,has_more:value.pagination.has_next};
 }
 async function post(path:string,body:unknown,auth:AuthRequestOptions):Promise<TableResult>{
+  return withRequestFeedback(auth, async auth => {
   let uncertain=false;
   for(let attempt=0;attempt<2;attempt+=1){
     try{return resultView(await apiRequest(path,{...authRequestOptions(auth),method:"POST",body:body as Record<string,unknown>}));}
@@ -41,10 +43,12 @@ async function post(path:string,body:unknown,auth:AuthRequestOptions):Promise<Ta
       const rejected=error instanceof ApiError&&error.status>=400&&error.status<500;
       if(rejected&&!uncertain)throw error;
       uncertain=true;
-      if(attempt===1||rejected)throw new ApiError(503,"表格保存结果尚未确认，请重试原操作。本机修改仍保留。","TABLE_WRITE_RESULT_UNKNOWN");
+      if(attempt===1||rejected)throw new ApiError(503, "表格保存结果尚未确认，请重试原操作。本机修改仍保留。", "TABLE_WRITE_RESULT_UNKNOWN", "", null, { cause: error });
     }
   }
   throw new Error("Unreachable table write recovery");
+
+  });
 }
 export function createTable(noteId:string,payload:{operation_id:string;expected_document_version:number;block_id:string;definition?:TableDefinition;source?:{workspace_id:string;document_id:string;table_id:string;document_version?:number|null}},auth:AuthRequestOptions):Promise<TableResult>{
   return post(workspacePath(auth,`/documents/${noteId}/tables`),payload,auth);

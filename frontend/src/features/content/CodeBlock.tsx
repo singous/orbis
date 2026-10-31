@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Check, Copy } from "../../shared/ui/icons";
 import { useEffect, useState } from "react";
@@ -31,7 +32,7 @@ export function CodeBlock({ source, language = "text" }: { source: string; langu
       setCopyState("copied");
       showToast({ title: "代码已复制", tone: "success" });
     } catch {
-      showToast({ title: "复制失败", description: "请选择代码后手动复制。", tone: "danger" });
+      reportError("请选择代码后手动复制。");
     }
   }
   const html = highlighted?.source === source && highlighted.language === language ? highlighted.html : null;

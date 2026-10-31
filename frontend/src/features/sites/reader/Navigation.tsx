@@ -1,3 +1,4 @@
+import { OrbisLogo } from "../../../shared/ui/OrbisLogo";
 import { ActionButton } from "../../../shared/ui/ActionButton";
 import { ChevronRight } from "../../../shared/ui/icons";
 import { useEffect, useRef, type RefObject } from "react";
@@ -83,7 +84,7 @@ export function Navigation({ sections, currentSlug, basePath, open, close, descr
       </nav>
       <footer className="site-reader-navigation-footer">
         {footerLinks.map((link) => <ManagedContentLink key={`${link.label}-${link.url}`} reference={link.url} fallback={link.url}>{link.label}</ManagedContentLink>)}
-        <span>由 <strong>Orbis</strong> 提供支持</span>
+        <span className="orbis-attribution">由 <OrbisLogo size={20} /> <strong>Orbis</strong> 提供支持</span>
       </footer>
     </aside>
   </>;

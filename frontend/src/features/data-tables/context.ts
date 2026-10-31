@@ -1,7 +1,7 @@
 import { createContext } from "react";
 import type { AuthRequestOptions } from "../../shared/auth/use-auth-request";
 import type { TableResult } from "./api";
-import type { OrbisBlock } from "../content/model/blocks";
+import type { OrbisBlock } from "../content/blocks";
 
 export type PendingTableWriter={hasPending:()=>boolean;flush:()=>Promise<void>};
 

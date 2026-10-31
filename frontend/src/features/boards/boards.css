@@ -1,0 +1,911 @@
+/* Diagram-editor chrome is scoped so visual changes do not affect document or table pages. */
+.board-shell {
+  --board-canvas: var(--orbis-canvas-bg);
+  --board-border: var(--border-subtle);
+  --board-ink: var(--text-primary);
+  --board-muted: var(--text-tertiary);
+  --board-grid: color-mix(in oklab, var(--foreground) 12%, transparent);
+  --board-touch-bar-height: calc(var(--orbis-control-touch-height) + 6px);
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  color: var(--board-ink);
+  font-size: 13px;
+  line-height: 1.5;
+  container-type: inline-size;
+}
+.board-document-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: var(--text-secondary);
+}
+.board-document-heading > svg { flex: none; color: var(--accent); }
+.board-document-heading h1 {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.board-save-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-tertiary);
+}
+.board-save-state.is-conflict,
+.board-save-state.is-error {
+  color: #c03939;
+}
+.board-save-state.is-save_failed {
+  color: #a36c16;
+}
+.board-header-actions {
+  --board-border: var(--border-subtle);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.board-shell .orbis-action-button,
+.board-header-actions .orbis-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 30px;
+  min-width: 30px;
+  padding: 5px;
+  border-radius: 5px;
+  font-size: 12px;
+}
+.board-header-actions > .orbis-action-button {
+  background: var(--orbis-panel-bg);
+  border: 1px solid var(--board-border);
+  box-shadow: 0 1px 2px #18263b04;
+  color: var(--text-secondary);
+}
+.board-header-actions > .button:not(.orbis-action-button) {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  border-color: var(--accent);
+  box-shadow: 0 1px 3px #2458ff20;
+  min-height: 30px;
+  font-size: 12px;
+}
+.board-workspace {
+  --board-panel-offset: 0px;
+  display: grid;
+  grid-template-columns: minmax(0, max-content) max-content minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--board-canvas);
+}
+.board-workspace.has-inspector {
+  --board-panel-offset: 368px;
+}
+.board-main,
+.board-stage-wrap {
+  position: absolute;
+  inset: 0;
+  min-width: 0;
+  min-height: 0;
+}
+.board-stage-wrap {
+  overflow: hidden;
+  background-color: var(--board-canvas);
+  background-image: radial-gradient(var(--board-grid) 0.7px, transparent 0.85px);
+  background-size: 16px 16px;
+}
+.board-toolbar {
+  position: absolute;
+  z-index: 18;
+  top: 50%;
+  left: 12px;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 36px;
+  padding: 4px 3px;
+  gap: 1px;
+  background: var(--orbis-panel-bg);
+  border: 1px solid var(--board-border);
+  border-radius: 9px;
+  box-shadow: 0 2px 8px #24344b0a;
+}
+.board-toolbar :is(.orbis-action-button, .toggle-button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+  min-width: 28px;
+  min-height: 28px;
+  width: 28px;
+  height: 28px;
+  color: #788398;
+}
+.board-toolbar :is(.orbis-action-button, .toggle-button) > svg {
+  display: block;
+  margin: 0;
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+.board-toolbar [aria-pressed="true"] {
+  background: var(--orbis-item-selected-bg);
+  color: var(--text-primary);
+}
+.board-toolbar :is(.orbis-action-button, .toggle-button):hover {
+  background: var(--orbis-item-hover-bg);
+  color: var(--text-primary);
+}
+.board-separator {
+  display: block;
+  width: 20px;
+  height: 1px;
+  margin: 4px 0;
+  flex: none;
+  background: var(--board-border);
+}
+.board-toolbar-spacer {
+  flex: 1;
+}
+.board-canvas {
+  position: absolute;
+  inset: 0;
+  outline: none;
+  touch-action: none;
+}
+.board-render-surface {
+  position: absolute;
+  inset: 0;
+}
+.board-canvas.is-panning {
+  cursor: grab;
+}
+.board-canvas:focus-visible {
+  box-shadow: inset 0 0 0 1px #2458ff55;
+}
+.board-selection-box {
+  position: absolute;
+  border: 1px solid #2458ff;
+  background: #2458ff0c;
+  pointer-events: none;
+}
+.board-resize-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  min-height: 0;
+  min-width: 0;
+  border: 1.5px solid #2458ff;
+  border-radius: 2px;
+  background: var(--orbis-panel-bg);
+  cursor: nwse-resize;
+  padding: 0;
+  z-index: 3;
+}
+.board-inline-text {
+  position: absolute;
+  z-index: 4;
+  resize: none;
+  padding: 8px;
+  border: 2px solid #2458ff;
+  border-radius: 5px;
+  background: var(--orbis-floating-bg);
+  color: var(--text-primary);
+  outline: none;
+  line-height: 1.4;
+}
+.board-library {
+  position: absolute;
+  z-index: 22;
+  left: 62px;
+  top: 64px;
+  bottom: 64px;
+  width: 264px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid var(--board-border);
+  border-radius: 10px;
+  background: var(--orbis-panel-bg);
+  box-shadow: 0 4px 16px #26354b0b;
+  overflow: hidden;
+}
+.board-floating-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 4px 16px;
+}
+.board-floating-panel-header strong {
+  font-weight: 600;
+}
+.board-floating-panel-header button {
+  color: #8a94a6;
+}
+.board-library-content { flex: 1; min-height: 0; gap: 0; }
+.board-library-content > [data-slot="tabs-list-container"] { margin: 4px 8px; flex: none; }
+.board-library-tabs { display: flex; width: 100%; }
+.board-library-tabs [data-slot="tabs-tab"] { flex: 1; flex-direction: column; gap: 4px; font-size: 11px; padding: 8px 4px; }
+.board-library-tabs [data-slot="tabs-tab"] > svg { width: 17px; height: 17px; }
+.board-library-panel { flex: 1; min-height: 0; padding: 0; }
+.board-library-panel:not([hidden]) { display: flex; flex-direction: column; }
+.board-search { position: relative; display: flex; align-items: center; margin: 12px 12px 8px; }
+.board-search > svg { position: absolute; left: 10px; color: var(--text-tertiary); pointer-events: none; }
+.board-search .orbis-text-input { padding-left: 32px; min-width: 0; }
+.board-category { margin: 0 12px 10px; width: auto; flex: none; }
+.board-shape-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-content: start;
+  gap: 6px;
+  padding: 4px 10px 12px;
+  overflow: auto;
+  flex: 1;
+}
+.board-shape-grid .orbis-action-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 9px 3px;
+  min-height: 78px;
+  width: 100%;
+  height: auto;
+  white-space: normal;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: #778297;
+  background: transparent;
+  font-size: 11px;
+  line-height: 16px;
+  text-align: center;
+  cursor: pointer;
+}
+.board-shape-grid .orbis-action-button:hover {
+  background: var(--orbis-item-hover-bg);
+  border-color: #e8edf5;
+}
+.board-shape-grid svg {
+  width: 40px;
+  height: 35px;
+}
+.board-library-footer {
+  padding: 9px 12px;
+  border-top: 1px solid #edf0f4;
+  font-size: 11px;
+  color: #939dad;
+}
+.board-result-count {
+  margin: 0 12px 8px;
+  font-size: 11px;
+  color: #8d98aa;
+}
+.board-icon-browser {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 10px;
+}
+.board-icon-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+.board-icon-row .orbis-action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 40px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+}
+.board-icon-row .orbis-action-button:hover {
+  background: var(--orbis-item-hover-bg);
+}
+.board-icon-loading {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: #f3f5f8;
+}
+.board-template-list {
+  overflow: auto;
+  flex: 1;
+  padding: 0 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.board-template-list .orbis-action-button {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  height: auto;
+  white-space: normal;
+  text-align: left;
+  gap: 4px;
+  border: 1px solid #e8edf4;
+  border-radius: 7px;
+  padding: 0 0 10px;
+  background: var(--orbis-panel-bg);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.board-template-list .orbis-action-button:hover {
+  border-color: #9fb0f7;
+}
+.board-template-list strong {
+  font-weight: 500;
+  padding: 4px 10px 0;
+}
+.board-template-list small {
+  color: #8b96a8;
+  padding: 0 10px;
+  font-size: 11px;
+}
+.board-template-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  height: 88px;
+  background: var(--surface-secondary);
+  color: #8c98ac;
+  border-radius: 7px 7px 0 0;
+}
+.board-template-art svg {
+  height: 42px;
+  width: 50px;
+}
+.board-object-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 4px 10px;
+}
+.board-object-list .orbis-action-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 7px;
+  border: 0;
+  border-radius: 5px;
+  justify-content: flex-start;
+  text-align: left;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+}
+.board-object-list .orbis-action-button.is-selected {
+  background: var(--orbis-item-selected-bg);
+  color: var(--text-primary);
+}
+.board-object-list svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.board-object-list span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.board-inspector,
+.board-comments {
+  position: absolute;
+  z-index: 22;
+  top: 12px;
+  right: 12px;
+  bottom: 56px;
+  width: 352px;
+  overflow: auto;
+  border: 1px solid var(--board-border);
+  border-radius: 10px;
+  background: var(--orbis-panel-bg);
+  box-shadow: 0 2px 10px #23304d08;
+}
+.board-inspector > header,
+.board-comments > header {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px 6px 16px;
+}
+.board-inspector > header strong {
+  flex: 1;
+  font-weight: 600;
+  font-size: 14px;
+}
+.board-inspector > header button {
+  color: #8792a5;
+}
+.board-inspector-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: #8754f7;
+  color: white;
+  box-shadow: 0 2px 4px #7643df24;
+}
+.board-inspector-content { gap: 12px; }
+.board-inspector-content > [data-slot="tabs-list-container"] { margin-inline: 16px; }
+.board-inspector-tabs { width: 100%; }
+.board-inspector-tabs [data-slot="tabs-tab"] { flex: 1; }
+.board-property-panel { padding: 0; }
+.board-property-panel > fieldset {
+  border: 0;
+  margin: 0 16px 20px;
+  padding: 0 0 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  min-width: 0;
+}
+.board-inspector legend {
+  font-size: 12px;
+  font-weight: 600;
+  color: #536075;
+  padding: 0 0 12px;
+}
+.board-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 12px;
+  min-width: 0;
+}
+.board-property-panel > .board-field {
+  margin-inline: 16px;
+}
+.board-field > span {
+  font-size: 11px;
+  color: #8e98aa;
+}
+.board-property-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 10px;
+}
+.board-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 9px 0 14px;
+  font-size: 12px;
+  color: #667388;
+}
+.board-inspector-note {
+  margin: 14px 16px;
+  color: #939daf;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.board-member {
+  padding: 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 7px;
+  margin-bottom: 8px;
+}
+.board-member .board-field {
+  margin-bottom: 6px;
+}
+.board-comments {
+  padding: 0 14px 16px;
+}
+.board-comments > header {
+  justify-content: space-between;
+  padding-inline: 0;
+  margin-bottom: 14px;
+}
+.board-empty {
+  position: absolute;
+  left: 76px;
+  right: 24px;
+  bottom: 74px;
+  max-width: 800px;
+  margin: auto;
+  pointer-events: none;
+}
+.board-empty p {
+  margin-bottom: 12px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+.board-starter-templates {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.board-starter-templates .orbis-action-button {
+  display: flex;
+  justify-content: flex-start;
+  height: auto;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px;
+  pointer-events: auto;
+  border: 1px solid var(--board-border);
+  border-radius: 8px;
+  background: var(--orbis-panel-bg);
+  color: var(--text-secondary);
+  font: inherit;
+  cursor: pointer;
+  box-shadow: var(--orbis-panel-shadow);
+}
+.board-starter-templates .orbis-action-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.board-starter-templates svg { width: 42px; height: 38px; flex: none; }
+.board-starter-templates span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.board-zoom,
+.board-history-controls {
+  position: absolute;
+  z-index: 16;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 34px;
+  border: 1px solid #e9edf3;
+  border-radius: 7px;
+  padding: 2px 4px;
+  background: var(--orbis-panel-bg);
+  box-shadow: 0 2px 6px #24334b08;
+  color: #8a95a8;
+}
+.board-zoom {
+  right: 12px;
+  top: 12px;
+}
+.board-zoom .board-separator {
+  width: 1px;
+  height: 16px;
+  margin: 0 3px;
+}
+.board-zoom > button:not(.orbis-action-button) {
+  background: transparent;
+  border: 0;
+  min-width: 42px;
+  padding: 4px;
+  color: #7f8b9f;
+  font: inherit;
+  font-size: 11px;
+}
+.board-history-controls {
+  left: 12px;
+  top: 12px;
+}
+.board-history-controls .orbis-action-button {
+  color: #8893a7;
+}
+.board-minimap {
+  position: absolute;
+  z-index: 15;
+  right: 12px;
+  bottom: 56px;
+  width: 102px;
+  height: 66px;
+  overflow: hidden;
+  border: 1px solid var(--board-border);
+  border-radius: 7px;
+  padding: 0;
+  background: var(--orbis-floating-bg);
+  box-shadow: 0 2px 6px #24334b08;
+}
+.board-minimap canvas {
+  display: block;
+}
+.board-minimap-viewport {
+  position: absolute;
+  border: 1px solid #a3b3d2;
+  background: #5d81cf08;
+  pointer-events: none;
+}
+.board-page-host { display: contents; }
+.board-page-list-container, .board-page-actions {
+  grid-row: 2;
+  z-index: 16;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 34px;
+  margin-bottom: 12px;
+  padding: 2px 4px;
+  border: 1px solid var(--board-border);
+  border-radius: 7px;
+  background: var(--orbis-panel-bg);
+  box-shadow: var(--orbis-card-shadow);
+}
+.board-page-list-container { grid-column: 1; margin-left: 12px; margin-right: 4px; min-width: 0; max-width: calc(100cqw - var(--board-panel-offset) - 168px); }
+.board-page-actions { grid-column: 2; }
+.board-page-list-container [data-slot="tabs-list"] { gap: 3px; padding: 0; }
+.board-page-list-container [data-slot="tabs-tab"] { height: 28px; min-height: 28px; padding: 0 10px; white-space: nowrap; font-size: 11px; }
+.board-page-actions small { display: block; white-space: nowrap; padding-inline: 10px; color: var(--board-muted); }
+.board-tool-hint {
+  position: absolute;
+  left: 50%;
+  top: 54px;
+  transform: translateX(-50%);
+  padding: 6px 10px;
+  border: 1px solid #e9edf3;
+  border-radius: 5px;
+  background: var(--orbis-panel-bg);
+  color: #8995a8;
+  font-size: 11px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.board-export-popover { z-index: var(--layer-popover); min-width: 180px; }
+.board-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 360px;
+  color: #8b97aa;
+}
+.board-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 60vh;
+  overflow: auto;
+}
+.board-history-list > div {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 8px 0;
+}
+.board-history-list time {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.board-shortcuts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 20px;
+}
+.board-shortcuts dt {
+  font-weight: 500;
+}
+.board-shortcuts dd {
+  color: var(--text-secondary);
+}
+.board-selection-actions {
+  position: absolute;
+  z-index: 18;
+  max-width: calc(100% - 16px);
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  background: var(--orbis-panel-bg);
+  border: 1px solid #e9edf3;
+  border-radius: 7px;
+  box-shadow: 0 2px 6px #24334b08;
+}
+
+.board-template-art .board-template-preview {
+  width: 100%;
+  height: 110px;
+  flex: 1;
+  min-width: 0;
+}
+.board-template-art:has(.board-template-preview) {
+  height: 132px;
+  padding: 8px;
+  flex-direction: column;
+}
+.board-template-art:has(.board-template-preview) > span {
+  font-size: 10px;
+}
+
+.board-property-panel fieldset > small {
+  display: block;
+  color: #748096;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* 属性与评论在宽画布中占据独立空间，工具条始终保留在画布边缘。 */
+.board-stage-wrap { right: var(--board-panel-offset); }
+.board-help {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  z-index: 24;
+  border: 1px solid var(--board-border);
+  background: var(--orbis-panel-bg);
+  box-shadow: var(--orbis-panel-shadow);
+  color: var(--board-muted);
+}
+.board-toolbar {
+  width: 44px;
+  padding: 5px;
+  max-height: calc(100% - 128px);
+  overflow-y: auto;
+}
+.board-toolbar :is(.orbis-action-button, .toggle-button) { width: 32px; height: 32px; }
+.board-toolbar :is(.orbis-action-button, .toggle-button) > svg { width: 17px; height: 17px; }
+.board-library { left: 68px; }
+.board-shell :is(.board-toolbar, .board-library, .board-inspector, .board-comments, .board-zoom, .board-history-controls, .board-page-actions, .board-selection-actions) {
+  background-color: var(--orbis-panel-bg);
+  border-color: var(--board-border);
+  box-shadow: var(--orbis-card-shadow);
+}
+@container (max-width: 900px) {
+  .board-workspace.has-inspector { --board-panel-offset: 300px; }
+  .board-inspector, .board-comments { width: 288px; }
+  .board-starter-templates { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .board-empty { max-width: 520px; }
+}
+@container (max-width: 640px) {
+  .board-workspace.has-inspector { --board-panel-offset: 0px; }
+  .board-inspector, .board-comments { width: min(300px, calc(100% - 80px)); top: 58px; bottom: 56px; }
+  .board-library { width: min(264px, calc(100% - 80px)); }
+  .board-page-actions small, .board-minimap { display: none; }
+  .board-page-list-container { max-width: calc(100cqw - 100px); }
+  .board-tool-hint { top: 58px; left: auto; right: 12px; transform: none; }
+  .board-toolbar { top: 64px; bottom: 64px; height: fit-content; max-height: calc(100% - 128px); overflow-y: auto; transform: none; }
+  .board-empty { left: 76px; right: 12px; }
+  .board-starter-templates .orbis-action-button { padding: 10px; gap: 8px; }
+  .board-starter-templates svg { width: 28px; height: 28px; }
+}
+@media (max-width: 760px) {
+  .board-document-heading .board-save-state { display: none; }
+  .board-header-actions { gap: 2px; }
+  .board-header-actions .orbis-action-button { padding: 5px; }
+  .board-export-trigger > span { display: none; }
+}
+@media (pointer: coarse) {
+  .board-shell button:not(.board-resize-handle) { min-width: var(--orbis-control-touch-height); min-height: var(--orbis-control-touch-height); }
+  .board-toolbar { width: calc(var(--orbis-control-touch-height) + 12px); }
+  .board-toolbar :is(.orbis-action-button, .toggle-button) { width: var(--orbis-control-touch-height); height: var(--orbis-control-touch-height); }
+  .board-zoom, .board-history-controls, .board-page-actions, .board-page-list-container { height: var(--board-touch-bar-height); }
+  .board-library { left: calc(var(--orbis-control-touch-height) + 28px); }
+  .board-icon-row .orbis-action-button { height: var(--orbis-control-touch-height); }
+}
+
+/* HeroUI owns fields, menus and tab focus; these rules only position board controls. */
+
+.board-main.tabs__panel { padding: 0; }
+.board-shell .board-minimap { display: block; padding: 0; }
+.board-shell .board-inline-text { min-height: 0; }
+.board-zoom > .orbis-action-button[aria-label="恢复百分之百缩放"] { min-width: 42px; font-size: 11px; }
+
+/* 连接点以屏幕像素保持命中面积，坐标跟随画布相机。 */
+.board-connection-ports {
+  position: absolute;
+  inset: 0;
+  z-index: 17;
+  overflow: hidden;
+  pointer-events: none;
+}
+.board-shell .board-connection-ports .board-connection-port {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  cursor: crosshair;
+  touch-action: none;
+}
+.board-connection-port-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid var(--accent);
+  border-radius: 50%;
+  background: var(--orbis-panel-bg);
+  color: var(--accent);
+  box-shadow: 0 0 0 2px var(--orbis-panel-bg);
+}
+.board-connection-port-mark > svg { display: block; width: 8px; height: 8px; }
+.board-connection-port:is(:hover, :focus-visible, .is-active) .board-connection-port-mark {
+  width: 16px;
+  height: 16px;
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+.board-shell .board-connection-ports .board-connection-port:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+@media (pointer: coarse) {
+  .board-shell .board-connection-ports .board-connection-port {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+.board-mindmap-controls {
+  --board-mindmap-control-spacing: 32px;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 17;
+  pointer-events: none;
+}
+.board-mindmap-node-controls { position: absolute; }
+.board-shell .board-mindmap-controls .orbis-action-button {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  min-height: 26px;
+  padding: 0;
+  border: 1px solid color-mix(in oklab, var(--accent) 45%, var(--board-border));
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+  background: var(--orbis-panel-bg);
+  color: var(--accent);
+  font-size: 11px;
+  line-height: 1;
+  pointer-events: auto;
+}
+.board-shell .board-mindmap-controls .board-mindmap-toggle[aria-expanded="false"] { width: auto; min-width: 34px; padding: 0 6px 0 3px; }
+.board-shell .board-mindmap-controls .orbis-action-button:is(:hover, :focus-visible) { background: var(--accent); color: var(--accent-foreground); }
+.board-mindmap-controls .orbis-action-button > svg { display: block; flex: none; }
+@media (pointer: coarse) {
+  .board-mindmap-controls { --board-mindmap-control-spacing: 48px; }
+  .board-shell .board-mindmap-controls .orbis-action-button { width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
+}
+
+.board-embedded-shell { height: 100%; }
+.board-embedded-status { position: absolute; top: 12px; left: 12px; z-index: 20; pointer-events: none; }
+.board-embedded-status .board-save-state { padding: 4px 7px; border-radius: 5px; background: var(--surface); }
+.board-embedded-shell .board-zoom { top: 8px; bottom: auto; right: 12px; }
+.board-embedded-shell .board-history-controls { top: auto; bottom: 38px; left: 12px; }
+.board-embedded-shell .board-page-actions > button { display: none; }
+.board-embedded-shell .board-minimap { display: none; }
+.board-embedded-shell .board-stage-wrap { background-image: none; }
+.is-embed-reading .board-toolbar,
+.is-embed-reading .board-history-controls,
+.is-embed-reading .board-selection-toolbar,
+.is-embed-reading .board-page-actions,
+.is-embed-reading .board-page-list-container { display: none; }
+
+.board-embedded-shell .board-toolbar { top: 52px; bottom: 60px; height: fit-content; max-height: calc(100% - 112px); overflow-y: auto; transform: none; scrollbar-width: thin; }
+
+.board-embedded-status { display: flex; align-items: center; gap: 6px; }
+.board-embedded-status .orbis-action-button { pointer-events: auto; background: var(--surface); }

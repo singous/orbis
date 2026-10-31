@@ -4,9 +4,9 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-libra
 import userEvent from "@testing-library/user-event";
 import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { DocumentEditorPage } from "./DocumentEditorPage";
-import type { NoteBlocksV2 } from "../../content/model/blocks";
-import { NOTE_ID, NOTEBOOK_ID, USER_ID, WORKSPACE_ID, blocks, content, http, page, response, session } from "../../collaboration/collaboration.test-utils";
+import { DocumentRoute } from "../../../app/DocumentRoute";
+import type { NoteBlocksV2 } from "../../content/blocks";
+import { NOTE_ID, blocks, session } from "../../collaboration/collaboration.test-utils";
 import { authStore } from "../../../shared/auth/auth-store";
 import { preparePendingNavigation } from "../../../shared/navigation/pending-navigation";
 
@@ -27,7 +27,7 @@ afterEach(() => { cleanup(); client.clear(); vi.unstubAllGlobals(); act(() => au
 
 function showEditor() {
   return render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[`/documents/${NOTE_ID}`]}>
-    <Link to="/elsewhere">离开文档</Link><Routes><Route path="/documents/:noteId" element={<DocumentEditorPage />} /><Route path="/elsewhere" element={<h1>其他页面</h1>} /><Route path="/collections/:notebookId" element={<h1>笔记本</h1>} /></Routes>
+    <Link to="/elsewhere">离开文档</Link><Routes><Route path="/documents/:noteId" element={<DocumentRoute />} /><Route path="/elsewhere" element={<h1>其他页面</h1>} /><Route path="/collections/:notebookId" element={<h1>笔记本</h1>} /></Routes>
   </MemoryRouter></QueryClientProvider>);
 }
 function deferred() {

@@ -1,3 +1,4 @@
+import { Toaster } from "../../shared/ui/Toast";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -19,7 +20,7 @@ function response(payload: unknown, status = 200) { return new Response(JSON.str
 function CurrentPath() { const location = useLocation(); return <output aria-label="当前地址">{location.pathname}{location.search}</output>; }
 function renderSearch(entry = "/search") {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  const rendered = render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[entry]}><Routes><Route path="/search" element={<SearchPage />} /><Route path="/documents/search" element={<LegacyDocumentSearchRedirect />} /></Routes><CurrentPath /></MemoryRouter></QueryClientProvider>);
+  const rendered = render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[entry]}><Routes><Route path="/search" element={<SearchPage />} /><Route path="/documents/search" element={<LegacyDocumentSearchRedirect />} /></Routes><CurrentPath /></MemoryRouter><Toaster /></QueryClientProvider>);
   return { ...rendered, client };
 }
 beforeEach(() => { act(() => authStore.setState({ accessToken: "search-token", refreshToken: "refresh", user, workspace })); });
@@ -101,7 +102,7 @@ describe("global search", () => {
   it("preserves legacy query/filter bookmarks and distinguishes permission failures from no matches", async () => {
     vi.stubGlobal("fetch", vi.fn(async (input: string) => new URL(input, "http://orbis.test").searchParams.get("q") ? response(null, 403) : response(data())));
     renderSearch("/documents/search?q=设计&status=archived");
-    expect(await screen.findByText("无权搜索内容")).toBeVisible();
+    expect(await screen.findByText("无权访问该工作空间")).toBeVisible();
     expect(screen.getByRole("status", { name: "当前地址" })).toHaveTextContent("/search?q=%E8%AE%BE%E8%AE%A1&status=archived&type=document");
     expect(screen.queryByText(/没有匹配的内容/)).not.toBeInTheDocument();
   });

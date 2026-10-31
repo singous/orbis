@@ -20,7 +20,7 @@ import (
 	"orbis.local/orbis/migrations"
 )
 
-var version = "0.1.0-dev"
+var version = "0.1.1"
 
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))

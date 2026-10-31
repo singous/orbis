@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { toast as heroToast } from "@heroui/react/toast";
 import userEvent from "@testing-library/user-event";
@@ -15,6 +15,13 @@ const dataUrl = "data:image/png;base64,aWNvbg==";
 function envelope(data: unknown, status = 200) {
   return new Response(JSON.stringify({ code: status === 200 ? "OK" : "ERROR", message: "图标上传失败，请重试", request_id: "icon-test", data }), {
     status, headers: { "Content-Type": "application/json" },
+  });
+}
+
+function imageResponse() {
+  // 保留真实 FileReader 的字节转换，只让 fetch fixture 返回浏览器同 realm 的 Blob。
+  return Object.assign(new Response("icon", { headers: { "Content-Type": "image/png" } }), {
+    blob: async () => new Blob(["icon"], { type: "image/png" }),
   });
 }
 
@@ -37,7 +44,7 @@ describe("notebook icons", () => {
 
   it("loads custom images with authentication and keeps a visible fallback if the image fails", async () => {
     authStore.setState({accessToken:"image-token",workspace:{id:fileId,name:"测试空间",role:"owner",created_at_ms:1,updated_at_ms:1}});
-    const fetchMock = vi.fn().mockResolvedValue(new Response("icon",{headers:{"Content-Type":"image/png"}}));
+    const fetchMock = vi.fn().mockResolvedValue(imageResponse());
     vi.stubGlobal("fetch", fetchMock);
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const { container } = render(<QueryClientProvider client={queryClient}><NotebookIcon icon={{ type: "image", asset_id: fileId }} /></QueryClientProvider>);
@@ -99,7 +106,7 @@ describe("notebook icons", () => {
     authStore.setState({accessToken:"icon-access-token",workspace:{id:fileId,name:"测试空间",role:"owner",created_at_ms:1,updated_at_ms:1}});
     let resolveUpload: (response: Response) => void = () => {};
     const upload=new Promise<Response>(resolve=>{resolveUpload=resolve;});
-    const fetchMock=vi.fn().mockImplementation((_path:string,options:RequestInit)=>options.method==="POST"?upload:Promise.resolve(new Response("icon",{headers:{"Content-Type":"image/png"}})));
+    const fetchMock=vi.fn().mockImplementation((_path:string,options:RequestInit)=>options.method==="POST"?upload:Promise.resolve(imageResponse()));
     vi.stubGlobal("fetch", fetchMock);
     const { onSubmit } = openDialog();
     await user.type(screen.getByRole("textbox", { name: "笔记本名称" }), "视觉规范");

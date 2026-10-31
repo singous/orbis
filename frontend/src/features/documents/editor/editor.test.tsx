@@ -7,7 +7,7 @@ import { createEmptyNoteBlocks } from "../../content/codecs/tiptap-document";
 import { authStore } from "../../../shared/auth/auth-store";
 import { ApiError } from "../../../shared/api/api-client";
 import * as checkpointHooks from "./use-draft-checkpoints";
-import { DocumentEditorPage } from "./DocumentEditorPage";
+import { DocumentRoute } from "../../../app/DocumentRoute";
 
 function render(ui:React.ReactElement){const client=new QueryClient({defaultOptions:{queries:{retry:false}}});return renderTestingLibrary(ui,{wrapper:({children})=><QueryClientProvider client={client}>{children}</QueryClientProvider>});}
 
@@ -66,7 +66,7 @@ vi.mock("../queries", () => ({
   useExportMarkdown: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
-describe("DocumentEditorPage", () => {
+describe("DocumentRoute", () => {
   beforeEach(() => {
     editorInputs.mockClear();
     editorEdits.sequence = 0;
@@ -91,7 +91,7 @@ describe("DocumentEditorPage", () => {
   });
 
   it("autosaves structured blocks with the current optimistic version", async () => {
-    render(<MemoryRouter initialEntries={["/documents/018ff7c4-a5b6-7000-8000-000000000001"]}><Routes><Route path="/documents/:noteId" element={<DocumentEditorPage />} /></Routes></MemoryRouter>);
+    render(<MemoryRouter initialEntries={["/documents/018ff7c4-a5b6-7000-8000-000000000001"]}><Routes><Route path="/documents/:noteId" element={<DocumentRoute />} /></Routes></MemoryRouter>);
     // Mount the lazy editor under real timers, then drive autosave with fake timers.
     const editButton = await screen.findByRole("button", { name: "模拟编辑" });
     vi.useFakeTimers();
@@ -105,7 +105,7 @@ describe("DocumentEditorPage", () => {
     expect(payload.expected_version).toBe(4);
     expect(payload.submitted.blocks.schema_version).toBe(2);
     expect(payload.submitted.blocks.editor).toBe("blocknote");
-    expect(screen.getByText(/版本 5/)).toBeInTheDocument();
+    expect(screen.queryByText(/版本 5/)).not.toBeInTheDocument();
   });
 
   it("keeps a server version conflict visible even when the local draft is persisted", async () => {
@@ -115,7 +115,7 @@ describe("DocumentEditorPage", () => {
       status: { status: "saved", sequence: 1 },
     }));
     saveContent.mockRejectedValue(new ApiError(409, "正文版本冲突", "NOTE_VERSION_CONFLICT"));
-    render(<MemoryRouter initialEntries={["/documents/018ff7c4-a5b6-7000-8000-000000000001"]}><Routes><Route path="/documents/:noteId" element={<DocumentEditorPage />} /></Routes></MemoryRouter>);
+    render(<MemoryRouter initialEntries={["/documents/018ff7c4-a5b6-7000-8000-000000000001"]}><Routes><Route path="/documents/:noteId" element={<DocumentRoute />} /></Routes></MemoryRouter>);
     const editButton = await screen.findByRole("button", { name: "模拟编辑" });
     vi.useFakeTimers();
     fireEvent.click(editButton);
@@ -129,7 +129,7 @@ describe("DocumentEditorPage", () => {
   it("keeps the live draft when the content-version bump is our own save echo", async () => {
     const view = render(
       <MemoryRouter initialEntries={["/documents/018ff7c4-a5b6-7000-8000-000000000001"]}>
-        <Routes><Route path="/documents/:noteId" element={<DocumentEditorPage />} /></Routes>
+        <Routes><Route path="/documents/:noteId" element={<DocumentRoute />} /></Routes>
       </MemoryRouter>,
     );
     const editButton = await screen.findByRole("button", { name: "模拟编辑" });
@@ -151,7 +151,7 @@ describe("DocumentEditorPage", () => {
     act(() => {
       view.rerender(
         <MemoryRouter initialEntries={["/documents/018ff7c4-a5b6-7000-8000-000000000001"]}>
-          <Routes><Route path="/documents/:noteId" element={<DocumentEditorPage />} /></Routes>
+          <Routes><Route path="/documents/:noteId" element={<DocumentRoute />} /></Routes>
         </MemoryRouter>,
       );
     });
@@ -160,7 +160,7 @@ describe("DocumentEditorPage", () => {
   });
 
   it("keeps typed echoes without per-key renders and replaces them with a newer server revision", async () => {
-    const show = () => <MemoryRouter initialEntries={["/documents/018ff7c4-a5b6-7000-8000-000000000001"]}><Routes><Route path="/documents/:noteId" element={<DocumentEditorPage />} /></Routes></MemoryRouter>;
+    const show = () => <MemoryRouter initialEntries={["/documents/018ff7c4-a5b6-7000-8000-000000000001"]}><Routes><Route path="/documents/:noteId" element={<DocumentRoute />} /></Routes></MemoryRouter>;
     const view = render(show());
     const edit = await screen.findByRole("button", { name: "模拟编辑" });
     vi.useFakeTimers();
@@ -186,7 +186,7 @@ describe("DocumentEditorPage", () => {
   it("keeps the live draft when a late stale response regresses the cached version", async () => {
     const view = render(
       <MemoryRouter initialEntries={["/documents/018ff7c4-a5b6-7000-8000-000000000001"]}>
-        <Routes><Route path="/documents/:noteId" element={<DocumentEditorPage />} /></Routes>
+        <Routes><Route path="/documents/:noteId" element={<DocumentRoute />} /></Routes>
       </MemoryRouter>,
     );
     const editButton = await screen.findByRole("button", { name: "模拟编辑" });
@@ -209,7 +209,7 @@ describe("DocumentEditorPage", () => {
     act(() => {
       view.rerender(
         <MemoryRouter initialEntries={["/documents/018ff7c4-a5b6-7000-8000-000000000001"]}>
-          <Routes><Route path="/documents/:noteId" element={<DocumentEditorPage />} /></Routes>
+          <Routes><Route path="/documents/:noteId" element={<DocumentRoute />} /></Routes>
         </MemoryRouter>,
       );
     });
@@ -220,7 +220,7 @@ describe("DocumentEditorPage", () => {
   it("adopts an already loaded newer snapshot after an older receipt settles",async()=>{
     let finish!:(value:{content_version:number})=>void;
     saveContent.mockReturnValueOnce(new Promise(resolve=>{finish=resolve;}));
-    const show=()=><MemoryRouter initialEntries={["/documents/018ff7c4-a5b6-7000-8000-000000000001"]}><Routes><Route path="/documents/:noteId" element={<DocumentEditorPage/>}/></Routes></MemoryRouter>;
+    const show=()=><MemoryRouter initialEntries={["/documents/018ff7c4-a5b6-7000-8000-000000000001"]}><Routes><Route path="/documents/:noteId" element={<DocumentRoute/>}/></Routes></MemoryRouter>;
     const view=render(show());
     const edit=await screen.findByRole("button",{name:"模拟编辑"});
     vi.useFakeTimers();fireEvent.click(edit);
@@ -237,7 +237,7 @@ describe("DocumentEditorPage", () => {
 
 it("opens a cached destination without first mounting the previous document", async () => {
   act(() => authStore.setState(ownerSession));
-  render(<MemoryRouter initialEntries={["/documents/first"]}><Link to="/documents/second">Next document</Link><Routes><Route path="/documents/:noteId" element={<DocumentEditorPage />} /></Routes></MemoryRouter>);
+  render(<MemoryRouter initialEntries={["/documents/first"]}><Link to="/documents/second">Next document</Link><Routes><Route path="/documents/:noteId" element={<DocumentRoute />} /></Routes></MemoryRouter>);
   await screen.findByRole("button", { name: "模拟编辑" });
   editorInputs.mockClear();
   contentFixture.current = {

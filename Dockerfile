@@ -16,7 +16,7 @@ FROM server-source AS server-test
 CMD ["go", "test", "./..."]
 
 FROM server-source AS server-build
-ARG ORBIS_VERSION=0.1.0-dev
+ARG ORBIS_VERSION=0.1.1
 RUN CGO_ENABLED=0 go build -trimpath -buildvcs=false \
     -ldflags="-s -w -X main.version=${ORBIS_VERSION}" \
     -o /out/orbis-server ./cmd/server
@@ -67,10 +67,13 @@ RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
 COPY --chown=1000:1000 --chmod=755 frontend/ ./
 RUN mkdir -p /app/api && chmod 755 /app/api
 COPY --chmod=644 api/editor-components.json /app/api/editor-components.json
+COPY --chmod=644 api/board-catalog.json api/board-icons.json api/board-templates.json /app/api/
 COPY --chmod=644 api/editor-prosemirror-schema.json /app/api/editor-prosemirror-schema.json
 RUN mkdir -p node_modules/.vite && chown 1000:1000 . node_modules/.vite
 
 FROM frontend-source AS frontend-test
+RUN install -d -m 755 /app/internal/publishing/reader
+COPY --chmod=644 internal/publishing/reader/reader.js /app/internal/publishing/reader/reader.js
 CMD ["npm", "run", "test:run"]
 
 FROM frontend-source AS frontend-build

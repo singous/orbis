@@ -127,6 +127,16 @@
   background: #eef6f4;
   color: #08765e;
 }
+.public-share-directory-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--orbis-space-1);
+}
+.public-share-directory-row > a {
+  flex: 1;
+  min-width: 0;
+}
 .public-share-layout > main {
   min-width: 0;
 }

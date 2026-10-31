@@ -1,0 +1,1861 @@
+{
+  "schema_version": 1,
+  "version": "1.0.0",
+  "categories": [
+    {
+      "id": "basic",
+      "name": "基础图形"
+    },
+    {
+      "id": "flow",
+      "name": "流程图"
+    },
+    {
+      "id": "mindmap",
+      "name": "思维导图"
+    },
+    {
+      "id": "architecture",
+      "name": "系统架构图"
+    },
+    {
+      "id": "uml",
+      "name": "UML"
+    },
+    {
+      "id": "er",
+      "name": "ER 图"
+    },
+    {
+      "id": "swimlane",
+      "name": "泳道图"
+    }
+  ],
+  "shapes": [
+    {
+      "id": "basic.rectangle",
+      "version": 1,
+      "category": "basic",
+      "name": "矩形",
+      "primitive": "rect",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "rectangle",
+        "basic",
+        "矩形"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0Z"
+    },
+    {
+      "id": "basic.rounded",
+      "version": 1,
+      "category": "basic",
+      "name": "圆角矩形",
+      "primitive": "round",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "rounded",
+        "basic",
+        "圆角矩形"
+      ],
+      "path": "M10 0H90Q100 0 100 12V88Q100 100 90 100H10Q0 100 0 88V12Q0 0 10 0Z"
+    },
+    {
+      "id": "basic.ellipse",
+      "version": 1,
+      "category": "basic",
+      "name": "椭圆",
+      "primitive": "ellipse",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "ellipse",
+        "basic",
+        "椭圆"
+      ],
+      "path": "M100 50A50 50 0 1 1 0 50A50 50 0 1 1 100 50Z"
+    },
+    {
+      "id": "basic.circle",
+      "version": 1,
+      "category": "basic",
+      "name": "圆形",
+      "primitive": "circle",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "circle",
+        "basic",
+        "圆形"
+      ],
+      "path": "M100 50A50 50 0 1 1 0 50A50 50 0 1 1 100 50Z"
+    },
+    {
+      "id": "basic.diamond",
+      "version": 1,
+      "category": "basic",
+      "name": "菱形",
+      "primitive": "diamond",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "diamond",
+        "basic",
+        "菱形"
+      ],
+      "path": "M46.46 3.54Q50 0 53.54 3.54L96.46 46.46Q100 50 96.46 53.54L53.54 96.46Q50 100 46.46 96.46L3.54 53.54Q0 50 3.54 46.46Z"
+    },
+    {
+      "id": "basic.triangle",
+      "version": 1,
+      "category": "basic",
+      "name": "三角形",
+      "primitive": "triangle",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "triangle",
+        "basic",
+        "三角形"
+      ],
+      "path": "M50 0L100 100H0Z"
+    },
+    {
+      "id": "basic.hexagon",
+      "version": 1,
+      "category": "basic",
+      "name": "六边形",
+      "primitive": "hexagon",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "hexagon",
+        "basic",
+        "六边形"
+      ],
+      "path": "M18.14 4.64Q20 0 25 0L75 0Q80 0 81.86 4.64L98.14 45.36Q100 50 98.14 54.64L81.86 95.36Q80 100 75 100L25 100Q20 100 18.14 95.36L1.86 54.64Q0 50 1.86 45.36Z"
+    },
+    {
+      "id": "basic.parallelogram",
+      "version": 1,
+      "category": "basic",
+      "name": "平行四边形",
+      "primitive": "parallelogram",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "parallelogram",
+        "basic",
+        "平行四边形"
+      ],
+      "path": "M19.02 4.9Q20 0 25 0L95 0Q100 0 99.02 4.9L80.98 95.1Q80 100 75 100L5 100Q0 100 0.98 95.1Z"
+    },
+    {
+      "id": "basic.trapezoid",
+      "version": 1,
+      "category": "basic",
+      "name": "梯形",
+      "primitive": "trapezoid",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "trapezoid",
+        "basic",
+        "梯形"
+      ],
+      "path": "M0 0H100L80 100H20Z"
+    },
+    {
+      "id": "basic.star",
+      "version": 1,
+      "category": "basic",
+      "name": "星形",
+      "primitive": "star",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "star",
+        "basic",
+        "星形"
+      ],
+      "path": "M50 0L62 35L100 38L70 61L80 100L50 77L20 100L30 61L0 38L38 35Z"
+    },
+    {
+      "id": "basic.arrow",
+      "version": 1,
+      "category": "basic",
+      "name": "块箭头",
+      "primitive": "block-arrow",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "arrow",
+        "basic",
+        "块箭头"
+      ],
+      "path": "M0 30Q0 25 5 25L60 25Q65 25 65 20L65 5Q65 0 67.87 4.1L97.13 45.9Q100 50 97.13 54.1L67.87 95.9Q65 100 65 95L65 80Q65 75 60 75L5 75Q0 75 0 70Z"
+    },
+    {
+      "id": "basic.chevron",
+      "version": 1,
+      "category": "basic",
+      "name": "人字形",
+      "primitive": "chevron",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "chevron",
+        "basic",
+        "人字形"
+      ],
+      "path": "M2.24 4.47Q0 0 5 0L70 0Q75 0 77.24 4.47L97.76 45.53Q100 50 97.76 54.47L77.24 95.53Q75 100 70 100L5 100Q0 100 2.24 95.53L22.76 54.47Q25 50 22.76 45.53Z"
+    },
+    {
+      "id": "basic.text",
+      "version": 1,
+      "category": "basic",
+      "name": "文字",
+      "primitive": "text",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "text",
+        "basic",
+        "文字"
+      ],
+      "path": ""
+    },
+    {
+      "id": "basic.note",
+      "version": 1,
+      "category": "basic",
+      "name": "便签",
+      "primitive": "note",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "note",
+        "basic",
+        "便签"
+      ],
+      "path": "M0 0H75L100 25V100H0ZM75 0V25H100"
+    },
+    {
+      "id": "basic.callout",
+      "version": 1,
+      "category": "basic",
+      "name": "标注",
+      "primitive": "callout",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "callout",
+        "basic",
+        "标注"
+      ],
+      "path": "M0 5Q0 0 5 0L95 0Q100 0 100 5L100 70Q100 75 95 75L45 75Q40 75 36.88 78.9L23.12 96.1Q20 100 20 95L20 80Q20 75 15 75L5 75Q0 75 0 70Z"
+    },
+    {
+      "id": "basic.frame",
+      "version": 1,
+      "category": "basic",
+      "name": "画框",
+      "primitive": "frame",
+      "width": 560,
+      "height": 320,
+      "container": true,
+      "keywords": [
+        "frame",
+        "basic",
+        "画框"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0Z"
+    },
+    {
+      "id": "basic.image",
+      "version": 1,
+      "category": "basic",
+      "name": "图片",
+      "primitive": "image",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "image",
+        "basic",
+        "图片"
+      ],
+      "path": ""
+    },
+    {
+      "id": "basic.line",
+      "version": 1,
+      "category": "basic",
+      "name": "线段",
+      "primitive": "line",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "line",
+        "basic",
+        "线段"
+      ],
+      "path": "M0 50H100"
+    },
+    {
+      "id": "flow.start",
+      "version": 1,
+      "category": "flow",
+      "name": "开始与结束",
+      "primitive": "pill",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "start",
+        "flow",
+        "开始与结束"
+      ],
+      "path": "M25 0H75A25 50 0 0 1 75 100H25A25 50 0 0 1 25 0Z"
+    },
+    {
+      "id": "flow.process",
+      "version": 1,
+      "category": "flow",
+      "name": "处理步骤",
+      "primitive": "rect",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "process",
+        "flow",
+        "处理步骤"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0Z"
+    },
+    {
+      "id": "flow.decision",
+      "version": 1,
+      "category": "flow",
+      "name": "条件判断",
+      "primitive": "diamond",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "decision",
+        "flow",
+        "条件判断"
+      ],
+      "path": "M46.46 3.54Q50 0 53.54 3.54L96.46 46.46Q100 50 96.46 53.54L53.54 96.46Q50 100 46.46 96.46L3.54 53.54Q0 50 3.54 46.46Z"
+    },
+    {
+      "id": "flow.input-output",
+      "version": 1,
+      "category": "flow",
+      "name": "输入与输出",
+      "primitive": "parallelogram",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "input-output",
+        "flow",
+        "输入与输出"
+      ],
+      "path": "M19.02 4.9Q20 0 25 0L95 0Q100 0 99.02 4.9L80.98 95.1Q80 100 75 100L5 100Q0 100 0.98 95.1Z"
+    },
+    {
+      "id": "flow.subprocess",
+      "version": 1,
+      "category": "flow",
+      "name": "预定义流程",
+      "primitive": "process",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "subprocess",
+        "flow",
+        "预定义流程"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0ZM10 0V100M90 0V100"
+    },
+    {
+      "id": "flow.document",
+      "version": 1,
+      "category": "flow",
+      "name": "文档",
+      "primitive": "document",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "document",
+        "flow",
+        "文档"
+      ],
+      "path": "M0 0H100V85C60 65 40 110 0 90Z"
+    },
+    {
+      "id": "flow.multi-document",
+      "version": 1,
+      "category": "flow",
+      "name": "多份文档",
+      "primitive": "multi-document",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "multi-document",
+        "flow",
+        "多份文档"
+      ],
+      "path": "M10 0H100V80M5 5H95V85M0 10H90V90C55 70 35 110 0 95Z"
+    },
+    {
+      "id": "flow.database",
+      "version": 1,
+      "category": "flow",
+      "name": "数据库",
+      "primitive": "cylinder",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "database",
+        "flow",
+        "数据库"
+      ],
+      "path": "M0 15A50 15 0 0 1 100 15V85A50 15 0 0 1 0 85ZM0 15A50 15 0 0 0 100 15"
+    },
+    {
+      "id": "flow.connector",
+      "version": 1,
+      "category": "flow",
+      "name": "页内连接",
+      "primitive": "circle",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "connector",
+        "flow",
+        "页内连接"
+      ],
+      "path": "M100 50A50 50 0 1 1 0 50A50 50 0 1 1 100 50Z"
+    },
+    {
+      "id": "flow.off-page",
+      "version": 1,
+      "category": "flow",
+      "name": "跨页连接",
+      "primitive": "off-page",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "off-page",
+        "flow",
+        "跨页连接"
+      ],
+      "path": "M0 5Q0 0 5 0L95 0Q100 0 100 5L100 60Q100 65 95.9 67.87L54.1 97.13Q50 100 45.9 97.13L4.1 67.87Q0 65 0 60Z"
+    },
+    {
+      "id": "flow.manual",
+      "version": 1,
+      "category": "flow",
+      "name": "人工操作",
+      "primitive": "trapezoid",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "manual",
+        "flow",
+        "人工操作"
+      ],
+      "path": "M0 0H100L80 100H20Z"
+    },
+    {
+      "id": "flow.manual-input",
+      "version": 1,
+      "category": "flow",
+      "name": "手动输入",
+      "primitive": "input",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "manual-input",
+        "flow",
+        "手动输入"
+      ],
+      "path": "M0 25Q0 20 4.9 19.02L95.1 0.98Q100 0 100 5L100 95Q100 100 95 100L5 100Q0 100 0 95Z"
+    },
+    {
+      "id": "flow.preparation",
+      "version": 1,
+      "category": "flow",
+      "name": "准备",
+      "primitive": "hexagon",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "preparation",
+        "flow",
+        "准备"
+      ],
+      "path": "M18.14 4.64Q20 0 25 0L75 0Q80 0 81.86 4.64L98.14 45.36Q100 50 98.14 54.64L81.86 95.36Q80 100 75 100L25 100Q20 100 18.14 95.36L1.86 54.64Q0 50 1.86 45.36Z"
+    },
+    {
+      "id": "flow.delay",
+      "version": 1,
+      "category": "flow",
+      "name": "等待",
+      "primitive": "delay",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "delay",
+        "flow",
+        "等待"
+      ],
+      "path": "M0 0H50A50 50 0 0 1 50 100H0Z"
+    },
+    {
+      "id": "flow.stored-data",
+      "version": 1,
+      "category": "flow",
+      "name": "存储数据",
+      "primitive": "stored-data",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "stored-data",
+        "flow",
+        "存储数据"
+      ],
+      "path": "M15 0H100Q70 50 100 100H15Q-15 50 15 0Z"
+    },
+    {
+      "id": "flow.display",
+      "version": 1,
+      "category": "flow",
+      "name": "显示",
+      "primitive": "display",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "display",
+        "flow",
+        "显示"
+      ],
+      "path": "M20 0H75Q120 50 75 100H20L0 50Z"
+    },
+    {
+      "id": "flow.merge",
+      "version": 1,
+      "category": "flow",
+      "name": "合并",
+      "primitive": "triangle",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "merge",
+        "flow",
+        "合并"
+      ],
+      "path": "M50 0L100 100H0Z"
+    },
+    {
+      "id": "flow.extract",
+      "version": 1,
+      "category": "flow",
+      "name": "提取",
+      "primitive": "triangle",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "extract",
+        "flow",
+        "提取"
+      ],
+      "path": "M50 0L100 100H0Z"
+    },
+    {
+      "id": "flow.audit",
+      "version": 1,
+      "category": "flow",
+      "name": "审核步骤",
+      "primitive": "process",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "audit",
+        "flow",
+        "审核步骤"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0ZM10 0V100M90 0V100"
+    },
+    {
+      "id": "flow.annotation",
+      "version": 1,
+      "category": "flow",
+      "name": "流程注释",
+      "primitive": "annotation",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "annotation",
+        "flow",
+        "流程注释"
+      ],
+      "path": "M25 0H0V100H25"
+    },
+    {
+      "id": "mindmap.root",
+      "version": 1,
+      "category": "mindmap",
+      "name": "中心主题",
+      "primitive": "pill",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "root",
+        "mindmap",
+        "中心主题"
+      ],
+      "path": "M10 0H90Q100 0 100 18V82Q100 100 90 100H10Q0 100 0 82V18Q0 0 10 0Z"
+    },
+    {
+      "id": "mindmap.topic",
+      "version": 1,
+      "category": "mindmap",
+      "name": "主分支",
+      "primitive": "round",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "topic",
+        "mindmap",
+        "主分支"
+      ],
+      "path": "M0 100H100"
+    },
+    {
+      "id": "mindmap.subtopic",
+      "version": 1,
+      "category": "mindmap",
+      "name": "子主题",
+      "primitive": "round",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "subtopic",
+        "mindmap",
+        "子主题"
+      ],
+      "path": "M0 100H100"
+    },
+    {
+      "id": "mindmap.summary",
+      "version": 1,
+      "category": "mindmap",
+      "name": "概要",
+      "primitive": "annotation",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "summary",
+        "mindmap",
+        "概要"
+      ],
+      "path": "M25 0H0V100H25"
+    },
+    {
+      "id": "mindmap.boundary",
+      "version": 1,
+      "category": "mindmap",
+      "name": "主题边界",
+      "primitive": "frame",
+      "width": 560,
+      "height": 320,
+      "container": true,
+      "keywords": [
+        "boundary",
+        "mindmap",
+        "主题边界"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0Z"
+    },
+    {
+      "id": "mindmap.relationship",
+      "version": 1,
+      "category": "mindmap",
+      "name": "关联说明",
+      "primitive": "callout",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "relationship",
+        "mindmap",
+        "关联说明"
+      ],
+      "path": "M0 5Q0 0 5 0L95 0Q100 0 100 5L100 70Q100 75 95 75L45 75Q40 75 36.88 78.9L23.12 96.1Q20 100 20 95L20 80Q20 75 15 75L5 75Q0 75 0 70Z"
+    },
+    {
+      "id": "architecture.service",
+      "version": 1,
+      "category": "architecture",
+      "name": "应用服务",
+      "primitive": "round",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "service",
+        "architecture",
+        "应用服务"
+      ],
+      "path": "M10 0H90Q100 0 100 12V88Q100 100 90 100H10Q0 100 0 88V12Q0 0 10 0Z"
+    },
+    {
+      "id": "architecture.application",
+      "version": 1,
+      "category": "architecture",
+      "name": "应用系统",
+      "primitive": "component",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "application",
+        "architecture",
+        "应用系统"
+      ],
+      "path": "M15 0H100V100H15ZM0 20H30V40H0ZM0 60H30V80H0Z"
+    },
+    {
+      "id": "architecture.database",
+      "version": 1,
+      "category": "architecture",
+      "name": "数据库",
+      "primitive": "cylinder",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "database",
+        "architecture",
+        "数据库"
+      ],
+      "path": "M0 15A50 15 0 0 1 100 15V85A50 15 0 0 1 0 85ZM0 15A50 15 0 0 0 100 15"
+    },
+    {
+      "id": "architecture.cache",
+      "version": 1,
+      "category": "architecture",
+      "name": "缓存",
+      "primitive": "cylinder",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "cache",
+        "architecture",
+        "缓存"
+      ],
+      "path": "M0 15A50 15 0 0 1 100 15V85A50 15 0 0 1 0 85ZM0 15A50 15 0 0 0 100 15"
+    },
+    {
+      "id": "architecture.queue",
+      "version": 1,
+      "category": "architecture",
+      "name": "消息队列",
+      "primitive": "queue",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "queue",
+        "architecture",
+        "消息队列"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0ZM25 0V100M50 0V100M75 0V100"
+    },
+    {
+      "id": "architecture.gateway",
+      "version": 1,
+      "category": "architecture",
+      "name": "API 网关",
+      "primitive": "hexagon",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "gateway",
+        "architecture",
+        "API 网关"
+      ],
+      "path": "M18.14 4.64Q20 0 25 0L75 0Q80 0 81.86 4.64L98.14 45.36Q100 50 98.14 54.64L81.86 95.36Q80 100 75 100L25 100Q20 100 18.14 95.36L1.86 54.64Q0 50 1.86 45.36Z"
+    },
+    {
+      "id": "architecture.load-balancer",
+      "version": 1,
+      "category": "architecture",
+      "name": "负载均衡",
+      "primitive": "hexagon",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "load-balancer",
+        "architecture",
+        "负载均衡"
+      ],
+      "path": "M18.14 4.64Q20 0 25 0L75 0Q80 0 81.86 4.64L98.14 45.36Q100 50 98.14 54.64L81.86 95.36Q80 100 75 100L25 100Q20 100 18.14 95.36L1.86 54.64Q0 50 1.86 45.36Z"
+    },
+    {
+      "id": "architecture.user",
+      "version": 1,
+      "category": "architecture",
+      "name": "终端用户",
+      "primitive": "actor",
+      "width": 96,
+      "height": 150,
+      "container": false,
+      "keywords": [
+        "user",
+        "architecture",
+        "终端用户"
+      ],
+      "path": "M65 15A15 15 0 1 1 35 15A15 15 0 1 1 65 15ZM50 30V65M15 42H85M50 65L15 100M50 65L85 100"
+    },
+    {
+      "id": "architecture.client",
+      "version": 1,
+      "category": "architecture",
+      "name": "客户端",
+      "primitive": "screen",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "client",
+        "architecture",
+        "客户端"
+      ],
+      "path": "M0 0H100V75H0ZM40 75V95M60 75V95M25 100H75"
+    },
+    {
+      "id": "architecture.browser",
+      "version": 1,
+      "category": "architecture",
+      "name": "浏览器",
+      "primitive": "screen",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "browser",
+        "architecture",
+        "浏览器"
+      ],
+      "path": "M0 0H100V75H0ZM40 75V95M60 75V95M25 100H75"
+    },
+    {
+      "id": "architecture.mobile",
+      "version": 1,
+      "category": "architecture",
+      "name": "移动设备",
+      "primitive": "mobile",
+      "width": 96,
+      "height": 150,
+      "container": false,
+      "keywords": [
+        "mobile",
+        "architecture",
+        "移动设备"
+      ],
+      "path": "M15 0H85Q95 0 95 10V90Q95 100 85 100H15Q5 100 5 90V10Q5 0 15 0ZM35 10H65M40 90H60"
+    },
+    {
+      "id": "architecture.server",
+      "version": 1,
+      "category": "architecture",
+      "name": "服务器",
+      "primitive": "server",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "server",
+        "architecture",
+        "服务器"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0ZM0 33H100M0 66H100M10 17H20M10 50H20M10 83H20M40 17H90M40 50H90M40 83H90"
+    },
+    {
+      "id": "architecture.cluster",
+      "version": 1,
+      "category": "architecture",
+      "name": "集群",
+      "primitive": "frame",
+      "width": 560,
+      "height": 320,
+      "container": true,
+      "keywords": [
+        "cluster",
+        "architecture",
+        "集群"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0Z"
+    },
+    {
+      "id": "architecture.network",
+      "version": 1,
+      "category": "architecture",
+      "name": "网络区域",
+      "primitive": "cloud",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "network",
+        "architecture",
+        "网络区域"
+      ],
+      "path": "M20 80C-10 80 -5 40 15 35C5 5 40 0 50 15C70 -5 100 15 90 40C115 60 100 90 75 85C55 105 30 95 20 80Z"
+    },
+    {
+      "id": "architecture.firewall",
+      "version": 1,
+      "category": "architecture",
+      "name": "防火墙",
+      "primitive": "wall",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "firewall",
+        "architecture",
+        "防火墙"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0ZM0 33H100M0 66H100M33 0V33M66 0V33M50 33V66M33 66V100M66 66V100"
+    },
+    {
+      "id": "architecture.router",
+      "version": 1,
+      "category": "architecture",
+      "name": "路由器",
+      "primitive": "router",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "router",
+        "architecture",
+        "路由器"
+      ],
+      "path": "M0 25H100V90H0ZM20 25V0M80 25V0M15 65H25M40 65H50M65 65H85"
+    },
+    {
+      "id": "architecture.storage",
+      "version": 1,
+      "category": "architecture",
+      "name": "对象存储",
+      "primitive": "cylinder",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "storage",
+        "architecture",
+        "对象存储"
+      ],
+      "path": "M0 15A50 15 0 0 1 100 15V85A50 15 0 0 1 0 85ZM0 15A50 15 0 0 0 100 15"
+    },
+    {
+      "id": "architecture.volume",
+      "version": 1,
+      "category": "architecture",
+      "name": "磁盘卷",
+      "primitive": "disk",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "volume",
+        "architecture",
+        "磁盘卷"
+      ],
+      "path": "M0 15A50 15 0 0 1 100 15V85A50 15 0 0 1 0 85ZM0 15A50 15 0 0 0 100 15M0 40A50 15 0 0 0 100 40M0 65A50 15 0 0 0 100 65"
+    },
+    {
+      "id": "architecture.function",
+      "version": 1,
+      "category": "architecture",
+      "name": "函数服务",
+      "primitive": "hexagon",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "function",
+        "architecture",
+        "函数服务"
+      ],
+      "path": "M18.14 4.64Q20 0 25 0L75 0Q80 0 81.86 4.64L98.14 45.36Q100 50 98.14 54.64L81.86 95.36Q80 100 75 100L25 100Q20 100 18.14 95.36L1.86 54.64Q0 50 1.86 45.36Z"
+    },
+    {
+      "id": "architecture.container",
+      "version": 1,
+      "category": "architecture",
+      "name": "运行容器",
+      "primitive": "component",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "container",
+        "architecture",
+        "运行容器"
+      ],
+      "path": "M15 0H100V100H15ZM0 20H30V40H0ZM0 60H30V80H0Z"
+    },
+    {
+      "id": "architecture.pod",
+      "version": 1,
+      "category": "architecture",
+      "name": "工作负载",
+      "primitive": "hexagon",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "pod",
+        "architecture",
+        "工作负载"
+      ],
+      "path": "M18.14 4.64Q20 0 25 0L75 0Q80 0 81.86 4.64L98.14 45.36Q100 50 98.14 54.64L81.86 95.36Q80 100 75 100L25 100Q20 100 18.14 95.36L1.86 54.64Q0 50 1.86 45.36Z"
+    },
+    {
+      "id": "architecture.worker",
+      "version": 1,
+      "category": "architecture",
+      "name": "后台任务",
+      "primitive": "process",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "worker",
+        "architecture",
+        "后台任务"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0ZM10 0V100M90 0V100"
+    },
+    {
+      "id": "architecture.scheduler",
+      "version": 1,
+      "category": "architecture",
+      "name": "调度服务",
+      "primitive": "clock",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "scheduler",
+        "architecture",
+        "调度服务"
+      ],
+      "path": "M100 50A50 50 0 1 1 0 50A50 50 0 1 1 100 50ZM50 15V50L75 65"
+    },
+    {
+      "id": "architecture.monitor",
+      "version": 1,
+      "category": "architecture",
+      "name": "监控系统",
+      "primitive": "screen",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "monitor",
+        "architecture",
+        "监控系统"
+      ],
+      "path": "M0 0H100V75H0ZM40 75V95M60 75V95M25 100H75"
+    },
+    {
+      "id": "architecture.logging",
+      "version": 1,
+      "category": "architecture",
+      "name": "日志服务",
+      "primitive": "document",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "logging",
+        "architecture",
+        "日志服务"
+      ],
+      "path": "M0 0H100V85C60 65 40 110 0 90Z"
+    },
+    {
+      "id": "architecture.identity",
+      "version": 1,
+      "category": "architecture",
+      "name": "身份服务",
+      "primitive": "shield",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "identity",
+        "architecture",
+        "身份服务"
+      ],
+      "path": "M50 0L100 20V55Q95 85 50 100Q5 85 0 55V20ZM25 50L45 70L80 30"
+    },
+    {
+      "id": "architecture.search",
+      "version": 1,
+      "category": "architecture",
+      "name": "搜索服务",
+      "primitive": "search",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "search",
+        "architecture",
+        "搜索服务"
+      ],
+      "path": "M70 35A35 35 0 1 1 0 35A35 35 0 1 1 70 35ZM60 60L100 100"
+    },
+    {
+      "id": "architecture.cdn",
+      "version": 1,
+      "category": "architecture",
+      "name": "内容分发",
+      "primitive": "cloud",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "cdn",
+        "architecture",
+        "内容分发"
+      ],
+      "path": "M20 80C-10 80 -5 40 15 35C5 5 40 0 50 15C70 -5 100 15 90 40C115 60 100 90 75 85C55 105 30 95 20 80Z"
+    },
+    {
+      "id": "architecture.region",
+      "version": 1,
+      "category": "architecture",
+      "name": "地域",
+      "primitive": "frame",
+      "width": 560,
+      "height": 320,
+      "container": true,
+      "keywords": [
+        "region",
+        "architecture",
+        "地域"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0Z"
+    },
+    {
+      "id": "architecture.zone",
+      "version": 1,
+      "category": "architecture",
+      "name": "可用区",
+      "primitive": "frame",
+      "width": 560,
+      "height": 320,
+      "container": true,
+      "keywords": [
+        "zone",
+        "architecture",
+        "可用区"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0Z"
+    },
+    {
+      "id": "architecture.external",
+      "version": 1,
+      "category": "architecture",
+      "name": "外部系统",
+      "primitive": "component",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "external",
+        "architecture",
+        "外部系统"
+      ],
+      "path": "M15 0H100V100H15ZM0 20H30V40H0ZM0 60H30V80H0Z"
+    },
+    {
+      "id": "architecture.boundary",
+      "version": 1,
+      "category": "architecture",
+      "name": "系统边界",
+      "primitive": "frame",
+      "width": 560,
+      "height": 320,
+      "container": true,
+      "keywords": [
+        "boundary",
+        "architecture",
+        "系统边界"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0Z"
+    },
+    {
+      "id": "uml.class",
+      "version": 1,
+      "category": "uml",
+      "name": "类",
+      "primitive": "class",
+      "width": 180,
+      "height": 160,
+      "container": false,
+      "keywords": [
+        "class",
+        "uml",
+        "类"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0Z"
+    },
+    {
+      "id": "uml.interface",
+      "version": 1,
+      "category": "uml",
+      "name": "接口",
+      "primitive": "class",
+      "width": 180,
+      "height": 160,
+      "container": false,
+      "keywords": [
+        "interface",
+        "uml",
+        "接口"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0Z"
+    },
+    {
+      "id": "uml.abstract",
+      "version": 1,
+      "category": "uml",
+      "name": "抽象类",
+      "primitive": "class",
+      "width": 180,
+      "height": 160,
+      "container": false,
+      "keywords": [
+        "abstract",
+        "uml",
+        "抽象类"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0Z"
+    },
+    {
+      "id": "uml.enum",
+      "version": 1,
+      "category": "uml",
+      "name": "枚举",
+      "primitive": "entity",
+      "width": 180,
+      "height": 160,
+      "container": false,
+      "keywords": [
+        "enum",
+        "uml",
+        "枚举"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0Z"
+    },
+    {
+      "id": "uml.actor",
+      "version": 1,
+      "category": "uml",
+      "name": "参与者",
+      "primitive": "actor",
+      "width": 96,
+      "height": 150,
+      "container": false,
+      "keywords": [
+        "actor",
+        "uml",
+        "参与者"
+      ],
+      "path": "M65 15A15 15 0 1 1 35 15A15 15 0 1 1 65 15ZM50 30V65M15 42H85M50 65L15 100M50 65L85 100"
+    },
+    {
+      "id": "uml.usecase",
+      "version": 1,
+      "category": "uml",
+      "name": "用例",
+      "primitive": "ellipse",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "usecase",
+        "uml",
+        "用例"
+      ],
+      "path": "M100 50A50 50 0 1 1 0 50A50 50 0 1 1 100 50Z"
+    },
+    {
+      "id": "uml.system",
+      "version": 1,
+      "category": "uml",
+      "name": "系统边界",
+      "primitive": "frame",
+      "width": 560,
+      "height": 320,
+      "container": true,
+      "keywords": [
+        "system",
+        "uml",
+        "系统边界"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0Z"
+    },
+    {
+      "id": "uml.state",
+      "version": 1,
+      "category": "uml",
+      "name": "状态",
+      "primitive": "round",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "state",
+        "uml",
+        "状态"
+      ],
+      "path": "M10 0H90Q100 0 100 12V88Q100 100 90 100H10Q0 100 0 88V12Q0 0 10 0Z"
+    },
+    {
+      "id": "uml.initial",
+      "version": 1,
+      "category": "uml",
+      "name": "初始状态",
+      "primitive": "initial",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "initial",
+        "uml",
+        "初始状态"
+      ],
+      "path": "M100 50A50 50 0 1 1 0 50A50 50 0 1 1 100 50Z"
+    },
+    {
+      "id": "uml.final",
+      "version": 1,
+      "category": "uml",
+      "name": "终止状态",
+      "primitive": "final",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "final",
+        "uml",
+        "终止状态"
+      ],
+      "path": "M100 50A50 50 0 1 1 0 50A50 50 0 1 1 100 50Z"
+    },
+    {
+      "id": "uml.choice",
+      "version": 1,
+      "category": "uml",
+      "name": "选择伪状态",
+      "primitive": "diamond",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "choice",
+        "uml",
+        "选择伪状态"
+      ],
+      "path": "M46.46 3.54Q50 0 53.54 3.54L96.46 46.46Q100 50 96.46 53.54L53.54 96.46Q50 100 46.46 96.46L3.54 53.54Q0 50 3.54 46.46Z"
+    },
+    {
+      "id": "uml.fork",
+      "version": 1,
+      "category": "uml",
+      "name": "分叉与汇合",
+      "primitive": "fork",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "fork",
+        "uml",
+        "分叉与汇合"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0Z"
+    },
+    {
+      "id": "uml.history",
+      "version": 1,
+      "category": "uml",
+      "name": "历史状态",
+      "primitive": "history",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "history",
+        "uml",
+        "历史状态"
+      ],
+      "path": "M100 50A50 50 0 1 1 0 50A50 50 0 1 1 100 50Z"
+    },
+    {
+      "id": "uml.lifeline",
+      "version": 1,
+      "category": "uml",
+      "name": "生命线",
+      "primitive": "lifeline",
+      "width": 96,
+      "height": 300,
+      "container": false,
+      "keywords": [
+        "lifeline",
+        "uml",
+        "生命线"
+      ],
+      "path": "M0 0H100V20H0ZM50 20V100"
+    },
+    {
+      "id": "uml.activation",
+      "version": 1,
+      "category": "uml",
+      "name": "激活条",
+      "primitive": "activation",
+      "width": 96,
+      "height": 150,
+      "container": false,
+      "keywords": [
+        "activation",
+        "uml",
+        "激活条"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0Z"
+    },
+    {
+      "id": "uml.fragment",
+      "version": 1,
+      "category": "uml",
+      "name": "组合片段",
+      "primitive": "fragment",
+      "width": 560,
+      "height": 320,
+      "container": true,
+      "keywords": [
+        "fragment",
+        "uml",
+        "组合片段"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0Z"
+    },
+    {
+      "id": "uml.note",
+      "version": 1,
+      "category": "uml",
+      "name": "约束注释",
+      "primitive": "note",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "note",
+        "uml",
+        "约束注释"
+      ],
+      "path": "M0 0H75L100 25V100H0ZM75 0V25H100"
+    },
+    {
+      "id": "uml.package",
+      "version": 1,
+      "category": "uml",
+      "name": "包",
+      "primitive": "package",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "package",
+        "uml",
+        "包"
+      ],
+      "path": "M0 20V0H40V20H100V100H0ZM0 20H40"
+    },
+    {
+      "id": "uml.component",
+      "version": 1,
+      "category": "uml",
+      "name": "组件",
+      "primitive": "component",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "component",
+        "uml",
+        "组件"
+      ],
+      "path": "M15 0H100V100H15ZM0 20H30V40H0ZM0 60H30V80H0Z"
+    },
+    {
+      "id": "uml.artifact",
+      "version": 1,
+      "category": "uml",
+      "name": "制品",
+      "primitive": "artifact",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "artifact",
+        "uml",
+        "制品"
+      ],
+      "path": "M0 0H75L100 25V100H0ZM75 0V25H100"
+    },
+    {
+      "id": "uml.object",
+      "version": 1,
+      "category": "uml",
+      "name": "对象",
+      "primitive": "entity",
+      "width": 180,
+      "height": 160,
+      "container": false,
+      "keywords": [
+        "object",
+        "uml",
+        "对象"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0Z"
+    },
+    {
+      "id": "uml.node",
+      "version": 1,
+      "category": "uml",
+      "name": "部署节点",
+      "primitive": "cube",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "node",
+        "uml",
+        "部署节点"
+      ],
+      "path": "M0 20L20 0H100V80L80 100H0ZM0 20H80V100M80 20L100 0"
+    },
+    {
+      "id": "er.entity",
+      "version": 1,
+      "category": "er",
+      "name": "实体",
+      "primitive": "entity",
+      "width": 180,
+      "height": 160,
+      "container": false,
+      "keywords": [
+        "entity",
+        "er",
+        "实体"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0Z"
+    },
+    {
+      "id": "er.weak-entity",
+      "version": 1,
+      "category": "er",
+      "name": "弱实体",
+      "primitive": "weak-entity",
+      "width": 180,
+      "height": 160,
+      "container": false,
+      "keywords": [
+        "weak-entity",
+        "er",
+        "弱实体"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0ZM4 4H96V96H4Z"
+    },
+    {
+      "id": "er.attribute",
+      "version": 1,
+      "category": "er",
+      "name": "属性",
+      "primitive": "ellipse",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "attribute",
+        "er",
+        "属性"
+      ],
+      "path": "M100 50A50 50 0 1 1 0 50A50 50 0 1 1 100 50Z"
+    },
+    {
+      "id": "er.key",
+      "version": 1,
+      "category": "er",
+      "name": "主键属性",
+      "primitive": "ellipse",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "key",
+        "er",
+        "主键属性"
+      ],
+      "path": "M100 50A50 50 0 1 1 0 50A50 50 0 1 1 100 50Z"
+    },
+    {
+      "id": "er.relationship",
+      "version": 1,
+      "category": "er",
+      "name": "关系",
+      "primitive": "diamond",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "relationship",
+        "er",
+        "关系"
+      ],
+      "path": "M46.46 3.54Q50 0 53.54 3.54L96.46 46.46Q100 50 96.46 53.54L53.54 96.46Q50 100 46.46 96.46L3.54 53.54Q0 50 3.54 46.46Z"
+    },
+    {
+      "id": "er.associative",
+      "version": 1,
+      "category": "er",
+      "name": "关联实体",
+      "primitive": "entity",
+      "width": 180,
+      "height": 160,
+      "container": false,
+      "keywords": [
+        "associative",
+        "er",
+        "关联实体"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0Z"
+    },
+    {
+      "id": "er.lookup",
+      "version": 1,
+      "category": "er",
+      "name": "字典实体",
+      "primitive": "entity",
+      "width": 180,
+      "height": 160,
+      "container": false,
+      "keywords": [
+        "lookup",
+        "er",
+        "字典实体"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0Z"
+    },
+    {
+      "id": "er.view",
+      "version": 1,
+      "category": "er",
+      "name": "数据视图",
+      "primitive": "entity",
+      "width": 180,
+      "height": 160,
+      "container": false,
+      "keywords": [
+        "view",
+        "er",
+        "数据视图"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0Z"
+    },
+    {
+      "id": "swimlane.pool",
+      "version": 1,
+      "category": "swimlane",
+      "name": "泳池",
+      "primitive": "pool",
+      "width": 560,
+      "height": 320,
+      "container": true,
+      "keywords": [
+        "pool",
+        "swimlane",
+        "泳池"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0Z"
+    },
+    {
+      "id": "swimlane.horizontal",
+      "version": 1,
+      "category": "swimlane",
+      "name": "横向泳道",
+      "primitive": "lane",
+      "width": 560,
+      "height": 320,
+      "container": true,
+      "keywords": [
+        "horizontal",
+        "swimlane",
+        "横向泳道"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0Z"
+    },
+    {
+      "id": "swimlane.vertical",
+      "version": 1,
+      "category": "swimlane",
+      "name": "纵向泳道",
+      "primitive": "vertical-lane",
+      "width": 560,
+      "height": 320,
+      "container": true,
+      "keywords": [
+        "vertical",
+        "swimlane",
+        "纵向泳道"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0Z"
+    },
+    {
+      "id": "swimlane.phase",
+      "version": 1,
+      "category": "swimlane",
+      "name": "阶段",
+      "primitive": "phase",
+      "width": 560,
+      "height": 320,
+      "container": true,
+      "keywords": [
+        "phase",
+        "swimlane",
+        "阶段"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0Z"
+    },
+    {
+      "id": "swimlane.task",
+      "version": 1,
+      "category": "swimlane",
+      "name": "任务",
+      "primitive": "round",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "task",
+        "swimlane",
+        "任务"
+      ],
+      "path": "M10 0H90Q100 0 100 12V88Q100 100 90 100H10Q0 100 0 88V12Q0 0 10 0Z"
+    },
+    {
+      "id": "swimlane.gateway",
+      "version": 1,
+      "category": "swimlane",
+      "name": "分支网关",
+      "primitive": "diamond",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "gateway",
+        "swimlane",
+        "分支网关"
+      ],
+      "path": "M46.46 3.54Q50 0 53.54 3.54L96.46 46.46Q100 50 96.46 53.54L53.54 96.46Q50 100 46.46 96.46L3.54 53.54Q0 50 3.54 46.46Z"
+    },
+    {
+      "id": "swimlane.event",
+      "version": 1,
+      "category": "swimlane",
+      "name": "事件",
+      "primitive": "circle",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "event",
+        "swimlane",
+        "事件"
+      ],
+      "path": "M100 50A50 50 0 1 1 0 50A50 50 0 1 1 100 50Z"
+    },
+    {
+      "id": "swimlane.subprocess",
+      "version": 1,
+      "category": "swimlane",
+      "name": "子流程",
+      "primitive": "process",
+      "width": 180,
+      "height": 80,
+      "container": false,
+      "keywords": [
+        "subprocess",
+        "swimlane",
+        "子流程"
+      ],
+      "path": "M6 0H94Q100 0 100 6V94Q100 100 94 100H6Q0 100 0 94V6Q0 0 6 0ZM10 0V100M90 0V100"
+    }
+  ],
+  "font_family": "Inter, Noto Sans SC, system-ui, sans-serif"
+}

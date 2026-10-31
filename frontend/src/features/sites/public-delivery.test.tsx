@@ -5,6 +5,9 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 import { PublicSiteDelivery as PublicSitePage } from "./PublicSiteDelivery";
 
+const notify = vi.hoisted(() => vi.fn());
+vi.mock("../../shared/ui/Toast", () => ({ showToast: notify }));
+
 const firstRelease = "0190a111-1111-7111-8111-111111111111";
 const nextRelease = "0190a111-1111-7111-8111-111111111112";
 const meta = (slug: string, title: string) => ({ slug, title, group: "指南", parent_slug: null, section: "指南", description: "", updated_at_ms: 1 });
@@ -14,7 +17,7 @@ const wireBody=(page:ReturnType<typeof body>)=>({...page,blocks:[{id:"public-0",
 const firstPage = body("start", "快速开始", "当前页面正文");
 const secondPage = body("guides/install", "安装指南", "安装专用正文");
 const response = (data: unknown, status = 200, code = "OK") => new Response(JSON.stringify({ code, message: code, request_id: "test", data }), { status, headers: { "Content-Type": "application/json" } });
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); notify.mockClear(); });
 function reader() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(<QueryClientProvider client={client}><MemoryRouter initialEntries={["/s/guide/start"]}><Routes><Route path="/s/:slug/*" element={<PublicSitePage />} /></Routes></MemoryRouter></QueryClientProvider>);
@@ -81,4 +84,32 @@ it("refreshes a changed release before combining page content with navigation", 
   await waitFor(() => expect(manifestReads).toBe(2));
   expect(urls.filter((url) => url.includes("/pages/start"))).toHaveLength(2);
   expect(screen.queryByText("当前页面正文")).not.toBeInTheDocument();
+});
+
+it("retries a failed public page body without repeating its transient error message", async () => {
+  const pageRequests: string[] = [];
+  vi.stubGlobal("fetch", vi.fn(async (input: string) => {
+    const url = new URL(input, "https://example.com");
+    if (url.pathname.endsWith("/manifest")) return response(manifest);
+    if (url.pathname.endsWith("/pages/start")) {
+      pageRequests.push(input);
+      return pageRequests.length === 1
+        ? response(null, 503, "SERVICE_UNAVAILABLE")
+        : response(wireBody(firstPage));
+    }
+    return response(null, 404, "SITE_NOT_FOUND");
+  }));
+  reader();
+  const retry = await screen.findByRole("button", { name: "重新加载正文" });
+  expect(screen.getByRole("heading", { name: "快速开始", level: 1 })).toBeVisible();
+  expect(screen.getByRole("button", { name: "复制页面" })).toBeDisabled();
+  expect(screen.queryByText("SERVICE_UNAVAILABLE")).not.toBeInTheDocument();
+  expect(notify).toHaveBeenCalledExactlyOnceWith({ title: "SERVICE_UNAVAILABLE", tone: "danger" });
+  await userEvent.click(retry);
+  await screen.findByText("当前页面正文");
+  expect(pageRequests).toHaveLength(2);
+  expect(pageRequests[1]).toBe(pageRequests[0]);
+  expect(screen.queryByRole("button", { name: "重新加载正文" })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "复制页面" })).toBeEnabled();
+  expect(notify).toHaveBeenCalledTimes(1);
 });

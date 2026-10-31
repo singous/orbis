@@ -32,12 +32,12 @@
 .orbis-tiptap-toolbar button:hover, .orbis-tiptap-toolbar button[aria-pressed="true"] { background: var(--surface-hover); color: var(--text-primary); }
 .orbis-tiptap-toolbar button:focus-visible, .orbis-tiptap-menu button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .orbis-tiptap-toolbar-divider { height: 18px; flex: none; border-left: 1px solid var(--border-subtle); margin: 0 3px; }
+.orbis-tiptap-toolbar .editor-text-style-tools { flex: none; gap: 2px; }
 .orbis-tiptap-toolbar .orbis-tiptap-insert { font-size: var(--orbis-text-ui-size); font-weight: var(--orbis-weight-heading); line-height: var(--orbis-text-ui-leading); }
 .orbis-tiptap-menu { position: relative; z-index: 5; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); max-height: 230px; overflow-y: auto; gap: 3px; margin: -12px 0 14px; padding: 8px; border: 1px solid var(--border-subtle); border-radius: 8px; background: var(--surface-overlay); box-shadow: var(--shadow-pop); }
 .orbis-tiptap-menu button { display: flex; gap: 8px; align-items: center; padding: 8px 9px; border: 0; border-radius: 5px; background: transparent; color: var(--text-primary); text-align: left; font-size: var(--orbis-text-ui-size); cursor: pointer; line-height: var(--orbis-text-ui-leading); }
 .orbis-tiptap-menu button:hover { background: var(--surface-hover); }
-.orbis-tiptap-menu p, .orbis-tiptap-error { margin: 4px 8px; color: var(--text-secondary); font-size: var(--orbis-text-caption-size); line-height: var(--orbis-text-caption-leading); }
-.orbis-tiptap-error { color: var(--error, #b42318); }
+.orbis-tiptap-menu p { margin: 4px 8px; color: var(--text-secondary); font-size: var(--orbis-text-caption-size); line-height: var(--orbis-text-caption-leading); }
 @media (max-width: 700px) { .orbis-tiptap-toolbar { position: static; margin-inline: 0; }.orbis-tiptap .ProseMirror { min-height: 45vh; padding-bottom: 40px; }.orbis-tiptap-menu { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 .orbis-tiptap .ProseMirror li > p, .orbis-tiptap .ProseMirror li > div > p:first-child { margin: 0; }
@@ -47,8 +47,6 @@
 .orbis-tiptap .orbis-code [data-node-view-content], .orbis-tiptap .orbis-code [data-node-view-content-react] { white-space: pre; }
 .orbis-tiptap .orbis-code pre { overflow-x: auto; max-width: 100%; }
 .orbis-tiptap .orbis-tiptap-toolbar { box-shadow: 0 3px 14px #0000000a; }
-.orbis-tiptap-error { padding: 12px; border: 1px solid currentColor; border-radius: 6px; }
-.orbis-tiptap-error button { padding: 5px 10px; text-decoration: underline; cursor: pointer; }
 @media (max-width: 700px) { .orbis-tiptap-toolbar { flex-wrap: wrap; overflow: visible; gap: 3px; } }
 
 .orbis-tiptap .content-table-scroll { overflow-x: auto; max-width: 100%; margin: 24px 0; }
@@ -75,6 +73,10 @@
  .orbis-tiptap-toolbar .editor-secondary-tool {display:none;}
  .orbis-tiptap-toolbar .editor-more-tools {display:inline-flex;}
  .document-format-host .orbis-tiptap-toolbar {overflow-x:auto;}
+}
+
+@media (pointer: coarse) {
+  .orbis-tiptap-toolbar button { min-width: var(--orbis-control-touch-height); min-height: var(--orbis-control-touch-height); }
 }
 
 .document-load-more { padding: var(--orbis-space-6) 0; color: var(--text-secondary); font-size: var(--orbis-text-ui-size); line-height: var(--orbis-text-ui-leading); }
@@ -111,3 +113,7 @@
     contain: layout style paint;
   }
 }
+
+.editor-outline-link { display: block; width: 100%; min-width: 0; height: auto; min-height: 0; padding: 6px 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; justify-content: flex-start; border-radius: 6px; color: var(--text-secondary); font-size: var(--orbis-text-caption-size); font-weight: var(--orbis-weight-body); }
+.editor-outline-link:hover { color: var(--text-primary); background: var(--surface-hover); }
+.editor-outline-link:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }

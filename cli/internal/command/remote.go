@@ -28,6 +28,8 @@ func (r Runtime) remote(ctx context.Context, a arguments, c config.Config, api *
 		return api.Agent(ctx, "GET", path, client.Request{Query: q, Retries: 2})
 	}
 	switch a.family {
+	case "versions":
+		return r.versions(ctx, a, api)
 	case "capabilities", "schema":
 		return get("/"+a.family, nil)
 	case "workspaces", "collections":
@@ -136,6 +138,8 @@ func (r Runtime) remote(ctx context.Context, a arguments, c config.Config, api *
 			return api.Agent(ctx, "POST", path+"/preview", client.Request{Body: body})
 		}
 		return api.Idempotent(ctx, path, body)
+	case "boards":
+		return r.boards(ctx, a, api)
 	case "files":
 		return r.files(ctx, a, api)
 	case "shares":

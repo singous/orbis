@@ -2,7 +2,7 @@ import { afterEach, expect, it } from 'vitest';
 import { Editor } from '@tiptap/core';
 import { tiptapExtensions } from './tiptap-extensions';
 import { toTiptapDocument, fromTiptapDocument } from './tiptap-model';
-import type { OrbisBlock } from '../../content/model/blocks';
+import type { OrbisBlock } from '../../content/blocks';
 const editors: Editor[] = [];
 afterEach(() => editors.splice(0).forEach(e => e.destroy()));
 function editor(blocks: OrbisBlock[] = []) {

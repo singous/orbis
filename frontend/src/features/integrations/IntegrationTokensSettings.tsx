@@ -1,3 +1,4 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useStore } from "zustand";
 import { apiRequest,workspacePath } from "../../shared/api/api-client";
@@ -6,7 +7,6 @@ import { authRequestOptions, useAuthRequest } from "../../shared/auth/use-auth-r
 import { Button } from "../../shared/ui/Button";
 import { TextInput } from "../../shared/ui/TextInput";
 import { SelectField } from "../../shared/ui/SelectField";
-import { StatusMessage } from "../../shared/ui/StatusMessage";
 
 type IntegrationToken = {
   id: string; name: string; permissions: string[]; secret_prefix: string;
@@ -40,7 +40,6 @@ function IntegrationTokensScope() {
   const [days, setDays] = useState("90");
   const [secret, setSecret] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
   const canWrite = ["owner", "admin", "editor"].includes(workspace?.role ?? "");
   async function refresh(key = sessionKey,requestedPage=page) {
     const generation=++listGeneration.current;
@@ -49,14 +48,14 @@ function IntegrationTokensScope() {
   }
   useEffect(() => {
     currentKey.current = sessionKey;
-    if(previousScope.current!==sessionKey){setPending(false);setSecret(null);setMessage(null);previousScope.current=sessionKey;}
+    if(previousScope.current!==sessionKey){setPending(false);setSecret(null);previousScope.current=sessionKey;}
     setItems([]);
-    void refresh().catch(error => { if (currentKey.current === sessionKey) setMessage(error instanceof Error ? error.message : "无法载入集成令牌"); });
+    void refresh().catch(error => { if (currentKey.current === sessionKey) reportError(error); });
     return () => { currentKey.current = ""; };
   }, [sessionKey, auth.workspaceId,page]);
   async function create(event: FormEvent) {
     event.preventDefault();
-    setPending(true); setMessage(null); setSecret(null);
+    setPending(true);  setSecret(null);
     const key = sessionKey;
     try {
       const data = await apiRequest<{credential:IntegrationToken;token:string}>(workspacePath(auth,"/integration-tokens"), {
@@ -70,22 +69,22 @@ function IntegrationTokensScope() {
       if (currentKey.current !== key) return;
       setSecret(data.token); setName("");
       setPage(1);await refresh(key,1);
-    } catch (error) { if (currentKey.current === key) setMessage(error instanceof Error ? error.message : "创建失败，请重试"); }
+    } catch (error) { if (currentKey.current === key) reportError(error); }
     finally { if (currentKey.current === key) setPending(false); }
   }
   async function revoke(item:IntegrationToken) {
     const key = sessionKey;
-    setPending(true); setMessage(null);
+    setPending(true);
     try {
       await apiRequest(workspacePath(auth,`/integration-tokens/${item.id}/revoke`), { ...authRequestOptions(auth), method: "POST",body:{expected_version:item.version} });
       if (currentKey.current === key) { setSecret(null); await refresh(key); }
-    } catch (error) { if (currentKey.current === key) setMessage(error instanceof Error ? error.message : "撤销失败，请重试"); }
+    } catch (error) { if (currentKey.current === key) reportError(error); }
     finally { if (currentKey.current === key) setPending(false); }
   }
   return <section className="workbench-settings-section" aria-labelledby="integration-tokens-title">
     <h2 id="integration-tokens-title">智能体与远程文档库</h2>
     <p>通过 Orbis CLI 将当前工作空间接入可以执行命令的智能体。令牌权限同时受你的当前成员角色约束，撤销后立即停止访问。</p>
-    {message ? <StatusMessage tone="error" title="集成令牌操作失败">{message}</StatusMessage> : null}
+
     <form className="profile-edit-form" onSubmit={create}>
       <TextInput label="令牌名称" required maxLength={120} value={name} disabled={pending} onChange={event => setName(event.target.value)} placeholder="例如：我的写作助手" />
       <SelectField label="权限" value={permission} disabled={pending} onChange={setPermission} options={[{ value: "read", label: "只读文档" }, ...(canWrite ? [{ value: "write", label: "读取与编辑文档" }] : [])]} />
@@ -100,7 +99,7 @@ function IntegrationTokensScope() {
     {secret ? <div role="status" className="profile-field">
       <p>请现在保存令牌。关闭后无法再次查看原文。使用环境变量 ORBIS_TOKEN 或通过 orbis auth login --token-stdin 存入系统凭据库。</p>
       <TextInput aria-label="新集成令牌" readOnly value={secret} />
-      <div className="profile-form-actions"><Button onPress={() => { if(!navigator.clipboard){setMessage("浏览器不支持自动复制，请手动复制令牌");return;}void navigator.clipboard.writeText(secret).catch(() => setMessage("复制失败，请手动复制令牌")); }}>复制令牌</Button><Button variant="ghost" onPress={() => setSecret(null)}>已保存，关闭原文</Button></div>
+      <div className="profile-form-actions"><Button onPress={() => { if(!navigator.clipboard){reportError("浏览器不支持自动复制，请手动复制令牌");return;}void navigator.clipboard.writeText(secret).catch(() => reportError("复制失败，请手动复制令牌")); }}>复制令牌</Button><Button variant="ghost" onPress={() => setSecret(null)}>已保存，关闭原文</Button></div>
       <p>工作空间 ID：<code>{auth.workspaceId}</code></p>
     </div> : null}
     <ul className="workbench-settings-list" aria-label="已创建的集成令牌">

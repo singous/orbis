@@ -1,10 +1,10 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { type FormEvent, useEffect, useState } from "react";
 
 import { useOptionalAuthRequest } from "../../shared/auth/use-auth-request";
 import { Button } from "../../shared/ui/Button";
 import { Dialog, DialogContent, DialogFooter } from "../../shared/ui/Dialog";
 import { TextInput } from "../../shared/ui/TextInput";
-import { showToast } from "../../shared/ui/Toast";
 import { NotebookIconPicker } from "./NotebookIconPicker";
 import { uploadNotebookIcon } from "./notebook-icon-api";
 import type { NotebookIconValue } from "./notebook-icons";
@@ -44,7 +44,7 @@ export function NotebookDialog({ open, title = "新建笔记本", initialValue =
     try {
       await onSubmit({ title: value.trim(), icon });
     } catch (submitError) {
-      showToast({ title: "保存笔记本失败", description: submitError instanceof Error ? submitError.message : "请重试。", tone: "danger" });
+      reportError(submitError);
     } finally {
       setSubmitting(false);
     }

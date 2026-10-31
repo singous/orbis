@@ -66,6 +66,7 @@ func Normalize(blocks []Block) ([]Block, error) {
 	seen := map[string]bool{}
 	count := 0
 	gridCells := 0
+	boardReferences := 0
 	var visit func([]Block, int) error
 	visit = func(items []Block, depth int) error {
 		if len(items) == 0 {
@@ -150,6 +151,14 @@ func Normalize(blocks []Block) ([]Block, error) {
 				for key := range b.Props {
 					allowed[key] = true
 				}
+			case "board":
+				boardReferences++
+				if err := normalizeBoardReference(b); err != nil {
+					return err
+				}
+				for key := range b.Props {
+					allowed[key] = true
+				}
 			case "table":
 				if err := normalizeGrid(b.Table, &gridCells); err != nil {
 					return err
@@ -181,10 +190,10 @@ func Normalize(blocks []Block) ([]Block, error) {
 					return fault.Field("body.blocks", "块属性不受支持")
 				}
 			}
-			if (b.Type == "divider" || b.Type == "group" || mediaBlock(b.Type) || b.Type == "drawing" || b.Type == "table" || b.Type == "data_table") && len(b.Content) > 0 {
+			if (b.Type == "divider" || b.Type == "group" || mediaBlock(b.Type) || b.Type == "drawing" || b.Type == "board" || b.Type == "table" || b.Type == "data_table") && len(b.Content) > 0 {
 				return fault.Field("body.blocks", "该块类型不允许正文")
 			}
-			if (b.Type == "divider" || b.Type == "heading" || b.Type == "code_block" || mediaBlock(b.Type) || b.Type == "drawing" || b.Type == "table" || b.Type == "data_table") && len(b.Children) > 0 {
+			if (b.Type == "divider" || b.Type == "heading" || b.Type == "code_block" || mediaBlock(b.Type) || b.Type == "drawing" || b.Type == "board" || b.Type == "table" || b.Type == "data_table") && len(b.Children) > 0 {
 				return fault.Field("body.blocks", "该块类型不允许子块")
 			}
 			if err := normalizeRuns(b.Content); err != nil {
@@ -198,6 +207,9 @@ func Normalize(blocks []Block) ([]Block, error) {
 	}
 	if err := visit(result, 1); err != nil {
 		return nil, err
+	}
+	if boardReferences > MaxBoardReferences {
+		return nil, fault.Field("body.blocks", fmt.Sprintf("单篇文档最多引用 %d 个画板视图", MaxBoardReferences))
 	}
 	normalized, err := json.Marshal(result)
 	if err != nil {

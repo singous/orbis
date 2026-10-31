@@ -1,15 +1,15 @@
+import { releaseFeatures } from "../../shared/release-features";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useStore } from "zustand";
-import { ApiError } from "../../shared/api/api-client";
 import { authStore, getAuthSessionKey } from "../../shared/auth/auth-store";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { Button } from "../../shared/ui/Button";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { PageContainer } from "../../shared/ui/PageContainer";
 import { SelectField } from "../../shared/ui/SelectField";
-import { StatusMessage } from "../../shared/ui/StatusMessage";
+
 import { TextInput } from "../../shared/ui/TextInput";
 import { BookOpen, FileText, Folder, Globe, Paperclip } from "../../shared/ui/icons";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
@@ -54,11 +54,11 @@ export function SearchPage() {
     inputDirty.current = false;
     setParams(writeSearchFilters({ ...filters, q: input, ...patch, page: patch.page ?? 1 }));
   }
-  const data = results.data;
+  const data = results.data && { ...results.data, items: results.data.items.filter(item => releaseFeatures.sites || item.type !== "site") };
   const loading = Boolean(filters.q.trim() && (pendingInput || results.isPending));
   const error = results.error;
 
-  return <WorkspaceShell><PageContainer title="全局搜索" description="搜索有权访问的文档、评论、笔记本、分组、站点与文件。">
+  return <WorkspaceShell><PageContainer title="全局搜索" description="搜索有权访问的文档、评论、笔记本、分组与文件。">
     <form className="global-search-form" role="search" aria-label="内容搜索" onSubmit={(event) => { event.preventDefault(); if (!composing) updateFilters({ q: input }); }}>
       <div className="global-search-input-row">
         <TextInput id={GLOBAL_SEARCH_INPUT_ID} label="搜索内容" aria-label="搜索内容" type="search" autoFocus maxLength={SEARCH_MAX_LENGTH} placeholder="搜索标题、正文、评论或文件名…" value={input} onChange={(event) => { inputDirty.current = true; setInput(event.target.value); }} onCompositionStart={() => setComposing(true)} onCompositionEnd={(event) => { inputDirty.current = true; setInput(event.currentTarget.value); setComposing(false); }} />
@@ -71,7 +71,7 @@ export function SearchPage() {
       </div>
       <p className="global-search-help">文件与附件支持名称和已有元数据检索。</p>
     </form>
-    {error && !pendingInput ? <StatusMessage tone="error" title={error instanceof ApiError && error.status === 403 ? "无权搜索内容" : "搜索失败"}>{error instanceof Error ? error.message : "请稍后重试。"}<Button onClick={() => void results.refetch()}>重试</Button></StatusMessage> : null}
+
     {!filters.q.trim() && !pendingInput ? <p className="global-search-empty">输入关键词，查找文档、评论或文件。</p> : null}
     {loading ? <LoadingState label="正在搜索…" /> : null}
     {!loading && !pendingInput && !error && filters.q.trim() && data ? <>

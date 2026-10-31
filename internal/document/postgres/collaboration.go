@@ -309,12 +309,53 @@ func preserveTableReferences(ctx context.Context, tx *gorm.DB, did string, block
 	return changed, nil
 }
 
+type collaborationPreparation struct {
+	state        collaborationRow
+	transformed  document.CollaborationTransformResult
+	transformErr error
+	ready        bool
+}
+
+// prepareCollaboration performs ordinary CRDT conversion without holding database locks.
+// The commit transaction revalidates permission, receipts, epoch and the exact base.
+func (r *Repository) prepareCollaboration(ctx context.Context, commit document.CollaborationCommit) (collaborationPreparation, error) {
+	var prepared collaborationPreparation
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if _, _, err := readSnapshot(ctx, tx, document.ReadQuery{Scope: commit.Scope}); err != nil {
+			return err
+		}
+		var receipts int64
+		if err := tx.Model(&operationRow{}).Where("document_id=? AND operation_id=?", commit.Scope.DocumentID, commit.Input.OperationID).Count(&receipts).Error; err != nil {
+			return err
+		}
+		if receipts > 0 {
+			return nil
+		}
+		if err := tx.Where("document_id=?", commit.Scope.DocumentID).Take(&prepared.state).Error; err != nil {
+			return missing(err)
+		}
+		prepared.ready = prepared.state.Epoch == commit.Input.Epoch
+		return nil
+	}, &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: true})
+	if err != nil {
+		return prepared, err
+	}
+	if prepared.ready {
+		prepared.transformed, prepared.transformErr = r.collaboration.Transform(ctx, document.CollaborationTransform{State: prepared.state.State, Update: commit.Input.Update, Targets: commit.Input.Targets})
+	}
+	return prepared, nil
+}
+
 func (r *Repository) CommitCollaboration(ctx context.Context, commit document.CollaborationCommit) (document.CollaborationResult, error) {
 	var result document.CollaborationResult
 	if r.collaboration == nil {
 		return result, document.CollaborationUnavailable()
 	}
-	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	prepared, err := r.prepareCollaboration(ctx, commit)
+	if err != nil {
+		return result, err
+	}
+	err = r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		doc, err := LockContent(ctx, tx, commit.Scope)
 		if err != nil {
 			return err
@@ -331,7 +372,7 @@ func (r *Repository) CommitCollaboration(ctx context.Context, commit document.Co
 			return json.Unmarshal(receipt.Result, &result)
 		}
 		var state collaborationRow
-		if err := tx.Where("document_id=?", doc.ID).Take(&state).Error; err != nil {
+		if err := tx.Select("document_id,epoch,content_version,updated_at_ms").Where("document_id=?", doc.ID).Take(&state).Error; err != nil {
 			return missing(err)
 		}
 		if state.Epoch != commit.Input.Epoch {
@@ -340,7 +381,20 @@ func (r *Repository) CommitCollaboration(ctx context.Context, commit document.Co
 		if state.ContentVersion != doc.ContentVersion {
 			return fmt.Errorf("collaboration projection is not current")
 		}
-		transformed, err := r.collaboration.Transform(ctx, document.CollaborationTransform{State: state.State, Update: commit.Input.Update, Targets: commit.Input.Targets})
+		var transformed document.CollaborationTransformResult
+		if prepared.ready && prepared.state.Epoch == state.Epoch && prepared.state.ContentVersion == state.ContentVersion {
+			state.State = prepared.state.State
+			transformed, err = prepared.transformed, prepared.transformErr
+		} else {
+			// A competing commit requires a fresh merge. Keep the existing serialized
+			// fallback so a normal CRDT edit is never rejected for a stale save counter.
+			var binary struct{ State []byte }
+			if err := tx.Table("document_collaboration_states").Select("state").Where("document_id=?", doc.ID).Take(&binary).Error; err != nil {
+				return err
+			}
+			state.State = binary.State
+			transformed, err = r.collaboration.Transform(ctx, document.CollaborationTransform{State: state.State, Update: commit.Input.Update, Targets: commit.Input.Targets})
+		}
 		if err != nil {
 			return err
 		}
@@ -380,7 +434,7 @@ func (r *Repository) CommitCollaboration(ctx context.Context, commit document.Co
 			command := document.Command{Scope: commit.Scope, Timestamp: commit.Timestamp, Input: document.CommandsInput{TableCopies: commit.Input.TableCopies, Operations: []document.Operation{{Type: "insert_blocks", Blocks: blocks}}}}
 			// Copy validation is performed against the exact merged tree and current stored identities below.
 			if len(commit.Input.TableCopies) > document.MaxCopiedTables {
-				return fault.Field("body.table_copies", "单次最多复制 100 个多维表格")
+				return fault.Field("body.table_copies", "单次最多复制 100 个数据表")
 			}
 			seen := map[string]bool{}
 			for _, copy := range commit.Input.TableCopies {

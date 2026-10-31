@@ -1,6 +1,8 @@
-import { Archive, BookOpen, Clock3, Globe, Home, Notebook, Search, Settings, Users } from "../../shared/ui/icons";
-import type { ReactNode } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { releaseFeatures } from "../../shared/release-features";
+import { StickyNote } from "lucide-react";
+import { BookOpen, ChevronDown, ChevronRight, Clock3, Globe, Home, Pin, Search, Settings, Trash2, Users } from "../../shared/ui/icons";
+import { type ReactNode, useId, useState } from "react";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { useStore } from "zustand";
 
 import { authStore } from "../../shared/auth/auth-store";
@@ -13,9 +15,9 @@ import { usePinnedNotebooks } from "../documents/pinned-notebooks";
 import { resolveWorkspaceArea } from "./workspace-areas";
 
 const documentLinks = [
-  { to: "/documents", label: "笔记本总览", icon: BookOpen },
+  { to: "/documents", label: "开始", icon: Clock3 },
+  { to: "/documents/quick-notes", label: "随手记", icon: StickyNote },
   { to: "/documents/recent", label: "最近编辑", icon: Clock3 },
-  { to: "/documents/collections", label: "我的笔记本", icon: Notebook },
 ];
 const navClass = ({ isActive }: { isActive: boolean }) => `workspace-function-link${isActive ? " is-active" : ""}`;
 
@@ -32,17 +34,24 @@ function DocumentNavigation() {
   const workspace = useStore(authStore, (state) => state.workspace);
   const notebooks = useNotebooks();
   const { isPinned } = usePinnedNotebooks(workspace?.id);
-  const commonNotebooks = (notebooks.data?.items ?? []).filter((notebook) => isPinned(notebook.id));
+  const [expanded, setExpanded] = useState(true);
+  const notebooksId = useId();
+  const allNotebooks = notebooks.data?.items ?? [];
+  const items = allNotebooks.filter(notebook => isPinned(notebook.id));
 
-  return <MenuFrame label="文档导航" footer={<NavLink to="/documents/archive" className={navClass}><Archive size={18} />归档</NavLink>}>
-    <div className="document-business-links">
-      <NavLink to="/home" className={navClass}><Home size={18} />首页</NavLink>
-      <NavLink to="/sites" className={navClass}><Globe size={18} />站点</NavLink>
+  return <MenuFrame label="文档导航" footer={<NavLink to="/documents/archive" className={navClass}><Trash2 size={18} aria-hidden="true" />回收站</NavLink>}>
+    <ActionButton type="button" className="workspace-function-link document-menu-search" aria-haspopup="dialog" aria-expanded={isOpen} onClick={() => openSearch({ type: "document" })}><Search size={18} aria-hidden="true" />搜索文档</ActionButton>
+    {documentLinks.map(({ to, label, icon: Icon }) => <NavLink key={to} to={to} end className={navClass}><Icon size={18} aria-hidden="true" />{label}</NavLink>)}
+    <div className="document-notebooks-heading">
+      <ActionButton type="button" className="workspace-function-link" aria-label={expanded ? "收起常用笔记本" : "展开常用笔记本"} aria-expanded={expanded} aria-controls={notebooksId} onClick={() => setExpanded(value => !value)}><ChevronDown size={16} aria-hidden="true" /><span>常用笔记本</span></ActionButton>
+      <NavLink to="/documents/collections" className="document-notebooks-manage" aria-label="管理笔记本" title="管理笔记本"><ChevronRight size={16} aria-hidden="true" /></NavLink>
     </div>
-    <span className="workspace-nav-label">在线文档</span>
-    {documentLinks.map(({ to, label, icon: Icon }) => <NavLink key={to} to={to} end className={navClass}><Icon size={18} />{label}</NavLink>)}
-    <ActionButton type="button" className="workspace-function-link" aria-haspopup="dialog" aria-expanded={isOpen} onClick={() => openSearch({ type: "document" })}><Search size={18} aria-hidden="true" />搜索文档</ActionButton>
-    {commonNotebooks.map((notebook) => <NavLink key={notebook.id} to={`/collections/${notebook.id}`} className={navClass}><NotebookIcon icon={notebook.icon} size="sm" /><span className="truncate">{notebook.title}</span></NavLink>)}
+    <div id={notebooksId} className="document-notebooks-list" hidden={!expanded}>
+      {notebooks.isLoading ? <span className="document-notebooks-status" role="status">正在加载笔记本…</span> : null}
+
+      {!notebooks.isLoading && !notebooks.isError && !items.length ? <Link to={allNotebooks.length ? "/documents" : "/documents/collections"} className="workspace-function-link"><BookOpen size={18} aria-hidden="true" />{allNotebooks.length ? "设置常用笔记本" : "创建第一个笔记本"}</Link> : null}
+      {items.map((notebook) => <NavLink key={notebook.id} to={`/collections/${notebook.id}`} className={navClass}><NotebookIcon icon={notebook.icon} size="sm" /><span className="truncate">{notebook.title}</span>{isPinned(notebook.id) ? <Pin className="document-notebook-pin" size={13} aria-hidden="true" /> : null}</NavLink>)}
+    </div>
   </MenuFrame>;
 }
 
@@ -62,7 +71,7 @@ export function WorkspaceNavigation() {
   switch (area.id) {
     case "documents": return <DocumentNavigation />;
     case "settings": return <SettingsNavigation />;
-    case "sites": return <MenuFrame label={area.navigationLabel}><NavLink to="/sites" className={navClass}><Globe size={18} />我的站点</NavLink></MenuFrame>;
+    case "sites": return releaseFeatures.sites ? <MenuFrame label={area.navigationLabel}><NavLink to="/sites" className={navClass}><Globe size={18} />我的站点</NavLink></MenuFrame> : null;
     case "home": return <MenuFrame label={area.navigationLabel}><NavLink to="/home" end className={navClass}><Home size={18} />工作台</NavLink></MenuFrame>;
     case "search": return null;
   }

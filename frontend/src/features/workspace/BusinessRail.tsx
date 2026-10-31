@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { ActionButton } from "../../shared/ui/ActionButton";
-import { BookOpen, ChevronsRight, Globe, Home, Orbit, Search, Settings, X } from "../../shared/ui/icons";
+import { OrbisLogo } from "../../shared/ui/OrbisLogo";
+import { BookOpen, ChevronsRight, Globe, Home, Search, Settings, X } from "../../shared/ui/icons";
 import { Link, useLocation } from "react-router-dom";
 
 import { Tooltip } from "../../shared/ui/Tooltip";
@@ -32,7 +33,7 @@ export function BusinessRail({ surface = "web", collapsed, onExpand, onClose, cr
       <div className="rail-expand-slot" data-visible={collapsed} aria-hidden={!collapsed ? true : undefined} inert={!collapsed ? true : undefined}>
         <Tooltip label={expandLabel} side="right"><ActionButton className="rail-action rail-expand" data-sidebar-toggle="expand" type="button" aria-label={expandLabel} onClick={onExpand}><ChevronsRight size={20} /></ActionButton></Tooltip>
       </div>
-      {surface === "web" ? <WorkspaceSwitcher variant="rail" /> : <Link to={DEFAULT_WORKSPACE_PATH} className="rail-brand" aria-label="Orbis 首页"><Orbit size={28} strokeWidth={1.8} /></Link>}
+      {surface === "web" ? <WorkspaceSwitcher variant="rail" /> : <Link to={DEFAULT_WORKSPACE_PATH} className="rail-brand" aria-label="Orbis 首页"><OrbisLogo size={32} /></Link>}
       {createMenu ? <div className="rail-create-entry">{createMenu}</div> : null}
       <nav className="workspace-business-nav" aria-label="业务板块">
         <Tooltip label="全局搜索" side="right"><ActionButton type="button" aria-label="搜索" aria-haspopup="dialog" aria-expanded={isOpen} aria-current={searchActive ? "page" : undefined} className={`rail-action${searchActive || isOpen ? " is-active" : ""}`} onClick={() => openSearch()}><Search aria-hidden="true" size={20} /></ActionButton></Tooltip>

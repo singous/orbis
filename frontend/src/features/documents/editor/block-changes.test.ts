@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createBlockChanges } from "./block-changes";
-import type { NoteBlocksV2, OrbisBlock } from "../../content/model/blocks";
+import type { NoteBlocksV2, OrbisBlock } from "../../content/blocks";
 
 const paragraph = (id: string, children: OrbisBlock[] = []): OrbisBlock => ({ id, type: "paragraph", props: {}, content: [{ type: "text", text: id }], children });
 const document = (blocks: OrbisBlock[]): NoteBlocksV2 => ({ schema_version: 2, editor: "blocknote", blocks });

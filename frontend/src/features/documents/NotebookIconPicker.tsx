@@ -1,10 +1,10 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { Radio } from "@heroui/react/radio";
 import { RadioGroup } from "@heroui/react/radio-group";
 import { ImagePlus, RotateCcw, Check, LoaderCircle } from "../../shared/ui/icons";
 import { type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
 
 import { Button } from "../../shared/ui/Button";
-import { showToast } from "../../shared/ui/Toast";
 import { NotebookIcon } from "./NotebookIcon";
 import type { UploadedNotebookIcon } from "./notebook-icon-api";
 import {
@@ -53,7 +53,7 @@ export function NotebookIconPicker({ value, onChange, uploadFile, onPendingChang
     if (!file) return;
     const validationError = validateNotebookIconFile(file);
     if (validationError) {
-      showToast({ title: "无法上传图标", description: validationError, tone: "danger" });
+      reportError(validationError);
       return;
     }
     const version = ++uploadVersion.current;
@@ -66,7 +66,7 @@ export function NotebookIconPicker({ value, onChange, uploadFile, onPendingChang
       onChange({ type: "image", asset_id: uploaded.asset_id });
     } catch (uploadError) {
       if (version === uploadVersion.current) {
-        showToast({ title: "图标上传失败", description: uploadError instanceof Error ? uploadError.message : "请重试。", tone: "danger" });
+        reportError(uploadError);
       }
     } finally {
       if (version === uploadVersion.current) {
@@ -97,8 +97,10 @@ export function NotebookIconPicker({ value, onChange, uploadFile, onPendingChang
       if (color) chooseIcon({ type: "preset", name: selected.name, color: color.name });
     }}>
       {NOTEBOOK_ICON_COLORS.map(({ name, label }) => <Radio key={name} value={name} aria-label={label} render={(props) => <div {...props} title={label} />}>
-        <Radio.Content className={`notebook-icon-swatch notebook-icon--${name}`}>
-          {({ isSelected }) => isSelected ? <Check size={14} strokeWidth={2.5} aria-hidden="true" /> : null}
+        <Radio.Content className="notebook-icon-color-choice">
+          {({ isSelected }) => <span className={`notebook-icon-swatch notebook-icon--${name}`}>
+            {isSelected ? <Check size={14} strokeWidth={2.5} aria-hidden="true" /> : null}
+          </span>}
         </Radio.Content>
       </Radio>)}
     </RadioGroup>

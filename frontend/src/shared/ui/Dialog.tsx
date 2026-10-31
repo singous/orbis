@@ -53,17 +53,15 @@ export function DialogContent({
           className={cn("orbis-modal-dialog", className)}
         >
           <Modal.Header className="orbis-modal-header">
-            <div>
-              <Modal.Heading className="text-lg font-semibold tracking-tight text-[var(--text-primary)]">
-                {title}
-              </Modal.Heading>
-              {description ? <p id={descriptionId} className="text-sm leading-6 text-[var(--text-secondary)]">{description}</p> : null}
-            </div>
+            <Modal.Heading className="orbis-modal-title text-lg font-semibold tracking-tight text-[var(--text-primary)]">
+              {title}
+            </Modal.Heading>
             {hideCloseButton ? null : (
               <Modal.CloseTrigger aria-label="关闭" className="orbis-modal-close">
                 <X aria-hidden="true" size={14} />
               </Modal.CloseTrigger>
             )}
+            {description ? <p id={descriptionId} className="orbis-modal-description text-sm leading-6 text-[var(--text-secondary)]">{description}</p> : null}
           </Modal.Header>
           {children}
         </Modal.Dialog>
@@ -73,5 +71,5 @@ export function DialogContent({
 }
 
 export function DialogFooter({ className, children }: { className?: string; children?: ReactNode }) {
-  return <Modal.Footer className={cn("mt-5 flex justify-end gap-2", className)}>{children}</Modal.Footer>;
+  return <Modal.Footer className={cn("orbis-modal-footer", className)}>{children}</Modal.Footer>;
 }

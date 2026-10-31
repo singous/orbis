@@ -1,8 +1,8 @@
+import { OrbisLogo } from "../../shared/ui/OrbisLogo";
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { BookOpen, RefreshCw } from "lucide-react";
-import { ApiError } from "../../shared/api/api-client";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { useReaderMetadata } from "../sites/reader/head-metadata";
 import { readPublicShare,readSharedDocument } from "./api";
@@ -21,7 +21,7 @@ export function PublicSharePage() {
     retry: false,
     staleTime: 0,
     gcTime: 0,
-    refetchInterval: LIVE_REFRESH_INTERVAL_MS,
+    refetchInterval: query => query.state.status === "error" ? false : LIVE_REFRESH_INTERVAL_MS,
   });
   useReaderMetadata(
     `${manifest.data?.title ?? "在线文档分享"} · Orbis`,
@@ -40,7 +40,7 @@ export function PublicSharePage() {
     if (window.scrollY || window.scrollX) window.scrollTo(0, 0);
   }, [shareToken, noteId]);
   const selectedId=noteId??manifest.data?.root_note_id??manifest.data?.items[0]?.id;
-  const selected=useQuery({queryKey:["public-share-document",shareToken,selectedId,manifest.data?.directory_version],queryFn:({signal})=>readSharedDocument(shareToken,selectedId!,signal),enabled:Boolean(manifest.data&&selectedId),retry:false,staleTime:0,gcTime:0,refetchInterval:LIVE_REFRESH_INTERVAL_MS});
+  const selected=useQuery({queryKey:["public-share-document",shareToken,selectedId,manifest.data?.directory_version],queryFn:({signal})=>readSharedDocument(shareToken,selectedId!,signal),enabled:Boolean(manifest.data&&selectedId),retry:false,staleTime:0,gcTime:0,refetchInterval: query => query.state.status === "error" ? false : LIVE_REFRESH_INTERVAL_MS});
   if(manifest.isPending||manifest.isError||!manifest.data)return <ShareStatus loading={manifest.isPending} error={manifest.error} retry={()=>void manifest.refetch()}/>;
   return (
     <div className="public-share-reader">
@@ -52,7 +52,7 @@ export function PublicSharePage() {
           <BookOpen size={19} aria-hidden="true" />
           {manifest.data.title}
         </Link>
-        <span>实时文档分享</span>
+        <span className="orbis-attribution"><OrbisLogo size={20} />Orbis · 实时文档分享</span>
         <ActionButton
           aria-label="刷新目录与正文"
           onClick={() => {
@@ -82,7 +82,6 @@ export function PublicSharePage() {
               key={`${shareToken}:${selected.data.id}`}
               token={shareToken}
               noteId={selected.data.id}
-              manifest={manifest.data}
             />
           ) : selectedId ? (
             <ShareStatus

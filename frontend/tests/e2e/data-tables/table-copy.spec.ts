@@ -28,11 +28,11 @@ test("an initialized table duplicates atomically after a lost response and edits
       socket.send(message);
     });
   });
+  const legacyBlock=crypto.randomUUID();
+  await responseData(await request.put(`${path}/content`,{headers,data:{operation_id:crypto.randomUUID(),expected_version:metadata.content_version,title:"表格复制验收",blocks:[{id:legacyBlock,type:"data_table"}]}}));
+  await responseData(await request.post(`${path}/tables`,{headers,data:{operation_id:crypto.randomUUID(),expected_document_version:(await responseData(await request.get(path,{headers}))).content_version,block_id:legacyBlock}}));
   await openWithSession(page,session,`/documents/${note.id}`);
   await expect(page.locator(".ProseMirror")).toBeVisible();
-  await page.getByRole("button",{name:"插入内容",exact:true}).click();
-  await page.getByRole("option",{name:"多维表格",exact:true}).click();
-  await page.getByRole("button",{name:"创建表格",exact:true}).click();
   await expect(page.getByRole("tab",{name:"全部记录",exact:true})).toBeVisible();
   await page.getByRole("button",{name:"添加记录",exact:true}).click();
   const title=page.getByRole("textbox",{name:"标题",exact:true});
@@ -40,7 +40,7 @@ test("an initialized table duplicates atomically after a lost response and edits
   await title.press("Tab");
   const tableBlock=page.locator(".orbis-data-table").first();
   await tableBlock.hover({position:{x:3,y:3}});
-  await page.getByRole("button",{name:"块操作：多维表格",exact:true}).click();
+  await page.getByRole("button",{name:"块操作：数据表",exact:true}).click();
   let receiptUnavailable=true;
   if(!collaborative){
     await page.route("**/api/v1/workspaces/*/documents/*/operations/*",route=>receiptUnavailable?route.abort("failed"):route.continue());
@@ -57,7 +57,8 @@ test("an initialized table duplicates atomically after a lost response and edits
     await expect.poll(()=>lostAcknowledgement).toBe(true);
     await expect.poll(()=>copies.length).toBe(2);
   }else{
-    await expect(page.getByText("自动保存失败",{exact:true})).toBeVisible();
+    await expect(page.getByRole("alertdialog", { name: "网络异常，请稍后重试", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "本机修改", exact: true }).click();
     receiptUnavailable=false;
     await page.getByRole("button",{name:"重试保存",exact:true}).click();
   }
@@ -77,14 +78,14 @@ test("an initialized table duplicates atomically after a lost response and edits
   await expect(page.getByRole("textbox",{name:"标题",exact:true}).nth(1)).toHaveValue("只修改副本");
   await page.context().grantPermissions(["clipboard-read","clipboard-write"]);
   await page.locator(".orbis-data-table").first().hover({position:{x:3,y:3}});
-  await page.getByRole("button",{name:"块操作：多维表格",exact:true}).click();
+  await page.getByRole("button",{name:"块操作：数据表",exact:true}).click();
   await page.getByRole("menuitem",{name:"复制块",exact:true}).click();
-  await expect(page.locator(".orbis-block-notice")).toContainText("已复制");
+  await expect(page.getByRole("alertdialog", { name: /已复制/ })).toBeVisible();
   const destination=await createDocument(request,session,collection.id,"跨文档粘贴验收");
   await page.goto(`/documents/${destination.id}`);
   await expect(page.locator(".ProseMirror")).toBeVisible();
   await page.locator(".ProseMirror").click();
-  await page.keyboard.press("Control+V");
+  await page.keyboard.press("ControlOrMeta+V");
   await expect(page.getByRole("textbox",{name:"标题",exact:true})).toHaveValue("复制前尚未自动保存的内容");
   const pasted=await responseData(await request.get(workspacePath(session,`/documents/${destination.id}/content`),{headers}));
   const pastedTable=pasted.blocks.find((block:any)=>block.type==="data_table");

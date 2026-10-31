@@ -11,12 +11,14 @@ import (
 	"gorm.io/gorm"
 	"orbis.local/orbis/internal/asset"
 	assetstore "orbis.local/orbis/internal/asset/postgres"
+	"orbis.local/orbis/internal/board"
 	"orbis.local/orbis/internal/document"
 	docstore "orbis.local/orbis/internal/document/postgres"
 	"orbis.local/orbis/internal/document/publicview"
 	"orbis.local/orbis/internal/platform/fault"
 	"orbis.local/orbis/internal/platform/pagination"
 	"orbis.local/orbis/internal/sharing"
+	sheetstore "orbis.local/orbis/internal/sheet/postgres"
 	"orbis.local/orbis/internal/table"
 	tablestore "orbis.local/orbis/internal/table/postgres"
 )
@@ -171,6 +173,43 @@ func (r *Repository) project(ctx context.Context, tx *gorm.DB, scope scopeState,
 		return nil, err
 	}
 	references := document.MediaReferences(blocks)
+	boardAllowed := map[string]bool{}
+	boardViews := map[string]board.View{}
+	boardViewBytes := 0
+	if r.boards != nil {
+		for _, ref := range document.BoardReferences(blocks) {
+			if _, exists := boardViews[ref.Key()]; exists {
+				continue
+			}
+			allowed, checked := boardAllowed[ref.ID]
+			if !checked {
+				var count int64
+				if err := tx.WithContext(ctx).Table("boards").Where("id=? AND workspace_id=? AND document_id=?", ref.ID, scope.share.WorkspaceID, doc.ID).Count(&count).Error; err != nil {
+					return nil, err
+				}
+				allowed = count == 1
+				boardAllowed[ref.ID] = allowed
+			}
+			if !allowed {
+				continue
+			}
+			if len(boardViews) >= document.MaxBoardReferences {
+				return nil, contentLimit()
+			}
+			view, err := r.boards.Project(ctx, tx, scope.share.WorkspaceID, ref, func(id string) (string, error) {
+				references = append(references, document.AssetReference{ID: id, Kind: "image"})
+				return "orbis-asset:" + id, nil
+			})
+			if err != nil {
+				return nil, err
+			}
+			boardViewBytes += len(view.SVG) + len(view.Text)
+			if boardViewBytes > sharing.MaxPageBytes {
+				return nil, contentLimit()
+			}
+			boardViews[ref.Key()] = view
+		}
+	}
 	ids := []string{}
 	seen := map[string]bool{}
 	for _, ref := range references {
@@ -196,11 +235,37 @@ func (r *Repository) project(ctx context.Context, tx *gorm.DB, scope scopeState,
 		}
 	}
 	options := publicview.Options{URLs: policy, RedactUnsafeLinks: true, MaxBytes: sharing.MaxPageBytes, BudgetError: contentLimit()}
+	// Only tables owned by this authorized document inherit its public projection.
+	options.Sheet = func(id, view string) (publicview.TableRef, error) {
+		var count int64
+		if err := tx.WithContext(ctx).Table("sheets").Where("id=? AND document_id=? AND workspace_id=?", id, doc.ID, scope.share.WorkspaceID).Count(&count).Error; err != nil {
+			return publicview.TableRef{}, err
+		}
+		if count == 1 {
+			data, err := sheetstore.Snapshot(ctx, tx, scope.share.WorkspaceID, id, view)
+			if err != nil {
+				return publicview.TableRef{}, err
+			}
+			return publicview.TableRef{ID: id, Version: sheetstore.SnapshotRevision(data), Title: data.Title, Fields: data.Fields, View: data.View, Groups: data.Groups, Items: data.Records}, nil
+		}
+		return publicview.TableRef{Restricted: true, ID: id, Version: 1, Title: "数据表", Fields: []table.Field{}, View: table.PublicView{Name: "需要工作空间访问权限", Kind: "grid", Widths: map[string]int{}}, Groups: []table.Group{}, Items: []table.PublicRecord{}}, nil
+	}
+
 	options.Asset = func(id string) (string, error) {
 		if _, exists := types[id]; !exists {
 			return "", sharing.Missing()
 		}
 		return "/api/v1/public/shares/" + input.Token + "/documents/" + doc.ID + "/assets/" + id + "?version=" + versionString(doc.ContentVersion), nil
+	}
+	options.Board = func(ref document.BoardReference) (board.View, error) {
+		view, exists := boardViews[ref.Key()]
+		if !exists {
+			return board.View{Title: "画板", Restricted: true}, nil
+		}
+		view.SVG = board.BindSVGAssets(view.SVG, func(id string) string {
+			return "/api/v1/public/shares/" + input.Token + "/documents/" + doc.ID + "/assets/" + id + "?version=" + versionString(doc.ContentVersion)
+		})
+		return view, nil
 	}
 	options.Table = func(ref table.Reference) (publicview.TableRef, error) {
 		metadata, err := tableMetadata(ctx, tx, scope, doc, ref.TableID)
@@ -365,7 +430,47 @@ func (r *Repository) Asset(ctx context.Context, input sharing.PublicQuery) (asse
 			return err
 		}
 		if !referenced {
-			return sharing.Missing()
+			if r.boards == nil {
+				return sharing.Missing()
+			}
+			var rows []struct{ Payload json.RawMessage }
+			if err := tx.WithContext(ctx).Table("document_block_versions").Select("payload").Where("document_id=? AND valid_from<=? AND (valid_to IS NULL OR valid_to>?) AND payload->>'type'='board'", doc.ID, doc.ContentVersion, doc.ContentVersion).Limit(document.MaxBlocks).Find(&rows).Error; err != nil {
+				return err
+			}
+			for _, row := range rows {
+				var block document.Block
+				if err := json.Unmarshal(row.Payload, &block); err != nil {
+					return err
+				}
+				for _, ref := range document.BoardReferences([]document.Block{block}) {
+					var count int64
+					if err := tx.Table("boards").Where("workspace_id=? AND id=? AND document_id=?", scope.share.WorkspaceID, ref.ID, doc.ID).Count(&count).Error; err != nil {
+						return err
+					}
+					if count != 1 {
+						continue
+					}
+					snapshot, err := r.boards.Read(ctx, tx, scope.share.WorkspaceID, ref)
+					if err != nil {
+						return err
+					}
+					for _, element := range snapshot.Elements {
+						if element.Structure.AssetID != nil && *element.Structure.AssetID == input.AssetID {
+							referenced = true
+							break
+						}
+					}
+					if referenced {
+						break
+					}
+				}
+				if referenced {
+					break
+				}
+			}
+			if !referenced {
+				return sharing.Missing()
+			}
 		}
 		var row assetstore.Record
 		if err := tx.Where("id=? AND workspace_id=? AND kind='file' AND state='ready'", input.AssetID, scope.share.WorkspaceID).Take(&row).Error; err != nil {

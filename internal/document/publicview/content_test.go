@@ -29,7 +29,7 @@ func TestPublicURLBoundaries(t *testing.T) {
 		t.Fatalf("document link rewrite failed: %s %v", rewritten, err)
 	}
 }
-func TestProjectionStripsDrawingSceneAndPrivateReferences(t *testing.T) {
+func TestProjectionOmitsRetiredDrawingsAndTheirAssets(t *testing.T) {
 	assetID := uuid.NewString()
 	blocks, err := document.Normalize([]document.Block{{ID: uuid.NewString(), Type: "drawing", Props: map[string]any{"scene": "", "source": map[string]any{"type": "asset", "asset_id": assetID}, "caption": "Preview"}}})
 	if err != nil {
@@ -37,16 +37,14 @@ func TestProjectionStripsDrawingSceneAndPrivateReferences(t *testing.T) {
 	}
 	original, _ := json.Marshal(blocks)
 	projected, err := Project(blocks, Options{Asset: func(id string) (string, error) {
-		if id != assetID {
-			t.Fatal("wrong asset")
-		}
-		return "/public/asset", nil
+		t.Fatal("retired drawing assets must not be delivered")
+		return "", nil
 	}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if projected[0].ID != blocks[0].ID {
-		t.Fatal("public projection lost stable block identity")
+	if len(projected) != 0 {
+		t.Fatal("retired drawings must be omitted")
 	}
 	encoded, _ := json.Marshal(projected)
 	for _, private := range []string{"scene", "asset_id", assetID} {

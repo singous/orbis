@@ -1,7 +1,7 @@
 import { nativePayload, type NativeBlock, type NativePayload } from "../content/codecs/api-content";
 import { createBlockChanges, type BlockChanges } from "./editor/block-changes";
 import type { EditorDraft } from "./editor/editor-draft";
-import type { OrbisBlock } from "../content/model/blocks";
+import type { OrbisBlock } from "../content/blocks";
 
 export type DocumentCommand =
   | { type:"update_metadata"; title:string }

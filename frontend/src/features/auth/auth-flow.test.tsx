@@ -39,8 +39,8 @@ describe("community auth flow", () => {
 
   it("defaults to login and exposes setup without public registration", () => {
     renderPage("login");
-    expect(screen.getByRole("heading", { name: "登录工作空间" })).toBeInTheDocument();
-    expect(screen.getByRole("form", { name: "登录工作空间" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "欢迎回到 Orbis" })).toBeInTheDocument();
+    expect(screen.getByRole("form", { name: "欢迎回到 Orbis" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /初始化管理员账号/ })).toHaveAttribute("href", "/setup");
     expect(screen.queryByText(/注册账号/)).not.toBeInTheDocument();
   });
@@ -52,11 +52,11 @@ describe("community auth flow", () => {
     await userEvent.type(screen.getByLabelText("邮箱"), "owner@example.com");
     await userEvent.type(screen.getByLabelText("密码"), "correct horse battery staple");
     await userEvent.click(screen.getByRole("button", { name: "创建并进入工作空间" }));
-    expect(await screen.findByText("无需重复初始化")).toBeInTheDocument();
+    expect(await screen.findByText("系统已经完成初始化")).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "返回登录" })[0]).toHaveAttribute("href", "/login");
   });
 
-  it("attributes an email validation error to email without shifting the form", async () => {
+  it("shows the backend validation message without shifting the form", async () => {
     loginMock.mockRejectedValue(new ApiError(422, "请求字段校验失败", "VALIDATION_ERROR", "", {
       errors: [{ field: "body.email", code: "VALUE_ERROR", message: "字段值不正确" }],
     }));
@@ -65,10 +65,10 @@ describe("community auth flow", () => {
     await userEvent.type(screen.getByLabelText("密码"), "OrbisDev123!");
     await userEvent.click(screen.getByRole("button", { name: "登录 Orbis" }));
 
-    expect(await screen.findByText("邮箱格式不正确，请检查后重试。")).toBeInTheDocument();
+    expect(await screen.findByText("请求字段校验失败")).toBeInTheDocument();
     expect(screen.queryByText(/密码至少需要 8 位/)).not.toBeInTheDocument();
     expect(screen.queryByText("无法继续")).not.toBeInTheDocument();
-    expect(screen.getByRole("form", { name: "登录工作空间" })).not.toHaveTextContent("邮箱格式不正确");
+    expect(screen.getByRole("form", { name: "欢迎回到 Orbis" })).not.toHaveTextContent("邮箱格式不正确");
   });
 
   it("does not claim a password length requirement for an unknown login validation error", async () => {
@@ -80,7 +80,7 @@ describe("community auth flow", () => {
     await userEvent.type(screen.getByLabelText("密码"), "OrbisDev123!");
     await userEvent.click(screen.getByRole("button", { name: "登录 Orbis" }));
 
-    expect(await screen.findByText("请检查填写的信息后重试。")).toBeInTheDocument();
+    expect(await screen.findByText("请求字段校验失败")).toBeInTheDocument();
     expect(screen.queryByText(/密码至少需要 8 位/)).not.toBeInTheDocument();
   });
 
@@ -92,7 +92,7 @@ describe("community auth flow", () => {
     await userEvent.click(screen.getByRole("button", { name: "登录 Orbis" }));
 
     expect(loginMock).toHaveBeenCalledWith({ email: "dev@example.com", password: "short" });
-    expect(await screen.findByText("邮箱或密码不正确。")).toBeInTheDocument();
+    expect(await screen.findByText("Invalid credentials")).toBeInTheDocument();
     expect(screen.queryByText(/至少需要 8 位/)).not.toBeInTheDocument();
   });
 

@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import type { Editor } from "@tiptap/core";
 import { afterEach, expect, it, vi } from "vitest";
 import { TiptapEditor } from "./TiptapEditor";
-import type { NoteBlocksV2 } from "../../content/model/blocks";
+import type { NoteBlocksV2 } from "../../content/blocks";
 import * as model from "./tiptap-model";
 import * as codeHighlight from "../../content/code-highlight";
 

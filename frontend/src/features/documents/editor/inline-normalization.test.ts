@@ -1,7 +1,7 @@
 import { Editor } from "@tiptap/core";
 import { EditorState } from "@tiptap/pm/state";
 import { afterEach, expect, it, vi } from "vitest";
-import type { OrbisBlock } from "../../content/model/blocks";
+import type { OrbisBlock } from "../../content/blocks";
 import { tiptapExtensions } from "./tiptap-extensions";
 import { fromTiptapDocument, toTiptapDocument } from "./tiptap-model";
 import { inlineTransactionsOnly } from "./tiptap-inline-change";

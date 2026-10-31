@@ -1,3 +1,4 @@
+import { Toaster } from "../../shared/ui/Toast";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useEffect } from "react";
@@ -46,7 +47,7 @@ function Background({ initialFilters, prepare, captureNavigate }: { initialFilte
 function renderPalette({ initialFilters = { q: "检索" }, prepare }: { initialFilters?: Partial<SearchFilters>; prepare?: () => Promise<void> } = {}) {
   let navigate!: (path: string) => void;
   const captureNavigate = (next: (path: string) => void) => { navigate = next; };
-  const view = render(<MemoryRouter initialEntries={[editingRoute]}><SearchPaletteProvider><Background initialFilters={initialFilters} prepare={prepare} captureNavigate={captureNavigate} /></SearchPaletteProvider></MemoryRouter>);
+  const view = render(<MemoryRouter initialEntries={[editingRoute]}><SearchPaletteProvider><Background initialFilters={initialFilters} prepare={prepare} captureNavigate={captureNavigate} /></SearchPaletteProvider><Toaster /></MemoryRouter>);
   const trigger = screen.getByRole("button", { name: "打开全局搜索" });
   const draft = screen.getByRole("textbox", { name: "当前编辑草稿" });
   const route = screen.getByRole("status", { name: "当前页面" });
@@ -67,6 +68,28 @@ beforeEach(() => {
 afterEach(() => { cleanup(); act(() => authStore.getState().clearSession()); vi.restoreAllMocks(); });
 
 describe("global search palette", () => {
+  it("keeps the closing dialog mounted through its exit animation and restores focus and scrolling afterwards", async () => {
+    let finishExit!: () => void;
+    const finished = new Promise<void>(resolve => { finishExit = resolve; });
+    vi.spyOn(Element.prototype, "getAnimations").mockImplementation(function (this: Element) {
+      return this.matches(".search-palette-backdrop[data-exiting]") ? [{ finished } as unknown as Animation] : [];
+    });
+    const view = renderPalette();
+    view.container.scrollTop = 72;
+    await openPalette(view);
+    await userEvent.click(screen.getByRole("button", { name: "关闭搜索" }));
+    const closing = document.querySelector(".search-palette-backdrop");
+    expect(closing).toBeInTheDocument();
+    expect(closing).toHaveAttribute("data-exiting");
+    view.container.scrollTop = 0;
+    await act(async () => { finishExit(); });
+    await waitFor(() => expect(document.querySelector(".search-palette-backdrop")).not.toBeInTheDocument());
+    await waitFor(() => expect(view.trigger).toHaveFocus());
+    await waitFor(() => expect(view.container.scrollTop).toBe(72));
+    await openPalette(view);
+    expect(screen.getByRole("combobox", { name: "搜索任何内容" })).toHaveValue("检索");
+  });
+
   it.each(["escape", "close button"])("opens and closes with %s without saving, changing route or discarding the background draft", async (method) => {
     const prepare = vi.fn(async () => undefined);
     const view = renderPalette({ initialFilters: {}, prepare });
@@ -88,13 +111,13 @@ describe("global search palette", () => {
     const input = await openPalette(view);
     const categoryList = screen.getByRole("listbox", { name: "搜索内容类型" });
     const categories = within(categoryList).getAllByRole("option");
-    expect(categories.map(option => option.querySelector("strong")?.textContent)).toEqual(["@doc", "@notebook", "@group", "@site", "@file"]);
+    expect(categories.map(option => option.querySelector("strong")?.textContent)).toEqual(["@doc", "@notebook", "@group", "@file"]);
     expect(categories[0]).toHaveAttribute("aria-selected", "true");
     await userEvent.keyboard("{ArrowDown}");
     expect(categories[1]).toHaveAttribute("aria-selected", "true");
     await userEvent.keyboard("{End}");
-    expect(categories[4]).toHaveAttribute("aria-selected", "true");
-    expect(input).toHaveAttribute("aria-activedescendant", categories[4].id);
+    expect(categories.at(-1)!).toHaveAttribute("aria-selected", "true");
+    expect(input).toHaveAttribute("aria-activedescendant", categories.at(-1)!.id);
     await userEvent.keyboard("{Home}{Enter}");
     expect(input).toHaveValue("@doc ");
     expect(mockedSearch.calls.at(-1)?.filters).toMatchObject({ q: "", type: "document" });

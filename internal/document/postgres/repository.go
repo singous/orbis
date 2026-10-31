@@ -136,7 +136,9 @@ func InsertDocument(ctx context.Context, tx *gorm.DB, actor string, d document.D
 		}
 		d.Position = position
 		row := documentRow{
-			ID: d.ID, WorkspaceID: d.WorkspaceID, CollectionID: d.CollectionID, Title: d.Title,
+			BoardID: d.BoardID,
+			SheetID: d.SheetID,
+			ID:      d.ID, WorkspaceID: d.WorkspaceID, CollectionID: d.CollectionID, Title: d.Title,
 			ContentVersion: 1, ParentID: d.ParentID, Position: position, CreatedAtMS: d.CreatedAtMS, UpdatedAtMS: d.UpdatedAtMS,
 		}
 		if err := tx.Create(&row).Error; err != nil {
@@ -191,6 +193,26 @@ func (r *Repository) Get(ctx context.Context, wid, did string) (document.Documen
 	}
 	if err := readableDocument(tx, row); err != nil {
 		return document.Document{}, err
+	}
+	// A table-only page can become a mixed document through normal content APIs.
+	// Resolve presentation from at most two active blocks so added prose stays visible.
+	if row.SheetID != nil {
+		var primary []struct{ Kind, SheetID string }
+		if err := tx.Table("document_block_versions").Select("payload->>'type' AS kind, payload->'props'->>'sheet_id' AS sheet_id").Where("document_id=? AND valid_to IS NULL", row.ID).Limit(2).Scan(&primary).Error; err != nil {
+			return document.Document{}, err
+		}
+		if len(primary) != 1 || primary[0].Kind != "data_table" || primary[0].SheetID != *row.SheetID {
+			row.SheetID = nil
+		}
+	}
+	if row.BoardID != nil {
+		var primary []struct{ Kind, BoardID string }
+		if err := tx.Table("document_block_versions").Select("payload->>'type' AS kind,payload->'props'->>'board_id' AS board_id").Where("document_id=? AND valid_to IS NULL", row.ID).Limit(2).Scan(&primary).Error; err != nil {
+			return document.Document{}, err
+		}
+		if len(primary) != 1 || primary[0].Kind != "board" || primary[0].BoardID != *row.BoardID {
+			row.BoardID = nil
+		}
 	}
 	return row.domain(), nil
 }
@@ -256,6 +278,11 @@ func (r *Repository) Commit(ctx context.Context, c document.Commit) (int64, erro
 		}
 		if err := CheckVersion(doc.ContentVersion, c.ExpectedVersion); err != nil {
 			return err
+		}
+		if c.RestoreVersion != nil {
+			if _, err := captureVersion(ctx, tx, doc.ID, doc.ContentVersion, document.VersionKindBeforeRestore, nil, "", &c.ActorID, c.Timestamp); err != nil {
+				return err
+			}
 		}
 		ids := make([]string, 0, len(c.AssetReferences))
 		for _, reference := range c.AssetReferences {
@@ -338,6 +365,11 @@ func (r *Repository) Commit(ctx context.Context, c document.Commit) (int64, erro
 		}
 		if err := SyncCollaboration(ctx, tx, doc.ID, version, c.OperationID, c.ActorID, c.Timestamp, c.RestoreVersion != nil, r.collaboration); err != nil {
 			return err
+		}
+		if c.RestoreVersion != nil {
+			if _, err := captureVersion(ctx, tx, doc.ID, version, document.VersionKindRestored, nil, "", &c.ActorID, c.Timestamp); err != nil {
+				return err
+			}
 		}
 		return tx.Create(&operationRow{
 			DocumentID:    c.DocumentID,

@@ -32,7 +32,7 @@ async function chooseAppearance(page: Page, label: string) {
 }
 
 for (const surface of ["web", "desktop"] as const) for (const width of [1440, 390]) {
-  test(`${surface} ${width}px: appearance switches, persists and follows the system while retaining the blue accent`, async ({ page, request }) => {
+  test(`${surface} ${width}px: appearance switches, persists and follows the system with the neutral accent`, async ({ page, request }) => {
     await page.setViewportSize({ width, height: 900 });
     if (surface === "desktop") await page.addInitScript(() => Object.assign(window, { __ORBIS_HOST__: { surface: "desktop" } }));
     await signIn(page, request);
@@ -43,7 +43,7 @@ for (const surface of ["web", "desktop"] as const) for (const width of [1440, 39
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     const create = page.locator(".notebook-overview .page-actions").getByRole("button", { name: "新建笔记本", exact: true });
     await expect(create).toBeVisible();
-    await expect.poll(() => create.evaluate(element => getComputedStyle(element).backgroundColor)).toBe("oklch(0.5774 0.2091 273.85)");
+    await expect.poll(() => create.evaluate(element => getComputedStyle(element).backgroundColor)).toBe("oklch(0.9848 0 0)");
     await page.goto("/sites");
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     await chooseAppearance(page, "白天");
@@ -59,7 +59,9 @@ for (const surface of ["web", "desktop"] as const) for (const width of [1440, 39
     await expect(page).toHaveURL(/\/login$/);
     await page.emulateMedia({ colorScheme: "dark" });
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-    await expect.poll(() => page.getByLabel("邮箱", { exact: true }).evaluate(element => getComputedStyle(element).backgroundColor)).toBe("oklch(0.2103 0.0248 273.85)");
+    await page.mouse.move(0, 0);
+    const emailGroup = page.locator('[data-slot="input-group"]').filter({ has: page.getByLabel("邮箱", { exact: true }) });
+    await expect.poll(() => emailGroup.evaluate(element => getComputedStyle(element).backgroundColor)).toBe("oklch(0.257 0 0)");
   });
 }
 
@@ -69,7 +71,7 @@ test("the saved night preference is applied before the app JavaScript loads", as
   await page.goto("/login");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   expect(await page.locator("#root").evaluate(element => element.childElementCount)).toBe(0);
-  await expect.poll(() => page.locator("body").evaluate(element => getComputedStyle(element).backgroundColor)).toBe("oklch(0.12 0.0124 273.85)");
+  await expect.poll(() => page.locator("body").evaluate(element => getComputedStyle(element).backgroundColor)).toBe("oklch(0.12 0 0)");
 });
 
 test("appearance switching keeps the current editor and its content mounted", async ({ page, request }) => {

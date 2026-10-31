@@ -4,6 +4,9 @@ import { useDataTable } from "./use-table";
 import { readTable } from "./api";
 import type { TableHost } from "./context";
 import type { TablePage } from "./model";
+import { z } from "zod";
+const notify = vi.hoisted(() => vi.fn());
+vi.mock("../../shared/ui/Toast", () => ({ showToast: notify }));
 
 vi.mock("./api", () => ({
   readTable: vi.fn(),
@@ -81,4 +84,50 @@ it("binds subsequent private pages to the version returned by the first page", a
       }),
     ),
   );
+});
+
+it("clears a table read failure when retry succeeds", async () => {
+  vi.mocked(readTable).mockRejectedValueOnce(new Error("First read failed")).mockResolvedValue(page("A"));
+  const { result } = renderHook(() => useDataTable(host, "table", 1, "block"));
+  await waitFor(() => expect(result.current.error).toBe("First read failed"));
+  await act(async () => { await result.current.retry(); });
+  expect(result.current.error).toBeNull();
+  expect(result.current.page?.view_id).toBe("A");
+  expect(result.current.loading).toBe(false);
+});
+
+it("reports another read failure without rejecting the UI retry", async () => {
+  vi.mocked(readTable).mockRejectedValueOnce(new Error("First read failed")).mockRejectedValueOnce(new Error("Still offline"));
+  const { result } = renderHook(() => useDataTable(host, "table", 1, "block"));
+  await waitFor(() => expect(result.current.error).toBe("First read failed"));
+  await act(async () => { await expect(result.current.retry()).resolves.toBeUndefined(); });
+  expect(result.current.error).toBe("Still offline");
+  expect(result.current.loading).toBe(false);
+});
+
+it("does not replace the current view's status with a failed retry from the previous view", async () => {
+  let rejectRetry!: (reason: Error) => void;
+  vi.mocked(readTable).mockResolvedValueOnce(page("A"))
+    .mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectRetry = reject; }))
+    .mockResolvedValue(page("B"));
+  const { result } = renderHook(() => useDataTable(host, "table", 1, "block"));
+  await waitFor(() => expect(result.current.page?.view_id).toBe("A"));
+  let retry!: Promise<void>;
+  act(() => { retry = result.current.retry(); });
+  act(() => result.current.setViewId("B"));
+  await waitFor(() => expect(result.current.page?.view_id).toBe("B"));
+  await act(async () => { rejectRetry(new Error("Stale read failed")); await retry; });
+  expect(result.current.error).toBeNull();
+  expect(result.current.loading).toBe(false);
+});
+
+it("reports local response-validation failures on initial load and an explicit retry", async () => {
+  const validation = z.object({ revision: z.number() }).safeParse({ revision: "invalid" });
+  if (validation.success) throw new Error("expected invalid fixture");
+  vi.mocked(readTable).mockRejectedValue(validation.error);
+  const { result } = renderHook(() => useDataTable(host, "table", 1, "block"));
+  await waitFor(() => expect(notify).toHaveBeenCalledExactlyOnceWith({ title: "服务返回的数据不完整，请刷新重试", tone: "danger" }));
+  await act(async () => { await result.current.retry(); });
+  expect(notify).toHaveBeenCalledTimes(2);
+  expect(result.current.page).toBeNull();
 });

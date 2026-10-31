@@ -72,6 +72,7 @@ export type TableMutation = TableChanges & {
   expected_table_revision: number;
 };
 export type TableSnapshot = {
+ restricted?:boolean;
   fields?:TableField[];
   title: string;
   view: string;

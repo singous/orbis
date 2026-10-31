@@ -1,9 +1,11 @@
+import { reportError } from "../../shared/api/request-feedback";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "../../shared/ui/Button";
 import { readTable } from "./api";
 import type { TableHost } from "./context";
 import {
   cellText,
+  TABLE_PAGE_SIZE,
   type TableDefinition,
   type TablePage,
   type TableRecord,
@@ -30,7 +32,6 @@ function BoardColumn({
   onRecord: (record: TableRecord) => void;
 }) {
   const [page, setPage] = useState<TablePage | null>(null),
-    [error, setError] = useState<string | null>(null),
     [loading, setLoading] = useState(false);
   const [offset, setOffset] = useState(0);
   const element = useRef<HTMLElement>(null);
@@ -64,11 +65,12 @@ function BoardColumn({
       signal: abort.signal,
     })
       .then((value) => {
+        if (abort.signal.aborted) return;
         setPage(value);
-        setError(null);
+
       })
       .catch((error) => {
-        if (!abort.signal.aborted) setError(error.message);
+        if (!abort.signal.aborted) reportError(error);
       })
       .finally(() => {
         if (!abort.signal.aborted) setLoading(false);
@@ -84,9 +86,9 @@ function BoardColumn({
     offset,
     visible,
   ]);
-  const fields = definition.fields.filter((field) =>
-    view.field_ids.includes(field.id),
-  );
+  const fields = view.field_ids.length
+    ? view.field_ids.flatMap(id => definition.fields.find(field => field.id === id) ?? [])
+    : definition.fields;
   return (
     <section
       ref={element}
@@ -109,7 +111,7 @@ function BoardColumn({
         <strong>{group.name}</strong>
         <span>{group.count}</span>
       </header>
-      {error ? <p role="alert">{error}</p> : null}
+
       <div className="dt-board-cards" aria-busy={loading}>
         {page?.records.map((record) => (
           <button
@@ -145,7 +147,7 @@ function BoardColumn({
           <Button
             size="sm"
             disabled={offset === 0 || loading}
-            onClick={() => setOffset(Math.max(0, offset - 100))}
+            onClick={() => setOffset(Math.max(0, offset - TABLE_PAGE_SIZE))}
           >
             上一页
           </Button>
@@ -183,7 +185,7 @@ export function TableBoard(props: {
     <div className="dt-board">
       {props.page.groups.map((group) => (
         <BoardColumn
-          key={group.id ?? "empty"}
+          key={`${props.view.id}:${group.id ?? "empty"}`}
           host={props.host}
           tableId={props.page.table_id}
           definition={props.definition}
