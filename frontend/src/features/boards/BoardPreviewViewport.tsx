@@ -1,4 +1,4 @@
-import { Dropdown } from "@heroui/react/dropdown";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "@orbis/ui/dropdown-menu";
 import { Maximize, Minus, Plus } from "@orbis/ui/icons";
 import { useRef, useState, type ReactNode } from "react";
 import { ActionButton } from "../../shared/ui/ActionButton";
@@ -51,12 +51,14 @@ export function BoardPreviewViewport({ children }: { children: ReactNode }) {
     <div className="board-preview-tools" role="group" aria-label="画板预览缩放">
       <Tooltip label="适应画布"><ActionButton aria-label="适应画布" onPress={fit}><Maximize size={16} /></ActionButton></Tooltip>
       <Tooltip label="缩小画板"><ActionButton aria-label="缩小画板" isDisabled={view.zoom <= MIN_ZOOM} onPress={() => zoom(view.zoom / ZOOM_STEP)}><Minus size={15} /></ActionButton></Tooltip>
-      <Dropdown>
-        <ActionButton aria-label={`缩放比例 ${Math.round(view.zoom * 100)}%`}>{Math.round(view.zoom * 100)}%</ActionButton>
-        <Dropdown.Popover placement="bottom end"><Dropdown.Menu aria-label="缩放比例" selectionMode="single" selectedKeys={new Set([String(view.zoom)])} onAction={key => zoom(Number(key))}>
-          {PREVIEW_ZOOMS.map(value => <Dropdown.Item key={value} id={String(value)} textValue={`${value * 100}%`}>{value * 100}%</Dropdown.Item>)}
-        </Dropdown.Menu></Dropdown.Popover>
-      </Dropdown>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild><ActionButton aria-label={`缩放比例 ${Math.round(view.zoom * 100)}%`}>{Math.round(view.zoom * 100)}%</ActionButton></DropdownMenuTrigger>
+        <DropdownMenuContent align="end" aria-label="缩放比例">
+          <DropdownMenuRadioGroup value={view.zoom} onValueChange={zoom}>
+            {PREVIEW_ZOOMS.map(value => <DropdownMenuRadioItem key={value} value={value} closeOnSelect textValue={`${value * 100}%`}>{value * 100}%</DropdownMenuRadioItem>)}
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
       <Tooltip label="放大画板"><ActionButton aria-label="放大画板" isDisabled={view.zoom >= MAX_ZOOM} onPress={() => zoom(view.zoom * ZOOM_STEP)}><Plus size={15} /></ActionButton></Tooltip>
     </div>
   </div>;

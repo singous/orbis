@@ -1,10 +1,10 @@
 import { reportError } from "../../shared/api/request-feedback";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { Tag } from "../../shared/ui/Tag";
-import { Tabs } from "@heroui/react/tabs";
-import { Textarea as HeroTextArea } from "@orbis/ui/textarea";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
+import { Textarea } from "@orbis/ui/textarea";
 import { ActionButton } from "../../shared/ui/ActionButton";
-import { Drawer } from "@heroui/react/drawer";
+import { Sheet, SheetContent, SheetTitle } from "@orbis/ui/sheet";
 import { History, MessageSquare, X } from "../../shared/ui/icons";
 import { useState, type FormEvent } from "react";
 import type { NoteContent } from "../../shared/api/schemas";
@@ -30,7 +30,7 @@ function CommentForm({ label, submitLabel, initialBody = "", onSubmit, onCancel 
     finally { setPending(false); }
   }
   return <form className="collaboration-form" onSubmit={submit}>
-    <label><span>{label}</span><HeroTextArea aria-label={label} value={body} onChange={(event) => setBody(event.target.value)} maxLength={MAX_COMMENT_LENGTH} rows={3} disabled={pending} required /></label>
+    <label><span>{label}</span><Textarea aria-label={label} value={body} onChange={(event) => setBody(event.target.value)} maxLength={MAX_COMMENT_LENGTH} rows={3} disabled={pending} required /></label>
     <div className="collaboration-actions"><ActionButton variant="primary" className="mvp-button primary" type="submit" disabled={pending || !body.trim()}>{pending ? "正在提交…" : submitLabel}</ActionButton>{onCancel ? <ActionButton variant="secondary" className="mvp-button secondary" type="button" disabled={pending} onClick={onCancel}>取消</ActionButton> : null}</div>
   </form>;
 }
@@ -123,16 +123,16 @@ export function DocumentCollaborationPanel(props: Props) {
   const [busy, setBusy] = useState(false);
   const [legacy, setLegacy] = useState(false);
   const [tab, setTab] = useState<"comments" | "revisions">("comments");
-  return <Drawer.Backdrop isOpen={props.open ?? true} isDismissable={!busy} isKeyboardDismissDisabled={busy} onOpenChange={(open) => { if (!open && !busy) props.onClose(); }} className="collaboration-overlay">
-    <Drawer.Content placement="right" className="collaboration-drawer"><Drawer.Dialog className="collaboration-panel" aria-describedby="collaboration-description">
-      <header className="collaboration-panel-header"><div><Drawer.Heading>评论与历史</Drawer.Heading><p id="collaboration-description">讨论文档，查看和恢复已保存的正文。</p></div><ActionButton className="icon-button" type="button" aria-label="关闭评论与历史" disabled={busy} onClick={props.onClose}><X size={18} aria-hidden="true" /></ActionButton></header>
-      <Tabs className="collaboration-tabs-root" selectedKey={tab} onSelectionChange={(key) => { if (key === "comments" || key === "revisions") setTab(key); }}>
-        <Tabs.ListContainer className="collaboration-tabs"><Tabs.List aria-label="协作面板内容">
-          <Tabs.Tab id="comments" isDisabled={busy}><MessageSquare size={16} aria-hidden="true" />评论<Tabs.Indicator /></Tabs.Tab>
-          <Tabs.Tab id="revisions" isDisabled={busy}><History size={16} aria-hidden="true" />历史版本<Tabs.Indicator /></Tabs.Tab>
-        </Tabs.List></Tabs.ListContainer>
-        <Drawer.Body className="collaboration-panel-scroll"><Tabs.Panel id="comments" shouldForceMount><div className="collaboration-tab-content" hidden={tab !== "comments"}><DocumentComments {...props} /></div></Tabs.Panel><Tabs.Panel id="revisions">{tab === "revisions" ? legacy ? <><ActionButton type="button" variant="secondary" disabled={busy} onClick={() => setLegacy(false)}>返回版本时间线</ActionButton><Revisions {...props} onBusyChange={setBusy} /></> : <DocumentVersions {...props} onPrepare={props.onPrepareVersion} onBusyChange={setBusy} onLegacy={() => setLegacy(true)} /> : null}</Tabs.Panel></Drawer.Body>
+  return <Sheet open={props.open ?? true} dismissOnOutsidePress={!busy} onOpenChange={open => { if (!open && !busy) props.onClose(); }}>
+    <SheetContent className="collaboration-panel" aria-describedby="collaboration-description">
+      <header className="collaboration-panel-header"><div><SheetTitle>评论与历史</SheetTitle><p id="collaboration-description">讨论文档，查看和恢复已保存的正文。</p></div><ActionButton className="icon-button" type="button" aria-label="关闭评论与历史" disabled={busy} onClick={props.onClose}><X size={18} aria-hidden="true" /></ActionButton></header>
+      <Tabs className="collaboration-tabs-root" value={tab} onValueChange={(key) => { if (key === "comments" || key === "revisions") setTab(key); }}>
+        <div className="collaboration-tabs"><TabsList aria-label="协作面板内容">
+          <TabsTrigger value="comments" disabled={busy}><MessageSquare size={16} aria-hidden="true" />评论</TabsTrigger>
+          <TabsTrigger value="revisions" disabled={busy}><History size={16} aria-hidden="true" />历史版本</TabsTrigger>
+        </TabsList></div>
+        <div className="collaboration-panel-scroll"><TabsContent value="comments" keepMounted><div className="collaboration-tab-content" hidden={tab !== "comments"}><DocumentComments {...props} /></div></TabsContent><TabsContent value="revisions">{tab === "revisions" ? legacy ? <><ActionButton type="button" variant="secondary" disabled={busy} onClick={() => setLegacy(false)}>返回版本时间线</ActionButton><Revisions {...props} onBusyChange={setBusy} /></> : <DocumentVersions {...props} onPrepare={props.onPrepareVersion} onBusyChange={setBusy} onLegacy={() => setLegacy(true)} /> : null}</TabsContent></div>
       </Tabs>
-    </Drawer.Dialog></Drawer.Content>
-  </Drawer.Backdrop>;
+    </SheetContent>
+  </Sheet>;
 }

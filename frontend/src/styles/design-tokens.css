@@ -1,7 +1,7 @@
-/* Orbis semantic scale. frontend/README.md documents roles; values live here. */
+/* 应用排版与内容尺度；控件高度、动效和层级引用 UI 平台 token。 */
 :root {
-  --orbis-text-caption-size: .75rem;
-  --orbis-text-caption-leading: 1.125rem;
+  --orbis-text-caption-size: var(--ob-text-caption-size);
+  --orbis-text-caption-leading: var(--ob-text-caption-leading);
   --orbis-text-ui-size: .875rem;
   --orbis-text-ui-leading: 1.25rem;
   --orbis-text-section-size: 1rem;
@@ -13,10 +13,10 @@
   --orbis-weight-body: 400;
   --orbis-weight-action: 500;
   --orbis-weight-heading: 600;
-  --orbis-control-compact-height: 2rem;
-  --orbis-control-default-height: 2.25rem;
-  --orbis-control-form-height: 2.5rem;
-  --orbis-control-touch-height: 2.75rem;
+  --orbis-control-compact-height: var(--ob-control-height-sm);
+  --orbis-control-default-height: var(--ob-control-height-md);
+  --orbis-control-form-height: var(--ob-control-height-lg);
+  --orbis-control-touch-height: var(--ob-control-height-touch);
   --orbis-icon-compact-size: 1rem;
   --orbis-icon-default-size: 1.125rem;
   --orbis-icon-navigation-size: 1.25rem;
@@ -27,14 +27,14 @@
   --orbis-space-6: 1.5rem;
   --orbis-space-8: 2rem;
   --orbis-space-12: 3rem;
-  --orbis-motion-feedback: 120ms;
-  --orbis-motion-popover: 180ms;
-  --orbis-motion-dialog: 220ms;
-  --orbis-ease-out: cubic-bezier(.2, .8, .2, 1);
+  --orbis-motion-feedback: var(--ob-motion-feedback);
+  --orbis-motion-popover: var(--ob-motion-popover);
+  --orbis-motion-dialog: var(--ob-motion-dialog);
+  --orbis-ease-out: var(--ob-ease-out);
   --orbis-dialog-gutter: var(--orbis-space-4);
-  --layer-dialog: 80;
-  --layer-popover: 90;
-  --layer-tooltip: 100;
+  --layer-dialog: var(--ob-z-dialog);
+  --layer-popover: var(--ob-z-popover);
+  --layer-tooltip: var(--ob-z-tooltip);
   --orbis-tree-indent: 1.25rem;
   /* Default reading typography follows the shared scale; authored sizes remain content. */
   --orbis-prose-body-size: 14px;

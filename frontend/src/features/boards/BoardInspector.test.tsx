@@ -32,7 +32,7 @@ it("keeps the text draft until blur or Enter and ignores IME confirmation", asyn
   expect(submit).toHaveBeenCalledExactlyOnceWith([{ type: "elements.update", patches: [expect.objectContaining({ id: element.id, text: "核验资料与权限", expected: element.versions })] }]);
 });
 
-it("uses keyboard tabs and HeroUI checkboxes to commit style changes", async () => {
+it("uses keyboard tabs and checkboxes to commit style changes", async () => {
   const { submit, element } = mount();
   const user = userEvent.setup();
   await user.click(screen.getByRole("tab", { name: "属性" }));
@@ -48,8 +48,8 @@ it("uses keyboard tabs and HeroUI checkboxes to commit style changes", async () 
 it("preserves the empty parent value when selecting none through the shared SelectField", async () => {
   const { submit, element } = mount(false, true);
   const user = userEvent.setup();
-  await user.click(screen.getByRole("button", { name: /父容器/ }));
-  await user.click(screen.getByRole("option", { name: "无" }));
+  await user.click(screen.getByRole("combobox", { name: /父容器/ }));
+  await user.click(await screen.findByRole("option", { name: "无" }));
   expect(submit).toHaveBeenCalledWith([{ type: "elements.update", patches: [expect.objectContaining({ id: element.id, structure: expect.objectContaining({ parent_id: null }) })] }]);
 });
 
@@ -57,7 +57,7 @@ it("commits a typed color on blur without sending intermediate colors or duplica
   const { submit } = mount();
   const user = userEvent.setup();
   await user.click(screen.getByRole("tab", { name: "样式" }));
-  await user.click(screen.getByRole("button", { name: "选择填充颜色" }));
+  await user.click(screen.getByRole("button", { name: /选择填充颜色/ }));
   const input = screen.getByRole("textbox", { name: /^十六进制颜色/ });
   await user.clear(input);
   await user.type(input, "123456");
@@ -72,9 +72,9 @@ it("disables input, selection, checkbox and color controls for readers", async (
   const { submit } = mount(true);
   const user = userEvent.setup();
   expect(screen.getByRole("textbox", { name: "文字" })).toBeDisabled();
-  expect(screen.getByRole("button", { name: /父容器/ })).toBeDisabled();
+  expect(screen.getByRole("combobox", { name: /父容器/ })).toBeDisabled();
   await user.click(screen.getByRole("tab", { name: "样式" }));
-  expect(screen.getByRole("button", { name: "选择填充颜色" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: /选择填充颜色/ })).toBeDisabled();
   const bold = screen.getByRole("checkbox", { name: "粗体" });
   expect(bold).toBeDisabled();
   await user.click(bold);
@@ -142,4 +142,49 @@ it("expands a compacted mindmap branch from its checkbox with one atomic layout 
   for (let i = 0; i < leaves.length; i++)
     for (let j = i + 1; j < leaves.length; j++)
       expect(overlaps(leaves[i], leaves[j]), `${leaves[i].text} and ${leaves[j].text} must not overlap`).toBe(false);
+});
+
+it("keeps shorthand color drafts through IME confirmation and commits Enter once", async () => {
+  const { submit } = mount();
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("tab", { name: "样式" }));
+  await user.click(screen.getByRole("button", { name: /选择填充颜色/ }));
+  const input = screen.getByRole("textbox", { name: "十六进制颜色" });
+  await user.clear(input);
+  await user.type(input, "abc");
+  expect(submit).not.toHaveBeenCalled();
+  fireEvent.keyDown(input, { key: "Enter", isComposing: true });
+  expect(submit).not.toHaveBeenCalled();
+  await user.keyboard("{Enter}");
+  expect(submit).toHaveBeenCalledExactlyOnceWith([{ type: "elements.update", patches: [expect.objectContaining({ style: expect.objectContaining({ fill: "#AABBCC" }) })] }]);
+  await user.tab();
+  expect(submit).toHaveBeenCalledOnce();
+});
+
+it("restores an invalid color draft without committing a board change", async () => {
+  const { submit } = mount();
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("tab", { name: "样式" }));
+  await user.click(screen.getByRole("button", { name: /选择填充颜色/ }));
+  const input = screen.getByRole("textbox", { name: "十六进制颜色" });
+  await user.clear(input);
+  await user.type(input, "not-hex");
+  await user.tab();
+  expect(input).toHaveValue("#FFFFFF");
+  expect(submit).not.toHaveBeenCalled();
+});
+
+it("completes a focused color draft when the picker closes and retains RGB arrow stepping", async () => {
+  const { submit } = mount();
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("tab", { name: "样式" }));
+  await user.click(screen.getByRole("button", { name: /选择填充颜色/ }));
+  const input = screen.getByRole("textbox", { name: "十六进制颜色" });
+  await user.clear(input);
+  await user.type(input, "000000");
+  await user.keyboard("{ArrowUp}");
+  expect(input).toHaveValue("#000001");
+  expect(submit).not.toHaveBeenCalled();
+  await user.keyboard("{Escape}");
+  expect(submit).toHaveBeenCalledExactlyOnceWith([{ type: "elements.update", patches: [expect.objectContaining({ style: expect.objectContaining({ fill: "#000001" }) })] }]);
 });

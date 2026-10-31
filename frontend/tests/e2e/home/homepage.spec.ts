@@ -16,7 +16,7 @@ async function expectHomeControlScale(page: Page) {
       const style = getComputedStyle(element);
       return { radius: style.borderRadius, padding: style.padding, background: style.backgroundColor, color: style.color, font: style.fontSize };
     };
-    const controls = [".home-welcome-actions button", ".home-note-actions > button:first-child", ".home-note-actions > button:last-child", ".home-note-actions summary", ".home-search .orbis-icon-button"].map(selector => {
+    const controls = [".home-welcome-actions button", ".home-note-actions > button:first-child", ".home-note-actions > button:last-child", ".home-note-actions summary", ".home-search button[type=submit]"].map(selector => {
       const control = document.querySelector(selector)!;
       const reference = control.cloneNode(false) as HTMLElement;
       document.body.append(reference);
@@ -27,7 +27,7 @@ async function expectHomeControlScale(page: Page) {
     const result = {
       button: height(".home-welcome-actions button"), save: height(".home-note-actions > button:last-child"),
       attachment: height(".home-note-actions > button:first-child"), tag: height(".home-note-actions summary"),
-      search: height(".home-search-group"), iconButton: height(".home-search .orbis-icon-button"), toolbar: height(".home-note-composer .quick-note-tools button"),
+      search: height(".home-search-group"), iconButton: height(".home-search button[type=submit]"), toolbar: height(".home-note-composer .quick-note-tools button"),
       title: font(".home-header h1"), section: font(".home-recent h2"), body: font(".home-document-copy strong"),
       expectedButton: tokenPixels("--orbis-control-default-height"), expectedForm: tokenPixels("--orbis-control-form-height"), expectedCompact: tokenPixels("--orbis-control-compact-height"),
       expectedTitle: tokenPixels("--orbis-text-page-title-size"), expectedSection: tokenPixels("--orbis-text-panel-title-size"), expectedBody: tokenPixels("--orbis-text-ui-size"),

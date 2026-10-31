@@ -1,6 +1,6 @@
 import {nativeSnapshot,nativeCollection,nativeDocument} from "../documents/editor/editor.test-utils";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { toast as heroToast } from "@heroui/react/toast";
+import { clearToasts } from "../../shared/ui/Toast";
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -26,7 +26,7 @@ vi.mock("../documents/editor/TiptapEditor", () => ({ TiptapEditor: ({ blocks: va
 } }));
 let client: QueryClient;
 beforeEach(() => { act(() => authStore.setState(session)); client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } }); });
-afterEach(() => { act(() => heroToast.clear()); cleanup(); client.clear(); vi.unstubAllGlobals(); act(() => authStore.getState().clearSession()); });
+afterEach(() => { act(() => clearToasts()); cleanup(); client.clear(); vi.unstubAllGlobals(); act(() => authStore.getState().clearSession()); });
 function showEditor() {
   return render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[`/documents/${NOTE_ID}`]}><Routes><Route path="/documents/:noteId" element={<DocumentRoute />} /></Routes></MemoryRouter><Toaster /></QueryClientProvider>);
 }

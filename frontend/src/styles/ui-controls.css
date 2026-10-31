@@ -1,4 +1,4 @@
-/* Shared semantics for HeroUI and custom controls, independent of page layout. */
+/* Shared semantics for application controls, independent of page layout. */
 :is(.ui-button, .orbis-icon-button, .orbis-action-button) {
   touch-action: manipulation;
   transition-property: color, background-color, border-color, box-shadow, transform;
@@ -65,7 +65,7 @@
   outline-offset: -2px;
 }
 
-/* HeroUI and custom menu rows share pointer, keyboard and selected states. */
+/* Menu rows share pointer, keyboard and selected states. */
 :is(.menu-item, .list-box-item, .orbis-block-menu [role="menuitem"], .editor-more-menu button,
   .orbis-tiptap-menu button, .orbis-tiptap-toolbar button, .icon-button, .orbis-icon-button:not(.button--primary),
   .workspace-function-link, .workspace-switcher-option, .orbis-nav-item,

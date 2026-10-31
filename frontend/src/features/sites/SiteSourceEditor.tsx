@@ -1,7 +1,6 @@
 import { LoadingState } from "../../shared/ui/LoadingState";
-import { Input as HeroInput } from "@heroui/react/input";
-import { Radio } from "@heroui/react/radio";
-import { RadioGroup } from "@heroui/react/radio-group";
+import { Input } from "@orbis/ui/input";
+import { RadioGroup, RadioGroupItem } from "@orbis/ui/radio-group";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { SelectField } from "../../shared/ui/SelectField";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "../../shared/ui/icons";
@@ -51,7 +50,7 @@ function SourceBinding({
     <div className="site-source-binding-fields">
       <SelectField label="来源笔记本" aria-label={`来源笔记本 ${index + 1}`} disabled={disabled} value={binding.notebook_id} onChange={(notebook_id) => onChange({ notebook_id, root_note_id: null, label: binding.label ?? null })} options={[...(!notebook ? [{ value: binding.notebook_id, label: "当前来源不可用" }] : []), ...notebookOptions.map((item) => ({ value: item.id, label: item.title }))]} />
       <SelectField label="内容范围" aria-label={`内容范围 ${index + 1}`} disabled={disabled || tree.isPending} value={binding.root_note_id ?? ""} onChange={(rootId) => onChange({ ...binding, root_note_id: rootId || null })} options={[{ value: "", label: "整个笔记本" }, ...flatTree.map((item) => ({ value: item.id, label: item.title }))]} />
-      <label>栏目名称<HeroInput aria-label={`栏目名称 ${index + 1}`} disabled={disabled} value={binding.label ?? ""} placeholder={notebook?.title ?? "默认使用笔记本名称"} onChange={(event) => onChange({ ...binding, label: event.target.value || null })} /></label>
+      <label>栏目名称<Input aria-label={`栏目名称 ${index + 1}`} disabled={disabled} value={binding.label ?? ""} placeholder={notebook?.title ?? "默认使用笔记本名称"} onChange={(event) => onChange({ ...binding, label: event.target.value || null })} /></label>
     </div>
     {tree.isPending ? <LoadingState label="正在加载真实文档树…" compact /> : tree.isError ? null : <SiteSourceTree items={tree.data.items} rootNoteId={binding.root_note_id} source={source} resolved={saved ? sources : undefined} disabled={disabled} onChange={onSourceChange} />}
   </article>;
@@ -94,9 +93,9 @@ export function SiteSourceEditor({
 
   return <section className="site-source-editor" aria-labelledby="site-source-title">
     <div className="site-section-heading"><div><h2 id="site-source-title">内容来源</h2><p>关联笔记本后，新文档与标题更新会在下次预览时自动出现。</p></div></div>
-    <RadioGroup className="site-source-mode" aria-label="内容来源方式" name="site-source-kind" orientation="horizontal" isDisabled={disabled} value={source.kind} onChange={(kind) => { if (kind === "notebooks" || kind === "manual") setMode(kind); }}>
-      <Radio value="notebooks"><Radio.Content><Radio.Control><Radio.Indicator /></Radio.Control>关联笔记本</Radio.Content></Radio>
-      <Radio value="manual"><Radio.Content><Radio.Control><Radio.Indicator /></Radio.Control>手动选择</Radio.Content></Radio>
+    <RadioGroup<SiteSource["kind"]> className="site-source-mode" aria-label="内容来源方式" name="site-source-kind" aria-orientation="horizontal" disabled={disabled} value={source.kind} onValueChange={setMode}>
+      <RadioGroupItem value="notebooks">关联笔记本</RadioGroupItem>
+      <RadioGroupItem value="manual">手动选择</RadioGroupItem>
     </RadioGroup>
     {source.kind === "manual" ? <div className="site-source-manual-note"><strong>手动选择目录</strong><p>继续使用下方站点目录。切换到笔记本来源不会删除这些手选项，切回后仍可继续编辑。</p></div> : <>
       {notebooks.isPending ? <LoadingState label="正在加载笔记本…" compact /> : null}

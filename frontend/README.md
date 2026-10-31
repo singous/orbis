@@ -81,8 +81,8 @@ PNG/ICO 导出使用项目锁定的 Playwright 与 Chromium（首次使用需执
 
 ## UI 尺寸与交互规范
 
-尺寸和动效以 `src/styles/design-tokens.css` 为统一来源，页面优先复用 `src/shared/ui/` 组件。
-保留现有 HeroUI 主题及业务布局，新增控件按语义选档位，不在页面中另设一套尺寸。
+通用控件、材质、颜色与动效以 `packages/ui/src/styles/` 为统一来源，应用排版和正文尺度保留在 `src/styles/design-tokens.css`。页面优先使用 `@orbis/ui` 原语与有产品契约的 `src/shared/ui` 组合。
+HeroUI 运行时和样式依赖已移除；仍在迁移的页面变量由应用别名桥单向引用平台 token。新增控件按语义选档位，不在页面中另设一套尺寸。
 
 | 用途 | 默认尺寸 | 变量或组件 |
 | --- | --- | --- |
@@ -131,6 +131,6 @@ npm run test:e2e
 
 包级契约、主题、表单、可访问名称和浮层规则见 [UI 包文档](packages/ui/README.md)。应用开发路径 `/__ui` 验证页面样式与组合，`npm run storybook` 预览原语状态。迁移期间保留未迁组件及样式；`check:ui` 冻结已有违规，只拦截新增，`node scripts/check-ui.mjs --prune` 只删除已清理的例外，不扩大基线。
 
-验证使用 `npm run typecheck`、`npm run test:run`、`npm run test:storybook`、`npm run test:ui`、`npm run test:a11y`、`npm run storybook:build` 与 `npm run build`。应用 UI 测试在 HTTP 边界提供响应，完整持久化与协作仍须 `test:e2e`。包体检查 `npm run check:bundle` 读取 Vite manifest，与固定提交的原始 lockfile 构建比较首屏和 feature chunk gzip；最终清理 HeroUI 后还需 `npm run check:bundle -- --complete` 验证总体减少。
+验证使用 `npm run typecheck`、`npm run test:run`、`npm run test:storybook`、`npm run test:ui`、`npm run test:a11y`、`npm run storybook:build` 与 `npm run build`。应用 UI 测试在 HTTP 边界提供响应，完整持久化与协作仍须 `test:e2e`。包体检查 `npm run check:bundle` 读取 Vite manifest，与固定提交的原始 lockfile 构建比较首屏和 feature chunk gzip；交付前还需 `npm run check:bundle -- --complete` 验证总体低于固定基线。
 
 新增/升级依赖或复制代码时，同步 `licenses/npm-manifest.json`、原始许可文本、来源与 `THIRD_PARTY_NOTICES.md`。`licenses:generate -- --check` 可离线检查一致性；`check:licenses` 和 `licenses:bundle dist/licenses` 使用严格发行门禁，待审项不能当作已批准。`licenses/pending-review-summary.json` 和 `licenses/material-gaps.json` 记录真实缺口。

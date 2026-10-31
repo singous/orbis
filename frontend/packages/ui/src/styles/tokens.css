@@ -29,6 +29,29 @@
   --ob-input: var(--ob-gray-200);
   --ob-ring: oklch(0 0 0);
   --ob-scrim: rgb(16 24 40 / 28%);
+  --ob-canvas: #f2f4f7;
+  --ob-surface-secondary: oklch(95.24% 0 0);
+  --ob-surface-tertiary: oklch(93.73% 0 0);
+  --ob-separator: oklch(92% 0 0);
+  --ob-segment: var(--ob-surface);
+  --ob-item-hover-bg: #f3f4f6;
+  --ob-item-foreground: rgb(66 66 66);
+  --ob-shadow-color: rgb(16 24 40 / 8%);
+  /* 页面样式的既有状态色仍有真实消费者；迁移别名退出前保留其颜色含义。 */
+  --ob-page-muted-foreground: oklch(55.17% 0 0);
+  --ob-page-danger: oklch(65.32% 0.2328 355.28);
+  --ob-page-success: oklch(73.29% 0.1935 120.35);
+  --ob-page-warning: var(--ob-warning);
+  --ob-page-accent-soft: color-mix(in oklab, var(--ob-primary) 15%, transparent);
+  --ob-warning-soft: color-mix(in oklab, var(--ob-page-warning) 15%, transparent);
+  --ob-page-success-soft: color-mix(in oklab, var(--ob-page-success) 15%, transparent);
+  --ob-page-warning-soft-foreground: color-mix(in oklab, var(--ob-page-warning) 80%, var(--ob-foreground) 70%);
+  --ob-page-success-soft-foreground: color-mix(in oklab, var(--ob-page-success) 80%, var(--ob-foreground) 60%);
+  --ob-text-caption-size: .75rem;
+  --ob-text-caption-leading: 1.125rem;
+  --ob-font-sans: "Inter Variable", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --ob-font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --ob-shadow-field: 0 2px 4px 0 rgb(0 0 0 / 4%), 0 1px 2px 0 rgb(0 0 0 / 6%), 0 0 1px 0 rgb(0 0 0 / 6%);
 
   --ob-radius: 0.25rem;
   --ob-radius-sm: var(--ob-radius);
@@ -49,6 +72,7 @@
   --ob-z-dialog: 80;
   --ob-z-popover: 90;
   --ob-z-tooltip: 100;
+  --ob-z-toast: 110;
 }
 
 [data-theme="dark"] {
@@ -67,15 +91,52 @@
   --ob-input: oklch(28% 0 0);
   --ob-ring: oklch(98.48% 0 0);
   --ob-scrim: rgb(0 0 0 / 48%);
+  --ob-canvas: var(--ob-background);
+  --ob-surface-secondary: oklch(25.70% 0 0);
+  --ob-surface-tertiary: oklch(27.21% 0 0);
+  --ob-separator: oklch(25% 0 0);
+  --ob-segment: oklch(39.64% 0 0);
+  --ob-item-hover-bg: var(--ob-surface-tertiary);
+  --ob-item-foreground: var(--ob-foreground);
+  --ob-shadow-color: rgb(0 0 0 / 28%);
+  --ob-page-muted-foreground: var(--ob-muted-foreground);
+  --ob-page-danger: oklch(59.40% 0.1967 354.17);
+  --ob-page-warning: oklch(82.03% 0.1388 45.88);
+  --ob-page-accent-soft: color-mix(in oklab, var(--ob-primary) 12%, transparent);
+  --ob-warning-soft: color-mix(in oklab, var(--ob-page-warning) 12%, transparent);
+  --ob-page-success-soft: color-mix(in oklab, var(--ob-page-success) 12%, transparent);
+  --ob-page-warning-soft-foreground: color-mix(in oklab, var(--ob-page-warning) 80%, var(--ob-foreground) 30%);
+  --ob-page-success-soft-foreground: color-mix(in oklab, var(--ob-page-success) 80%, var(--ob-foreground) 30%);
+  --ob-shadow-field: 0 0 0 0 transparent inset;
 }
 
 /* 在每个主题边界重新绑定别名，避免继承上层已经解析的颜色。 */
 :root, [data-theme="light"], [data-theme="dark"] {
   --ob-secondary-foreground: var(--ob-foreground);
   --ob-accent-surface-foreground: var(--ob-foreground);
+  --ob-item-selected-bg: var(--ob-item-hover-bg);
+  --ob-surface-edge: color-mix(in oklab, var(--ob-foreground) 8%, var(--ob-surface));
+  --ob-shadow-panel: 0 1px 2px var(--ob-shadow-color);
+  --ob-shadow-card: 0 2px 4px var(--ob-shadow-color);
+  --ob-shadow-card-hover: 0 4px 12px var(--ob-shadow-color);
+  --ob-shadow-floating: 0 12px 28px var(--ob-shadow-color), 0 2px 6px var(--ob-shadow-color);
+  --ob-page-danger-soft: color-mix(in oklab, var(--ob-page-danger) 15%, transparent);
+  --ob-danger-hover: color-mix(in oklab, var(--ob-danger) 90%, var(--ob-gray-900) 10%);
 }
 
 @theme inline {
+  --text-ob-caption: var(--ob-text-caption-size);
+  --text-ob-caption--line-height: var(--ob-text-caption-leading);
+  --font-ob-sans: var(--ob-font-sans);
+  --color-ob-canvas: var(--ob-canvas);
+  --color-ob-surface-secondary: var(--ob-surface-secondary);
+  --color-ob-surface-tertiary: var(--ob-surface-tertiary);
+  --color-ob-surface-edge: var(--ob-surface-edge);
+  --color-ob-warning-soft: var(--ob-warning-soft);
+  --shadow-ob-card: var(--ob-shadow-card);
+  --shadow-ob-card-hover: var(--ob-shadow-card-hover);
+  --shadow-ob-panel: var(--ob-shadow-panel);
+  --shadow-ob-floating: var(--ob-shadow-floating);
   --color-ob-background: var(--ob-background);
   --color-ob-foreground: var(--ob-foreground);
   --color-ob-card: var(--ob-surface);
@@ -91,6 +152,7 @@
   --color-ob-accent: var(--ob-accent-surface);
   --color-ob-accent-foreground: var(--ob-accent-surface-foreground);
   --color-ob-destructive: var(--ob-danger);
+  --color-ob-destructive-hover: var(--ob-danger-hover);
   --color-ob-danger-text: var(--ob-danger-text);
   --color-ob-destructive-foreground: var(--ob-danger-foreground);
   --color-ob-success: var(--ob-success);
@@ -98,6 +160,7 @@
   --color-ob-border: var(--ob-border);
   --color-ob-input: var(--ob-input);
   --color-ob-ring: var(--ob-ring);
+  --shadow-ob-field: var(--ob-shadow-field);
   --radius-ob-sm: var(--ob-radius-sm);
   --radius-ob-md: var(--ob-radius-md);
   --radius-ob-lg: var(--ob-radius-lg);

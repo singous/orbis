@@ -7,13 +7,12 @@ import { newUUID } from "../../shared/ids";
 import { sheetAPI } from "../sheets/api";
 import { boardAPI } from "../boards/api";
 import { Shapes, StickyNote, Table2 } from "@orbis/ui/icons";
-import { Dropdown } from "@heroui/react/dropdown";
-import { Label } from "@heroui/react/label";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@orbis/ui/dropdown-menu";
+import { Button as MenuButton } from "@orbis/ui/button";
 import type { WorkspaceSidebarConfig } from "../workspace/workspace-sidebar-config";
 import { useStore } from "zustand";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { authStore } from "../../shared/auth/auth-store";
-import { ActionButton } from "../../shared/ui/ActionButton";
 import { ArrowLeft, FilePlus2, Home, MoreHorizontal, Pin, Plus } from "../../shared/ui/icons";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { usePinnedNotebooks } from "./pinned-notebooks";
@@ -135,22 +134,15 @@ function NotebookCreateAction({ notebookId }: { notebookId: string }) {
 
   const creating = createNote.isPending || creatingTable || creatingBoard;
   return canMutateWorkspaceContent(workspace) ? (
-    <Dropdown>
-      <ActionButton type="button" className="notebook-menu-create" aria-label="创建内容" title="创建内容" disabled={creating}><Plus aria-hidden="true" size={18} /></ActionButton>
-      <Dropdown.Popover placement="bottom start" offset={6} className="notebook-create-popover">
-        <Dropdown.Menu aria-label="创建内容" onAction={key => {
-          if (key === "quick-note") navigate("/documents/quick-notes");
-          if (key === "document") void createDocument();
-          if (key === "board") void createBoard();
-          if (key === "table") void createTable();
-        }}>
-          <Dropdown.Item id="quick-note" textValue="随手记"><StickyNote aria-hidden="true" className="notebook-create-quick-note" /><Label>随手记</Label></Dropdown.Item>
-          <Dropdown.Item id="document" textValue="文档" isDisabled={!tree.isSuccess}><FilePlus2 aria-hidden="true" className="notebook-create-document" /><Label>文档</Label></Dropdown.Item>
-          {releaseFeatures.boardCreation && <Dropdown.Item id="board" textValue="画板" isDisabled={!tree.isSuccess}><Shapes aria-hidden="true" className="notebook-create-board" /><Label>画板</Label></Dropdown.Item>}
-          <Dropdown.Item id="table" textValue="数据表" isDisabled={!tree.isSuccess}><Table2 aria-hidden="true" className="notebook-create-table" /><Label>数据表</Label></Dropdown.Item>
-        </Dropdown.Menu>
-      </Dropdown.Popover>
-    </Dropdown>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild disabled={creating}><MenuButton appearance="unstyled" type="button" className="notebook-menu-create" aria-label="创建内容" title="创建内容"><Plus aria-hidden="true" size={18} /></MenuButton></DropdownMenuTrigger>
+      <DropdownMenuContent align="start" sideOffset={6} className="notebook-create-popover" aria-label="创建内容">
+        <DropdownMenuItem textValue="随手记" onSelect={() => navigate("/documents/quick-notes")}><StickyNote aria-hidden="true" size={16} className="notebook-create-quick-note" /><span>随手记</span></DropdownMenuItem>
+        <DropdownMenuItem textValue="文档" disabled={!tree.isSuccess} onSelect={() => { void createDocument(); }}><FilePlus2 aria-hidden="true" size={16} className="notebook-create-document" /><span>文档</span></DropdownMenuItem>
+        {releaseFeatures.boardCreation && <DropdownMenuItem textValue="画板" disabled={!tree.isSuccess} onSelect={() => { void createBoard(); }}><Shapes aria-hidden="true" size={16} className="notebook-create-board" /><span>画板</span></DropdownMenuItem>}
+        <DropdownMenuItem textValue="数据表" disabled={!tree.isSuccess} onSelect={() => { void createTable(); }}><Table2 aria-hidden="true" size={16} className="notebook-create-table" /><span>数据表</span></DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   ) : null;
 }
 
@@ -175,14 +167,12 @@ export function NotebookSectionMenu({
           <Home aria-hidden="true" size={16} />
           <span>首页</span>
         </NavLink>
-        {releaseFeatures.documentFavorites && <Dropdown>
-          <ActionButton type="button" className="notebook-home-more" aria-label="笔记本快捷操作" title="笔记本快捷操作"><MoreHorizontal aria-hidden="true" size={18} /></ActionButton>
-          <Dropdown.Popover placement="bottom end" offset={4}>
-            <Dropdown.Menu aria-label="笔记本快捷操作" onAction={() => togglePin(notebookId)}>
-              <Dropdown.Item id="pin" textValue={isPinned(notebookId) ? "取消常用" : "设为常用"}><Pin aria-hidden="true" size={16} /><Label>{isPinned(notebookId) ? "取消常用" : "设为常用"}</Label></Dropdown.Item>
-            </Dropdown.Menu>
-          </Dropdown.Popover>
-        </Dropdown>}
+        {releaseFeatures.documentFavorites && <DropdownMenu>
+          <DropdownMenuTrigger asChild><MenuButton appearance="unstyled" type="button" className="notebook-home-more" aria-label="笔记本快捷操作" title="笔记本快捷操作"><MoreHorizontal aria-hidden="true" size={18} /></MenuButton></DropdownMenuTrigger>
+          <DropdownMenuContent align="end" sideOffset={4} aria-label="笔记本快捷操作">
+            <DropdownMenuItem textValue={isPinned(notebookId) ? "取消常用" : "设为常用"} onSelect={() => togglePin(notebookId)}><Pin aria-hidden="true" size={16} /><span>{isPinned(notebookId) ? "取消常用" : "设为常用"}</span></DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>}
       </div>
       <DocumentContextPanel
         notebookId={notebookId}

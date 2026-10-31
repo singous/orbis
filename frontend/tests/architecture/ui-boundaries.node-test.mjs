@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { analyzeUI, findingCounts, newFindings } from "../../scripts/ui-architecture.mjs";
+import { analyzeUI, findingCounts, newFindings, applyColorDataAllowlist } from "../../scripts/ui-architecture.mjs";
 
 const inspect = (file, text) => analyzeUI(new Map([[file, text]]), {});
 test("detects primitive and internal imports through static, lazy, type and re-export paths", () => {
@@ -30,4 +30,23 @@ test("frozen exceptions do not authorize new imports in an existing legacy file"
 test("checks public subpaths, target files and stories", () => {
   const findings = analyzeUI(new Map([["packages/ui/src/button/index.tsx", "export function Button() {}"]]), { ".": "./src/index.ts", "./input": "./src/input/index.tsx" });
   for (const rule of ["root-barrel", "missing-export", "missing-target", "missing-story", "unused-component"]) assert.ok(findings.some(item => item.rule === rule));
+});
+
+test("permits primitive positioning geometry but rejects foreign theme variables", () => {
+  const findings = inspect("packages/ui/src/popover/index.tsx", 'const style = "var(--available-width) var(--anchor-width) var(--accent)";');
+  assert.deepEqual(findings.filter(item => item.rule === "foreign-token").map(item => item.detail), ["var(--accent)"]);
+});
+
+test("color-data exceptions are exact, attributed and occurrence-bounded", () => {
+  const findings = inspect("src/shared/ui/ColorField.tsx", 'const fallback = "#000000"; const chrome = "#000000"; const other = "#ffffff";');
+  const filtered = applyColorDataAllowlist(findings, [{ file: "src/shared/ui/ColorField.tsx", detail: "#000000", maxOccurrences: 1, reason: "User color fallback" }]);
+  assert.deepEqual(filtered.map(item => item.detail), ["#000000", "#ffffff"]);
+  assert.equal(applyColorDataAllowlist(inspect("src/features/home/Page.tsx", 'const color = "#000000";'), [{ file: "src/shared/ui/ColorField.tsx", detail: "#000000", maxOccurrences: 1, reason: "User color fallback" }]).length, 1);
+});
+
+test("CSS HeroUI imports and direct color-picker dependencies cannot bypass the boundary", () => {
+  for (const source of ['@import "@heroui/styles";', '@import url("@heroui/styles");', '@import url(@heroui/styles);']) assert.equal(inspect("src/styles/index.css", source).filter(item => item.rule === "legacy-heroui").length, 1);
+  assert.deepEqual(inspect("src/styles/index.css", '/* @import "@heroui/styles"; */'), []);
+  assert.equal(inspect("src/features/boards/Panel.tsx", 'import { HexColorPicker } from "react-colorful";').filter(item => item.rule === "primitive-boundary").length, 1);
+  assert.equal(inspect("packages/ui/src/color-picker/index.tsx", 'import { HexColorPicker } from "react-colorful";').filter(item => item.rule === "primitive-boundary").length, 0);
 });

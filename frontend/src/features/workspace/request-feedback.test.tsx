@@ -34,7 +34,7 @@ it("keeps a single backend failure toast visible after local sign-out clears the
   render(<MemoryRouter><AppProviders><Routes><Route path="/" element={<RequireAuth><WorkspaceAccountMenu /></RequireAuth>} /><Route path="/login" element={<h1>登录页面</h1>} /></Routes></AppProviders></MemoryRouter>);
   const user = userEvent.setup();
   await user.click(screen.getByRole("button", { name: "打开用户菜单" }));
-  await user.click(screen.getByRole("menuitem", { name: "退出登录" }));
+  await user.click(await screen.findByRole("menuitem", { name: "退出登录" }));
   await screen.findByRole("heading", { name: "登录页面" });
   expect(authStore.getState().accessToken).toBeNull();
   expect(await screen.findByRole("alertdialog", { name: "服务端暂不能撤销会话" })).toBeVisible();

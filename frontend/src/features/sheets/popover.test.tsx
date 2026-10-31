@@ -38,7 +38,7 @@ it("keeps input composition and a nested selector from dismissing the parent", a
   await user.click(screen.getByRole("button", { name: "Open" }));
   fireEvent.keyDown(screen.getByRole("textbox", { name: "Name" }), { key: "Escape", isComposing: true });
   expect(screen.getByRole("dialog", { name: "Settings" })).toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: /Category/ }));
+  await user.click(screen.getByRole("combobox", { name: /Category/ }));
   expect(screen.getByRole("listbox")).toBeInTheDocument();
   await user.keyboard("{Escape}");
   expect(screen.queryByRole("listbox")).not.toBeInTheDocument();

@@ -4,8 +4,8 @@ import {newUUID} from "../../shared/ids";
 import {ApiError} from "../../shared/api/api-client";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { ActionButton } from "../../shared/ui/ActionButton";
-import { Dropdown } from "@heroui/react/dropdown";
-import { Label } from "@heroui/react/label";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@orbis/ui/dropdown-menu";
+import { Button as MenuButton } from "@orbis/ui/button";
 import { DragDropProvider } from "@dnd-kit/react";
 import { isSortable, useSortable } from "@dnd-kit/react/sortable";
 import { useIsMutating,useQueryClient } from "@tanstack/react-query";
@@ -136,20 +136,14 @@ function SortableDocumentItem(props: DocumentItemProps) {
 function DocumentRowActions({ note, reordering, onCreateChild, onRename, onArchive }: Pick<DocumentItemProps, "note" | "reordering" | "onCreateChild" | "onRename" | "onArchive">) {
   const [open, setOpen] = useState(false);
   return <div className="document-context-actions" data-document-row-action data-menu-open={open}>
-    <Dropdown onOpenChange={setOpen}>
-      <ActionButton type="button" className="icon-button" aria-label={`文档操作 ${note.title}`} title="更多操作" disabled={reordering}><MoreVertical aria-hidden="true" size={16} /></ActionButton>
-      <Dropdown.Popover placement="bottom end" offset={4} className="document-actions-popover">
-        <Dropdown.Menu aria-label={`文档操作 ${note.title}`} onAction={(key) => {
-          if (key === "create") onCreateChild(note.id);
-          if (key === "rename") onRename(note);
-          if (key === "archive") onArchive(note);
-        }}>
-          <Dropdown.Item id="create" textValue="新建子文档" isDisabled={reordering}><Plus aria-hidden="true" /><Label>新建子文档</Label></Dropdown.Item>
-          <Dropdown.Item id="rename" textValue="重命名" isDisabled={reordering}><Pencil aria-hidden="true" /><Label>重命名</Label></Dropdown.Item>
-          <Dropdown.Item id="archive" textValue="归档" isDisabled={reordering} className="document-archive-action"><Archive aria-hidden="true" /><Label>归档</Label></Dropdown.Item>
-        </Dropdown.Menu>
-      </Dropdown.Popover>
-    </Dropdown>
+    <DropdownMenu onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild disabled={reordering}><MenuButton appearance="unstyled" type="button" className="icon-button" aria-label={`文档操作 ${note.title}`} title="更多操作"><MoreVertical aria-hidden="true" size={16} /></MenuButton></DropdownMenuTrigger>
+      <DropdownMenuContent align="end" sideOffset={4} className="document-actions-popover" aria-label={`文档操作 ${note.title}`}>
+        <DropdownMenuItem textValue="新建子文档" disabled={reordering} onSelect={() => onCreateChild(note.id)}><Plus aria-hidden="true" size={16} /><span>新建子文档</span></DropdownMenuItem>
+        <DropdownMenuItem textValue="重命名" disabled={reordering} onSelect={() => onRename(note)}><Pencil aria-hidden="true" size={16} /><span>重命名</span></DropdownMenuItem>
+        <DropdownMenuItem textValue="归档" disabled={reordering} variant="danger" onSelect={() => onArchive(note)}><Archive aria-hidden="true" size={16} /><span>归档</span></DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
     <ActionButton type="button" className="icon-button document-create-child" aria-label={`新建子文档 ${note.title}`} title="新建子文档" disabled={reordering} onClick={() => onCreateChild(note.id)}><Plus aria-hidden="true" size={16} /></ActionButton>
   </div>;
 }

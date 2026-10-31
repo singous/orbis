@@ -157,3 +157,13 @@ it("supports choosing two ports with the keyboard", async () => {
   await user.keyboard("[Space]");
   expect(board.submit).toHaveBeenCalledOnce();
 });
+
+it("supports assistive-technology virtual clicks without a pointer drag", () => {
+  const board = fixture();
+  fireEvent.click(screen.getByRole("button", { name: "开始 右侧连接点" }), { detail: 0 });
+  expect(board.submit).not.toHaveBeenCalled();
+  board.rerender(<BoardConnectionPorts {...board.props} hoveredID={board.target.id} />);
+  fireEvent.click(screen.getByRole("button", { name: "完成 左侧连接点" }), { detail: 0 });
+  expect(board.submit).toHaveBeenCalledOnce();
+  expect(board.capture.setPointerCapture).not.toHaveBeenCalled();
+});

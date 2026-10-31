@@ -1,5 +1,5 @@
-import { toast as heroToast } from "@heroui/react/toast";
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { clearToasts } from "../../shared/ui/Toast";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { authStore } from "../../shared/auth/auth-store";
@@ -66,7 +66,7 @@ beforeEach(() => {
   sessionControl.discard.mockReset();
   authStore.setState({ workspace: { id: "workspace", name: "验收空间", role: "owner", created_at_ms: 1, updated_at_ms: 1 } });
 });
-afterEach(() => { cleanup(); heroToast.clear(); authStore.getState().clearSession(); });
+afterEach(() => { cleanup(); clearToasts(); authStore.getState().clearSession(); });
 
 it("only offers discard when the session can safely discard its pending operations", async () => {
   sessionControl.initial = { status: "conflict", pending: 1, error: "保存结果尚未确认", canDiscard: false };
@@ -116,7 +116,7 @@ it("reports another identical import failure after its notification was dismisse
 
   fireEvent.change(input, { target: { files: [file] } });
   expect(await screen.findByRole("alertdialog")).toHaveTextContent("文件超过 32 MiB 导入限制。");
-  act(() => heroToast.close(heroToast.getQueue().visibleToasts[0].key));
+  fireEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "关闭通知" }));
   await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
 
   fireEvent.click(screen.getByRole("button", { name: "选中测试对象" }));
@@ -180,7 +180,7 @@ it("keeps retry available after dismissing the error and prevents guarded naviga
   const view = render(<><BoardEditor id="board" /><Toaster /></>);
   act(() => showToast({ title: "连接失败", tone: "danger" }));
   const notice = await screen.findByRole("alertdialog");
-  fireEvent.click(notice.querySelector('button[aria-label="Close"]')!);
+  fireEvent.click(within(notice).getByRole("button", { name: "关闭通知" }));
   expect(screen.getByRole("button", { name: "重试保存" })).toBeVisible();
   await expect(preparePendingNavigation()).rejects.toThrow("画板尚未保存");
   expect(sessionControl.retry).not.toHaveBeenCalled();
@@ -188,4 +188,25 @@ it("keeps retry available after dismissing the error and prevents guarded naviga
   await expect(preparePendingNavigation()).resolves.toBeUndefined();
   view.unmount();
   await expect(preparePendingNavigation()).resolves.toBeUndefined();
+});
+
+it.each(["owner", "viewer"] as const)("keeps import permission in the explicit board export menu for %s", async role => {
+  authStore.setState({ workspace: { id: "workspace", name: "验收空间", role, created_at_ms: 1, updated_at_ms: 1 } });
+  const user = userEvent.setup();
+  const view = render(<BoardEditor id="board" />);
+  const input = view.container.querySelector<HTMLInputElement>('input[accept=".json,.orbis-board.json"]')!;
+  const openFile = vi.spyOn(input, "click");
+  const trigger = screen.getByRole("button", { name: "导入与导出画板" });
+  await user.click(trigger);
+  const item = await screen.findByRole("menuitem", { name: "导入画板文件" });
+  if (role === "owner") {
+    expect(item).not.toHaveAttribute("aria-disabled", "true");
+    await user.click(item);
+    expect(openFile).toHaveBeenCalledOnce();
+  } else {
+    expect(item).toHaveAttribute("aria-disabled", "true");
+    expect(openFile).not.toHaveBeenCalled();
+    await user.keyboard("{Escape}");
+  }
+  await waitFor(() => expect(trigger).toHaveFocus());
 });

@@ -1,6 +1,8 @@
 import ts from "typescript";
 import path from "node:path";
 
+const geometryTokens = new Set(["var(--available-width)", "var(--available-height)", "var(--anchor-width)", "var(--anchor-height)", "var(--transform-origin)"]);
+
 export const isProduction = file => !/(?:\.(?:test|spec|stories)\.[cm]?[jt]sx?$|(?:^|\/)(?:__tests__|tests)\/)/.test(file);
 
 export function analyzeUI(sources, exports) {
@@ -12,10 +14,15 @@ export function analyzeUI(sources, exports) {
     const inPackage = file.startsWith("packages/ui/src/");
     if (/packages\/ui\/src\/index\.tsx?$/.test(file)) add(file, "root-barrel", "Use public component subpaths");
     if (file.endsWith(".css")) {
+      const stylesheet = text.replace(/\/\*[\s\S]*?\*\//g, "");
+      for (const match of stylesheet.matchAll(/@import\s+(?:url\(\s*(?:"([^"]+)"|'([^']+)'|([^\s)]+))\s*\)|"([^"]+)"|'([^']+)')/g)) {
+        const name = match.slice(1).find(Boolean);
+        if (name.startsWith("@heroui/")) add(file, "legacy-heroui", name);
+      }
       if (!["packages/ui/src/styles/tokens.css", "src/styles/brand-tokens.css"].includes(file)) {
         for (const match of text.matchAll(/#[\da-f]{3,8}\b|\b(?:rgb|rgba|hsl|hsla|oklch)\([^)]*\)/gi)) add(file, "raw-color", match[0]);
       }
-      if (inPackage) for (const match of text.matchAll(/var\(--(?!ob-)[\w-]+\)/g)) add(file, "foreign-token", match[0]);
+      if (inPackage) for (const match of text.matchAll(/var\(--(?!ob-)[\w-]+\)/g)) if (!geometryTokens.has(match[0])) add(file, "foreign-token", match[0]);
       continue;
     }
     const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true);
@@ -29,6 +36,7 @@ export function analyzeUI(sources, exports) {
         const resolved = name.startsWith(".") ? path.posix.normalize(path.posix.join(path.posix.dirname(file), name)) : name.startsWith("@/") ? `src/${name.slice(2)}` : name;
         if (name.startsWith("@heroui/")) add(file, "legacy-heroui", name);
         if (/^(?:@radix-ui\/|radix-ui(?:\/|$)|sonner(?:\/|$)|cmdk(?:\/|$))/.test(name)) add(file, "foreign-primitive", name);
+        if (name === "react-colorful" && file !== "packages/ui/src/color-picker/index.tsx") add(file, "primitive-boundary", name);
         if (name.startsWith("@base-ui/") && !/^packages\/ui\/src\/[^/]+\/index\.tsx$/.test(file)) add(file, "primitive-boundary", name);
         if (name === "lucide-react" && !["src/shared/ui/icons.tsx", "packages/ui/src/icons/index.tsx"].includes(file)) add(file, "icon-boundary", name);
         if (inPackage && (/^(?:src\/|@\/|react-router|@tanstack\/react-query|zustand)/.test(resolved))) add(file, "package-boundary", name);
@@ -45,7 +53,7 @@ export function analyzeUI(sources, exports) {
     }
     inspect(source);
     for (const match of text.matchAll(/#[\da-f]{3,8}\b|\b(?:rgb|rgba|hsl|hsla|oklch)\([^)]*\)/gi)) add(file, "raw-color", match[0]);
-    if (inPackage) for (const match of text.matchAll(/var\(--(?!ob-)[\w-]+\)/g)) add(file, "foreign-token", match[0]);
+    if (inPackage) for (const match of text.matchAll(/var\(--(?!ob-)[\w-]+\)/g)) if (!geometryTokens.has(match[0])) add(file, "foreign-token", match[0]);
   }
   if (Object.hasOwn(exports, ".")) add("packages/ui/package.json", "root-barrel", ".");
   for (const file of sources.keys()) {
@@ -72,4 +80,19 @@ export function findingCounts(findings) {
 
 export function newFindings(findings, baseline) {
   return Object.entries(findingCounts(findings)).flatMap(([key, count]) => count > (baseline[key] ?? 0) ? [`${key}: ${count} occurrences (allowed ${baseline[key] ?? 0})`] : []);
+}
+
+export function applyColorDataAllowlist(findings, entries) {
+  const remaining = new Map(entries.map(entry => {
+    if (!entry.reason || !Number.isInteger(entry.maxOccurrences) || entry.maxOccurrences < 1) throw new Error(`Invalid color-data allowlist entry: ${entry.file}`);
+    return [JSON.stringify([entry.file, entry.detail]), entry.maxOccurrences];
+  }));
+  return findings.filter(finding => {
+    if (finding.rule !== "raw-color") return true;
+    const key = JSON.stringify([finding.file, finding.detail]);
+    const allowed = remaining.get(key) ?? 0;
+    if (!allowed) return true;
+    remaining.set(key, allowed - 1);
+    return false;
+  });
 }

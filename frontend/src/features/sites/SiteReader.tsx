@@ -113,7 +113,6 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false, load
 
   const closeSearch = useCallback(() => {
     setSearchOpen(false);
-    window.setTimeout(() => searchButtonRef.current?.focus(), 0);
   }, []);
 
   useEffect(() => {
@@ -210,7 +209,7 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false, load
       </main>
       {current && !compactOutline ? <Outline items={outline} /> : null}
     </div>
-    <SearchDialog open={searchOpen} pages={snapshot.pages} basePath={basePath} close={closeSearch} loadPages={loadSearch} />
+    <SearchDialog finalFocus={searchButtonRef} open={searchOpen} pages={snapshot.pages} basePath={basePath} close={closeSearch} loadPages={loadSearch} />
   </div>;
   return preview ? <SitePreviewLinks siteSlug={snapshot.slug} basePath={basePath}>{reader}</SitePreviewLinks> : reader;
 }

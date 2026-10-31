@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { dependencyUsage, licensePolicy, packageName, parseSourcePins } from "./license-core.mjs";
+import { dependencyUsage, distributionArtifact, licensePolicy, packageName, parseSourcePins } from "./license-core.mjs";
 
 const root = process.env.ORBIS_LICENSE_ROOT ?? fileURLToPath(new URL("../../", import.meta.url));
 const args = process.argv.slice(2);
@@ -23,29 +23,39 @@ const packages = [];
 for (const [location, entry] of Object.entries(lock.packages).sort(([a], [b]) => a.localeCompare(b))) {
   if (!location || entry.link || location.startsWith("packages/")) continue;
   const name = packageName(location);
-  const prior = previous.packages.find(item => item.location === location && item.version === entry.version && item.integrity === entry.integrity && item.license === entry.license);
+  const artifact = distributionArtifact(lock.packages, location);
+  const prior = previous.packages.find(item => item.location === location && item.version === entry.version && item.integrity === artifact.integrity && item.license === entry.license);
   const supplement = supplemental.packages[`${name}@${entry.version}`];
   if (supplement && supplement.license !== entry.license) throw new Error(`Supplemental license differs from lockfile: ${name}@${entry.version}`);
   let texts = supplement?.texts ?? prior?.texts ?? [];
-  if (!texts.length && !check) texts = installedLicenseTexts(location, entry);
+  if (!check && !supplement) {
+    const installed = installedLicenseTexts(location, entry);
+    if (installed.length) texts = installed;
+  }
   const declaredUsage = [...(usage.get(location) ?? [])].sort();
   if (!declaredUsage.length) throw new Error(`Dependency has no declared owner: ${location}`);
   packages.push({
     name, version: entry.version, location,
     license: entry.license ?? "UNKNOWN",
     policy: licensePolicy(entry.license ?? "UNKNOWN"),
-    integrity: entry.integrity,
-    artifact: entry.resolved,
+    ...artifact,
     usage: declaredUsage,
     distribution: declaredUsage.includes("runtime") ? "browser-js" : declaredUsage.includes("asset") ? "static-assets" : "not-in-frontend-runtime",
     texts,
   });
 }
+const embedded = JSON.parse(read("licenses/embedded-notices.json"));
+for (const item of embedded.components) {
+  if (!packages.some(parent => `${parent.name}@${parent.version}` === item.parentPackage)) throw new Error(`Stale embedded-code notice: ${item.name}`);
+  if (licensePolicy(item.license) !== "permissive" || !/^[a-f0-9]{40}$/.test(item.sourceRevision) || !item.sourceURL.startsWith("https://") || !item.modifications) throw new Error(`Embedded-code record needs source/license review: ${item.name}`);
+  validateText(item.text, item.name);
+}
 const manifest = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   lockfileSha256: sha256(lockText),
   classification: "Declared dependency closure: runtime dependencies except explicit Vite/Tailwind build roots; Inter and generated Tabler icons are assets. Peers and optional binaries retain every applicable owner. This is a conservative declared-dependency inventory, not a measurement of tree-shaken emitted code. Build/test sources are not part of the frontend static distribution.",
   packages,
+  embeddedComponents: embedded.components,
 };
 const serialized = JSON.stringify(manifest, null, 2) + "\n";
 if (check) {
@@ -95,7 +105,7 @@ const pendingSummary = JSON.stringify({
 if (check) {
   if (read("licenses/pending-review-summary.json") !== pendingSummary) throw new Error("Pending license review summary is stale; run npm run licenses:generate");
 } else write("licenses/pending-review-summary.json", pendingSummary);
-console.log(JSON.stringify({ packages: packages.length, classified: Object.fromEntries(["browser-js", "static-assets", "not-in-frontend-runtime"].map(scope => [scope, packages.filter(item => item.distribution === scope).length])), missingTexts: packages.filter(item => !item.texts.length).map(item => `${item.name}@${item.version}`), unresolvedReviews: [...new Set(issues.filter(issue => issue.startsWith("Maintainer review")))], releaseReady: issues.length === 0 }, null, 2));
+console.log(JSON.stringify({ packages: packages.length, embeddedComponents: embedded.components.length, classified: Object.fromEntries(["browser-js", "static-assets", "not-in-frontend-runtime"].map(scope => [scope, packages.filter(item => item.distribution === scope).length])), missingTexts: packages.filter(item => !item.texts.length).map(item => `${item.name}@${item.version}`), unresolvedReviews: [...new Set(issues.filter(issue => issue.startsWith("Maintainer review")))], releaseReady: issues.length === 0 }, null, 2));
 if (release && issues.length) throw new Error(`Release license gate failed:\n${[...new Set(issues)].join("\n")}`);
 if (bundleIndex !== -1) {
   const destination = args[bundleIndex + 1];
@@ -108,7 +118,7 @@ function installedLicenseTexts(location, entry) {
   if (!existsSync(directory)) return [];
   const metadata = JSON.parse(readFileSync(path.join(directory, "package.json"), "utf8"));
   if (metadata.version !== entry.version || metadata.license !== entry.license) throw new Error(`Installed dependency differs from lockfile: ${location}`);
-  return readdirSync(directory).filter(file => /^(?:licen[sc]e|copying|notice|copyright)(?:[.-]|$)/i.test(file) && statSync(path.join(directory, file)).isFile()).sort().map(file => {
+  return readdirSync(directory).filter(file => /^(?:licen[sc]e|copying|notice|copyright|acknowledg(?:e)?ments?)(?:[.-]|$)/i.test(file) && statSync(path.join(directory, file)).isFile()).sort().map(file => {
     const contents = readFileSync(path.join(directory, file));
     const checksum = sha256(contents);
     const destination = `licenses/texts/npm/${checksum}.txt`;

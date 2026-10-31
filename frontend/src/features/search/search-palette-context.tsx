@@ -3,10 +3,9 @@ import { Component, createContext, useCallback, useContext, useEffect, useLayout
 import { useLocation } from "react-router-dom";
 import { useStore } from "zustand";
 import { authStore, getAuthSessionKey } from "../../shared/auth/auth-store";
-import { Button } from "../../shared/ui/Button";
-import { Dialog, DialogContent } from "../../shared/ui/Dialog";
+import { Button } from "@orbis/ui/button";
+import { Dialog, DialogContent } from "@orbis/ui/dialog";
 import type { SearchFilters } from "./api";
-import { PalettePresenceObserver } from "./palette-presence";
 import { GlobalSearchPalette } from "./GlobalSearchPalette";
 import { captureSearchReturnContext } from "./search-return-context";
 
@@ -23,9 +22,8 @@ class PaletteBoundary extends Component<{ children: ReactNode; isOpen: boolean; 
   state = { failed: false };
   static getDerivedStateFromError() { return { failed: true }; }
   render() {
-    return this.state.failed ? <Dialog open={this.props.isOpen} onOpenChange={open => { if (!open) this.props.onClose(); }}>
+    return this.state.failed ? <Dialog open={this.props.isOpen} onOpenChange={open => { if (!open) this.props.onClose(); }} onOpenChangeComplete={open => { if (!open) this.props.onExited(); }}>
       <DialogContent title="搜索暂时无法显示" description="当前页面仍然保留，请关闭搜索后重试。">
-        <PalettePresenceObserver onExited={this.props.onExited} />
         <Button onClick={this.props.onClose}>关闭搜索</Button>
       </DialogContent>
     </Dialog> : this.props.children;
@@ -65,7 +63,7 @@ function SearchPaletteScope({ children }: { children: ReactNode }) {
     const context = returnContext.current;
     for (const frame of restoreFrames.current) cancelAnimationFrame(frame);
     restoreFrames.current = [];
-    // 等待 React Aria 的焦点恢复，再还原编辑选区和滚动；不猜测 CSS 退场时长。
+    // 等待浮层原语的焦点恢复，再还原编辑选区和滚动；不猜测 CSS 退场时长。
     restoreFrames.current.push(requestAnimationFrame(() => {
       restoreFrames.current.push(requestAnimationFrame(() => {
         restoreFrames.current = [];

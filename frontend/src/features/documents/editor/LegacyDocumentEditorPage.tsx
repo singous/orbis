@@ -8,9 +8,9 @@ import {DocumentCopyContext,type DocumentCopyPort} from "./blocks/block-copy-con
 import {indexBlocks} from "./blocks/block-tree";
 import { LoadingState } from "../../../shared/ui/LoadingState";
 import { TableHostContext, replaceTableBlock, type TableHost,type PendingTableWriter } from "../../data-tables/context";
-import { Dropdown } from "@heroui/react/dropdown";
-import { Label } from "@heroui/react/label";
-import { Input as HeroInput } from "@heroui/react/input";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@orbis/ui/dropdown-menu";
+import { Button as MenuButton } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
 import { ActionButton } from "../../../shared/ui/ActionButton";
 import { AlertTriangle, Archive, BookOpen, ChevronRight, MoreHorizontal, Check, Cloud, Download, MessageSquare, RefreshCw, RotateCcw, Save, WifiOff } from "../../../shared/ui/icons";
 import { Component, lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -789,14 +789,12 @@ export function LegacyDocumentEditorPage() {
       <span className="document-header-divider" aria-hidden="true" />
       {canEdit && noteQuery.data ? (releaseFeatures.documentSharing ? <ShareButton notebookId={noteQuery.data.notebook_id!} noteId={noteId} title={draft?.title || noteQuery.data.title} /> : null) : null}
       {releaseFeatures.documentCollaboration && <ActionButton ref={collaborationTriggerRef} type="button" className="document-comment-trigger" aria-label="评论与历史" aria-haspopup="dialog" aria-expanded={collaborationOpen} disabled={!draft || archiving} onClick={() => { setCollaborationMounted(true); setCollaborationSession(value => value + 1); setCollaborationOpen(true); }}><MessageSquare aria-hidden="true" size={16} /><span>评论</span></ActionButton>}
-      {canEdit ? <Dropdown>
-        <ActionButton type="button" className="icon-button" aria-label="更多文档操作" disabled={!draft || editorBusy}><MoreHorizontal aria-hidden="true" size={18} /></ActionButton>
-        <Dropdown.Popover placement="bottom end" className="document-actions-popover" offset={6}>
-          <Dropdown.Menu aria-label="文档操作" onAction={(key) => { if (key === "archive") void handleArchive(); }}>
-            <Dropdown.Item id="archive" textValue="归档文档" isDisabled={!draft || editorBusy}><Archive aria-hidden="true" size={16} /><Label>归档文档</Label></Dropdown.Item>
-          </Dropdown.Menu>
-        </Dropdown.Popover>
-      </Dropdown> : null}
+      {canEdit ? <DropdownMenu>
+        <DropdownMenuTrigger asChild disabled={!draft || editorBusy}><MenuButton appearance="unstyled" type="button" className="icon-button" aria-label="更多文档操作"><MoreHorizontal aria-hidden="true" size={18} /></MenuButton></DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="document-actions-popover" sideOffset={6} aria-label="文档操作">
+          <DropdownMenuItem textValue="归档文档" disabled={!draft || editorBusy} onSelect={() => { void handleArchive(); }}><Archive aria-hidden="true" size={16} /><span>归档文档</span></DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu> : null}
     </div>
   );
 
@@ -805,7 +803,7 @@ export function LegacyDocumentEditorPage() {
       {!draft || !noteQuery.data || hydratedNoteRef.current !== draftKey ? <div className="page-container"><LoadingState label="正在打开文档…" variant="editor" /></div> : (
         <EditorLayout outlineStore={outlineStore} loadOutlineContent={loadCompleteContent}>
           <article className="editor-canvas">
-            <HeroInput
+            <Input
               aria-label="文档标题"
               className="orbis-embedded-input editor-title"
               placeholder="无标题"

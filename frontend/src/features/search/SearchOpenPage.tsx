@@ -6,14 +6,13 @@ import { useStore } from "zustand";
 import { apiBlobRequest,workspacePath } from "../../shared/api/api-client";
 import { authStore, getAuthSessionKey } from "../../shared/auth/auth-store";
 import { authRequestOptions, useAuthRequest } from "../../shared/auth/use-auth-request";
-import { Button } from "../../shared/ui/Button";
+import { Button } from "@orbis/ui/button";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { PageContainer } from "../../shared/ui/PageContainer";
 
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
 import { lookupSearchResource, searchTypeSchema } from "./api";
 import { resultDestination } from "./search-state";
-import "./search.css";
 
 const openTargetSchema = z.object({
   id: z.string().uuid(), type: searchTypeSchema, workspace_id: z.string().uuid().nullable(),
@@ -90,10 +89,10 @@ export function SearchOpenPage() {
   }
 
   return <WorkspaceShell><PageContainer title={target.success && target.data.type === "file" ? filename : "打开搜索结果"}>
-    <div className="global-search-open">
+    <div className="grid gap-4">
 
       {target.success && !ready && !error ? <LoadingState label="正在打开内容…" /> : null}
-      {ready ? <><p>文件内容仅在下载时读取。</p><Button variant="primary" isPending={downloading} onClick={() => void download()}>下载文件</Button>{downloaded ? <p role="status">已开始下载。</p> : null}</> : null}
+      {ready ? <><p>文件内容仅在下载时读取。</p><Button variant="primary" loading={downloading} onClick={() => void download()}>下载文件</Button>{downloaded ? <p role="status">已开始下载。</p> : null}</> : null}
       <Link to="/search">返回全局搜索</Link>
     </div>
   </PageContainer></WorkspaceShell>;

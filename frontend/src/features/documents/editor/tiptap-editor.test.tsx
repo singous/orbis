@@ -92,13 +92,13 @@ it("reports conversion failures and retries the retained live document", async (
   render(<><TiptapEditor blocks={initial} onChange={changed} onError={failed} /><Toaster /></>);
   await screen.findByText("已有正文");
   vi.spyOn(model, "fromTiptapDocument").mockImplementationOnce(() => { throw new Error("Conversion failure"); });
-  await userEvent.click(screen.getByRole("button", { name: /段落类型/ }));
-  await userEvent.click(screen.getByRole("option", { name: "标题 1" }));
-  expect(await screen.findByRole("alert")).toHaveTextContent("正文暂未保存");
+  await userEvent.click(screen.getByRole("combobox", { name: /段落类型/ }));
+  await userEvent.click(await screen.findByRole("option", { name: "标题 1" }));
+  expect(await screen.findByRole("alertdialog")).toHaveTextContent("正文暂未保存");
   expect(changed).not.toHaveBeenCalled();
   expect(failed).toHaveBeenCalledWith(expect.stringContaining("正文暂未保存"));
-  await userEvent.click(screen.getByRole("button", { name: /段落类型/ }));
-  await userEvent.click(screen.getByRole("option", { name: "标题 2" }));
+  await userEvent.click(screen.getByRole("combobox", { name: /段落类型/ }));
+  await userEvent.click(await screen.findByRole("option", { name: "标题 2" }));
   expect(changed.mock.calls[0][0].blocks.blocks[0]).toMatchObject({ type: "heading", content: [{ type: "text", text: "已有正文" }] });
   expect(failed).toHaveBeenLastCalledWith(null);
 });
@@ -108,8 +108,8 @@ it("formats a stored paragraph through the real Tiptap React surface", async () 
   let latest = initial;
   const { container } = render(<TiptapEditor blocks={initial} onChange={({ blocks }) => { latest = blocks; }} />);
   await waitFor(() => expect(container.querySelector(".ProseMirror")).toBeInTheDocument());
-  await user.click(screen.getByRole("button", { name: /段落类型/ }));
-  await user.click(screen.getByRole("option", { name: "标题 1" }));
+  await user.click(screen.getByRole("combobox", { name: /段落类型/ }));
+  await user.click(await screen.findByRole("option", { name: "标题 1" }));
   await waitFor(() => expect(latest.blocks[0].type).toBe("heading"));
   expect(latest.blocks[0].id).toBe("paragraph");
 });
@@ -141,7 +141,7 @@ it("updates documentation component properties without dropping its body", async
 it("retains an imported code language in read only mode", async () => {
   const code: NoteBlocksV2 = { schema_version: 2, editor: "blocknote", blocks: [{ id: "code", type: "codeBlock", props: { language: "rust" }, content: "fn main() {}", children: [] }] };
   render(<TiptapEditor blocks={code} readOnly onChange={() => { throw new Error("Read only document changed"); }} />);
-  const language = await screen.findByRole("button", { name: /代码语言/ });
+  const language = await screen.findByRole("combobox", { name: /代码语言/ });
   expect(language).toHaveTextContent("rust");
   expect(language).toBeDisabled();
 });
@@ -175,8 +175,8 @@ it('applies restore of the initially opened revision after editing and saving', 
   const changed = vi.fn(({blocks}: { blocks: NoteBlocksV2 }) => { latest = blocks; });
   const {container, rerender} = render(<TiptapEditor blocks={initial} onChange={changed} />);
   await screen.findByText("已有正文");
-  await userEvent.click(screen.getByRole("button", { name: /段落类型/ }));
-  await userEvent.click(screen.getByRole("option", { name: "标题 1" }));
+  await userEvent.click(screen.getByRole("combobox", { name: /段落类型/ }));
+  await userEvent.click(await screen.findByRole("option", { name: "标题 1" }));
   expect(latest.blocks[0].type).toBe('heading');
   rerender(<TiptapEditor blocks={latest} onChange={changed} />);
   rerender(<TiptapEditor blocks={latest} readOnly onChange={changed} />);

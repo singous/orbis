@@ -239,8 +239,8 @@
 .board-library-content { flex: 1; min-height: 0; gap: 0; }
 .board-library-content > [data-slot="tabs-list-container"] { margin: 4px 8px; flex: none; }
 .board-library-tabs { display: flex; width: 100%; }
-.board-library-tabs [data-slot="tabs-tab"] { flex: 1; flex-direction: column; gap: 4px; font-size: 11px; padding: 8px 4px; }
-.board-library-tabs [data-slot="tabs-tab"] > svg { width: 17px; height: 17px; }
+.board-library-tabs [data-slot="ob-tabs-trigger"] { flex: 1; flex-direction: column; gap: 4px; font-size: 11px; padding: 8px 4px; }
+.board-library-tabs [data-slot="ob-tabs-trigger"] > svg { width: 17px; height: 17px; }
 .board-library-panel { flex: 1; min-height: 0; padding: 0; }
 .board-library-panel:not([hidden]) { display: flex; flex-direction: column; }
 .board-search { position: relative; display: flex; align-items: center; margin: 12px 12px 8px; }
@@ -451,7 +451,7 @@
 .board-inspector-content { gap: 12px; }
 .board-inspector-content > [data-slot="tabs-list-container"] { margin-inline: 16px; }
 .board-inspector-tabs { width: 100%; }
-.board-inspector-tabs [data-slot="tabs-tab"] { flex: 1; }
+.board-inspector-tabs [data-slot="ob-tabs-trigger"] { flex: 1; }
 .board-property-panel { padding: 0; }
 .board-property-panel > fieldset {
   border: 0;
@@ -638,8 +638,8 @@
 }
 .board-page-list-container { grid-column: 1; margin-left: 12px; margin-right: 4px; min-width: 0; max-width: calc(100cqw - var(--board-panel-offset) - 168px); }
 .board-page-actions { grid-column: 2; }
-.board-page-list-container [data-slot="tabs-list"] { gap: 3px; padding: 0; }
-.board-page-list-container [data-slot="tabs-tab"] { height: 28px; min-height: 28px; padding: 0 10px; white-space: nowrap; font-size: 11px; }
+.board-page-list-container [data-slot="ob-tabs-list"] { gap: 3px; padding: 0; }
+.board-page-list-container [data-slot="ob-tabs-trigger"] { height: 28px; min-height: 28px; padding: 0 10px; white-space: nowrap; font-size: 11px; }
 .board-page-actions small { display: block; white-space: nowrap; padding-inline: 10px; color: var(--board-muted); }
 .board-tool-hint {
   position: absolute;
@@ -788,7 +788,7 @@
   .board-icon-row .orbis-action-button { height: var(--orbis-control-touch-height); }
 }
 
-/* HeroUI owns fields, menus and tab focus; these rules only position board controls. */
+/* @orbis/ui owns fields, menus and tab focus; these rules position board controls. */
 
 .board-main.tabs__panel { padding: 0; }
 .board-shell .board-minimap { display: block; padding: 0; }

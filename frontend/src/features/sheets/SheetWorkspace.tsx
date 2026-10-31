@@ -4,8 +4,7 @@ import { ConfirmAction } from "../../shared/ui/ConfirmAction";
 import { DraftActions } from "../../shared/ui/DraftActions";
 import { Button } from "../../shared/ui/Button";
 
-import { Dropdown } from "@heroui/react/dropdown";
-import { Label } from "@heroui/react/label";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@orbis/ui/dropdown-menu";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlignVerticalSpaceAround,
@@ -395,50 +394,26 @@ export function SheetWorkspace({
         <MessageSquare size={16} />
         <span>评论</span>
       </ActionButton>}
-      <Dropdown>
-        <ActionButton aria-label="更多文档操作">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild><ActionButton aria-label="更多文档操作">
           <MoreHorizontal size={18} />
-        </ActionButton>
-        <Dropdown.Popover
-          placement="bottom end"
-          className="document-actions-popover"
-          offset={6}
-        >
-          <Dropdown.Menu
-            aria-label="文档操作"
-            onAction={(key) => {
-              if (key === "copy")
-                void navigator.clipboard.writeText(location.href).catch(fail);
-              if (key === "archive")
-                void (async () => {
-                  await preparePendingNavigation();
-                  const owner = await getNotebook(sheet.collection_id, c.auth);
-                  await archiveNote.mutateAsync({
-                    id: sheet.document_id,
-                    archived: true,
-                    expected_directory_version: owner.directory_version,
-                  });
-                  navigate(`/collections/${sheet.collection_id}`);
-                })().catch(fail);
-            }}
-          >
-            <Dropdown.Item id="copy" textValue="复制链接">
-              <Copy size={15} />
-              <Label>复制链接</Label>
-            </Dropdown.Item>
-            {canEdit && (
-              <Dropdown.Item
-                id="archive"
-                textValue="归档文档"
-                isDisabled={c.busy || c.hasPending || archiveNote.isPending}
-              >
-                <Archive size={15} />
-                <Label>归档文档</Label>
-              </Dropdown.Item>
-            )}
-          </Dropdown.Menu>
-        </Dropdown.Popover>
-      </Dropdown>
+        </ActionButton></DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="document-actions-popover" aria-label="文档操作">
+          <DropdownMenuItem textValue="复制链接" onSelect={() => { void navigator.clipboard.writeText(location.href).catch(fail); }}>
+            <Copy size={15} /><span>复制链接</span>
+          </DropdownMenuItem>
+          {canEdit && <DropdownMenuItem textValue="归档文档" disabled={c.busy || c.hasPending || archiveNote.isPending} onSelect={() => {
+            void (async () => {
+              await preparePendingNavigation();
+              const owner = await getNotebook(sheet.collection_id, c.auth);
+              await archiveNote.mutateAsync({ id: sheet.document_id, archived: true, expected_directory_version: owner.directory_version });
+              navigate(`/collections/${sheet.collection_id}`);
+            })().catch(fail);
+          }}>
+            <Archive size={15} /><span>归档文档</span>
+          </DropdownMenuItem>}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
   const content = (

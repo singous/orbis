@@ -8,13 +8,18 @@ The frontend lockfile inventory is generated in [licenses/npm-manifest.json](lic
 
 This inventory is **not a completed release approval**. `npm run report:licenses` validates the snapshot offline. The strict release gate also requires complete texts and actual maintainer decisions from [reviews.json](licenses/reviews.json). Runtime, static asset, build-only and development classifications describe the declared dependency closure. The build/test tools are not included by the frontend Docker final stage, which copies only the static `dist/` output.
 
-Three omitted upstream full-text notices remain visible: `client-only` 0.0.1, `stackback` 0.0.2 and optional `@tybys/wasm-util` 0.10.2. Their SPDX metadata alone is not treated as a fabricated full text. Pending review-level licenses and source-material decisions are also reported by the release gate. See [maintenance instructions](licenses/README.md).
+Two omitted upstream full-text notices remain visible: `stackback` 0.0.2 and optional `@tybys/wasm-util` 0.10.2. The former `client-only` dependency was removed with HeroUI and is no longer declared. Their SPDX metadata alone does not supply the missing attributable full texts. Pending review-level licenses and source-material decisions are also reported by the release gate. See [maintenance instructions](licenses/README.md).
 
 ## New UI platform
 
 - `@base-ui/react` 1.9.0 and `@base-ui/utils` 0.5.0: MIT; unmodified npm dependencies, used by the UI primitives. Their copyright and license texts are linked from the manifest.
+- `react-colorful` 5.8.1: MIT; unmodified runtime dependency used by the color picker. The manifest retains both its complete Vlad Shilov copyright/license and its bundled-source `ACKNOWLEDGMENTS`, including the credit to `@swiftcarrot/color-fns` and the adapted HSV conversion source.
 - Storybook 9.1.21: MIT; component development and testing, not imported by the production application. Upstream license text: [storybook-MIT.txt](licenses/texts/storybook-MIT.txt). The exact release-source revision and checksum also appear in the manifest.
 - shadcn/ui: MIT; the Base Nova registry was used as the starting reference for Button/Dialog. [ui.registry.json](frontend/packages/ui/ui.registry.json) records downloaded source URLs, content checksums and local adaptations. [License text](licenses/texts/shadcn-ui-MIT.txt). No Dify code or documentation was copied.
+
+## Embedded third-party code
+
+`stackback@0.0.2` includes a V8 stack-formatting fallback under BSD-3-Clause. Its original 2012 V8 copyright and complete notice are retained in [stackback-V8-BSD-3-Clause.txt](licenses/texts/stackback-V8-BSD-3-Clause.txt), with the exact upstream source recorded in [embedded-notices.json](licenses/embedded-notices.json). This notice is separate from stackback's declared MIT wrapper license, whose complete upstream notice remains unresolved.
 
 ## Existing components requiring distribution review
 
@@ -33,9 +38,6 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | Component | Version | Declared license | Use | Text / copyright |
 | --- | --- | --- | --- | --- |
 | `@adobe/css-tools` | 4.5.0 | MIT | dev-only | [1](licenses/texts/npm/326ff3850062286003ff4cbdaa8f61764e128f9a6532431bccf97e4e2bd75059.txt) |
-| `@adobe/react-spectrum-ui` | 1.2.1 | Apache-2.0 | runtime | [1](licenses/texts/npm/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30.txt) |
-| `@adobe/react-spectrum-workflow` | 2.3.5 | Apache-2.0 | runtime | [1](licenses/texts/npm/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30.txt) |
-| `@adobe/react-spectrum` | 3.47.5 | Apache-2.0 | runtime | [1](licenses/texts/npm/7dfe6526888bac51759c99f9a51262ba2711a8c12a067f2181609dd9a4066b84.txt) |
 | `@asamuzakjp/css-color` | 3.2.0 | MIT | dev-only | [1](licenses/texts/npm/1156c4bf9aa3982ff6157a4a8615906f225e4f46126dc41bf14df9aa7d74601b.txt) |
 | `@axe-core/playwright` | 4.14.0 | MPL-2.0 | dev-only | [1](licenses/texts/npm/812e9d96e900a093ae4d1d3f22c5f82f568a0a0461c3007a99d00573d41c5461.txt) |
 | `@babel/code-frame` | 7.29.7 | MIT | build-only, dev-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
@@ -106,13 +108,8 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `@floating-ui/utils` | 0.2.12 | MIT | runtime | [1](licenses/texts/npm/0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce.txt) |
 | `@fontsource-variable/inter` | 5.3.0 | OFL-1.1 | asset | [1](licenses/texts/npm/3b0a5fca3d17942cde889069889dedbbbd075e9b599968c82a95f4d944e9b345.txt) |
 | `@gravity-ui/icons` | 2.23.0 | MIT | runtime | [1](licenses/texts/npm/6c509237a13194071fcd99cfaae017e514204ba9493291ab6f87dec58dc2662b.txt) |
-| `@heroui/react` | 3.2.6 | MIT | runtime | [1](licenses/texts/npm/bd087c1ebd511adbab74705ec2b31d63d175e8d422f58c1af54754da02b1d329.txt) |
-| `@heroui/styles` | 3.2.6 | MIT | runtime | [1](licenses/texts/npm/bd087c1ebd511adbab74705ec2b31d63d175e8d422f58c1af54754da02b1d329.txt) |
 | `@iconify-json/tabler` | 1.2.42 | MIT | asset | [1](licenses/texts/npm/b740a1d46122672da62833e97f7e7c8a13fa85cbc7445b584b297cc00dde93db.txt) |
 | `@iconify/types` | 2.0.0 | MIT | asset | [1](licenses/texts/npm/045ce74712fc613fdd74d1c55f5140a08d623836ff2aca44132b38d68fbc67ad.txt) |
-| `@internationalized/date` | 3.12.4 | Apache-2.0 | runtime | [1](licenses/texts/npm/7dfe6526888bac51759c99f9a51262ba2711a8c12a067f2181609dd9a4066b84.txt) |
-| `@internationalized/number` | 3.6.8 | Apache-2.0 | runtime | [1](licenses/texts/npm/7dfe6526888bac51759c99f9a51262ba2711a8c12a067f2181609dd9a4066b84.txt) |
-| `@internationalized/string` | 3.2.10 | Apache-2.0 | runtime | [1](licenses/texts/npm/7dfe6526888bac51759c99f9a51262ba2711a8c12a067f2181609dd9a4066b84.txt) |
 | `@isaacs/cliui` | 8.0.2 | ISC | dev-only | [1](licenses/texts/npm/2dc0465729366c3a7890dfa9e972a1ba7048a26c02116fb8b419a6a1ac110149.txt) |
 | `@joshwooding/vite-plugin-react-docgen-typescript` | 0.6.1 | MIT | dev-only | [1](licenses/texts/npm/36c0a6c416faedf94efe2011d9618442049e3ccd414c40068e3fe16c8f70f3a2.txt) |
 | `@jridgewell/gen-mapping` | 0.3.13 | MIT | build-only, dev-only | [1](licenses/texts/npm/769d154fbde32a915af110b1123650bc79f4cbe675acc66e005265bf069c6c6c.txt) |
@@ -127,24 +124,6 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `@polka/url` | 1.0.0-next.29 | MIT | dev-only | [1](licenses/texts/npm/ba573393f24555ac0528612ad39665fab5bdcc80330a61096024bbf5f736526d.txt) |
 | `@popperjs/core` | 2.11.8 | MIT | runtime | [1](licenses/texts/npm/bf67e2c9b7974543bb18ced3a0b37f53729aaff953b442dd89a3adaf90fd93e8.txt) |
 | `@preact/signals-core` | 1.14.4 | MIT | dev-only, runtime | [1](licenses/texts/npm/a11fc89e4c6b118854c7a667734a0b2e6bf2af5e45c6686de31adbccc8f3ae8d.txt) |
-| `@radix-ui/primitive` | 1.1.7 | MIT | runtime | [1](licenses/texts/npm/0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138.txt) |
-| `@radix-ui/react-avatar` | 1.2.6 | MIT | runtime | [1](licenses/texts/npm/0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138.txt) |
-| `@radix-ui/react-compose-refs` | 1.1.5 | MIT | runtime | [1](licenses/texts/npm/0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138.txt) |
-| `@radix-ui/react-context` | 1.2.2 | MIT | runtime | [1](licenses/texts/npm/0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138.txt) |
-| `@radix-ui/react-primitive` | 2.1.10 | MIT | runtime | [1](licenses/texts/npm/0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138.txt) |
-| `@radix-ui/react-slot` | 1.3.3 | MIT | runtime | [1](licenses/texts/npm/0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138.txt) |
-| `@radix-ui/react-use-callback-ref` | 1.1.4 | MIT | runtime | [1](licenses/texts/npm/0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138.txt) |
-| `@radix-ui/react-use-is-hydrated` | 0.1.3 | MIT | runtime | [1](licenses/texts/npm/0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138.txt) |
-| `@radix-ui/react-use-layout-effect` | 1.1.4 | MIT | runtime | [1](licenses/texts/npm/0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138.txt) |
-| `@react-aria/color` | 3.2.1 | Apache-2.0 | runtime | [1](licenses/texts/npm/7dfe6526888bac51759c99f9a51262ba2711a8c12a067f2181609dd9a4066b84.txt) |
-| `@react-aria/ssr` | 3.10.1 | Apache-2.0 | runtime | [1](licenses/texts/npm/7dfe6526888bac51759c99f9a51262ba2711a8c12a067f2181609dd9a4066b84.txt) |
-| `@react-aria/utils` | 3.34.1 | Apache-2.0 | runtime | [1](licenses/texts/npm/7dfe6526888bac51759c99f9a51262ba2711a8c12a067f2181609dd9a4066b84.txt) |
-| `@react-spectrum/color` | 3.2.1 | Apache-2.0 | runtime | [1](licenses/texts/npm/7dfe6526888bac51759c99f9a51262ba2711a8c12a067f2181609dd9a4066b84.txt) |
-| `@react-spectrum/provider` | 3.11.1 | Apache-2.0 | runtime | [1](licenses/texts/npm/7dfe6526888bac51759c99f9a51262ba2711a8c12a067f2181609dd9a4066b84.txt) |
-| `@react-stately/color` | 3.10.1 | Apache-2.0 | runtime | [1](licenses/texts/npm/7dfe6526888bac51759c99f9a51262ba2711a8c12a067f2181609dd9a4066b84.txt) |
-| `@react-stately/utils` | 3.12.1 | Apache-2.0 | runtime | [1](licenses/texts/npm/7dfe6526888bac51759c99f9a51262ba2711a8c12a067f2181609dd9a4066b84.txt) |
-| `@react-types/color` | 3.2.0 | Apache-2.0 | runtime | [1](licenses/texts/npm/7dfe6526888bac51759c99f9a51262ba2711a8c12a067f2181609dd9a4066b84.txt) |
-| `@react-types/shared` | 3.36.1 | Apache-2.0 | runtime | [1](licenses/texts/npm/7dfe6526888bac51759c99f9a51262ba2711a8c12a067f2181609dd9a4066b84.txt) |
 | `@remirror/core-constants` | 3.0.0 | MIT | runtime | [1](licenses/texts/npm/2a3b698d8ae82cbc7b34e85ee7d4eb06910f48a0544346c765f91600b86dc34b.txt) |
 | `@remixicon/react` | 4.6.0 | Apache-2.0 | runtime | [1](licenses/texts/npm/c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4.txt) |
 | `@rolldown/pluginutils` | 1.0.0-beta.27 | MIT | build-only | [1](licenses/texts/npm/23ecfff35a5a2e80d92142f75228912c3b1abc4b5a8337a821ff4397e2f9f734.txt) |
@@ -174,8 +153,6 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `@rollup/rollup-win32-ia32-msvc` | 4.62.2 | MIT | build-only, dev-only | [1](licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt) |
 | `@rollup/rollup-win32-x64-gnu` | 4.62.2 | MIT | build-only, dev-only | [1](licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt) |
 | `@rollup/rollup-win32-x64-msvc` | 4.62.2 | MIT | build-only, dev-only | [1](licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt) |
-| `@spectrum-icons/ui` | 3.7.2 | Apache-2.0 | runtime | [1](licenses/texts/npm/7dfe6526888bac51759c99f9a51262ba2711a8c12a067f2181609dd9a4066b84.txt) |
-| `@spectrum-icons/workflow` | 4.3.2 | Apache-2.0 | runtime | [1](licenses/texts/npm/7dfe6526888bac51759c99f9a51262ba2711a8c12a067f2181609dd9a4066b84.txt) |
 | `@storybook/addon-a11y` | 9.1.21 | MIT | dev-only | [1](licenses/texts/npm/bc90586179d44dcb313a9a289d687a2f26226303b2066bd21dbefd2378e894e5.txt) |
 | `@storybook/addon-docs` | 9.1.21 | MIT | dev-only | [1](licenses/texts/npm/bc90586179d44dcb313a9a289d687a2f26226303b2066bd21dbefd2378e894e5.txt) |
 | `@storybook/addon-vitest` | 9.1.21 | MIT | dev-only | [1](licenses/texts/npm/bc90586179d44dcb313a9a289d687a2f26226303b2066bd21dbefd2378e894e5.txt) |
@@ -186,7 +163,6 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `@storybook/react-dom-shim` | 9.1.21 | MIT | dev-only | [1](licenses/texts/npm/bc90586179d44dcb313a9a289d687a2f26226303b2066bd21dbefd2378e894e5.txt) |
 | `@storybook/react-vite` | 9.1.21 | MIT | dev-only | [1](licenses/texts/npm/bc90586179d44dcb313a9a289d687a2f26226303b2066bd21dbefd2378e894e5.txt) |
 | `@storybook/react` | 9.1.21 | MIT | dev-only | [1](licenses/texts/npm/bc90586179d44dcb313a9a289d687a2f26226303b2066bd21dbefd2378e894e5.txt) |
-| `@swc/helpers` | 0.5.23 | Apache-2.0 | runtime | [1](licenses/texts/npm/d96eba1f1881334d50ffc144276dfa98e147a415e7c591ecdfcb81680361dc91.txt) |
 | `@tailwindcss/node` | 4.3.1 | MIT | build-only | [1](licenses/texts/npm/60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985.txt) |
 | `@tailwindcss/oxide-android-arm64` | 4.3.1 | MIT | build-only | [1](licenses/texts/npm/60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985.txt) |
 | `@tailwindcss/oxide-darwin-arm64` | 4.3.1 | MIT | build-only | [1](licenses/texts/npm/60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985.txt) |
@@ -265,7 +241,7 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `@types/mdx` | 2.0.14 | MIT | dev-only | [1](licenses/texts/npm/c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383.txt) |
 | `@types/node` | 22.20.0 | MIT | build-only, dev-only | [1](licenses/texts/npm/c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383.txt) |
 | `@types/qrcode` | 1.5.5 | MIT | dev-only | [1](licenses/texts/npm/c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383.txt) |
-| `@types/react-dom` | 19.2.3 | MIT | dev-only, runtime | [1](licenses/texts/npm/c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383.txt) |
+| `@types/react-dom` | 19.2.3 | MIT | dev-only | [1](licenses/texts/npm/c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383.txt) |
 | `@types/react` | 19.2.17 | MIT | dev-only, runtime | [1](licenses/texts/npm/c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383.txt) |
 | `@types/resolve` | 1.20.6 | MIT | dev-only | [1](licenses/texts/npm/c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383.txt) |
 | `@types/use-sync-external-store` | 0.0.6 | MIT | runtime | [1](licenses/texts/npm/c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383.txt) |
@@ -291,7 +267,6 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `ansi-styles` | 5.2.0 | MIT | dev-only | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
 | `ansi-styles` | 6.2.3 | MIT | dev-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `argparse` | 2.0.1 | Python-2.0 | runtime | [1](licenses/texts/npm/de4d1f2d2ad5ad0cfd1657a106476b31cb5db5ef9d1ff842b237c0c81f0c8a23.txt) |
-| `aria-hidden` | 1.2.6 | MIT | runtime | [1](licenses/texts/npm/30f0cfddf483d1128e3610205020f2041a6c5e837aa999e0aa82e5576187d4a9.txt) |
 | `aria-query` | 5.3.0 | Apache-2.0 | dev-only | [1](licenses/texts/npm/c8df456c7ccba74b959087dff494d4ac2a12dfb0400c08b46b2494a08a000567.txt) |
 | `assertion-error` | 2.0.1 | MIT | dev-only | [1](licenses/texts/npm/2130216d5ab4c02134f8247f32999feda0abe1eaf028218baeac445c19ce4cea.txt) |
 | `ast-types` | 0.16.3 | MIT | dev-only | [1](licenses/texts/npm/a374b737c41b30b1ec04c5fcc17d1b853f008f217cc43a9dbea441abd9afde70.txt) |
@@ -307,7 +282,6 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `chai` | 5.3.3 | MIT | dev-only | [1](licenses/texts/npm/b181da80336ff9dd1043fc8be1a764d7382363433319aa872e4d2cb5ce2a3066.txt) |
 | `check-error` | 2.1.3 | MIT | dev-only | [1](licenses/texts/npm/e5aee0714b6ecc416454b968d1017570ef609f20d8722ab84b07acd550b78198.txt) |
 | `class-variance-authority` | 0.7.1 | Apache-2.0 | runtime | [1](licenses/texts/npm/0ccbf956cffc8dcf515809433cb5242ee67c94513d46e48c261d68d0880de406.txt) |
-| `client-only` | 0.0.1 | MIT | runtime | Missing upstream text |
 | `cliui` | 6.0.0 | ISC | runtime | [1](licenses/texts/npm/2dc0465729366c3a7890dfa9e972a1ba7048a26c02116fb8b419a6a1ac110149.txt) |
 | `clsx` | 2.1.1 | MIT | runtime | [1](licenses/texts/npm/9a9edad7baae52622bddf3c15b2ef8a33d2c89f2d25408ad13e8a7481c6b0c97.txt) |
 | `color-convert` | 2.0.1 | MIT | dev-only, runtime | [1](licenses/texts/npm/693866fc419c6f61c8570438ec00659d156ec2b4d4a4d04091711f5f11a365d4.txt) |
@@ -331,7 +305,6 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `doctrine` | 3.0.0 | Apache-2.0 | dev-only | [1](licenses/texts/npm/5c272e206669b79ee20fa89fa8fa888d5b56186f16c55a5614753ad3412e2ae9.txt) [2](licenses/texts/npm/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30.txt) [3](licenses/texts/npm/0e74697a68cebdcd61502c30fe80ab7f9e341d995dcd452023654d57133534b1.txt) |
 | `dom-accessibility-api` | 0.5.16 | MIT | dev-only | [1](licenses/texts/npm/0ffe67fe630169de46df2d29dc18f5857b4c98f0f95b0cd9e3c21fef51f9a9b8.txt) |
 | `dom-accessibility-api` | 0.6.3 | MIT | dev-only | [1](licenses/texts/npm/0ffe67fe630169de46df2d29dc18f5857b4c98f0f95b0cd9e3c21fef51f9a9b8.txt) |
-| `dom-helpers` | 5.2.1 | MIT | runtime | [1](licenses/texts/npm/1b0a9ba95a67bc484e028b13c61b83fc5aa1ca7957d1e2d43c2b0f70d9e9dd45.txt) |
 | `eastasianwidth` | 0.2.0 | MIT | dev-only | [1](licenses/texts/npm/94aa6016fb9d436508366433e9caba061443ca58f4c7eb515caec7badf90ae5a.txt) |
 | `electron-to-chromium` | 1.5.377 | ISC | build-only, dev-only | [1](licenses/texts/npm/25ba5c59dad3e0dd8f9540beaa0f0a86a10e3aec35af5fdc8e88c5f6a5c0d8c6.txt) |
 | `elkjs` | 0.12.0 | EPL-2.0 OR GPL-3.0-or-later | runtime | [1](licenses/texts/npm/637e81f4a1b6b4079535c499fca05e238cf7605c1ff5b76d60d7da7ce96700c9.txt) |
@@ -370,7 +343,6 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `https-proxy-agent` | 7.0.6 | MIT | dev-only | [1](licenses/texts/npm/8d8c55319c7729d57be811c747452636688d54f19701ee0752b6b15ad3771d9a.txt) |
 | `iconv-lite` | 0.6.3 | MIT | dev-only | [1](licenses/texts/npm/ac779f7314c74f232ef847ea86e714abe25cf6eeb5cc97b69451b74e2af6492d.txt) |
 | `indent-string` | 4.0.0 | MIT | dev-only | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
-| `input-otp` | 1.5.0 | MIT | runtime | [1](licenses/texts/npm/079031192fea535a245aa64a637d8433c406b82a14f91c3606b1d63e41c00152.txt) |
 | `is-core-module` | 2.17.0 | MIT | dev-only | [1](licenses/texts/npm/5c496ce5ae47eb8e5ddcaa5e29c27c446a3855b19e3a66991b52f361bed22b28.txt) |
 | `is-docker` | 2.2.1 | MIT | dev-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `is-fullwidth-code-point` | 3.0.0 | MIT | dev-only, runtime | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
@@ -380,7 +352,7 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `isomorphic.js` | 0.2.5 | MIT | runtime | [1](licenses/texts/npm/dd6488c9c1a4ce2dc978ecee067e5b6a725b52e6057a450b24f1a23bc373b057.txt) |
 | `jackspeak` | 3.4.3 | BlueOak-1.0.0 | dev-only | [1](licenses/texts/npm/2c7c5d22ed5a8ee968c64757710979afcd77438c48b4a265b94e615babd8a901.txt) |
 | `jiti` | 2.7.0 | MIT | build-only, dev-only | [1](licenses/texts/npm/46231df5a7733c3f52f11b71f3df61813007745b62b09031acfb45fb42d75082.txt) |
-| `js-tokens` | 4.0.0 | MIT | build-only, dev-only, runtime | [1](licenses/texts/npm/2213d91c606205c71eb051a199478cdc2adde945893404d7f1421436dd6d5cc1.txt) |
+| `js-tokens` | 4.0.0 | MIT | build-only, dev-only | [1](licenses/texts/npm/2213d91c606205c71eb051a199478cdc2adde945893404d7f1421436dd6d5cc1.txt) |
 | `js-tokens` | 9.0.1 | MIT | dev-only | [1](licenses/texts/npm/33038d552d766f4501d8da25b66053ed217c61274ffce1c6bee413bb037c259c.txt) |
 | `jsdom` | 26.1.0 | MIT | dev-only | [1](licenses/texts/npm/242d37e7cab25cbafc36cc973ee88f9345fddf066afe4f72b7ac3d9ad4e24cce.txt) |
 | `jsesc` | 3.1.0 | MIT | build-only, dev-only | [1](licenses/texts/npm/483acb265f182907d1caf6cff9c16c96f31325ed23792832cc5d8b12d5f88c8a.txt) |
@@ -404,7 +376,6 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `linkifyjs` | 4.3.3 | MIT | runtime | [1](licenses/texts/npm/58e6f3677452cca096ce5328ebf7de37a1406bbeeb2f263c1b2ededc8c7d0228.txt) |
 | `locate-path` | 5.0.0 | MIT | runtime | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
 | `locate-path` | 7.2.0 | MIT | dev-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
-| `loose-envify` | 1.4.0 | MIT | runtime | [1](licenses/texts/npm/4eb7543b08d955a6d23fcc224601d43ff566e775be918805e26210d7f6eb4893.txt) |
 | `loupe` | 3.2.1 | MIT | dev-only | [1](licenses/texts/npm/592141f7b861426ceeff937d85ad04ada5f66e386c5a8696ed1bd680f2cdb552.txt) |
 | `lru-cache` | 10.4.3 | ISC | dev-only | [1](licenses/texts/npm/451ec07eeb9c4e1b86de9abdaa426462a8be48f887ec7421cf0bbb9c769555ab.txt) |
 | `lru-cache` | 5.1.1 | ISC | build-only, dev-only | [1](licenses/texts/npm/4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b.txt) |
@@ -423,7 +394,6 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `nanoid` | 3.3.15 | MIT | build-only, dev-only | [1](licenses/texts/npm/da4db1480d9beea3483a2eda5c53b22238d0827d57da162b48f122e04d2d9987.txt) |
 | `node-releases` | 2.0.48 | MIT | build-only, dev-only | [1](licenses/texts/npm/3706296ed611888111ceccc1dff4712844dea4bde0b185c82d718c3b69895abe.txt) |
 | `nwsapi` | 2.2.24 | MIT | dev-only | [1](licenses/texts/npm/2aebdf8ae67777ccb2fa66b32066c1a16bd71085011bb4085dc7408e2947d2c2.txt) |
-| `object-assign` | 4.1.1 | MIT | runtime | [1](licenses/texts/npm/6fb9754611c20f6649f68805e8c990e83261f29316e29de9e6cedae607b8634c.txt) |
 | `open` | 8.4.2 | MIT | dev-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `orderedmap` | 2.1.1 | MIT | runtime | [1](licenses/texts/npm/869c30f368eb08735e779027b9f4bc9fea2f39624351856aebe42741f0bc0884.txt) |
 | `p-limit` | 2.3.0 | MIT | runtime | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
@@ -448,7 +418,6 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `postcss` | 8.5.15 | MIT | build-only, dev-only | [1](licenses/texts/npm/5be1f3465bba68a626777f984878814aaf35e7ef8e9fd314d469bcf887050fb8.txt) |
 | `pretty-format` | 27.5.1 | MIT | dev-only | [1](licenses/texts/npm/52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85.txt) |
 | `prompts` | 2.4.2 | MIT | dev-only | [1](licenses/texts/npm/ade66f698fd417addc4d948a85ef33e8abb302daff6453feda18b191d250e54d.txt) |
-| `prop-types` | 15.8.1 | MIT | runtime | [1](licenses/texts/npm/f657f99d3fb9647db92628e96007aabb46e5f04f33e49999075aab8e250ca7ce.txt) |
 | `prosemirror-changeset` | 2.4.1 | MIT | runtime | [1](licenses/texts/npm/7543dfe82fa61d5bb2478c78cbd9dfb2cbd500b6ac2893b24ed925773b67fb70.txt) |
 | `prosemirror-collab` | 1.3.1 | MIT | runtime | [1](licenses/texts/npm/ef0b452ced6304db2ce78ca66de1fc7b97bab05bc1750c95df359ed3fe1d65c8.txt) |
 | `prosemirror-commands` | 1.7.1 | MIT | runtime | [1](licenses/texts/npm/ef0b452ced6304db2ce78ca66de1fc7b97bab05bc1750c95df359ed3fe1d65c8.txt) |
@@ -470,18 +439,14 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `punycode.js` | 2.3.1 | MIT | runtime | [1](licenses/texts/npm/483acb265f182907d1caf6cff9c16c96f31325ed23792832cc5d8b12d5f88c8a.txt) |
 | `punycode` | 2.3.1 | MIT | dev-only | [1](licenses/texts/npm/483acb265f182907d1caf6cff9c16c96f31325ed23792832cc5d8b12d5f88c8a.txt) |
 | `qrcode` | 1.5.4 | MIT | runtime | [1](licenses/texts/npm/8df47c6ad9ac2c41eb9b2a72def9908959da0ede8dadd56c7b249c1bdb0c5ce6.txt) |
-| `react-aria-components` | 1.21.1 | Apache-2.0 | runtime | [1](licenses/texts/npm/7dfe6526888bac51759c99f9a51262ba2711a8c12a067f2181609dd9a4066b84.txt) |
-| `react-aria` | 3.52.1 | Apache-2.0 | runtime | [1](licenses/texts/npm/7dfe6526888bac51759c99f9a51262ba2711a8c12a067f2181609dd9a4066b84.txt) |
+| `react-colorful` | 5.8.1 | MIT | runtime | [1](licenses/texts/npm/eaa62adefbadd3f8c7733d47f72b185970b4d8c1e738d12e953c1e9d74292ca3.txt) [2](licenses/texts/npm/c779efe5dfb04b7b7cac35c4898725e4d22e98b86bc81c9556311d067bf97af5.txt) |
 | `react-docgen-typescript` | 2.4.0 | MIT | dev-only | [1](licenses/texts/npm/a61b261379cbd8e1856fc16892d4c5202500af07d44bf0de58facaa0abe76afe.txt) |
 | `react-docgen` | 8.0.4 | MIT | dev-only | [1](licenses/texts/npm/52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85.txt) |
 | `react-dom` | 19.2.7 | MIT | dev-only, runtime | [1](licenses/texts/npm/da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93.txt) |
-| `react-is` | 16.13.1 | MIT | runtime | [1](licenses/texts/npm/52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85.txt) |
 | `react-is` | 17.0.2 | MIT | dev-only | [1](licenses/texts/npm/52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85.txt) |
 | `react-refresh` | 0.17.0 | MIT | build-only | [1](licenses/texts/npm/da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93.txt) |
 | `react-router-dom` | 7.18.0 | MIT | runtime | [1](licenses/texts/npm/77c9ee6a9c5d5782fb0c50b50d101189116314c14f7df0a1b0d385fc96a7ba49.txt) |
 | `react-router` | 7.18.0 | MIT | runtime | [1](licenses/texts/npm/77c9ee6a9c5d5782fb0c50b50d101189116314c14f7df0a1b0d385fc96a7ba49.txt) |
-| `react-stately` | 3.50.0 | Apache-2.0 | runtime | [1](licenses/texts/npm/7dfe6526888bac51759c99f9a51262ba2711a8c12a067f2181609dd9a4066b84.txt) |
-| `react-transition-group` | 4.4.5 | BSD-3-Clause | runtime | [1](licenses/texts/npm/b9adc17ad75a847d8743be2843935f0842a0ea4f45e7b0c7e17ed0be98614b9b.txt) |
 | `react` | 19.2.7 | MIT | dev-only, runtime | [1](licenses/texts/npm/da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93.txt) |
 | `recast` | 0.23.21 | MIT | dev-only | [1](licenses/texts/npm/6ca87d1dce5b82873603e566fd83dabe8771fb169013337d4a14bb9bbf794687.txt) |
 | `redent` | 3.0.0 | MIT | dev-only | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
@@ -523,8 +488,7 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `supports-preserve-symlinks-flag` | 1.0.0 | MIT | dev-only | [1](licenses/texts/npm/0f0ca96f50793990031ebc488a38f7292ff70bce8ab6a8e5eeda674abc32ccdf.txt) |
 | `symbol-tree` | 3.2.4 | MIT | dev-only | [1](licenses/texts/npm/9ea1eccdabe469767a9edb9249a840b2461cf91b2434bf8a3e2fc1f414311cb1.txt) |
 | `tailwind-merge` | 3.6.0 | MIT | runtime | [1](licenses/texts/npm/d4c70c7ce38cea8778f0aed3fc0bef0a9dbd27f13bd8b6773cbd6d37941971e5.txt) |
-| `tailwind-variants` | 3.3.1 | MIT | runtime | [1](licenses/texts/npm/f3f8984c684106a9ffb50c44ff5dd6f2082526d78a820235a6592423d376d650.txt) |
-| `tailwindcss` | 4.3.1 | MIT | build-only, runtime | [1](licenses/texts/npm/60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985.txt) |
+| `tailwindcss` | 4.3.1 | MIT | build-only | [1](licenses/texts/npm/60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985.txt) |
 | `tapable` | 2.3.3 | MIT | build-only | [1](licenses/texts/npm/824ef6c33ae5ecbbab65d37f2b37da2bfc81d76cf7676ec0f59d00a0a38bdb75.txt) |
 | `tiny-invariant` | 1.3.3 | MIT | dev-only | [1](licenses/texts/npm/b1c501095de70182748cb8e8d97ac5577701a4ef3b755ba30d59fd87b24bdb0f.txt) |
 | `tinybench` | 2.9.0 | MIT | dev-only | [1](licenses/texts/npm/cebc084d54e6dd99e53292ddb4bc1cdb63d9bfcd9ce438fe3aa6eb106d79e2ea.txt) |
@@ -542,7 +506,6 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `ts-dedent` | 2.3.0 | MIT | dev-only | [1](licenses/texts/npm/eff13095d9d762c3bd9dda74370c81e2130c28f2691bc455603abf973bac25b9.txt) |
 | `tsconfig-paths` | 4.2.0 | MIT | dev-only | [1](licenses/texts/npm/8850a2d4828514113042db6ec97237b7ca6cb1599734874e5817d521f8f84e1c.txt) |
 | `tslib` | 2.8.1 | 0BSD | build-only, dev-only, runtime | [1](licenses/texts/npm/210b19e543130388c68654b7497e967119ce17145f66ab7d85688fbd70f08751.txt) |
-| `tw-animate-css` | 1.4.0 | MIT | runtime | [1](licenses/texts/npm/039184dfa0a822397b3f45a435b5b1e538721587fbade96b9fa80f86cb354109.txt) |
 | `typescript` | 5.9.3 | Apache-2.0 | dev-only | [1](licenses/texts/npm/a7d00bfd54525bc694b6e32f64c7ebcf5e6b7ae3657be5cc12767bce74654a47.txt) |
 | `uc.micro` | 2.1.0 | MIT | runtime | [1](licenses/texts/npm/483acb265f182907d1caf6cff9c16c96f31325ed23792832cc5d8b12d5f88c8a.txt) |
 | `undici-types` | 6.21.0 | MIT | build-only, dev-only | [1](licenses/texts/npm/a6db8096b2707bc0102d256917d4d33f298ba36d8c3f25de067a2b5bb379db27.txt) |

@@ -134,10 +134,10 @@
 .site-reader-empty p { margin: 0; font-size: var(--orbis-prose-body-size); }
 .site-reader-empty a { color: var(--reader-accent); font-size: var(--orbis-prose-body-size); font-weight: 650; }
 
-.site-reader-search-backdrop { position: fixed; z-index: 80; inset: 0; display: grid; place-items: start center; padding: min(12vh, 110px) 20px 30px; background: #07110b99; }
+.site-reader-search-backdrop { background: #07110b99; }
+.site-reader-search-viewport { place-items: start center; padding: min(12vh, 110px) 20px 30px; }
 .site-reader-overlay-root { display: contents; }
-.site-reader-search-container { position: static; display: block; inset: auto; width: min(660px, 100%); height: auto; padding: 0; }
-.site-reader-search-dialog { display: block; width: 100%; max-width: none; padding: 0; overflow: hidden; }
+.site-reader-search-dialog { display: block; width: min(660px, 100%); max-width: none; padding: 0; overflow: hidden; border-color: var(--reader-border); background: var(--reader-surface); color: var(--reader-text); }
 .site-reader-search-field { height: 57px; }
 .site-reader-search-field button { width: 30px; height: 30px; display: grid; place-items: center; border: 0; background: transparent; color: var(--reader-muted); cursor: pointer; }
 .site-reader-search-field button:hover { background: var(--reader-surface-soft); }
@@ -201,7 +201,7 @@
   .site-reader .document-prose h2 { margin-top: 36px; font-size: var(--orbis-prose-h2-size); }
   .site-reader-pagination { margin-top: 46px; gap: 5px; }
   .site-reader-pagination a { padding: 9px 5px; }
-  .site-reader-search-backdrop { place-items: start center; padding: 12px; }
+  .site-reader-search-viewport { place-items: start center; padding: 12px; }
   .site-reader-search-results { max-height: calc(100dvh - 150px); }
 }
 

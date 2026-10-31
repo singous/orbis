@@ -1,21 +1,14 @@
-import { Spinner } from "@heroui/react/spinner";
-import { Button as HeroButton } from "@heroui/react/button";
-import type { ComponentProps, ReactNode, AriaRole, HTMLAttributes } from "react";
+import { Button as PrimitiveButton } from "@orbis/ui/button";
+import { Spinner } from "@orbis/ui/spinner";
+import type { ComponentProps } from "react";
+import { cn } from "@orbis/ui/cn";
+import { controlTones, domainTouchTargets } from "./control-styles";
+import { useLegacyButtonEvents, type LegacyButtonEvents } from "./legacy-button-events";
 
-import { cn } from "./cn";
-
-type ActionButtonProps = Omit<ComponentProps<typeof HeroButton>, "className" | "children" | "render"> & {
-  className?: string;
-  children?: ReactNode;
-  disabled?: boolean;
-  title?: string;
-  role?: AriaRole;
-  "aria-selected"?: HTMLAttributes<HTMLButtonElement>["aria-selected"];
-  "aria-checked"?: HTMLAttributes<HTMLButtonElement>["aria-checked"];
-  contentEditable?: HTMLAttributes<HTMLButtonElement>["contentEditable"];
-};
-
-/** HeroUI interaction semantics for controls whose shape belongs to a feature layout. */
-export function ActionButton({ className, children, disabled, isDisabled, isPending = false, title, role, "aria-selected": ariaSelected, "aria-checked": ariaChecked, contentEditable, variant = "ghost", type = "button", ...props }: ActionButtonProps) {
-  return <HeroButton variant={variant} className={cn("orbis-action-button", className)} isDisabled={isPending ? true : disabled ?? isDisabled} isPending={isPending} aria-busy={isPending || undefined} type={type} render={(domProps) => <button {...domProps} role={role ?? domProps.role} aria-selected={ariaSelected ?? domProps["aria-selected"]} aria-checked={ariaChecked ?? domProps["aria-checked"]} contentEditable={contentEditable} aria-busy={isPending || undefined} title={title} />} {...props}>{isPending ? <Spinner size="sm" color="current" className="action-pending-spinner" aria-hidden="true" /> : null}{children}</HeroButton>;
+type ActionButtonProps = ComponentProps<"button"> & LegacyButtonEvents & { isDisabled?: boolean; isPending?: boolean; variant?: "primary" | "secondary" | "tertiary" | "ghost" | "outline" | "danger" | "danger-soft"; size?: "sm" | "md" | "lg" };
+export function ActionButton({ className, children, disabled, isDisabled, isPending = false, variant = "ghost", size = "md", type = "button", onPress, onClick, onKeyDown, onPointerDown, ...props }: ActionButtonProps) {
+  const events = useLegacyButtonEvents({ onPress, onClick, onKeyDown, onPointerDown });
+  return <PrimitiveButton {...props} {...events} appearance="unstyled" type={type} disabled={isPending || (disabled ?? isDisabled)} aria-busy={isPending || undefined} data-pending={isPending || undefined} className={cn("button", `button--${variant}`, `button--${size}`, "orbis-action-button static inline-block h-auto w-auto min-w-0 rounded-ob-xl border-0 p-0 [font:inherit] text-start whitespace-normal [justify-content:normal] [gap:normal] [&_svg]:h-auto [&_svg]:w-auto [&_svg]:m-0 [&_svg]:self-auto", domainTouchTargets, controlTones[variant], className)}>
+    {isPending ? <Spinner size="sm" color="current" className="action-pending-spinner" aria-hidden="true" /> : null}{children}
+  </PrimitiveButton>;
 }

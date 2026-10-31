@@ -1,11 +1,11 @@
-import { AlertDialog } from "@heroui/react/alert-dialog";
-import { useRef, useState, type ReactNode } from "react";
+import { Dialog, DialogTrigger, DialogPopup, DialogTitle, DialogFooter } from "@orbis/ui/dialog";
+import { useId, useRef, useState, type ReactElement } from "react";
 import { reportError } from "../api/request-feedback";
 import { Button } from "./Button";
 
 /** 危险操作只在用户明确确认后执行；请求失败仍由统一反馈出口处理。 */
 export function ConfirmAction({ children, title, description, confirmLabel, onConfirm, disabled = false }: {
-  children: ReactNode;
+  children: ReactElement;
   title: string;
   description: string;
   confirmLabel: string;
@@ -15,6 +15,8 @@ export function ConfirmAction({ children, title, description, confirmLabel, onCo
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const running = useRef(false);
+  const cancel = useRef<HTMLButtonElement>(null);
+  const descriptionId = useId();
 
   async function confirm() {
     if (running.current || disabled) return;
@@ -31,24 +33,14 @@ export function ConfirmAction({ children, title, description, confirmLabel, onCo
     }
   }
 
-  return (
-    <AlertDialog isOpen={open} onOpenChange={value => { if (!running.current) setOpen(value); }}>
-      {children}
-      <AlertDialog.Backdrop isKeyboardDismissDisabled={pending}>
-        <AlertDialog.Container>
-          <AlertDialog.Dialog>
-            <AlertDialog.Header>
-              <AlertDialog.Icon status="warning" />
-              <AlertDialog.Heading>{title}</AlertDialog.Heading>
-            </AlertDialog.Header>
-            <AlertDialog.Body><p>{description}</p></AlertDialog.Body>
-            <AlertDialog.Footer>
-              <Button slot="close" autoFocus disabled={pending}>取消</Button>
-              <Button variant="danger" disabled={disabled} isPending={pending} onPress={() => void confirm()}>{confirmLabel}</Button>
-            </AlertDialog.Footer>
-          </AlertDialog.Dialog>
-        </AlertDialog.Container>
-      </AlertDialog.Backdrop>
-    </AlertDialog>
-  );
+  return <Dialog dismissOnOutsidePress={false} open={open} onOpenChange={value => { if (!running.current) setOpen(value); }}>
+    <DialogTrigger asChild>{children}</DialogTrigger>
+    <DialogPopup role="alertdialog" initialFocus={cancel} aria-describedby={descriptionId} className="max-w-112">
+      <DialogTitle>{title}</DialogTitle><p id={descriptionId} className="text-sm leading-6 text-ob-muted-foreground">{description}</p>
+      <DialogFooter>
+        <Button ref={cancel} disabled={pending} onClick={() => setOpen(false)}>取消</Button>
+        <Button variant="danger" disabled={disabled} isPending={pending} onPress={() => void confirm()}>{confirmLabel}</Button>
+      </DialogFooter>
+    </DialogPopup>
+  </Dialog>;
 }

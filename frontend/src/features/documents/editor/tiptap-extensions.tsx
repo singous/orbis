@@ -1,6 +1,6 @@
 import { SelectField } from "../../../shared/ui/SelectField";
 import { ActionButton } from "../../../shared/ui/ActionButton";
-import { Input as HeroInput } from "@heroui/react/input";
+import { Input } from "@orbis/ui/input";
 import { Extension, Mark, Node, mergeAttributes } from "@tiptap/core";
 import CodeBlock from "@tiptap/extension-code-block";
 import Link from "@tiptap/extension-link";
@@ -143,7 +143,7 @@ function ComponentView({ node, editor, updateAttributes, getPos }: NodeViewProps
       {Object.entries(definition.props).map(([name, rule]) => {
         const label = name === "title" ? definition.label + "标题" : PROP_LABELS[name] || name;
         if (rule.values) return <SelectField key={name} label={label} value={String(props[name] ?? rule.default)} onChange={(value) => updateProps({ [name]: typeof rule.default === "number" ? Number(value) : value })} options={rule.values.map((value) => ({ value: String(value), label: VALUE_LABELS[String(value)] || String(value) }))} />;
-        return <label key={name}><span>{label}</span><HeroInput aria-label={label} maxLength={rule.maxLength} value={String(props[name] ?? rule.default)}
+        return <label key={name}><span>{label}</span><Input aria-label={label} maxLength={rule.maxLength} value={String(props[name] ?? rule.default)}
           placeholder={name === "href" ? "https://… 或内部文档链接" : "输入标题"}
           onChange={(event) => updateProps({ [name]: event.target.value })} /></label>;
       })}
@@ -172,7 +172,7 @@ function MediaView({ node, updateAttributes }: NodeViewProps) {
   return <NodeViewWrapper data-orbis-block-id={node.attrs.orbisId} className="orbis-media" contentEditable={false}>
     <ContentMedia kind={kind} reference={reference} fallback={safeContentUrl(reference, true)} name={caption || "附件"} caption={caption || undefined} previewWidth={props.previewWidth} />
     {!readOnly ? <ActionButton type="button" className="doc-editor-settings" aria-label="编辑媒体说明" aria-expanded={editingCaption} onClick={() => setEditingCaption((value) => !value)}><Settings2 size={14} /></ActionButton> : null}
-    {!readOnly && editingCaption ? <label className="orbis-media-caption">说明<HeroInput aria-label="媒体说明" value={caption} onChange={(event) => updateAttributes({ orbisProps: { ...props, caption: event.target.value }, caption: event.target.value })} /></label> : null}
+    {!readOnly && editingCaption ? <label className="orbis-media-caption">说明<Input aria-label="媒体说明" value={caption} onChange={(event) => updateAttributes({ orbisProps: { ...props, caption: event.target.value }, caption: event.target.value })} /></label> : null}
   </NodeViewWrapper>;
 }
 

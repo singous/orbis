@@ -267,10 +267,14 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
    if(menuOpenRef.current && !insideEmbed && !(event.target instanceof Node && menuRef.current?.contains(event.target)))setOpen(false);
   };
   const openRequested=()=>{
-   const id=blockSelectionKey.getState(editor.state)?.ids[0]??ownedOrbisBlock(editor.state.doc,editor.state.selection.from)?.id;
+   const selectedIds=blockSelectionKey.getState(editor.state)?.ids??[];
+   const caretId=ownedOrbisBlock(editor.state.doc,editor.state.selection.from)?.id;
+   // 句柄已跟随新光标时，单块菜单不能继续操作上一次的块；显式多块选区仍优先。
+   const retargetSingle=selectedIds.length===1&&caretId!==undefined&&activeRef.current===caretId&&selectedIds[0]!==caretId;
+   const id=retargetSingle?caretId:selectedIds[0]??caretId;
    if(!id)return;
    setDoc(editor.state.doc);setActiveId(id);positionHandle(id);
-   if(!blockSelectionKey.getState(editor.state)?.ids.length)selectBlock(editor,id);
+   if(!selectedIds.length||retargetSingle)selectBlock(editor,id);
    setOpen(true);
   };
   const layoutObserver=new ResizeObserver(()=>positionHandle(activeRef.current));

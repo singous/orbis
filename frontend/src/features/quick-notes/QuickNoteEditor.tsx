@@ -78,11 +78,11 @@ export function QuickNoteEditor({ initialValue, onChange, onSubmit, onError, onB
     finally { uploadLock.current = false; if (mounted.current) { setUploading(false); callbacks.current.onBusy(false); } }
   }
   function tool(label: string, icon: ReactNode, run: (editor: Editor) => void, pressed?: boolean) {
-    return <ActionButton type="button" title={label} aria-label={label} aria-pressed={pressed} disabled={disabled || uploading || !editor} onMouseDown={event => event.preventDefault()} onClick={() => editor && run(editor)}>{icon}</ActionButton>;
+    return <ActionButton type="button" hidden={Boolean(homeActions) && label === "添加附件"} title={label} aria-label={label} aria-pressed={pressed} disabled={disabled || uploading || !editor} onMouseDown={event => event.preventDefault()} onClick={() => editor && run(editor)}>{icon}</ActionButton>;
   }
   return <FileContentContext.Provider value={files}>
-    <div className="quick-note-editor orbis-tiptap">
-      <div className="quick-note-tools" role="toolbar" aria-label="随手记格式">
+    <div className={homeActions ? "quick-note-editor orbis-tiptap flex min-h-0 flex-1 flex-col" : "quick-note-editor orbis-tiptap"} data-home-editor={Boolean(homeActions) || undefined}>
+      <div className={homeActions ? "quick-note-tools order-1 flex flex-wrap items-center gap-1 border-b border-ob-surface-edge px-0 py-2 [&_svg]:size-4" : "quick-note-tools"} role="toolbar" aria-label="随手记格式">
         {tool("插入图片", <Image size={17} />, () => imageInput.current?.click())}
         {tool("待办清单", <ListChecks size={17} />, editor => editor.chain().focus().toggleTaskList().run(), active?.task)}
         {tool("插入链接", <Link2 size={17} />, editor => { setLink(String(editor.getAttributes("link").href ?? ""));  setLinkOpen(true); })}
@@ -93,8 +93,9 @@ export function QuickNoteEditor({ initialValue, onChange, onSubmit, onError, onB
         {tool("无序列表", <List size={17} />, editor => editor.chain().focus().toggleBulletList().run(), active?.list)}
         {tool("代码块", <Code size={17} />, editor => editor.chain().focus().toggleCodeBlock().run(), active?.code)}
       </div>
-      {homeActions ? <div className="home-note-field"><EditorContent editor={editor} /><span className="home-note-count">{active?.characters ?? 0} 字</span></div> : <EditorContent editor={editor} />}
-      {homeActions ? <div className="home-note-actions">
+      {/* 共享 ProseMirror 内容样式未分层；这里只覆盖首页编辑区的最小高度与内边距。 */}
+      {homeActions ? <div className="home-note-field relative flex-1"><EditorContent className="h-full [&_.tiptap]:h-full [&_.tiptap]:min-h-[calc(4*var(--ob-control-height-lg))]! [&_.tiptap]:max-h-80 [&_.tiptap]:px-3! [&_.tiptap]:pt-3! [&_.tiptap]:pb-8!" editor={editor} /><span className="home-note-count pointer-events-none absolute end-3 bottom-2 text-xs text-ob-muted-foreground">{active?.characters ?? 0} 字</span></div> : <EditorContent editor={editor} />}
+      {homeActions ? <div className="home-note-actions order-2 flex flex-wrap items-center gap-2 pt-3">
         <Button variant="ghost" disabled={disabled || uploading || !editor} onClick={() => uploadInput.current?.click()}><Paperclip aria-hidden="true" />添加附件</Button>
         {homeActions}
       </div> : null}

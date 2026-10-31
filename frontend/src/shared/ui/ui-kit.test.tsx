@@ -1,5 +1,5 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
-import { toast as heroToast } from "@heroui/react/toast";
+import { clearToasts } from "./Toast";
 import userEvent from "@testing-library/user-event";
 import type { FormEvent } from "react";
 import { Link, MemoryRouter } from "react-router-dom";
@@ -101,7 +101,7 @@ describe("Dialog", () => {
     expect(screen.getByRole("dialog")).toHaveTextContent("输入文档标题");
 
     await user.click(screen.getByRole("button", { name: "创建" }));
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 });
 
@@ -117,7 +117,7 @@ describe("Toaster", () => {
     expect(screen.getByText("文档内容已更新")).toBeInTheDocument();
 
     act(() => {
-      heroToast.clear();
+      clearToasts();
     });
 
     await waitFor(() => expect(screen.queryByText("已保存")).not.toBeInTheDocument());

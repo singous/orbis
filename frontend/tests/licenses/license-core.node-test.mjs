@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { dependencyUsage, licensePolicy, parseSourcePins } from "../../scripts/license-core.mjs";
+import { dependencyUsage, distributionArtifact, licensePolicy, parseSourcePins } from "../../scripts/license-core.mjs";
 
 test("SPDX expressions are parsed before policy is applied", () => {
   assert.equal(licensePolicy("MIT OR (Apache-2.0 AND BSD-3-Clause)"), "permissive");
@@ -36,4 +36,11 @@ test("corresponding source pins require real immutable revisions, checksums and 
   assert.deepEqual(parseSourcePins("# not approved yet\n"), []);
   assert.throws(() => parseSourcePins(valid.replace("a".repeat(40), "main")));
   assert.throws(() => parseSourcePins(valid.replace("elkjs-source.tar.gz", "../../source.tgz")));
+});
+
+test("bundled dependency provenance points to the actual containing tarball", () => {
+  const location = "node_modules/container/node_modules/embedded";
+  const packages = { "node_modules/container": { version: "4.3.1", resolved: "https://example.com/container.tgz", integrity: "sha512-actual" }, [location]: { version: "0.10.2", inBundle: true } };
+  assert.deepEqual(distributionArtifact(packages, location), { artifact: "https://example.com/container.tgz", integrity: "sha512-actual", artifactOwner: { name: "container", version: "4.3.1", location: "node_modules/container" } });
+  assert.throws(() => distributionArtifact({ [location]: packages[location] }, location));
 });

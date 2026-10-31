@@ -3,7 +3,7 @@ import { expect, userEvent, within, waitFor } from "storybook/test";
 import { useState, type CSSProperties } from "react";
 import { Button } from "@orbis/ui/button";
 import { Select } from "@orbis/ui/select";
-import { Dialog, DialogTrigger, DialogContent, DialogFooter, DialogClose } from "./index";
+import { Dialog, DialogTrigger, DialogContent, DialogFooter, DialogClose, DialogPopup, DialogTitle } from "./index";
 
 function NestedForm() {
   const [value, setValue] = useState<string | null>("");
@@ -68,5 +68,46 @@ export const TriggerTheme: Story = {
     await expect(dialog.closest("[data-theme]")).toHaveAttribute("data-theme", "light");
     await waitFor(() => expect(getComputedStyle(dialog).getPropertyValue("--ob-primary")).toBe(getComputedStyle(owner).getPropertyValue("--ob-primary")));
     await userEvent.keyboard("{Escape}");
+  },
+};
+
+export const ComposedPopup: Story = {
+  render: function ComposedExample() {
+    const [completed, setCompleted] = useState<boolean | null>(null);
+    return <><Dialog onOpenChangeComplete={setCompleted}>
+      <DialogTrigger asChild><Button>打开组合浮层</Button></DialogTrigger>
+      <DialogPopup className="max-w-sm gap-3">
+        <DialogTitle>组合浮层</DialogTitle>
+        <p>内容布局由调用方组合，关闭与焦点仍由原语维护。</p>
+        <DialogClose asChild><Button>关闭组合浮层</Button></DialogClose>
+      </DialogPopup>
+    </Dialog><output aria-label="浮层状态">{completed === null ? "尚未打开" : completed ? "已打开" : "已关闭"}</output></>;
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const screen = within(canvasElement.ownerDocument.body);
+    const trigger = canvas.getByRole("button", { name: "打开组合浮层" });
+    await userEvent.click(trigger);
+    const dialog = await screen.findByRole("dialog", { name: "组合浮层" });
+    await waitFor(() => expect(canvas.getByLabelText("浮层状态")).toHaveTextContent("已打开"));
+    await userEvent.click(within(dialog).getByRole("button", { name: "关闭组合浮层" }));
+    await waitFor(() => expect(canvas.getByLabelText("浮层状态")).toHaveTextContent("已关闭"));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "组合浮层" })).not.toBeInTheDocument());
+    await waitFor(() => expect(trigger).toHaveFocus());
+  },
+};
+
+export const OutsideDismissalPolicy: Story = {
+  render: () => <Dialog dismissOnOutsidePress={false}><DialogTrigger asChild><Button>打开确认</Button></DialogTrigger><DialogContent title="确认操作"><DialogClose asChild><Button>取消操作</Button></DialogClose></DialogContent></Dialog>,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const screen = within(canvasElement.ownerDocument.body);
+    await userEvent.click(canvas.getByRole("button", { name: "打开确认" }));
+    const dialog = await screen.findByRole("dialog", { name: "确认操作" });
+    await waitFor(() => expect(dialog).toBeVisible());
+    await userEvent.click(canvasElement.ownerDocument.querySelector<HTMLElement>('[data-slot="ob-dialog-backdrop"]')!);
+    await waitFor(() => expect(dialog).toBeVisible());
+    await userEvent.click(within(dialog).getByRole("button", { name: "取消操作" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "确认操作" })).not.toBeInTheDocument());
   },
 };

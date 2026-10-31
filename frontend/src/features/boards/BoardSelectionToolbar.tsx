@@ -1,4 +1,4 @@
-import { Toolbar } from "@heroui/react/toolbar";
+import { Toolbar } from "@orbis/ui/toolbar";
 import { useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import type { Bounds } from "./geometry";
 import type { Camera } from "./renderer";

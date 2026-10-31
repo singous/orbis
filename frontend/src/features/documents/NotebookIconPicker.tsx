@@ -1,6 +1,5 @@
 import { reportError } from "../../shared/api/request-feedback";
-import { Radio } from "@heroui/react/radio";
-import { RadioGroup } from "@heroui/react/radio-group";
+import { RadioGroup, RadioGroupItem } from "@orbis/ui/radio-group";
 import { ImagePlus, RotateCcw, Check, LoaderCircle } from "../../shared/ui/icons";
 import { type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
 
@@ -24,7 +23,7 @@ function handleRadioGroupKeyDown(event: KeyboardEvent<HTMLDivElement>) {
   if (event.key !== "Home" && event.key !== "End") return;
   if (!(event.target instanceof Element)) return;
   const group = event.target.closest('[role="radiogroup"]');
-  const choices = Array.from(group?.querySelectorAll<HTMLInputElement>('input[type="radio"]:not(:disabled)') ?? []);
+  const choices = Array.from(group?.querySelectorAll<HTMLElement>('[role="radio"]:not([aria-disabled="true"])') ?? []);
   if (!choices.length) return;
   event.preventDefault();
   event.stopPropagation();
@@ -84,25 +83,22 @@ export function NotebookIconPicker({ value, onChange, uploadFile, onPendingChang
         <RotateCcw size={14} aria-hidden="true" />
       </Button>
     </div>
-    <RadioGroup className="notebook-icon-picker-grid" aria-label="预设图标" value={value?.type === "image" ? "" : selected.name} isDisabled={blocked} onChange={(nextName) => {
+    <RadioGroup className="notebook-icon-picker-grid" aria-label="预设图标" value={value?.type === "image" ? "" : selected.name} disabled={blocked} onValueChange={(nextName) => {
       const preset = NOTEBOOK_ICON_PRESETS.find((item) => item.name === nextName);
       if (preset) chooseIcon({ type: "preset", name: preset.name, color: selected.color });
     }}>
-      {NOTEBOOK_ICON_PRESETS.map(({ name, label }) => <Radio key={name} value={name} aria-label={label} render={(props) => <div {...props} title={label} />}>
-        <Radio.Content className="notebook-icon-choice"><NotebookIcon icon={{ type: "preset", name, color: selected.color }} /></Radio.Content>
-      </Radio>)}
+      {NOTEBOOK_ICON_PRESETS.map(({ name, label }) => <RadioGroupItem key={name} value={name} aria-label={label} title={label} appearance="choice" className="notebook-icon-choice"><NotebookIcon icon={{ type: "preset", name, color: selected.color }} />
+      </RadioGroupItem>)}
     </RadioGroup>
-    <RadioGroup className="notebook-icon-picker-colors" aria-label="图标颜色" orientation="horizontal" value={value?.type === "image" ? "" : selected.color} isDisabled={blocked} onChange={(nextColor) => {
+    <RadioGroup className="notebook-icon-picker-colors" aria-label="图标颜色" aria-orientation="horizontal" value={value?.type === "image" ? "" : selected.color} disabled={blocked} onValueChange={(nextColor) => {
       const color = NOTEBOOK_ICON_COLORS.find((item) => item.name === nextColor);
       if (color) chooseIcon({ type: "preset", name: selected.name, color: color.name });
     }}>
-      {NOTEBOOK_ICON_COLORS.map(({ name, label }) => <Radio key={name} value={name} aria-label={label} render={(props) => <div {...props} title={label} />}>
-        <Radio.Content className="notebook-icon-color-choice">
-          {({ isSelected }) => <span className={`notebook-icon-swatch notebook-icon--${name}`}>
-            {isSelected ? <Check size={14} strokeWidth={2.5} aria-hidden="true" /> : null}
-          </span>}
-        </Radio.Content>
-      </Radio>)}
+      {NOTEBOOK_ICON_COLORS.map(({ name, label }) => <RadioGroupItem key={name} value={name} aria-label={label} title={label} appearance="choice" className="notebook-icon-color-choice">
+        <span className={`notebook-icon-swatch notebook-icon--${name}`}>
+          {value?.type !== "image" && selected.color === name ? <Check size={14} strokeWidth={2.5} aria-hidden="true" /> : null}
+        </span>
+      </RadioGroupItem>)}
     </RadioGroup>
     <div className="notebook-icon-upload">
       <Button variant="secondary" disabled={blocked} onPress={() => fileInputRef.current?.click()}>

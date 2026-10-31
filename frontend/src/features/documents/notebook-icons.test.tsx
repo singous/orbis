@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { toast as heroToast } from "@heroui/react/toast";
+import { clearToasts } from "../../shared/ui/Toast";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -30,7 +30,7 @@ function openDialog(onSubmit = vi.fn()) {
 }
 
 afterEach(() => {
-  act(() => heroToast.clear());
+  act(() => clearToasts());
   vi.unstubAllGlobals();
   act(() => authStore.getState().clearSession());
 });

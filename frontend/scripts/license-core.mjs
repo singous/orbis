@@ -79,3 +79,21 @@ export function parseSourcePins(text) {
     return { name, version, artifactIntegrity, sourceRevision, sourceURL, sourceSHA256, destination };
   });
 }
+
+/** Bundled dependencies inherit the containing npm tarball identity. */
+export function distributionArtifact(packages, location) {
+  const entry = packages[location];
+  if (entry.resolved && entry.integrity) return { artifact: entry.resolved, integrity: entry.integrity };
+  if (!entry.inBundle) throw new Error(`Locked dependency has no artifact identity: ${location}`);
+  let owner = location;
+  while (owner.includes("/node_modules/")) {
+    owner = owner.slice(0, owner.lastIndexOf("/node_modules/"));
+    const container = packages[owner];
+    if (container?.resolved && container?.integrity) return {
+      artifact: container.resolved,
+      integrity: container.integrity,
+      artifactOwner: { name: packageName(owner), version: container.version, location: owner },
+    };
+  }
+  throw new Error(`Bundled dependency has no containing artifact: ${location}`);
+}

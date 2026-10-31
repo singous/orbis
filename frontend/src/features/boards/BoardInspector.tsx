@@ -3,8 +3,8 @@ import { isMindmapTopic, reparentElement, toggleTopicCollapsed } from "./mindmap
 import { removeMember, reorderLane, transformBranch } from "./transforms";
 import { useEffect, useRef, useState } from "react";
 import { Plus, Trash2, Shapes, X, ArrowUp, ArrowDown } from "@orbis/ui/icons";
-import { Tabs } from "@heroui/react/tabs";
-import { Checkbox } from "@heroui/react/checkbox";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
+import { Checkbox } from "@orbis/ui/checkbox";
 import { TextInput } from "../../shared/ui/TextInput";
 import { SelectField } from "../../shared/ui/SelectField";
 import { ColorField } from "../../shared/ui/ColorField";
@@ -162,16 +162,16 @@ export function BoardInspector({
           <X size={16} />
         </ActionButton>
       </header>
-      <Tabs selectedKey={tab} onSelectionChange={key => setTab(key === "style" ? "style" : "properties")} className="board-inspector-content">
-        <Tabs.ListContainer>
-          <Tabs.List className="board-inspector-tabs" aria-label="对象设置">
-            <Tabs.Tab id="properties">属性<Tabs.Indicator /></Tabs.Tab>
-            <Tabs.Tab id="style">样式<Tabs.Indicator /></Tabs.Tab>
-          </Tabs.List>
-        </Tabs.ListContainer>
+      <Tabs value={tab} onValueChange={key => setTab(key === "style" ? "style" : "properties")} className="board-inspector-content">
+        <div className="shrink-0">
+          <TabsList className="board-inspector-tabs" aria-label="对象设置">
+            <TabsTrigger value="properties">属性</TabsTrigger>
+            <TabsTrigger value="style">样式</TabsTrigger>
+          </TabsList>
+        </div>
         {!e ? (
           <>
-            <Tabs.Panel id="properties" className="board-property-panel">
+            <TabsContent value="properties" className="board-property-panel">
               <Field
                 label="页面名称"
                 value={page.name}
@@ -187,8 +187,8 @@ export function BoardInspector({
               <p className="board-inspector-note">
                 {elements.size.toLocaleString()} 个对象
               </p>
-            </Tabs.Panel>
-            <Tabs.Panel id="style" className="board-property-panel">
+            </TabsContent>
+            <TabsContent value="style" className="board-property-panel">
               <Field
                 label="页面背景"
                 type="color"
@@ -200,11 +200,11 @@ export function BoardInspector({
                   send([{ type: "pages.update", page: { ...page, background } }])
                 }
               />
-            </Tabs.Panel>
+            </TabsContent>
           </>
         ) : (
           <>
-            <Tabs.Panel id="properties" className="board-property-panel">
+            <TabsContent value="properties" className="board-property-panel">
               <fieldset disabled={readOnly}>
                 <legend>内容</legend>
                 <Field
@@ -265,12 +265,12 @@ export function BoardInspector({
               {e.shape_type.startsWith("mindmap.") ? (
                 <fieldset disabled={readOnly}>
                   <legend>主题分支</legend>
-                  <Checkbox className="board-check" isDisabled={readOnly} isSelected={e.structure.collapsed} onChange={value => {
+                  <Checkbox wrapperClassName="board-check" disabled={readOnly} checked={e.structure.collapsed} onCheckedChange={value => {
                     if (value === e.structure.collapsed) return;
                     if (isMindmapTopic(e)) run(() => toggleTopicCollapsed(e, elements));
                     else patch({ structure: { ...e.structure, collapsed: value } });
                   }}>
-                    <Checkbox.Content><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control>折叠子主题</Checkbox.Content>
+                    折叠子主题
                   </Checkbox>
                   <small>在画布中按 Tab 添加子主题，Enter 添加同级主题。</small>
                 </fieldset>
@@ -458,8 +458,8 @@ export function BoardInspector({
                   置于底层
                 </ActionButton>
               </fieldset>
-            </Tabs.Panel>
-            <Tabs.Panel id="style" className="board-property-panel">
+            </TabsContent>
+            <TabsContent value="style" className="board-property-panel">
               <fieldset disabled={readOnly}>
                 <legend>样式</legend>
                 <div className="board-property-grid">
@@ -501,17 +501,17 @@ export function BoardInspector({
                     onCommit={(value) => style("stroke_width", Number(value))}
                   />
                 </div>
-                <Checkbox className="board-check" isDisabled={readOnly} isSelected={e.style.bold} onChange={value => style("bold", value)}>
-                  <Checkbox.Content><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control>粗体</Checkbox.Content>
+                <Checkbox wrapperClassName="board-check" disabled={readOnly} checked={e.style.bold} onCheckedChange={value => style("bold", value)}>
+                  粗体
                 </Checkbox>
-                <Checkbox className="board-check" isDisabled={readOnly} isSelected={e.style.dashed} onChange={value => style("dashed", value)}>
-                  <Checkbox.Content><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control>虚线</Checkbox.Content>
+                <Checkbox wrapperClassName="board-check" disabled={readOnly} checked={e.style.dashed} onCheckedChange={value => style("dashed", value)}>
+                  虚线
                 </Checkbox>
                 <SelectField label="文字对齐" density="compact" className="board-field" value={e.style.align} disabled={readOnly}
                   options={[{ value: "left", label: "左对齐" }, { value: "center", label: "居中" }, { value: "right", label: "右对齐" }]}
                   onChange={value => style("align", value)} />
               </fieldset>
-            </Tabs.Panel>
+            </TabsContent>
           </>
         )}
       </Tabs>

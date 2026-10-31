@@ -1,4 +1,4 @@
-import { Toaster } from "../../shared/ui/Toast";
+import { clearToasts, Toaster } from "../../shared/ui/Toast";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useEffect } from "react";
@@ -65,14 +65,14 @@ beforeEach(() => {
   mockedSearch.pending = false;
   act(() => authStore.setState({ accessToken: "palette-token", refreshToken: "refresh", user, workspace }));
 });
-afterEach(() => { cleanup(); act(() => authStore.getState().clearSession()); vi.restoreAllMocks(); });
+afterEach(() => { cleanup(); act(() => { clearToasts(); authStore.getState().clearSession(); }); vi.restoreAllMocks(); });
 
 describe("global search palette", () => {
   it("keeps the closing dialog mounted through its exit animation and restores focus and scrolling afterwards", async () => {
     let finishExit!: () => void;
     const finished = new Promise<void>(resolve => { finishExit = resolve; });
     vi.spyOn(Element.prototype, "getAnimations").mockImplementation(function (this: Element) {
-      return this.matches(".search-palette-backdrop[data-exiting]") ? [{ finished } as unknown as Animation] : [];
+      return this.matches(".search-palette[data-ending-style]") ? [{ finished } as unknown as Animation] : [];
     });
     const view = renderPalette();
     view.container.scrollTop = 72;
@@ -80,7 +80,7 @@ describe("global search palette", () => {
     await userEvent.click(screen.getByRole("button", { name: "关闭搜索" }));
     const closing = document.querySelector(".search-palette-backdrop");
     expect(closing).toBeInTheDocument();
-    expect(closing).toHaveAttribute("data-exiting");
+    expect(closing).toHaveAttribute("data-ending-style");
     view.container.scrollTop = 0;
     await act(async () => { finishExit(); });
     await waitFor(() => expect(document.querySelector(".search-palette-backdrop")).not.toBeInTheDocument());
@@ -88,6 +88,25 @@ describe("global search palette", () => {
     await waitFor(() => expect(view.container.scrollTop).toBe(72));
     await openPalette(view);
     expect(screen.getByRole("combobox", { name: "搜索任何内容" })).toHaveValue("检索");
+  });
+
+  it("does not let an earlier exit completion close a newly opened search session", async () => {
+    let finishExit!: () => void;
+    const finished = new Promise<void>(resolve => { finishExit = resolve; });
+    vi.spyOn(Element.prototype, "getAnimations").mockImplementation(function (this: Element) {
+      return this.matches(".search-palette[data-ending-style]") ? [{ finished } as unknown as Animation] : [];
+    });
+    const view = renderPalette();
+    await openPalette(view);
+    await userEvent.click(screen.getByRole("button", { name: "关闭搜索" }));
+    expect(document.querySelector(".search-palette[data-ending-style]")).toBeInTheDocument();
+    fireEvent.click(view.trigger);
+    const reopened = screen.getByRole("combobox", { name: "搜索任何内容" });
+    await waitFor(() => expect(reopened).toHaveFocus());
+    await act(async () => { finishExit(); });
+    expect(screen.getByRole("dialog", { name: "全局搜索" })).toBeVisible();
+    expect(reopened).toHaveFocus();
+    expect(view.route).toHaveTextContent(editingRoute);
   });
 
   it.each(["escape", "close button"])("opens and closes with %s without saving, changing route or discarding the background draft", async (method) => {
@@ -124,7 +143,7 @@ describe("global search palette", () => {
     expect(screen.getByText("输入关键词，搜索文档与评论。")).toBeVisible();
     fireEvent.change(input, { target: { value: "@file 报告" } });
     expect(mockedSearch.calls.at(-1)?.filters).toMatchObject({ q: "报告", type: "file" });
-    await userEvent.click(screen.getByRole("button", { name: "清除类型筛选" }));
+    await userEvent.click(screen.getByRole("button", { name: /^清除类型筛选/ }));
     expect(input).toHaveValue("报告");
     expect(mockedSearch.calls.at(-1)?.filters).toMatchObject({ q: "报告", type: "all" });
     fireEvent.change(input, { target: { value: "@plugin 配置" } });
@@ -190,7 +209,7 @@ describe("global search palette", () => {
     const view = renderPalette({ prepare });
     const input = await openPalette(view);
     await userEvent.keyboard("{Enter}");
-    expect(await screen.findByRole("alert")).toHaveTextContent("草稿保存失败，请重试");
+    expect(await screen.findByRole("alertdialog", { name: "草稿保存失败，请重试" })).toHaveTextContent("草稿保存失败，请重试");
     expect(view.route).toHaveTextContent(editingRoute);
     expect(view.draft).toHaveValue("需要保留的未保存草稿");
     await waitFor(() => expect(screen.queryByText("正在准备打开…")).not.toBeInTheDocument());
@@ -213,7 +232,7 @@ describe("global search palette", () => {
     await openPalette(view);
     await act(async () => { if (completion === "resolve") finish(); else fail(new Error("过期保存错误")); });
     expect(screen.getByRole("dialog", { name: "全局搜索" })).toBeVisible();
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
     expect(view.route).toHaveTextContent(editingRoute);
     expect(view.draft).toHaveValue("需要保留的未保存草稿");
   });
@@ -245,8 +264,8 @@ describe("global search palette", () => {
     expect(prepare).toHaveBeenCalledTimes(1);
     if (refinement === "keyword") fireEvent.change(input, { target: { value: "新的关键词" } });
     else {
-      await userEvent.click(screen.getByRole("button", { name: /内容状态/ }));
-      await userEvent.click(screen.getByRole("option", { name: "已归档" }));
+      await userEvent.click(screen.getByRole("combobox", { name: /内容状态/ }));
+      await userEvent.click(await screen.findByRole("option", { name: "已归档" }));
     }
     await waitFor(() => expect(screen.queryByText("正在准备打开…")).not.toBeInTheDocument());
     await act(async () => { finish(); });

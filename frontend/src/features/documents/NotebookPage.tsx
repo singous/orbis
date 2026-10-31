@@ -5,9 +5,8 @@ import { DraftActions } from "../../shared/ui/DraftActions";
 import {ApiError} from "../../shared/api/api-client";
 import type { Notebook } from "../../shared/api/schemas";
 import { newUUID } from "../../shared/ids";
-import { ActionButton } from "../../shared/ui/ActionButton";
-import { Dropdown } from "@heroui/react/dropdown";
-import { Label } from "@heroui/react/label";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@orbis/ui/dropdown-menu";
+import { Button as MenuButton } from "@orbis/ui/button";
 import { Hand, Pin } from "@orbis/ui/icons";
 import { ArrowLeft, Download, Globe2, Import, MoreHorizontal, Plus, Settings2 } from "../../shared/ui/icons";
 import { type ChangeEvent, useEffect, useRef, useState } from "react";
@@ -156,21 +155,15 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
               {canEdit && notebook ? (releaseFeatures.documentSharing ? <ShareButton notebookId={collectionId} title={notebook.title} /> : null) : null}
               {canEdit ? <Button size="sm" icon={<Plus aria-hidden="true" size={14} />} onClick={() => void createDocument().catch((error) => reportError(error))} disabled={createNote.isPending}>新建文档</Button> : null}
               <input ref={fileInputRef} className="hidden" type="file" accept=".md,text/markdown,text/plain" onChange={handleImport} />
-              <Dropdown>
-                <ActionButton ref={actionsTriggerRef} type="button" className="icon-button notebook-actions-trigger" aria-label="笔记本操作" title="更多操作"><MoreHorizontal aria-hidden="true" size={18} /></ActionButton>
-                <Dropdown.Popover className="notebook-actions-popover" placement="bottom end" offset={8}>
-                  <Dropdown.Menu aria-label="笔记本操作" onAction={(key) => {
-                    if (key === "edit") setEditing(notebook ?? null);
-                    if (key === "import") fileInputRef.current?.click();
-                    if (key === "export") void exportAllDocuments().catch((error) => reportError(error));
-                  }}>
-                    {canEdit ? <Dropdown.Item id="edit" textValue="编辑笔记本"><Settings2 aria-hidden="true" /><Label>编辑笔记本</Label></Dropdown.Item> : null}
-                    {canEdit ? <Dropdown.Item id="import" textValue="导入 Markdown" isDisabled={importBusy}><Import aria-hidden="true" /><Label>导入 Markdown</Label></Dropdown.Item> : null}
-                    <Dropdown.Item id="export" textValue="导出全部" isDisabled={!treeSummary.noteCount || exportMarkdown.isPending}><Download aria-hidden="true" /><Label>导出全部</Label></Dropdown.Item>
-                    {canEdit ? (releaseFeatures.sites ? <Dropdown.Item id="site" href={`/sites?notebook=${collectionId}`} textValue="创建文档站点" render={(props) => "href" in props ? <Link {...props} to={`/sites?notebook=${collectionId}`} /> : <div {...props} />}><Globe2 aria-hidden="true" /><Label>创建文档站点</Label></Dropdown.Item> : null) : null}
-                  </Dropdown.Menu>
-                </Dropdown.Popover>
-              </Dropdown>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild><MenuButton appearance="unstyled" ref={actionsTriggerRef} type="button" className="icon-button notebook-actions-trigger" aria-label="笔记本操作" title="更多操作"><MoreHorizontal aria-hidden="true" size={18} /></MenuButton></DropdownMenuTrigger>
+                <DropdownMenuContent className="notebook-actions-popover" align="end" sideOffset={8} aria-label="笔记本操作">
+                  {canEdit ? <DropdownMenuItem textValue="编辑笔记本" onSelect={() => setEditing(notebook ?? null)}><Settings2 aria-hidden="true" size={16} /><span>编辑笔记本</span></DropdownMenuItem> : null}
+                  {canEdit ? <DropdownMenuItem textValue="导入 Markdown" disabled={importBusy} onSelect={() => fileInputRef.current?.click()}><Import aria-hidden="true" size={16} /><span>导入 Markdown</span></DropdownMenuItem> : null}
+                  <DropdownMenuItem textValue="导出全部" disabled={!treeSummary.noteCount || exportMarkdown.isPending} onSelect={() => { void exportAllDocuments().catch(error => reportError(error)); }}><Download aria-hidden="true" size={16} /><span>导出全部</span></DropdownMenuItem>
+                  {canEdit && releaseFeatures.sites ? <DropdownMenuItem asChild textValue="创建文档站点"><Link to={`/sites?notebook=${collectionId}`}><Globe2 aria-hidden="true" size={16} /><span>创建文档站点</span></Link></DropdownMenuItem> : null}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </header>
           {pendingImportTitle?<DraftActions label="导入操作"><Button disabled={importBusy} onClick={()=>void retryImport()}>重试导入</Button></DraftActions>:null}

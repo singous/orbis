@@ -33,7 +33,7 @@ describe("pending actions", () => {
     const view = render(<Control isPending onPress={action}>保存</Control>);
     const button = screen.getByRole("button", { name: "保存" });
     expect(button).toHaveAttribute("aria-busy", "true");
-    expect(view.container.querySelector('.spinner')).toBeInTheDocument();
+    expect(view.container.querySelector('[data-slot="ob-spinner"]')).toBeInTheDocument();
     await actor.click(button);
     expect(action).not.toHaveBeenCalled();
     view.rerender(<Control onPress={action}>保存</Control>);

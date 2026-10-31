@@ -9,7 +9,7 @@ npm run check:licenses
 npm run licenses:bundle -- dist/licenses
 ```
 
-`licenses:generate` updates the manifest, the generated table in `THIRD_PARTY_NOTICES.md`, and public font/icon notices. It retains frozen text for an unchanged name/version/integrity instead of depending on which optional platform binary happens to be installed. New packages read their own installed license/NOTICE files. Packages whose tarballs omit their license text need an explicit entry in `supplemental-texts.json`, with a fixed upstream commit, URL and content checksum. The generator does not download or invent missing text.
+`licenses:generate` updates the manifest, the generated table in `THIRD_PARTY_NOTICES.md`, and public font/icon notices. It freezes texts by package name/version/integrity. Generation reads the available installed artifact's license, NOTICE and acknowledgement files, and retains the previous frozen material when an optional platform package is unavailable. Checking reads only the frozen inventory and works without node_modules. Packages whose tarballs omit their license text need an explicit entry in `supplemental-texts.json`, with a fixed upstream commit, URL and content checksum. The generator does not download or invent missing text.
 
 `report:licenses` is an offline snapshot check. It verifies the lockfile hash, every package version/license/integrity, text checksums, public asset notices and copied-code snapshots. It reports unresolved items without treating them as approved.
 
@@ -20,6 +20,7 @@ npm run licenses:bundle -- dist/licenses
 - `npm-manifest.json`: generated dependency records. Runtime, build-only, development and asset owners are calculated from the lockfile dependency graph, including workspace links, peers and optional binaries. This is a conservative declared-dependency classification, not a claim that every dependency byte survives tree shaking.
 - `texts/npm/`: verbatim package/upstream license and NOTICE files, named by SHA-256. Copyright notices remain in the original text.
 - `supplemental-texts.json`: manually recorded evidence for omitted upstream texts. The generator accepts a record only for a matching package version and declared license.
+- `embedded-notices.json`: attributable notices for code bundled inside a dependency; these do not replace the enclosing package's own license.
 - `material-gaps.json`: precise evidence for unresolved missing upstream notices.
 - `pending-review-summary.json`: generated, lockfile-bound list of remaining material gaps and requested maintainer decisions.
 - `reviews.json`: maintainer decisions. Pending evidence is not an approval. Approval needs an actual reviewer, date, selected license, conclusion and explicit corresponding-source decision. An OR expression may elect a declared branch; an AND expression cannot discard one of its obligations.
@@ -29,8 +30,10 @@ npm run licenses:bundle -- dist/licenses
 
 ## Current unresolved material
 
-`client-only` 0.0.1, `stackback` 0.0.2 and optional `@tybys/wasm-util` 0.10.2 declare permissive SPDX identifiers, but their published package/release sources do not contain an attributable full license text in the inspected locations. The inventory leaves those gaps visible instead of creating a generic MIT notice. `client-only` is currently a transitive HeroUI dependency and should disappear when that migration completes. The other packages are build/test dependencies; their presence still remains visible to the strict inventory policy.
+`stackback` 0.0.2 and optional `@tybys/wasm-util` 0.10.2 declare permissive SPDX identifiers, but their published package/release sources do not contain an attributable full license text in the inspected locations. The inventory leaves those gaps visible instead of creating a generic MIT notice. The former `client-only` material gap disappeared with the actual HeroUI dependency removal, so it is no longer in the inventory or pending summary. The other packages are build/test dependencies; their presence still remains visible to the strict inventory policy.
 
 The runtime elkjs election and source-material mapping, plus build/test MPL and CC-BY reviews, require maintainer confirmation. No approval is inferred from the general UI implementation request.
 
 The historical eastasianwidth 0.2.0 omission is resolved using the maintainer's explicit [licensing notes](https://github.com/komagata/eastasianwidth/blob/f42b1e7b2a403d2050dda1141211b4e198e50e70/LICENSE-NOTES.md), which identify the complete original MIT notice and retain its exact `Copyright komagata` line without adding a year. Its fixed source and text hash are recorded in `supplemental-texts.json`.
+
+Bundled npm dependencies whose lock entries have no independent tarball record inherit `artifact` and `integrity` from the containing locked package, with an explicit `artifactOwner`. Their own package name/version and license remain separate. For example, optional wasm-util is inside the Tailwind WASI artifact; it is not falsely recorded as independently downloaded.

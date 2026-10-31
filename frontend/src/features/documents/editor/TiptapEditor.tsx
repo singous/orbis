@@ -6,9 +6,8 @@ import { reportError, reportRequestError } from "../../../shared/api/request-fee
 import { registerRetiredBlockCleanup } from "./tiptap-retired";
 import { ActionButton } from "../../../shared/ui/ActionButton";
 import { SelectField } from "../../../shared/ui/SelectField";
-import { Toolbar } from "@heroui/react/toolbar";
-import { ToggleButton } from "@heroui/react/toggle-button";
-import { ToggleButtonGroup } from "@heroui/react/toggle-button-group";
+import { Toolbar } from "@orbis/ui/toolbar";
+import { Toggle } from "@orbis/ui/toggle";
 import { createPortal } from "react-dom";
 import { useEditorToolbarHost } from "./EditorToolbarHost";
 import { BlockControls, requestBlockMenu } from "./blocks/BlockControls";
@@ -483,29 +482,12 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
       <Tool title="撤销" onClick={() => { if (!blockBoardHistory(editor)) editor.chain().focus().undo().run(); }}><Undo2 size={16} /></Tool>
       <Tool title="重做" onClick={() => { if (!blockBoardHistory(editor)) editor.chain().focus().redo().run(); }}><Redo2 size={16} /></Tool>
       <span className="orbis-tiptap-toolbar-divider" />
-      <ToggleButtonGroup
-        className="editor-text-style-tools"
-        aria-label="文字样式"
-        isDetached
-        size="sm"
-        selectionMode="multiple"
-        selectedKeys={TEXT_MARK_TOOLS.filter(({ mark }) => active?.[mark]).map(({ mark }) => mark)}
-        onSelectionChange={(keys) => {
-          const changed = TEXT_MARK_TOOLS.find(({ mark }) => keys.has(mark) !== Boolean(active?.[mark]));
-          if (changed) toggleMark(changed.mark);
-        }}
-      >
-        {TEXT_MARK_TOOLS.map(({ mark, label, Icon }) => <ToggleButton
-          key={mark}
-          id={mark}
-          isIconOnly
-          variant="ghost"
-          aria-label={label}
-          render={(domProps) => <button {...domProps} title={label} />}
+      <div className="editor-text-style-tools" role="group" aria-label="文字样式">
+        {TEXT_MARK_TOOLS.map(({ mark, label, Icon }) => <Toggle key={mark} title={label} aria-label={label}
+          pressed={Boolean(active?.[mark])} onPressedChange={() => toggleMark(mark)}
           className={mark === "bold" ? undefined : "editor-secondary-tool"}
-          onMouseDown={(event) => event.preventDefault()}
-        ><Icon size={16} /></ToggleButton>)}
-      </ToggleButtonGroup>
+          onMouseDown={event => event.preventDefault()}><Icon size={16} /></Toggle>)}
+      </div>
       <Tool title="链接" active={active?.link} onClick={() => inlineLink(editor)}><Link2 size={16} /></Tool>
       <span className="orbis-tiptap-toolbar-divider" />
       <Tool title="表格" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}><Table2 size={16} /></Tool>

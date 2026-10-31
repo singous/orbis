@@ -1,6 +1,8 @@
-import { Button as Primitive } from "@base-ui/react/button";
+import { Toolbar as ToolbarPrimitive } from "@base-ui/react/toolbar";
+import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { cva } from "class-variance-authority";
-import { Children, cloneElement, isValidElement, useId, type ComponentProps, type CSSProperties, type ReactElement, type ReactNode } from "react";
+import { Children, cloneElement, isValidElement, useContext, useId, type ComponentProps, type CSSProperties, type ReactElement, type ReactNode } from "react";
+import { ToolbarScopeContext } from "../internal/toolbar-scope";
 import { controlFocus } from "../internal/focus";
 import { resolveClassName } from "../internal/resolve-class-name";
 
@@ -12,7 +14,7 @@ const buttonVariants = cva(
         primary: "bg-ob-components-button-primary-bg text-ob-components-button-primary-text enabled:hover:bg-ob-components-button-primary-bg-hover",
         secondary: "border-ob-border bg-ob-card text-ob-foreground enabled:hover:bg-ob-accent",
         ghost: "bg-transparent text-ob-foreground enabled:hover:bg-ob-accent",
-        danger: "bg-ob-destructive text-ob-destructive-foreground enabled:hover:opacity-90",
+        danger: "bg-ob-destructive text-ob-destructive-foreground enabled:hover:bg-ob-destructive-hover",
       },
       size: {
         sm: "min-h-(--ob-control-height-sm) px-3",
@@ -28,33 +30,39 @@ type ButtonProps = Omit<ComponentProps<"button">, "className" | "style" | "child
   variant?: "primary" | "secondary" | "ghost" | "danger";
   size?: "sm" | "md" | "lg";
   loading?: boolean;
+  appearance?: "default" | "unstyled";
   className?: string | ((state: { disabled: boolean }) => string | undefined);
   style?: CSSProperties | ((state: { disabled: boolean }) => CSSProperties | undefined);
 } & ({ asChild: true; children: ReactElement<ComponentProps<"button">> } | { asChild?: false; children?: ReactNode });
 
-function Button({ className, variant, size, loading = false, disabled = false, asChild, children, type = "button", ...props }: ButtonProps) {
+function Button({ className, variant, size, appearance = "default", loading = false, disabled = false, asChild, children, type = "button", ...props }: ButtonProps) {
+  const inToolbar = useContext(ToolbarScopeContext);
+  const Primitive = inToolbar ? ToolbarPrimitive.Button : ButtonPrimitive;
   const labelId = useId();
   const child = asChild ? Children.only(children) : undefined;
   const childProps = isValidElement<ComponentProps<"button">>(child) ? child.props : undefined;
   const inactive = disabled || childProps?.disabled || loading;
   const label = <>{loading ? <span aria-hidden="true" className="size-4 animate-spin rounded-full border-2 border-current border-e-transparent motion-reduce:animate-none" /> : null}<span id={labelId} className="inline-flex items-center justify-center gap-2">{childProps ? childProps.children : children}</span></>;
-  const labelledBy = props["aria-labelledby"] ?? childProps?.["aria-labelledby"] ?? (props["aria-label"] || childProps?.["aria-label"] ? undefined : labelId);
+  // 领域控件依赖直接子节点布局；无样式模式保留调用方的内容与命名结构。
+  const content = appearance === "unstyled" ? <>{loading ? <span aria-hidden="true" className="size-4 animate-spin rounded-full border-2 border-current border-e-transparent motion-reduce:animate-none" /> : null}{childProps ? childProps.children : children}</> : label;
+  const labelledBy = props["aria-labelledby"] ?? childProps?.["aria-labelledby"] ?? (appearance === "unstyled" || props["aria-label"] || childProps?.["aria-label"] ? undefined : labelId);
+  const defaults = appearance === "unstyled" ? `${controlFocus} disabled:cursor-not-allowed data-disabled:opacity-50` : buttonVariants({ variant, size });
   return <Primitive
     {...props}
     type={type}
     data-slot="ob-button"
     data-loading={loading || undefined}
     render={child ? cloneElement(child, {
-      children: label,
+      children: content,
       disabled: disabled || childProps?.disabled || undefined,
       onClick: event => { if (!inactive) childProps?.onClick?.(event); },
     }) : undefined}
     disabled={inactive}
     focusableWhenDisabled={loading && !disabled && !childProps?.disabled}
     aria-labelledby={labelledBy}
-    className={resolveClassName(buttonVariants({ variant, size }), className)}
+    className={resolveClassName(defaults, className)}
   >
-    {label}
+    {content}
   </Primitive>;
 }
 

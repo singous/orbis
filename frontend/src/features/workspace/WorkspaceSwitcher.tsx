@@ -1,5 +1,5 @@
 import { reportError } from "../../shared/api/request-feedback";
-import { Popover } from "@heroui/react/popover";
+import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui/popover";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -43,19 +43,19 @@ export function WorkspaceSwitcher({ variant = "topbar" }: { variant?: "topbar" |
   }, [open, close]);
 
   return <div className={`workspace-switcher${variant === "rail" ? " workspace-switcher--rail" : ""}`}>
-    <Popover isOpen={open} onOpenChange={next => setOpen(next ? { sessionKey, locationKey: location.key } : null)}>
-      <ActionButton type="button" className={variant === "rail" ? "rail-brand workspace-switcher-rail-trigger" : "workspace-brand"} aria-label="切换工作空间" disabled={!authenticated}>
+    <Popover open={open} onOpenChange={next => setOpen(next ? { sessionKey, locationKey: location.key } : null)}>
+      <PopoverTrigger type="button" className={variant === "rail" ? "rail-brand workspace-switcher-rail-trigger" : "workspace-brand"} aria-label="切换工作空间" disabled={!authenticated}>
         {variant === "rail" ? <OrbisLogo size={32} /> : <>
           <span className="workspace-brand-mark identity-mark" style={identityColor(workspace?.id || "orbis")}><Boxes size={16} aria-hidden="true" /></span>
           <span className="workspace-brand-word">{workspace?.name ?? "Orbis"}</span>
           <ChevronDown size={14} aria-hidden="true" />
         </>}
-      </ActionButton>
-      <Popover.Content className={`workspace-switcher-popover${variant === "rail" ? " workspace-switcher-popover--rail" : ""}`} placement={variant === "rail" ? "right top" : "bottom start"} shouldFlip offset={12}>
-        <Popover.Dialog className="workspace-switcher-dialog" aria-label="切换工作空间">
+      </PopoverTrigger>
+      <PopoverContent aria-label="切换工作空间" className={`workspace-switcher-popover${variant === "rail" ? " workspace-switcher-popover--rail" : ""}`} side={variant === "rail" ? "right" : "bottom"} align="start" sideOffset={12}>
+        <div className="workspace-switcher-dialog">
           {open ? <WorkspaceChoices key={`${sessionKey}:${location.key}`} onClose={close} /> : null}
-        </Popover.Dialog>
-      </Popover.Content>
+        </div>
+      </PopoverContent>
     </Popover>
   </div>;
 }

@@ -16,14 +16,26 @@
     "./badge": "./src/badge/index.tsx",
     "./spinner": "./src/spinner/index.tsx",
     "./skeleton": "./src/skeleton/index.tsx",
-    "./icons": "./src/icons/index.tsx"
+    "./icons": "./src/icons/index.tsx",
+    "./dropdown-menu": "./src/dropdown-menu/index.tsx",
+    "./popover": "./src/popover/index.tsx",
+    "./tooltip": "./src/tooltip/index.tsx",
+    "./radio-group": "./src/radio-group/index.tsx",
+    "./toast": "./src/toast/index.tsx",
+    "./color-picker": "./src/color-picker/index.tsx",
+    "./tabs": "./src/tabs/index.tsx",
+    "./checkbox": "./src/checkbox/index.tsx",
+    "./toggle": "./src/toggle/index.tsx",
+    "./toolbar": "./src/toolbar/index.tsx",
+    "./sheet": "./src/sheet/index.tsx"
   },
   "dependencies": {
     "@base-ui/react": "1.9.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "tailwind-merge": "^3.6.0",
-    "lucide-react": "^0.468.0"
+    "lucide-react": "^0.468.0",
+    "react-colorful": "5.8.1",
+    "tailwind-merge": "^3.6.0"
   },
   "peerDependencies": {
     "react": "^19.1.0",

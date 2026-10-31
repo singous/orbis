@@ -1,5 +1,3 @@
-.collaboration-overlay { z-index: 60; }
-.collaboration-drawer { z-index: 61; }
 .collaboration-panel { position: relative; display: flex; flex-direction: column; gap: 0; width: min(520px, 100vw); max-width: 100vw; height: 100%; padding: 0;  }
 .collaboration-panel-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; padding: 26px 24px 20px; border-bottom: 1px solid var(--border-subtle); }
 .collaboration-panel-header h2 { font-size: var(--orbis-text-panel-title-size); font-weight: var(--orbis-weight-heading); margin: 0 0 6px; line-height: var(--orbis-text-panel-title-leading); }
@@ -43,7 +41,7 @@
 }
 
 .collaboration-tabs-root { display: flex; flex: 1; flex-direction: column; min-height: 0; gap: 0; }
-.collaboration-tabs-root [data-slot="tabs-panel"][hidden] { display: none; }
+.collaboration-tabs-root [data-slot="ob-tabs-content"][hidden] { display: none; }
 .collaboration-tab-content[hidden] { display: none; }
 .collaboration-tabs [role="tab"] { min-inline-size: max-content; white-space: nowrap; }
 

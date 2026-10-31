@@ -1,4 +1,4 @@
-import { toast as heroToast } from "@heroui/react/toast";
+import { clearToasts } from "../../shared/ui/Toast";
 import { act, fireEvent, render as renderTestingLibrary, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
@@ -75,7 +75,7 @@ function LocationProbe() {
 }
 
 afterEach(() => {
-  act(() => heroToast.clear());
+  act(() => clearToasts());
   localStorage.clear();
   vi.restoreAllMocks();
   Object.defineProperty(window, "matchMedia", { configurable: true, value: originalMatchMedia });
@@ -107,7 +107,7 @@ describe("Mint-style site reader", () => {
     expect(option).toHaveTextContent("文档 / 指南 / 开始使用");
     await user.keyboard("{ArrowDown}{Enter}");
 
-    expect(screen.queryByRole("dialog", { name: "搜索文档" })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "搜索文档" })).not.toBeInTheDocument());
     expect(screen.getByLabelText("当前路径")).toHaveTextContent("/s/developer/deploy");
   });
 
@@ -133,7 +133,7 @@ describe("Mint-style site reader", () => {
 
     options[1].focus();
     await user.keyboard("{Enter}");
-    expect(screen.queryByRole("dialog", { name: "搜索文档" })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "搜索文档" })).not.toBeInTheDocument());
     expect(screen.getByLabelText("当前路径")).toHaveTextContent("/s/developer/security");
   });
 
@@ -172,7 +172,7 @@ describe("Mint-style site reader", () => {
     await user.tab();
     expect(screen.getByRole("button", { name: "关闭搜索" })).toHaveFocus();
     await user.keyboard("{Enter}");
-    expect(screen.queryByRole("dialog", { name: "搜索文档" })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "搜索文档" })).not.toBeInTheDocument());
     expect(screen.getByLabelText("当前路径")).toHaveTextContent("/s/developer");
   });
 
@@ -196,8 +196,37 @@ describe("Mint-style site reader", () => {
     const trigger = screen.getByRole("button", { name: "搜索文档" });
     await user.click(trigger);
     await user.keyboard("{Escape}");
-    expect(screen.queryByRole("dialog", { name: "搜索文档" })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "搜索文档" })).not.toBeInTheDocument());
     expect(trigger).toHaveFocus();
+  });
+
+  it("keeps reader search in its local light theme and lets IME consume Escape", async () => {
+    const outerTheme = document.documentElement.dataset.theme;
+    document.documentElement.dataset.theme = "dark";
+    localStorage.setItem("orbis-reader-theme", "light");
+    try {
+      const user = userEvent.setup();
+      const { container } = render(<MemoryRouter initialEntries={["/s/developer"]}><SiteReader snapshot={snapshot} basePath="/s/developer" /><LocationProbe /></MemoryRouter>);
+      const trigger = screen.getByRole("button", { name: "搜索文档" });
+      await user.click(trigger);
+      const dialog = screen.getByRole("dialog", { name: "搜索文档" });
+      const input = within(dialog).getByRole("combobox", { name: "搜索文档" });
+      expect(dialog.closest(".site-reader")).toBe(container.querySelector(".site-reader"));
+      expect(dialog.closest("[data-theme]")).toHaveAttribute("data-theme", "light");
+      expect(document.documentElement).toHaveAttribute("data-theme", "dark");
+      fireEvent.compositionStart(input);
+      fireEvent.change(input, { target: { value: "部署" } });
+      await user.keyboard("{Enter}{Escape}");
+      expect(dialog).toBeVisible();
+      expect(screen.getByLabelText("当前路径")).toHaveTextContent("/s/developer");
+      fireEvent.compositionEnd(input);
+      await user.keyboard("{Escape}");
+      await waitFor(() => expect(screen.queryByRole("dialog", { name: "搜索文档" })).not.toBeInTheDocument());
+      await waitFor(() => expect(trigger).toHaveFocus());
+    } finally {
+      if (outerTheme === undefined) delete document.documentElement.dataset.theme;
+      else document.documentElement.dataset.theme = outerTheme;
+    }
   });
 
   it("renders nested navigation while keeping parent documents readable", () => {

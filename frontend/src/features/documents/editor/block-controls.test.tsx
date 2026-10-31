@@ -94,9 +94,45 @@ it('reopens its menu on the current content and refreshes structural changes and
  await screen.findByRole('button',{name:'块操作：标题'});
  act(()=>requestBlockMenu(editor));
  const opened=await screen.findByRole('menu',{name:'块操作'});
- expect(opened).toHaveTextContent('标题');
+ expect(opened.querySelector('.block-menu-heading')).toHaveTextContent('标题');
+ expect(container.querySelector('[data-orbis-selected="true"]')).toHaveAttribute('data-orbis-block-id','b0');
  act(()=>{editor.commands.setParagraph();});
- await waitFor(()=>expect(screen.getByRole('menu',{name:'块操作'})).toHaveTextContent('段落'));
+ await waitFor(()=>expect(screen.getByRole('menu',{name:'块操作'}).querySelector('.block-menu-heading')).toHaveTextContent('段落'));
+});
+
+it('keeps an explicitly selected block when its handle differs from the native caret', async () => {
+ let latest=blocks;
+ const {container}=render(<TiptapEditor blocks={blocks} onChange={next=>{latest=next.blocks;}}/>);
+ await screen.findByText('First');
+ await menu(container,1);
+ fireEvent.keyDown(screen.getByRole('menu',{name:'块操作'}),{key:'Escape'});
+ const editor=(container.querySelector('.ProseMirror') as HTMLElement&{editor:import('@tiptap/core').Editor}).editor;
+ expect(editor.state.selection.from).toBe(1);
+ act(()=>requestBlockMenu(editor));
+ await screen.findByRole('menu',{name:'块操作'});
+ expect(container.querySelector('[data-orbis-selected="true"]')).toHaveAttribute('data-orbis-block-id','b1');
+ fireEvent.click(screen.getByRole('menuitem',{name:'创建副本'}));
+ await waitFor(()=>expect(latest.blocks).toHaveLength(3));
+ expect(latest.blocks.map(block=>block.content)).toEqual([blocks.blocks[0].content,blocks.blocks[1].content,blocks.blocks[1].content]);
+});
+
+it('retains an explicit block range when the menu is opened from a caret within the range', async () => {
+ const {container}=render(<TiptapEditor blocks={blocks} onChange={()=>{}}/>);
+ await screen.findByText('First');
+ const editor=(container.querySelector('.ProseMirror') as HTMLElement&{editor:import('@tiptap/core').Editor}).editor;
+ const {setBlockSelection,blockSelectionKey}=await import('./blocks/block-selection');
+ act(()=>{
+  editor.commands.setTextSelection(1);
+  editor.view.focus();
+  setBlockSelection(editor,['b0','b1']);
+  editor.commands.setTextSelection(editor.state.doc.firstChild!.nodeSize+1);
+ });
+ await screen.findByRole('button',{name:'块操作：段落'});
+ act(()=>requestBlockMenu(editor));
+ const opened=await screen.findByRole('menu',{name:'块操作'});
+ expect(opened.querySelector('.block-menu-heading')).toHaveTextContent('已选择 2 个块');
+ expect(blockSelectionKey.getState(editor.state)?.ids).toEqual(['b0','b1']);
+ expect(container.querySelectorAll('[data-orbis-selected="true"]')).toHaveLength(2);
 });
 
 it('keeps the block menu open during embedded scrolling but closes it on document scrolling', async () => {

@@ -98,7 +98,34 @@ export const CallerOverrides: Story = {
     await expect(cn("rounded-full", "rounded-ob-lg")).toBe("rounded-ob-lg");
     await expect(cn("text-sm text-ob-foreground", "text-base")).toBe("text-ob-foreground text-base");
     await expect(cn("text-ob-foreground", "text-ob-primary")).toBe("text-ob-primary");
+    await expect(cn("text-ob-caption text-ob-foreground", "text-ob-muted-foreground")).toBe("text-ob-caption text-ob-muted-foreground");
+    await expect(cn("text-sm text-ob-foreground", "text-ob-caption")).toBe("text-ob-foreground text-ob-caption");
+    await expect(cn("font-ob-sans", "font-mono")).toBe("font-mono");
     await expect(cn("border border-ob-input", "border-2 border-ob-border")).toBe("border-2 border-ob-border");
     await expect(cn("bg-ob-card", "bg-ob-primary")).toBe("bg-ob-primary");
   },
 };
+
+export const Unstyled: Story = {
+  render: args => <Button {...args} appearance="unstyled" aria-label="连接点" style={{ width: 12, height: 12, padding: 0, border: 0 }}><svg data-testid="direct-icon" aria-hidden="true" width="10" height="10"><path d="M0 5h10M5 0v10" /></svg></Button>,
+  play: async ({ canvasElement, args }) => {
+    const button = within(canvasElement).getByRole("button", { name: "连接点" });
+    await expect(button.firstElementChild).toBe(within(button).getByTestId("direct-icon"));
+    await expect(button).not.toHaveAttribute("aria-labelledby");
+    await expect(button.getBoundingClientRect().height).toBe(12);
+    await expect(button.getBoundingClientRect().width).toBe(12);
+    button.focus();
+    await userEvent.keyboard("{Enter}");
+    await expect(args.onClick).toHaveBeenCalledTimes(1);
+  },
+};
+
+export const DangerHover: Story = {
+  render: () => <Button variant="danger">危险动作</Button>,
+  play: async ({ canvasElement }) => {
+    const button = within(canvasElement).getByRole("button", { name: "危险动作" });
+    await userEvent.hover(button);
+    await Promise.all(button.getAnimations().map(animation => animation.finished));
+  },
+};
+export const DarkDangerHover: Story = { ...DangerHover, globals: { theme: "dark" } };

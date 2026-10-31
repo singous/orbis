@@ -2,11 +2,10 @@ import { releaseFeatures } from "../../shared/release-features";
 import { ConfirmAction } from "../../shared/ui/ConfirmAction";
 import { reportError } from "../../shared/api/request-feedback";
 import { DraftActions } from "../../shared/ui/DraftActions";
-import { Dropdown } from "@heroui/react/dropdown";
-import { Label } from "@heroui/react/label";
-import { Tabs } from "@heroui/react/tabs";
-import { Toolbar } from "@heroui/react/toolbar";
-import { ToggleButton } from "@heroui/react/toggle-button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@orbis/ui/dropdown-menu";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
+import { Toolbar } from "@orbis/ui/toolbar";
+import { Toggle } from "@orbis/ui/toggle";
 
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { Tooltip } from "../../shared/ui/Tooltip";
@@ -49,7 +48,7 @@ import {
   RiText,
   RiPencilLine,
   RiFunctionAddLine,
-} from "@remixicon/react";
+} from "../../shared/ui/icons";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Button } from "../../shared/ui/Button";
 import { Dialog, DialogContent } from "../../shared/ui/Dialog";
@@ -374,22 +373,17 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
       >
         <Settings2 size={17} />
       </ActionButton>
-      <Dropdown>
-        <ActionButton aria-label="导入与导出画板" className="board-export-trigger">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild><ActionButton aria-label="导入与导出画板" className="board-export-trigger">
           <Download size={16} /><span>导出</span>
-        </ActionButton>
-        <Dropdown.Popover placement="bottom end" className="board-export-popover">
-          <Dropdown.Menu aria-label="导入与导出画板" onAction={key => {
-            if (key === "import") importRef.current?.click();
-            else if (key === "svg" || key === "png" || key === "json") void exportFile(key);
-          }}>
-            <Dropdown.Item id="import" textValue="导入画板文件" isDisabled={!canEdit}><Label>导入画板文件</Label></Dropdown.Item>
-            <Dropdown.Item id="svg" textValue="SVG" isDisabled={exporting}><Label>SVG</Label></Dropdown.Item>
-            <Dropdown.Item id="png" textValue="PNG" isDisabled={exporting}><Label>PNG</Label></Dropdown.Item>
-            <Dropdown.Item id="json" textValue="当前页可编辑文件" isDisabled={exporting}><Label>当前页可编辑文件</Label></Dropdown.Item>
-          </Dropdown.Menu>
-        </Dropdown.Popover>
-      </Dropdown>
+        </ActionButton></DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="board-export-popover" aria-label="导入与导出画板">
+          <DropdownMenuItem textValue="导入画板文件" disabled={!canEdit} onSelect={() => importRef.current?.click()}>导入画板文件</DropdownMenuItem>
+          <DropdownMenuItem textValue="SVG" disabled={exporting} onSelect={() => void exportFile("svg")}>SVG</DropdownMenuItem>
+          <DropdownMenuItem textValue="PNG" disabled={exporting} onSelect={() => void exportFile("png")}>PNG</DropdownMenuItem>
+          <DropdownMenuItem textValue="当前页可编辑文件" disabled={exporting} onSelect={() => void exportFile("json")}>当前页可编辑文件</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </>
   );
   const selectionActions = selection.size ? (<>
@@ -474,16 +468,15 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
     >
       <section className={"board-workspace" + (inspector || comments ? " has-inspector" : "") + (embed?.readOnly ? " is-embed-reading" : "")}>
         <Tabs className="board-page-host"
-        selectedKey={state.pageID}
-        onSelectionChange={key => { if (!embed && typeof key === "string") void session.switchPage(key).catch(fail); }}
-        keyboardActivation="manual"
+        value={state.pageID}
+        onValueChange={key => { if (!embed && typeof key === "string") void session.switchPage(key).catch(fail); }}
       >
-          <Tabs.ListContainer className="board-page-list-container">
-            <Tabs.List aria-label="画板页面">
-              {board.pages.filter(p => !embed || p.id === state.pageID).map(p => <Tabs.Tab id={p.id} key={p.id}>{p.name}<Tabs.Indicator /></Tabs.Tab>)}
-            </Tabs.List>
-          </Tabs.ListContainer>
-        <Tabs.Panel key={state.pageID} id={state.pageID} className="board-main">
+          <div className="board-page-list-container">
+            <TabsList aria-label="画板页面" activateOnFocus={false}>
+              {board.pages.filter(p => !embed || p.id === state.pageID).map(p => <TabsTrigger value={p.id} key={p.id}>{p.name}</TabsTrigger>)}
+            </TabsList>
+          </div>
+        <TabsContent key={state.pageID} value={state.pageID} className="board-main">
           {library ? (
             <BoardLibrary
               tab={libraryTab}
@@ -601,12 +594,12 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
               >
                 <Minus size={15} />
               </ActionButton>
-              <Dropdown>
-                <ActionButton aria-label={`缩放比例 ${Math.round(camera.zoom * 100)}%`}>{Math.round(camera.zoom * 100)}%</ActionButton>
-                <Dropdown.Popover placement="bottom end"><Dropdown.Menu aria-label="画板缩放比例" onAction={key => zoom(Number(key))}>
-                  {PREVIEW_ZOOMS.map(value => <Dropdown.Item key={value} id={String(value)} textValue={`${value * 100}%`}>{value * 100}%</Dropdown.Item>)}
-                </Dropdown.Menu></Dropdown.Popover>
-              </Dropdown>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild><ActionButton aria-label={`缩放比例 ${Math.round(camera.zoom * 100)}%`}>{Math.round(camera.zoom * 100)}%</ActionButton></DropdownMenuTrigger>
+                <DropdownMenuContent align="end" aria-label="画板缩放比例">
+                  {PREVIEW_ZOOMS.map(value => <DropdownMenuItem key={value} textValue={`${value * 100}%`} onSelect={() => zoom(value)}>{value * 100}%</DropdownMenuItem>)}
+                </DropdownMenuContent>
+              </DropdownMenu>
               <ActionButton
                 aria-label="放大画板"
                 title="放大画板"
@@ -663,7 +656,7 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
               onError={fail}
             />
           ) : null}
-        </Tabs.Panel>
+        </TabsContent>
         </Tabs>
         <footer className="board-page-actions">
 
@@ -716,17 +709,14 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
             ] as const
           ).map(({ id, label, shortcut, Icon }) => (
             <Tooltip key={id} label={`${label} (${shortcut})`} side="right">
-              <ToggleButton
-                isIconOnly
-                size="sm"
-                variant="ghost"
+              <Toggle
                 aria-label={label}
-                isSelected={tool === id}
-                isDisabled={!canEdit && !["select", "pan"].includes(id)}
-                onChange={() => { setTool(id); setLibrary(false); }}
+                pressed={tool === id}
+                disabled={!canEdit && !["select", "pan"].includes(id)}
+                onPressedChange={() => { setTool(id); setLibrary(false); }}
               >
                 <Icon size={17} />
-              </ToggleButton>
+              </Toggle>
             </Tooltip>
           ))}
 

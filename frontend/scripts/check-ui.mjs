@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { analyzeUI, newFindings, isProduction, findingCounts } from "./ui-architecture.mjs";
+import { analyzeUI, newFindings, isProduction, findingCounts, applyColorDataAllowlist } from "./ui-architecture.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const sources = new Map();
@@ -15,7 +15,8 @@ function collect(directory) {
 collect("src");
 collect("packages/ui/src");
 const manifest = JSON.parse(readFileSync(path.join(root, "packages/ui/package.json"), "utf8"));
-const findings = analyzeUI(sources, manifest.exports);
+const colorData = JSON.parse(readFileSync(path.join(root, "ui-color-data-allowlist.json"), "utf8"));
+const findings = applyColorDataAllowlist(analyzeUI(sources, manifest.exports), colorData.entries);
 const baseline = JSON.parse(readFileSync(path.join(root, "ui-migration-baseline.json"), "utf8"));
 if (process.argv.includes("--prune")) {
   const current = findingCounts(findings);
@@ -27,7 +28,7 @@ const css = [...sources].filter(([file]) => file.endsWith(".css"));
 console.log(JSON.stringify({
   productionModules: [...sources.keys()].filter(file => isProduction(file) && /\.tsx?$/.test(file)).length,
   heroUIFiles: new Set(findings.filter(item => item.rule === "legacy-heroui").map(item => item.file)).size,
-  directFeatureUIFiles: new Set(findings.filter(item => ["legacy-heroui", "icon-boundary"].includes(item.rule) && item.file.startsWith("src/features/")).map(item => item.file)).size,
+  directFeatureUIFiles: new Set(findings.filter(item => ["legacy-heroui", "icon-boundary", "primitive-boundary", "foreign-primitive"].includes(item.rule) && item.file.startsWith("src/features/")).map(item => item.file)).size,
   cssFiles: css.length,
   cssLines: css.reduce((sum, [, text]) => sum + text.trimEnd().split("\n").length, 0),
   rawColors: findings.filter(item => item.rule === "raw-color").length,

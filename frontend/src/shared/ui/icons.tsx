@@ -1,3 +1,4 @@
+export { RiCursorLine, RiHand, RiAddCircleFill, RiNodeTree, RiText, RiPencilLine, RiFunctionAddLine } from "@remixicon/react";
 export { Envelope, Lock, Person, Pause, Play } from "@gravity-ui/icons";
 import {
   AlertTriangle as LucideAlertTriangle,

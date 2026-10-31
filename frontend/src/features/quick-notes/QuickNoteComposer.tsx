@@ -10,6 +10,7 @@ import { Tag } from "../../shared/ui/Tag";
 import { saveQuickNote, type QuickNote, type QuickNoteTag } from "./api";
 import { draftKey, freshDraft, hasNoteContent, pendingWrite, readDraft, removeDraft, writeDraft, type QuickNoteDraft } from "./draft";
 import { QuickNoteEditor } from "./QuickNoteEditor";
+import { homeCardClassName } from "../home/HomeLayout";
 
 export function QuickNoteComposer({ userId, workspaceId, note, tags, onSaved, onManageTags, canEdit, expanded, onToggleExpanded, appearance = "default" }: {
   userId: string; workspaceId: string; note?: QuickNote; tags: QuickNoteTag[]; onSaved: (note: QuickNote) => void;
@@ -70,20 +71,20 @@ export function QuickNoteComposer({ userId, workspaceId, note, tags, onSaved, on
     } finally { saveLock.current = false; if (mounted.current) setSaving(false); }
   }
   const hasContent = hasNoteContent(draft.blocks);
-  const tagPicker = <details className={appearance === "home" ? "home-note-tag-picker" : "quick-note-tag-picker"}><summary className={appearance === "home" ? buttonVariants({ variant: "ghost" }) : undefined} aria-label="添加标签">{appearance === "home" ? <TagIcon aria-hidden="true" /> : <Plus size={14} />}添加标签</summary><div className="quick-note-tag-options">
+  const tagPicker = <details className={appearance === "home" ? "home-note-tag-picker relative" : "quick-note-tag-picker"}><summary className={appearance === "home" ? `${buttonVariants({ variant: "ghost" })} pointer-coarse:min-h-(--ob-control-height-touch)` : undefined} aria-label="添加标签">{appearance === "home" ? <TagIcon aria-hidden="true" /> : <Plus size={14} />}添加标签</summary><div className={appearance === "home" ? "quick-note-tag-options start-auto end-0 max-w-[calc(100vw-3rem)] min-[541px]:start-0 min-[541px]:end-auto min-[541px]:max-w-none" : "quick-note-tag-options"}>
     {tags.filter(tag => !draft.tag_ids.includes(tag.id)).map(tag => <ActionButton key={tag.id} type="button" disabled={locked || draft.tag_ids.length >= 20} onClick={() => update({ ...draft, tag_ids: [...draft.tag_ids, tag.id] })}>{tag.name}</ActionButton>)}
     <ActionButton type="button" disabled={locked} onClick={onManageTags}><Plus size={14} />管理标签</ActionButton>
   </div></details>;
-  const saveButton = <Button variant="primary" disabled={!canEdit || !hasContent || uploading} isPending={saving} onClick={() => void submit(conflict)}>{saving ? "正在保存" : conflict ? "将当前内容另存为新记录" : draft.pending ? "重试保存" : note ? "保存修改" : "记一下"}</Button>;
-  return <section className={`quick-note-composer${expanded ? " is-expanded" : ""}${appearance === "home" ? " home-note-composer home-card" : ""}`} aria-label={note ? "编辑随手记" : "快速记录"}>
-    <header className="quick-note-composer-heading">{appearance === "home" ? <h2>突然想到…</h2> : <span>{note ? "编辑记录" : "快速记录"}</span>}{onToggleExpanded ? <ActionButton type="button" title={expanded ? "退出全屏" : "展开编辑区"} aria-label={expanded ? "退出全屏" : "展开编辑区"} onClick={onToggleExpanded}>{expanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}</ActionButton> : null}</header>
+  const saveButton = <Button variant="primary" className={appearance === "home" ? "ms-auto" : undefined} disabled={!canEdit || !hasContent || uploading} isPending={saving} onClick={() => void submit(conflict)}>{saving ? "正在保存" : conflict ? "将当前内容另存为新记录" : draft.pending ? "重试保存" : note ? "保存修改" : "记一下"}</Button>;
+  return <section className={`quick-note-composer${expanded ? " is-expanded" : ""}${appearance === "home" ? ` ${homeCardClassName} home-note-composer relative top-auto flex flex-col` : ""}`} data-home-composer={appearance === "home" || undefined} aria-label={note ? "编辑随手记" : "快速记录"}>
+    <header className={appearance === "home" ? "quick-note-composer-heading mb-4 flex items-center justify-between gap-3 p-0 text-sm text-ob-muted-foreground" : "quick-note-composer-heading"}>{appearance === "home" ? <h2 className="m-0 text-base font-semibold text-ob-foreground">突然想到…</h2> : <span>{note ? "编辑记录" : "快速记录"}</span>}{onToggleExpanded ? <ActionButton type="button" title={expanded ? "退出全屏" : "展开编辑区"} aria-label={expanded ? "退出全屏" : "展开编辑区"} onClick={onToggleExpanded}>{expanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}</ActionButton> : null}</header>
     <QuickNoteEditor key={editorKey} initialValue={draft.blocks} disabled={locked} onBusy={setUploading} onError={reportError} onChange={blocks => update({ ...current.current, blocks })} onSubmit={() => void submit(conflict)} homeActions={appearance === "home" ? <>{tagPicker}{saveButton}</> : undefined} />
-    <div className="quick-note-composer-tags">
-      {draft.tag_ids.map(id => <span className="quick-note-selected-tag" key={id}><Tag>{tags.find(tag => tag.id === id)?.name ?? "已移除标签"}</Tag><ActionButton type="button" disabled={locked} aria-label={`移除标签 ${tags.find(tag => tag.id === id)?.name ?? "已移除标签"}`} onClick={() => update({ ...draft, tag_ids: draft.tag_ids.filter(tag => tag !== id) })}><X size={12} /></ActionButton></span>)}
+    <div className={appearance === "home" ? "quick-note-composer-tags order-3 flex flex-wrap items-center gap-2 border-0 p-0 [&:not(:empty)]:pt-3" : "quick-note-composer-tags"}>
+      {draft.tag_ids.map(id => <span className={appearance === "home" ? "quick-note-selected-tag [&_svg]:size-4" : "quick-note-selected-tag"} key={id}><Tag>{tags.find(tag => tag.id === id)?.name ?? "已移除标签"}</Tag><ActionButton type="button" disabled={locked} aria-label={`移除标签 ${tags.find(tag => tag.id === id)?.name ?? "已移除标签"}`} onClick={() => update({ ...draft, tag_ids: draft.tag_ids.filter(tag => tag !== id) })}><X size={12} /></ActionButton></span>)}
       {appearance === "default" ? tagPicker : null}
     </div>
     {appearance === "default" ? <footer className="quick-note-composer-footer">{saveButton}<span className="quick-note-shortcut">⌘ / Ctrl + Enter</span></footer> : null}
-    <div className="quick-note-save-status" aria-live="polite">{saved ? "已记下" : !persisted ? "未保存" : draft.pending ? "未保存" : hasContent ? "未保存" : "仅自己可见"}</div>
+    <div className={appearance === "home" ? "quick-note-save-status absolute end-4 top-4 m-0 p-0 min-[541px]:end-6 min-[541px]:top-6" : "quick-note-save-status"} aria-live="polite">{saved ? "已记下" : !persisted ? "未保存" : draft.pending ? "未保存" : hasContent ? "未保存" : "仅自己可见"}</div>
     {!canEdit ? <p className="quick-note-hint">当前工作空间角色没有编辑权限。</p> : null}
 
   </section>;

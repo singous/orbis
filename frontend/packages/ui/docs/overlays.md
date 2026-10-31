@@ -9,3 +9,11 @@ Portal 挂到 body，但通过隐藏锚点读取打开位置最近的 data-theme
 层级使用 token：Dialog 80、Select/Popover 90、Tooltip 100。嵌套 Select 的第一次 Escape 只关闭列表并恢复触发器焦点，第二次关闭 Dialog 并返回外部触发器。对应 Story 和应用级浏览器用例覆盖这些行为。
 
 Select 的 body Portal 使用具名选项区域，让浮层文本在完整页面的地标导航中可定位；内部 listbox/option 继续由 Base UI 管理。
+
+搜索等具有独立 chrome 的场景使用 DialogPopup + DialogTitle + DialogClose 组合。DialogPopup 负责 Portal、背景、视口和焦点，不额外插入标题区或关闭图标；调用方必须通过 DialogTitle 或 aria-label 提供名称，并渲染关闭控件。backdropClassName 和 viewportClassName 用于浮层布局，不允许业务直接依赖 Base UI 的 DOM 结构。
+
+Dialog 的 onOpenChangeComplete(open) 在对应进入/退出动画完成后通知。需要保留草稿、恢复编辑选区或卸载会话时使用该回调，不根据固定毫秒数推测退场。搜索拥有者继续在实际退出后等待焦点恢复帧，再还原原来的选区与滚动位置；较早请求的退出回调不能关闭新打开的会话。
+
+危险操作确认可以通过 dismissOnOutsidePress={false} 禁止点击背景关闭；显式取消、Escape 和受控关闭是否接受，仍由相应原语和业务拥有者负责。
+
+公开阅读器等拥有独立品牌变量的边界可给 DialogPopup 传 portalContainer DOM 或 ref，使浮层实际挂载在该主题子树中。该容器保留 --reader-* 等领域变量的原有继承，不把它们加入通用 UI 包的复制协议；initialFocus/finalFocus 仍由浮层原语负责。

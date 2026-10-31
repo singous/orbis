@@ -90,7 +90,7 @@ describe("archiving from the editor", () => {
     expect(screen.queryByRole("button", { name: "评论与历史" })).not.toBeInTheDocument();
     fireEvent.change(editor, { target: { value: "归档时不应接受的编辑" } });
     fireEvent.click(archive);
-    expect(screen.queryByRole("menuitem", { name: "归档文档" })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("menuitem", { name: "归档文档" })).not.toBeInTheDocument());
     await act(async () => { save.resolve(); });
     await screen.findByRole("heading", { name: "笔记本" });
     expect(stored.content.plain_text).toBe("保存中正文");

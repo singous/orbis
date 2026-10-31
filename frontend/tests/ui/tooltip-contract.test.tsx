@@ -20,6 +20,17 @@ describe("Tooltip trigger composition", () => {
     expect(onKeyDown).toHaveBeenCalledOnce();
   });
 
+  it("keeps links as links and merges existing descriptions", async () => {
+    const user = userEvent.setup();
+    render(<><p id="existing-tooltip-description">已有说明</p><Tooltip label="链接说明"><a href="/guide" aria-describedby="existing-tooltip-description">指南</a></Tooltip></>);
+    const link = screen.getByRole("link", { name: "指南" });
+    await user.tab();
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("链接说明");
+    expect(link).toHaveAttribute("href", "/guide");
+    expect(link).not.toHaveAttribute("role", "button");
+    expect(link).toHaveAccessibleDescription("已有说明 链接说明");
+  });
+
   it("keeps the consumer ref attached to the trigger", () => {
     const ref = createRef<HTMLButtonElement>();
     render(<Tooltip label="操作说明"><button ref={ref}>操作</button></Tooltip>);

@@ -1,6 +1,6 @@
-import { Input as HeroInput } from "@heroui/react/input";
-import { Checkbox } from "@heroui/react/checkbox";
-import { Textarea as HeroTextArea } from "@orbis/ui/textarea";
+import { Input } from "@orbis/ui/input";
+import { Checkbox } from "@orbis/ui/checkbox";
+import { Textarea } from "@orbis/ui/textarea";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { ChevronDown, ChevronRight, FileText, PencilLine } from "../../shared/ui/icons";
 import { useState } from "react";
@@ -46,18 +46,17 @@ export function SiteSourceTree({ items, rootNoteId, source, resolved, disabled, 
       const resolvedPage = resolvedById.get(node.id);
       return <li key={node.id} className="site-source-node" style={{ "--source-depth": depth } as React.CSSProperties}>
         <div className="site-source-node-row">
-          <Checkbox className="site-source-check"
+          <Checkbox wrapperClassName="site-source-check"
               aria-label={`公开 ${node.title}`}
-              isSelected={publiclyIncluded}
-              isDisabled={disabled || affectedByParent}
-              onChange={(checked) => onChange({
+              checked={publiclyIncluded}
+              disabled={disabled || affectedByParent}
+              onCheckedChange={(checked) => onChange({
                 ...source,
                 excluded_note_ids: checked
                   ? source.excluded_note_ids.filter((id) => id !== node.id)
                   : [...source.excluded_note_ids, node.id],
               })}
           >
-            <Checkbox.Content><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control></Checkbox.Content>
           </Checkbox>
           <FileText aria-hidden="true" size={16} />
           <div className="site-source-node-copy">
@@ -76,9 +75,9 @@ export function SiteSourceTree({ items, rootNoteId, source, resolved, disabled, 
           </ActionButton>
         </div>
         {isExpanded ? <div className="site-source-overrides">
-          <label>公开标题<HeroInput aria-label={`公开标题：${node.title}`} value={override?.title ?? ""} disabled={disabled} placeholder={node.title} onChange={(event) => onChange(updatePageOverride(source, node.id, { title: event.target.value || null }))} /></label>
-          <label>公开路径<HeroInput aria-label={`公开路径：${node.title}`} value={override?.slug ?? ""} disabled={disabled} pattern="[a-z0-9]+(-[a-z0-9]+)*(/[a-z0-9]+(-[a-z0-9]+)*)*" placeholder={resolvedPage?.slug ?? "保存后生成"} onChange={(event) => onChange(updatePageOverride(source, node.id, { slug: event.target.value || null }))} /></label>
-          <label className="site-source-description">公开简介<HeroTextArea aria-label={`公开简介：${node.title}`} value={override?.description ?? ""} disabled={disabled} rows={2} onChange={(event) => onChange(updatePageOverride(source, node.id, { description: event.target.value || null }))} /></label>
+          <label>公开标题<Input aria-label={`公开标题：${node.title}`} value={override?.title ?? ""} disabled={disabled} placeholder={node.title} onChange={(event) => onChange(updatePageOverride(source, node.id, { title: event.target.value || null }))} /></label>
+          <label>公开路径<Input aria-label={`公开路径：${node.title}`} value={override?.slug ?? ""} disabled={disabled} pattern="[a-z0-9]+(-[a-z0-9]+)*(/[a-z0-9]+(-[a-z0-9]+)*)*" placeholder={resolvedPage?.slug ?? "保存后生成"} onChange={(event) => onChange(updatePageOverride(source, node.id, { slug: event.target.value || null }))} /></label>
+          <label className="site-source-description">公开简介<Textarea aria-label={`公开简介：${node.title}`} value={override?.description ?? ""} disabled={disabled} rows={2} onChange={(event) => onChange(updatePageOverride(source, node.id, { description: event.target.value || null }))} /></label>
         </div> : null}
         {node.children.length ? <ul>{renderNodes(node.children, depth + 1, affectedByParent || explicitlyExcluded)}</ul> : null}
       </li>;

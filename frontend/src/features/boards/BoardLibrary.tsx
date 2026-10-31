@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Search, Shapes, Smile, LayoutTemplate, Layers, X } from "@orbis/ui/icons";
-import { Tabs } from "@heroui/react/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
 import { TextInput } from "../../shared/ui/TextInput";
 import { SelectField } from "../../shared/ui/SelectField";
 import { ActionButton } from "../../shared/ui/ActionButton";
@@ -75,20 +75,20 @@ export function BoardLibrary(props: Props) {
           <X size={16} />
         </ActionButton>
       </header>
-      <Tabs selectedKey={tab} onSelectionChange={key => props.onTab(key as BoardLibraryTab)} className="board-library-content">
-        <Tabs.ListContainer>
-          <Tabs.List className="board-library-tabs" aria-label="素材分类">
+      <Tabs value={tab} onValueChange={key => props.onTab(key as BoardLibraryTab)} className="board-library-content">
+        <div className="shrink-0">
+          <TabsList className="board-library-tabs" aria-label="素材分类">
             {([
               { id: "shapes", name: "图形", Icon: Shapes },
               { id: "icons", name: "图标", Icon: Smile },
               { id: "templates", name: "模板", Icon: LayoutTemplate },
               { id: "layers", name: "图层", Icon: Layers },
             ] as const).map(({ id, name, Icon }) => (
-              <Tabs.Tab id={id} key={id}><Icon size={17} aria-hidden="true" /><span>{name}</span><Tabs.Indicator /></Tabs.Tab>
+              <TabsTrigger value={id} key={id}><Icon size={17} aria-hidden="true" /><span>{name}</span></TabsTrigger>
             ))}
-          </Tabs.List>
-        </Tabs.ListContainer>
-        <Tabs.Panel id="shapes" className="board-library-panel">
+          </TabsList>
+        </div>
+        <TabsContent value="shapes" className="board-library-panel">
           {tab === "shapes" ? filters : null}
           {tab === "shapes" ? (
             <div className="board-shape-grid">
@@ -114,8 +114,8 @@ export function BoardLibrary(props: Props) {
                 ))}
             </div>
           ) : null}
-        </Tabs.Panel>
-        <Tabs.Panel id="icons" className="board-library-panel">
+        </TabsContent>
+        <TabsContent value="icons" className="board-library-panel">
           {tab === "icons" ? filters : null}
           {tab === "icons" ? (
             <IconBrowser
@@ -124,8 +124,8 @@ export function BoardLibrary(props: Props) {
               readOnly={props.readOnly}
             />
           ) : null}
-        </Tabs.Panel>
-        <Tabs.Panel id="templates" className="board-library-panel">
+        </TabsContent>
+        <TabsContent value="templates" className="board-library-panel">
           {tab === "templates" ? filters : null}
           {tab === "templates" ? (
             <div className="board-template-list">
@@ -156,8 +156,8 @@ export function BoardLibrary(props: Props) {
               ))}
             </div>
           ) : null}
-        </Tabs.Panel>
-        <Tabs.Panel id="layers" className="board-library-panel">
+        </TabsContent>
+        <TabsContent value="layers" className="board-library-panel">
           {tab === "layers" ? filters : null}
           {tab === "layers" ? (
             <div className="board-object-list" role="list" aria-label="画板对象树">
@@ -185,7 +185,7 @@ export function BoardLibrary(props: Props) {
               ) : null}
             </div>
           ) : null}
-        </Tabs.Panel>
+        </TabsContent>
       </Tabs>
       <footer className="board-library-footer">选择图形后点击画布放置</footer>
     </aside>

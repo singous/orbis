@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { toast as heroToast } from "@heroui/react/toast";
+import { clearToasts } from "../../shared/ui/Toast";
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
@@ -30,7 +30,7 @@ beforeEach(() => {
     return response(page([]));
   }));
 });
-afterEach(() => { act(() => heroToast.clear()); cleanup(); vi.unstubAllGlobals(); authStore.getState().clearSession(); });
+afterEach(() => { act(() => clearToasts()); cleanup(); vi.unstubAllGlobals(); authStore.getState().clearSession(); });
 
 function renderEditor() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });

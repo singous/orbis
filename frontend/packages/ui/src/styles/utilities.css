@@ -1,3 +1,10 @@
+@utility ob-focus-ring {
+  &:focus-visible { outline: 2px solid var(--ob-ring); outline-offset: 2px; }
+}
+@utility ob-input-focus {
+  &:focus { outline: 2px solid var(--ob-ring); outline-offset: 2px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   :root, [data-theme="light"], [data-theme="dark"] {
     --ob-motion-feedback: 0ms;
@@ -14,6 +21,29 @@
 }
 @media (forced-colors: active) {
   :root, [data-theme="light"], [data-theme="dark"] {
+    --ob-canvas: Canvas;
+    --ob-surface-secondary: Canvas;
+    --ob-surface-tertiary: Canvas;
+    --ob-surface-edge: CanvasText;
+    --ob-separator: CanvasText;
+    --ob-segment: Canvas;
+    --ob-item-hover-bg: Highlight;
+    --ob-item-selected-bg: Highlight;
+    --ob-item-foreground: HighlightText;
+    --ob-page-muted-foreground: CanvasText;
+    --ob-page-danger: LinkText;
+    --ob-page-danger-soft: Canvas;
+    --ob-page-success: CanvasText;
+    --ob-page-success-soft: Canvas;
+    --ob-page-success-soft-foreground: CanvasText;
+    --ob-page-warning: CanvasText;
+    --ob-warning-soft: Canvas;
+    --ob-page-warning-soft-foreground: CanvasText;
+    --ob-page-accent-soft: Highlight;
+    --ob-shadow-panel: none;
+    --ob-shadow-card: none;
+    --ob-shadow-card-hover: none;
+    --ob-shadow-floating: none;
     --ob-background: Canvas;
     --ob-surface: Canvas;
     --ob-surface-raised: Canvas;
@@ -24,11 +54,13 @@
     --ob-secondary: Canvas;
     --ob-accent-surface: Canvas;
     --ob-danger: LinkText;
+    --ob-danger-hover: LinkText;
     --ob-danger-text: LinkText;
     --ob-danger-foreground: Canvas;
     --ob-border: ButtonText;
     --ob-input: ButtonText;
     --ob-ring: Highlight;
+    --ob-shadow-field: none;
   }
   [data-slot^="ob-"] { box-shadow: none; }
 }

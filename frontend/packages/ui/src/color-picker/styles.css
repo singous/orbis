@@ -1,0 +1,9 @@
+/* 尺寸与焦点仅覆盖固定版本颜色原语的局部样式，不影响应用控件。 */
+.ob-color-picker .react-colorful { width: 100%; height: auto; gap: 16px; }
+.ob-color-picker .react-colorful__saturation { flex: 0 0 160px; border: 0; border-radius: var(--ob-radius-md); }
+.ob-color-picker .react-colorful__hue { flex: 0 0 20px; border-radius: var(--ob-radius-md); }
+.ob-color-picker .react-colorful__interactive:focus-visible { outline: 2px solid var(--ob-ring); outline-offset: 2px; }
+.ob-color-picker[data-disabled="true"] { opacity: .5; cursor: not-allowed; }
+@media (forced-colors: active) {
+  .ob-color-picker .react-colorful__pointer { border-color: CanvasText; }
+}

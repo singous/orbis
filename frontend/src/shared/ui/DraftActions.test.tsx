@@ -18,7 +18,8 @@ it("opens draft tools in a modal only on request and restores trigger focus on E
   await user.click(trigger);
   const modal = screen.getByRole("dialog", { name: "本机修改" });
   expect(within(modal).getByRole("button", { name: "导出草稿" })).toBeVisible();
-  expect(modal.parentElement?.closest("[data-slot='modal-backdrop']")).toBeTruthy();
+  expect(modal).toHaveAttribute("aria-modal", "true");
+  expect(document.querySelector('[data-slot="ob-dialog-backdrop"]')).toBeInTheDocument();
   await user.keyboard("{Escape}");
   await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   await waitFor(() => expect(trigger).toHaveFocus());
@@ -31,7 +32,7 @@ it("keeps the draft on cancellation and requires explicit confirmation", async (
   await user.click(screen.getByRole("button", { name: "放弃草稿" }));
   const alert = screen.getByRole("alertdialog", { name: "放弃草稿" });
   expect(discard).not.toHaveBeenCalled();
-  expect(within(alert).getByRole("button", { name: "取消" })).toHaveFocus();
+  await waitFor(() => expect(within(alert).getByRole("button", { name: "取消" })).toHaveFocus());
   await user.click(within(alert).getByRole("button", { name: "取消" }));
   await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
   expect(discard).not.toHaveBeenCalled();

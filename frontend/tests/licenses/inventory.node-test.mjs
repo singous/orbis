@@ -21,6 +21,7 @@ function fixture(t, license = "MIT") {
   write("licenses/supplemental-texts.json", { packages: {} });
   write("licenses/reviews.json", { packages: {} });
   write("licenses/material-gaps.json", { packages: {} });
+  write("licenses/embedded-notices.json", { components: [] });
   write("licenses/sources/packages.tsv", "# no source pins\n");
   write("licenses/texts/copied.txt", "Copied code license\n");
   write("licenses/copied-code/shadcn-button.registry.json", "source snapshot");
@@ -73,4 +74,14 @@ test("review records cannot omit a corresponding-source decision", t => {
   assert.equal(run().status, 0);
   write("licenses/reviews.json", { packages: { "example@1.0.0": { status: "approved", approvedBy: "fixture maintainer", approvedAt: "2026-11-01", selectedLicense: "MPL-2.0", conclusion: "fixture decision" } } });
   assert.match(run("--check", "--release").stderr, /Maintainer review pending/);
+});
+
+test("retains acknowledgements that document bundled third-party code", t => {
+  const { root, write, run } = fixture(t);
+  write("frontend/node_modules/example/ACKNOWLEDGMENTS", "Bundled source acknowledgement\n");
+  assert.equal(run().status, 0);
+  const manifest = JSON.parse(readFileSync(path.join(root, "licenses/npm-manifest.json"), "utf8"));
+  const example = manifest.packages.find(item => item.name === "example");
+  assert.ok(example.texts.some(text => text.source === "node_modules/example/ACKNOWLEDGMENTS"));
+  assert.equal(run("--check").status, 0);
 });

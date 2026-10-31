@@ -47,7 +47,7 @@ it("flushes local edits before naming a fixed revision and retains the operation
   await user.click(screen.getByRole("button", { name: "新建命名版本" }));
   await user.type(screen.getByLabelText("新版本名称"), "评审稿");
   await user.click(screen.getByRole("button", { name: "保存命名版本" }));
-  await screen.findByRole("alert");
+  await screen.findByRole("alertdialog");
   expect(screen.getByLabelText("新版本名称")).toBeDisabled();
   await user.click(screen.getByRole("button", { name: "重试保存版本" }));
   await screen.findByText("Saved body");
@@ -67,7 +67,7 @@ it("restores the selected version through its UUID and reports persistence failu
   const user = userEvent.setup(); show(); await history(user);
   await user.click(await screen.findByRole("button", { name: "查看版本 评审稿" }));
   await screen.findByText("Review preview"); await user.click(screen.getByRole("button", { name: "恢复此版本" }));
-  expect(await screen.findByRole("alert")).toHaveTextContent("当前内容已变化");
+  expect(await screen.findByRole("alertdialog")).toHaveTextContent("当前内容已变化");
   expect(screen.getByText("Review preview")).toBeInTheDocument();
   const request = requests.find(request => request.method === "POST");
   expect(request?.path).toContain(`/versions/${REVISION_ID}/restore`);

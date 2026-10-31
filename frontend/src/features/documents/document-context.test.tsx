@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { toast as heroToast } from "@heroui/react/toast";
+import { clearToasts } from "../../shared/ui/Toast";
 import { cleanup, render as renderTestingLibrary, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
@@ -232,7 +232,7 @@ describe("DocumentContextPanel", () => {
 
   afterEach(() => {
     cleanup();
-    act(() => heroToast.clear());
+    act(() => clearToasts());
     act(() => authStore.getState().clearSession());
   });
 
@@ -314,7 +314,7 @@ describe("DocumentContextPanel", () => {
     expect(screen.queryByRole("button", { name: "归档 产品计划" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /预览文档/ })).not.toBeInTheDocument();
     await actor.click(screen.getByRole("button", { name: "文档操作 产品计划" }));
-    expect(screen.getByRole("menuitem", { name: "重命名" })).toBeInTheDocument();
+    expect(await screen.findByRole("menuitem", { name: "重命名" })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "归档" })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "新建子文档" })).toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "预览文档" })).not.toBeInTheDocument();
@@ -390,7 +390,7 @@ describe("DocumentContextPanel", () => {
     );
 
     await actor.click(screen.getByRole("button", { name: "文档操作 发布范围" }));
-    await actor.click(screen.getByRole("menuitem", { name: "归档" }));
+    await actor.click(await screen.findByRole("menuitem", { name: "归档" }));
 
     await waitFor(() => expect(screen.getByRole("status", { name: "current path" })).toHaveTextContent(`/collections/${rootNote.notebook_id}`));
     expect(mocks.archiveNote).toHaveBeenCalledWith({ id: rootNote.children[0].id, archived: true,expected_directory_version:7 });
@@ -401,7 +401,7 @@ describe("DocumentContextPanel", () => {
     renderPanel({ activeNoteId: undefined });
 
     await actor.click(screen.getByRole("button", { name: "文档操作 产品计划" }));
-    await actor.click(screen.getByRole("menuitem", { name: "归档" }));
+    await actor.click(await screen.findByRole("menuitem", { name: "归档" }));
     expect(screen.queryByRole("button", { name: "撤销" })).not.toBeInTheDocument();
 
     expect(mocks.archiveNote).toHaveBeenNthCalledWith(1, { id: rootNote.id, archived: true,expected_directory_version:7 });
@@ -472,7 +472,7 @@ describe("DocumentContextPanel", () => {
     expect(within(main).getByRole("button", { name: "新建文档" })).toBeEnabled();
     expect(within(main).queryByRole("button", { name: "导出全部" })).not.toBeInTheDocument();
     await actor.click(within(main).getByRole("button", { name: "笔记本操作" }));
-    expect(screen.getByRole("menuitem", { name: "导出全部" })).toBeEnabled();
+    expect(await screen.findByRole("menuitem", { name: "导出全部" })).toBeEnabled();
     expect(screen.getByRole("menuitem", { name: "导入 Markdown" })).toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "创建文档站点" })).not.toBeInTheDocument();
     await actor.keyboard("{Escape}");
@@ -487,7 +487,7 @@ describe("DocumentContextPanel", () => {
     mocks.updateNote.mockRejectedValueOnce(new ApiError(503,"重命名结果尚未确认","DOCUMENT_WRITE_RESULT_UNKNOWN"));
     renderPanel();
     await userEvent.click(screen.getByRole("button",{name:"文档操作 产品计划"}));
-    await userEvent.click(screen.getByRole("menuitem",{name:"重命名"}));
+    await userEvent.click(await screen.findByRole("menuitem",{name:"重命名"}));
     const dialog=screen.getByRole("dialog",{name:"重命名文档"});
     const title=within(dialog).getByRole("textbox",{name:"文档标题"});
     await userEvent.clear(title);await userEvent.type(title,"新标题");

@@ -18,7 +18,7 @@ const FOCUSABLE = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(", ");
 // Toast 位于独立门户中，其交互不应关闭当前设置或丢失草稿。
-const NESTED_OVERLAY = '.orbis-select-popover, .orbis-color-popover, [data-slot="toast-region"]';
+const NESTED_OVERLAY = '.orbis-select-popover, .orbis-color-popover, [data-slot="ob-select-popup"], [data-slot="ob-toast-viewport"]';
 
 export type Anchor = { left: number; top: number; element?: HTMLElement };
 export function anchorAt(element: Element): Anchor {
@@ -148,7 +148,7 @@ export function Popover({
       if (
         e.key === "Escape" &&
         !e.isComposing && !e.defaultPrevented &&
-        !(e.target instanceof Element && e.target.closest(NESTED_OVERLAY))
+        !(e.target instanceof Element && (e.target.closest(NESTED_OVERLAY) || e.target.closest('[role="combobox"][aria-expanded="true"]')))
       ) {
         e.preventDefault();
         e.stopPropagation();

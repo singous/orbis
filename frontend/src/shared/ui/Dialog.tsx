@@ -1,75 +1,31 @@
-import { Modal } from "@heroui/react/modal";
-import { X } from "./icons";
-import { cloneElement, createContext, isValidElement, useContext, useId, type ReactElement, type ReactNode } from "react";
-
+import { Dialog as PrimitiveDialog, DialogTrigger as PrimitiveTrigger, DialogClose as PrimitiveClose, DialogPopup, DialogTitle, DialogFooter as PrimitiveFooter } from "@orbis/ui/dialog";
+import { Children, isValidElement, useId, type ReactElement, type ReactNode } from "react";
 import { cn } from "./cn";
+import { X } from "./icons";
+import { Button } from "@orbis/ui/button";
 
-type DialogProps = {
-  open?: boolean;
-  defaultOpen?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  children: ReactNode;
-};
-
-const ControlledDialogContext = createContext<Pick<DialogProps, "open" | "onOpenChange"> | null>(null);
-
+type DialogProps = { open?: boolean; defaultOpen?: boolean; onOpenChange?: (open: boolean) => void; children: ReactNode };
 export function Dialog({ open, defaultOpen, onOpenChange, children }: DialogProps) {
-  if (open !== undefined) {
-    return <ControlledDialogContext.Provider value={{ open, onOpenChange }}>{children}</ControlledDialogContext.Provider>;
-  }
-  return <Modal isOpen={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>{children}</Modal>;
+  const content = Children.map(children, (child, index) => {
+    // 兼容既有 DraftActions 的首个直接按钮；显式触发器和受控弹窗不作转换。
+    if (open === undefined && index === 0 && isValidElement(child) && child.type !== DialogContent && child.type !== DialogTrigger) return <PrimitiveTrigger asChild>{child}</PrimitiveTrigger>;
+    return child;
+  });
+  return open === undefined
+    ? <PrimitiveDialog defaultOpen={defaultOpen} onOpenChange={onOpenChange}>{content}</PrimitiveDialog>
+    : <PrimitiveDialog open={open} onOpenChange={value => onOpenChange?.(value)}>{content}</PrimitiveDialog>;
 }
-
-// Modal uses its direct button child as the trigger. Keep the existing call sites intact.
-export function DialogTrigger({ children }: { asChild?: boolean; children: ReactNode }) {
-  return <>{children}</>;
-}
-
-export function DialogClose({ children }: { asChild?: boolean; children: ReactElement<{ slot?: string }> }) {
-  return isValidElement(children) ? cloneElement(children, { slot: "close" }) : null;
-}
-
-export function DialogContent({
-  title,
-  description,
-  className,
-  children,
-  hideCloseButton = false,
-}: {
-  title: string;
-  description?: string;
-  className?: string;
-  children?: ReactNode;
-  hideCloseButton?: boolean;
-}) {
-  const controlled = useContext(ControlledDialogContext);
+export function DialogTrigger({ children }: { asChild?: boolean; children: ReactElement }) { return <PrimitiveTrigger asChild>{children}</PrimitiveTrigger>; }
+export function DialogClose({ children }: { asChild?: boolean; children: ReactElement }) { return <PrimitiveClose asChild>{children}</PrimitiveClose>; }
+export function DialogContent({ title, description, className, children, hideCloseButton = false }: { title: string; description?: string; className?: string; children?: ReactNode; hideCloseButton?: boolean }) {
   const descriptionId = useId();
-
-  return (
-    <Modal.Backdrop className="orbis-modal-backdrop" isOpen={controlled?.open} onOpenChange={controlled?.onOpenChange}>
-      <Modal.Container className="orbis-modal-container">
-        <Modal.Dialog
-          aria-describedby={description ? descriptionId : undefined}
-          className={cn("orbis-modal-dialog", className)}
-        >
-          <Modal.Header className="orbis-modal-header">
-            <Modal.Heading className="orbis-modal-title text-lg font-semibold tracking-tight text-[var(--text-primary)]">
-              {title}
-            </Modal.Heading>
-            {hideCloseButton ? null : (
-              <Modal.CloseTrigger aria-label="关闭" className="orbis-modal-close">
-                <X aria-hidden="true" size={14} />
-              </Modal.CloseTrigger>
-            )}
-            {description ? <p id={descriptionId} className="orbis-modal-description text-sm leading-6 text-[var(--text-secondary)]">{description}</p> : null}
-          </Modal.Header>
-          {children}
-        </Modal.Dialog>
-      </Modal.Container>
-    </Modal.Backdrop>
-  );
+  return <DialogPopup aria-describedby={description ? descriptionId : undefined} className={cn("max-w-112 max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain p-[clamp(20px,4vw,28px)]", className)}>
+    <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2">
+      <DialogTitle className="min-w-0 wrap-anywhere font-semibold tracking-tight">{title}</DialogTitle>
+      {hideCloseButton ? null : <PrimitiveClose asChild><Button appearance="unstyled" aria-label="关闭" className="col-start-2 row-start-1 grid size-8 place-items-center rounded-ob-sm text-ob-muted-foreground hover:bg-ob-accent hover:text-ob-foreground"><X aria-hidden="true" size={14} /></Button></PrimitiveClose>}
+      {description ? <p id={descriptionId} className="col-span-full min-w-0 text-sm leading-6 wrap-anywhere text-ob-muted-foreground">{description}</p> : null}
+    </header>
+    {children}
+  </DialogPopup>;
 }
-
-export function DialogFooter({ className, children }: { className?: string; children?: ReactNode }) {
-  return <Modal.Footer className={cn("orbis-modal-footer", className)}>{children}</Modal.Footer>;
-}
+export function DialogFooter({ className, ...props }: { className?: string; children?: ReactNode }) { return <PrimitiveFooter {...props} className={cn("mt-6", className)} />; }

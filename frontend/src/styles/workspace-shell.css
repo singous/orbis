@@ -1,4 +1,4 @@
-/* Workspace layout colors are independent of HeroUI control tokens. */
+/* Workspace layout colors follow application material roles. */
 :root, .light, .default, [data-theme="light"], [data-theme="default"] {
   --workspace-panel-background: var(--orbis-panel-bg);
   --workspace-shadow-color: var(--foreground);
@@ -116,13 +116,12 @@
 .workspace-brand-mark { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; color: var(--text-oninverse); background: var(--surface-inverse); flex: none; }
 .workspace-brand-word { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .workspace-brand > svg { flex: none; color: var(--text-secondary); }
-.workspace-switcher-popover, .workspace-user-popover { position: absolute; z-index: 60; top: calc(100% + 12px); width: 268px; padding: 8px; }
-.workspace-switcher-popover { left: -7px; }
+.workspace-switcher-popover, .workspace-user-popover { width: 268px; padding: 8px; }
 .workspace-switcher-group { color: var(--text-tertiary); font-size: var(--orbis-text-caption-size); padding: 8px 10px; line-height: var(--orbis-text-caption-leading); }
 .workspace-switcher-item { display: flex; gap: 10px; align-items: center; padding: 9px 10px; }
 .workspace-switcher-space-icon { display: grid; place-items: center; width: 33px; height: 33px; border-radius: 9px; background: var(--surface-active); color: var(--text-secondary); font-size: var(--orbis-text-ui-size); flex: none; line-height: var(--orbis-text-ui-leading); }
 .workspace-switcher-name { display: block; font-size: var(--orbis-text-ui-size); color: var(--text-primary); font-weight: var(--orbis-weight-action); line-height: var(--orbis-text-ui-leading); }
-.workspace-switcher-sub { display: block; font-size: var(--orbis-text-caption-size); color: var(--text-tertiary); margin-top: 2px; line-height: var(--orbis-text-caption-leading); }
+.workspace-switcher-sub { display: block; font-size: var(--orbis-text-caption-size); color: var(--ob-muted-foreground); margin-top: 2px; line-height: var(--orbis-text-caption-leading); }
 .workspace-switcher-empty { padding: 5px 10px 12px; font-size: var(--orbis-text-caption-size); color: var(--text-tertiary); line-height: var(--orbis-text-caption-leading); }
 .workspace-switcher-check { color: var(--text-secondary); flex: none; }
 .workspace-user-menu { position: relative; margin-left: auto; }
@@ -177,16 +176,14 @@
 .workspace-user-trigger { display: grid; place-items: center; min-width: var(--orbis-control-compact-height); min-height: var(--orbis-control-compact-height); }
 .workspace-user-avatar { width: 30px; height: 30px; }
 .workspace-user-trigger-copy { display: none; }
-.workspace-user-popover { right: -8px; }
 .workspace-user-profile { display: flex; gap: 12px; align-items: center; padding: var(--orbis-space-3); margin-bottom: var(--orbis-space-2); border-radius: var(--field-radius); background: var(--surface-hover); }
 .workspace-user-profile .workspace-user-avatar { width: 36px; height: 36px; }
 .workspace-user-name { font-size: var(--orbis-text-ui-size); font-weight: var(--orbis-weight-action); line-height: var(--orbis-text-ui-leading); }
-.workspace-user-space { font-size: var(--orbis-text-caption-size); color: var(--text-tertiary); margin-top: 2px; line-height: var(--orbis-text-caption-leading); }
-.workspace-user-actions-label { padding: 3px 10px 6px; font-size: var(--orbis-text-caption-size); color: var(--text-tertiary); line-height: var(--orbis-text-caption-leading); }
+.workspace-user-space { font-size: var(--orbis-text-caption-size); color: var(--ob-muted-foreground); margin-top: 2px; line-height: var(--orbis-text-caption-leading); }
+.workspace-user-actions-label { padding: 3px 10px 6px; font-size: var(--orbis-text-caption-size); color: var(--ob-muted-foreground); line-height: var(--orbis-text-caption-leading); }
 .workspace-user-menu-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: var(--orbis-space-2) var(--orbis-space-3); font-size: var(--orbis-text-ui-size); text-align: left; line-height: var(--orbis-text-ui-leading); min-height: var(--orbis-control-default-height); }
 .workspace-user-menu-item svg { width: var(--orbis-icon-default-size); height: var(--orbis-icon-default-size); }
 .workspace-appearance-dialog { width: min(320px, calc(100vw - 32px)); }
-.workspace-appearance-dialog [data-slot="radio-content"] { min-height: var(--orbis-control-form-height); gap: var(--orbis-space-3); }
 .rail-create-trigger { display: grid; place-items: center; }
 @media (max-width: 1199px) {
   .workspace-shell { --sidebar-default-width: 210px; }
@@ -327,7 +324,7 @@ html.workspace-resizing, html.workspace-resizing * { cursor: col-resize !importa
 .workspace-user-trigger--rail .workspace-user-avatar { width: 30px; height: 30px; }
 /* The overlay engine positions portaled content; topbar offsets do not apply. */
 .workspace-switcher-popover--rail,
-.workspace-user-popover--rail { position: relative; inset: auto; width: min(268px, calc(100vw - 80px)); max-width: calc(100vw - 24px); }
+.workspace-user-popover--rail { width: min(268px, calc(100vw - 80px)); max-width: calc(100vw - 24px); }
 .workspace-user-popover--rail .workspace-user-profile > div { min-width: 0; overflow-wrap: anywhere; }
 .workspace-user-popover--rail .workspace-user-profile .workspace-user-avatar { flex: none; }
 

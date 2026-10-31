@@ -1,6 +1,6 @@
 import {nativeSnapshot} from "../documents/editor/editor.test-utils";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { toast as heroToast } from "@heroui/react/toast";
+import { clearToasts } from "../../shared/ui/Toast";
 import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -20,7 +20,7 @@ function showPanel({ canManage = true, onClose = () => {}, onRestore = async (re
 }
 
 beforeEach(() => { act(() => authStore.getState().setSession(session)); });
-afterEach(() => { act(() => heroToast.clear()); cleanup(); clients.forEach((client) => client.clear()); clients.length = 0; vi.unstubAllGlobals(); act(() => authStore.getState().clearSession()); });
+afterEach(() => { act(() => clearToasts()); cleanup(); clients.forEach((client) => client.clear()); clients.length = 0; vi.unstubAllGlobals(); act(() => authStore.getState().clearSession()); });
 
 describe("document collaboration", () => {
   it("keeps closed drawers offscreen without queries and restores focus after a controlled close", async () => {
@@ -179,7 +179,7 @@ describe("document collaboration", () => {
     await user.click(await screen.findByRole("button", { name: /查看保存记录 2/ }));
     await screen.findByText("历史正文");
     await user.click(screen.getByRole("button", { name: "恢复此版本" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(/版本|冲突/);
+    expect(await screen.findByRole("alertdialog")).toHaveTextContent(/版本|冲突/);
     expect(screen.getByText("历史正文")).toBeInTheDocument();
     expect(client.getQueryData(["note-content", NOTE_ID])).toEqual(content());
   });
@@ -199,7 +199,7 @@ describe("document collaboration", () => {
     http(() => unavailable ? response(null, 503, "暂时无法加载评论") : response(page([comment()])));
     const user = userEvent.setup();
     showPanel();
-    expect(await screen.findByRole("alert")).toHaveTextContent("暂时无法加载评论");
+    expect(await screen.findByRole("alertdialog")).toHaveTextContent("暂时无法加载评论");
     unavailable = false;
     await user.click(await screen.findByRole("button", { name: "重试加载评论" }));
     await screen.findByText("第一条讨论");
