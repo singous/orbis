@@ -41,6 +41,20 @@ for (const theme of ["light", "dark"] as const) test(`home search in ${theme} ke
   await expect(palette.getByRole("option")).toHaveCount(2);
   await expect(palette.getByRole("option").first()).toContainText("服务端第二名");
   await expect(palette.getByRole("option").last()).toContainText("服务端第一名");
+  const firstResult = palette.getByRole("option").first();
+  expect(await firstResult.evaluate(element => element.tagName)).toBe("A");
+  await expect(firstResult).toHaveAttribute("tabindex", "-1");
+  await expect(firstResult).toHaveAttribute("href", `/documents/${results[0].id}`);
+  await expect(input).toHaveAttribute("aria-activedescendant", await firstResult.getAttribute("id") ?? "");
+  await expect(firstResult).toHaveAttribute("aria-selected", "true");
+  await page.keyboard.press("ArrowDown");
+  await expect(input).toBeFocused();
+  await expect(input).toHaveAttribute("aria-activedescendant", await palette.getByRole("option").last().getAttribute("id") ?? "");
+  await expect(palette.getByRole("option").last()).toHaveAttribute("aria-selected", "true");
+  await page.evaluate(async () => {
+    await Promise.all(document.getAnimations().filter(animation => animation.effect?.getComputedTiming().iterations !== Infinity).map(animation => animation.finished.catch(() => {})));
+  });
+  expect((await new AxeBuilder({ page }).include('[role="dialog"]').analyze()).violations).toEqual([]);
   await palette.getByRole("button", { name: "下一页" }).click();
   await expect.poll(() => requests.at(-1)?.searchParams.get("page")).toBe("2");
   expect(requests.at(-1)?.searchParams.get("type")).toBe("document");

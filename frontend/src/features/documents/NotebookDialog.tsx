@@ -50,9 +50,10 @@ export function NotebookDialog({ open, title = "新建笔记本", initialValue =
     }
   }
 
-  return <Dialog open={open} onOpenChange={(nextOpen) => { if (!nextOpen && !submitting && !pending) onClose(); }}>
-    <DialogContent title={title} description="选择一个图标，为你的内容留个专属位置。" className="notebook-dialog">
-      <form className="notebook-dialog-form" onSubmit={handleSubmit}>
+  // 延续现有弹窗宽度和表单起点，避免切换图标时改变布局。
+  return <Dialog open={open} dismissible={!submitting && !pending} onOpenChange={(nextOpen) => { if (!nextOpen && !submitting && !pending) onClose(); }}>
+    <DialogContent title={title} description="选择一个图标，为你的内容留个专属位置。" className="notebook-dialog max-w-[476px]">
+      <form className="notebook-dialog-form mt-[25px]" onSubmit={handleSubmit}>
         <TextInput label="笔记本名称" placeholder="输入笔记本名称" autoFocus value={value} disabled={pending || submitting} onChange={(event) => setValue(event.target.value)} />
         <NotebookIconPicker value={icon} onChange={setIcon} onPendingChange={setUploading} disabled={pending || submitting} uploadFile={async (file) => {
           if (!auth) throw new Error("登录已失效，请重新登录后上传。");

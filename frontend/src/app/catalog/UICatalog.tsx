@@ -1,3 +1,4 @@
+import { CommandExample } from "./CommandExample";
 import { useState } from "react";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -61,6 +62,7 @@ export function UICatalog() {
       <SelectField label="兼容分组" value={compatibleSelection} options={[{ value: "", label: "兼容不分组" }, { value: "name", label: "兼容按名称" }]} onChange={setCompatibleSelection} />
       <output aria-label="兼容激活次数">{compatibleActivations}</output><output aria-label="兼容选择">{compatibleSelection || "（空值）"}</output>
     </section>
+    <CommandExample />
     <section aria-label="加载布局" className="grid gap-6">
       <h2>加载布局</h2>
       {(["cards", "rows", "editor", "editor-body"] as const).map(variant => <div key={variant} data-loading-preview={variant}>

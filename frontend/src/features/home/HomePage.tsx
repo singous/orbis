@@ -19,7 +19,6 @@ import { buildActivityCalendar, memberDays } from "./home-activity";
 import { useHomeQuickNotes } from "./home-queries";
 import { HomeSurface, HomeHeader, HomeGrid, HomeCard, HomeCardHeading } from "./HomeLayout";
 import { HomeActivityCard } from "./HomeActivityCard";
-import "../quick-notes/quick-notes.css";
 
 const greetingDate = new Intl.DateTimeFormat("zh-CN", { timeZone: "Asia/Shanghai", month: "long", day: "numeric", weekday: "long" });
 const CLOCK_REFRESH_MS = 60_000;

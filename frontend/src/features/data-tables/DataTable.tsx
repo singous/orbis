@@ -1,3 +1,4 @@
+import { tableSurfaceClassName, tableHeadingClassName, tableFooterClassName, tableStartClassName, tableFormClassName, tableFormActionsClassName } from "./table-chrome";
 import { reportError } from "../../shared/api/request-feedback";
 import { DraftActions } from "../../shared/ui/DraftActions";
 
@@ -45,15 +46,15 @@ export function DataTableBlock({
   const operation = useRef<string | null>(null);
   if (!host)
     return (
-      <div className="dt-unavailable">
+      <div className="rounded-lg border border-dashed border-ob-border p-[18px] text-(--ob-page-muted-foreground)">
         {String(props.title || "数据表")} · 请在所属文档中打开
       </div>
     );
   const effective = { ...host, readOnly: readOnly || host.readOnly };
-  if(host.isCopyPending?.(blockId))return <div className="dt-unavailable" role="status">正在保存表格副本…</div>;
+  if(host.isCopyPending?.(blockId))return <div className="rounded-lg border border-dashed border-ob-border p-[18px] text-(--ob-page-muted-foreground)" role="status">正在保存表格副本…</div>;
   if (!props.table_id)
     return (
-      <div className="data-table dt-start" contentEditable={false}>
+      <div className={tableStartClassName} contentEditable={false}>
         <Table2 size={24} />
         <div>
           <strong>数据表</strong>
@@ -144,7 +145,7 @@ function DataTableEditor({
   const definition = table.definition;
   if (!definition || !table.page || table.recovering)
     return (
-      <section className="data-table dt-start" contentEditable={false}>
+      <section className={tableStartClassName} contentEditable={false}>
         <Table2 size={22} />
         <span>{table.error ?? "正在读取数据表…"}</span>
         {table.error ? (
@@ -156,7 +157,7 @@ function DataTableEditor({
     );
   if (table.page.block_id !== blockId)
     return (
-      <section className="data-table dt-start" contentEditable={false}>
+      <section className={tableStartClassName} contentEditable={false}>
         正在保存独立副本，完成后即可编辑。
       </section>
     );
@@ -200,7 +201,7 @@ function DataTableEditor({
     : null;
   const content = (
     <section
-      className="data-table"
+      className={tableSurfaceClassName}
       contentEditable={false}
       aria-label={definition.title}
       onKeyDown={(event) => {
@@ -218,7 +219,7 @@ function DataTableEditor({
           !(event.target instanceof HTMLElement && event.target.closest("input,textarea"))) expand(false);
       }}
     >
-      <header className="dt-heading">{(table.error || actionError) || (table.candidates.length) || (table.dirty && !table.saving) ? <DraftActions label="表格本机修改">{table.error || actionError ? <section><h3 className="mb-2 text-sm font-semibold">保存修改</h3><Button size="sm" onClick={save}>
+      <header className={tableHeadingClassName}>{(table.error || actionError) || (table.candidates.length) || (table.dirty && !table.saving) ? <DraftActions label="表格本机修改">{table.error || actionError ? <section><h3 className="mb-2 text-sm font-semibold">保存修改</h3><Button size="sm" onClick={save}>
             重试保存
           </Button>
 <Button
@@ -244,10 +245,11 @@ function DataTableEditor({
             保存修改
           </Button></section> : null}</DraftActions> : null}
         <Table2 size={18} />
-        <div className="dt-title-area">
+        <div className="flex min-w-0 flex-1 items-baseline gap-3">
           {titleEditing ? (
             <input
               autoFocus
+              className="min-w-0 rounded-md border border-ob-border bg-ob-card px-2.5 py-[9px] [font:inherit] text-inherit"
               aria-label="表格名称"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
@@ -263,7 +265,7 @@ function DataTableEditor({
           ) : (
             <button
               type="button"
-              className="dt-title"
+              className="dt-title cursor-text border-0 border-current bg-transparent text-left text-[16px]! font-semibold!"
               disabled={host.readOnly}
               onClick={() => {
                 setTitle(definition.title);
@@ -273,7 +275,7 @@ function DataTableEditor({
               {definition.title}
             </button>
           )}
-          <span className="dt-save" aria-live="polite">
+          <span className="whitespace-nowrap text-[11px] text-(--ob-page-muted-foreground) [@media(max-width:720px)]:hidden" aria-live="polite">
             {host.readOnly
               ? "只读"
               : table.saving
@@ -286,11 +288,12 @@ function DataTableEditor({
           </span>
         </div>
       </header>
-      <div className="dt-toolbar">
-        <div className="dt-view-tabs" role="tablist" aria-label="表格视图">
+      <div className="flex flex-wrap items-center gap-1.5 border-b border-ob-border px-3 py-2 [@media(max-width:720px)]:p-2">
+        <div className="flex max-w-[60%] items-center gap-[3px] overflow-x-auto [@media(max-width:720px)]:max-w-full [@media(max-width:720px)]:flex-1" role="tablist" aria-label="表格视图">
           {definition.views.map((item) => (
             <button
               type="button"
+              className="flex items-center gap-1.5 whitespace-nowrap rounded-[5px] border-0 border-current bg-transparent px-2.5 py-[7px] text-(--ob-page-muted-foreground) aria-selected:bg-ob-surface-secondary aria-selected:font-semibold aria-selected:text-ob-foreground"
               role="tab"
               aria-selected={item.id === view.id}
               key={item.id}
@@ -308,7 +311,7 @@ function DataTableEditor({
         {!host.readOnly ? (
           <button
             type="button"
-            className="dt-add-view"
+            className="cursor-pointer border-0 border-current bg-transparent p-1.5"
             aria-label="添加视图"
             onClick={async () => {
               const next = {
@@ -326,7 +329,7 @@ function DataTableEditor({
             <Plus size={15} />
           </button>
         ) : null}
-        <div className="dt-tools">
+        <div className="ml-auto flex items-center gap-0.5 [@media(max-width:720px)]:w-full [@media(max-width:720px)]:justify-end">
           {!host.readOnly ? (
             <>
               <Button
@@ -347,23 +350,23 @@ function DataTableEditor({
               </Button>
             </>
           ) : null}
-          <details className="dt-actions">
-            <summary aria-label="更多表格操作">•••</summary>
-            <div>
+          <details className="relative z-5">
+            <summary className="cursor-pointer list-none px-2 py-[5px]" aria-label="更多表格操作">•••</summary>
+            <div className="absolute top-full right-0 flex min-w-[155px] flex-col rounded-lg border border-ob-border bg-ob-card p-[5px] [box-shadow:var(--ob-shadow-table-menu)]">
               {host.auth ? (
                 <>
-                  <button type="button" onClick={() => exportFile("csv")}>
+                  <button className="flex items-center gap-1.5 border-0 border-current bg-transparent px-2.5 py-2 text-left hover:bg-ob-surface-secondary" type="button" onClick={() => exportFile("csv")}>
                     <Download size={14} />
                     导出 CSV
                   </button>
-                  <button type="button" onClick={() => exportFile("markdown")}>
+                  <button className="flex items-center gap-1.5 border-0 border-current bg-transparent px-2.5 py-2 text-left hover:bg-ob-surface-secondary" type="button" onClick={() => exportFile("markdown")}>
                     导出 Markdown
                   </button>
                 </>
               ) : null}
               {!host.readOnly ? (
                 <>
-                  <button
+                  <button className="flex items-center gap-1.5 border-0 border-current bg-transparent px-2.5 py-2 text-left hover:bg-ob-surface-secondary"
                     type="button"
                     onClick={() =>
                       saveDefinition({
@@ -381,7 +384,7 @@ function DataTableEditor({
                   >
                     复制当前视图
                   </button>
-                  <button
+                  <button className="flex items-center gap-1.5 border-0 border-current bg-transparent px-2.5 py-2 text-left hover:bg-ob-surface-secondary"
                     type="button"
                     disabled={
                       definition.views.length < 2 ||
@@ -447,7 +450,7 @@ function DataTableEditor({
           }}
         />
       )}
-      <footer className="dt-footer">
+      <footer className={tableFooterClassName}>
         <div>
           {!host.readOnly ? (
             <>
@@ -548,7 +551,7 @@ function DataTableEditor({
           }}
         >
           <DialogContent title="记录详情">
-            <div className="dt-form">
+            <div className={tableFormClassName}>
               {definition.fields.map((field) => (
                 <label key={field.id}>
                   {field.name}
@@ -571,7 +574,7 @@ function DataTableEditor({
                 </label>
               ))}
               {!host.readOnly ? (
-                <div className="dt-form-actions">
+                <div className={tableFormActionsClassName}>
                   <Button
                     variant="danger"
                     onClick={() => {

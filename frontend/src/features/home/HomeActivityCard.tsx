@@ -5,7 +5,7 @@ import { LoadingState, loadingLineClassName } from "../../shared/ui/LoadingState
 import { HomeCard, HomeCardHeading } from "./HomeLayout";
 import type { buildActivityCalendar } from "./home-activity";
 
-const CALENDAR_DAY_CLASSES = "home-calendar-day block aspect-square min-w-0 rounded-ob-sm bg-ob-surface-secondary data-[level=1]:bg-[color-mix(in_oklab,var(--orbis-icon-mint)_15%,var(--ob-surface))] data-[level=2]:bg-[color-mix(in_oklab,var(--orbis-icon-mint)_30%,var(--ob-surface))] data-[level=3]:bg-[color-mix(in_oklab,var(--orbis-icon-mint)_60%,var(--ob-surface))] data-[level=4]:bg-(--orbis-icon-mint) data-future:border data-future:border-ob-surface-edge data-future:bg-transparent";
+const CALENDAR_DAY_CLASSES = "home-calendar-day block aspect-square min-w-0 rounded-ob-sm bg-ob-surface-secondary data-[level=1]:bg-[color-mix(in_oklab,var(--ob-icon-mint)_15%,var(--ob-surface))] data-[level=2]:bg-[color-mix(in_oklab,var(--ob-icon-mint)_30%,var(--ob-surface))] data-[level=3]:bg-[color-mix(in_oklab,var(--ob-icon-mint)_60%,var(--ob-surface))] data-[level=4]:bg-(--ob-icon-mint) data-future:border data-future:border-ob-surface-edge data-future:bg-transparent";
 
 type HomeActivityProps = { state: "skeleton" } | {
   state: "ready" | "pending" | "unavailable";

@@ -1,4 +1,10 @@
 @theme {
+  --animate-ob-navigation-icon-select: navigation-icon-select 240ms cubic-bezier(.2, .8, .2, 1);
+  @keyframes navigation-icon-select {
+    0% { transform: scale(.86); }
+    65% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
   --animate-ob-workspace-enter: ob-workspace-enter var(--ob-motion-popover) var(--ob-ease-out);
   @keyframes ob-workspace-enter {
     from { opacity: .35; }

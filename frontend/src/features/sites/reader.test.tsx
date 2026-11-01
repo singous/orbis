@@ -120,7 +120,7 @@ describe("Mint-style site reader", () => {
         </Routes>
       </MemoryRouter>,
     );
-    await user.click(screen.getByRole("button", { name: "搜索文档" }));
+    await user.click(screen.getByRole("button", { name: "搜索文档 ⌘ K" }));
     const dialog = screen.getByRole("dialog", { name: "搜索文档" });
     const input = within(dialog).getByRole("combobox", { name: "搜索文档" });
     await user.type(input, "使用");
@@ -148,7 +148,7 @@ describe("Mint-style site reader", () => {
         </Routes>
       </MemoryRouter>,
     );
-    await user.click(screen.getByRole("button", { name: "搜索文档" }));
+    await user.click(screen.getByRole("button", { name: "搜索文档 ⌘ K" }));
     const input = screen.getByRole("combobox", { name: "搜索文档" });
     await user.type(input, "使用");
     await user.keyboard("{ArrowDown}");
@@ -167,7 +167,7 @@ describe("Mint-style site reader", () => {
         </Routes>
       </MemoryRouter>,
     );
-    await user.click(screen.getByRole("button", { name: "搜索文档" }));
+    await user.click(screen.getByRole("button", { name: "搜索文档 ⌘ K" }));
     await user.type(screen.getByRole("combobox", { name: "搜索文档" }), "部署");
     await user.tab();
     expect(screen.getByRole("button", { name: "关闭搜索" })).toHaveFocus();
@@ -183,7 +183,7 @@ describe("Mint-style site reader", () => {
       pages: snapshot.pages.map((page) => page.slug === "deploy" ? { ...page, section: "指南" } : page),
     };
     render(<MemoryRouter><SiteReader snapshot={repeatedLabelSnapshot} basePath="/s/developer" /></MemoryRouter>);
-    await user.click(screen.getByRole("button", { name: "搜索文档" }));
+    await user.click(screen.getByRole("button", { name: "搜索文档 ⌘ K" }));
     await user.type(screen.getByRole("combobox", { name: "搜索文档" }), "部署");
     const result = screen.getByRole("option", { name: /部署到生产环境/ });
     expect(result).toHaveTextContent("指南 / 开始使用");
@@ -193,7 +193,7 @@ describe("Mint-style site reader", () => {
   it("closes search with Escape and restores focus to its trigger", async () => {
     const user = userEvent.setup();
     render(<MemoryRouter><SiteReader snapshot={snapshot} basePath="/s/developer" /></MemoryRouter>);
-    const trigger = screen.getByRole("button", { name: "搜索文档" });
+    const trigger = screen.getByRole("button", { name: "搜索文档 ⌘ K" });
     await user.click(trigger);
     await user.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "搜索文档" })).not.toBeInTheDocument());
@@ -207,7 +207,7 @@ describe("Mint-style site reader", () => {
     try {
       const user = userEvent.setup();
       const { container } = render(<MemoryRouter initialEntries={["/s/developer"]}><SiteReader snapshot={snapshot} basePath="/s/developer" /><LocationProbe /></MemoryRouter>);
-      const trigger = screen.getByRole("button", { name: "搜索文档" });
+      const trigger = screen.getByRole("button", { name: "搜索文档 ⌘ K" });
       await user.click(trigger);
       const dialog = screen.getByRole("dialog", { name: "搜索文档" });
       const input = within(dialog).getByRole("combobox", { name: "搜索文档" });
@@ -312,7 +312,8 @@ describe("Mint-style site reader", () => {
     const summaries = drawer.querySelectorAll<HTMLElement>("summary");
     const firstVisible = summaries[0];
     const finalDetails = summaries[1].closest("details")!;
-    const lastVisible = within(drawer).getByRole("link", { name: "访问控制" });
+    const lastVisible = within(drawer).getByRole("link", { name: "源码与许可" });
+    expect(lastVisible).toHaveAttribute("href", "/licenses/");
     const hiddenNested = within(drawer).getByRole("link", { name: "令牌轮换", hidden: true });
     const hiddenDeepNested = within(drawer).getByRole("link", { name: "紧急令牌", hidden: true });
     expect(finalDetails).not.toHaveAttribute("open");

@@ -1,8 +1,9 @@
+import { readerFocus, readerTouchTarget } from "./chrome";
 import { LoadingState } from "../../../shared/ui/LoadingState";
-import { Input } from "@orbis/ui/input";
 import { Button } from "@orbis/ui/button";
-import { Dialog, DialogPopup, DialogTitle, DialogClose } from "@orbis/ui/dialog";
-import { FileText, Search, X } from "../../../shared/ui/icons";
+import { Dialog, DialogClose } from "@orbis/ui/dialog";
+import { CommandPopup, CommandInput, CommandList, CommandResult, CommandMessage, CommandFooter } from "../../../shared/ui/command";
+import { FileText, X } from "../../../shared/ui/icons";
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -14,7 +15,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
   const normalized = query.trim().toLocaleLowerCase();
   const index = text.toLocaleLowerCase().indexOf(normalized);
   if (!normalized || index < 0) return <>{text}</>;
-  return <>{text.slice(0, index)}<mark>{text.slice(index, index + normalized.length)}</mark>{text.slice(index + normalized.length)}</>;
+  return <>{text.slice(0, index)}<mark className="rounded-[2px] bg-(--ob-reader-highlight) text-(--ob-reader-text)">{text.slice(index, index + normalized.length)}</mark>{text.slice(index + normalized.length)}</>;
 }
 
 export function SearchDialog({ open = true, pages, basePath, close, loadPages, finalFocus }: { open?: boolean; pages: PublishedPage[]; basePath: string; close: () => void; finalFocus?: RefObject<HTMLElement | null>; loadPages?: (query:string,signal?:AbortSignal) => Promise<PublishedPage[]> }) {
@@ -63,14 +64,11 @@ export function SearchDialog({ open = true, pages, basePath, close, loadPages, f
     close();
   }
 
-  return <div className="site-reader-overlay-root" ref={setPortalContainer}>{portalContainer ? <Dialog open={open} onOpenChange={nextOpen => { if (!nextOpen) close(); }}>
-    <DialogPopup portalContainer={portalContainer} initialFocus={inputRef} finalFocus={finalFocus} backdropClassName="site-reader-search-backdrop" viewportClassName="site-reader-search-viewport" className="site-reader-search-dialog" ref={dialogRef} onKeyDown={event => {
+  return <div className="site-reader-overlay-root contents" ref={setPortalContainer}>{portalContainer ? <Dialog open={open} onOpenChange={nextOpen => { if (!nextOpen) close(); }}>
+    <CommandPopup preset="reader" title="搜索文档" portalContainer={portalContainer} initialFocus={inputRef} finalFocus={finalFocus} ref={dialogRef} onKeyDown={event => {
       if ((event.nativeEvent.isComposing || composing || event.keyCode === 229) && event.key === "Escape") event.stopPropagation();
     }}>
-      <DialogTitle className="sr-only">搜索文档</DialogTitle>
-      <div className="site-reader-search-field relative border-b border-(--reader-border) bg-(--reader-surface)">
-        <Search aria-hidden="true" size={18} className="pointer-events-none absolute inset-y-0 start-3 my-auto text-(--reader-muted)" />
-        <Input className="h-full min-h-0 rounded-none border-0 bg-transparent ps-[42px] pe-[54px] text-(--reader-text) shadow-none" ref={inputRef} role="combobox" aria-label="搜索文档" aria-controls="site-reader-search-results" aria-expanded="true" aria-activedescendant={results[activeIndex] ? `site-search-${activeIndex}` : undefined} placeholder="搜索标题与正文…" value={query} onCompositionStart={() => setComposing(true)} onCompositionEnd={() => setComposing(false)} onChange={event => setQuery(event.target.value)} onKeyDown={event => {
+      <CommandInput ref={inputRef} aria-label="搜索文档" listId="site-reader-search-results" activeId={results[activeIndex] ? `site-search-${activeIndex}` : undefined} placeholder="搜索标题与正文…" value={query} onCompositionStart={() => setComposing(true)} onCompositionEnd={() => setComposing(false)} onChange={event => setQuery(event.target.value)} onKeyDown={event => {
           if (event.nativeEvent.isComposing || composing || event.keyCode === 229) {
             if (event.key === "Escape") event.stopPropagation();
             return;
@@ -78,17 +76,14 @@ export function SearchDialog({ open = true, pages, basePath, close, loadPages, f
           if (event.key === "ArrowDown") { event.preventDefault(); event.stopPropagation(); setActiveIndex(index => results.length ? (index + 1) % results.length : 0); }
           else if (event.key === "ArrowUp") { event.preventDefault(); event.stopPropagation(); setActiveIndex(index => results.length ? (index - 1 + results.length) % results.length : 0); }
           else if (event.key === "Enter") { event.preventDefault(); event.stopPropagation(); choose(activeIndex); }
-        }} />
-        <DialogClose asChild><Button appearance="unstyled" type="button" className="absolute inset-y-0 end-3 my-auto" aria-label="关闭搜索"><X aria-hidden="true" size={18} /></Button></DialogClose>
-      </div>
-      <div id="site-reader-search-results" className="site-reader-search-results" role="listbox" aria-label="搜索结果">
+        }}>
+        <DialogClose asChild><Button appearance="unstyled" type="button" className={`absolute inset-y-0 end-3 my-auto grid size-[30px] cursor-pointer place-items-center border-0 border-current bg-transparent p-0 text-(--ob-reader-muted) hover:bg-(--ob-reader-surface-soft) ${readerFocus} ${readerTouchTarget}`} aria-label="关闭搜索"><X aria-hidden="true" size={18} /></Button></DialogClose>
+      </CommandInput>
+      <CommandList id="site-reader-search-results" aria-label="搜索结果">
         {/* Search options retain active-descendant focus on the combobox input. */}
-        {loading ? <LoadingState label="正在加载搜索索引…" compact /> : current?.error ? null : !query.trim() ? <div className="site-reader-search-hint"><Search aria-hidden="true" size={20} /><p>输入关键词搜索当前发布版本</p><span>仅显示读者可见的文档</span></div> : results.length ? results.map((result, index) => <Button appearance="unstyled" id={`site-search-${index}`} key={result.page.slug} type="button" role="option" aria-label={`${result.page.title} ${result.path} ${result.excerpt}`} aria-selected={activeIndex === index} className={activeIndex === index ? "is-active" : ""} onMouseMove={() => setActiveIndex(index)} onClick={() => choose(index)}>
-          <FileText aria-hidden="true" size={18} />
-          <span><strong><Highlight text={result.page.title} query={query} /></strong><small>{result.path}</small><span><Highlight text={result.excerpt} query={query} /></span></span>
-        </Button>) : <div className="site-reader-search-empty"><Search aria-hidden="true" size={22} /><strong>没有找到相关内容</strong><p>请尝试更短的关键词或浏览左侧目录。</p></div>}
-      </div>
-      <footer><span><kbd>↑</kbd><kbd>↓</kbd> 选择</span><span><kbd>↵</kbd> 打开</span><span><kbd>esc</kbd> 关闭</span></footer>
-    </DialogPopup>
+        {loading ? <LoadingState label="正在加载搜索索引…" compact /> : current?.error ? null : !query.trim() ? <CommandMessage kind="prompt" description="输入关键词搜索当前发布版本" detail="仅显示读者可见的文档" /> : results.length ? results.map((result, index) => <CommandResult key={result.page.slug} selected={activeIndex === index} icon={FileText} title={<Highlight text={result.page.title} query={query} />} path={result.path} excerpt={<Highlight text={result.excerpt} query={query} />} element={<Button appearance="unstyled" id={`site-search-${index}`} type="button" aria-label={`${result.page.title} ${result.path} ${result.excerpt}`} onMouseMove={() => setActiveIndex(index)} onClick={() => choose(index)} />} />) : <CommandMessage kind="empty" title="没有找到相关内容" description="请尝试更短的关键词或浏览左侧目录。" />}
+      </CommandList>
+      <CommandFooter />
+    </CommandPopup>
   </Dialog> : null}</div>;
 }

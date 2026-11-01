@@ -1,6 +1,6 @@
 # 浮层契约
 
-Dialog 使用 Base UI 的焦点约束、滚动锁、外部点击与 Escape 生命周期。标题必填，描述可选，默认保留关闭按钮。受控调用方通过 `onOpenChange` 决定是否接受关闭，例如在途提交期间忽略 `false`；关闭动画不要求调用方提前清空表单草稿。
+Dialog 使用 Base UI 的焦点约束、滚动锁、外部点击与 Escape 生命周期。标题必填，描述可选，默认保留关闭按钮。在途提交通过 `dismissible={false}` 阻止 Escape、关闭按钮和外部点击引发的关闭；业务完成后仍可显式设置 `open={false}`。仅在受控回调里忽略 `false` 不能阻止原语开始退场，因此原有关闭 guard 仍保留，但关闭策略也必须传给 Dialog。关闭动画不要求调用方提前清空表单草稿。
 
 DialogTrigger 和 DialogClose 可以通过 `asChild` 与 Button 组合，避免嵌套按钮。受控且无 Trigger 的弹窗可通过 `finalFocus` 指向返回位置。
 

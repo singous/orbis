@@ -1,7 +1,7 @@
 import { releaseFeatures } from "../../shared/release-features";
 import { reportError } from "../../shared/api/request-feedback";
-import { Dialog, DialogPopup, DialogTitle, DialogClose } from "@orbis/ui/dialog";
-import { Input } from "@orbis/ui/input";
+import { Dialog, DialogClose } from "@orbis/ui/dialog";
+import { CommandPopup, CommandInput, CommandList, CommandResult, CommandMessage, CommandFooter } from "../../shared/ui/command";
 import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
@@ -10,7 +10,7 @@ import { preparePendingNavigation } from "../../shared/navigation/pending-naviga
 import { Button } from "@orbis/ui/button";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { Select } from "@orbis/ui/select";
-import { BookOpen, FileText, Folder, Globe, Paperclip, Search, X } from "../../shared/ui/icons";
+import { BookOpen, FileText, Folder, Globe, Paperclip, X } from "../../shared/ui/icons";
 import type { SearchFilters, SearchResult } from "./api";
 import { resultHref, SEARCH_MAX_LENGTH, SEARCH_STATUS_OPTIONS, SEARCH_TYPE_LABELS } from "./search-state";
 import { matchPaletteCategories, parsePaletteInput, SEARCH_PALETTE_CATEGORIES, type SearchPaletteCategory } from "./search-palette-model";
@@ -132,27 +132,23 @@ export function GlobalSearchPalette({ initialFilters, onClose, isOpen = true, on
     listRef.current?.querySelectorAll<HTMLElement>('[role="option"]')[next]?.scrollIntoView?.({ block: "nearest" });
   }
 
-  // 固定 720×480 搜索工作区，窄屏沿用 560px 断点和 12px 边距。
   return <Dialog open={isOpen} onOpenChange={open => { if (!open) close(); }} onOpenChangeComplete={open => { if (!open) onExited(); }}>
-    <DialogPopup initialFocus={inputRef} backdropClassName="search-palette-backdrop" viewportClassName="p-0" className="search-palette flex h-[min(480px,calc(100dvh-48px))] min-h-0 w-[min(720px,calc(100vw-32px))] max-w-none flex-col gap-0 overflow-hidden rounded-[18px] bg-ob-popover p-0 max-[560px]:h-[min(560px,calc(100dvh-24px))] max-[560px]:max-h-[calc(100dvh-24px)] max-[560px]:w-[calc(100vw-24px)]" inert={!isOpen ? true : undefined}>
-      <DialogTitle className="sr-only">全局搜索</DialogTitle>
-      <div className="flex min-h-16 flex-none items-center gap-3 border-b border-ob-border px-4 py-3 text-ob-muted-foreground">
-        <Search aria-hidden="true" size={20} className="flex-none" />
-        <Input ref={inputRef} type="search" role="combobox" aria-label="搜索任何内容" placeholder="搜索任何内容…" aria-autocomplete="list" aria-expanded="true" aria-controls={listId} aria-activedescendant={activeId} value={input} maxLength={SEARCH_MAX_LENGTH} onChange={event => changeInput(event.target.value)} onKeyDown={handleKey} onCompositionStart={() => setComposing(true)} onCompositionEnd={event => { changeInput(event.currentTarget.value); setComposing(false); }} className="h-9 min-h-9 min-w-0 flex-1 rounded-none border-0 bg-transparent p-0 text-base font-normal text-ob-foreground shadow-none [&::-webkit-search-cancel-button]:hidden" />
+    <CommandPopup preset="workspace" title="全局搜索" initialFocus={inputRef} inert={!isOpen ? true : undefined}>
+      <CommandInput ref={inputRef} type="search" aria-label="搜索任何内容" placeholder="搜索任何内容…" aria-autocomplete="list" listId={listId} activeId={activeId} value={input} maxLength={SEARCH_MAX_LENGTH} onChange={event => changeInput(event.target.value)} onKeyDown={handleKey} onCompositionStart={() => setComposing(true)} onCompositionEnd={event => { changeInput(event.currentTarget.value); setComposing(false); }}>
         {input ? <Button appearance="unstyled" aria-label="清空搜索" className="size-4 min-h-0 flex-none border-0 p-0 pointer-coarse:size-11" onClick={() => { changeInput(""); inputRef.current?.focus(); }}><X size={16} /></Button> : null}
         <kbd className="flex-none rounded-[5px] bg-ob-accent px-[5px] py-0.5 font-sans text-xs text-ob-foreground whitespace-nowrap max-[560px]:hidden">{shortcut}</kbd>
-      </div>
+      </CommandInput>
       <div className="flex flex-none flex-wrap items-center gap-2 px-4 pt-3 max-[560px]:gap-1">
         <Select<SearchFilters["status"]> aria-label="内容状态" density="compact" wrapperClassName="w-auto min-w-0 max-w-full" className="border-transparent bg-transparent px-2 text-xs font-normal text-ob-muted-foreground shadow-none hover:bg-ob-accent hover:text-ob-foreground focus-visible:text-ob-foreground" value={status} options={SEARCH_STATUS_OPTIONS} onValueChange={value => { if (value !== null) { cancelOpening(); setStatus(value); setPage(1); } }} />
         {parsed.category ? <Button appearance="unstyled" className="inline-flex items-center min-h-0 gap-1 border-0 p-0 text-xs font-normal text-ob-muted-foreground pointer-coarse:min-h-11" aria-label={`清除类型筛选：${parsed.category.label}`} onClick={() => { changeInput(parsed.q); inputRef.current?.focus(); }}>{parsed.category.label}<X size={12} /></Button> : null}
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-3 pb-4">
         {categoryMode ? <p className="mb-3 text-xs leading-[18px] font-semibold text-ob-muted-foreground">选择搜索内容</p> : null}
-        {!categoryMode && !filters.q ? <p className="m-0 px-4 py-8 text-center text-sm text-ob-muted-foreground">输入关键词，搜索{parsed.category?.label ?? "全部内容"}。</p> : null}
+        {!categoryMode && !filters.q ? <CommandMessage kind="prompt" description={<>输入关键词，搜索{parsed.category?.label ?? "全部内容"}。</>} /> : null}
         {waiting ? <LoadingState label="正在搜索…" compact /> : null}
         {!waiting && filters.q && !results.isError && results.data ? <p className="mb-3 text-xs leading-[18px] font-semibold text-ob-muted-foreground" role="status">找到 {results.data.pagination.total} 条结果</p> : null}
-        {!waiting && filters.q && !results.isError && results.data && !resultItems.length ? <p className="m-0 px-4 py-8 text-center text-sm text-ob-muted-foreground">没有匹配的内容。试试其他关键词。</p> : null}
-        <div ref={listRef} id={listId} role="listbox" aria-label={categoryMode ? "搜索内容类型" : "搜索结果"} aria-busy={waiting || opening} className={categoryMode ? "grid grid-cols-2 gap-2 max-[560px]:grid-cols-1" : "grid gap-1"}>
+        {!waiting && filters.q && !results.isError && results.data && !resultItems.length ? <CommandMessage kind="empty" description="没有匹配的内容。试试其他关键词。" /> : null}
+        <CommandList ref={listRef} id={listId} aria-label={categoryMode ? "搜索内容类型" : "搜索结果"} aria-busy={waiting || opening} layout={categoryMode ? "categories" : "results"}>
           {categoryMode ? categories.map(category => {
             const Icon = icons[category.type];
             return <Button appearance="unstyled" key={category.type} id={`${listId}-${category.type}`} role="option" aria-selected={activeKey === category.type} tabIndex={-1} type="button" className="group flex min-h-20 min-w-0 items-center gap-3 rounded-ob-xl border border-ob-border bg-ob-card p-3 text-start hover:bg-ob-accent aria-selected:border-ob-primary aria-selected:bg-ob-accent max-[560px]:min-h-18" onMouseMove={() => setSelected(category.type)} onClick={() => chooseCategory(category)}>
@@ -162,22 +158,20 @@ export function GlobalSearchPalette({ initialFilters, onClose, isOpen = true, on
           }) : resultItems.map(result => {
             const Icon = icons[result.type];
             const key = resultKey(result);
-            const children = <><span className="grid size-8 flex-none place-items-center text-ob-muted-foreground"><Icon aria-hidden="true" size={18} /></span><span className="grid min-w-0 flex-1 gap-0.5"><strong className="text-sm font-medium wrap-anywhere">{result.title || "未命名内容"}</strong><span className="truncate text-xs leading-[18px] text-ob-muted-foreground">{result.location}</span>{result.snippet ? <span className="line-clamp-2 text-xs leading-[18px] text-ob-muted-foreground wrap-anywhere">{result.match === "comment" ? "评论：" : ""}{result.snippet}</span> : null}</span><span className="flex-none pt-0.5 text-xs leading-[18px] text-ob-muted-foreground max-[560px]:max-w-[4.5em]">{SEARCH_TYPE_LABELS[result.type]}{result.status === "archived" ? " · 归档" : ""}</span></>;
-            const props = { id: `${listId}-${key}`, role: "option", "aria-selected": activeKey === key, "aria-disabled": opening || undefined, "data-search-result": true, tabIndex: -1, className: "flex w-full min-w-0 items-start gap-3 rounded-[9px] border border-transparent bg-transparent p-3 text-start text-ob-foreground hover:bg-ob-accent aria-selected:border-ob-border aria-selected:bg-ob-accent max-[560px]:gap-2 max-[560px]:px-2", onMouseMove: () => setSelected(key) };
-            return <Link key={key} {...props} to={resultHref(result)} onClick={event => { if (plainClick(event)) { event.preventDefault(); void openResult(result); } }}>{children}</Link>;
+            return <CommandResult key={key} selected={activeKey === key} icon={Icon} title={result.title || "未命名内容"} path={result.location} excerpt={result.snippet ? <>{result.match === "comment" ? "评论：" : ""}{result.snippet}</> : undefined} metadata={<>{SEARCH_TYPE_LABELS[result.type]}{result.status === "archived" ? " · 归档" : ""}</>} element={<Link id={`${listId}-${key}`} aria-disabled={opening || undefined} data-search-result tabIndex={-1} onMouseMove={() => setSelected(key)} to={resultHref(result)} onClick={event => { if (plainClick(event)) { event.preventDefault(); void openResult(result); } }} />} />;
           })}
-        </div>
+        </CommandList>
         {!waiting && !results.isError && filters.q && results.data && results.data.pagination.total_pages > 1 ? <div className="mt-4 flex items-center justify-center gap-3 text-xs text-ob-muted-foreground" aria-label="搜索结果分页">
           <Button size="sm" className="rounded-full" disabled={!results.data.pagination.has_previous || opening} onClick={() => setPage(current => current - 1)}>上一页</Button>
           <span>第 {results.data.pagination.page} / {results.data.pagination.total_pages} 页</span>
           <Button size="sm" className="rounded-full" disabled={!results.data.pagination.has_next || opening} onClick={() => setPage(current => current + 1)}>下一页</Button>
         </div> : null}
       </div>
-      <footer className="flex min-h-10 flex-none items-center gap-4 border-t border-ob-border px-4 py-1 text-xs leading-[18px] text-ob-muted-foreground max-[560px]:flex-wrap max-[560px]:gap-x-2 max-[560px]:gap-y-0">
+      <CommandFooter>
         <span className="max-[560px]:hidden">↑ ↓ 选择</span>
         <span className="inline-flex items-center gap-1"><kbd aria-hidden="true" className="font-sans">Esc</kbd><DialogClose asChild><Button appearance="unstyled" aria-label="关闭搜索" className="h-auto min-h-8 flex-none rounded-ob-lg border-0 px-1 text-xs font-normal text-ob-muted-foreground hover:text-ob-foreground">关闭</Button></DialogClose></span>
         <span className="ms-auto" role={opening ? "status" : undefined}>{opening ? "正在准备打开…" : categoryMode ? "选择 Enter" : "打开 Enter"}</span>
-      </footer>
-    </DialogPopup>
+      </CommandFooter>
+    </CommandPopup>
   </Dialog>;
 }

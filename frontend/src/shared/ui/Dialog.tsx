@@ -4,16 +4,16 @@ import { cn } from "./cn";
 import { X } from "./icons";
 import { Button } from "@orbis/ui/button";
 
-type DialogProps = { open?: boolean; defaultOpen?: boolean; onOpenChange?: (open: boolean) => void; children: ReactNode };
-export function Dialog({ open, defaultOpen, onOpenChange, children }: DialogProps) {
+type DialogProps = { open?: boolean; defaultOpen?: boolean; onOpenChange?: (open: boolean) => void; dismissible?: boolean; children: ReactNode };
+export function Dialog({ open, defaultOpen, onOpenChange, dismissible, children }: DialogProps) {
   const content = Children.map(children, (child, index) => {
     // 兼容既有 DraftActions 的首个直接按钮；显式触发器和受控弹窗不作转换。
     if (open === undefined && index === 0 && isValidElement(child) && child.type !== DialogContent && child.type !== DialogTrigger) return <PrimitiveTrigger asChild>{child}</PrimitiveTrigger>;
     return child;
   });
   return open === undefined
-    ? <PrimitiveDialog defaultOpen={defaultOpen} onOpenChange={onOpenChange}>{content}</PrimitiveDialog>
-    : <PrimitiveDialog open={open} onOpenChange={value => onOpenChange?.(value)}>{content}</PrimitiveDialog>;
+    ? <PrimitiveDialog defaultOpen={defaultOpen} onOpenChange={onOpenChange} dismissible={dismissible}>{content}</PrimitiveDialog>
+    : <PrimitiveDialog open={open} onOpenChange={value => onOpenChange?.(value)} dismissible={dismissible}>{content}</PrimitiveDialog>;
 }
 export function DialogTrigger({ children }: { asChild?: boolean; children: ReactElement }) { return <PrimitiveTrigger asChild>{children}</PrimitiveTrigger>; }
 export function DialogClose({ children }: { asChild?: boolean; children: ReactElement }) { return <PrimitiveClose asChild>{children}</PrimitiveClose>; }

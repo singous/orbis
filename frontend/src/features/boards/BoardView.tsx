@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Shapes } from "@orbis/ui/icons";
 import { type BoardViewData } from "./public-contract";
 import { EmbeddedSurface } from "../../shared/ui/EmbeddedSurface";
+import { BoardPreviewState } from "./BoardPreviewState";
 import { BoardPreviewViewport } from "./BoardPreviewViewport";
 import { useOptionalAuthRequest } from "../../shared/auth/use-auth-request";
 import { createManagedFiles } from "../files/managed-files";
@@ -51,15 +52,15 @@ export function BoardView({ view }: { view: BoardViewData }) {
   }, [view.svg, auth?.workspaceId, auth?.accessToken]);
   if (view.restricted)
     return (
-      <div className="board-preview-empty">
+      <BoardPreviewState>
         <Shapes size={28} />
         <p>该画板需要工作空间访问权限。</p>
-      </div>
+      </BoardPreviewState>
     );
   // This dedicated DTO contains only server-generated SVG, never an authored HTML field.
   const content = (
     <div
-      className="board-public-svg"
+      className="board-public-svg h-full w-full overflow-visible"
       role="img"
       aria-label={view.title}
       dangerouslySetInnerHTML={{

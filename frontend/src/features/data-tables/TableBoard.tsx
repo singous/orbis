@@ -1,3 +1,4 @@
+import { tableEmptyClassName } from "./table-chrome";
 import { reportError } from "../../shared/api/request-feedback";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "../../shared/ui/Button";
@@ -161,7 +162,7 @@ function BoardColumn({
         </footer>
       ) : null}
       {!loading && !page?.records.length ? (
-        <p className="dt-board-empty">拖入记录或更改状态</p>
+        <p className="px-[3px] py-[15px] text-xs text-(--ob-page-muted-foreground)">拖入记录或更改状态</p>
       ) : null}
     </section>
   );
@@ -177,12 +178,12 @@ export function TableBoard(props: {
 }) {
   if (!props.view.group_field_id)
     return (
-      <div className="dt-empty">
+      <div className={tableEmptyClassName}>
         在视图设置中选择一个单选字段，开始使用看板。
       </div>
     );
   return (
-    <div className="dt-board">
+    <div className="dt-board [.embed-content>.data-table_&]:min-h-0 [.embed-content>.data-table_&]:flex-1 [.embed-content>.data-table_&]:overflow-auto">
       {props.page.groups.map((group) => (
         <BoardColumn
           key={`${props.view.id}:${group.id ?? "empty"}`}

@@ -28,6 +28,11 @@ test("create dialog keeps nested selection, locks while saving, and retries the 
     await route.fulfill({ json: { code: "OK", message: "", request_id: "sheet-ui", data } });
   });
   await page.goto("/sheets");
+  const empty = page.locator('[data-slot="ob-empty-state"]');
+  await expect(empty).toContainText("还没有数据表");
+  await expect(empty).toHaveCSS("padding", "64px 24px");
+  await expect(empty.locator(":scope > div").first()).toHaveCSS("width", "48px");
+  await expect(empty.locator(":scope > div").first()).toHaveCSS("height", "48px");
   const create = page.getByRole("button", { name: "新建数据表", exact: true }).first();
   await create.click();
   const dialog = page.getByRole("dialog", { name: "新建数据表", exact: true });

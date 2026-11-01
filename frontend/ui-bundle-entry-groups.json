@@ -1,0 +1,13 @@
+{
+  "baselineRef": "0f0bbdc69445bd4f764482d7510d4220581ed83a",
+  "lockfileSha256": "aa381e4d516b0e1acafd145e83251c68ae774631b16e64e1b4c4316e6b653f49",
+  "baselineManifestSha256": "c521b2b1b0ec2e1955d3b5592857d5069e621bbbd9f134e0f35543cc795c46cb",
+  "groups": [
+    {
+      "baselineEntry": "src/features/sites/PublicSitePage.tsx",
+      "successors": ["src/features/sites/PublicSitePage.tsx", "src/features/sites/SitePreviewPage.tsx"],
+      "expectedSharedChunks": ["SiteReader"],
+      "reason": "The frozen module exported both existing public delivery and authenticated preview routes. Both successors and ALL outputs exclusive to this route family share the original own budget once, including SiteReader and any further family-local extraction. Only dependencies also statically consumed by an unrelated entry remain shared. Complete static closures derive from the retained original build graph; smaller route loads cannot offset an own-lineage failure. SiteReader stays synchronous, preserving bootstrap handoff."
+    }
+  ]
+}

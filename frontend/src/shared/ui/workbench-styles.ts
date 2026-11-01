@@ -7,7 +7,7 @@ export const workbenchStyles = {
   more: "workbench-more inline-flex items-center gap-[5px] whitespace-nowrap text-xs font-normal leading-[18px] text-ob-muted-foreground hover:text-ob-foreground",
   resourceGrid: "workbench-resource-grid grid grid-cols-2 gap-x-4 gap-y-[13px] max-[850px]:grid-cols-1",
   resourceCard: "workbench-resource-card flex min-h-[84px] min-w-0 items-center gap-[17px] rounded-[15px] border border-ob-surface-edge bg-ob-card px-5 py-[17px] shadow-ob-card transition-[border-color,background-color,box-shadow] duration-(--ob-motion-feedback) hover:border-ob-border hover:shadow-ob-card-hover motion-reduce:transition-none max-[560px]:gap-3 max-[560px]:p-4",
-  resourceIcon: "workbench-resource-icon grid size-10 shrink-0 place-items-center text-(--ob-page-muted-foreground)",
+  resourceIcon: "workbench-resource-icon grid size-10 shrink-0 place-items-center rounded-ob-xl text-(--ob-page-muted-foreground)",
   resourceCopy: "workbench-resource-copy flex min-w-0 flex-1 flex-col gap-[5px]",
   resourceTitle: "m-0 truncate text-sm font-medium leading-5 text-ob-foreground",
   resourceCaption: "block truncate text-sm leading-5 text-(--ob-page-muted-foreground)",

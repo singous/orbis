@@ -48,6 +48,7 @@ export function ResourceDialog({
   return (
     <Dialog
       open={open}
+      dismissible={!busy}
       onOpenChange={(nextOpen) => {
         if (!nextOpen&&!busy) onClose();
       }}

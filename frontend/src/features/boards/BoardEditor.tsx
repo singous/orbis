@@ -56,6 +56,7 @@ import { boardCanvasBackground, boardCanvasTextColor, DEFAULT_BOARD_BACKGROUND }
 import { TemplatePreview } from "./TemplatePreview";
 import { PREVIEW_ZOOMS } from "./BoardPreviewViewport";
 import { zoomAt } from "./viewport";
+import { BoardPreviewState } from "./BoardPreviewState";
 import { BoardShell } from "./BoardShell";
 import { BoardMinimap } from "./BoardMinimap";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
@@ -297,7 +298,7 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
     }
   }
   const LoadingShell = embed ? "div" : DocumentShell;
-  if (embed && state.board && state.pageID !== embed.pageID) return <div className="board-preview-empty" role="alert">引用的画板页面已不存在，请重新选择引用页面。</div>;
+  if (embed && state.board && state.pageID !== embed.pageID) return <BoardPreviewState role="alert">引用的画板页面已不存在，请重新选择引用页面。</BoardPreviewState>;
   if (!state.board)
     return (
       <LoadingShell {...(!embed ? { loading: true } : {})}>

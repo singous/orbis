@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { expect, it } from "vitest";
@@ -39,10 +39,11 @@ it("keeps input composition and a nested selector from dismissing the parent", a
   fireEvent.keyDown(screen.getByRole("textbox", { name: "Name" }), { key: "Escape", isComposing: true });
   expect(screen.getByRole("dialog", { name: "Settings" })).toBeInTheDocument();
   await user.click(screen.getByRole("combobox", { name: /Category/ }));
-  expect(screen.getByRole("listbox")).toBeInTheDocument();
+  expect(await screen.findByRole("listbox")).toBeInTheDocument();
   await user.keyboard("{Escape}");
-  expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+  await waitFor(() => expect(screen.queryByRole("listbox")).not.toBeInTheDocument());
   expect(screen.getByRole("dialog", { name: "Settings" })).toBeInTheDocument();
+  expect(screen.getByRole("combobox", { name: /Category/ })).toHaveFocus();
 });
 
 it("does not steal focus from a control clicked outside the popover", async () => {

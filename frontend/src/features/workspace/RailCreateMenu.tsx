@@ -71,7 +71,7 @@ function RailCreateActions({ open, onOpenChange, notebookDialogOpen, onNotebookD
 
   return (
     <>
-      <Dialog open={open} onOpenChange={(next) => { if (!createNote.isPending) onOpenChange(next); }}>
+      <Dialog open={open} dismissible={!createNote.isPending} onOpenChange={(next) => { if (!createNote.isPending) onOpenChange(next); }}>
         <DialogContent title="新建资产" description="选择要创建的内容。">
           <div className="grid gap-3">
             <Button icon={<FilePlus2 aria-hidden="true" size={18} />} isPending={createNote.isPending} disabled={notebooksQuery.isLoading || notebooksQuery.isError || Boolean(targetNotebook && !treeQuery.isSuccess)} onClick={() => void createDocument().catch(reportError)}>文档</Button>

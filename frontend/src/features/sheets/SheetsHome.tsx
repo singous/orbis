@@ -170,6 +170,7 @@ export function SheetsHome() {
         </div>
         <Dialog
           open={creating}
+          dismissible={!busy}
           onOpenChange={(open) => {
             if (!busy) setCreating(open);
           }}

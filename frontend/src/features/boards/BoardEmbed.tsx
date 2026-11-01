@@ -14,12 +14,12 @@ import {
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { boardAPI } from "./api";
 import { EmbeddedSurface } from "../../shared/ui/EmbeddedSurface";
+import { BoardPreviewState } from "./BoardPreviewState";
 import { BoardPreviewViewport } from "./BoardPreviewViewport";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { TableHostContext } from "../data-tables/context";
 import { getNote } from "../documents/api";
 import { newUUID } from "../../shared/ids";
-import "./board-preview.css";
 const BoardEditor = lazy(() => import("./BoardEditor").then(module => ({ default: module.BoardEditor })));
 export type BoardBinding = {
   board_id: string | null;
@@ -149,21 +149,21 @@ export function BoardEmbed({
       <EmbeddedSurface kind="board" label={meta.data?.title ?? "画板"}
         surfaceKey={`${credential}:${auth?.workspaceId}:${blockId || id}:${page}:${revision}`}
         actions={<>
-          {props.mode === "snapshot" && <span className="board-reference-mode">快照 · v{revision}</span>}
-          {meta.data && <Link className="board-embed-source" to={"/documents/" + meta.data.document_id + "?page=" + encodeURIComponent(page)} aria-label="打开画板"><ExternalLink size={14} /><span>打开画板</span></Link>}
+          {props.mode === "snapshot" && <span className="board-reference-mode text-[11px] whitespace-nowrap text-(--ob-page-muted-foreground) [@media(max-width:640px)]:hidden">快照 · v{revision}</span>}
+          {meta.data && <Link className="board-embed-source inline-flex items-center gap-1 text-[12px] text-(--ob-page-muted-foreground)" to={"/documents/" + meta.data.document_id + "?page=" + encodeURIComponent(page)} aria-label="打开画板"><ExternalLink size={14} /><span className="[@media(max-width:640px)]:hidden">打开画板</span></Link>}
           {id && page && canEdit && <ActionButton aria-pressed={editing} onPress={() => { setEditorLoaded(true); setEditing(value => !value); }}><Pencil size={14} />{editing ? "结束编辑" : "编辑画板"}</ActionButton>}
         </>}
       >
         {editorLoaded && props.mode !== "snapshot" && auth ? (
-          <Suspense fallback={<div className="board-embed-start">正在打开画板…</div>}>
+          <Suspense fallback={<div className="board-embed-start grid h-full place-items-center text-(--ob-page-muted-foreground)">正在打开画板…</div>}>
             <BoardEditor key={`${credential}:${auth.workspaceId}:${id}:${page}`} id={id} embed={{ pageID: page, blockID: blockId, frameID: typeof props.frame_id === "string" ? props.frame_id : undefined, readOnly: !canEdit || !editing }} />
           </Suspense>
         ) : url ? (
-          <BoardPreviewViewport key={`${id}:${page}:${revision}:${String(props.frame_id ?? "")}`}><img src={url} alt={meta.data?.title ?? "画板预览"} draggable={false} /></BoardPreviewViewport>
+          <BoardPreviewViewport key={`${id}:${page}:${revision}:${String(props.frame_id ?? "")}`}><img className="block h-full w-full object-contain" src={url} alt={meta.data?.title ?? "画板预览"} draggable={false} /></BoardPreviewViewport>
         ) : (
-          <div className="board-preview-empty">
+          <BoardPreviewState>
             {query.error ? <><ActionButton onPress={() => void query.refetch()}>重试读取画板</ActionButton></> : !id ? <><Shapes size={30} />{releaseFeatures.boardCreation && !readOnly && (createFailed || owner.isError) && <ActionButton onPress={() => owner.isError ? void owner.refetch() : void create()}>重试创建画板</ActionButton>}<p>{!releaseFeatures.boardCreation ? "画板创建将在后续版本开放。" : readOnly ? "尚未创建画板" : createFailed || owner.isError ? "画板创建失败，请重试。" : "正在创建画板…"}</p></> : <p>{auth ? "正在读取画板预览…" : "请登录工作空间查看画板。"}</p>}
-          </div>
+          </BoardPreviewState>
         )}
       </EmbeddedSurface>
     </div>

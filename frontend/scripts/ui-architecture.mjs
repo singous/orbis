@@ -100,15 +100,23 @@ export function applyColorDataAllowlist(findings, entries) {
 export function applyDomainStylesAllowlist(findings, entries, sources) {
   const scopeFindings = [];
   const remaining = new Map(entries.map(entry => {
-    if (!entry.reason || !/^\.[\w-]+$/.test(entry.scope ?? "") || !entry.detail.endsWith(".css") || !Number.isInteger(entry.maxOccurrences) || entry.maxOccurrences < 1) throw new Error(`Invalid domain stylesheet entry: ${entry.file}`);
+    if (!entry.reason || !/^\.[\w-]+$/.test(entry.scope ?? "") || (entry.contentScope !== undefined && !/^\.[\w-]+$/.test(entry.contentScope)) || !entry.detail.endsWith(".css") || !Number.isInteger(entry.maxOccurrences) || entry.maxOccurrences < 1) throw new Error(`Invalid domain stylesheet entry: ${entry.file}`);
     const file = path.posix.normalize(path.posix.join(path.posix.dirname(entry.file), entry.detail));
     const stylesheet = sources.get(file);
     if (stylesheet === undefined) throw new Error(`Domain stylesheet is missing: ${file}`);
     const boundary = new RegExp(`^\\${entry.scope}(?=$|[\\s:.>#\\[])`);
-    for (const match of stylesheet.replace(/\/\*[\s\S]*?\*\//g, "").matchAll(/([^{}]+)\{/g)) {
+    const contentBoundary = entry.contentScope ? new RegExp(`^\\${entry.scope}\\s+\\${entry.contentScope}(?=$|[\\s:.>#\\[])`) : undefined;
+    const normalized = stylesheet.replace(/\/\*[\s\S]*?\*\//g, "");
+    for (const match of normalized.matchAll(/([^{}]+)\{/g)) {
       const rule = match[1].trim();
       if (/^@(?:media|supports)\b/.test(rule)) continue;
-      for (const selector of rule.split(",")) if (!boundary.test(selector.trim())) scopeFindings.push({ file, rule: "domain-style-scope", detail: selector.trim() });
+      for (const selector of rule.split(",")) {
+        const scoped = selector.trim().replace(`:where(${entry.scope})`, entry.scope);
+        if (!boundary.test(scoped) || (contentBoundary && !contentBoundary.test(scoped))) scopeFindings.push({ file, rule: "domain-style-scope", detail: selector.trim() });
+      }
+    }
+    if (entry.variablesOnly) for (const body of normalized.matchAll(/\{([^{}]*)\}/g)) {
+      for (const declaration of body[1].split(";").map(item => item.trim()).filter(Boolean)) if (!declaration.startsWith("--")) scopeFindings.push({ file, rule: "domain-theme-property", detail: declaration.split(":")[0] });
     }
     return [JSON.stringify([entry.file, entry.detail]), entry.maxOccurrences];
   }));

@@ -27,7 +27,7 @@ for (const inner of ["light", "dark"] as const) {
     const reader = page.locator(".site-reader");
     await expect(reader).toHaveAttribute("data-theme", inner);
     await expect(page.locator("html")).toHaveAttribute("data-theme", outer);
-    const trigger = page.getByRole("button", { name: "搜索文档", exact: true });
+    const trigger = page.getByRole("button", { name: "搜索文档 ⌘ K", exact: true });
     await trigger.click();
     const dialog = page.getByRole("dialog", { name: "搜索文档", exact: true });
     const input = dialog.getByRole("combobox", { name: "搜索文档" });
@@ -41,7 +41,14 @@ for (const inner of ["light", "dark"] as const) {
     await expect(dialog).toBeVisible();
     await expect(page).toHaveURL(/\/s\/guide$/);
     await input.dispatchEvent("compositionend", { data: "安装" });
-    await expect(dialog.getByRole("option", { name: /安装指南/ })).toBeVisible();
+    const option = dialog.getByRole("option", { name: /安装指南/ });
+    await expect(option).toBeVisible();
+    expect(await option.evaluate(element => ({ tag: element.tagName, tabIndex: (element as HTMLElement).tabIndex }))).toEqual({ tag: "BUTTON", tabIndex: 0 });
+    await expect(option.locator("small")).toHaveText("指南");
+    await expect(option.locator("strong mark")).toHaveText("安装");
+    await expect(input).toHaveAttribute("aria-controls", "site-reader-search-results");
+    await expect(input).toHaveAttribute("aria-activedescendant", await option.getAttribute("id") ?? "");
+    await expect(option).toHaveAttribute("aria-selected", "true");
     await page.keyboard.press("Escape");
     await expect(dialog).toHaveCount(0);
     await expect(trigger).toBeFocused();

@@ -1,7 +1,8 @@
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@orbis/ui/cn";
+import { cardSurfaceClassName } from "../../shared/ui/surface-styles";
 
-export const homeCardClassName = "home-card min-w-0 rounded-ob-lg border border-ob-surface-edge bg-ob-card p-4 shadow-ob-card min-[541px]:p-6";
+export const homeCardClassName = `${cardSurfaceClassName} home-card p-4 min-[541px]:p-6`;
 
 /** 首页与启动占位共用几何，加载完成时保持列宽、留白和标题位置。 */
 export function HomeSurface({ className, ...props }: ComponentProps<"div">) {

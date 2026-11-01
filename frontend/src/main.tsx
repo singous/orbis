@@ -5,8 +5,6 @@ import { App } from "./app/App";
 import { initializeAppearance } from "./shared/theme/appearance";
 import "./styles/index.css";
 import "./styles/document-prose.css";
-import "./styles/collaboration.css";
-import "./styles/notebook-icons.css";
 
 const disposeAppearance = initializeAppearance();
 if (import.meta.hot) import.meta.hot.dispose(disposeAppearance);

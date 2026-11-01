@@ -61,3 +61,11 @@ test("domain stylesheet imports need exact ownership and a documented content sc
   sources.set("src/styles/document-prose.css", ".document-prose h2, .site-page { margin: 0; } .document-prose-other { padding: 0; }");
   assert.deepEqual(applyDomainStylesAllowlist([], entries, sources).map(item => item.detail), [".site-page", ".document-prose-other"]);
 });
+
+test("reader prose and local theme exceptions cannot admit ordinary chrome rules", () => {
+  const entry = { file: "src/Reader.tsx", detail: "./reader.css", maxOccurrences: 1, scope: ".reader", reason: "Reader content", contentScope: ".document-prose" };
+  const sources = new Map([["src/reader.css", ":where(.reader) .document-prose h3 { margin: 0; } .reader .toolbar { padding: 1rem; }"]]);
+  assert.deepEqual(applyDomainStylesAllowlist([], [entry], sources).map(item => item.detail), [".reader .toolbar"]);
+  sources.set("src/reader.css", ".reader { --ob-reader-background: var(--ob-surface); padding: 1rem; } @media (max-width: 800px) { .reader { --ob-reader-height: 62px; } }");
+  assert.deepEqual(applyDomainStylesAllowlist([], [{ ...entry, contentScope: undefined, variablesOnly: true }], sources).map(item => item.detail), ["padding"]);
+});

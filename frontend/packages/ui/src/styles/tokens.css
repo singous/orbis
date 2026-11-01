@@ -157,6 +157,7 @@
   --color-ob-secondary-foreground: var(--ob-secondary-foreground);
   --color-ob-muted: var(--ob-secondary);
   --color-ob-muted-foreground: var(--ob-muted-foreground);
+  --color-ob-item-foreground: var(--ob-item-foreground);
   --color-ob-accent: var(--ob-accent-surface);
   --color-ob-accent-foreground: var(--ob-accent-surface-foreground);
   --color-ob-destructive: var(--ob-danger);

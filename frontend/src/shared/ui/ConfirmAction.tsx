@@ -33,7 +33,7 @@ export function ConfirmAction({ children, title, description, confirmLabel, onCo
     }
   }
 
-  return <Dialog dismissOnOutsidePress={false} open={open} onOpenChange={value => { if (!running.current) setOpen(value); }}>
+  return <Dialog dismissible={!pending} dismissOnOutsidePress={false} open={open} onOpenChange={value => { if (!running.current) setOpen(value); }}>
     <DialogTrigger asChild>{children}</DialogTrigger>
     <DialogPopup role="alertdialog" initialFocus={cancel} aria-describedby={descriptionId} className="max-w-112">
       <DialogTitle>{title}</DialogTitle><p id={descriptionId} className="text-sm leading-6 text-ob-muted-foreground">{description}</p>

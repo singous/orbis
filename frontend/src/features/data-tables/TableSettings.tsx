@@ -1,3 +1,4 @@
+import { tableFormClassName, tableFormActionsClassName, tableSettingRowClassName, tableFilterRowClassName } from "./table-chrome";
 import { reportError } from "../../shared/api/request-feedback";
 import { useState } from "react";
 import { Button } from "../../shared/ui/Button";
@@ -118,7 +119,7 @@ export function FieldDialog({
         title={field ? "编辑字段" : "添加字段"}
         description="字段标识保持稳定；删除字段后可通过撤销或文档历史恢复。"
       >
-        <div className="dt-form">
+        <div className={tableFormClassName}>
           <label>
             字段名称
             <input
@@ -153,7 +154,7 @@ export function FieldDialog({
             </label>
           ) : null}
 
-          <div className="dt-form-actions">
+          <div className={tableFormActionsClassName}>
             {field ? (
               <Button
                 variant="danger"
@@ -219,9 +220,9 @@ export function ViewDialog({
       <DialogContent
         title="视图设置"
         description="筛选与排序作用于整张表；公开字段由服务端限制。"
-        className="dt-settings-dialog"
+        className="w-[min(680px,95vw)]! max-w-[680px]!"
       >
-        <div className="dt-form">
+        <div className={tableFormClassName}>
           <label>
             视图名称
             <input
@@ -271,7 +272,7 @@ export function ViewDialog({
           <fieldset>
             <legend>显示字段与列宽</legend>
             {ordered.map((field) => (
-              <div className="dt-setting-row" key={field.id}>
+              <div className={tableSettingRowClassName} key={field.id}>
                 <label>
                   <input
                     type="checkbox"
@@ -327,7 +328,7 @@ export function ViewDialog({
                 (field) => field.id === filter.field_id,
               )!;
               return (
-                <div className="dt-filter-row" key={index}>
+                <div className={tableFilterRowClassName} key={index}>
                   <select
                     aria-label={`筛选字段 ${index + 1}`}
                     value={filter.field_id}
@@ -447,7 +448,7 @@ export function ViewDialog({
           <fieldset>
             <legend>排序</legend>
             {draft.sorts.map((sort, index) => (
-              <div className="dt-setting-row" key={index}>
+              <div className={tableSettingRowClassName} key={index}>
                 <select
                   aria-label={`排序字段 ${index + 1}`}
                   value={sort.field_id}
@@ -533,7 +534,7 @@ export function ViewDialog({
               </select>
             </label>
             {definition.fields.map((field) => (
-              <label className="dt-check" key={field.id}>
+              <label className="flex-row! items-center" key={field.id}>
                 <input
                   type="checkbox"
                   checked={publicFields.includes(field.id)}
@@ -550,7 +551,7 @@ export function ViewDialog({
             ))}
           </fieldset>
 
-          <div className="dt-form-actions">
+          <div className={tableFormActionsClassName}>
             <Button
               variant="primary"
               onClick={() => {

@@ -57,15 +57,50 @@
   --ob-icon-slate: #a8b7cc;
 }
 
-:root, .light, .default, [data-theme="light"], [data-theme="default"], .dark, [data-theme="dark"] {
-  --orbis-icon-cyan: var(--ob-icon-cyan);
-  --orbis-icon-mint: var(--ob-icon-mint);
-  --orbis-icon-orange: var(--ob-icon-orange);
-  --orbis-icon-blue: var(--ob-icon-blue);
-  --orbis-icon-indigo: var(--ob-icon-indigo);
-  --orbis-icon-teal: var(--ob-icon-teal);
-  --orbis-icon-violet: var(--ob-icon-violet);
-  --orbis-icon-rose: var(--ob-icon-rose);
-  --orbis-icon-amber: var(--ob-icon-amber);
-  --orbis-icon-slate: var(--ob-icon-slate);
+
+
+/* 公开分享保持原有独立浅色材料，不随工作区主题切换。 */
+[data-ui="public-share"] {
+  --ob-share-background: var(--ob-gray-0);
+  --ob-share-foreground: #23303a;
+  --ob-share-muted-foreground: #697882;
+  --ob-share-border: #e5e9ec;
+  --ob-share-link: #455762;
+  --ob-share-active-background: #eef6f4;
+  --ob-share-active-foreground: #08765e;
+}
+[data-ui="share-management"] {
+  --ob-share-manager-border: #dce2e5;
+  --ob-share-manager-background: #f6f8f9;
+}
+
+/* 阅读器的品牌混色锚点与浮层材料由自己的主题边界拥有。 */
+.site-reader {
+  --ob-reader-accent-anchor: #0c3523;
+  --ob-reader-accent-soft-anchor: #fff;
+  --ob-reader-subtle-shadow: 0 1px 2px #00000008;
+  --ob-reader-search-scrim: #07110b99;
+  --ob-reader-drawer-shadow: 20px 0 60px #0002;
+  --ob-reader-drawer-scrim: #0007;
+}
+.site-reader[data-theme="dark"] {
+  --ob-reader-accent-anchor: #a7f3c4;
+  --ob-reader-accent-soft-anchor: #111815;
+}
+:root, .light, .default, [data-theme="light"], [data-theme="default"] { --ob-reader-status-muted: #66736c; }
+.dark, [data-theme="dark"] { --ob-reader-status-muted: var(--ob-muted-foreground); }
+.site-preview-back {
+  --ob-reader-preview-background: #eaf8f0;
+  --ob-reader-preview-foreground: #156144;
+}
+
+.board-preview-tools { --ob-board-preview-controls-shadow: 0 3px 12px #0000000a; }
+
+:root {
+  --ob-icon-oncolor: #fff;
+  --ob-shadow-table-menu: 0 8px 24px #0001;
+  --ob-sheet-qr-surface: #fff;
+}
+@theme inline {
+  --shadow-ob-table-menu: var(--ob-shadow-table-menu);
 }

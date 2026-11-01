@@ -111,3 +111,41 @@ export const OutsideDismissalPolicy: Story = {
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "确认操作" })).not.toBeInTheDocument());
   },
 };
+
+export const PendingDismissalPolicy: Story = {
+  render: function PendingExample() {
+    const [open, setOpen] = useState(false);
+    const [pending, setPending] = useState(true);
+    return <Dialog open={open} onOpenChange={setOpen} dismissible={!pending}>
+      <DialogTrigger asChild><Button onClick={() => setPending(true)}>打开提交会话</Button></DialogTrigger>
+      <DialogContent title="正在提交">
+        <Button onClick={() => setPending(false)}>允许关闭</Button>
+        <Button onClick={() => setOpen(false)}>完成提交</Button>
+      </DialogContent>
+    </Dialog>;
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const screen = within(canvasElement.ownerDocument.body);
+    const trigger = canvas.getByRole("button", { name: "打开提交会话" });
+    await userEvent.click(trigger);
+    const dialog = await screen.findByRole("dialog", { name: "正在提交" });
+    await userEvent.keyboard("{Escape}");
+    await expect(dialog).toHaveAttribute("data-open");
+    await expect(dialog).not.toHaveAttribute("data-ending-style");
+    await userEvent.click(within(dialog).getByRole("button", { name: "关闭" }));
+    await expect(dialog).toHaveAttribute("data-open");
+    await expect(dialog).not.toHaveAttribute("data-ending-style");
+    await userEvent.click(canvasElement.ownerDocument.querySelector<HTMLElement>('[data-slot="ob-dialog-backdrop"]')!);
+    await expect(dialog).toHaveAttribute("data-open");
+    await userEvent.click(within(dialog).getByRole("button", { name: "完成提交" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() => expect(trigger).toHaveFocus());
+    await userEvent.click(trigger);
+    const reopened = await screen.findByRole("dialog", { name: "正在提交" });
+    await userEvent.click(within(reopened).getByRole("button", { name: "允许关闭" }));
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() => expect(trigger).toHaveFocus());
+  },
+};

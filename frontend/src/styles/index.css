@@ -7,7 +7,6 @@
 @import "./brand-tokens.css";
 @import "./motion.css";
 @import "./scrollbars.css";
-@import "./icons.css";
 
 @source "../../packages/ui/src";
 @source not "../../packages/ui/src/**/*.stories.tsx";

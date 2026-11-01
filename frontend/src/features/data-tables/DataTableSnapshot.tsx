@@ -1,3 +1,4 @@
+import { tableSurfaceClassName, tableHeadingClassName, tableFooterClassName, tableEmptyClassName } from "./table-chrome";
 import { reportError } from "../../shared/api/request-feedback";
 
 import { z } from "zod";
@@ -67,10 +68,10 @@ export function DataTableSnapshot({ data }: { data: TableSnapshot }) {
     ? (loaded?.offset===offset?loaded.rows:offset===(data.offset??0)?data.rows:[])
     : data.rows.slice(offset, offset + TABLE_PAGE_SIZE);
   const total = data.total ?? data.rows.length;
-  if(data.restricted)return <section className="data-table dt-snapshot"><header className="dt-heading"><Table2 size={18}/><strong>数据表</strong></header><div className="dt-empty">此数据表未通过文档分享公开。<a href={`/sheets/${data.snapshot_id}`}>在拥有访问权限的工作空间中打开</a></div></section>;
+  if(data.restricted)return <section className={`${tableSurfaceClassName} dt-snapshot`}><header className={tableHeadingClassName}><Table2 size={18}/><strong>数据表</strong></header><div className={tableEmptyClassName}>此数据表未通过文档分享公开。<a href={`/sheets/${data.snapshot_id}`}>在拥有访问权限的工作空间中打开</a></div></section>;
   return (
-    <section className="data-table dt-snapshot" aria-busy={loading}>
-      <header className="dt-heading">
+    <section className={`${tableSurfaceClassName} dt-snapshot`} aria-busy={loading}>
+      <header className={tableHeadingClassName}>
         <Table2 size={18} />
         <strong>{data.title}</strong>
         <span>{data.view}</span>
@@ -98,7 +99,7 @@ export function DataTableSnapshot({ data }: { data: TableSnapshot }) {
           </tbody>
         </table>
       </div>
-      <footer className="dt-footer">
+      <footer className={tableFooterClassName}>
         <span>{total} 条记录 · {data.records_url?.includes("/public/shares/")?"分享内容":data.records_url?.includes("/workspaces/")?"公开预览":"发布快照"}</span>
         <div>
           <Button

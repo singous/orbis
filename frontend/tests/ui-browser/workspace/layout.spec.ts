@@ -86,3 +86,22 @@ test("rail keyboard focus and sidebar motion use their owned contracts", async (
   await expect(page.locator(".workspace-sidebar")).toHaveCSS("transition-property", "none");
   await expect(page.locator(".rail-expand-slot")).toHaveCSS("transition-property", "none");
 });
+
+test("workspace navigation follows live media changes at its compact boundary", async ({ page }) => {
+  await installSession(page);
+  await page.route("**/api/v1/**", route => route.fulfill({ json: { code: "OK", message: "", request_id: "workspace-responsive", data: route.request().url().endsWith("/me") ? user : { items: [], pagination } } }));
+  await page.setViewportSize({ width: 768, height: 900 });
+  await page.goto("/settings/account");
+  await expect(page.getByRole("heading", { name: "个人资料", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "收起侧栏", exact: true })).toBeVisible();
+  await page.setViewportSize({ width: 767, height: 900 });
+  const opener = page.getByRole("button", { name: "打开主导航", exact: true });
+  await expect(opener).toBeVisible();
+  await opener.click();
+  await expect(page.locator(".workspace-main-navigation")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(opener).toBeFocused();
+  await page.setViewportSize({ width: 768, height: 900 });
+  await expect(page.getByRole("button", { name: "收起侧栏", exact: true })).toBeVisible();
+  await expect(opener).toBeHidden();
+});

@@ -6,15 +6,19 @@ import { resolveClassName } from "../internal/resolve-class-name";
 import { controlFocus } from "../internal/focus";
 import { usePortalTheme } from "../internal/use-portal-theme";
 
-type DialogProps = { children: ReactNode; onOpenChangeComplete?: (open: boolean) => void; dismissOnOutsidePress?: boolean } & (
+type DialogProps = { children: ReactNode; onOpenChangeComplete?: (open: boolean) => void; dismissOnOutsidePress?: boolean; dismissible?: boolean } & (
   | { open: boolean; onOpenChange: (open: boolean) => void; defaultOpen?: never }
   | { open?: never; defaultOpen?: boolean; onOpenChange?: (open: boolean) => void }
 );
 const ThemeContext = createContext<{ theme: "light" | "dark"; portalStyle: CSSProperties }>({ theme: "light", portalStyle: {} });
-function Dialog({ children, onOpenChange, dismissOnOutsidePress = true, ...props }: DialogProps) {
+function Dialog({ children, onOpenChange, dismissOnOutsidePress = true, dismissible = true, ...props }: DialogProps) {
   const [openingElement, setOpeningElement] = useState<Element | null>(null);
   const { anchor, theme, portalStyle } = usePortalTheme(openingElement);
-  return <ThemeContext.Provider value={{ theme, portalStyle }}><span hidden ref={anchor} /><Primitive.Root {...props} disablePointerDismissal={!dismissOnOutsidePress} onOpenChange={(open, details) => {
+  return <ThemeContext.Provider value={{ theme, portalStyle }}><span hidden ref={anchor} /><Primitive.Root {...props} disablePointerDismissal={!dismissOnOutsidePress || !dismissible} onOpenChange={(open, details) => {
+    if (!open && !dismissible) {
+      details.cancel();
+      return;
+    }
     if (open) setOpeningElement(details.event.target instanceof Element ? details.event.target : null);
     onOpenChange?.(open);
   }}>{children}</Primitive.Root></ThemeContext.Provider>;

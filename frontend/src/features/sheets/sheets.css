@@ -678,245 +678,6 @@
   text-align: center;
   color: var(--text-secondary);
 }
-.sheet-form-workspace {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  flex: 1;
-}
-.sheet-form-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 56px;
-  padding: 10px 20px;
-  border-bottom: 1px solid var(--border-subtle);
-}
-.sheet-segment {
-  display: flex;
-  gap: 3px;
-  padding: 3px;
-  background: var(--surface-secondary);
-  border-radius: 10px;
-}
-.sheet-segment button {
-  font-size: var(--orbis-text-caption-size);
-  border-radius: 7px;
-}
-.sheet-segment button[aria-pressed="true"] {
-  background: var(--segment);
-  box-shadow: var(--orbis-panel-shadow);
-  color: var(--segment-foreground);
-}
-.sheet-form-toolbar > .sheet-segment + span {
-  margin-left: auto;
-  color: var(--text-secondary);
-  font-size: var(--orbis-text-caption-size);
-}
-.sheet-form-body {
-  display: flex;
-  align-items: flex-start;
-  min-height: 0;
-  flex: 1;
-  overflow: auto;
-  background: var(--orbis-canvas-bg);
-  gap: 24px;
-  padding: 24px;
-}
-.sheet-form-palette {
-  width: 240px;
-  flex-shrink: 0;
-  padding: 20px;
-  background: var(--orbis-card-bg);
-  border: 1px solid var(--orbis-surface-edge);
-  border-radius: 12px;
-  box-shadow: var(--orbis-card-shadow);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  position: sticky;
-  top: 0;
-}
-.sheet-form-palette > strong {
-  font-size: var(--orbis-text-caption-size);
-  font-weight: var(--orbis-weight-heading);
-  color: var(--text-secondary);
-}
-.sheet-form-palette > strong:not(:first-child) {
-  margin-top: 12px;
-  border-top: 1px solid var(--border-subtle);
-  padding-top: 20px;
-}
-.sheet-form-palette > p,
-.sheet-form-palette > small {
-  font-size: var(--orbis-text-caption-size);
-  color: var(--text-tertiary);
-}
-.sheet-form-palette > button {
-  justify-content: flex-start;
-  gap: 8px;
-}
-.sheet-form-palette > button > svg:last-child {
-  margin-left: auto;
-}
-.sheet-form-new-fields {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-}
-.sheet-form-new-fields > button {
-  justify-content: flex-start;
-  gap: 7px;
-  font-size: var(--orbis-text-caption-size);
-  padding-inline: 6px;
-}
-.sheet-form-paper {
-  max-width: 720px;
-  width: 100%;
-  min-width: 0;
-  margin: 0 auto 24px;
-  padding: 32px;
-  background: var(--orbis-card-bg);
-  border: 1px solid var(--orbis-surface-edge);
-  border-radius: 12px;
-  box-shadow: var(--orbis-card-shadow);
-  color: var(--text-primary);
-}
-.sheet-form-paper .sheet-form-title {
-  font-size: var(--orbis-text-page-title-size);
-  font-weight: var(--orbis-weight-heading);
-  line-height: var(--orbis-text-page-title-leading);
-  background: transparent;
-  border-color: transparent;
-  padding-inline: 0;
-  box-shadow: none;
-  width: 100%;
-}
-.sheet-form-description {
-  display: block;
-  margin: 12px 0 24px;
-  width: 100%;
-  resize: vertical;
-  border: 0;
-  padding: 0;
-  color: var(--text-secondary);
-  font: inherit;
-  background: transparent;
-  outline: none;
-  min-height: 48px;
-}
-.sheet-form-description:focus {
-  outline: 2px solid var(--focus);
-  outline-offset: 4px;
-  border-radius: 4px;
-}
-.sheet-form-question {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin: 0 0 24px;
-  padding-top: 24px;
-  border-top: 1px solid var(--border-subtle);
-}
-.sheet-form-question > div:first-child {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.sheet-form-question > label,
-.sheet-form-question > div > label {
-  font-weight: var(--orbis-weight-action);
-  line-height: var(--orbis-text-ui-leading);
-}
-.sheet-form-question em {
-  color: var(--danger);
-  font-style: normal;
-  margin-right: 6px;
-}
-.sheet-question-tools {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-wrap: wrap;
-  opacity: 0;
-}
-.sheet-form-question:hover .sheet-question-tools,
-.sheet-form-question:focus-within .sheet-question-tools {
-  opacity: 1;
-}
-.sheet-question-tools label {
-  font-size: var(--orbis-text-caption-size);
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--text-secondary);
-}
-.sheet-question-tools button {
-  padding: 4px;
-  min-width: var(--orbis-control-compact-height);
-  min-height: var(--orbis-control-compact-height);
-  height: var(--orbis-control-compact-height);
-  font-size: var(--orbis-text-caption-size);
-}
-.sheet-form-question .sheet-question-description {
-  color: var(--text-secondary);
-  font-size: var(--orbis-text-caption-size);
-}
-.sheet-form-share {
-  padding-top: 24px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 20px;
-}
-.sheet-form-share > p {
-  color: var(--text-secondary);
-  font-size: var(--orbis-text-ui-size);
-}
-.sheet-form-share > div {
-  display: flex;
-  gap: 8px;
-  width: 100%;
-}
-.sheet-form-share > div > .orbis-text-input {
-  flex: 1;
-  min-width: 0;
-}
-.sheet-form-share > div > button {
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.sheet-form-share > img {
-  align-self: center;
-  padding: 8px;
-  background: white;
-  border-radius: 8px;
-}
-.sheet-form-share > a {
-  color: var(--accent);
-  align-self: center;
-  font-size: var(--orbis-text-caption-size);
-}
-.sheet-public {
-  min-height: 100dvh;
-  padding: 48px 20px;
-  background: var(--orbis-canvas-bg);
-}
-.sheet-public .sheet-form-paper {
-  margin: 0 auto;
-  padding: 40px;
-  max-width: 720px;
-}
-.sheet-public h1 {
-  font-size: var(--orbis-text-page-title-size);
-  font-weight: var(--orbis-weight-heading);
-  line-height: var(--orbis-text-page-title-leading);
-  margin: 0;
-}
-.sheet-public .sheet-form-description {
-  margin-bottom: 28px;
-}
 .sheet-record-fields {
   display: flex;
   flex-direction: column;
@@ -1114,22 +875,6 @@
   font-size: var(--orbis-text-caption-size);
   margin-top: 12px;
 }
-@media (max-width: 1000px) {
-  .sheet-form-body {
-    gap: 16px;
-    padding: 16px;
-  }
-  .sheet-form-palette {
-    width: 200px;
-    padding: 16px;
-  }
-  .sheet-form-new-fields {
-    grid-template-columns: 1fr;
-  }
-  .sheet-form-paper {
-    padding: 24px;
-  }
-}
 @media (max-width: 760px) {
   .sheet-breadcrumb .sheet-title {
     max-width: 200px;
@@ -1141,26 +886,6 @@
   .sheet-toolbar {
     padding-inline: 12px;
   }
-  .sheet-form-body {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .sheet-form-palette {
-    position: static;
-    width: 100%;
-  }
-  .sheet-form-new-fields {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  .sheet-form-paper {
-    padding: 24px;
-    margin: 0;
-  }
-  .sheet-form-toolbar {
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 10px 12px;
-  }
   .sheet-popover.wide {
     width: min(360px, calc(100vw - 16px));
   }
@@ -1169,18 +894,6 @@
   }
   .sheet-home-controls {
     flex-direction: column;
-  }
-  .sheet-public {
-    padding: 20px 12px;
-  }
-  .sheet-public .sheet-form-paper {
-    padding: 24px;
-  }
-  .sheet-form-question > div:first-child {
-    flex-wrap: wrap;
-  }
-  .sheet-question-tools {
-    opacity: 1;
   }
   .sheet-option-edit {
     grid-template-columns: 16px minmax(0, 1fr) 88px;
@@ -1261,7 +974,7 @@
     .sheet-record-dialog,
     .sheet-create-dialog
   )
-  .orbis-action-button {
+  .orbis-action-button:not(.sheet-action) {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
@@ -1285,7 +998,7 @@
     .sheet-record-dialog,
     .sheet-create-dialog
   )
-  .orbis-action-button
+  .orbis-action-button:not(.sheet-action)
   > svg {
   width: var(--action-icon-size);
   height: var(--action-icon-size);
@@ -1331,21 +1044,6 @@
   display: flex;
   justify-content: space-between;
   padding-top: 8px;
-}
-
-.sheet-form-paper {
-  overflow-wrap: anywhere;
-}
-@media (max-width: 760px) {
-  .sheet-public .orbis-action-button[type="submit"] {
-    min-height: var(--orbis-control-touch-height);
-    width: 100%;
-  }
-  .sheet-public .orbis-text-input,
-  .sheet-public .sheet-radio-options label,
-  .sheet-public .sheet-multi-options label {
-    min-height: var(--orbis-control-touch-height);
-  }
 }
 
 /* Cell editing stays inside the selected cell; only typed pickers use anchored menus. */
@@ -1632,8 +1330,8 @@ textarea.sheet-inline-input {
   .sheet-search { min-height: var(--orbis-control-touch-height); }
   .sheet-tab > button:last-child:not([role="tab"]),
   .sheet-setting-row > button { min-width: var(--orbis-control-touch-height); }
-  .sheet-check, .sheet-setting-row > label, .sheet-question-tools label { min-height: var(--orbis-control-touch-height); }
-  .sheet-grid-heading > button > svg:last-child, .sheet-question-tools, .sheet-row-inspect { opacity: 1; }
+  .sheet-check, .sheet-setting-row > label { min-height: var(--orbis-control-touch-height); }
+  .sheet-grid-heading > button > svg:last-child, .sheet-row-inspect { opacity: 1; }
   .sheet-row-select > input { opacity: 1; }
   .sheet-row-select > span { opacity: 0; }
   /* Dense rows keep their saved height; the whole gutter is a selection target. */

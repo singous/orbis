@@ -1,3 +1,6 @@
+import { cn } from "@orbis/ui/cn";
+import { sheetActionClassName } from "./sheet-chrome";
+import { formPaperVariants, formQuestionClassName, formRequiredClassName, formDescriptionVariants } from "./form-chrome";
 import { reportError } from "../../shared/api/request-feedback";
 import { ArrowDown, ArrowUp, Copy, Plus, Send, Trash2 } from "@orbis/ui/icons";
 import QRCode from "qrcode";
@@ -32,7 +35,7 @@ function FormQR({ value }: { value: string }) {
     };
   }, [value]);
   return src ? (
-    <img src={src} width={144} height={144} alt="表单填写二维码" />
+    <img className="self-center rounded-lg bg-(--ob-sheet-qr-surface) p-2" src={src} width={144} height={144} alt="表单填写二维码" />
   ) : null;
 }
 
@@ -135,10 +138,11 @@ export function SheetForms({
     setDraft({ ...draft, config: { ...draft.config, fields: next } });
   }
   return (
-    <div className="sheet-form-workspace">
-      <div className="sheet-form-toolbar">
-        <div className="sheet-segment">
+    <div className="sheet-form-workspace flex min-h-0 flex-1 flex-col">
+      <div className="sheet-form-toolbar flex min-h-14 items-center gap-3 border-b border-ob-border px-5 py-2.5 [@media(max-width:760px)]:flex-wrap [@media(max-width:760px)]:gap-2 [@media(max-width:760px)]:px-3">
+        <div className="sheet-segment flex gap-[3px] rounded-[10px] bg-ob-surface-secondary p-[3px]">
           <ActionButton
+            className={cn(sheetActionClassName, "rounded-[7px] [&.sheet-action]:text-[12px] aria-pressed:bg-(--ob-segment) aria-pressed:text-ob-foreground aria-pressed:[box-shadow:var(--ob-shadow-panel)]")}
             size="sm"
             aria-pressed={!preview}
             onClick={() => setPreview(false)}
@@ -146,6 +150,7 @@ export function SheetForms({
             编辑表单
           </ActionButton>
           <ActionButton
+            className={cn(sheetActionClassName, "rounded-[7px] [&.sheet-action]:text-[12px] aria-pressed:bg-(--ob-segment) aria-pressed:text-ob-foreground aria-pressed:[box-shadow:var(--ob-shadow-panel)]")}
             size="sm"
             aria-pressed={preview}
             onClick={() => {
@@ -159,10 +164,11 @@ export function SheetForms({
             预览表单
           </ActionButton>
         </div>
-        <span>{dirty ? "有未保存修改" : "已保存"}</span>
+        <span className="ml-auto text-[12px] text-(--ob-page-muted-foreground)">{dirty ? "有未保存修改" : "已保存"}</span>
         {!readOnly && (
           <>
             <ActionButton
+              className={sheetActionClassName}
               size="sm"
               disabled={busy || !dirty}
               onClick={() => void save().catch(() => {})}
@@ -171,6 +177,7 @@ export function SheetForms({
             </ActionButton>
             {draft.enabled && <Tag tone="success">收集中</Tag>}
             <ActionButton
+              className={sheetActionClassName}
               size="sm"
               variant={draft.enabled ? "secondary" : "primary"}
               onClick={() => {
@@ -189,13 +196,14 @@ export function SheetForms({
         )}
       </div>
 
-      <div className="sheet-form-body">
+      <div className="sheet-form-body flex min-h-0 flex-1 items-start gap-6 overflow-auto bg-ob-canvas p-6 [@media(max-width:1000px)]:gap-4 [@media(max-width:1000px)]:p-4 [@media(max-width:760px)]:flex-col [@media(max-width:760px)]:items-stretch">
         {!preview && !readOnly && (
-          <aside className="sheet-form-palette">
-            <strong>可添加字段</strong>
+          <aside className="sheet-form-palette sticky top-0 flex w-60 shrink-0 flex-col gap-2.5 rounded-[12px] border border-ob-surface-edge bg-ob-card p-5 [box-shadow:var(--ob-shadow-card)] [@media(max-width:1000px)]:w-50 [@media(max-width:1000px)]:p-4 [@media(max-width:760px)]:static [@media(max-width:760px)]:w-full">
+            <strong className="text-[12px] font-semibold text-(--ob-page-muted-foreground)">可添加字段</strong>
             {available.length ? (
               available.map((f) => (
                 <ActionButton
+                  className={cn(sheetActionClassName, "justify-start [&>svg:last-child]:ml-auto")}
                   size="sm"
                   key={f.id}
                   onClick={() =>
@@ -217,14 +225,15 @@ export function SheetForms({
                 </ActionButton>
               ))
             ) : (
-              <p>所有字段已添加</p>
+              <p className="text-[12px] text-(--ob-page-muted-foreground)">所有字段已添加</p>
             )}
-            <strong>添加新字段</strong>
-            <div className="sheet-form-new-fields">
+            <strong className="mt-3 border-t border-ob-border pt-5 text-[12px] font-semibold text-(--ob-page-muted-foreground)">添加新字段</strong>
+            <div className="sheet-form-new-fields grid grid-cols-2 gap-1.5 [@media(max-width:1000px)]:grid-cols-1 [@media(max-width:760px)]:grid-cols-3">
               {Object.entries(KINDS)
                 .filter(([, info]) => !info.system)
                 .map(([kind, info]) => (
                   <ActionButton
+                    className={cn(sheetActionClassName, "justify-start gap-[7px] px-1.5 [&.sheet-action]:text-[12px]")}
                     size="sm"
                     key={kind}
                     disabled={busy}
@@ -237,9 +246,9 @@ export function SheetForms({
             </div>
           </aside>
         )}
-        <div className="sheet-form-paper">
+        <div className={formPaperVariants({ surface: "editor" })}>
           <TextInput
-            className="sheet-form-title"
+            className="sheet-form-title w-full border-transparent bg-transparent px-0 text-2xl font-semibold [&.sheet-form-title]:[box-shadow:none]"
             aria-label="表单标题"
             readOnly={preview || readOnly}
             value={draft.config.title}
@@ -252,7 +261,7 @@ export function SheetForms({
             }
           />
           <textarea
-            className="sheet-form-description"
+            className={formDescriptionVariants({ surface: "editor" })}
             aria-label="表单描述"
             readOnly={preview || readOnly}
             placeholder="请输入表单描述"
@@ -268,15 +277,16 @@ export function SheetForms({
             const field = fields.find((f) => f.id === ff.field_id);
             if (!field) return null;
             return (
-              <section key={field.id} className="sheet-form-question">
-                <div>
+              <section key={field.id} className={formQuestionClassName}>
+                <div className="flex items-center justify-between gap-3 [@media(max-width:760px)]:flex-wrap">
                   <label>
-                    {ff.required && <em>*</em>}
+                    {ff.required && <em className={formRequiredClassName}>*</em>}
                     {index + 1}. {field.name}
                   </label>
                   {!preview && !readOnly && (
-                    <div className="sheet-question-tools">
+                    <div className="sheet-question-tools flex flex-wrap items-center gap-1 opacity-0 group-hover/form-question:opacity-100 group-focus-within/form-question:opacity-100 [@media(max-width:760px)]:opacity-100 pointer-coarse:opacity-100">
                       <ActionButton
+                        className={cn(sheetActionClassName, "h-8 min-w-8 p-1 [&.sheet-action]:text-[12px]")}
                         size="sm"
                         onClick={() =>
                           setDescribing(
@@ -286,7 +296,7 @@ export function SheetForms({
                       >
                         说明
                       </ActionButton>
-                      <label>
+                      <label className="flex items-center gap-[5px] text-[12px] text-(--ob-page-muted-foreground) pointer-coarse:min-h-(--ob-control-height-touch)">
                         <input
                           type="checkbox"
                           checked={ff.required}
@@ -307,6 +317,7 @@ export function SheetForms({
                         必填
                       </label>
                       <ActionButton
+                        className={cn(sheetActionClassName, "h-8 min-w-8 p-1 [&.sheet-action]:text-[12px]")}
                         size="sm"
                         aria-label="上移问题"
                         onClick={() => reorder(index, -1)}
@@ -314,6 +325,7 @@ export function SheetForms({
                         <ArrowUp size={13} />
                       </ActionButton>
                       <ActionButton
+                        className={cn(sheetActionClassName, "h-8 min-w-8 p-1 [&.sheet-action]:text-[12px]")}
                         size="sm"
                         aria-label="下移问题"
                         onClick={() => reorder(index, 1)}
@@ -321,6 +333,7 @@ export function SheetForms({
                         <ArrowDown size={13} />
                       </ActionButton>
                       <ActionButton
+                        className={cn(sheetActionClassName, "h-8 min-w-8 p-1 [&.sheet-action]:text-[12px]")}
                         size="sm"
                         aria-label="移除问题"
                         onClick={() =>
@@ -343,7 +356,7 @@ export function SheetForms({
                 {(ff.description ||
                   (!preview && describing === ff.field_id)) && (
                   <TextInput
-                    className="sheet-question-description"
+                    className="sheet-question-description text-[12px] text-(--ob-page-muted-foreground)"
                     aria-label={`${field.name}说明`}
                     placeholder="添加问题说明"
                     readOnly={preview || readOnly}
@@ -376,7 +389,7 @@ export function SheetForms({
             );
           })}
           {preview && (
-            <p className="sheet-muted">
+            <p className="text-[12px] text-(--ob-page-muted-foreground)">
               当前为预览；请通过填写链接提交真实记录。
             </p>
           )}
@@ -394,9 +407,9 @@ export function SheetForms({
             description="分享填写链接，提交内容将自动保存为新的记录。"
             className="sheet-share-dialog"
           >
-            <div className="sheet-form-share">
-              <p>获得链接的人可以填写并提交表单</p>
-              <label className="sheet-check">
+            <div className="sheet-form-share flex flex-col items-start gap-5 pt-6">
+              <p className="text-sm text-(--ob-page-muted-foreground)">获得链接的人可以填写并提交表单</p>
+              <label className="sheet-check flex items-center gap-2 text-sm pointer-coarse:min-h-(--ob-control-height-touch)">
                 <input
                   type="checkbox"
                   checked={draft.enabled}
@@ -404,12 +417,12 @@ export function SheetForms({
                 />
                 允许收集
               </label>
-              <div>
-                <TextInput readOnly aria-label="填写链接" value={link} />
+              <div className="flex w-full gap-2">
+                <TextInput className="min-w-0 flex-1" readOnly aria-label="填写链接" value={link} />
                 <ActionButton
                   size="sm"
                   variant="primary"
-                  className="sheet-primary"
+                  className={sheetActionClassName}
                   onClick={() => {
                     void navigator.clipboard
                       .writeText(link)
@@ -422,7 +435,7 @@ export function SheetForms({
                 </ActionButton>
               </div>
               <FormQR value={link} />
-              <a href={link} target="_blank" rel="noreferrer">
+              <a className="self-center text-[12px] text-ob-primary" href={link} target="_blank" rel="noreferrer">
                 打开填写页面
               </a>
             </div>

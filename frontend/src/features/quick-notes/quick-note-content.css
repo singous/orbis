@@ -1,0 +1,20 @@
+/* Quick Notes owns this compact Tiptap prose; its React owner supplies editor geometry. */
+.quick-note-content .tiptap {
+  min-height: var(--ob-quick-note-editor-min-height);
+  max-height: var(--ob-quick-note-editor-max-height);
+  padding: var(--ob-quick-note-editor-padding);
+  overflow: auto;
+  outline: none;
+  font-size: var(--orbis-text-ui-size);
+  line-height: var(--orbis-prose-body-leading);
+  overflow-wrap: anywhere;
+}
+.quick-note-content .tiptap p.is-editor-empty:first-child::before { color: var(--ob-page-muted-foreground); content: attr(data-placeholder); float: left; height: 0; pointer-events: none; }
+.quick-note-content .tiptap p { margin: 0 0 .7em; }
+.quick-note-content .tiptap ul, .quick-note-content .tiptap ol { padding-inline-start: 1.5em; }
+.quick-note-content .tiptap ul[data-type="taskList"] { padding-inline-start: 0; list-style: none; }
+.quick-note-content .tiptap li[data-type="taskItem"] { display: flex; gap: .5rem; }
+.quick-note-content .tiptap li[data-type="taskItem"] > div { flex: 1; min-width: 0; }
+.quick-note-content img, .quick-note-content .document-prose video { max-width: 100%; height: auto; }
+.quick-note-content audio { max-width: 100%; }
+.quick-note-content pre { max-width: 100%; overflow-x: auto; }
