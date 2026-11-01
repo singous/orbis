@@ -6,6 +6,7 @@ import { documentEditorHTTP, documentId } from "../fixtures/document-editor";
 import { readerHTTP, siteId } from "../fixtures/site-reader";
 import { boardHTTP, collectionId, documentId as boardDocumentId, board } from "../fixtures/board";
 import { initialSheet, sheetReadData } from "../fixtures/sheet-workspace";
+import { installSiteManagementFixture, siteManagementSiteId } from "../fixtures/site-management";
 
 const RUNTIME_ASSET_TYPES = new Set(["script", "stylesheet", "font", "image"]);
 const production = process.env.ORBIS_UI_PRODUCTION === "1";
@@ -18,7 +19,7 @@ type RuntimeSurface = {
   path: string;
   entry: string;
   setup?: (page: Page, baseURL: string | undefined) => Promise<unknown>;
-  verify: (page: Page) => Promise<void>;
+  verify: (page: Page, setupResult: unknown) => Promise<void>;
 };
 
 async function installBoardFixture(page: Page) {
@@ -92,6 +93,13 @@ const surfaces: RuntimeSurface[] = [
     await expect(page.getByRole("heading", { name: "你的文档站点", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "从第一篇文档开始", exact: true })).toBeVisible();
   } },
+  { name: "site editor", path: `/sites/${siteManagementSiteId}`, entry: "src/features/sites/SiteEditorPage.tsx", setup: page => installSiteManagementFixture(page), verify: async (page, mutations) => {
+    await expect(page.getByRole("heading", { name: "产品手册", exact: true })).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "站点名称", exact: true })).toHaveValue("产品手册");
+    await expect(page.getByRole("checkbox", { name: "公开 开始使用", exact: true })).toBeChecked();
+    await expect(page.getByText("当前公开版本", { exact: true })).toBeVisible();
+    expect(mutations).toEqual([]);
+  } },
   { name: "preview", path: `/sites/${siteId}/preview`, entry: "src/features/sites/SitePreviewPage.tsx", setup: async (page, baseURL) => {
     await installSession(page);
     return readerHTTP(page, baseURL);
@@ -144,9 +152,9 @@ for (const { name: surface, path, entry, setup, verify } of surfaces) test(`${su
     if (RUNTIME_ASSET_TYPES.has(request.resourceType())) failures.push({ url: request.url(), error: request.failure()?.errorText });
   });
 
-  await setup?.(page, baseURL);
+  const setupResult = await setup?.(page, baseURL);
   await page.goto(path);
-  await verify(page);
+  await verify(page, setupResult);
 
   const rendered = await page.evaluate(async () => {
     await document.fonts.ready;
