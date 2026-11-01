@@ -1,3 +1,4 @@
+import { editorLoadMoreClassName } from "./editor-control-styles";
 import { iconActionVariants } from "../../../shared/ui/control-styles";
 import { documentActionsMenuClassName } from "@/features/documents/document-layout";
 import { pageColumnClassName } from "../../../shared/ui/PageContainer";
@@ -815,7 +816,7 @@ export function LegacyDocumentEditorPage() {
               readOnly={!canEdit || editorBusy}
               onChange={(event) => changeDraft({ ...(coordinatorRef.current?.current ?? draft), title: event.target.value })}
             />
-            <div className="mb-7 mt-2 flex items-center gap-2 text-xs text-[var(--muted-light)]"><span>{canEdit ? "停手后自动保存" : "只读访问"}</span></div>
+            <div className="mb-7 mt-2 flex items-center gap-2 text-xs text-[var(--ob-page-muted-foreground)]"><span>{canEdit ? "停手后自动保存" : "只读访问"}</span></div>
 
             <DocumentCopyContext.Provider value={copyPort}><TableHostContext.Provider value={tableHost}><EditorErrorBoundary key={noteId}>
               <Suspense fallback={<LoadingState label="正在准备编辑…" variant="editor-body" delayMs={180} />}>
@@ -834,7 +835,7 @@ export function LegacyDocumentEditorPage() {
                 />
               </Suspense>
             </EditorErrorBoundary></TableHostContext.Provider></DocumentCopyContext.Provider>
-            {hasMoreContent ? <div ref={loadMoreTarget} className="document-load-more" aria-live="polite">
+            {hasMoreContent ? <div ref={loadMoreTarget} className={editorLoadMoreClassName} aria-live="polite">
               {loadingMore ? <LoadingState label="正在载入后续正文…" compact /> : null}
 
               {!loadingMore ? <Button variant="ghost" onClick={() => void loadMoreContent().catch(() => {})}>继续阅读</Button> : null}

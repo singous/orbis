@@ -1,3 +1,6 @@
+import "./grid.css";
+import { cn } from "@orbis/ui/cn";
+import { sheetActionClassName, sheetMutedClassName } from "./sheet-chrome";
 import { reportError } from "../../shared/api/request-feedback";
 import { useQuery } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -50,15 +53,15 @@ function BoardCell({
   }
   return (
     <div
-      className={`sheet-card-field sheet-card-editable${primary ? " sheet-card-title" : ""}`}
+      className={cn("sheet-card-field block cursor-text gap-[5px]", primary && "sheet-card-title font-medium")}
       onClick={(e) => {
         e.stopPropagation();
         if ((e.target as HTMLElement).closest("button,a,textarea,select")) return;
         edit();
       }}
     >
-      {!primary && <small>{field.name}</small>}
-      <div className="sheet-card-cell">
+      {!primary && <small className="text-[12px] text-(--ob-page-muted-foreground)">{field.name}</small>}
+      <div className={cn("sheet-card-cell", editing && "outline-2 outline-ob-primary")}>
         {editing ? (
           <CellEditor
             field={field}
@@ -95,14 +98,14 @@ function BoardCell({
             interactive={!readOnly}
           />
         ) : (
-          <span className="sheet-muted">
+          <span className={sheetMutedClassName}>
             {primary ? "未命名记录" : "点击填写"}
           </span>
         )}
         {editable && !editing ? <ActionButton
           ref={trigger}
           size="sm"
-          className="sheet-card-edit-trigger"
+          className={cn(sheetActionClassName, "sheet-card-edit-trigger ml-auto flex-none")}
           aria-label={`${field.kind === "checkbox" ? "切换" : "编辑"}${field.name}`}
           aria-pressed={field.kind === "checkbox" ? Boolean(row.values[field.id]) : undefined}
           disabled={c.busy}
@@ -189,7 +192,7 @@ function ColumnRecords({
                 style={{ transform: `translateY(${item.start}px)` }}
               >
                 <article
-                  className="sheet-board-card"
+                  className="sheet-board-card m-0 flex w-full cursor-pointer flex-col items-stretch gap-3 rounded-[12px] border border-ob-surface-edge bg-ob-card p-4 text-left [box-shadow:var(--ob-shadow-card)] hover:border-ob-border hover:[box-shadow:var(--ob-shadow-card-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ob-ring"
                   draggable={!readOnly && !c.busy}
                   onDragStart={(e) =>
                     e.dataTransfer.setData(
@@ -216,19 +219,19 @@ function ColumnRecords({
                       primary={index === 0}
                     />
                   ))}
-                  <ActionButton size="sm" className="sheet-board-details" aria-label="查看记录详情" onClick={event => { event.stopPropagation(); onRecord(row); }}><Eye size={14} />查看详情</ActionButton>
+                  <ActionButton size="sm" className={cn(sheetActionClassName, "self-end")} aria-label="查看记录详情" onClick={event => { event.stopPropagation(); onRecord(row); }}><Eye size={14} />查看详情</ActionButton>
                 </article>
               </div>
             );
           })}
         </div>
         {!query.isFetching && !rows.length && (
-          <p className="sheet-muted">暂无记录</p>
+          <p className={sheetMutedClassName}>暂无记录</p>
         )}
       </div>
       {(previous.length > 0 || query.data?.next_cursor) && (
-        <footer className="sheet-board-paging">
-          <ActionButton
+        <footer className="flex justify-between pt-2">
+          <ActionButton className={sheetActionClassName}
             size="sm"
             disabled={!previous.length || query.isFetching}
             onClick={() => {
@@ -238,7 +241,7 @@ function ColumnRecords({
           >
             上一页
           </ActionButton>
-          <ActionButton
+          <ActionButton className={sheetActionClassName}
             size="sm"
             disabled={!query.data?.next_cursor || query.isFetching}
             onClick={() => {
@@ -308,7 +311,7 @@ function Column(props: ColumnProps) {
         }
       }}
     >
-      <header>
+      <header className="mb-4 flex flex-none items-center gap-2.5 text-[12px] text-(--ob-page-muted-foreground)">
         <span
           className="sheet-tag"
           style={{ background: `var(--sheet-${group.color})` }}
@@ -317,7 +320,7 @@ function Column(props: ColumnProps) {
         </span>
         <span>{count}</span>
         {!readOnly && (
-          <ActionButton
+          <ActionButton className={cn(sheetActionClassName, "ml-auto")}
             size="sm"
             aria-label={`在${group.label}添加记录`}
             disabled={c.busy}
@@ -360,12 +363,12 @@ export function SheetBoard({
     field = fields.find((f) => f.id === view.group_field_id);
   if (!field)
     return (
-      <div className="sheet-empty">
+      <div className="px-8 py-16 text-center text-(--ob-page-muted-foreground)">
         选择一个单选字段进行分组，即可开始使用看板。
       </div>
     );
   return (
-    <div className="sheet-board">
+    <div className="sheet-board flex flex-1 items-start gap-5 overflow-auto bg-ob-canvas p-6">
       {[{ id: "", label: "未分组", color: "gray" }, ...field.options].map(
         (group) => (
           <Column

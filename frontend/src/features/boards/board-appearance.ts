@@ -9,7 +9,7 @@ export function boardCanvasBackground(background: string) {
 }
 
 export function boardCanvasTextColor(background: string) {
-  return background.toLowerCase() === DEFAULT_BOARD_BACKGROUND ? "var(--text-primary)" : DEFAULT_STYLE.text_color;
+  return background.toLowerCase() === DEFAULT_BOARD_BACKGROUND ? "var(--ob-foreground)" : DEFAULT_STYLE.text_color;
 }
 
 /** 只调整直接落在画布上的默认文字；实色图形和作者自定义的文字颜色保持原样。 */

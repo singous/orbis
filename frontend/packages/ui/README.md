@@ -10,7 +10,7 @@ import { Input } from "@orbis/ui/input";
 <Button type="submit" loading={saving}>保存资料</Button>
 ```
 
-当前入口：`button`、`input`、`textarea`、`dialog`、`sheet`、`popover`、`dropdown-menu`、`tooltip`、`select`、`radio-group`、`checkbox`、`toggle`、`toolbar`、`toast`、`color-picker`、`avatar`、`badge`、`spinner`、`skeleton`、`icons`、`cn` 和 `styles.css`。个人资料、认证、工作区、搜索、文档/画板/网格外围控件等实际消费者已迁入平台；应用开发路由 `/__ui` 验证样式与主题组合。共享兼容入口保留旧 onPress、native pending 和领域布局契约；新通用控件直接采用新 API。
+当前入口：`button`、`input`、`textarea`、`dialog`、`sheet`、`popover`、`portal`、`dropdown-menu`、`tooltip`、`select`、`radio-group`、`checkbox`、`toggle`、`toolbar`、`toast`、`color-picker`、`avatar`、`badge`、`spinner`、`skeleton`、`icons`、`cn` 和 `styles.css`。个人资料、认证、工作区、搜索、文档/画板/网格外围控件等实际消费者已迁入平台；应用开发路由 `/__ui` 验证样式与主题组合。共享兼容入口保留旧 onPress、native pending 和领域布局契约；新通用控件直接采用新 API。
 
 从 `frontend/` 执行：
 

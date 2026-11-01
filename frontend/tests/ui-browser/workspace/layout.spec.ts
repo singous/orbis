@@ -105,3 +105,31 @@ test("workspace navigation follows live media changes at its compact boundary", 
   await expect(page.getByRole("button", { name: "收起侧栏", exact: true })).toBeVisible();
   await expect(opener).toBeHidden();
 });
+
+test("sidebar pointer resizing owns document cursor and selection through commit and Escape", async ({ page }) => {
+  await installSession(page);
+  await page.route("**/api/v1/**", route => route.fulfill({ json: { code: "OK", message: "", request_id: "workspace-pointer-resize", data: route.request().url().endsWith("/me") ? user : { items: [], pagination } } }));
+  await page.goto("/settings/account");
+  const heading = page.getByRole("heading", { name: "个人资料", exact: true });
+  await expect(heading).toBeVisible();
+  const html = page.locator("html");
+  const initial = await heading.evaluate(element => ({ cursor: getComputedStyle(element).cursor, select: getComputedStyle(element).userSelect }));
+  const handle = page.getByRole("separator", { name: "调整侧栏宽度", exact: true });
+  const originalWidth = Number(await handle.getAttribute("aria-valuenow"));
+  for (const accept of [true, false]) {
+    const bounds = (await handle.boundingBox())!;
+    await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+    await page.mouse.down();
+    await expect(html).toHaveClass(/workspace-resizing/);
+    await expect(html).toHaveCSS("cursor", "col-resize");
+    await expect(heading).toHaveCSS("cursor", "col-resize");
+    await expect(heading).toHaveCSS("user-select", "none");
+    await page.mouse.move(bounds.x + bounds.width / 2 + 16, bounds.y + bounds.height / 2);
+    if (!accept) await page.keyboard.press("Escape");
+    await page.mouse.up();
+    await expect(html).not.toHaveClass(/workspace-resizing/);
+    await expect(heading).toHaveCSS("cursor", initial.cursor);
+    await expect(heading).toHaveCSS("user-select", initial.select);
+    await expect(handle).toHaveAttribute("aria-valuenow", String(originalWidth + 16));
+  }
+});

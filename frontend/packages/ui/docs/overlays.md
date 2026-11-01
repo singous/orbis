@@ -6,6 +6,8 @@ DialogTrigger 和 DialogClose 可以通过 `asChild` 与 Button 组合，避免�
 
 Portal 挂到 body，但通过隐藏锚点读取打开位置最近的 data-theme。读取锚点的全部 `--ob-*` 解析值，并在 Portal 根复制，保留局部主题覆盖。祖先的主题、class、style 属性变化和 forced-colors/reduced-motion/pointer 媒体变化会重新取值；卸载时清理订阅。普通任意业务 CSS 变量不进入 UI 平台的继承契约。
 
+独立宿主或原生浮层使用 `@orbis/ui/portal` 的 `Portal`，由调用方传 `Element | DocumentFragment` 容器。它保留逻辑位置的隐藏主题锚点，在目标以 `display: contents` 包装内容并结束外层 Toolbar 范围，不增加布局盒。空内容不创建目标包装，保留 `:empty` 布局；移动同一个容器保留子树身份。焦点、定位、关闭与容器生命周期由所属消费者管理。原生拖动预览可调用同一入口的 `readPortalTheme(element)`，在挂载前应用一次 `theme` 与 `portalStyle` 快照，不复制包内 hook。
+
 层级使用 token：Dialog 80、Select/Popover 90、Tooltip 100。嵌套 Select 的第一次 Escape 只关闭列表并恢复触发器焦点，第二次关闭 Dialog 并返回外部触发器。对应 Story 和应用级浏览器用例覆盖这些行为。
 
 Select 的 body Portal 使用具名选项区域，让浮层文本在完整页面的地标导航中可定位；内部 listbox/option 继续由 Base UI 管理。

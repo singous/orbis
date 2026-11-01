@@ -1,8 +1,8 @@
 /* Published article typography only; reader chrome belongs to its React owners. */
-.site-reader .document-prose { color: var(--ob-reader-text); font-size: var(--orbis-prose-body-size); line-height: var(--orbis-prose-body-leading); }
+.site-reader .document-prose { color: var(--ob-reader-text); font-size: var(--ob-prose-body-size); line-height: var(--ob-prose-body-leading); }
 .site-reader .document-prose h1, .site-reader .document-prose h2, .site-reader .document-prose h3, .site-reader .document-prose h4, .site-reader .document-prose h5, .site-reader .document-prose h6 { scroll-margin-top: 130px; color: var(--ob-reader-text); letter-spacing: -.026em; }
-.site-reader .document-prose h2 { margin: 43px 0 15px; font-size: var(--orbis-prose-h2-size); }
-:where(.site-reader) .document-prose h3 { margin: 34px 0 12px; font-size: var(--orbis-prose-h3-size); }
+.site-reader .document-prose h2 { margin: 43px 0 15px; font-size: var(--ob-prose-h2-size); }
+:where(.site-reader) .document-prose h3 { margin: 34px 0 12px; font-size: var(--ob-prose-h3-size); }
 .site-reader .document-prose p { margin: 15px 0; }
 .site-reader .document-prose .doc-card p { margin: 6px 0; }
 .site-reader .document-prose a { color: var(--ob-reader-accent); text-decoration-color: color-mix(in srgb, var(--ob-reader-accent) 45%, transparent); }
@@ -14,5 +14,6 @@
 .site-reader .document-prose th { background: var(--ob-reader-surface-soft); }
 
 @media (max-width: 800px) {
-  .site-reader .document-prose h2 { margin-top: 36px; font-size: var(--orbis-prose-h2-size); }
+  .site-reader .document-prose h2 { margin-top: 36px; font-size: var(--ob-prose-h2-size); }
 }
+.site-reader[data-theme="dark"] .document-prose .doc-callout { background: color-mix(in srgb, var(--ob-content-callout-icon, var(--ob-content-callout-info-icon)) 13%, var(--reading-bg)); border-color: color-mix(in srgb, var(--ob-content-callout-icon, var(--ob-content-callout-info-icon)) 50%, var(--reading-border)); }

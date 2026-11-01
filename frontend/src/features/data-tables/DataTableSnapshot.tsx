@@ -13,7 +13,7 @@ import {
   useOptionalAuthRequest,
 } from "../../shared/auth/use-auth-request";
 import { TABLE_PAGE_SIZE, type TableSnapshot } from "./model";
-import "../../styles/data-tables.css";
+import "./grid.css";
 
 const UUID="[0-9a-f-]{36}";
 function recordsRequest(raw:string,workspaceId:string|null|undefined){

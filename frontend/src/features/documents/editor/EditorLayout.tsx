@@ -1,3 +1,4 @@
+import { editorOutlineLinkClassName } from "./editor-control-styles";
 import { reportError } from "../../../shared/api/request-feedback";
 import { NAVIGATE_OUTLINE_EVENT } from "./outline-navigation";
 import { useRef, useState, useSyncExternalStore, type ReactNode } from "react";
@@ -105,10 +106,10 @@ export function EditorLayout({ outlineStore, children, loadOutlineContent }: { o
   const [hovered, setHovered] = useState(false);
   return <div ref={layoutRef} className={`editor-layout grid min-h-[calc(100vh-80px)] grid-cols-[minmax(0,1fr)_44px] gap-6 bg-transparent px-8 pt-6 pb-24 transition-[grid-template-columns] duration-200 ease-[ease] [&.outline-open]:grid-cols-[minmax(0,1fr)_232px] max-[1024px]:grid-cols-[minmax(0,1fr)] max-[1024px]:px-4 max-[1024px]:pb-[60px] max-[1024px]:[&.outline-open]:grid-cols-[minmax(0,1fr)] max-[641px]:px-0 in-[.document-scroll-region]:min-h-full in-[.document-scroll-region]:pt-8 max-[768px]:in-[.document-scroll-region]:pt-3 motion-reduce:transition-none${pinned || hovered ? " outline-open" : ""}`}>
     {children}
-    <aside className="editor-outline sticky top-24 flex max-h-[calc(100vh-120px)] flex-col gap-2.5 self-start overflow-hidden border-l border-[color:var(--border-strong,var(--ob-border))] py-2 pl-2.5 in-[.document-scroll-region]:top-6 in-[.document-scroll-region]:max-h-[calc(100dvh-190px)] max-[1024px]:hidden" aria-label="文档大纲" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+    <aside className="editor-outline sticky top-24 flex max-h-[calc(100vh-120px)] flex-col gap-2.5 self-start overflow-hidden border-l border-ob-border in-[.workspace-shell]:border-ob-workspace-hover-outline py-2 pl-2.5 in-[.document-scroll-region]:top-6 in-[.document-scroll-region]:max-h-[calc(100dvh-190px)] max-[1024px]:hidden" aria-label="文档大纲" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
       <ActionButton type="button" className="editor-outline-pin grid size-(--ob-control-height-sm) flex-none place-items-center border border-ob-border bg-ob-card text-(--ob-page-muted-foreground) transition-colors duration-120 ease-[ease] hover:bg-(--ob-item-hover-bg) hover:text-ob-foreground" aria-label={pinned ? "取消大纲常驻" : "大纲常驻"} aria-pressed={pinned} title={pinned ? "取消常驻" : "常驻大纲"} onClick={() => setPinned(value => !value)}>{pinned ? <Eye aria-hidden="true" size={14} /> : <EyeOff aria-hidden="true" size={14} />}</ActionButton>
-      <div className="editor-outline-body hidden min-w-0 overflow-auto in-[.outline-open]:block"><div className="mb-4 text-xs font-semibold text-[var(--muted)]">大纲</div>
-        {outline.length ? <nav className="space-y-1">{outline.map(item => <ActionButton key={item.id} className="editor-outline-link" disabled={loading} title={item.text} style={{ paddingLeft: `${(item.level - 1) * 10}px` }} onPress={() => { void navigateHeading(item.id); }}>{item.text}</ActionButton>)}</nav> : <p className="text-xs leading-5 text-[var(--muted-light)]">添加标题后，这里会自动生成大纲。</p>}
+      <div className="editor-outline-body hidden min-w-0 overflow-auto in-[.outline-open]:block"><div className="mb-4 text-xs font-semibold text-[var(--ob-page-muted-foreground)]">大纲</div>
+        {outline.length ? <nav className="space-y-1">{outline.map(item => <ActionButton key={item.id} className={editorOutlineLinkClassName} disabled={loading} title={item.text} style={{ paddingLeft: `${(item.level - 1) * 10}px` }} onPress={() => { void navigateHeading(item.id); }}>{item.text}</ActionButton>)}</nav> : <p className="text-xs leading-5 text-[var(--ob-page-muted-foreground)]">添加标题后，这里会自动生成大纲。</p>}
       </div>
     </aside>
   </div>;

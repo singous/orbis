@@ -136,7 +136,7 @@ export function GlobalSearchPalette({ initialFilters, onClose, isOpen = true, on
     <CommandPopup preset="workspace" title="全局搜索" initialFocus={inputRef} inert={!isOpen ? true : undefined}>
       <CommandInput ref={inputRef} type="search" aria-label="搜索任何内容" placeholder="搜索任何内容…" aria-autocomplete="list" listId={listId} activeId={activeId} value={input} maxLength={SEARCH_MAX_LENGTH} onChange={event => changeInput(event.target.value)} onKeyDown={handleKey} onCompositionStart={() => setComposing(true)} onCompositionEnd={event => { changeInput(event.currentTarget.value); setComposing(false); }}>
         {input ? <Button appearance="unstyled" aria-label="清空搜索" className="size-4 min-h-0 flex-none border-0 p-0 pointer-coarse:size-11" onClick={() => { changeInput(""); inputRef.current?.focus(); }}><X size={16} /></Button> : null}
-        <kbd className="flex-none rounded-[5px] bg-ob-accent px-[5px] py-0.5 font-sans text-xs text-ob-foreground whitespace-nowrap max-[560px]:hidden">{shortcut}</kbd>
+        <kbd className="flex-none rounded-[5px] bg-ob-accent px-[5px] py-0.5 font-ob-sans text-xs text-ob-foreground whitespace-nowrap max-[560px]:hidden">{shortcut}</kbd>
       </CommandInput>
       <div className="flex flex-none flex-wrap items-center gap-2 px-4 pt-3 max-[560px]:gap-1">
         <Select<SearchFilters["status"]> aria-label="内容状态" density="compact" wrapperClassName="w-auto min-w-0 max-w-full" className="border-transparent bg-transparent px-2 text-xs font-normal text-ob-muted-foreground shadow-none hover:bg-ob-accent hover:text-ob-foreground focus-visible:text-ob-foreground" value={status} options={SEARCH_STATUS_OPTIONS} onValueChange={value => { if (value !== null) { cancelOpening(); setStatus(value); setPage(1); } }} />
@@ -153,7 +153,7 @@ export function GlobalSearchPalette({ initialFilters, onClose, isOpen = true, on
             const Icon = icons[category.type];
             return <Button appearance="unstyled" key={category.type} id={`${listId}-${category.type}`} role="option" aria-selected={activeKey === category.type} tabIndex={-1} type="button" className="group flex min-h-20 min-w-0 items-center gap-3 rounded-ob-xl border border-ob-border bg-ob-card p-3 text-start hover:bg-ob-accent aria-selected:border-ob-primary aria-selected:bg-ob-accent max-[560px]:min-h-18" onMouseMove={() => setSelected(category.type)} onClick={() => chooseCategory(category)}>
               <span className="grid size-10 flex-none place-items-center rounded-[10px] border border-ob-border bg-ob-card text-ob-muted-foreground group-aria-selected:text-ob-primary"><Icon aria-hidden="true" size={20} /></span>
-              <span className="grid min-w-0 gap-1"><strong className="font-mono text-sm font-semibold wrap-anywhere">{category.alias}</strong><span className="text-xs leading-[18px] text-ob-muted-foreground group-hover:text-ob-foreground group-aria-selected:text-ob-foreground">{category.description}</span></span>
+              <span className="grid min-w-0 gap-1"><strong className="font-ob-mono text-sm font-semibold wrap-anywhere">{category.alias}</strong><span className="text-xs leading-[18px] text-ob-muted-foreground group-hover:text-ob-foreground group-aria-selected:text-ob-foreground">{category.description}</span></span>
             </Button>;
           }) : resultItems.map(result => {
             const Icon = icons[result.type];
@@ -169,7 +169,7 @@ export function GlobalSearchPalette({ initialFilters, onClose, isOpen = true, on
       </div>
       <CommandFooter>
         <span className="max-[560px]:hidden">↑ ↓ 选择</span>
-        <span className="inline-flex items-center gap-1"><kbd aria-hidden="true" className="font-sans">Esc</kbd><DialogClose asChild><Button appearance="unstyled" aria-label="关闭搜索" className="h-auto min-h-8 flex-none rounded-ob-lg border-0 px-1 text-xs font-normal text-ob-muted-foreground hover:text-ob-foreground">关闭</Button></DialogClose></span>
+        <span className="inline-flex items-center gap-1"><kbd aria-hidden="true" className="font-ob-sans">Esc</kbd><DialogClose asChild><Button appearance="unstyled" aria-label="关闭搜索" className="h-auto min-h-8 flex-none rounded-ob-lg border-0 px-1 text-xs font-normal text-ob-muted-foreground hover:text-ob-foreground">关闭</Button></DialogClose></span>
         <span className="ms-auto" role={opening ? "status" : undefined}>{opening ? "正在准备打开…" : categoryMode ? "选择 Enter" : "打开 Enter"}</span>
       </CommandFooter>
     </CommandPopup>

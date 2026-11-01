@@ -29,8 +29,8 @@ async function expectHomeControlScale(page: Page) {
       attachment: height(".home-note-actions > button:first-child"), tag: height(".home-note-actions summary"),
       search: height(".home-search-group"), iconButton: height(".home-search button[type=submit]"), toolbar: height(".home-note-composer .quick-note-tools button"),
       title: font(".home-header h1"), section: font(".home-recent h2"), body: font(".home-document-copy strong"),
-      expectedButton: tokenPixels("--orbis-control-default-height"), expectedForm: tokenPixels("--orbis-control-form-height"), expectedCompact: tokenPixels("--orbis-control-compact-height"),
-      expectedTitle: tokenPixels("--orbis-text-page-title-size"), expectedSection: tokenPixels("--orbis-text-panel-title-size"), expectedBody: tokenPixels("--orbis-text-ui-size"),
+      expectedButton: tokenPixels("--ob-control-height-md"), expectedForm: tokenPixels("--ob-control-height-lg"), expectedCompact: tokenPixels("--ob-control-height-sm"),
+      expectedTitle: tokenPixels("--ob-text-page-title-size"), expectedSection: tokenPixels("--ob-text-panel-title-size"), expectedBody: tokenPixels("--ob-text-ui-size"),
       controls,
     };
     return result;

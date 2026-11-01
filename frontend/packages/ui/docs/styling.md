@@ -11,7 +11,7 @@
 Base UI 的 --available-width/height、--anchor-width/height、--transform-origin 是浮层定位几何，可在原语内使用；它们不属于主题变量。其他第三方主题变量仍被架构门禁拒绝。
 
 
-平台样式本身不依赖 HeroUI。应用仍在迁移的页面变量通过应用拥有的 `legacy-token-aliases.css` 单向引用平台 token，不向包内反向导入。`--ob-page-*` 仅保留这些已存在的页面状态/文案颜色以避免本次换库改版；新控件使用正常的 foreground、danger-text 等语义。画布底色、表面层级、边缘与卡片阴影使用共享的 canvas/surface-secondary/surface-edge/shadow-card 角色。
+平台样式不依赖 HeroUI。应用通过 `globals.css` 导入平台样式和应用品牌角色；通用变量直接使用 `--ob-*`，旧变量桥已移除。内容、编辑器和网格的保留样式由实际模块导入，并在领域样式清单中限定入口与根作用域。`--ob-page-*` 仅保留这些已存在的页面状态/文案颜色以避免本次换库改版；新控件使用正常的 foreground、danger-text 等语义。画布底色、表面层级、边缘与卡片阴影使用共享的 canvas/surface-secondary/surface-edge/shadow-card 角色。
 
 
 组件的 caption 使用 `text-ob-caption`（12px/18px），应用旧 caption 变量仅引用同一值，避免全局 `text-xs` 主题改写使渲染契约漂移。大头像沿用应用实际的 16px/24px。Storybook 独立加载与应用同一份本地 Inter 字体，并为 body（含 Portal）提供相同的 UI 基础排版；不导入应用页面样式来补组件契约。

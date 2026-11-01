@@ -18,6 +18,7 @@ vi.mock("./renderer", () => ({
     setElements() {}
     setSelection() {}
     setCanvasTextColor() {}
+    setCanvasChrome() {}
     setPreview(elements: unknown) { drawing.preview(elements); }
     clearPreview() { drawing.clear(); }
     destroy() {}

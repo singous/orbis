@@ -524,7 +524,7 @@ export default function CollaborativeDocumentEditorPage() {
   return <DocumentShell editorLayout breadcrumb={breadcrumb} toolbar={toolbar} notebookId={noteQuery.data?.notebook_id} activeNoteId={noteId}>
     {!provider || !initialBlocks ? <div className={pageColumnClassName}>{error ? null : <LoadingState label="正在打开文档…" variant="editor" />}</div> : <EditorLayout outlineStore={outlineStore}><article className={editorCanvasClassName}>
       <Input aria-label="文档标题" className={editorTitleClassName} placeholder="无标题" value={title} readOnly={readOnly || metadataRecovery} onChange={event => changeTitle(event.target.value)} />
-      <div className="mb-7 mt-2 flex items-center gap-2 text-xs text-[var(--muted-light)]"><span>{canEdit ? "修改自动同步，多人实时协作" : "只读访问"}</span></div>
+      <div className="mb-7 mt-2 flex items-center gap-2 text-xs text-[var(--ob-page-muted-foreground)]"><span>{canEdit ? "修改自动同步，多人实时协作" : "只读访问"}</span></div>
 
       <DocumentCopyContext.Provider value={copyPort}><TableHostContext.Provider value={tableHost}><EditorBoundary key={draftKey}><Suspense fallback={<LoadingState label="正在准备编辑…" variant="editor-body" delayMs={180} />}><TiptapEditor noteId={noteId} blocks={initialBlocks} collaborationDoc={provider.doc} readOnly={readOnly} onContentReady={handle => { contentHandle.current = handle; }} onError={setEditorError} onChange={({ blocks }) => { completeTableCopies(blocks); outlineStore.update(blocks); }} /></Suspense></EditorBoundary></TableHostContext.Provider></DocumentCopyContext.Provider>
     </article></EditorLayout>}

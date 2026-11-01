@@ -5,8 +5,8 @@
   padding: var(--ob-quick-note-editor-padding);
   overflow: auto;
   outline: none;
-  font-size: var(--orbis-text-ui-size);
-  line-height: var(--orbis-prose-body-leading);
+  font-size: var(--ob-text-ui-size);
+  line-height: var(--ob-prose-body-leading);
   overflow-wrap: anywhere;
 }
 .quick-note-content .tiptap p.is-editor-empty:first-child::before { color: var(--ob-page-muted-foreground); content: attr(data-placeholder); float: left; height: 0; pointer-events: none; }

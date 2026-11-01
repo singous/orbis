@@ -1,10 +1,9 @@
 import { ArrowLeft, Maximize2, RotateCcw } from "@orbis/ui/icons";
 import { cn } from "@orbis/ui/cn";
-import { createPortal } from "react-dom";
+import { Portal } from "@orbis/ui/portal";
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { ActionButton } from "./ActionButton";
 import { Tooltip } from "./Tooltip";
-import "./embedded-surface.css";
 
 const MIN_HEIGHT = 220;
 const MAX_HEIGHT = 960;
@@ -83,7 +82,7 @@ export function EmbeddedSurface({
   useLayoutEffect(() => () => host.remove(), [host]);
 
   return <div ref={placeholder} className="embed-placeholder relative my-4 min-w-0" style={{ height }} data-orbis-embedded-editor>
-    {createPortal(<section
+    <Portal container={host}><section
       ref={surface}
       className={cn("embed-surface flex min-w-0 flex-col bg-ob-card text-sm text-ob-foreground", `embed-${kind}`, expanded ? "is-expanded fixed inset-0 z-[calc(var(--ob-z-dialog)-1)] isolate h-dvh rounded-none border-0 border-none border-current" : "relative rounded-ob-md border border-ob-border in-[.workspace-shell]:border-ob-workspace-outline focus-within:border-ob-ring")}
       style={expanded ? undefined : { height }}
@@ -140,6 +139,6 @@ export function EmbeddedSurface({
         ><span className="h-1 w-12 rounded-ob-sm bg-ob-border in-[.workspace-shell]:bg-ob-workspace-outline group-hover:bg-(--ob-page-muted-foreground)" /></div>
         {customHeight !== null && <Tooltip label="恢复默认高度"><ActionButton aria-label="恢复默认高度" onPress={() => changeHeight(null)}><RotateCcw size={13} /></ActionButton></Tooltip>}
       </footer>}
-    </section>, host)}
+    </section></Portal>
   </div>;
 }

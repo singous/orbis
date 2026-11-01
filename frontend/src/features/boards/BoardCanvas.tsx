@@ -5,6 +5,7 @@ import { BoardConnectionPorts } from "./BoardConnectionPorts";
 import { BoardMindmapControls } from "./BoardMindmapControls";
 import { selectedBounds } from "./selection-geometry";
 import { BoardRenderer, type Camera } from "./renderer";
+import { boardCanvasChrome, observeBoardAppearance } from "./canvas-appearance";
 import { elementBounds, portPosition, unionBounds } from "./geometry";
 import {
   elementPatch,
@@ -115,6 +116,7 @@ export function BoardCanvas(props: Props) {
   const space = useRef(false),
     clipboard = useRef<Element[]>([]);
   useEffect(() => {
+    const appearance = getComputedStyle(container.current!);
     const renderer = new BoardRenderer(
       surface.current!,
       {
@@ -384,6 +386,7 @@ export function BoardCanvas(props: Props) {
         },
         zoom: (camera) => live.current.onCamera(camera),
       },
+      boardCanvasChrome(appearance),
       (id) =>
         live.current.resolveImage
           ? live.current.resolveImage(id)
@@ -392,17 +395,16 @@ export function BoardCanvas(props: Props) {
     props.rendererRef.current = renderer;
     renderer.setCamera(live.current.camera);
     renderer.setElements(live.current.elements);
-    const syncCanvasText = () => {
-      const color = getComputedStyle(container.current!).getPropertyValue("--board-canvas-text").trim();
+    const syncAppearance = (style: CSSStyleDeclaration) => {
+      const color = style.getPropertyValue("--board-canvas-text").trim();
       if (color) renderer.setCanvasTextColor(color);
+      renderer.setCanvasChrome(boardCanvasChrome(style));
     };
-    const appearanceObserver = new MutationObserver(syncCanvasText);
-    appearanceObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-    if (container.current?.parentElement) appearanceObserver.observe(container.current.parentElement, { attributes: true, attributeFilter: ["style"] });
-    syncCanvasText();
+    syncAppearance(appearance);
+    const stopAppearance = observeBoardAppearance(container.current!, syncAppearance);
     return () => {
       previewOwner.current++;
-      appearanceObserver.disconnect();
+      stopAppearance();
       renderer.destroy();
       props.rendererRef.current = null;
     };

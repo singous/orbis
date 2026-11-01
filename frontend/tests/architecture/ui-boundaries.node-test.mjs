@@ -66,6 +66,14 @@ test("reader prose and local theme exceptions cannot admit ordinary chrome rules
   const entry = { file: "src/Reader.tsx", detail: "./reader.css", maxOccurrences: 1, scope: ".reader", reason: "Reader content", contentScope: ".document-prose" };
   const sources = new Map([["src/reader.css", ":where(.reader) .document-prose h3 { margin: 0; } .reader .toolbar { padding: 1rem; }"]]);
   assert.deepEqual(applyDomainStylesAllowlist([], [entry], sources).map(item => item.detail), [".reader .toolbar"]);
+  sources.set("src/reader.css", '.reader[data-theme="dark"] .document-prose .callout { background: var(--ob-surface); } .reader[data-theme="dark"] .toolbar { padding: 1rem; }');
+  assert.deepEqual(applyDomainStylesAllowlist([], [entry], sources).map(item => item.detail), ['.reader[data-theme="dark"] .toolbar']);
   sources.set("src/reader.css", ".reader { --ob-reader-background: var(--ob-surface); padding: 1rem; } @media (max-width: 800px) { .reader { --ob-reader-height: 62px; } }");
   assert.deepEqual(applyDomainStylesAllowlist([], [{ ...entry, contentScope: undefined, variablesOnly: true }], sources).map(item => item.detail), ["padding"]);
+});
+
+test("domain selector lists preserve functional and quoted commas without admitting another root", () => {
+  const entry = { file: "src/Canvas.tsx", detail: "./canvas.css", maxOccurrences: 1, scope: ".canvas", reason: "Canvas hit geometry" };
+  const sources = new Map([["src/canvas.css", '.canvas .port:is(:hover, :focus-visible, .active), .canvas [data-value="a,b"] { width: 16px; } .outside { color: inherit; }']]);
+  assert.deepEqual(applyDomainStylesAllowlist([], [entry], sources).map(item => item.detail), [".outside"]);
 });

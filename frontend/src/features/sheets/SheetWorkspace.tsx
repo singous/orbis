@@ -1,3 +1,5 @@
+import { cn } from "@orbis/ui/cn";
+import { sheetActionClassName, sheetWorkspaceClassName, sheetTabClassName, sheetStatusBarClassName } from "./sheet-chrome";
 import { documentActionsMenuClassName } from "@/features/documents/document-layout";
 import { documentBreadcrumbClassName, documentHeaderActionsClassName, documentHeaderDividerClassName, documentCommentTriggerClassName } from "../documents/editor/document-chrome";
 import { releaseFeatures } from "../../shared/release-features";
@@ -66,7 +68,6 @@ import {
   type Row,
   type View,
 } from "./model";
-import "./sheets.css";
 import { SheetWorkspaceMenu, type SheetMenu } from "./SheetWorkspaceMenu";
 import { removeFieldDefinition, updateFieldDefinition } from "./definition";
 import { useSheet } from "./use-sheet";
@@ -152,7 +153,7 @@ export function SheetWorkspace({
   if (!sheet || !view)
     return (
       <LoadingShell {...(!embedded ? { loading: true } : {})}>
-        <div className="sheet-empty">
+        <div className="px-8 py-16 text-center text-(--ob-page-muted-foreground)">
           {c.meta.error ? (
             <>
 
@@ -298,7 +299,7 @@ export function SheetWorkspace({
     if (action === "filter") setSettings({ mode: "filter", anchor, fieldID: field.id });
   }
   const breadcrumb = (
-    <nav className={`${documentBreadcrumbClassName} sheet-breadcrumb`} aria-label="文档位置">
+    <nav className={cn(documentBreadcrumbClassName, "sheet-breadcrumb text-(--ob-page-muted-foreground) [&.sheet-breadcrumb]:gap-2.5 [&.sheet-breadcrumb>svg]:text-ob-primary")} aria-label="文档位置">
       <Link to={`/collections/${sheet.collection_id}`}>
         <BookOpen size={15} />
         <span>{notebook.data?.title ?? "笔记本"}</span>
@@ -307,6 +308,7 @@ export function SheetWorkspace({
       {titleEdit ? (
         <TextInput
           autoFocus
+          className="w-[min(340px,40vw)]"
           aria-label="数据表名称"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -323,7 +325,7 @@ export function SheetWorkspace({
       ) : (
         <ActionButton
           size="sm"
-          className="sheet-title"
+          className={cn(sheetActionClassName, "sheet-title max-w-[440px] justify-start overflow-hidden text-ellipsis text-ob-foreground [@media(max-width:760px)]:max-w-[200px]")}
           disabled={!canEdit}
           onClick={() => {
             setTitle(sheet.title);
@@ -367,7 +369,7 @@ export function SheetWorkspace({
           </section></DraftActions> : null;
   const actions = (
     <div className={documentHeaderActionsClassName}>{draftActions}
-      <span className="sheet-save-state">
+      <span className="flex items-center gap-[5px] whitespace-nowrap text-[12px] text-(--ob-page-muted-foreground) [@media(max-width:760px)]:hidden">
         {c.busy ? (
           "保存中…"
         ) : c.hasPending || cellDirty ? (
@@ -388,7 +390,7 @@ export function SheetWorkspace({
         /> : null)
       )}
       {releaseFeatures.documentCollaboration && <ActionButton
-        className={documentCommentTriggerClassName}
+        className={cn(sheetActionClassName, documentCommentTriggerClassName)}
         aria-label="评论"
         aria-expanded={commentsOpen}
         onClick={() => setCommentsOpen(!commentsOpen)}
@@ -397,7 +399,7 @@ export function SheetWorkspace({
         <span>评论</span>
       </ActionButton>}
       <DropdownMenu>
-        <DropdownMenuTrigger asChild><ActionButton aria-label="更多文档操作">
+        <DropdownMenuTrigger asChild><ActionButton className={cn(sheetActionClassName)} aria-label="更多文档操作">
           <MoreHorizontal size={18} />
         </ActionButton></DropdownMenuTrigger>
         <DropdownMenuContent align="end" className={documentActionsMenuClassName} aria-label="文档操作">
@@ -420,18 +422,18 @@ export function SheetWorkspace({
   );
   const content = (
     <div
-      className={`sheet-workspace${embedded ? " sheet-embedded-workspace" : ""}`}
+      className={cn(sheetWorkspaceClassName, embedded && "sheet-embedded-workspace h-full")}
     >
-      <nav className="sheet-view-tabs" aria-label="视图">
-        <div role="tablist">
+      <nav className={cn("sheet-view-tabs flex shrink-0 items-stretch gap-0 overflow-x-auto pt-1 [&>*]:shrink-0 in-[.embed-table:not(.is-expanded)]:pr-12", embedded ? "min-h-10 px-2.5" : "min-h-11 px-2 [@media(max-width:760px)]:px-3")} aria-label="视图">
+        <div className="flex items-stretch gap-0" role="tablist">
           {sheet.definition.views.map((v) => (
             <div
-              className={`sheet-tab${!activeForm && view.id === v.id ? " active" : ""}`}
+              className={cn(sheetTabClassName, !activeForm && view.id === v.id && "active border-(--ob-sheet-chrome-border) bg-(--ob-sheet-toolbar-bg)")}
               key={v.id}
             >
               {rename?.id === v.id ? (
                 <input
-                  className="sheet-tab-rename"
+                  className="w-[120px] border-b border-ob-ring bg-transparent p-[5px] outline-none"
                   aria-label="视图名称"
                   autoFocus
                   value={rename.name}
@@ -450,7 +452,7 @@ export function SheetWorkspace({
                   }}
                 />
               ) : (
-                <ActionButton
+                <ActionButton className={cn(sheetActionClassName, "text-ob-foreground [&>svg]:text-(--ob-page-muted-foreground) [&[aria-selected=true]>svg]:text-(--sheet-selection-ink)")}
                   size="sm"
                   role="tab"
                   aria-selected={!activeForm && view.id === v.id}
@@ -465,7 +467,7 @@ export function SheetWorkspace({
                 </ActionButton>
               )}
               {canEdit && (
-                <ActionButton
+                <ActionButton className={cn(sheetActionClassName, "min-w-[26px] px-[5px] pointer-coarse:min-w-(--ob-control-height-touch)")}
                   size="sm"
                   aria-label={`${v.name}操作`}
                   onClick={(e) =>
@@ -483,10 +485,10 @@ export function SheetWorkspace({
           ))}
           {releaseFeatures.sheetForms && c.forms.data?.map((f) => (
             <div
-              className={`sheet-tab${activeForm?.id === f.id ? " active" : ""}`}
+              className={cn(sheetTabClassName, activeForm?.id === f.id && "active border-(--ob-sheet-chrome-border) bg-(--ob-sheet-toolbar-bg)")}
               key={f.id}
             >
-              <ActionButton
+              <ActionButton className={cn(sheetActionClassName, "text-ob-foreground [&>svg]:text-(--ob-page-muted-foreground) [&[aria-selected=true]>svg]:text-(--sheet-selection-ink)")}
                 size="sm"
                 role="tab"
                 aria-selected={activeForm?.id === f.id}
@@ -499,7 +501,7 @@ export function SheetWorkspace({
           ))}
         </div>
         {canEdit && (
-          <ActionButton
+          <ActionButton className={cn(sheetActionClassName)}
             size="sm"
             aria-label="添加视图"
             onClick={(e) =>
@@ -509,7 +511,7 @@ export function SheetWorkspace({
             <Plus size={16} />
           </ActionButton>
         )}
-        {embedded && <span className="sheet-embed-save" role="status">{!canEdit ? "只读" : c.error ? "保存失败" : c.busy ? "保存中…" : c.hasPending || cellDirty ? "待保存" : "已保存"}</span>}
+        {embedded && <span className="ml-auto whitespace-nowrap px-2 text-[11px] text-(--ob-page-muted-foreground)" role="status">{!canEdit ? "只读" : c.error ? "保存失败" : c.busy ? "保存中…" : c.hasPending || cellDirty ? "待保存" : "已保存"}</span>}
       </nav>
       {activeForm ? (
         <SheetForms
@@ -521,7 +523,7 @@ export function SheetWorkspace({
         />
       ) : (
         <>
-          <div className="sheet-toolbar">
+          <div className={cn("sheet-toolbar flex shrink-0 items-center gap-1 border-b border-b-(--ob-sheet-chrome-border) bg-(--ob-sheet-toolbar-bg) py-1.5 whitespace-nowrap overscroll-x-contain", embedded ? "min-h-10 flex-wrap overflow-visible px-2.5" : "min-h-11 overflow-x-auto px-5 [@media(max-width:760px)]:px-3")}>
             {(
               [
                 { mode: "columns", icon: Settings2, label: "字段管理" },
@@ -539,24 +541,23 @@ export function SheetWorkspace({
                 size="sm"
                 aria-label={label}
                 disabled={!canEdit || c.busy}
-                className={
-                  (mode === "filter" && view.filters.length) ||
+                className={cn(sheetActionClassName, embedded && "min-w-[30px] px-[7px]", (mode === "filter" && view.filters.length) ||
                   (mode === "sort" && view.sorts.length) ||
                   (mode === "group" && view.group_field_id)
-                    ? "is-set"
-                    : ""
-                }
+                    ? "is-set bg-(--ob-page-accent-soft) text-ob-primary"
+                    : "")}
                 onClick={(e) =>
                   setSettings({ mode, anchor: anchorAt(e.currentTarget) })
                 }
               >
                 <Icon size={14} />
-                <span className="sheet-tool-label">{label}</span>
+                <span className={cn("sheet-tool-label", embedded && "hidden in-[.embed-surface.is-expanded]:inline")}>{label}</span>
               </ActionButton></Tooltip>
             ))}
-            <label className="sheet-search">
+            <label className={cn("flex max-w-[190px] items-center gap-[7px] rounded-lg border border-(--ob-sheet-chrome-border) px-[9px] py-[5px] text-(--ob-page-muted-foreground) focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ob-ring pointer-coarse:min-h-(--ob-control-height-touch)", embedded ? "min-w-20 flex-1" : "ml-2 min-w-[110px] shrink-0")}>
               <Search size={14} />
               <input
+                className="w-full min-w-0 bg-transparent text-[12px] text-ob-foreground outline-none"
                 aria-label="搜索记录"
                 placeholder="搜索"
                 value={search}
@@ -564,14 +565,14 @@ export function SheetWorkspace({
               />
             </label>
             {canEdit && (
-              <ActionButton size="sm" disabled={c.busy} onClick={addRecord}>
+              <ActionButton className={cn(sheetActionClassName, embedded && "min-w-[30px] px-[7px]")} size="sm" disabled={c.busy} onClick={addRecord}>
                 <Plus size={14} />
                 添加记录
               </ActionButton>
             )}
-            <span className="sheet-toolbar-spacer" />
+            <span className="sheet-toolbar-spacer flex-1" />
             {canEdit && releaseFeatures.sheetForms && (
-              <ActionButton size="sm" aria-label="生成表单" title="生成表单" onClick={() => void addView("form")}>
+              <ActionButton className={cn(sheetActionClassName, embedded && "min-w-[30px] px-[7px]")} size="sm" aria-label="生成表单" title="生成表单" onClick={() => void addView("form")}>
                 <FileInput size={14} />
                 <span className="sheet-tool-label">生成表单</span>
               </ActionButton>
@@ -642,13 +643,13 @@ export function SheetWorkspace({
             />
           )}
           {view.kind !== "grid" && (
-            <footer className="sheet-statusbar">
+            <footer className={sheetStatusBarClassName}>
               <span>
                 {c.stats.data
                   ? `${c.stats.data.total} 条记录`
                   : "正在读取记录数…"}
               </span>
-              <ActionButton size="sm" onClick={() => void c.refresh()}>
+              <ActionButton className={cn(sheetActionClassName)} size="sm" onClick={() => void c.refresh()}>
                 刷新
               </ActionButton>
             </footer>
@@ -688,10 +689,10 @@ export function SheetWorkspace({
         />
       )}
       {record && (
-        <section className="sheet-record-panel" aria-label="记录详情">
+        <section className={cn("sheet-record-panel flex-none overflow-auto border-t border-t-ob-border in-[.workspace-shell]:border-t-ob-workspace-outline px-5 py-4 [&>header]:flex [&>header]:items-center [&>header]:justify-between [&>div]:flex [&>div]:gap-6 [&>div]:py-2 [&>div>span:first-child]:w-25 [&>div>span:first-child]:text-(--ob-page-muted-foreground)", embedded ? "absolute inset-y-0 right-0 left-auto z-25 max-h-[120px] max-w-[min(400px,100%)] bg-ob-card" : "max-h-[280px]")} aria-label="记录详情">
           <header>
             <strong>记录详情</strong>
-            <ActionButton size="sm" onClick={() => setRecord(null)}>
+            <ActionButton className={cn(sheetActionClassName)} size="sm" onClick={() => setRecord(null)}>
               收起
             </ActionButton>
           </header>
@@ -723,7 +724,7 @@ export function SheetWorkspace({
       sidebar={createNotebookSidebar(sheet.collection_id, sheet.document_id)}
       contextPanel={
         commentsOpen ? (
-          <section className="sheet-comments-panel" aria-label="文档评论">
+          <section className="p-4 [&>header]:mb-4 [&>header]:flex [&>header]:items-center [&>header]:justify-between" aria-label="文档评论">
             <header>
               <strong>评论</strong>
               <ActionButton
@@ -745,7 +746,7 @@ export function SheetWorkspace({
       }
       contentLayout="document"
       sectionTitle={breadcrumb}
-      toolbar={<div className="sheet-header-actions">{actions}</div>}
+      toolbar={<div className="sheet-header-actions flex items-center gap-2">{actions}</div>}
     >
       {content}
     </WorkspaceShell>

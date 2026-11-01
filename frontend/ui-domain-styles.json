@@ -1,6 +1,106 @@
 {
   "entries": [
     {
+      "file": "src/features/quick-notes/QuickNoteEditor.tsx",
+      "detail": "../../styles/tiptap-editor.css",
+      "maxOccurrences": 1,
+      "scope": ".orbis-tiptap",
+      "reason": "The compact editor consumes the same authored rich-block/media/table typography and rendering rules; its geometry and controls remain component-owned."
+    },
+    {
+      "file": "src/features/sheets/SheetGrid.tsx",
+      "detail": "./grid.css",
+      "maxOccurrences": 1,
+      "scope": ".sheet-workspace",
+      "reason": "Virtualized grid, row/column/cell sizing, selection, drag feedback and inline editing geometry; ordinary controls belong to React owners."
+    },
+    {
+      "file": "src/features/sheets/SheetBoard.tsx",
+      "detail": "./grid.css",
+      "maxOccurrences": 1,
+      "scope": ".sheet-workspace",
+      "reason": "Board scroll/virtual-item and inline card-cell sizing under the actual workspace; card and column chrome belong to React owners."
+    },
+    {
+      "file": "src/features/sheets/CellEditor.tsx",
+      "detail": "./grid.css",
+      "maxOccurrences": 1,
+      "scope": ".sheet-workspace",
+      "reason": "Inline editor/cell coupling and visibility geometry; picker, date and option controls belong to their owners."
+    },
+    {
+      "file": "src/features/sheets/Cell.tsx",
+      "detail": "./values.css",
+      "maxOccurrences": 1,
+      "scope": ".sheet-data-theme",
+      "reason": "Readonly authored field-value typography, tag/progress/person data rendering under its actual palette boundary."
+    },
+    {
+      "file": "src/features/sheets/sheet-chrome.ts",
+      "detail": "./palette.css",
+      "maxOccurrences": 1,
+      "scope": ".sheet-data-theme",
+      "variablesOnly": true,
+      "reason": "Private field-color enum bindings to canonical nearest-theme roles; no chrome layout or control styles."
+    },
+    {
+      "file": "src/features/sheets/SheetsHome.tsx",
+      "detail": "./palette.css",
+      "maxOccurrences": 1,
+      "scope": ".sheet-data-theme",
+      "variablesOnly": true,
+      "reason": "The home root owns the same private field palette contract; all layout and actions are component-owned."
+    },
+    {
+      "file": "src/features/boards/BoardEditor.tsx",
+      "detail": "./boards.css",
+      "maxOccurrences": 1,
+      "scope": ".board-shell",
+      "reason": "Canvas/raster positioning, camera grid, selection, resize, inline text, minimap and anchored hit geometry; ordinary chrome and overlay-control visuals belong to React owners."
+    },
+    {
+      "file": "src/features/data-tables/DataTable.tsx",
+      "detail": "./grid.css",
+      "maxOccurrences": 1,
+      "scope": ".data-table",
+      "reason": "Virtualized grid/cell sizing, editing/focus coupling and grouped-row geometry; menus, cards and record forms belong to React owners."
+    },
+    {
+      "file": "src/features/data-tables/DataTableSnapshot.tsx",
+      "detail": "./grid.css",
+      "maxOccurrences": 1,
+      "scope": ".data-table",
+      "reason": "Read-only snapshot table and scroll geometry under its actual data-table root; header and pagination belong to React owners."
+    },
+    {
+      "file": "src/features/documents/editor/TiptapEditor.tsx",
+      "detail": "../../../styles/tiptap-editor.css",
+      "maxOccurrences": 1,
+      "scope": ".orbis-tiptap",
+      "reason": "Authored ProseMirror typography, tables, media and content-visibility/caret rendering; toolbar, outline and loading controls belong to their owners."
+    },
+    {
+      "file": "src/features/documents/editor/tiptap-extensions.tsx",
+      "detail": "../../../styles/document-editor.css",
+      "maxOccurrences": 1,
+      "scope": ".orbis-tiptap",
+      "reason": "Authored rich-block node-view typography, grid layout, counters and pane content; property controls and tabs belong to React owners."
+    },
+    {
+      "file": "src/features/content/ContentRenderer.tsx",
+      "detail": "../../styles/document-components.css",
+      "maxOccurrences": 1,
+      "scope": ".document-prose",
+      "reason": "Authored callout/card/step/code typography and content layout; tab and copy controls belong to React owners."
+    },
+    {
+      "file": "src/features/documents/editor/blocks/BlockControls.tsx",
+      "detail": "./block-selection.css",
+      "maxOccurrences": 1,
+      "scope": ".orbis-tiptap",
+      "reason": "ProseMirror block selection, target and drag feedback applied to authored nodes; menus, handles, drop indicators and drag-preview chrome belong to their owners."
+    },
+    {
       "file": "src/features/boards/BoardView.tsx",
       "detail": "./board-preview.css",
       "maxOccurrences": 1,

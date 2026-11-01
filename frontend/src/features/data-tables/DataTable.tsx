@@ -30,7 +30,7 @@ import {
   Table2,
   Undo2,
 } from "../../shared/ui/icons";
-import "../../styles/data-tables.css";
+import "./grid.css";
 
 export function DataTableBlock({
   blockId,

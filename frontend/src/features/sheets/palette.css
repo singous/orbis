@@ -1,0 +1,19 @@
+/* 私有字段色名同时供内联值和浮层消费；原色由最近主题的公共角色提供。 */
+.sheet-data-theme {
+  --sheet-toolbar-bg: var(--ob-sheet-toolbar-bg);
+  --sheet-record-selected: var(--ob-sheet-record-selected);
+  --sheet-selection-ink: var(--ob-sheet-selection-ink);
+  --sheet-active-border: var(--ob-sheet-active-border);
+  --sheet-green: color-mix(in oklab, var(--ob-page-success) 16%, var(--ob-surface));
+  --sheet-amber: color-mix(in oklab, var(--ob-page-warning) 16%, var(--ob-surface));
+  --sheet-blue: color-mix(in oklab, var(--ob-sheet-blue-base) 15%, var(--ob-surface));
+  --sheet-purple: color-mix(in oklab, var(--ob-primary) 14%, var(--ob-surface));
+  --sheet-pink: color-mix(in oklab, var(--ob-sheet-pink-base) 15%, var(--ob-surface));
+  --sheet-gray: var(--ob-surface-secondary);
+  --sheet-ink-gray: var(--ob-foreground);
+  --sheet-ink-blue: var(--ob-sheet-ink-blue);
+  --sheet-ink-green: var(--ob-sheet-ink-green);
+  --sheet-ink-amber: var(--ob-sheet-ink-amber);
+  --sheet-ink-purple: var(--ob-sheet-ink-purple);
+  --sheet-ink-pink: var(--ob-sheet-ink-pink);
+}

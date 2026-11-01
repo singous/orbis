@@ -1,3 +1,5 @@
+import { cn } from "@orbis/ui/cn";
+import { sheetPopoverClassName } from "./sheet-chrome";
 import {
   useEffect,
   useLayoutEffect,
@@ -5,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { createPortal } from "react-dom";
+import { Portal } from "@orbis/ui/portal";
 
 const ANCHOR_GAP = 6;
 const VIEWPORT_MARGIN = 8;
@@ -163,13 +165,12 @@ export function Popover({
       document.removeEventListener("keydown", key, true);
     };
   }, []);
-  return createPortal(
-    <div
+  return <Portal container={document.body}><div
       ref={ref}
       role="dialog"
       tabIndex={-1}
       aria-label={label}
-      className={`sheet-popover${wide ? " wide" : ""} ${className}`}
+      className={cn(sheetPopoverClassName, className, wide && "wide w-90 [@media(max-width:760px)]:w-[min(360px,calc(100vw-16px))]")}
       style={position}
       onKeyDown={(e) => {
         e.stopPropagation();
@@ -200,7 +201,5 @@ export function Popover({
       }}
     >
       {children}
-    </div>,
-    document.body,
-  );
+    </div></Portal>;
 }

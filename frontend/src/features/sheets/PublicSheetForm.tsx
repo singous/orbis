@@ -11,7 +11,6 @@ import { ActionButton } from "../../shared/ui/ActionButton";
 import { ValueEditor } from "./Cell";
 import { readPublicForm, submitPublicForm, uploadPublicFormFile } from "./api";
 import type { Value } from "./model";
-import "./sheets.css";
 
 export function PublicSheetForm() {
   const { token = "" } = useParams();

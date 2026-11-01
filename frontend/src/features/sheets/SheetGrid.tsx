@@ -1,3 +1,5 @@
+import "./grid.css";
+import { sheetActionClassName, sheetStatusBarClassName, sheetMutedClassName } from "./sheet-chrome";
 import { ConfirmAction } from "../../shared/ui/ConfirmAction";
 import { DraftActions } from "../../shared/ui/DraftActions";
 import { Button } from "../../shared/ui/Button";
@@ -827,7 +829,7 @@ export function SheetGrid({
                       style={
                         groupOption
                           ? {
-                              background: `var(--sheet-ink-${groupOption.color}, var(--text-tertiary))`,
+                              background: `var(--sheet-ink-${groupOption.color}, var(--ob-page-muted-foreground))`,
                             }
                           : undefined
                       }
@@ -1047,16 +1049,16 @@ export function SheetGrid({
         onInsert={(before, count) => { void onChange(Array.from({ length: count }, () => ({ id: newUUID(), version: 0, values: {}, ...(before ? { before_id: contextMenu.rowID } : { after_id: contextMenu.rowID }) }))).catch(onError); }}
         onDuplicate={() => { const row = currentRow(contextMenu.rowID); if (row) void onChange([duplicateRecord(row, allFields, manualOrder)]).catch(onError); }}
         onInspect={() => { const row = currentRow(contextMenu.rowID); if (row) onInspect(row); }} onDelete={menuDelete} />}
-      <div className="sheet-statusbar">
+      <div className={sheetStatusBarClassName}>
         <span>
           {total != null ? `${total} 条记录` : "正在读取记录数…"}
         </span>
-        <span className="sheet-muted">
+        <span className={sheetMutedClassName}>
           {selected.size ? `已选择 ${selected.size} 条记录` : bounds
             ? `已选择 ${(bounds.bottom - bounds.top + 1) * (bounds.right - bounds.left + 1)} 个单元格`
             : "双击单元格编辑 · 拖动选择 · 支持复制粘贴"}
         </span>
-        <ActionButton size="sm" onClick={() => void onRefresh()}>
+        <ActionButton className={sheetActionClassName} size="sm" onClick={() => void onRefresh()}>
           刷新
         </ActionButton>
       </div>

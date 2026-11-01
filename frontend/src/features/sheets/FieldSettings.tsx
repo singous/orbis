@@ -1,3 +1,5 @@
+import { cn } from "@orbis/ui/cn";
+import { sheetActionClassName, sheetCheckClassName, sheetMutedClassName } from "./sheet-chrome";
 import { reportError } from "../../shared/api/request-feedback";
 import { useState } from "react";
 import { newUUID } from "../../shared/ids";
@@ -62,13 +64,13 @@ export function FieldSettings({
       anchor={anchor}
       label="字段设置"
       wide
-      className="sheet-field-popover"
+      className="w-[380px] p-5 [&>h3]:m-0 [&>h3]:mb-4 [&>h3]:text-sm"
       onClose={() => {
         if (!busy) onClose();
       }}
     >
       <h3>字段设置</h3>
-      <div className="sheet-field-form">
+      <div className="flex flex-col gap-5 pt-6">
         <TextInput
           label="字段名称"
           aria-label="字段名称"
@@ -90,14 +92,14 @@ export function FieldSettings({
           }
         />
         {hasOptions && (
-          <section className="sheet-field-options">
-            <div className="sheet-section-label">
+          <section className="flex flex-col gap-3">
+            <div className="flex items-center justify-between font-medium">
               <span>选项</span>
-              <span className="sheet-muted">拖动或使用箭头调整顺序</span>
+              <span className={cn(sheetMutedClassName, "font-normal")}>拖动或使用箭头调整顺序</span>
             </div>
             {draft.options.map((option, index) => (
               <div
-                className="sheet-option-edit"
+                className="sheet-option-edit grid grid-cols-[16px_minmax(0,1fr)_88px_auto] items-center gap-2 [&>svg]:cursor-grab [&>svg]:text-(--ob-page-muted-foreground) [@media(max-width:760px)]:grid-cols-[16px_minmax(0,1fr)_88px] pointer-coarse:grid-cols-[16px_minmax(0,1fr)_var(--ob-control-height-touch)] pointer-coarse:[&>.orbis-select-field]:col-start-2"
                 key={option.id}
                 draggable={!busy}
                 onDragStart={(event) =>
@@ -157,10 +159,10 @@ export function FieldSettings({
                     })
                   }
                 />
-                <div className="sheet-option-actions" role="group" aria-label={`选项 ${index + 1} 操作`}>
-                  <ActionButton size="sm" aria-label={`上移选项 ${index + 1} ${option.label}`} disabled={busy || index === 0} onClick={() => moveOption(index, index - 1)}><ArrowUp size={15} /></ActionButton>
-                  <ActionButton size="sm" aria-label={`下移选项 ${index + 1} ${option.label}`} disabled={busy || index === draft.options.length - 1} onClick={() => moveOption(index, index + 1)}><ArrowDown size={15} /></ActionButton>
-                  <ActionButton
+                <div className="flex items-center gap-1 [@media(max-width:760px)]:col-[2/-1] [@media(max-width:760px)]:justify-end pointer-coarse:col-[2/-1] pointer-coarse:justify-end" role="group" aria-label={`选项 ${index + 1} 操作`}>
+                  <ActionButton className={cn(sheetActionClassName, "min-w-8")} size="sm" aria-label={`上移选项 ${index + 1} ${option.label}`} disabled={busy || index === 0} onClick={() => moveOption(index, index - 1)}><ArrowUp size={15} /></ActionButton>
+                  <ActionButton className={cn(sheetActionClassName, "min-w-8")} size="sm" aria-label={`下移选项 ${index + 1} ${option.label}`} disabled={busy || index === draft.options.length - 1} onClick={() => moveOption(index, index + 1)}><ArrowDown size={15} /></ActionButton>
+                  <ActionButton className={cn(sheetActionClassName, "min-w-8")}
                     size="sm"
                     aria-label={`删除选项 ${index + 1}`}
                     disabled={busy}
@@ -211,7 +213,7 @@ export function FieldSettings({
               disabled={busy}
               onChange={(date_format) => setDraft({ ...draft, date_format })}
             />
-            <label className="sheet-check">
+            <label className={sheetCheckClassName}>
               <input
                 type="checkbox"
                 checked={draft.include_time ?? false}
@@ -225,7 +227,7 @@ export function FieldSettings({
           </>
         )}
         {!KINDS[draft.kind].system && !KINDS[draft.kind].multiple && (
-          <label className="sheet-default-field">
+          <label className="grid gap-2 font-medium [&>.orbis-select-field]:font-normal [&>.orbis-text-input]:font-normal">
             <span>默认值</span>
             <ValueEditor
               field={draft}
@@ -235,7 +237,7 @@ export function FieldSettings({
           </label>
         )}
       </div>
-      <div className="sheet-field-actions">
+      <div className="mt-4 flex justify-end gap-2">
         <Button disabled={busy} onClick={onClose}>
           取消
         </Button>

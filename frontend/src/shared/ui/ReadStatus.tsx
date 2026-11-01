@@ -8,8 +8,8 @@ const readStatusStyles = {
   },
   reader: {
     root: "site-reader-status grid min-h-[70vh] content-center justify-items-center gap-4 bg-ob-card p-[30px] text-ob-foreground",
-    title: "m-0 text-[length:var(--orbis-prose-title-size)] font-[680]",
-    message: "m-0 text-[length:var(--orbis-prose-body-size)] text-(--ob-reader-status-muted)",
+    title: "m-0 text-[length:var(--ob-prose-title-size)] font-[680]",
+    message: "m-0 text-[length:var(--ob-prose-body-size)] text-(--ob-reader-status-muted)",
   },
 };
 

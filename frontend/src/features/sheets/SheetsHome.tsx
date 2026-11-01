@@ -1,3 +1,4 @@
+import "./palette.css";
 import { reportError } from "../../shared/api/request-feedback";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -19,7 +20,6 @@ import { DocumentShell } from "../documents/DocumentShell";
 import { useNotebooks } from "../documents/queries";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { sheetAPI } from "./api";
-import "./sheets.css";
 
 const templates = [
   { id: "", name: "空白数据表", description: "自由定义字段" },
@@ -114,8 +114,8 @@ export function SheetsHome() {
           ) : undefined
         }
       >
-        <div className="sheet-home-content">
-          <div className="sheet-home-filters">
+        <div className="sheet-data-theme text-sm text-ob-foreground">
+          <div className="mb-6 w-[220px]">
             <Select
               aria-label="筛选笔记本"
               density="compact"
@@ -127,12 +127,12 @@ export function SheetsHome() {
           {list.error ? (
             null
           ) : items.length ? (
-            <div className="sheet-home-list">
+            <div className="sheet-home-list rounded-[12px] border border-ob-surface-edge bg-ob-card px-5 [box-shadow:var(--ob-shadow-card)] empty:hidden">
               {items.map((item) => (
-                <Link key={item.id} to={`/documents/${item.document_id}`}>
+                <Link className="flex items-center gap-3 border-b border-b-ob-border py-[18px] in-[.workspace-shell]:border-b-ob-workspace-outline text-ob-foreground no-underline last:border-b-0 last:border-b-current" key={item.id} to={`/documents/${item.document_id}`}>
                   <Table2 size={18} />
                   <span>{item.title}</span>
-                  <small>
+                  <small className="ml-auto text-[12px] text-(--ob-page-muted-foreground)">
                     {new Date(item.updated_at_ms).toLocaleDateString("zh-CN", {
                       timeZone: "Asia/Shanghai",
                     })}
@@ -154,10 +154,10 @@ export function SheetsHome() {
               }
             />
           ) : (
-            <p className="sheet-muted">正在读取…</p>
+            <p className="text-[12px] text-(--ob-page-muted-foreground)">正在读取…</p>
           )}
           {list.hasNextPage && (
-            <div className="sheet-list-more">
+            <div className="mt-6 flex justify-center">
               <Button
                 size="sm"
                 loading={list.isFetchingNextPage}
@@ -195,7 +195,7 @@ export function SheetsHome() {
                 onValueChange={next => { if (next !== null) setTarget(next); }}
               />
               {!notebookOptions.length && (
-                <p className="sheet-muted">请先在文档中心创建笔记本。</p>
+                <p className="text-[12px] text-(--ob-page-muted-foreground)">请先在文档中心创建笔记本。</p>
               )}
               <span className="text-sm font-medium text-ob-muted-foreground">起始模板</span>
               <div className="grid grid-cols-2 gap-2.5">

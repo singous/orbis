@@ -1,3 +1,5 @@
+import { cn } from "@orbis/ui/cn";
+import { sheetEmbedClassName } from "./sheet-chrome";
 import { reportError } from "../../shared/api/request-feedback";
 import { useQuery } from "@tanstack/react-query";
 import { useContext, useEffect, useRef, useState } from "react";
@@ -8,7 +10,6 @@ import { TableHostContext } from "../data-tables/context";
 import { getNote } from "../documents/api";
 import { sheetAPI } from "./api";
 import { SheetWorkspace } from "./SheetWorkspace";
-import "./sheets.css";
 
 export function SheetEmbed({
   id,
@@ -66,10 +67,10 @@ export function SheetEmbed({
     if (!id && owner.data && !readOnly) void create();
   }, [id, owner.data, readOnly]);
   if (!auth)
-    return <div className="sheet-embed">请登录工作空间查看数据表。</div>;
+    return <div className={sheetEmbedClassName}>请登录工作空间查看数据表。</div>;
   if (!id)
     return (
-      <div className="sheet-embed" contentEditable={false}>
+      <div className={sheetEmbedClassName} contentEditable={false}>
         {error || owner.error?.message ? (
           <>
 
@@ -83,7 +84,7 @@ export function SheetEmbed({
       </div>
     );
   return (
-    <div className="sheet-embed sheet-embed-editor" contentEditable={false}>
+    <div className={cn(sheetEmbedClassName, "sheet-embed-editor m-0 overflow-visible border-0 border-current bg-transparent p-0")} contentEditable={false}>
       <SheetWorkspace
         key={id}
         id={id}

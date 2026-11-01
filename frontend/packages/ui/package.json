@@ -19,6 +19,7 @@
     "./icons": "./src/icons/index.tsx",
     "./dropdown-menu": "./src/dropdown-menu/index.tsx",
     "./popover": "./src/popover/index.tsx",
+    "./portal": "./src/portal/index.tsx",
     "./tooltip": "./src/tooltip/index.tsx",
     "./radio-group": "./src/radio-group/index.tsx",
     "./toast": "./src/toast/index.tsx",

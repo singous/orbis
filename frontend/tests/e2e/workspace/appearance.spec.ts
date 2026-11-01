@@ -1,3 +1,4 @@
+import { expectTokenStyles } from "../helpers/theme-probes";
 import {sessionFromPage,createCollection,createDocument} from "../helpers/api-fixtures";
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 
@@ -60,8 +61,8 @@ for (const surface of ["web", "desktop"] as const) for (const width of [1440, 39
     await page.emulateMedia({ colorScheme: "dark" });
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     await page.mouse.move(0, 0);
-    const emailGroup = page.locator('[data-slot="input-group"]').filter({ has: page.getByLabel("邮箱", { exact: true }) });
-    await expect.poll(() => emailGroup.evaluate(element => getComputedStyle(element).backgroundColor)).toBe("oklch(0.257 0 0)");
+    const email = page.getByLabel("邮箱", { exact: true });
+    await expectTokenStyles(email, { "background-color": "--ob-auth-input-background" });
   });
 }
 

@@ -1,3 +1,5 @@
+import { cn } from "@orbis/ui/cn";
+import { boardConnectionPortClassName, boardConnectionMarkClassName } from "./board-control-styles";
 import { Plus } from "@orbis/ui/icons";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { ActionButton } from "../../shared/ui/ActionButton";
@@ -161,13 +163,13 @@ export function BoardConnectionPorts(props: Props) {
       const element = props.elements.get(port.elementID)!;
       const selected = [view?.source, view?.target].some(candidate => candidate?.elementID === port.elementID && candidate.port === port.port);
       return <Tooltip key={`${port.elementID}:${port.port}`} label={view ? "拖拽到此处连接；按 Esc 取消" : "拖拽连接到其他图形"}>
-        <ActionButton className={`board-connection-port${selected ? " is-active" : ""}`} aria-label={`${element.text || "图形"} ${port.label}`} aria-pressed={selected} style={{ left: port.point.x * props.camera.zoom + props.camera.x, top: port.point.y * props.camera.zoom + props.camera.y }} onPointerDown={event => {
+        <ActionButton className={cn("board-connection-port", boardConnectionPortClassName, selected && "is-active")} aria-label={`${element.text || "图形"} ${port.label}`} aria-pressed={selected} style={{ left: port.point.x * props.camera.zoom + props.camera.x, top: port.point.y * props.camera.zoom + props.camera.y }} onPointerDown={event => {
           if (event.button !== 0) return;
           event.preventDefault();
           event.stopPropagation();
           begin(port, event.pointerId);
         }} onPress={event => { if (event.pointerType === "keyboard" || event.pointerType === "virtual") begin(port, null); }}>
-          <span className="board-connection-port-mark" aria-hidden="true"><Plus size={10} strokeWidth={2.5} /></span>
+          <span className={cn("board-connection-port-mark", boardConnectionMarkClassName)} aria-hidden="true"><Plus size={10} strokeWidth={2.5} /></span>
         </ActionButton>
       </Tooltip>;
     })}

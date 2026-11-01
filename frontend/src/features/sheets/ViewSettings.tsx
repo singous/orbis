@@ -1,3 +1,4 @@
+import { sheetSettingRowClassName, sheetActionClassName } from "./sheet-chrome";
 import { reportError } from "../../shared/api/request-feedback";
 import { useState } from "react";
 import { ActionButton } from "../../shared/ui/ActionButton";
@@ -67,11 +68,11 @@ export function ViewSettings({
       }}
       wide
     >
-      <div className="sheet-view-settings">
+      <div className="flex flex-col gap-4 p-3 [&>strong]:text-[16px] [&>strong]:font-semibold [&>p]:text-[12px] [&>p]:text-(--ob-page-muted-foreground) [&>label]:flex [&>label]:flex-col [&>label]:gap-2 [&_input:not([type=checkbox],[type=radio])]:w-full [&_input:not([type=checkbox],[type=radio])]:min-w-0 [&_input:not([type=checkbox],[type=radio])]:min-h-(--ob-control-height-sm) [&_input:not([type=checkbox],[type=radio])]:rounded-[calc(var(--ob-radius)*2)] [&_input:not([type=checkbox],[type=radio])]:border [&_input:not([type=checkbox],[type=radio])]:border-ob-border [&_input:not([type=checkbox],[type=radio])]:bg-ob-card [&_input:not([type=checkbox],[type=radio])]:px-2.5 [&_input:not([type=checkbox],[type=radio])]:py-1.5 [&_input:not([type=checkbox],[type=radio])]:text-sm [&_input:not([type=checkbox],[type=radio])]:text-ob-foreground">
         <strong>{labels[mode]}</strong>
         {mode === "height" &&
           [32, 40, 64, 96].map((height, i) => (
-            <label key={height} className="sheet-setting-row">
+            <label key={height} className={sheetSettingRowClassName}>
               <input
                 type="radio"
                 name="row-height"
@@ -100,7 +101,7 @@ export function ViewSettings({
           <>
             <p>依次按以下条件排序</p>
             {draft.sorts.map((sort, index) => (
-              <div className="sheet-setting-row" key={index}>
+              <div className={sheetSettingRowClassName} key={index}>
                 <SelectField
                   density="compact"
                   aria-label={`排序字段 ${index + 1}`}
@@ -134,7 +135,7 @@ export function ViewSettings({
                     })
                   }
                 />
-                <ActionButton
+                <ActionButton className={`${sheetActionClassName} min-w-8`}
                   size="sm"
                   aria-label="移除排序"
                   disabled={busy}
@@ -192,7 +193,7 @@ export function ViewSettings({
                     : {}),
               };
               return (
-                <div className="sheet-filter-row" key={index}>
+                <div className="flex flex-col gap-2.5 border-b border-ob-border pb-4 [&>div:first-child]:flex [&>div:first-child]:gap-2 [&>div>.orbis-select-field]:min-w-0 [&>div>.orbis-select-field]:flex-1" key={index}>
                   <div>
                     <SelectField
                       density="compact"
@@ -214,7 +215,7 @@ export function ViewSettings({
                       disabled={busy}
                       onChange={(operator) => patch({ operator })}
                     />
-                    <ActionButton
+                    <ActionButton className={sheetActionClassName}
                       size="sm"
                       aria-label="移除筛选"
                       disabled={busy}
@@ -259,7 +260,7 @@ export function ViewSettings({
             </Button>
           </>
         )}
-        <footer>
+        <footer className="flex justify-end gap-2 border-t border-ob-border pt-4">
           <Button size="sm" disabled={busy} onClick={onClose}>
             取消
           </Button>

@@ -1,4 +1,9 @@
 @theme {
+  --animate-ob-sheet-popover-enter: ob-sheet-popover-enter var(--ob-motion-popover) var(--ob-ease-out);
+  @keyframes ob-sheet-popover-enter {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
   --animate-ob-navigation-icon-select: navigation-icon-select 240ms cubic-bezier(.2, .8, .2, 1);
   @keyframes navigation-icon-select {
     0% { transform: scale(.86); }

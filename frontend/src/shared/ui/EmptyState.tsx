@@ -25,7 +25,7 @@ export function EmptyState({
         className,
       )}
     >
-      {icon ? appearance === "plain" ? icon : <div className="mb-1 grid h-12 w-12 place-items-center rounded-xl bg-ob-accent text-ob-muted-foreground">{icon}</div> : null}
+      {icon ? appearance === "plain" ? icon : <div className="mb-1 grid h-12 w-12 place-items-center rounded-ob-md bg-ob-accent text-ob-muted-foreground">{icon}</div> : null}
       {appearance === "plain" ? <h2 className="m-0 text-base font-medium text-ob-foreground">{title}</h2> : <div className="text-base font-semibold text-ob-foreground">{title}</div>}
       {description ? (
         <p className={appearance === "plain" ? "m-0 text-sm" : "max-w-sm text-sm leading-6 text-ob-muted-foreground"}>{description}</p>

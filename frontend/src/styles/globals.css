@@ -1,0 +1,41 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+@import "@orbis/ui/styles.css";
+@import "./brand-tokens.css";
+@import "./motion.css";
+@import "./scrollbars.css";
+
+@source "../../packages/ui/src";
+@source not "../../packages/ui/src/**/*.stories.tsx";
+@source not "../../packages/ui/src/**/__tests__/**";
+
+:root {
+  font-family: var(--ob-font-sans);
+  font-size: 100%;
+}
+
+@layer base {
+  *, ::before, ::after, ::backdrop, ::file-selector-button { border-color: var(--ob-border, currentColor); }
+}
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--ob-background);
+  color: var(--ob-foreground);
+  font-size: var(--ob-text-ui-size);
+  -webkit-font-smoothing: antialiased;
+  line-height: var(--ob-text-ui-leading);
+}
+
+::selection { background: var(--ob-page-accent-soft); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+}
+
+/* iOS 原生输入保持防止聚焦缩放的既有字号。 */
+@media (pointer: coarse) {
+  :is(input, textarea):not(.editor-title) { font-size: var(--ob-text-section-size); }
+}

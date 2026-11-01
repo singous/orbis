@@ -3,7 +3,7 @@ import ReactDOM from "react-dom/client";
 
 import { App } from "./app/App";
 import { initializeAppearance } from "./shared/theme/appearance";
-import "./styles/index.css";
+import "./styles/globals.css";
 import "./styles/document-prose.css";
 
 const disposeAppearance = initializeAppearance();

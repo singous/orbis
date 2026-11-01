@@ -1,85 +1,54 @@
 import { expect, test } from "@playwright/test";
+import { expectTokenStyles } from "../helpers/theme-probes";
 
 test("the supplied theme reaches rendered fields in both color schemes", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/login");
   const email = page.getByLabel("邮箱", { exact: true });
-  const emailGroup = page.locator('[data-slot="input-group"]').filter({ has: email });
+  const submit = page.getByRole("button", { name: "登录 Orbis", exact: true });
   for (const mode of ["light", "dark"] as const) {
     await page.evaluate((theme) => { document.documentElement.dataset.theme = theme; }, mode);
     await email.focus();
-    await expect.poll(() => page.locator("body").evaluate((element) => getComputedStyle(element).backgroundColor)).toBe(mode === "light" ? "oklch(0.9702 0 0)" : "oklch(0.12 0 0)");
-    const rendered = await email.evaluate(async (element) => {
+    await expect.poll(() => page.locator("body").evaluate(element => getComputedStyle(element).backgroundColor)).toBe(mode === "light" ? "oklch(0.9702 0 0)" : "oklch(0.12 0 0)");
+    await expectTokenStyles(email, {
+      color: "--ob-foreground",
+      "-webkit-text-fill-color": "--ob-foreground",
+      "background-color": "--ob-surface",
+      "border-color": "--ob-auth-input-focus-border",
+      "outline-color": "--ob-ring",
+    });
+    await expect(email).toHaveCSS("outline-style", "solid");
+    await expect(email).toHaveCSS("outline-width", "2px");
+    await expect(email).toHaveCSS("outline-offset", "2px");
+    await expectTokenStyles(submit, { "background-color": "--ob-components-button-primary-bg", color: "--ob-components-button-primary-text" });
+    const rendered = await email.evaluate(async element => {
       await document.fonts.ready;
       const field = getComputedStyle(element);
-      // CSS transitions may serialize the same color as oklab or oklch.
-      const channels = (color: string) => {
-        const canvas = document.createElement("canvas");
-        canvas.width = canvas.height = 1;
-        const context = canvas.getContext("2d")!;
-        context.fillStyle = color;
-        context.fillRect(0, 0, 1, 1);
-        return Array.from(context.getImageData(0, 0, 1, 1).data);
-      };
-      const foreground = field.getPropertyValue("-webkit-text-fill-color") || field.color;
-      const expectedForeground = field.getPropertyValue("--field-foreground");
-      const group = element.closest('[data-slot="input-group"]')!;
-      const groupStyle = getComputedStyle(group);
-      const button = document.querySelector(".auth-submit")!;
-      const buttonStyle = getComputedStyle(button);
-      // Compare resolved colors; production CSS may serialize tokens differently.
-      const probe = document.createElement("span");
-      probe.style.color = field.getPropertyValue("--focus");
-      probe.style.borderColor = field.getPropertyValue("--field-border");
-      element.parentElement!.appendChild(probe);
-      const focus = getComputedStyle(probe).color;
-      const fieldBorder = getComputedStyle(probe).borderColor;
-      probe.remove();
       return {
-        background: getComputedStyle(document.body).backgroundColor,
-        // Autofill can override color while HeroUI keeps the painted text themed.
-        fieldForeground: channels(foreground),
-        expectedForeground: channels(expectedForeground),
-        validForegroundToken: CSS.supports("color", expectedForeground),
-        groupBackground: groupStyle.backgroundColor,
-        groupRadius: parseFloat(groupStyle.borderRadius),
-        groupHeight: group.getBoundingClientRect().height,
-        groupFocusShadow: groupStyle.boxShadow,
-        buttonRadius: parseFloat(buttonStyle.borderRadius),
-        buttonHeight: button.getBoundingClientRect().height,
-        buttonBackground: buttonStyle.backgroundColor,
-        buttonForeground: buttonStyle.color,
-        focus,
-        fieldBorder,
-        outline: field.outlineStyle,
+        height: element.getBoundingClientRect().height,
+        radius: parseFloat(field.borderRadius),
         font: field.fontFamily,
-        loadedInter: Array.from(document.fonts).some((font) => font.family.includes("Inter Variable") && font.status === "loaded"),
+        loadedInter: Array.from(document.fonts).some(font => font.family.includes("Inter Variable") && font.status === "loaded"),
       };
     });
-    expect(rendered.background).toBe(mode === "light" ? "oklch(0.9702 0 0)" : "oklch(0.12 0 0)");
-    expect(rendered.validForegroundToken).toBe(true);
-    expect(rendered.fieldForeground).toEqual(rendered.expectedForeground);
-    expect(rendered.groupBackground).toBe(mode === "light" ? "oklch(1 0 0)" : "oklch(0.2103 0 0)");
-    expect(rendered.groupHeight).toBe(52);
-    expect(rendered.groupRadius).toBeGreaterThanOrEqual(rendered.groupHeight / 2);
-    expect(rendered.groupFocusShadow).not.toBe("none");
-    expect(rendered.buttonHeight).toBe(rendered.groupHeight);
-    expect(rendered.buttonRadius).toBeGreaterThanOrEqual(rendered.buttonHeight / 2);
-    expect(rendered.buttonBackground).toBe(mode === "light" ? "oklch(0 0 0)" : "oklch(0.9848 0 0)");
-    expect(rendered.buttonForeground).toBe(mode === "light" ? "oklch(0.9911 0 0)" : "oklch(0.15 0 0)");
-    expect(rendered.focus).toBe(mode === "light" ? "oklch(0 0 0)" : "oklch(0.9848 0 0)");
-    expect(rendered.fieldBorder).toBe("rgba(0, 0, 0, 0)");
-    expect(rendered.outline).toBe("none");
+    expect(rendered.height).toBe(52);
+    expect(rendered.radius).toBeGreaterThanOrEqual(rendered.height / 2);
+    const action = await submit.evaluate(element => ({ height: element.getBoundingClientRect().height, radius: parseFloat(getComputedStyle(element).borderRadius) }));
+    expect(action.height).toBe(rendered.height);
+    expect(action.radius).toBeGreaterThanOrEqual(action.height / 2);
     expect(rendered.font).toContain("Inter Variable");
     expect(rendered.loadedInter).toBe(true);
     await page.getByRole("heading", { name: "欢迎回到 Orbis", exact: true }).click();
     await page.mouse.move(0, 0);
-    await expect.poll(() => emailGroup.evaluate(element => getComputedStyle(element).backgroundColor)).toBe(mode === "light" ? "oklch(0.9524 0 0)" : "oklch(0.257 0 0)");
+    await expectTokenStyles(email, { "background-color": "--ob-auth-input-background" });
+    await expect(email).toHaveCSS("border-color", "rgba(0, 0, 0, 0)");
+    await email.hover();
+    await expectTokenStyles(email, { "background-color": "--ob-accent-surface" });
   }
 });
 
 
-test("workbench action and field shapes follow HeroUI theme calculations", async ({ page, request }) => {
+test("workbench action and field shapes follow Orbis theme calculations", async ({ page, request }) => {
   // Desktop retains the global header search; web uses the rail entry.
   await page.addInitScript(() => Object.assign(window, { __ORBIS_HOST__: { surface: "desktop" } }));
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -95,9 +64,9 @@ test("workbench action and field shapes follow HeroUI theme calculations", async
   await expect(createNotebook).toBeVisible();
   expect(await createNotebook.evaluate((element) => getComputedStyle(element).borderRadius)).toBe("12px");
   // A theme edit must resize the rendered action, not just change a CSS token.
-  await page.evaluate(() => document.documentElement.style.setProperty("--radius", "0.5rem"));
+  await page.evaluate(() => document.documentElement.style.setProperty("--ob-radius", "0.5rem"));
   expect(await createNotebook.evaluate((element) => getComputedStyle(element).borderRadius)).toBe("24px");
-  await page.evaluate(() => document.documentElement.style.removeProperty("--radius"));
+  await page.evaluate(() => document.documentElement.style.removeProperty("--ob-radius"));
   expect(await page.getByRole("button", { name: "全局搜索", exact: true }).evaluate((element) => getComputedStyle(element).borderRadius)).toBe("8px");
   await page.goto("/sites");
   await page.getByRole("button", { name: "创建站点", exact: true }).click();
@@ -108,9 +77,9 @@ test("workbench action and field shapes follow HeroUI theme calculations", async
     await expect.poll(() => cancel.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe(mode === "light" ? "oklch(0.94 0 0)" : "oklch(0.274 0 0)");
     expect(await cancel.evaluate((element) => getComputedStyle(element).borderRadius)).toBe("12px");
     expect(await dialog.evaluate((element) => getComputedStyle(element).borderRadius)).toBe("12px");
-    const radio = dialog.locator('[data-slot="radio-control"]').first();
+    const radio = dialog.getByRole("radiogroup", { name: "内容来源方式", exact: true }).getByRole("radio", { name: "关联笔记本", exact: true });
     await expect(radio).toBeVisible();
-    expect(await radio.evaluate((element) => getComputedStyle(element).borderRadius)).toBe("4px");
+    await expectTokenStyles(radio, { "border-radius": "--ob-radius-md" });
     const create = dialog.getByRole("button", { name: "创建站点", exact: true });
     expect(await create.evaluate((element) => getComputedStyle(element).borderRadius)).toBe("12px");
   }

@@ -93,7 +93,7 @@ function BoardColumn({
   return (
     <section
       ref={element}
-      className="dt-board-column"
+      className="min-h-[260px] flex-[0_0_250px]"
       aria-label={group.name}
       onDragOver={(event) => {
         if (!host.readOnly) event.preventDefault();
@@ -107,17 +107,17 @@ function BoardColumn({
           onMove(recordId, group.id);
       }}
     >
-      <header>
-        <span className="dt-board-dot" />
+      <header className="flex items-center gap-2 px-0.5 pt-1 pb-3 text-[12px]">
+        <span className="size-[7px] rounded-[50%] bg-ob-primary" />
         <strong>{group.name}</strong>
-        <span>{group.count}</span>
+        <span className="ml-auto text-(--ob-page-muted-foreground) tabular-nums">{group.count}</span>
       </header>
 
-      <div className="dt-board-cards" aria-busy={loading}>
+      <div className="flex max-h-[390px] flex-col gap-[9px] overflow-auto" aria-busy={loading}>
         {page?.records.map((record) => (
           <button
             type="button"
-            className="dt-board-card"
+            className="flex flex-col gap-[9px] rounded-[7px] border border-ob-border bg-ob-card p-3 text-left text-inherit [box-shadow:var(--ob-shadow-table-card)] focus-visible:outline-2 focus-visible:outline-ob-primary"
             draggable={!host.readOnly}
             onDragStart={(event) =>
               event.dataTransfer.setData(
@@ -135,7 +135,7 @@ function BoardColumn({
                 : "记录"}
             </strong>
             {fields.slice(1, 4).map((field) => (
-              <span className="dt-card-field" key={field.id}>
+              <span className="flex justify-between gap-2.5 text-[11px] text-(--ob-page-muted-foreground)" key={field.id}>
                 <span>{field.name}</span>
                 {cellText(field, record.values[field.id]) || "—"}
               </span>
@@ -183,7 +183,7 @@ export function TableBoard(props: {
       </div>
     );
   return (
-    <div className="dt-board [.embed-content>.data-table_&]:min-h-0 [.embed-content>.data-table_&]:flex-1 [.embed-content>.data-table_&]:overflow-auto">
+    <div className="dt-board flex max-h-[540px] gap-3.5 overflow-auto bg-ob-surface-secondary p-4 [.embed-content>.data-table_&]:min-h-0 [.embed-content>.data-table_&]:flex-1 [.embed-content>.data-table_&]:overflow-auto">
       {props.page.groups.map((group) => (
         <BoardColumn
           key={`${props.view.id}:${group.id ?? "empty"}`}

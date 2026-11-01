@@ -4,6 +4,7 @@ for (const touch of [false, true]) test.describe(touch ? "touch document canvas"
   test.use({ hasTouch: touch });
   for (const theme of ["light", "dark"]) test(`keeps title and content gutters in ${theme}`, async ({ page }) => {
     await page.addInitScript(theme => localStorage.setItem("orbis.appearance", theme), theme);
+    await page.routeWebSocket(url => url.pathname === "/" && url.searchParams.has("token"), () => {});
     await page.goto("/__ui");
     await page.evaluate(async () => {
       const source = await (await fetch("/src/main.tsx")).text();
@@ -42,7 +43,8 @@ for (const touch of [false, true]) test.describe(touch ? "touch document canvas"
     await page.keyboard.press("Tab");
     await expect(title).toBeFocused();
     await expect(title).toHaveCSS("outline-style", "none");
-    const contentCSS = "/src/styles/block-controls.css";
+    await host.getByTestId("document-body-preview").evaluate(element => element.classList.add("orbis-tiptap"));
+    const contentCSS = "/src/features/documents/editor/blocks/block-selection.css";
     await page.evaluate(url => import(url), contentCSS);
     await expect(title).toHaveCSS("padding-left", `${touch ? 100 : 76}px`);
     await expect(host.getByTestId("document-body-preview")).toHaveCSS("margin-left", `${touch ? 100 : 76}px`);

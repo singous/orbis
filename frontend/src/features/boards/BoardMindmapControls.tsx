@@ -1,3 +1,5 @@
+import { cn } from "@orbis/ui/cn";
+import { boardMindmapControlClassName } from "./board-control-styles";
 import { ChevronDown, ChevronRight, Plus } from "@orbis/ui/icons";
 import { useEffect, useRef, useState } from "react";
 import { ActionButton } from "../../shared/ui/ActionButton";
@@ -61,7 +63,7 @@ export function BoardMindmapControls(props: Props) {
       const label = node.text || "主题";
       return <div key={node.id} className="board-mindmap-node-controls" style={{ left, top }}>
         {descendants.length ? <Tooltip label={node.structure.collapsed ? `展开 ${descendants.length} 个子主题` : "收起子主题"}>
-          <ActionButton className="board-mindmap-toggle" aria-label={`${node.structure.collapsed ? "展开" : "收起"}“${label}”的子主题`} aria-expanded={!node.structure.collapsed} isDisabled={pending === node.id} onPointerDown={event => event.stopPropagation()} onKeyDown={event => event.stopPropagation()} onKeyUp={event => event.stopPropagation()} onPress={() => {
+          <ActionButton className={cn("board-mindmap-toggle", boardMindmapControlClassName)} aria-label={`${node.structure.collapsed ? "展开" : "收起"}“${label}”的子主题`} aria-expanded={!node.structure.collapsed} isDisabled={pending === node.id} onPointerDown={event => event.stopPropagation()} onKeyDown={event => event.stopPropagation()} onKeyUp={event => event.stopPropagation()} onPress={() => {
             try { void submit(node, toggleTopicCollapsed(node, live.current.elements)); }
             catch (error) { live.current.onError(error); }
           }}>
@@ -69,7 +71,7 @@ export function BoardMindmapControls(props: Props) {
           </ActionButton>
         </Tooltip> : null}
         {selectedID === node.id ? <Tooltip label="添加子主题（Tab）">
-          <ActionButton className="board-mindmap-add" aria-label={`为“${label}”添加子主题`} isDisabled={pending === node.id} style={{ left: descendants.length ? "var(--board-mindmap-control-spacing)" : 0 }} onPointerDown={event => event.stopPropagation()} onKeyDown={event => event.stopPropagation()} onKeyUp={event => event.stopPropagation()} onPress={() => {
+          <ActionButton className={cn("board-mindmap-add", boardMindmapControlClassName)} aria-label={`为“${label}”添加子主题`} isDisabled={pending === node.id} style={{ left: descendants.length ? "var(--board-mindmap-control-spacing)" : 0 }} onPointerDown={event => event.stopPropagation()} onKeyDown={event => event.stopPropagation()} onKeyUp={event => event.stopPropagation()} onPress={() => {
             try {
               const current = live.current.elements.get(node.id);
               if (!current) return;

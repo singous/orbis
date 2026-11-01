@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } fr
 import { SIDEBAR_MIN_WIDTH } from "./use-sidebar-resize";
 
 const KEYBOARD_RESIZE_STEP = 16;
+const DOCUMENT_RESIZE_CLASSES = ["workspace-resizing", "cursor-col-resize!", "select-none!", "[&_*]:cursor-col-resize!", "[&_*]:select-none!"];
 
 type Props = {
   label?: string;
@@ -24,7 +25,7 @@ export function SidebarResizeHandle({ width, maximum, preview, commit, reset, be
     const current = session.current;
     if (!current) return;
     session.current = null;
-    document.documentElement.classList.remove("workspace-resizing");
+    document.documentElement.classList.remove(...DOCUMENT_RESIZE_CLASSES);
     setDragging(false);
     if (accept) commit(current.latestWidth); else current.restore();
     if (current.target.hasPointerCapture(current.pointerId)) current.target.releasePointerCapture(current.pointerId);
@@ -36,7 +37,7 @@ export function SidebarResizeHandle({ width, maximum, preview, commit, reset, be
       if (!current) return;
       session.current = null;
       current.restore();
-      document.documentElement.classList.remove("workspace-resizing");
+      document.documentElement.classList.remove(...DOCUMENT_RESIZE_CLASSES);
       setDragging(false);
       if (current.target.hasPointerCapture(current.pointerId)) current.target.releasePointerCapture(current.pointerId);
     };
@@ -51,7 +52,7 @@ export function SidebarResizeHandle({ width, maximum, preview, commit, reset, be
     event.currentTarget.focus({ preventScroll: true });
     event.currentTarget.setPointerCapture(event.pointerId);
     session.current = { pointerId: event.pointerId, startX: event.clientX, startWidth: width, latestWidth: width, target: event.currentTarget, restore: begin() };
-    document.documentElement.classList.add("workspace-resizing");
+    document.documentElement.classList.add(...DOCUMENT_RESIZE_CLASSES);
     setDragging(true);
   }
   function move(event: PointerEvent<HTMLDivElement>) {

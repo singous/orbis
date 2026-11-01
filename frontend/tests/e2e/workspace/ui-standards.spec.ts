@@ -28,7 +28,7 @@ test("notebook icon and color choices expose a visible keyboard focus ring", asy
     await group.getByRole("radio").first().focus();
     await page.keyboard.press("ArrowRight");
     await expect(group.getByRole("radio").nth(1)).toBeFocused();
-    const focused = group.locator('[data-slot="radio-content"][data-focus-visible="true"]');
+    const focused = group.getByRole("radio").nth(1);
     await expect(focused).toHaveCSS("outline-style", "solid");
     await expect(focused).toHaveCSS("outline-width", "2px");
   }
@@ -42,8 +42,7 @@ test("a selector inside a dialog remains clickable above its backdrop", async ({
   await openWithSession(page, session, "/sites");
   await page.getByRole("button", { name: "创建站点", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "创建文档站点", exact: true });
-  const field = dialog.locator(".orbis-select-field").filter({ has: page.getByText("站点场景", { exact: true }) });
-  const trigger = field.getByRole("button");
+  const trigger = dialog.getByRole("combobox", { name: "站点场景", exact: true });
   await trigger.click();
   const option = page.getByRole("listbox").getByRole("option").last();
   const label = await option.innerText();
@@ -76,7 +75,7 @@ test.describe("touch controls", () => {
       await page.getByRole("menuitem", { name: "编辑笔记本", exact: true }).tap();
       const dialog = page.getByRole("dialog", { name: "编辑笔记本", exact: true });
       await expect(dialog).toBeVisible();
-      const choices = await dialog.locator('.notebook-icon-picker [data-slot="radio-content"]').evaluateAll(elements => elements.map(element => {
+      const choices = await dialog.getByRole("radiogroup").getByRole("radio").evaluateAll(elements => elements.map(element => {
         const bounds = element.getBoundingClientRect();
         return { width: bounds.width, height: bounds.height };
       }));
@@ -86,10 +85,10 @@ test.describe("touch controls", () => {
         expect(choice.height).toBeGreaterThanOrEqual(44);
       }
       const color = dialog.getByRole("radiogroup", { name: "图标颜色", exact: true }).getByRole("radio").nth(2);
-      await dialog.locator(".notebook-icon-color-choice").nth(2).tap({ position: { x: 3, y: 3 } });
+      await color.tap({ position: { x: 3, y: 3 } });
       await expect(color).toBeChecked();
       const icon = dialog.getByRole("radiogroup", { name: "预设图标", exact: true }).getByRole("radio").nth(1);
-      await dialog.locator(".notebook-icon-choice").nth(1).tap();
+      await icon.tap();
       await expect(icon).toBeChecked();
       expect(await dialog.evaluate(element => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(1);
       expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);

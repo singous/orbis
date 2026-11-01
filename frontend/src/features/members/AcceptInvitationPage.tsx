@@ -1,3 +1,4 @@
+import { memberEntryStyles } from "./member-entry-styles";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Check, UserPlus } from "../../shared/ui/icons";
 import { type FormEvent, useEffect, useRef, useState } from "react";
@@ -58,21 +59,21 @@ function InvitationSession({ invitationToken }: { invitationToken: string }) {
   }
 
   return (
-    <main className="orbis-auth-layout grid min-h-screen place-items-center bg-[var(--surface-app)] p-5">
-      <section className="orbis-auth-card w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--surface-content)] p-7 shadow-[var(--shadow-pop)]">
-        <div className="mb-6 grid h-12 w-12 place-items-center rounded-2xl bg-[var(--surface-inverse)] text-[var(--text-oninverse)]">
+    <main className={memberEntryStyles.layout}>
+      <section className={memberEntryStyles.card}>
+        <div className={memberEntryStyles.icon}>
           {accept.isSuccess ? <Check aria-hidden="true" size={20} /> : <UserPlus aria-hidden="true" size={20} />}
         </div>
         {accept.isSuccess ? (
           <>
-            <h1 className="text-2xl font-semibold tracking-[-0.035em]">已加入工作空间</h1>
-            <p className="mt-3 text-sm leading-6 text-[var(--muted)]">成员身份已激活。请登录后进入 Orbis 云文档。</p>
+            <h1 className={memberEntryStyles.heading}>已加入工作空间</h1>
+            <p className={memberEntryStyles.description}>成员身份已激活。请登录后进入 Orbis 云文档。</p>
             <Link to={auth ? "/documents" : "/login"} className={`${buttonVariants({ variant: "primary" })} mt-6 w-full`}>{auth ? "进入文档中心" : "前往登录"}</Link>
           </>
         ) : (
           <>
-            <h1 className="text-2xl font-semibold tracking-[-0.035em]">接受成员邀请</h1>
-            <p className="mt-3 text-sm leading-6 text-[var(--muted)]">{auth ? "使用当前登录账号确认加入受邀工作空间。" : "首次加入需要设置显示名称和密码。已有账号请先登录，再重新打开邀请链接。"}</p>
+            <h1 className={memberEntryStyles.heading}>接受成员邀请</h1>
+            <p className={memberEntryStyles.description}>{auth ? "使用当前登录账号确认加入受邀工作空间。" : "首次加入需要设置显示名称和密码。已有账号请先登录，再重新打开邀请链接。"}</p>
             <form className="mt-6 grid gap-4" onSubmit={submit}>
               {inspection.data ? <p>工作空间：{inspection.data.workspace_name} · {inspection.data.email}</p> : null}
 
@@ -81,7 +82,7 @@ function InvitationSession({ invitationToken }: { invitationToken: string }) {
 
               <Button type="submit" variant="primary" className="mt-2 w-full" disabled={!invitationToken || inspection.isPending || inspection.isError || (!auth && Boolean(inspection.data?.account_exists)) || accept.isPending}>确认加入</Button>
             </form>
-            <div className="mt-5 text-center text-xs text-[var(--muted)]"><Link className="font-semibold text-[var(--text-primary)]" to="/login">返回登录</Link></div>
+            <div className="mt-5 text-center text-xs text-(--ob-page-muted-foreground)"><Link className="font-semibold text-ob-foreground" to="/login">返回登录</Link></div>
           </>
         )}
       </section>

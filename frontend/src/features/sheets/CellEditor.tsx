@@ -1,3 +1,6 @@
+import "./grid.css";
+import { cn } from "@orbis/ui/cn";
+import { sheetActionClassName, sheetMutedClassName } from "./sheet-chrome";
 import { reportError } from "../../shared/api/request-feedback";
 import {
   CalendarDays,
@@ -108,13 +111,13 @@ export function CellEditor({
           <div className="sheet-inline-value">
             <CellValue field={field} value={value} />
             {value == null && (
-              <span className="sheet-muted">
+              <span className={sheetMutedClassName}>
                 {field.kind === "datetime" ? "请选择日期" : "请选择"}
               </span>
             )}
           </div>
           <button
-            className="sheet-cell-picker"
+            className="sheet-cell-picker rounded-[4px] border-0 border-current bg-transparent text-(--ob-page-muted-foreground) hover:bg-(--ob-item-hover-bg) focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ob-ring"
             aria-label={`选择${field.name}`}
             onClick={() => setAnchor(anchorAt(host.current!))}
           >
@@ -163,7 +166,7 @@ export function CellEditor({
             void commit(undefined, backward ? "previous" : "next");
           }}
           label={`${field.name}选择`}
-          className="sheet-cell-picker-popover"
+          className="sheet-cell-picker-popover w-75 p-2.5 animate-none pointer-coarse:w-90"
           onClose={() => {
             if (!creating) void commit();
           }}
@@ -185,7 +188,7 @@ export function CellEditor({
             <>
               <input
                 autoFocus
-                className="sheet-option-search"
+                className="mb-1.5 w-full min-h-(--ob-control-height-lg) border-0 border-b border-current border-b-ob-border bg-transparent p-2 text-ob-foreground outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ob-ring pointer-coarse:min-h-(--ob-control-height-touch)"
                 aria-label={`搜索${field.name}选项`}
                 placeholder={onCreateOption ? "可搜索或新建选项" : "搜索选项"}
                 value={search}
@@ -205,7 +208,7 @@ export function CellEditor({
                 }}
               />
               <div
-                className="sheet-option-list"
+                className="max-h-60 overflow-auto"
                 role="listbox"
                 aria-label={`${field.name}选项`}
                 aria-multiselectable={multiple || undefined}
@@ -234,6 +237,7 @@ export function CellEditor({
                     : value === option.id;
                   return (
                     <button
+                      className="flex min-h-(--ob-control-height-md) w-full items-center justify-between rounded-md px-[9px] py-1.5 hover:bg-(--ob-item-hover-bg) focus-visible:bg-(--ob-item-hover-bg) focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ob-ring pointer-coarse:min-h-(--ob-control-height-touch)"
                       role="option"
                       aria-selected={selected}
                       key={option.id}
@@ -246,7 +250,7 @@ export function CellEditor({
                           className="sheet-tag"
                           style={{
                             background: `var(--sheet-${option.color})`,
-                            color: `var(--sheet-ink-${option.color}, var(--text-primary))`,
+                            color: `var(--sheet-ink-${option.color}, var(--ob-foreground))`,
                           }}
                         >
                           {option.label}
@@ -257,13 +261,13 @@ export function CellEditor({
                   );
                 })}
                 {!options.length && (
-                  <p className="sheet-muted">没有匹配的选项</p>
+                  <p className={sheetMutedClassName}>没有匹配的选项</p>
                 )}
               </div>
               {onCreateOption &&
                 search.trim() &&
                 !field.options.some((o) => o.label === search.trim()) && (
-                  <ActionButton
+                  <ActionButton className={sheetActionClassName}
                     size="sm"
                     disabled={creating}
                     onClick={async () => {
@@ -284,7 +288,7 @@ export function CellEditor({
                   </ActionButton>
                 )}
               {value != null && (
-                <ActionButton size="sm" onClick={() => void commit(null)}>
+                <ActionButton className={sheetActionClassName} size="sm" onClick={() => void commit(null)}>
                   清空
                 </ActionButton>
               )}
@@ -328,8 +332,8 @@ function DatePicker({
   }
   return (
     <div className="sheet-date-picker">
-      <header>
-        <ActionButton
+      <header className="flex items-center justify-between p-1">
+        <ActionButton className={cn(sheetActionClassName, "min-w-8")}
           size="sm"
           aria-label="上个月"
           onClick={() => setMonth(new Date(Date.UTC(year, index - 1, 1)))}
@@ -339,7 +343,7 @@ function DatePicker({
         <strong>
           {year} 年 {index + 1} 月
         </strong>
-        <ActionButton
+        <ActionButton className={cn(sheetActionClassName, "min-w-8")}
           size="sm"
           aria-label="下个月"
           onClick={() => setMonth(new Date(Date.UTC(year, index + 1, 1)))}
@@ -347,9 +351,9 @@ function DatePicker({
           <ChevronRight size={16} />
         </ActionButton>
       </header>
-      <div className="sheet-calendar-grid">
+      <div className="grid grid-cols-7 gap-[3px] text-center">
         {["一", "二", "三", "四", "五", "六", "日"].map((day) => (
-          <span key={day}>{day}</span>
+          <span className="py-2.5 text-(--ob-page-muted-foreground)" key={day}>{day}</span>
         ))}
         {days.map((day) => (
           <button
@@ -360,7 +364,7 @@ function DatePicker({
               day.toISOString().slice(0, 10) ===
                 current.toISOString().slice(0, 10)
             }
-            className={day.getUTCMonth() === index ? "" : "sheet-muted"}
+            className={cn("h-(--ob-control-height-sm) rounded-md hover:bg-(--ob-item-hover-bg) aria-pressed:bg-ob-primary aria-pressed:text-ob-primary-foreground focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ob-ring pointer-coarse:h-(--ob-control-height-touch)", day.getUTCMonth() !== index && "text-[12px] text-(--ob-page-muted-foreground)")}
             onClick={() => pick(day)}
           >
             {day.getUTCDate()}
@@ -375,8 +379,8 @@ function DatePicker({
           onChange={(e) => setTime(e.target.value || "00:00")}
         />
       )}
-      <footer>
-        <ActionButton
+      <footer className="mt-2 flex items-center justify-between border-t border-t-ob-border p-1">
+        <ActionButton className={sheetActionClassName}
           size="sm"
           onClick={() =>
             pick(new Date(Date.now() + BUSINESS_TIMEZONE_OFFSET_MS))
@@ -384,7 +388,7 @@ function DatePicker({
         >
           今天
         </ActionButton>
-        <ActionButton size="sm" onClick={() => onChoose(null)}>
+        <ActionButton className={sheetActionClassName} size="sm" onClick={() => onChoose(null)}>
           清空日期
         </ActionButton>
       </footer>

@@ -1,0 +1,126 @@
+.data-table {
+  --dt-line: var(--ob-border);
+  --dt-bg: var(--ob-surface);
+  --dt-muted: var(--ob-page-muted-foreground);
+}
+:where(.data-table) .dt-grid-scroll {
+  height: 360px;
+  overflow: auto;
+  position: relative;
+  overscroll-behavior: contain;
+  max-width: 100%;
+}
+:where(.data-table) .dt-grid-head {
+  position: sticky;
+  top: 0;
+  height: 38px;
+  background: var(--ob-surface-secondary);
+  z-index: 3;
+  border-bottom: 1px solid var(--dt-line);
+}
+:where(.data-table) .dt-header-cell {
+  position: absolute;
+  top: 0;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  border: 0;
+  border-right: 1px solid var(--dt-line);
+  background: transparent;
+  font-weight: 500 !important;
+  text-align: left;
+  color: inherit;
+}
+:where(.data-table) .dt-header-cell span {
+  color: var(--dt-muted);
+}
+:where(.data-table) .dt-row-number {
+  position: sticky;
+  left: 0;
+  width: 44px;
+  height: 100%;
+  border: 0;
+  border-right: 1px solid var(--dt-line);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dt-muted);
+  background: var(--dt-bg);
+  font-size: 11px !important;
+  z-index: 2;
+}
+:where(.data-table) .dt-grid-body {
+  position: relative;
+  min-height: 100px;
+}
+:where(.data-table) .dt-grid-row {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-bottom: 1px solid var(--dt-line);
+}
+:where(.data-table) .dt-grid-cell {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  border-right: 1px solid var(--dt-line);
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  min-width: 0;
+}
+:where(.data-table) .dt-grid-cell:focus-within {
+  outline: 2px solid var(--ob-primary);
+  outline-offset: -2px;
+  z-index: 2;
+  background: var(--dt-bg);
+}
+:where(.data-table) .dt-grid-cell input:not([type="checkbox"]),
+:where(.data-table) .dt-grid-cell select {
+  font: inherit;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  outline: 0;
+  padding: 0;
+}
+:where(.data-table) .dt-snapshot-scroll {
+  max-height: 480px;
+  overflow: auto;
+}
+:where(.data-table).dt-snapshot table {
+  border-collapse: collapse;
+  min-width: 100%;
+  font-size: 13px;
+}
+:where(.data-table).dt-snapshot th,
+:where(.data-table).dt-snapshot td {
+  border: 1px solid var(--dt-line);
+  padding: 10px 12px;
+  white-space: pre-wrap;
+  text-align: left;
+}
+:where(.data-table).dt-snapshot th {
+  background: var(--ob-surface-secondary);
+}
+@media (max-width: 720px) {
+  :where(.data-table) .dt-grid-scroll {
+    height: 320px;
+  }
+}
+
+:where(.data-table) .dt-group-label {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 26px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--ob-surface-secondary);
+  border-bottom: 1px solid var(--dt-line);
+}

@@ -1,5 +1,5 @@
 import { cn } from "@orbis/ui/cn";
-import { editorMenuItemClassName, editorToolbarControlClassName } from "./editor-control-styles";
+import { editorMenuItemClassName, editorMoreMenuItemClassName, editorToolbarClassName, editorToolbarDividerClassName, editorInsertionMenuClassName, editorMoreMenuClassName, editorToolbarControlClassName } from "./editor-control-styles";
 import { isEmbeddedInput } from "./blocks/block-selection";
 import { releaseFeatures } from "../../../shared/release-features";
 import { blockBoardHistory } from "./blocks/board-removal";
@@ -10,7 +10,7 @@ import { ActionButton } from "../../../shared/ui/ActionButton";
 import { SelectField } from "../../../shared/ui/SelectField";
 import { Toolbar } from "@orbis/ui/toolbar";
 import { Toggle } from "@orbis/ui/toggle";
-import { createPortal } from "react-dom";
+import { Portal } from "@orbis/ui/portal";
 import { useEditorToolbarHost } from "./EditorToolbarHost";
 import { BlockControls, requestBlockMenu } from "./blocks/BlockControls";
 import { OrbisBlockSelection, blockSelectionKey, setBlockSelection } from "./blocks/block-selection";
@@ -109,7 +109,7 @@ const COMMANDS: Command[] = [
 ];
 
 function Tool({ title, active, onClick, children }: { title: string; active?: boolean; onClick: () => void; children: ReactNode }) {
-  return <ActionButton className={cn(editorToolbarControlClassName, ["重做", "链接", "表格", "上传媒体或附件"].includes(title) && "editor-secondary-tool")} type="button" title={title} aria-label={title} aria-pressed={active} onMouseDown={(event) => event.preventDefault()} onClick={onClick}>{children}</ActionButton>;
+  return <ActionButton className={cn(editorToolbarControlClassName, ["重做", "链接", "表格", "上传媒体或附件"].includes(title) && "editor-secondary-tool [@media(max-width:700px)]:hidden")} type="button" title={title} aria-label={title} aria-pressed={active} onMouseDown={(event) => event.preventDefault()} onClick={onClick}>{children}</ActionButton>;
 }
 
 function inlineLink(editor: Editor) {
@@ -478,29 +478,29 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
     editor.view.dispatch(tr); editor.view.focus();
   }
 
-  const formatToolbar = !readOnly && editor ? <Toolbar className="orbis-tiptap-toolbar" aria-label="文档格式">
-      <SelectField density="compact" triggerClassName={editorToolbarControlClassName} aria-label="段落类型" className="editor-block-type" value={active?.h1 ? "heading:1" : active?.h2 ? "heading:2" : active?.h3 ? "heading:3" : active?.bulletList ? "bulletListItem" : active?.orderedList ? "numberedListItem" : active?.taskList ? "checkListItem" : active?.quote ? "quote" : active?.codeBlock ? "codeBlock" : "paragraph"} options={[{value:"paragraph",label:"正文"},{value:"heading:1",label:"标题 1"},{value:"heading:2",label:"标题 2"},{value:"heading:3",label:"标题 3"},{value:"bulletListItem",label:"无序列表"},{value:"numberedListItem",label:"有序列表"},{value:"checkListItem",label:"任务清单"},{value:"quote",label:"引用"},{value:"codeBlock",label:"代码块"}]} onChange={setParagraphType} />
-      <span className="orbis-tiptap-toolbar-divider" />
+  const formatToolbar = !readOnly && editor ? <Toolbar className={editorToolbarClassName} aria-label="文档格式">
+      <SelectField density="compact" triggerClassName={editorToolbarControlClassName} aria-label="段落类型" className="editor-block-type w-[104px] flex-none text-sm leading-5 [@media(max-width:700px)]:w-[85px]" value={active?.h1 ? "heading:1" : active?.h2 ? "heading:2" : active?.h3 ? "heading:3" : active?.bulletList ? "bulletListItem" : active?.orderedList ? "numberedListItem" : active?.taskList ? "checkListItem" : active?.quote ? "quote" : active?.codeBlock ? "codeBlock" : "paragraph"} options={[{value:"paragraph",label:"正文"},{value:"heading:1",label:"标题 1"},{value:"heading:2",label:"标题 2"},{value:"heading:3",label:"标题 3"},{value:"bulletListItem",label:"无序列表"},{value:"numberedListItem",label:"有序列表"},{value:"checkListItem",label:"任务清单"},{value:"quote",label:"引用"},{value:"codeBlock",label:"代码块"}]} onChange={setParagraphType} />
+      <span className={editorToolbarDividerClassName} />
       <Tool title="撤销" onClick={() => { if (!blockBoardHistory(editor)) editor.chain().focus().undo().run(); }}><Undo2 size={16} /></Tool>
       <Tool title="重做" onClick={() => { if (!blockBoardHistory(editor)) editor.chain().focus().redo().run(); }}><Redo2 size={16} /></Tool>
-      <span className="orbis-tiptap-toolbar-divider" />
-      <div className="editor-text-style-tools" role="group" aria-label="文字样式">
+      <span className={editorToolbarDividerClassName} />
+      <div className="editor-text-style-tools flex-none gap-0.5" role="group" aria-label="文字样式">
         {TEXT_MARK_TOOLS.map(({ mark, label, Icon }) => <Toggle key={mark} title={label} aria-label={label}
           pressed={Boolean(active?.[mark])} onPressedChange={() => toggleMark(mark)}
-          className={cn(editorToolbarControlClassName, mark !== "bold" && "editor-secondary-tool")}
+          className={cn(editorToolbarControlClassName, mark !== "bold" && "editor-secondary-tool [@media(max-width:700px)]:hidden")}
           onMouseDown={event => event.preventDefault()}><Icon size={16} /></Toggle>)}
       </div>
       <Tool title="链接" active={active?.link} onClick={() => inlineLink(editor)}><Link2 size={16} /></Tool>
-      <span className="orbis-tiptap-toolbar-divider" />
+      <span className={editorToolbarDividerClassName} />
       <Tool title="表格" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}><Table2 size={16} /></Tool>
       <Tool title="上传媒体或附件" onClick={() => inputRef.current?.click()}><Image size={16} /><Paperclip size={13} /></Tool>
-      <ActionButton ref={moreButtonRef} className={cn(editorToolbarControlClassName, "editor-more-tools")} aria-label="更多格式" aria-expanded={moreOpen} onClick={() => { setMenuOpen(false); setSlash(null); setMoreOpen(value => !value); }}><MoreHorizontal size={17}/></ActionButton>
-      <ActionButton ref={insertButtonRef} type="button" className={cn(editorToolbarControlClassName, "orbis-tiptap-insert")} aria-label="插入内容" aria-expanded={menuOpen} onClick={() => { setMoreOpen(false); setActiveCommand(0); setMenuOpen((value) => !value); }}><Plus size={15} />插入</ActionButton>
+      <ActionButton ref={moreButtonRef} className={cn(editorToolbarControlClassName, "editor-more-tools hidden [@media(max-width:700px)]:inline-flex")} aria-label="更多格式" aria-expanded={moreOpen} onClick={() => { setMenuOpen(false); setSlash(null); setMoreOpen(value => !value); }}><MoreHorizontal size={17}/></ActionButton>
+      <ActionButton ref={insertButtonRef} type="button" className={cn(editorToolbarControlClassName, "orbis-tiptap-insert ml-auto rounded-none border-l border-ob-border [border-left-style:solid] pl-3 [font:600_var(--ob-text-ui-size)/var(--ob-text-ui-leading)_var(--ob-font-sans)] in-[.workspace-shell]:border-ob-workspace-outline [@media(max-width:700px)]:ml-0.5")} aria-label="插入内容" aria-expanded={menuOpen} onClick={() => { setMoreOpen(false); setActiveCommand(0); setMenuOpen((value) => !value); }}><Plus size={15} />插入</ActionButton>
       <input ref={inputRef} type="file" aria-label="选择上传文件" hidden onChange={(event) => void upload(event)} />
     </Toolbar> : null;
 
   const visible = slash ? COMMANDS.filter((item) => `${item.label} ${item.keywords}`.toLocaleLowerCase().includes(slash.query)) : COMMANDS;
-  return <EditorReadOnlyContext.Provider value={readOnly}><FileContentContext.Provider value={files}><div className="orbis-tiptap document-prose" data-testid="orbis-tiptap-editor" onKeyDownCapture={(event) => {
+  return <EditorReadOnlyContext.Provider value={readOnly}><FileContentContext.Provider value={files}><div className="orbis-tiptap document-prose relative min-w-0" data-testid="orbis-tiptap-editor" onKeyDownCapture={(event) => {
     if (moreOpen) { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); setMoreOpen(false); moreButtonRef.current?.focus(); } return; }
     if (readOnly || (!menuOpen && !slash)) return;
     if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); setMenuOpen(false); setSlash(null); return; }
@@ -509,8 +509,8 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
       setActiveCommand((index) => (index + (event.key === "ArrowDown" ? 1 : -1) + visible.length) % Math.max(visible.length, 1));
     } else if (event.key === "Enter" && visible.length) { event.preventDefault(); event.stopPropagation(); run(visible[activeCommand % visible.length]); }
   }}>
-    {toolbarHost ? createPortal(formatToolbar, toolbarHost) : formatToolbar}
-    {!readOnly && editor && moreOpen ? createPortal(<div className="editor-more-menu" role="menu" aria-label="更多格式" style={insertPosition} onKeyDown={event => {
+    {toolbarHost ? <Portal container={toolbarHost}>{formatToolbar}</Portal> : formatToolbar}
+    {!readOnly && editor && moreOpen ? <Portal container={document.body}><div className={editorMoreMenuClassName} role="menu" aria-label="更多格式" style={insertPosition} onKeyDown={event => {
       if (!["ArrowDown", "ArrowUp"].includes(event.key)) return;
       const items = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button'));
       const index = items.indexOf(document.activeElement as HTMLButtonElement);
@@ -522,9 +522,9 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
       {label:"重做", run:()=>{if(!blockBoardHistory(editor))editor.chain().focus().redo().run();}},
       {label:"表格", run:()=>editor.chain().focus().insertTable({rows:3,cols:3,withHeaderRow:true}).run()},
       {label:"上传媒体或附件", run:()=>inputRef.current?.click()},
-    ].map(item=><ActionButton className={editorMenuItemClassName} key={item.label} role="menuitem" onMouseDown={event=>event.preventDefault()} onClick={()=>{item.run();setMoreOpen(false);}}>{item.label}</ActionButton>)}</div>,document.body) : null}
+    ].map(item=><ActionButton className={editorMoreMenuItemClassName} key={item.label} role="menuitem" onMouseDown={event=>event.preventDefault()} onClick={()=>{item.run();setMoreOpen(false);}}>{item.label}</ActionButton>)}</div></Portal> : null}
 
-    {!readOnly && editor && (slash || menuOpen) ? createPortal(<div style={insertPosition} className="orbis-tiptap-menu" role="listbox" aria-label="插入内容">{visible.length ? visible.map((item, index) => <ActionButton className={editorMenuItemClassName} type="button" role="option" aria-selected={index === activeCommand % visible.length} key={item.label} onMouseDown={(event) => event.preventDefault()} onClick={() => run(item)}>{item.icon}{item.label}</ActionButton>) : <p>没有匹配的内容块</p>}</div>, document.body) : null}
+    {!readOnly && editor && (slash || menuOpen) ? <Portal container={document.body}><div style={insertPosition} className={editorInsertionMenuClassName} role="listbox" aria-label="插入内容">{visible.length ? visible.map((item, index) => <ActionButton className={editorMenuItemClassName} type="button" role="option" aria-selected={index === activeCommand % visible.length} key={item.label} onMouseDown={(event) => event.preventDefault()} onClick={() => run(item)}>{item.icon}{item.label}</ActionButton>) : <p className="mx-2 my-1 text-xs leading-[18px] text-(--ob-page-muted-foreground)">没有匹配的内容块</p>}</div></Portal> : null}
     {editor ? <BlockControls editor={editor} readOnly={readOnly} noteId={noteId} /> : null}
     <EditorContent editor={editor} aria-label="文档正文" />
   </div></FileContentContext.Provider></EditorReadOnlyContext.Provider>;

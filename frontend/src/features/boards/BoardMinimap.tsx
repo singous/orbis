@@ -1,7 +1,10 @@
+import { cn } from "@orbis/ui/cn";
+import { boardControlStyles } from "./board-control-styles";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { hiddenElements } from "./mindmap";
 import { useEffect, useMemo, useRef } from "react";
 import { unionBounds } from "./geometry";
+import { observeBoardAppearance } from "./canvas-appearance";
 import type { Element } from "./model";
 import type { BoardRenderer, Camera } from "./renderer";
 
@@ -13,11 +16,13 @@ export function BoardMinimap({
   camera,
   renderer,
   onCamera,
+  className,
 }: {
   elements: Map<string, Element>;
   camera: Camera;
   renderer: BoardRenderer | null;
   onCamera: (camera: Camera) => void;
+  className?: string;
 }) {
   const hidden = useMemo(() => hiddenElements(elements), [elements]);
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -37,21 +42,26 @@ export function BoardMinimap({
   const offsetX = (WIDTH - bounds.width * scale) / 2,
     offsetY = (HEIGHT - bounds.height * scale) / 2;
   useEffect(() => {
-    const context = canvas.current?.getContext("2d");
+    const element = canvas.current;
+    const context = element?.getContext("2d");
     if (!context) return;
-    context.clearRect(0, 0, WIDTH, HEIGHT);
-    context.fillStyle = "#d9dfe7";
-    for (const element of elements.values()) {
-      if (element.shape_type === "connector" || hidden.has(element.id))
-        continue;
-      const g = element.geometry;
-      context.fillRect(
-        offsetX + (g.x - bounds.x) * scale,
-        offsetY + (g.y - bounds.y) * scale,
-        Math.max(2, g.width * scale),
-        Math.max(2, g.height * scale),
-      );
-    }
+    const draw = (style: CSSStyleDeclaration) => {
+      context.clearRect(0, 0, WIDTH, HEIGHT);
+      context.fillStyle = style.getPropertyValue("--ob-board-minimap-shape").trim();
+      for (const element of elements.values()) {
+        if (element.shape_type === "connector" || hidden.has(element.id))
+          continue;
+        const g = element.geometry;
+        context.fillRect(
+          offsetX + (g.x - bounds.x) * scale,
+          offsetY + (g.y - bounds.y) * scale,
+          Math.max(2, g.width * scale),
+          Math.max(2, g.height * scale),
+        );
+      }
+    };
+    draw(getComputedStyle(element!));
+    return observeBoardAppearance(element!, draw);
   }, [elements, hidden, bounds, scale, offsetX, offsetY]);
   if (!elements.size) return null;
   const viewport = renderer
@@ -64,7 +74,7 @@ export function BoardMinimap({
     : null;
   return (
     <ActionButton
-      className="board-minimap"
+      className={cn(boardControlStyles(), "board-minimap absolute right-3 bottom-14 z-15 block h-[66px] w-[102px] overflow-hidden border border-(--ob-board-border) bg-ob-popover p-0 [box-shadow:var(--ob-board-minimap-shadow)]", className)}
       aria-label="画板小地图，点击定位"
       onClick={(event) => {
         if (!renderer) return;

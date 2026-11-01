@@ -51,15 +51,29 @@
   --ob-page-success-soft-foreground: color-mix(in oklab, var(--ob-page-success) 80%, var(--ob-foreground) 60%);
   --ob-text-caption-size: .75rem;
   --ob-text-caption-leading: 1.125rem;
+  --ob-text-ui-size: .875rem;
+  --ob-text-ui-leading: 1.25rem;
+  --ob-text-section-size: 1rem;
+  --ob-text-section-leading: 1.5rem;
+  --ob-text-panel-title-size: 1rem;
+  --ob-text-panel-title-leading: 1.5rem;
+  --ob-text-page-title-size: 1.125rem;
+  --ob-text-page-title-leading: 1.625rem;
+  --ob-weight-body: 400;
+  --ob-weight-action: 500;
+  --ob-weight-heading: 600;
+  --ob-icon-default-size: 1.125rem;
+  --ob-space-2: .5rem;
+
   --ob-font-sans: "Inter Variable", "PingFang SC", "Microsoft YaHei", sans-serif;
   --ob-font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
   --ob-shadow-field: 0 2px 4px 0 rgb(0 0 0 / 4%), 0 1px 2px 0 rgb(0 0 0 / 6%), 0 0 1px 0 rgb(0 0 0 / 6%);
 
   --ob-radius: 0.25rem;
   --ob-radius-sm: var(--ob-radius);
-  --ob-radius-md: calc(var(--ob-radius) + 2px);
-  --ob-radius-lg: calc(var(--ob-radius) + 4px);
-  --ob-radius-xl: calc(var(--ob-radius) + 8px);
+  --ob-radius-md: calc(var(--ob-radius) * 1.5);
+  --ob-radius-lg: calc(var(--ob-radius) * 2);
+  --ob-radius-xl: calc(var(--ob-radius) * 3);
 
   --ob-control-height-sm: 2rem;
   --ob-control-height-md: 2.25rem;
@@ -133,6 +147,7 @@
   --text-ob-caption: var(--ob-text-caption-size);
   --text-ob-caption--line-height: var(--ob-text-caption-leading);
   --font-ob-sans: var(--ob-font-sans);
+  --font-ob-mono: var(--ob-font-mono);
   --color-ob-canvas: var(--ob-canvas);
   --color-ob-workspace-outline: var(--ob-workspace-outline);
   --color-ob-workspace-divider: var(--ob-workspace-divider);
@@ -177,3 +192,18 @@
 }
 
 /* 颜色差异由各主题作用域的 token 表达，不注册匹配任意深色祖先的 dark variant。 */
+
+@theme inline {
+  --text-xs: var(--ob-text-caption-size);
+  --text-xs--line-height: var(--ob-text-caption-leading);
+  --text-sm: var(--ob-text-ui-size);
+  --text-sm--line-height: var(--ob-text-ui-leading);
+  --text-base: var(--ob-text-section-size);
+  --text-base--line-height: var(--ob-text-section-leading);
+  --text-lg: var(--ob-text-panel-title-size);
+  --text-lg--line-height: var(--ob-text-panel-title-leading);
+  --text-xl: var(--ob-text-panel-title-size);
+  --text-xl--line-height: var(--ob-text-panel-title-leading);
+  --text-2xl: var(--ob-text-page-title-size);
+  --text-2xl--line-height: var(--ob-text-page-title-leading);
+}

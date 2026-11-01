@@ -1,6 +1,58 @@
 import { expect, test } from "@playwright/test";
 import { appendFileSync } from "node:fs";
 
+test("expanded content keeps its nested theme, live tokens and editor identity", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("orbis.appearance", "dark"));
+  await page.routeWebSocket(url => url.pathname === "/" && url.searchParams.has("token"), () => {});
+  await page.goto("/login");
+  await page.evaluate(async () => {
+    const source = await (await fetch("/src/main.tsx")).text();
+    const reactURL = source.match(/from\s*["']([^"']*\/react\.js[^"']*)["']/)![1];
+    const domURL = source.match(/from\s*["']([^"']*react-dom_client\.js[^"']*)["']/)![1];
+    const surfaceURL = "/src/shared/ui/EmbeddedSurface.tsx";
+    const [{ default: React }, { default: ReactDOM }, { EmbeddedSurface }] = await Promise.all([import(reactURL), import(domURL), import(surfaceURL)]);
+    const oldRoot = document.getElementById("root")!;
+    oldRoot.hidden = true;
+    oldRoot.id = "application-preview-root";
+    const host = document.createElement("div");
+    host.id = "root";
+    host.dataset.testid = "nested-theme-source";
+    host.dataset.theme = "light";
+    host.className = "bg-ob-card p-5 text-ob-foreground";
+    host.style.setProperty("--ob-surface", "#abcdef");
+    host.style.setProperty("--ob-foreground", "#123456");
+    document.body.append(host);
+    ReactDOM.createRoot(host).render(React.createElement(EmbeddedSurface, { label: "嵌套主题内容", kind: "table", surfaceKey: "nested-theme" }, React.createElement("input", { "aria-label": "嵌套草稿", defaultValue: "初稿" })));
+  });
+  const region = page.getByRole("region", { name: "嵌套主题内容", exact: true });
+  const draft = region.getByRole("textbox", { name: "嵌套草稿" });
+  await expect(region).toHaveCSS("background-color", "rgb(171, 205, 239)");
+  await expect(region).toHaveCSS("color", "rgb(18, 52, 86)");
+  await draft.fill("跨主题展开保留草稿");
+  const original = await draft.elementHandle();
+  await region.getByRole("button", { name: "全屏展开" }).click();
+  await expect(region).toHaveCSS("background-color", "rgb(171, 205, 239)");
+  await expect(region).toHaveCSS("color", "rgb(18, 52, 86)");
+  const origin = page.getByTestId("nested-theme-source");
+  await origin.evaluate(element => {
+    element.style.setProperty("--ob-surface", "#fedcba");
+    element.style.setProperty("--ob-foreground", "#654321");
+  });
+  await expect(region).toHaveCSS("background-color", "rgb(254, 220, 186)");
+  await expect(region).toHaveCSS("color", "rgb(101, 67, 33)");
+  await origin.evaluate(element => {
+    element.dataset.theme = "dark";
+    element.style.removeProperty("--ob-surface");
+    element.style.removeProperty("--ob-foreground");
+  });
+  const dark = await origin.evaluate(element => ({ background: getComputedStyle(element).backgroundColor, foreground: getComputedStyle(element).color }));
+  await expect(region).toHaveCSS("background-color", dark.background);
+  await expect(region).toHaveCSS("color", dark.foreground);
+  await region.getByRole("button", { name: "返回文档" }).click();
+  expect(await draft.evaluate((element, previous) => element === previous, original)).toBe(true);
+  await expect(draft).toHaveValue("跨主题展开保留草稿");
+});
+
 for (const theme of ["light", "dark"]) for (const kind of ["board", "table"] as const) for (const context of ["standalone", "workspace"]) {
   test(`embedded ${kind} retains layout and editor identity in ${theme} ${context}`, async ({ page }) => {
     await page.addInitScript(theme => localStorage.setItem("orbis.appearance", theme), theme);

@@ -1,9 +1,11 @@
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { CircleHelp, Shapes } from "@orbis/ui/icons";
 import { ActionButton } from "../../shared/ui/ActionButton";
 import { Dialog, DialogContent } from "../../shared/ui/Dialog";
 import { createNotebookSidebar } from "../documents/NotebookSectionMenu";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
+import { boardControlStyles } from "./board-control-styles";
+import { cn } from "@orbis/ui/cn";
 import type { Board } from "./model";
 
 type Props = {
@@ -17,8 +19,10 @@ type Props = {
 /** 画板复用笔记本目录；绘图状态和工具仍由画板编辑器管理。 */
 export function BoardShell({ board, children, actions, status, embedded }: Props) {
   const [help, setHelp] = useState(false);
-  if (embedded) return <section className="board-shell board-embedded-shell" aria-label="嵌入画板工作区">
-    <div className="board-embedded-status">{status}</div>
+  const helpButton = useRef<HTMLButtonElement>(null);
+  const shellClassName = "board-shell @container relative flex-1 min-h-0 overflow-hidden text-[13px] leading-[1.5] text-ob-foreground";
+  if (embedded) return <section className={`${shellClassName} board-embedded-shell h-full`} aria-label="嵌入画板工作区">
+    <div className="board-embedded-status pointer-events-none absolute top-3 left-3 z-20 flex items-center gap-1.5 [&_.orbis-action-button]:pointer-events-auto [&_.orbis-action-button]:bg-ob-card">{status}</div>
     {children}
   </section>;
   return (
@@ -26,18 +30,19 @@ export function BoardShell({ board, children, actions, status, embedded }: Props
       sidebar={createNotebookSidebar(board.collection_id, board.document_id)}
       contentLayout="document"
       sectionTitle={
-        <div className="board-document-heading">
-          <Shapes size={17} aria-hidden="true" />
-          <h1 title={board.title}>{board.title}</h1>
+        <div className="board-document-heading flex min-w-0 items-center gap-2.5 text-(--ob-page-muted-foreground)">
+          <Shapes size={17} aria-hidden="true" className="shrink-0 text-ob-primary" />
+          <h1 className="min-w-0 truncate text-[14px] font-semibold text-ob-foreground" title={board.title}>{board.title}</h1>
           {status}
         </div>
       }
-      toolbar={<div className="board-header-actions">{actions}</div>}
+      toolbar={<div className="board-header-actions flex items-center gap-1.5 [@media(max-width:760px)]:gap-0.5 [&>.button:not(.orbis-action-button)]:min-h-[30px] [&>.button:not(.orbis-action-button)]:border-ob-primary [&>.button:not(.orbis-action-button)]:bg-ob-primary [&>.button:not(.orbis-action-button)]:text-[12px] [&>.button:not(.orbis-action-button)]:text-ob-primary-foreground [&>.button:not(.orbis-action-button)]:[box-shadow:var(--ob-board-header-primary-shadow)] [&>.button:not(.orbis-action-button):enabled:hover]:bg-ob-primary">{actions}</div>}
     >
-      <section className="board-shell" aria-label="画板工作区">
+      <section className={shellClassName} aria-label="画板工作区">
         {children}
         <ActionButton
-          className="board-help"
+          ref={helpButton}
+          className={cn(boardControlStyles(), "board-help absolute right-3 bottom-3 z-24 border border-(--ob-board-border) bg-ob-card text-(--ob-page-muted-foreground) [box-shadow:var(--ob-shadow-panel)] enabled:hover:bg-ob-card")}
           title="快捷键帮助"
           aria-label="画板快捷键帮助"
           onClick={() => setHelp(true)}
@@ -46,8 +51,8 @@ export function BoardShell({ board, children, actions, status, embedded }: Props
         </ActionButton>
       </section>
       <Dialog open={help} onOpenChange={setHelp}>
-        <DialogContent title="画板快捷键">
-          <dl className="board-shortcuts">
+        <DialogContent title="画板快捷键" finalFocus={helpButton}>
+          <dl className="board-shortcuts grid grid-cols-2 gap-x-5 gap-y-3 [&_dt]:font-medium [&_dd]:text-(--ob-page-muted-foreground)">
             <dt>V / H / T / P / C</dt>
             <dd>选择 / 平移 / 文字 / 画笔 / 连接线</dd>
             <dt>空格 + 拖动</dt>

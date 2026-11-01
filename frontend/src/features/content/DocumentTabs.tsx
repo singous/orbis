@@ -1,4 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { Button } from "@orbis/ui/button";
+import { contentTabClassName, contentTabListClassName } from "./content-control-styles";
 
 export function DocumentTabs({ id, panels }: { id: string; panels: Array<{ title: string; content: ReactNode }> }) {
   // Published HTML owns these stable anchor IDs. Keep every panel mounted so a
@@ -32,7 +34,7 @@ export function DocumentTabs({ id, panels }: { id: string; panels: Array<{ title
   }
   if (!panels.length) return null;
   return <div className="doc-tabs">
-    <div className="doc-tabs-list" role="tablist" aria-label="内容标签">{panels.map((panel, index) => <button
+    <div className={contentTabListClassName} role="tablist" aria-label="内容标签">{panels.map((panel, index) => <Button appearance="unstyled" className={contentTabClassName}
       key={index} ref={(element) => { controls.current[index] = element; }} type="button" role="tab"
       id={id + "-tab-" + index} aria-controls={id + "-panel-" + index} aria-selected={active === index} tabIndex={active === index ? 0 : -1}
       onClick={() => choose(index)} onKeyDown={(event) => {
@@ -42,7 +44,7 @@ export function DocumentTabs({ id, panels }: { id: string; panels: Array<{ title
         if (event.key === "Home") target = 0;
         if (event.key === "End") target = panels.length - 1;
         if (target !== undefined) { event.preventDefault(); choose(target, true); }
-      }}>{panel.title}</button>)}</div>
+      }}>{panel.title}</Button>)}</div>
     {panels.map((panel, index) => <div key={index} ref={(element) => { containers.current[index] = element; }}
       id={id + "-panel-" + index} role="tabpanel" aria-labelledby={id + "-tab-" + index} hidden={active !== index} className="doc-tab-panel">{panel.content}</div>)}
   </div>;

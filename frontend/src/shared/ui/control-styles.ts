@@ -28,4 +28,4 @@ export const iconActionVariants = cva("icon-button inline-grid size-(--ob-contro
   variants: { tone: { danger: "[--ob-icon-action-foreground:var(--ob-page-danger)]" } },
 });
 
-export const textActionClassName = "text-action inline-flex h-(--ob-control-height-md) min-h-(--ob-control-height-md) shrink-0 items-center [justify-content:center] [gap:var(--orbis-space-2)] border-transparent px-3 [font:var(--orbis-weight-action)_var(--orbis-text-ui-size)/var(--orbis-text-ui-leading)_var(--ob-font-sans)] whitespace-nowrap text-ob-muted-foreground [&:hover]:bg-(--ob-item-hover-bg) [&:hover]:text-ob-foreground [&>svg]:size-[1.125rem] [&>svg]:shrink-0";
+export const textActionClassName = "text-action inline-flex h-(--ob-control-height-md) min-h-(--ob-control-height-md) shrink-0 items-center [justify-content:center] [gap:var(--ob-space-2)] border-transparent px-3 [font:var(--ob-weight-action)_var(--ob-text-ui-size)/var(--ob-text-ui-leading)_var(--ob-font-sans)] whitespace-nowrap text-ob-muted-foreground [&:hover]:bg-(--ob-item-hover-bg) [&:hover]:text-ob-foreground [&>svg]:size-[1.125rem] [&>svg]:shrink-0";

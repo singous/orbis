@@ -107,7 +107,7 @@ test("named document versions fix content and restore into an editable collabora
   const compared = await responseData<{ items: Array<{ change: string; before_text: string; after_text: string }> }>(await request.get(workspacePath(session, `/documents/${document.id}/versions/${revised.id}/compare?from_id=${review.id}`), { headers: sessionHeaders(session) }));
   expect(compared.items).toHaveLength(1);
   expect(compared.items[0]).toMatchObject({ change: "modified", before_text: "Version baseline", after_text: "Version baseline revised" });
-  await page.locator('.document-versions [data-slot="select-trigger"]').click();
+  await page.getByRole("combobox", { name: "选择比较起点", exact: true }).click();
   await page.getByRole("option", { name: /评审稿/ }).click();
   await expect(page.getByRole("heading", { name: "内容差异", exact: true })).toBeVisible();
   await expect(page.getByText("Version baseline", { exact: true })).toBeVisible();

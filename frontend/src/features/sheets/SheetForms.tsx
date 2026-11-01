@@ -20,7 +20,6 @@ import {
   type Kind,
   type Value,
 } from "./model";
-import "./sheets.css";
 import type { SheetController } from "./use-sheet";
 
 function FormQR({ value }: { value: string }) {
@@ -138,7 +137,7 @@ export function SheetForms({
     setDraft({ ...draft, config: { ...draft.config, fields: next } });
   }
   return (
-    <div className="sheet-form-workspace flex min-h-0 flex-1 flex-col">
+    <div className="sheet-form-workspace sheet-data-theme flex min-h-0 flex-1 flex-col">
       <div className="sheet-form-toolbar flex min-h-14 items-center gap-3 border-b border-ob-border px-5 py-2.5 [@media(max-width:760px)]:flex-wrap [@media(max-width:760px)]:gap-2 [@media(max-width:760px)]:px-3">
         <div className="sheet-segment flex gap-[3px] rounded-[10px] bg-ob-surface-secondary p-[3px]">
           <ActionButton
@@ -405,7 +404,6 @@ export function SheetForms({
           <DialogContent
             title="收集表单"
             description="分享填写链接，提交内容将自动保存为新的记录。"
-            className="sheet-share-dialog"
           >
             <div className="sheet-form-share flex flex-col items-start gap-5 pt-6">
               <p className="text-sm text-(--ob-page-muted-foreground)">获得链接的人可以填写并提交表单</p>

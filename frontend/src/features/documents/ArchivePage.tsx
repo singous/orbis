@@ -76,7 +76,7 @@ function ArchiveSection({
                   </div>
                 ) : null}
                 {resource.restoreBlockedReason ? (
-                  <div className="mt-1 text-xs text-[var(--warning-text)]">
+                  <div className="mt-1 text-xs text-[var(--ob-page-warning-soft-foreground)]">
                     {resource.restoreBlockedReason}
                   </div>
                 ) : null}

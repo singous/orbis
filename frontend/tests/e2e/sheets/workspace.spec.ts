@@ -1,3 +1,4 @@
+import { expectTokenStyles } from "../helpers/theme-probes";
 import { expect, test } from "@playwright/test";
 import {
   ownerSession,
@@ -447,6 +448,7 @@ test("sheet controls follow the Orbis theme in light and dark appearances", asyn
       },
     }),
   );
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await openWithSession(page, session, `/sheets/${sheet.id}`);
   for (const mode of ["light", "dark"]) {
     await page.evaluate(
@@ -461,67 +463,19 @@ test("sheet controls follow the Orbis theme in light and dark appearances", asyn
       exact: true,
     });
 
-    // 主操作跟随主题 accent；侧栏新建按钮是独立的中性控件。
-    await expect
-      .poll(async () => {
-        return submit.evaluate((e) => {
-          const probe = document.createElement("span");
-          probe.style.backgroundColor = "var(--accent)";
-          e.appendChild(probe);
-          const matches = getComputedStyle(e).backgroundColor === getComputedStyle(probe).backgroundColor;
-          probe.remove();
-          return matches;
-        });
-      })
-      .toBe(true);
-    const field = dialog.getByRole("textbox", {
-      name: "字段名称",
-      exact: true,
-    });
-    await expect
-      .poll(() =>
-        field.evaluate((e) => {
-          const p = document.createElement("div");
-          p.style.background =
-            e.matches(":focus") || e.getAttribute("data-focused") === "true"
-              ? "var(--field-focus)"
-              : e.matches(":hover") || e.getAttribute("data-hovered") === "true"
-                ? "var(--field-hover)"
-                : "var(--field-background)";
-          document.body.append(p);
-          const match =
-            getComputedStyle(e).backgroundColor ===
-            getComputedStyle(p).backgroundColor;
-          p.remove();
-          return match;
-        }),
-      )
-      .toBe(true);
-    const actual = await field.evaluate((e) => {
-      const probe = document.createElement("div");
-      probe.style.background =
-        e.matches(":focus") || e.getAttribute("data-focused") === "true"
-          ? "var(--field-focus)"
-          : e.matches(":hover") || e.getAttribute("data-hovered") === "true"
-            ? "var(--field-hover)"
-            : "var(--field-background)";
-      probe.style.borderRadius = "var(--field-radius)";
-      document.body.append(probe);
-      const expected = getComputedStyle(probe),
-        computed = getComputedStyle(e);
-      const result = {
-        background: computed.backgroundColor,
-        expectedBackground: expected.backgroundColor,
-        radius: computed.borderRadius,
-        expectedRadius: expected.borderRadius,
-        font: computed.fontFamily,
-      };
-      probe.remove();
-      return result;
-    });
-    expect(actual.background).toBe(actual.expectedBackground);
-    expect(actual.radius).toBe(actual.expectedRadius);
-    expect(actual.font).toContain("Inter Variable");
+    // 主操作和输入框使用各自拥有的 canonical 角色；输入框在 hover/focus 时保留表面颜色。
+    await page.mouse.move(0, 0);
+    await expectTokenStyles(submit, { "background-color": "--ob-primary", color: "--ob-primary-foreground" });
+    const field = dialog.getByRole("textbox", { name: "字段名称", exact: true });
+    await submit.focus();
+    await expectTokenStyles(field, { "background-color": "--ob-surface", "border-radius": "--ob-radius-lg" });
+    await field.hover();
+    await expectTokenStyles(field, { "background-color": "--ob-surface" });
+    await field.focus();
+    await expectTokenStyles(field, { "background-color": "--ob-surface", "outline-color": "--ob-ring" });
+    await expect(field).toHaveCSS("outline-style", "solid");
+    await expect(field).toHaveCSS("outline-width", "2px");
+    await expect(field).toHaveCSS("font-family", /Inter Variable/);
     await page.screenshot({
       path: test.info().outputPath(`native-field-${mode}.png`),
       animations: "disabled",
