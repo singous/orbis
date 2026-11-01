@@ -1,4 +1,6 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { expectNoContinuingMotion, expectVisibleKeyboardFocus } from "../fixtures/media";
 
 for (const route of ["login", "setup"]) {
   test(`auth ${route} keeps capsule controls and layout across existing breakpoints`, async ({ page }) => {
@@ -58,3 +60,44 @@ test("auth illustration pause and accessibility modes keep their controls usable
   await expect(page.getByLabel("邮箱", { exact: true })).toBeVisible();
   expect(await page.getByLabel("邮箱", { exact: true }).evaluate(element => getComputedStyle(element).borderTopStyle)).toBe("solid");
 });
+
+for (const { theme, width } of [{ theme: "light", width: 1280 }, { theme: "dark", width: 390 }] as const) {
+  for (const route of ["login", "setup"] as const) test(`media acceptance: ${route} ${theme} ${width} keeps keyboard fields without submitting`, async ({ page }, info) => {
+    const writes: string[] = [];
+    const evidence: Record<string, unknown> = { route: `/${route}`, theme, width, forcedColors: "active", reducedMotion: "reduce", writes };
+    page.on("request", request => { if (request.url().includes("/api/v1/") && request.method() !== "GET") writes.push(`${request.method()} ${new URL(request.url()).pathname}`); });
+    await page.setViewportSize({ width, height: 900 });
+    await page.addInitScript(theme => localStorage.setItem("orbis.appearance", theme), theme);
+    await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
+    try {
+      await page.goto(`/${route}`);
+      await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+      await page.getByRole("link", { name: "Orbis", exact: true }).focus();
+      const fields = route === "setup" ? ["显示名称", "邮箱", "密码"] : ["邮箱", "密码"];
+      for (const label of fields) {
+        await page.keyboard.press("Tab");
+        const field = page.getByLabel(label, { exact: true });
+        evidence[label] = await expectVisibleKeyboardFocus(field);
+        await page.keyboard.type(label === "显示名称" ? "媒体验收成员" : label === "邮箱" ? "media@example.com" : "media-password-2026");
+        await expect(field).not.toHaveValue("");
+      }
+      await page.keyboard.press("Tab");
+      const submit = page.getByRole("button", { name: route === "login" ? "登录 Orbis" : "创建并进入工作空间", exact: true });
+      evidence.submitFocus = await expectVisibleKeyboardFocus(submit);
+      await expect(submit).toBeEnabled();
+      await page.keyboard.press("Shift+Tab");
+      await expect(page.getByLabel("密码", { exact: true })).toBeFocused();
+      await expect(page.getByRole("complementary", { name: "关于 Orbis" })).toBeHidden();
+      evidence.motion = await expectNoContinuingMotion(page.getByRole("main"));
+      const illustration = await page.locator("[data-motion-paused] img").evaluateAll(elements => elements.map(element => ({ animation: getComputedStyle(element).animationName, visible: element.getClientRects().length > 0 })));
+      evidence.illustration = illustration;
+      expect(illustration.every(item => item.animation === "none")).toBe(true);
+      const accessibility = await new AxeBuilder({ page }).analyze();
+      evidence.axe = accessibility.violations;
+      expect(accessibility.violations).toEqual([]);
+      expect(writes).toEqual([]);
+    } finally {
+      await info.attach("auth-media-acceptance", { body: JSON.stringify(evidence, null, 2), contentType: "application/json" });
+    }
+  });
+}

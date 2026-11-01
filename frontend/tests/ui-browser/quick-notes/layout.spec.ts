@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { installSession, user, workspace } from "../fixtures/session";
+import { expectNoContinuingMotion, expectVisibleKeyboardFocus } from "../fixtures/media";
+import { settleNativeEditorSelection } from "../../e2e/helpers/editor-selection";
 
 const now = Date.parse("2026-11-01T00:00:00Z");
 const tag = { id: "00000000-0000-4000-8000-000000000010", name: "设计", version: 3, count: 1, created_at_ms: 1, updated_at_ms: 1 };
@@ -235,7 +237,7 @@ test("quick note view options and record actions keep stable elements and the or
   await page.goto("/documents/quick-notes");
   const view = page.getByRole("group", { name: "记录展示方式", exact: true });
   await expect(view.getByRole("button")).toHaveCount(2);
-  expect(await view.getByRole("button").evaluateAll(elements => elements.map(element => ({ label: element.getAttribute("aria-label"), title: element.title, icon: element.querySelector("svg")?.getAttribute("width") })))).toEqual([
+  expect(await view.getByRole("button").evaluateAll(elements => elements.map(element => ({ label: element.getAttribute("aria-label"), title: element.getAttribute("title"), icon: element.querySelector("svg")?.getAttribute("width") })))).toEqual([
     { label: "列表视图", title: "列表视图", icon: "17" },
     { label: "卡片视图", title: "卡片视图", icon: "17" },
   ]);
@@ -246,7 +248,7 @@ test("quick note view options and record actions keep stable elements and the or
   await expect(cards).toHaveAttribute("aria-pressed", "true");
   const card = page.getByRole("article", { name: "随手记记录", exact: true });
   await expect(card.getByRole("button")).toHaveCount(3);
-  expect(await card.getByRole("button").evaluateAll(elements => elements.map(element => ({ label: element.getAttribute("aria-label"), title: element.title, icon: element.querySelector("svg")?.getAttribute("width") })))).toEqual([
+  expect(await card.getByRole("button").evaluateAll(elements => elements.map(element => ({ label: element.getAttribute("aria-label"), title: element.getAttribute("title"), icon: element.querySelector("svg")?.getAttribute("width") })))).toEqual([
     { label: "编辑记录", title: "编辑记录", icon: "15" },
     { label: "取消置顶", title: "取消置顶", icon: "15" },
     { label: "移入回收站", title: "移入回收站", icon: "15" },
@@ -270,4 +272,65 @@ test("quick note view options and record actions keep stable elements and the or
     { is_deleted: false, expected_version: 6, operation_id: expect.any(String) },
   ]);
   expect(new Set(writes.map(write => write.operation_id)).size).toBe(3);
+});
+
+for (const { theme, width } of [{ theme: "light", width: 1280 }, { theme: "dark", width: 390 }] as const) test(`media acceptance: quick notes ${theme} ${width} retains keyboard selection and the cancelled edit draft`, async ({ page }, info) => {
+  const writes: string[] = [];
+  const draft = "媒体模式保留的草稿";
+  const evidence: Record<string, unknown> = { theme, width, forcedColors: "active", reducedMotion: "reduce", writes };
+  page.on("request", request => { if (request.url().includes("/api/v1/") && request.method() !== "GET") writes.push(`${request.method()} ${new URL(request.url()).pathname}`); });
+  await page.setViewportSize({ width, height: 900 });
+  await page.addInitScript(theme => localStorage.setItem("orbis.appearance", theme), theme);
+  await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
+  try {
+    await page.goto("/documents/quick-notes");
+    // 原生选区与焦点处理需要推进的当前页时钟，不改变共享 fixture。
+    await page.evaluate(() => { Date.now = () => new Date().getTime(); });
+    const trigger = page.getByRole("button", { name: "编辑记录", exact: true });
+    await trigger.focus();
+    evidence.triggerFocus = await expectVisibleKeyboardFocus(trigger);
+    await page.keyboard.press("Enter");
+    const dialog = page.getByRole("dialog", { name: "编辑随手记", exact: true });
+    await expect(dialog).toBeVisible();
+    const close = dialog.getByRole("button", { name: "关闭", exact: true });
+    await close.focus();
+    evidence.dialogFocus = await expectVisibleKeyboardFocus(close);
+    const editor = dialog.getByRole("textbox", { name: "随手记正文", exact: true });
+    await editor.focus();
+    await page.keyboard.press("ControlOrMeta+A");
+    await settleNativeEditorSelection(page, editor);
+    expect(await page.evaluate(() => window.getSelection()?.toString())).toBe("保留原记录");
+    await page.keyboard.insertText(draft);
+    await expect(editor).toHaveText(draft);
+    const apple = await page.evaluate(() => /Mac|iPhone|iPad/.test(navigator.platform));
+    await editor.press(apple ? "Meta+ArrowLeft" : "Home");
+    await settleNativeEditorSelection(page, editor);
+    await page.keyboard.press(apple ? "Meta+Shift+ArrowRight" : "Shift+End");
+    await settleNativeEditorSelection(page, editor);
+    evidence.selection = await page.evaluate(() => window.getSelection()?.toString());
+    expect(evidence.selection).toBe(draft);
+    await expect(editor).toBeFocused();
+    await expect(dialog.getByText("未保存", { exact: true })).toBeVisible();
+    evidence.editMotion = await expectNoContinuingMotion(dialog);
+    const editAxe = await new AxeBuilder({ page }).include('[role="dialog"]').analyze();
+    expect(editAxe.violations).toEqual([]);
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    evidence.restoredFocus = await expectVisibleKeyboardFocus(trigger);
+    await expect(page.getByRole("article", { name: "随手记记录", exact: true }).getByText("保留原记录", { exact: true })).toBeVisible();
+    await page.keyboard.press("Enter");
+    await expect(editor).toHaveText(draft);
+    await expect(dialog.getByRole("button", { name: "移除标签 设计", exact: true })).toBeVisible();
+    evidence.reopenedDraft = await editor.innerText();
+    evidence.reopenedMotion = await expectNoContinuingMotion(dialog);
+    const reopenedAxe = await new AxeBuilder({ page }).include('[role="dialog"]').analyze();
+    evidence.axe = { edit: editAxe.violations, reopened: reopenedAxe.violations };
+    expect(reopenedAxe.violations).toEqual([]);
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    evidence.finalFocus = await expectVisibleKeyboardFocus(trigger);
+    expect(writes).toEqual([]);
+  } finally {
+    await info.attach("quick-notes-media-acceptance", { body: JSON.stringify(evidence, null, 2), contentType: "application/json" });
+  }
 });

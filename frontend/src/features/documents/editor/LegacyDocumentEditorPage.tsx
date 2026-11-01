@@ -808,6 +808,7 @@ export function LegacyDocumentEditorPage() {
       {!draft || !noteQuery.data || hydratedNoteRef.current !== draftKey ? <div className={pageColumnClassName}><LoadingState label="正在打开文档…" variant="editor" /></div> : (
         <EditorLayout outlineStore={outlineStore} loadOutlineContent={loadCompleteContent}>
           <article className={editorCanvasClassName}>
+            <h1 className="sr-only">{draft.title || "无标题"}</h1>
             <Input
               aria-label="文档标题"
               className={editorTitleClassName}

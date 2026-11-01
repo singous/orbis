@@ -75,7 +75,7 @@ for (const theme of ["light", "dark"] as const) for (const width of [1280, 390])
       await mountWorkspace(page);
       const workspace = page.getByRole("region", { name: "产品计划", exact: true });
       await expect(workspace.getByRole("textbox", { name: "搜索记录", exact: true })).toBeVisible();
-      await expect(workspace.getByRole("columnheader")).toHaveText(["名称", "状态", "数量"]);
+      await expect(workspace.locator(".sheet-grid-heading[role=columnheader]")).toHaveText(["名称", "状态", "数量"]);
       await expect(workspace.getByRole("gridcell").filter({ hasText: "示例记录" })).toHaveCount(2);
       await settleSurface(page);
       await expect(page).toHaveScreenshot(`sheet-workspace-${theme}-${width}.png`);

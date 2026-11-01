@@ -63,4 +63,8 @@
     --ob-shadow-field: none;
   }
   [data-slot^="ob-"] { box-shadow: none; }
+  :is([data-slot="ob-dropdown-item"], [data-slot="ob-dropdown-radio-item"], [data-slot="ob-dropdown-checkbox-item"], [data-slot="ob-select-option"])[data-highlighted] {
+    outline: 2px solid var(--ob-ring);
+    outline-offset: -2px;
+  }
 }

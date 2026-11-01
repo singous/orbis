@@ -144,13 +144,13 @@
   padding: 4px 8px;
   border-bottom: 1px solid var(--ob-sheet-grid-border);
 }
-:where(.sheet-workspace) .sheet-grid-tail > button {
+:where(.sheet-workspace) .sheet-grid-tail button {
   flex: 1;
   justify-content: flex-start;
   padding-inline: 12px;
   color: var(--ob-page-muted-foreground);
 }
-:where(.sheet-workspace) .sheet-grid-tail > button:hover:not(:disabled) {
+:where(.sheet-workspace) .sheet-grid-tail button:hover:not(:disabled) {
   background: var(--ob-item-hover-bg);
   color: var(--ob-foreground);
 }

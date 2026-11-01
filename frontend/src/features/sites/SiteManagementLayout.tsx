@@ -49,7 +49,7 @@ export function SiteDialogActions({ className, ...props }: ComponentProps<"div">
 }
 
 export function SiteInfoPanel({ className, ...props }: ComponentProps<"div">) {
-  return <div {...props} className={cn("rounded-[10px] border border-ob-border bg-(--ob-item-hover-bg) px-4 py-3.5", className)} />;
+  return <div {...props} className={cn("rounded-[10px] border border-ob-border bg-(--ob-item-hover-bg) px-4 py-3.5 forced-colors:bg-ob-card", className)} />;
 }
 
 /** 站点行操作的统一命中区与原生按钮布局。 */

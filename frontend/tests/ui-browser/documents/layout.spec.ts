@@ -1,6 +1,7 @@
 import { Buffer } from "node:buffer";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { expectNoContinuingMotion, expectVisibleKeyboardFocus } from "../fixtures/media";
 
 const now = Date.parse("2026-11-01T00:00:00Z");
 const workspace = { id: "00000000-0000-4000-8000-000000000002", name: "文档布局空间", role: "owner", created_at_ms: 1, updated_at_ms: 1 };
@@ -295,4 +296,88 @@ for (const theme of ["light", "dark"]) test(`collection and profile ${theme} kee
     metrics.push({ theme, width, cards, form });
   }
   await info.attach("collection-profile-metrics", { body: JSON.stringify(metrics, null, 2), contentType: "application/json" });
+});
+
+for (const { theme, width } of [{ theme: "light", width: 1280 }, { theme: "dark", width: 390 }] as const) test(`media acceptance: documents ${theme} ${width} keeps cancelled creation and directory keyboard sessions`, async ({ page }, info) => {
+  const writes: string[] = [];
+  const evidence: Record<string, unknown> = { theme, width, forcedColors: "active", reducedMotion: "reduce", writes };
+  page.on("request", request => { if (request.url().includes("/api/v1/") && request.method() !== "GET") writes.push(`${request.method()} ${new URL(request.url()).pathname}`); });
+  await page.setViewportSize({ width, height: 900 });
+  await page.addInitScript(theme => localStorage.setItem("orbis.appearance", theme), theme);
+  await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
+  try {
+    await page.goto("/documents");
+    await expect(page.getByRole("heading", { name: "在线文档", exact: true })).toBeVisible();
+    const opener = page.getByRole("button", { name: "新建笔记本", exact: true });
+    await opener.focus();
+    evidence.overviewFocus = await expectVisibleKeyboardFocus(opener);
+    await page.keyboard.press("Enter");
+    const creation = page.getByRole("dialog", { name: "新建笔记本", exact: true });
+    const name = creation.getByRole("textbox", { name: "笔记本名称", exact: true });
+    evidence.createFocus = await expectVisibleKeyboardFocus(name);
+    await page.keyboard.type("未提交的媒体笔记本");
+    await expect(name).toHaveValue("未提交的媒体笔记本");
+    evidence.createMotion = await expectNoContinuingMotion(creation);
+    const createAxe = await new AxeBuilder({ page }).include('[role="dialog"]').analyze();
+    expect(createAxe.violations).toEqual([]);
+    await page.keyboard.press("Escape");
+    await expect(creation).toBeHidden();
+    evidence.restoredOverviewFocus = await expectVisibleKeyboardFocus(opener);
+    await expect(page.locator(".notebook-overview-card")).toHaveCount(4);
+
+    const notebookLink = page.getByRole("region", { name: "常用", exact: true }).getByRole("link", { name: notebooks[0].title, exact: false });
+    await notebookLink.focus();
+    evidence.notebookLinkFocus = await expectVisibleKeyboardFocus(notebookLink);
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(`/collections/${notebooks[0].id}`);
+    await expect(page.getByRole("article", { name: "笔记本首页", exact: true })).toBeVisible();
+    if (width === 390) {
+      const navigation = page.getByRole("button", { name: "打开主导航", exact: true });
+      await navigation.focus();
+      await page.keyboard.press("Enter");
+    }
+    const sidebar = page.locator("#notebook-directory");
+    const disclosure = sidebar.getByRole("button", { name: /子目录 开始使用/ });
+    await disclosure.focus();
+    evidence.treeFocus = await expectVisibleKeyboardFocus(disclosure);
+    const expanded = await disclosure.getAttribute("aria-expanded");
+    await page.keyboard.press("Space");
+    await expect(disclosure).toHaveAttribute("aria-expanded", expanded === "true" ? "false" : "true");
+    const child = sidebar.getByRole("link", { name: "安装与配置", exact: true });
+    if (expanded === "true") await expect(child).toBeHidden();
+    else await expect(child).toBeVisible();
+    const menuTrigger = sidebar.getByRole("button", { name: "文档操作 开始使用", exact: true });
+    await menuTrigger.focus();
+    evidence.menuTriggerFocus = await expectVisibleKeyboardFocus(menuTrigger);
+    await page.keyboard.press("ArrowDown");
+    const menu = page.getByRole("menu", { name: "文档操作 开始使用", exact: true });
+    const createChild = menu.getByRole("menuitem", { name: "新建子文档", exact: true });
+    evidence.menuPaint = await menu.evaluate(element => ({
+      container: { color: getComputedStyle(element).color, background: getComputedStyle(element).backgroundColor, forcedColorAdjust: getComputedStyle(element).forcedColorAdjust },
+      items: Array.from(element.querySelectorAll('[role="menuitem"]')).map(item => ({ text: item.textContent, focused: document.activeElement === item, highlighted: item.hasAttribute("data-highlighted"), color: getComputedStyle(item).color, background: getComputedStyle(item).backgroundColor, outline: getComputedStyle(item).outline, border: getComputedStyle(item).border, forcedColorAdjust: getComputedStyle(item).forcedColorAdjust })),
+    }));
+    evidence.menuItemFocus = await expectVisibleKeyboardFocus(createChild);
+    await page.keyboard.press("Escape");
+    await expect(menu).toBeHidden();
+    evidence.restoredMenuFocus = await expectVisibleKeyboardFocus(menuTrigger);
+    await page.keyboard.press("Enter");
+    await expect(createChild).toBeFocused();
+    await page.keyboard.press("Enter");
+    const childCreation = page.getByRole("dialog", { name: "新建子文档", exact: true });
+    const childTitle = childCreation.getByRole("textbox", { name: "文档标题", exact: true });
+    evidence.childCreateFocus = await expectVisibleKeyboardFocus(childTitle);
+    await page.keyboard.type("尚未创建的子文档");
+    await expect(childTitle).toHaveValue("尚未创建的子文档");
+    evidence.childCreateMotion = await expectNoContinuingMotion(childCreation);
+    await page.keyboard.press("Escape");
+    await expect(childCreation).toBeHidden();
+    evidence.closedChildFocus = await expectVisibleKeyboardFocus(menuTrigger);
+    evidence.directoryMotion = await expectNoContinuingMotion(sidebar);
+    const directoryAxe = await new AxeBuilder({ page }).include("#notebook-directory").analyze();
+    evidence.axe = { creation: createAxe.violations, directory: directoryAxe.violations };
+    expect(directoryAxe.violations).toEqual([]);
+    expect(writes).toEqual([]);
+  } finally {
+    await info.attach("documents-media-acceptance", { body: JSON.stringify(evidence, null, 2), contentType: "application/json" });
+  }
 });

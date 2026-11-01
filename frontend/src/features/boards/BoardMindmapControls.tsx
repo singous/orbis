@@ -54,7 +54,7 @@ export function BoardMindmapControls(props: Props) {
     const node = id ? props.elements.get(id) : null;
     return node && isMindmapTopic(node) && !hidden.has(node.id) ? [node] : [];
   });
-  return <div className="board-mindmap-controls" aria-label="思维导图分支操作">
+  return <div className="board-mindmap-controls" role="group" aria-label="思维导图分支操作">
     {nodes.map(node => {
       const descendants = mindmapDescendants(props.elements, node.id);
       const point = portPosition(node, "right");

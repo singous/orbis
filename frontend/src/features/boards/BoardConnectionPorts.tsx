@@ -158,7 +158,7 @@ export function BoardConnectionPorts(props: Props) {
     const element = id ? props.elements.get(id) : null;
     return element && (view || !element.shape_type.startsWith("mindmap.")) && element.page_id === props.pageID && element.style.opacity > 0 && !hidden.has(element.id) ? connectionPorts(element) : [];
   });
-  return <div className="board-connection-ports" aria-label="图元连接点">
+  return <div className="board-connection-ports" role="group" aria-label="图元连接点">
     {ports.map(port => {
       const element = props.elements.get(port.elementID)!;
       const selected = [view?.source, view?.target].some(candidate => candidate?.elementID === port.elementID && candidate.port === port.port);

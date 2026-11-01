@@ -30,7 +30,7 @@ import {
   Table2,
   X,
 } from "@orbis/ui/icons";
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useId, useMemo, useState } from "react";
 import {
   Link,
   useNavigate,
@@ -93,6 +93,7 @@ export function SheetWorkspace({
   readOnly?: boolean;
   onViewChange?: (id: string) => void;
 }) {
+  const tabsId = useId();
   const [params, setParams] = useSearchParams(),
     [localView, setLocalView] = useState(initialView),
     [search, setSearch] = useState(""),
@@ -168,6 +169,10 @@ export function SheetWorkspace({
       </LoadingShell>
     );
   const activeForm = releaseFeatures.sheetForms ? c.forms.data?.find((f) => f.id === selectedView) : undefined;
+  const ownedTabs = [
+    ...sheet.definition.views.filter(candidate => candidate.id !== rename?.id).map(candidate => `${tabsId}-${candidate.id}`),
+    ...(releaseFeatures.sheetForms ? c.forms.data ?? [] : []).map(form => `${tabsId}-${form.id}`),
+  ];
   const fail = (error: unknown) => {
     reportError(error);
     c.setError(error instanceof Error ? error.message : String(error));
@@ -424,8 +429,10 @@ export function SheetWorkspace({
     <div
       className={cn(sheetWorkspaceClassName, embedded && "sheet-embedded-workspace h-full")}
     >
+      {!embedded && <h1 className="sr-only">{sheet.title}</h1>}
       <nav className={cn("sheet-view-tabs flex shrink-0 items-stretch gap-0 overflow-x-auto pt-1 [&>*]:shrink-0 in-[.embed-table:not(.is-expanded)]:pr-12", embedded ? "min-h-10 px-2.5" : "min-h-11 px-2 [@media(max-width:760px)]:px-3")} aria-label="视图">
-        <div className="flex items-stretch gap-0" role="tablist">
+        <div className="contents" role={ownedTabs.length ? "tablist" : undefined} aria-label={ownedTabs.length ? "数据表视图" : undefined} aria-owns={ownedTabs.join(" ") || undefined} />
+        <div className="flex items-stretch gap-0" role="presentation">
           {sheet.definition.views.map((v) => (
             <div
               className={cn(sheetTabClassName, !activeForm && view.id === v.id && "active border-(--ob-sheet-chrome-border) bg-(--ob-sheet-toolbar-bg)")}
@@ -455,6 +462,7 @@ export function SheetWorkspace({
                 <ActionButton className={cn(sheetActionClassName, "text-ob-foreground [&>svg]:text-(--ob-page-muted-foreground) [&[aria-selected=true]>svg]:text-(--sheet-selection-ink)")}
                   size="sm"
                   role="tab"
+                  id={`${tabsId}-${v.id}`}
                   aria-selected={!activeForm && view.id === v.id}
                   onClick={() => choose(v.id)}
                 >
@@ -491,6 +499,7 @@ export function SheetWorkspace({
               <ActionButton className={cn(sheetActionClassName, "text-ob-foreground [&>svg]:text-(--ob-page-muted-foreground) [&[aria-selected=true]>svg]:text-(--sheet-selection-ink)")}
                 size="sm"
                 role="tab"
+                id={`${tabsId}-${f.id}`}
                 aria-selected={activeForm?.id === f.id}
                 onClick={() => choose(f.id)}
               >
@@ -544,7 +553,7 @@ export function SheetWorkspace({
                 className={cn(sheetActionClassName, embedded && "min-w-[30px] px-[7px]", (mode === "filter" && view.filters.length) ||
                   (mode === "sort" && view.sorts.length) ||
                   (mode === "group" && view.group_field_id)
-                    ? "is-set bg-(--ob-page-accent-soft) text-ob-primary"
+                    ? "is-set bg-(--ob-page-accent-soft) text-ob-primary forced-colors:bg-ob-primary forced-colors:text-ob-primary-foreground forced-colors:[forced-color-adjust:none]"
                     : "")}
                 onClick={(e) =>
                   setSettings({ mode, anchor: anchorAt(e.currentTarget) })

@@ -17,3 +17,20 @@
   --sheet-ink-purple: var(--ob-sheet-ink-purple);
   --sheet-ink-pink: var(--ob-sheet-ink-pink);
 }
+
+@media (forced-colors: active) {
+  .sheet-data-theme {
+    --sheet-green: Canvas;
+    --sheet-amber: Canvas;
+    --sheet-blue: Canvas;
+    --sheet-purple: Canvas;
+    --sheet-pink: Canvas;
+    --sheet-gray: Canvas;
+    --sheet-ink-gray: CanvasText;
+    --sheet-ink-blue: CanvasText;
+    --sheet-ink-green: CanvasText;
+    --sheet-ink-amber: CanvasText;
+    --sheet-ink-purple: CanvasText;
+    --sheet-ink-pink: CanvasText;
+  }
+}

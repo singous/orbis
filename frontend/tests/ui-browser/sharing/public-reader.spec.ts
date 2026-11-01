@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
+import { expectNoContinuingMotion, expectVisibleKeyboardFocus } from "../fixtures/media";
 import { appendFileSync } from "node:fs";
 
 const id = (value: number) => `00000000-0000-4000-8000-${String(value).padStart(12, "0")}`;
@@ -8,9 +9,16 @@ const dataPage = (items: unknown[]) => ({ items, pagination: { page: 1, page_siz
 const root = { id: rootId, parent_id: null, title: "公开根文档", position: 0, content_version: 2, updated_at_ms: now };
 const child = { ...root, id: childId, parent_id: rootId, title: "子文档" };
 
-for (const theme of ["light", "dark"]) for (const width of [1280, 390]) test.describe(`${theme} ${width}px`, () => {
-  test.use({ hasTouch: width === 390 });
-  test("anonymous share keeps directory navigation, current content, skip link and failed-read retry", async ({ page }) => {
+const MAX_TAB_STOPS = 80;
+
+async function tabTo(page: Page, target: Locator) {
+  for (let stop = 0; stop < MAX_TAB_STOPS && !await target.evaluate(element => element === document.activeElement); stop++) await page.keyboard.press("Tab");
+  await expect(target).toBeFocused();
+}
+
+async function anonymousShareJourney(page: Page, { theme, width, media = false }: { theme: string; width: number; media?: boolean }, info: TestInfo) {
+    const evidence: Record<string, unknown> = { theme, width, forcedColors: "active", reducedMotion: "reduce" };
+    if (media) await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
     await page.setViewportSize({ width, height: 900 });
     await page.addInitScript(theme => localStorage.setItem("orbis.appearance", theme), theme);
     let childUnavailable = true;
@@ -30,6 +38,7 @@ for (const theme of ["light", "dark"]) for (const width of [1280, 390]) test.des
       }
       await route.fulfill({ status, json: { code: status === 200 ? "OK" : "UNAVAILABLE", message: status === 200 ? "" : "正文暂时不可用", request_id: "public-sharing-ui", data: status === 200 ? data : null } });
     });
+    try {
     await page.goto(`/share/${token}`);
     await expect(page.getByRole("heading", { name: root.title })).toBeVisible();
     await expect(page.getByText("当前公开正文")).toBeVisible();
@@ -44,13 +53,29 @@ for (const theme of ["light", "dark"]) for (const width of [1280, 390]) test.des
       }));
       appendFileSync(process.env.ORBIS_SURFACE_EVIDENCE, JSON.stringify({ state: "public-reader", theme, width, values }) + "\n");
     }
-    await page.getByRole("link", { name: "跳转到正文" }).focus();
+    if (media) {
+      await page.keyboard.press("Tab");
+      evidence.skipFocus = await expectVisibleKeyboardFocus(page.getByRole("link", { name: "跳转到正文" }));
+      evidence.initialMotion = await expectNoContinuingMotion(page.locator(".public-share-reader"));
+    } else await page.getByRole("link", { name: "跳转到正文" }).focus();
     await expect(page.getByRole("link", { name: "跳转到正文" })).toBeInViewport();
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/#shared-document$/);
     await expect(page.locator("#shared-document")).toBeFocused();
-    await page.getByRole("button", { name: `展开${root.title}子目录` }).click();
-    await page.getByRole("link", { name: child.title, exact: true }).click();
+    if (media) {
+      const branch = page.getByRole("button", { name: `展开${root.title}子目录` });
+      await tabTo(page, branch);
+      evidence.branchFocus = await expectVisibleKeyboardFocus(branch);
+      await page.keyboard.press("Enter");
+      await expect(page.getByRole("button", { name: `收起${root.title}子目录` })).toHaveAttribute("aria-expanded", "true");
+      const childLink = page.getByRole("link", { name: child.title, exact: true });
+      await tabTo(page, childLink);
+      evidence.childFocus = await expectVisibleKeyboardFocus(childLink);
+      await page.keyboard.press("Enter");
+    } else {
+      await page.getByRole("button", { name: `展开${root.title}子目录` }).click();
+      await page.getByRole("link", { name: child.title, exact: true }).click();
+    }
     await expect(page).toHaveURL(new RegExp(`${childId}$`));
     const unavailable = page.getByRole("heading", { name: "暂时无法打开分享" });
     await expect(unavailable).toBeVisible();
@@ -60,14 +85,35 @@ for (const theme of ["light", "dark"]) for (const width of [1280, 390]) test.des
     expect((await unavailable.locator("..").boundingBox())?.width).toBe(width === 390 ? 390 : 760);
     expect((await new AxeBuilder({ page }).include(".public-share-reader").analyze()).violations).toEqual([]);
     childUnavailable = false;
-    await page.getByRole("button", { name: "重新读取", exact: true }).click();
+    if (media) {
+      const retry = page.getByRole("button", { name: "重新读取", exact: true });
+      await tabTo(page, retry);
+      evidence.retryFocus = await expectVisibleKeyboardFocus(retry);
+      evidence.failureMotion = await expectNoContinuingMotion(page.locator(".public-share-reader"));
+      await page.keyboard.press("Enter");
+    } else await page.getByRole("button", { name: "重新读取", exact: true }).click();
     await expect(page.getByRole("heading", { name: child.title })).toBeVisible();
     await expect(page.getByRole("link", { name: child.title, exact: true })).toHaveAttribute("aria-current", "page");
-    await page.getByRole("button", { name: "刷新目录与正文" }).click();
+    if (media) {
+      const refresh = page.getByRole("button", { name: "刷新目录与正文" });
+      await tabTo(page, refresh);
+      evidence.refreshFocus = await expectVisibleKeyboardFocus(refresh);
+      await page.keyboard.press("Enter");
+    } else await page.getByRole("button", { name: "刷新目录与正文" }).click();
     await expect(page.getByText("当前公开正文")).toBeVisible();
     expect(requests.every(request => request.authorization === undefined)).toBe(true);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     expect((await new AxeBuilder({ page }).include(".public-share-reader").analyze()).violations).toEqual([]);
+    if (media) evidence.currentMotion = await expectNoContinuingMotion(page.locator(".public-share-reader"));
+    } finally {
+      if (media) await info.attach("public-share-media", { body: JSON.stringify({ ...evidence, requests }, null, 2), contentType: "application/json" });
+    }
+}
+
+for (const theme of ["light", "dark"]) for (const width of [1280, 390]) test.describe(`${theme} ${width}px`, () => {
+  test.use({ hasTouch: width === 390 });
+  test("anonymous share keeps directory navigation, current content, skip link and failed-read retry", async ({ page }, info) => {
+    await anonymousShareJourney(page, { theme, width }, info);
   });
   test("share loading, empty scope and revoked-link states retain one main landmark", async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
@@ -133,4 +179,11 @@ for (const width of [390, 640, 760]) test(`long share title keeps header actions
   await expect(license).toBeFocused();
   expect(await header.evaluate(element => element.scrollWidth <= element.clientWidth && element.scrollHeight <= element.clientHeight)).toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+for (const profile of [{ theme: "light", width: 1280 }, { theme: "dark", width: 390 }] as const) test.describe(`public share media ${profile.theme} ${profile.width}px`, () => {
+  test.use({ hasTouch: profile.width === 390 });
+  test("forced colors and reduced motion preserve keyboard directory navigation and failed-read retry", async ({ page }, info) => {
+    await anonymousShareJourney(page, { ...profile, media: true }, info);
+  });
 });

@@ -1,4 +1,5 @@
 import type { Page } from "@playwright/test";
+import type { TableRecord } from "../../../src/features/data-tables/model";
 import { workspace } from "./session";
 
 export const controlId = (value: number) => `00000000-0000-4000-8000-${String(value).padStart(12, "0")}`;
@@ -42,18 +43,18 @@ export async function mountTableControl(page: Page, kind: ControlKind, localThem
         React.createElement("output", { "aria-label": "分组变更" }, JSON.stringify(move)));
       const commit = async (next?: unknown, navigation?: string) => {
         if (next !== undefined) setValue(next);
-        setCommits(previous => [...previous, { value: next, navigation }]);
+        setCommits((previous: Array<{ value: unknown; navigation?: string }>) => [...previous, { value: next, navigation }]);
         if (kind.startsWith("sheet")) setEditing(false);
         return true;
       };
       if (kind === "dt-board") return React.createElement(React.Fragment, null,
-        React.createElement("div", { className: tableChrome.tableSurfaceClassName }, React.createElement(board.TableBoard, { host: { auth, noteId: ids[3], draftScope: "control-browser", readOnly: false, documentVersion: () => 1 }, page: { table_id: ids[12], block_id: ids[13], revision: 1, content_version: 1, definition, view_id: view.id, records: [], total: 101, offset: 0, next_offset: 100, has_more: true, groups: [{ id: ids[6], name: "待处理", count: 101 }, { id: ids[7], name: "已完成", count: 0 }] }, definition, view, onMove: (record, group) => setMove([record, group]), onRecord: record => setSelected(record.id) })), outputs);
+        React.createElement("div", { className: tableChrome.tableSurfaceClassName }, React.createElement(board.TableBoard, { host: { auth, noteId: ids[3], draftScope: "control-browser", readOnly: false, documentVersion: () => 1 }, page: { table_id: ids[12], block_id: ids[13], revision: 1, content_version: 1, definition, view_id: view.id, records: [], total: 101, offset: 0, next_offset: 100, has_more: true, groups: [{ id: ids[6], name: "待处理", count: 101 }, { id: ids[7], name: "已完成", count: 0 }] }, definition, view, onMove: (record: string, group: string | null) => setMove([record, group]), onRecord: (record: TableRecord) => setSelected(record.id) })), outputs);
       if (kind.startsWith("dt")) {
         const editor = React.createElement(tableCell.CellEditor, { field: fields[2], value, readOnly: false, onChange: setValue, onCommit: () => { void commit(); } });
         return React.createElement(React.Fragment, null, kind === "dt-form-multi" ? React.createElement(dialog.Dialog, { open: true, onOpenChange() {} }, React.createElement(dialog.DialogContent, { title: "表格记录" }, React.createElement("div", { className: tableChrome.tableFormClassName }, React.createElement("label", null, "标签", editor)))) : React.createElement("div", { className: tableChrome.tableSurfaceClassName, style: { height: 220 } }, React.createElement("div", { className: "dt-grid-cell", style: { position: "relative", height: 40, width: "100%" } }, editor)), outputs);
       }
       const field = { id: "field", name: kind === "rating" ? "评分" : kind === "attachment" ? "附件" : "字段", kind: kind === "sheet-single" ? "select" : kind === "sheet-multi" ? "multi_select" : kind === "sheet-time" ? "datetime" : kind === "attachment" ? "attachment" : kind === "checkbox" ? "checkbox" : kind === "radio" ? "select" : "rating", options, default: null, include_time: kind === "sheet-time" };
-      const content = kind.startsWith("sheet") ? React.createElement("div", { className: "sheet-cell editing", style: { position: "relative", height: 40, width: "min(320px,100%)" } }, editing ? React.createElement(sheetCell.CellEditor, { field, value, auth, onChange: setValue, onCommit: commit, onCancel: () => { setCancels(previous => previous + 1); setEditing(false); } }) : "编辑结束") : React.createElement(cell.ValueEditor, { field, value, auth, publicMode: kind === "radio", onChange: setValue });
+      const content = kind.startsWith("sheet") ? React.createElement("div", { className: "sheet-cell editing", style: { position: "relative", height: 40, width: "min(320px,100%)" } }, editing ? React.createElement(sheetCell.CellEditor, { field, value, auth, onChange: setValue, onCommit: commit, onCancel: () => { setCancels((previous: number) => previous + 1); setEditing(false); } }) : "编辑结束") : React.createElement(cell.ValueEditor, { field, value, auth, publicMode: kind === "radio", onChange: setValue });
       return React.createElement(React.Fragment, null, React.createElement("div", { className: chrome.sheetWorkspaceClassName }, content), outputs);
     }
     ReactDOM.createRoot(host).render(React.createElement(Demo));

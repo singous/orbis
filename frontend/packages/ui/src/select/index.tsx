@@ -50,7 +50,7 @@ function Select<Value extends string | number>({ label, options, value, defaultV
       <ToolbarScopeBoundary><Primitive.Portal data-theme={theme} style={portalStyle} role="region" aria-label={`${label ?? props["aria-label"] ?? "选择"}选项`}>
         <Primitive.Positioner sideOffset={4} alignItemWithTrigger={false} className="z-(--ob-z-popover) outline-none">
           <Primitive.Popup data-slot="ob-select-popup" className="max-h-(--available-height) min-w-(--anchor-width) overflow-y-auto rounded-ob-lg border border-ob-border bg-ob-popover p-1 text-ob-popover-foreground shadow-lg outline-none scroll-p-1">
-            <Primitive.List>{options.map(option => <Primitive.Item key={option.value} value={option.value} disabled={option.disabled} className="flex min-h-(--ob-control-height-md) items-center gap-2 rounded-ob-sm px-3 py-2 text-sm outline-none data-highlighted:bg-ob-accent data-disabled:opacity-50">
+            <Primitive.List>{options.map(option => <Primitive.Item key={option.value} value={option.value} disabled={option.disabled} data-slot="ob-select-option" className="flex min-h-(--ob-control-height-md) items-center gap-2 rounded-ob-sm px-3 py-2 text-sm outline-none data-highlighted:bg-ob-accent data-disabled:opacity-50">
               <Primitive.ItemText>{option.label}</Primitive.ItemText><Primitive.ItemIndicator className="ms-auto" aria-hidden="true">✓</Primitive.ItemIndicator>
             </Primitive.Item>)}</Primitive.List>
           </Primitive.Popup>

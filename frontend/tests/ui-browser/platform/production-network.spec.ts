@@ -5,7 +5,7 @@ import { installHomeFixture, user } from "../fixtures/home";
 import { documentEditorHTTP, documentId } from "../fixtures/document-editor";
 import { readerHTTP, siteId } from "../fixtures/site-reader";
 import { boardHTTP, collectionId, documentId as boardDocumentId, board } from "../fixtures/board";
-import { initialSheet, sheetReadData } from "../fixtures/sheet-workspace";
+import { installSheetRouteFixture, sheetRoutePath } from "../fixtures/sheet-route";
 import { installSiteManagementFixture, siteManagementSiteId } from "../fixtures/site-management";
 
 const RUNTIME_ASSET_TYPES = new Set(["script", "stylesheet", "font", "image"]);
@@ -44,7 +44,9 @@ const surfaces: RuntimeSurface[] = [
     return documentEditorHTTP(page);
   }, verify: async page => {
     await expect(page.getByRole("textbox", { name: "文档标题", exact: true })).toHaveValue("界面平台化设计");
-    await expect(page.locator(".ProseMirror")).toContainText("这是一份固定的文档内容");
+    const body = page.getByRole("textbox", { name: "文档正文", exact: true });
+    await expect(body).toContainText("这是一份固定的文档内容");
+    await expect(body).toHaveAttribute("aria-readonly", "false");
     await expect(page.getByRole("toolbar", { name: "文档格式", exact: true })).toBeVisible();
   } },
   { name: "reader", path: "/s/guide", entry: "src/features/sites/PublicSitePage.tsx", setup: readerHTTP, verify: async page => {
@@ -55,22 +57,7 @@ const surfaces: RuntimeSurface[] = [
     await expect(page.getByRole("toolbar", { name: "画板工具", exact: true })).toBeVisible();
     await expect(page.getByRole("tab", { name: "主画布", exact: true })).toBeVisible();
   } },
-  { name: "sheet", path: `/documents/${initialSheet.document_id}`, entry: "src/features/sheets/SheetWorkspace.tsx", setup: async page => {
-    await installHomeFixture(page);
-    const sheet = { ...initialSheet, id: documentId };
-    await page.route("**/api/v1/workspaces/*/sheets/**", async route => {
-      expect(route.request().method()).toBe("GET");
-      const path = new URL(route.request().url()).pathname.replace(`/sheets/${sheet.id}`, `/sheets/${initialSheet.id}`);
-      await route.fulfill({ json: { code: "OK", message: "", request_id: "production-sheet", data: sheetReadData(path, sheet) } });
-    });
-    await page.route(`**/api/v1/workspaces/*/collections/${initialSheet.collection_id}`, async route => {
-      await route.fulfill({ json: { code: "OK", message: "", request_id: "production-sheet", data: sheetReadData(new URL(route.request().url()).pathname) } });
-    });
-    await page.route(`**/api/v1/workspaces/*/documents/${initialSheet.document_id}`, async route => {
-      const data = { id: initialSheet.document_id, workspace_id: initialSheet.workspace_id, collection_id: initialSheet.collection_id, sheet_id: sheet.id, parent_id: null, position: 0, title: initialSheet.title, content_version: 1, is_archived: false, archived_at_ms: null, created_at_ms: 1, updated_at_ms: 1 };
-      await route.fulfill({ json: { code: "OK", message: "", request_id: "production-sheet", data } });
-    });
-  }, verify: async page => {
+  { name: "sheet", path: sheetRoutePath, entry: "src/features/sheets/SheetWorkspace.tsx", setup: installSheetRouteFixture, verify: async page => {
     await expect(page.locator(".sheet-workspace")).toBeVisible();
     await expect(page.getByRole("tab", { name: "全部记录", exact: true })).toBeVisible();
     await expect(page.getByText("示例记录 1", { exact: true })).toBeVisible();

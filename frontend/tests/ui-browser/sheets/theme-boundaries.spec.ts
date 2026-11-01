@@ -21,7 +21,7 @@ for (const inner of ["light", "dark"] as const) for (const width of [1280, 390])
     const optionTag = popup.getByRole("option", { name: "选项 A", exact: true }).locator(".sheet-tag");
     await expect.poll(() => popup.evaluate(element => element.closest("[data-theme]")?.getAttribute("data-theme"))).toBe(inner);
     const initial = await sourceTag.evaluate(element => ({ color: getComputedStyle(element).color, background: getComputedStyle(element).backgroundColor }));
-    expect(initial.color).toBe(inner === "light" ? "rgb(38, 117, 190)" : "rgb(121, 184, 255)");
+    expect(initial.color).toBe(inner === "light" ? "rgb(34, 108, 175)" : "rgb(121, 184, 255)");
     await expect(optionTag).toHaveCSS("color", initial.color);
     await expect(optionTag).toHaveCSS("background-color", initial.background);
     await source.evaluate((element, theme) => { element.setAttribute("data-theme", theme); (element as HTMLElement).style.setProperty("--ob-sheet-blue-base", "#105530"); }, outer);
@@ -30,7 +30,7 @@ for (const inner of ["light", "dark"] as const) for (const width of [1280, 390])
     await expect(input).toBeFocused();
     expect(await input.evaluate((element, original) => element === original, original)).toBe(true);
     const updated = await sourceTag.evaluate(element => ({ color: getComputedStyle(element).color, background: getComputedStyle(element).backgroundColor }));
-    expect(updated.color).toBe(outer === "light" ? "rgb(38, 117, 190)" : "rgb(121, 184, 255)");
+    expect(updated.color).toBe(outer === "light" ? "rgb(34, 108, 175)" : "rgb(121, 184, 255)");
     expect(updated.background).not.toBe(initial.background);
     await expect(optionTag).toHaveCSS("color", updated.color);
     await expect(optionTag).toHaveCSS("background-color", updated.background);

@@ -211,6 +211,7 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
     immediatelyRender: false,
     shouldRerenderOnTransaction: false,
     editorProps: {
+      attributes: { role: "textbox", "aria-label": "文档正文", "aria-multiline": "true", "aria-readonly": String(readOnly) },
       handleKeyDown: (_view, event) => {
         if (!(event.ctrlKey || event.metaKey)) return false;
         const historyEditor = currentEditorRef.current;
@@ -526,6 +527,6 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
 
     {!readOnly && editor && (slash || menuOpen) ? <Portal container={document.body}><div style={insertPosition} className={editorInsertionMenuClassName} role="listbox" aria-label="插入内容">{visible.length ? visible.map((item, index) => <ActionButton className={editorMenuItemClassName} type="button" role="option" aria-selected={index === activeCommand % visible.length} key={item.label} onMouseDown={(event) => event.preventDefault()} onClick={() => run(item)}>{item.icon}{item.label}</ActionButton>) : <p className="mx-2 my-1 text-xs leading-[18px] text-(--ob-page-muted-foreground)">没有匹配的内容块</p>}</div></Portal> : null}
     {editor ? <BlockControls editor={editor} readOnly={readOnly} noteId={noteId} /> : null}
-    <EditorContent editor={editor} aria-label="文档正文" />
+    <EditorContent editor={editor} />
   </div></FileContentContext.Provider></EditorReadOnlyContext.Provider>;
 }

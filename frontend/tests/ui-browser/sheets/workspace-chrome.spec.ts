@@ -80,7 +80,7 @@ for (const theme of ["light", "dark"] as const) for (const width of [1280, 390])
     await manager.getByRole("button", { name: "应用", exact: true }).click();
     await expect(manager).toHaveCount(0);
     expect(updates[1]).toMatchObject({ version: 5, definition: { views: [{ field_ids: ["status", "name"] }] } });
-    await expect(root.getByRole("columnheader")).toHaveText(["状态", "名称"]);
+    await expect(root.locator(".sheet-grid-heading[role=columnheader]")).toHaveText(["状态", "名称"]);
     await root.getByRole("button", { name: "状态列菜单", exact: true }).click();
     await page.getByRole("menuitem", { name: "编辑列", exact: true }).click();
     const field = page.getByRole("dialog", { name: "字段设置", exact: true });
@@ -89,7 +89,7 @@ for (const theme of ["light", "dark"] as const) for (const width of [1280, 390])
     await field.getByRole("button", { name: "保存字段", exact: true }).click();
     await expect(field).toHaveCount(0);
     expect(updates[2]).toMatchObject({ version: 6, definition: { fields: [{ id: "name", name: "名称" }, { id: "status", name: "状态字段" }, { id: "number", name: "数量" }] } });
-    await expect(root.getByRole("columnheader").first()).toHaveText("状态字段");
+    await expect(root.locator(".sheet-grid-heading[role=columnheader]").first()).toHaveText("状态字段");
     await root.getByRole("button", { name: "全部记录操作", exact: true }).click();
     await page.getByRole("menuitem", { name: "复制视图", exact: true }).click();
     await expect(root.getByRole("tab", { name: "全部记录 副本", exact: true })).toHaveAttribute("aria-selected", "true");

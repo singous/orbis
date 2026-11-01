@@ -34,7 +34,7 @@ test("field drag handles and filter comboboxes retain the original view intent",
   await page.mouse.move(to.x + to.width / 2, to.y + to.height * .2, { steps: 10 });
   await page.mouse.up();
   await manager.getByRole("button", { name: "应用", exact: true }).click();
-  await expect(page.getByRole("columnheader")).toHaveText(["日期", "名称", "状态"]);
+  await expect(page.locator(".sheet-grid-heading[role=columnheader]")).toHaveText(["日期", "名称", "状态"]);
   expect(writes[0]).toMatchObject({ version: 4, definition: { views: [{ field_ids: ["number", "name", "status"] }] } });
   await page.getByRole("button", { name: "筛选", exact: true }).click();
   const filter = page.getByRole("dialog", { name: "筛选", exact: true });

@@ -156,11 +156,11 @@
   --ob-sheet-active-border: #3b8cff;
   --ob-sheet-blue-base: #4084d5;
   --ob-sheet-pink-base: #c15d91;
-  --ob-sheet-ink-blue: #2675be;
-  --ob-sheet-ink-green: #138363;
-  --ob-sheet-ink-amber: #a36d13;
-  --ob-sheet-ink-purple: #8356b8;
-  --ob-sheet-ink-pink: #b75583;
+  --ob-sheet-ink-blue: #226caf;
+  --ob-sheet-ink-green: #117b5d;
+  --ob-sheet-ink-amber: #95620e;
+  --ob-sheet-ink-purple: #70449e;
+  --ob-sheet-ink-pink: #a24973;
 }
 .dark, [data-theme="dark"] {
   --ob-board-hint-foreground: #8995a8;
