@@ -1,7 +1,7 @@
 import {ownerSession,workspacePath} from "../helpers/api-fixtures";
+import { expectUnpaintedBoxShadow } from "../helpers/workspace-rendering";
 import { expect, test } from '@playwright/test';
 
-const api = `http://127.0.0.1:${process.env.ORBIS_E2E_API_PORT || '9311'}`;
 const credentials = { email: 'owner@example.com', password: 'Orbis-browser-test-2026!' };
 test.use({ screenshot: 'off', trace: 'off' });
 
@@ -23,18 +23,19 @@ test('document overview shares the shell and exposes its function menu alongside
   async function frame(path: string) {
     await page.goto(path);
     await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
+    await expectUnpaintedBoxShadow(page.locator('.workspace-main-area'));
     return page.evaluate(() => {
       const panel = getComputedStyle(document.querySelector('.workspace-main-area')!);
       const grid = getComputedStyle(document.querySelector('.workspace-shell-grid')!);
       const rail = document.querySelector('.workspace-main-navigation')!.getBoundingClientRect();
-      return { radius: panel.borderRadius, border: panel.borderTopWidth, shadow: panel.boxShadow, gap: grid.columnGap, padding: grid.paddingLeft, railX: rail.x, railWidth: rail.width };
+      return { radius: panel.borderRadius, border: panel.borderTopWidth, gap: grid.columnGap, padding: grid.paddingLeft, railX: rail.x, railWidth: rail.width };
     });
   }
   for (const width of [1440, 1920]) {
     await page.setViewportSize({ width, height: 900 });
     const home = await frame('/home');
     const documents = await frame('/documents');
-    expect({ radius: documents.radius, border: documents.border, shadow: documents.shadow }).toEqual({ radius: '0px', border: '0px', shadow: 'none' });
+    expect({ radius: documents.radius, border: documents.border }).toEqual({ radius: '0px', border: '0px' });
     expect({ ...documents, railWidth: home.railWidth }).toEqual(home);
     expect(documents.railWidth).toBeGreaterThan(home.railWidth);
     await expect(page.getByRole('navigation', { name: '文档导航', exact: true })).toBeVisible();
@@ -82,7 +83,7 @@ test('document overview shares the shell and exposes its function menu alongside
   await expect(notebookHeader.getByRole('button', { name: '创建内容', exact: true })).toBeEnabled();
   await expect(page.locator('.workspace-main-navigation > #notebook-directory')).toBeVisible();
   await expect(page.locator('.workspace-shell-grid > #notebook-directory')).toHaveCount(0);
-  expect(await page.locator('#notebook-directory').evaluate(element => getComputedStyle(element).boxShadow)).toBe('none');
+  await expectUnpaintedBoxShadow(page.locator('#notebook-directory'));
   const columnBox = await page.locator('#notebook-directory').boundingBox();
   const titleBox = await page.locator('#notebook-directory .notebook-menu-title').boundingBox();
   const controlsBox = await notebookHeader.boundingBox();

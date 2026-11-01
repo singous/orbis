@@ -1,6 +1,7 @@
 import { releaseFeatures } from "../../../src/shared/release-features";
 import { expect, test, type APIRequestContext, type Browser, type Page } from "@playwright/test";
 import { createCollection, createDocument, openWithSession, ownerSession, responseData, sessionHeaders, workspacePath, type TestSession } from "../helpers/api-fixtures";
+import { settleNativeEditorSelection } from "../helpers/editor-selection";
 
 const runtime = { enabled: false };
 type NativeBlock = { id: string; type: string; props: Record<string, unknown>; content: Array<{ text: string; marks: string[]; href: string | null }>; children: NativeBlock[] };
@@ -38,6 +39,7 @@ async function append(page: Page, id: string, value: string) {
 async function lineBoundary(page: Page, edge: "start" | "end") {
   const apple = await page.evaluate(() => /Mac|iPhone|iPad/.test(navigator.platform));
   await page.keyboard.press(apple ? edge === "start" ? "Meta+ArrowLeft" : "Meta+ArrowRight" : edge === "start" ? "Home" : "End");
+  await settleNativeEditorSelection(page);
 }
 async function pastePlainText(page: Page) {
   const apple = await page.evaluate(() => /Mac|iPhone|iPad/.test(navigator.platform));

@@ -333,7 +333,7 @@ test("selection paste, duplicate highlighting, resize and filters operate on sto
   await page.getByRole("button", { name: "筛选", exact: true }).click();
   const filter = page.getByRole("dialog", { name: "筛选", exact: true });
   await filter.getByRole("button", { name: "添加筛选条件" }).click();
-  await filter.getByRole("button", { name: /筛选条件 1$/ }).click();
+  await filter.getByRole("combobox", { name: "筛选条件 1", exact: true }).click();
   await page.getByRole("option", { name: "包含", exact: true }).click();
   await filter
     .getByRole("textbox", { name: "文本", exact: true })
@@ -647,8 +647,7 @@ test("table pages live in the document tree and edit cells with anchored pickers
   page,
   request,
 }) => {
-  const session = await ownerSession(request),
-    headers = sessionHeaders(session);
+  const session = await ownerSession(request);
   const collection = await createCollection(
     request,
     session,

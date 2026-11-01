@@ -82,7 +82,7 @@ for (const kind of ["field", "view"] as const) {
     await expect(page.getByRole("alertdialog")).toHaveCount(1);
     await expect(notification.getByRole("button")).toHaveCount(1);
     await notification.hover();
-    await notification.getByRole("button", { name: "Close", exact: true }).click();
+    await notification.getByRole("button", { name: "关闭通知", exact: true }).click();
     await expect(notification).toHaveCount(0);
     await expectDraft();
     await save.click();
@@ -108,12 +108,13 @@ test.describe("touch sheet controls", () => {
       const bounds = element.getBoundingClientRect();
       return { left: bounds.left, right: bounds.right, height: bounds.height, overflow: element.scrollWidth - element.clientWidth };
     }));
+    expect(controls).toHaveLength(6);
     for (const [index, control] of controls.entries()) {
       expect(control.height).toBeGreaterThanOrEqual(44);
       expect(control.overflow).toBeLessThanOrEqual(1);
       if (index) expect(control.left).toBeGreaterThanOrEqual(controls[index - 1].right);
     }
-    await expect(page.locator(".sheet-search input")).toHaveCSS("font-size", "16px");
+    await expect(page.getByRole("textbox", { name: "搜索记录", exact: true })).toHaveCSS("font-size", "16px");
     await page.getByRole("button", { name: "状态列菜单", exact: true }).tap();
     await page.getByRole("menuitem", { name: "编辑列", exact: true }).tap();
     const settings = page.getByRole("dialog", { name: "字段设置", exact: true });
@@ -140,7 +141,7 @@ test.describe("touch sheet controls", () => {
     await expect(picker).toBeVisible();
     await expectInsideViewport(picker);
     await expect(picker).toHaveCSS("animation-name", "none");
-    const day = picker.locator(".sheet-calendar-grid > button").nth(10);
+    const day = picker.getByRole("button", { name: /^\d{4}-\d{2}-\d{2}$/ }).nth(10);
     const bounds = await day.boundingBox();
     expect(bounds!.height).toBeGreaterThanOrEqual(44);
     expect(bounds!.width).toBeGreaterThanOrEqual(44);

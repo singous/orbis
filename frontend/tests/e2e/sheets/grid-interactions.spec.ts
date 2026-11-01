@@ -90,7 +90,7 @@ test("field manager reorders, hides and restores columns; header menu works thro
   await expect(page.getByRole("button", { name: "生成表单", exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "字段管理", exact: true }).click();
   const manager = page.getByRole("dialog", { name: "字段管理", exact: true });
-  await drag(page, manager.getByRole("button", { name: `拖拽排序${names[2]}` }), manager.locator(".sheet-managed-field").first());
+  await drag(page, manager.getByRole("button", { name: `拖拽排序${names[2]}` }), manager.getByRole("button", { name: `拖拽排序${names[0]}`, exact: true }));
   await manager.getByRole("button", { name: "应用", exact: true }).click();
   await expect(grid.getByRole("columnheader").first()).toContainText(names[2]);
   await page.getByRole("button", { name: "字段管理", exact: true }).click();
@@ -124,7 +124,7 @@ test("field manager reorders, hides and restores columns; header menu works thro
   await expect(grid.getByRole("columnheader").nth(1)).toContainText("Inserted");
   await grid.getByRole("button", { name: `${names[0]}列菜单` }).click();
   await page.getByRole("menuitem", { name: "按本列筛选", exact: true }).click();
-  await expect(page.getByRole("dialog", { name: "筛选", exact: true }).getByRole("button", { name: /筛选字段 1/ })).toContainText(names[0]);
+  await expect(page.getByRole("dialog", { name: "筛选", exact: true }).getByRole("combobox", { name: "筛选字段 1", exact: true })).toContainText(names[0]);
   await page.getByRole("button", { name: "取消", exact: true }).click();
   await page.getByRole("button", { name: "字段管理", exact: true }).click();
   await manager.getByRole("button", { name: "Inserted字段操作" }).click();
