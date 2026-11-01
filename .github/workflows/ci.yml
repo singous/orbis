@@ -109,7 +109,7 @@ jobs:
         run: |
           npm run build
           npm run storybook:build
-          npm run check:bundle
+          npm run check:bundle -- --complete
 
   frontend-visual:
     name: Frontend Linux visual regression

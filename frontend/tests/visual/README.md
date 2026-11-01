@@ -15,7 +15,7 @@ Use `npm run test:visual:container -- --update-snapshots` to produce candidates.
 
 The Storybook cases wait for the current Story's `STORY_FINISHED` event, including `play` and `afterEach`, and reject cached framework play/render errors before preparing a visible state. Storybook 9.1.21 can report a successful finish after catching such an exception, so the status alone is insufficient. Popups are opened explicitly when the Story closed them. The application fixtures are shared with existing UI behavior tests. Home, document editor and reader use real frontend routes; Board and Sheet use real component compositions. The 390px application-surface cases enable touch; the other suites test narrow viewports. All suites wait for the relevant content, fonts and visible images before capturing.
 
-The 24 initial platform images and 96 additional reviewed images below are checked in. The remaining 20 images must be regenerated after their presentation and fixture corrections, then inspected before those suites can pass. A local `--ignore-snapshots` replay only checks the actions and readiness conditions.
+All 140 reviewed images below are checked in. A complete ordinary comparison after the final reference update is still required; a local `--ignore-snapshots` replay only checks the actions and readiness conditions.
 
 ## Initial platform snapshots
 
@@ -31,4 +31,10 @@ These images establish the current platform reference. They do not provide a pix
 
 All 116 new candidates were inspected. The accepted 96 images comprise 76 representative component images and 20 application images: home, document editor, embedded Sheet, Sheet filter and public reader, in each theme and width. They were copied without alteration and verified byte for byte. The embedded Sheet deliberately retains a bounded, scrollable grid viewport; narrow canvas content likewise retains its camera and pan behavior.
 
-The other 20 candidates were held for correction: Sheet's full-height grid stretched its default button; Icons and Badge examples overflowed their narrow theme container; the Popover example lacked focus-ring spacing. Those four component groups account for 16 images. The four Board images also wait for a valid notebook fixture and its loaded navigation state. These candidates are not accepted baselines and must be generated and inspected again after the corrections.
+The other 20 candidates were held for correction: Sheet's full-height grid stretched its default button; Icons and Badge examples overflowed their narrow theme container; the Popover example lacked focus-ring spacing. Those four component groups account for 16 images. The four Board images also required a valid notebook fixture and its loaded navigation state. Those original candidates were not accepted.
+
+## Corrected snapshots
+
+[CI run 41275276583](https://github.com/singous/orbis/actions/runs/41275276583), artifact `frontend-visual-evidence` (`13070472647`), generated the corrected candidates from source revision `6a2307a043094c538e46285848628e01e3cd4e7c`. The ZIP SHA-256 was `2b8aa4aba5c6039b8ba3d87901fd167f351c40506dd898801f8ba4e3fd4e9a37`. Its 107 passing scenarios covered zero-pixel comparison of the 120 existing images and the three readiness protocol tests; the remaining 20 scenarios reported only missing references.
+
+All 20 corrected images were inspected before copying. Sheet's close control has its natural single-line height; narrow Icons labels wrap completely; Badge stays within its theme panel; Popover leaves room for the input focus ring. The desktop Board navigation displays its loaded notebook and document, while narrow Board controls remain within the viewport around the pannable canvas. The files were copied unchanged and verified byte for byte; the other 120 reference files were also byte-identical to the artifact.
