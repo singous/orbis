@@ -38,3 +38,12 @@ The other 20 candidates were held for correction: Sheet's full-height grid stret
 [CI run 41275276583](https://github.com/singous/orbis/actions/runs/41275276583), artifact `frontend-visual-evidence` (`13070472647`), generated the corrected candidates from source revision `6a2307a043094c538e46285848628e01e3cd4e7c`. The ZIP SHA-256 was `2b8aa4aba5c6039b8ba3d87901fd167f351c40506dd898801f8ba4e3fd4e9a37`. Its 107 passing scenarios covered zero-pixel comparison of the 120 existing images and the three readiness protocol tests; the remaining 20 scenarios reported only missing references.
 
 All 20 corrected images were inspected before copying. Sheet's close control has its natural single-line height; narrow Icons labels wrap completely; Badge stays within its theme panel; Popover leaves room for the input focus ring. The desktop Board navigation displays its loaded notebook and document, while narrow Board controls remain within the viewport around the pannable canvas. The files were copied unchanged and verified byte for byte; the other 120 reference files were also byte-identical to the artifact.
+
+
+## Loading-button keyboard focus
+
+[CI run 41321006938](https://github.com/singous/orbis/actions/runs/41321006938), artifact `frontend-visual-evidence` (`13088984408`), generated the four loading Button candidates from source `795fa3699078e84a9de9940e5aa0e333c195e382`. The downloaded ZIP SHA-256 was `2c915e347c43839b315392704a6345f2501e6349228ffa502660a05d42289ea4`. The four light/dark, 1280/390px `button-loading` images were inspected against their previous references and difference images, then copied without modification and verified byte for byte. The other 136 PNGs remain unchanged.
+
+The Loading Story returns keyboard focus to its loading button after Tab/Shift+Tab. The button now retains full opacity while `focus-visible`, so its label, spinner and focus outline remain readable; losing focus restores the existing loading opacity. This is an intentional accessibility correction. Image review found no layout, size or wrapping change. The nonfocused completion button and remaining Story material retain their existing presentation.
+
+These references describe the current UI; they do not require visual identity with the previous UI implementation. The Story play, focus/duplicate-activation checks, zero-pixel comparison threshold and readiness rules are unchanged. A complete ordinary comparison against these updated references remains required.
