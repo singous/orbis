@@ -40,9 +40,17 @@ for (const theme of ["light", "dark"]) for (const width of [1280, 390]) test.des
     await panel.getByRole("button", { name: "编辑名称与说明" }).click();
     await panel.getByRole("textbox", { name: "版本名称", exact: true }).fill("未保存的名称");
     await panel.getByRole("button", { name: "取消", exact: true }).click();
+    await expect(panel.getByRole("textbox", { name: "版本名称", exact: true })).toHaveCount(0);
     await expect(panel.getByRole("heading", { name: "评审稿", exact: true })).toBeVisible();
-    await panel.getByRole("tab", { name: "历史版本" }).focus();
+    // 取消按钮卸载后，Dialog 会在下一帧再次恢复面板焦点；之后才能把键盘交给 Tab。
+    await expect.poll(() => panel.evaluate(element => new Promise<boolean>(resolve => {
+      requestAnimationFrame(() => resolve(document.activeElement === element));
+    }))).toBe(true);
+    const historyTab = panel.getByRole("tab", { name: "历史版本" });
+    await historyTab.focus();
+    await expect(historyTab).toBeFocused();
     await page.keyboard.press("ArrowLeft");
+    await expect(panel.getByRole("tab", { name: "评论", exact: true })).toBeFocused();
     await expect(panel.getByRole("tab", { name: "评论", exact: true })).toHaveAttribute("aria-selected", "true");
     await expect(panel.getByRole("textbox", { name: "回复内容" })).toHaveValue("保留的回复");
     await panel.getByRole("button", { name: "发送回复" }).click();

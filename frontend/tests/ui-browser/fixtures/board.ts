@@ -1,10 +1,11 @@
 import type { Page } from "@playwright/test";
+import type { Notebook } from "../../../src/shared/api/schemas";
 import { pagination, user, workspace } from "./session";
 
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 export const boardId = id(10), documentId = id(11), collectionId = id(12), firstPageId = id(13), secondPageId = id(14);
 export const board = { id: boardId, document_id: documentId, workspace_id: workspace.id, collection_id: collectionId, title: "体验设计画板", schema_version: 1, revision: 1, pages: [{ id: firstPageId, name: "主画布", position: 0, background: "#f2f4f7", version: 1 }, { id: secondPageId, name: "评审画布", position: 1, background: "#f2f4f7", version: 1 }], created_at_ms: 1, updated_at_ms: 1 };
-const notebook = { id: collectionId, workspace_id: workspace.id, group_id: null, title: "设计手册", sort_order: 0, icon: null, metadata_version: 1, directory_version: 1, is_archived: false, archived_at_ms: null, created_at_ms: 1, updated_at_ms: 1 };
+const notebook: Notebook = { id: collectionId, workspace_id: workspace.id, group_id: id(16), title: "设计手册", sort_order: 0, icon: null, metadata_version: 1, directory_version: 1, is_archived: false, archived_at_ms: null, created_at_ms: 1, updated_at_ms: 1 };
 const boardDocument = { id: documentId, workspace_id: workspace.id, collection_id: collectionId, parent_id: null, position: 0, title: board.title, content_version: 1, board_id: boardId, is_archived: false, archived_at_ms: null, created_at_ms: 1, updated_at_ms: 1 };
 const element = { id: id(15), page_id: firstPageId, shape_type: "flow.process", shape_version: 1, geometry: { x: 100, y: 100, width: 200, height: 100, rotation_rad: 0 }, style: { fill: "#ffffff", stroke: "#475569", stroke_width: 2, font_size: 16, text_color: "#26354b", opacity: 1, dashed: false, bold: false, align: "center" }, text: "流程步骤", structure: { parent_id: null, order: 0, members: [], start: null, end: null, points: [], route: "straight", start_marker: "none", end_marker: "arrow", icon_id: "", asset_id: null, collapsed: false }, versions: { geometry: 1, style: 1, text: 1, structure: 1 }, version: 1 };
 

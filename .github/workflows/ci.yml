@@ -108,8 +108,8 @@ jobs:
       - name: Build frontend and component documentation
         run: |
           npm run build
-          npm run check:bundle
           npm run storybook:build
+          npm run check:bundle
 
   frontend-visual:
     name: Frontend Linux visual regression
@@ -180,6 +180,9 @@ jobs:
         working-directory: frontend
         run: npx playwright install --with-deps chromium
       - name: Verify UI components, accessibility and application contracts
+        id: ui_contracts
+        # 保留 UI 失败，但继续获取独立数据库旅程的证据；最后的检查恢复失败结论。
+        continue-on-error: true
         working-directory: frontend
         run: |
           npm run test:storybook
@@ -187,6 +190,11 @@ jobs:
       - name: Build production frontend
         working-directory: frontend
         run: npm run build
+      - name: Verify production UI assets are served locally
+        working-directory: frontend
+        env:
+          ORBIS_UI_PRODUCTION: "1"
+        run: npm run test:ui -- tests/ui-browser/platform/production-network.spec.ts --output=test-results/production-ui
       - name: Build the owned collaboration test engine
         env:
           BUILDX_CONFIG: ${{ runner.temp }}/orbis-buildx
@@ -198,12 +206,20 @@ jobs:
           ORBIS_E2E_PERFORMANCE_MODE: "report"
           ORBIS_TEST_COLLABORATION_IMAGE: orbis-collaboration:ci
         run: npm run test:e2e
+      - name: Preserve UI contract failures
+        if: always() && steps.ui_contracts.outcome == 'failure'
+        run: |
+          echo "UI component, accessibility or application contract tests failed. See the original failures above and the uploaded UI browser evidence."
+          exit 1
       - name: Upload browser failure evidence
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: browser-failure-evidence
-          path: frontend/test-results/browser/
+          path: |
+            frontend/test-results/browser/
+            frontend/test-results/ui-browser/
+            frontend/test-results/production-ui/
           if-no-files-found: ignore
           retention-days: 7
 

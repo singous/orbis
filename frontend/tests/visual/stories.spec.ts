@@ -1,18 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
-import { STORY_FINISHED, type StoryFinishedPayload } from "storybook/internal/core-events";
-
-const STORYBOOK_ORIGIN = process.env.ORBIS_VISUAL_STORYBOOK_ORIGIN ?? "http://127.0.0.1:9322";
+import { STORYBOOK_ORIGIN, waitForStoryReady } from "./helpers/story-ready";
 
 type StoryCase = {
   name: string;
   id: string;
   prepare: (page: Page) => Promise<void>;
-};
-
-type StoryWindow = Window & {
-  __STORYBOOK_ADDONS_CHANNEL__?: {
-    last: (event: string) => [StoryFinishedPayload] | undefined;
-  };
 };
 
 const stories: StoryCase[] = [
@@ -128,12 +120,7 @@ for (const theme of ["light", "dark"] as const) for (const width of [1280, 390])
     for (const story of stories) test(story.name, async ({ page }) => {
       const query = new URLSearchParams({ id: story.id, viewMode: "story", globals: `theme:${theme}` });
       await page.goto(`${STORYBOOK_ORIGIN}/iframe.html?${query}`);
-      // Storybook 9 的标准结束事件在 play 与 afterEach 后发出；last() 也保留先于订阅完成的事件。
-      const finished = await page.waitForFunction(({ id, event }) => {
-        const result = (window as StoryWindow).__STORYBOOK_ADDONS_CHANNEL__?.last(event)?.[0];
-        return result?.storyId === id ? result : false;
-      }, { id: story.id, event: STORY_FINISHED });
-      expect(await finished.jsonValue(), `${story.id} must finish successfully before visual actions`).toMatchObject({ status: "success" });
+      await waitForStoryReady(page, story.id);
       await expect(page.locator("#storybook-root > [data-theme]")).toHaveAttribute("data-theme", theme);
       await page.evaluate(() => document.fonts.ready);
       await page.mouse.move(0, 0);

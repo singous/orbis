@@ -57,6 +57,7 @@ for (const theme of ["light", "dark"] as const) for (const width of [1280, 390])
       await expect(page.getByRole("application", { name: "画板编辑区域", exact: true })).toBeVisible();
       await expect(page.getByRole("tab", { name: "主画布", exact: true })).toHaveAttribute("aria-selected", "true");
       await expect(page.getByRole("heading", { name: "体验设计画板", exact: true })).toBeVisible();
+      if (width === 1280) await expect(page.getByRole("link", { name: "设计手册", exact: true })).toBeVisible();
       const canvas = page.locator(".board-render-surface canvas").first();
       await expect(canvas).toBeVisible();
       await expect.poll(() => canvas.evaluate(element => {
