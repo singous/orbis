@@ -17,11 +17,18 @@
           "npm release gitHead cded8e894fe40c7c6200a3fdb2bd33e328b7bb65 contains no LICENSE/NOTICE; README contains no full MIT notice",
           "A later LICENSE was added at a16b188d44ae43cc91edb71996ba2b43ff0996d9, when package.json is version 0.10.3",
           "The comparison from the 0.10.2 source to that license commit also changes src/wasi/preview1.ts, so the later file is not asserted to be the attributable release notice for 0.10.2",
-          "The actual @tailwindcss/oxide-wasm32-wasi 4.3.1 containing tarball was verified against its lockfile sha512; the bundled wasm-util 0.10.2 has no license file or complete inline MIT notice. A Node path algorithm credit is present, not a full grant text."
+          "The actual @tailwindcss/oxide-wasm32-wasi 4.3.1 containing tarball was verified against its lockfile sha512; the bundled wasm-util 0.10.2 has no license file or complete inline MIT notice. A Node path algorithm credit is present, not a full grant text.",
+          "The registry gitHead still declares version 0.10.1; its immediate child 70829ebc49510c2ffc606aac7486124e0d6a277d only bumps package.json to 0.10.2. Neither source tree includes a license file.",
+          "The official 0.10.2 tarball has SHA-256 689e9cbe95cb6a18cceb9a13a82578646e6642d7ad89fa179023401cca7d6a12. All 39 files match the copy in the lock-verified Tailwind WASI 4.3.1 tarball, whose SHA-256 is 62cc9354f9eb12ebf52c650a7172377976d4c9b85b046c3a2b592169210222cc; neither copy contains the full MIT notice.",
+          "Upstream issue #9 explicitly identifies 0.10.2 and 0.10.3 as missing LICENSE. Owner toyobayashi replied Fixed in 0.10.4, without explicitly confirming retroactive applicability to 0.10.2. The later 1076-byte LICENSE at a16b188d44ae43cc91edb71996ba2b43ff0996d9 has SHA-256 09e436100bf926e78df875ec80cf3d0c643dfec779b52cfe2aa96afa0de714cb; it is evidence, not an accepted supplemental text for this release."
         ],
         "evidence": [
           "https://registry.npmjs.org/@tybys%2fwasm-util/0.10.2",
-          "https://github.com/toyobayashi/wasm-util/compare/cded8e894fe40c7c6200a3fdb2bd33e328b7bb65...a16b188d44ae43cc91edb71996ba2b43ff0996d9"
+          "https://github.com/toyobayashi/wasm-util/compare/cded8e894fe40c7c6200a3fdb2bd33e328b7bb65...a16b188d44ae43cc91edb71996ba2b43ff0996d9",
+          "https://github.com/toyobayashi/wasm-util/commit/70829ebc49510c2ffc606aac7486124e0d6a277d",
+          "https://registry.npmjs.org/@tybys/wasm-util/-/wasm-util-0.10.2.tgz",
+          "https://registry.npmjs.org/@tailwindcss/oxide-wasm32-wasi/-/oxide-wasm32-wasi-4.3.1.tgz",
+          "https://github.com/toyobayashi/wasm-util/issues/9#issuecomment-5652075741"
         ],
         "requestedAction": "Confirm applicability of the maintainer's later MIT notice to 0.10.2, or obtain the full notice for that release; keep this optional build dependency visible until then."
       }
@@ -40,11 +47,15 @@
           "npm release package.json declares MIT and author Roman Shtylman",
           "Release tag v0.0.2 resolves to 2963095372abf7b75ba55f01cef08ab1e62c2ff4; its tree contains no LICENSE/NOTICE and README has no full license text",
           "Upstream master also contains no license file; GitHub license endpoint returns 404",
-          "formatstack.js carries a complete V8 BSD-3-Clause notice, now retained separately in embedded-notices.json; that notice does not replace the missing MIT wrapper notice"
+          "formatstack.js carries a complete V8 BSD-3-Clause notice, now retained separately in embedded-notices.json; that notice does not replace the missing MIT wrapper notice",
+          "The official 0.0.2 tarball has SHA-256 3e663c82d1ccf9748ed446b648ec21a7dd6c5895ecf4a95310a60a320ca55858 and matches the lockfile sha512. Its five source/documentation files match the release commit byte-for-byte; npm package metadata and .npmignore differ from the tagged source tree.",
+          "Upstream issue #1 requested the missing full license. Owner defunctzombie declined further changes on 2023-05-02 and closed it as not_planned; the reply supplies no full MIT notice or copyright year."
         ],
         "evidence": [
           "https://registry.npmjs.org/stackback/0.0.2",
-          "https://github.com/defunctzombie/node-stackback/tree/2963095372abf7b75ba55f01cef08ab1e62c2ff4"
+          "https://github.com/defunctzombie/node-stackback/tree/2963095372abf7b75ba55f01cef08ab1e62c2ff4",
+          "https://registry.npmjs.org/stackback/-/stackback-0.0.2.tgz",
+          "https://github.com/defunctzombie/node-stackback/issues/1#issuecomment-1532232903"
         ],
         "requestedAction": "Obtain the author's attributable full MIT notice for this release. The current record preserves the declared SPDX and author evidence without manufacturing a copyright line."
       }
