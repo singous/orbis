@@ -302,10 +302,18 @@ for (const { theme, width } of [{ theme: "light", width: 1280 }, { theme: "dark"
     expect(await page.evaluate(() => window.getSelection()?.toString())).toBe("保留原记录");
     await page.keyboard.insertText(draft);
     await expect(editor).toHaveText(draft);
-    const apple = await page.evaluate(() => /Mac|iPhone|iPad/.test(navigator.platform));
-    await editor.press(apple ? "Meta+ArrowLeft" : "Home");
+    // PM 会补偿刚聚焦后的折叠文首；从已证实的输入末尾反向选择相同全文。
     await settleNativeEditorSelection(page, editor);
-    await page.keyboard.press(apple ? "Meta+Shift+ArrowRight" : "Shift+End");
+    await expect.poll(() => editor.evaluate(element => {
+      const selection = window.getSelection();
+      if (!selection?.rangeCount || !selection.isCollapsed || !selection.focusNode || !element.contains(selection.focusNode)) return null;
+      const beforeCaret = selection.getRangeAt(0).cloneRange();
+      beforeCaret.selectNodeContents(element);
+      beforeCaret.setEnd(selection.focusNode, selection.focusOffset);
+      return beforeCaret.toString();
+    })).toBe(draft);
+    const apple = await page.evaluate(() => /Mac|iPhone|iPad/.test(navigator.platform));
+    await page.keyboard.press(apple ? "Meta+Shift+ArrowLeft" : "Shift+Home");
     await settleNativeEditorSelection(page, editor);
     evidence.selection = await page.evaluate(() => window.getSelection()?.toString());
     expect(evidence.selection).toBe(draft);
