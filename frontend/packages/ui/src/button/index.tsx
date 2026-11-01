@@ -7,7 +7,7 @@ import { controlFocus } from "../internal/focus";
 import { resolveClassName } from "../internal/resolve-class-name";
 
 const buttonVariants = cva(
-  `inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-ob-sm border border-transparent text-sm font-medium select-none touch-manipulation transition-colors duration-(--ob-motion-feedback) disabled:cursor-not-allowed data-disabled:opacity-50 ${controlFocus}`,
+  `inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-ob-sm border border-transparent text-sm font-medium select-none touch-manipulation transition-colors duration-(--ob-motion-feedback) disabled:cursor-not-allowed data-disabled:opacity-50 data-loading:focus-visible:opacity-100 ${controlFocus}`,
   {
     variants: {
       variant: {
@@ -46,7 +46,7 @@ function Button({ className, variant, size, appearance = "default", loading = fa
   // 领域控件依赖直接子节点布局；无样式模式保留调用方的内容与命名结构。
   const content = appearance === "unstyled" ? <>{loading ? <span aria-hidden="true" className="size-4 animate-spin rounded-full border-2 border-current border-e-transparent motion-reduce:animate-none" /> : null}{childProps ? childProps.children : children}</> : label;
   const labelledBy = props["aria-labelledby"] ?? childProps?.["aria-labelledby"] ?? (appearance === "unstyled" || props["aria-label"] || childProps?.["aria-label"] ? undefined : labelId);
-  const defaults = appearance === "unstyled" ? `${controlFocus} disabled:cursor-not-allowed data-disabled:opacity-50` : buttonVariants({ variant, size });
+  const defaults = appearance === "unstyled" ? `${controlFocus} disabled:cursor-not-allowed data-disabled:opacity-50 data-loading:focus-visible:opacity-100` : buttonVariants({ variant, size });
   return <Primitive
     {...props}
     type={type}

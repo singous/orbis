@@ -62,9 +62,9 @@ test("reduced-motion probe accepts the lifecycle transition and rejects continui
   }
 });
 
-for (const theme of ["light", "dark"] as const) test(`forced colors preserve ${theme} menu item variants and Select keyboard indicators`, async ({ page }, info) => {
+for (const theme of ["light", "dark"] as const) for (const forcedColors of ["none", "active"] as const) test(`color profile ${theme} ${forcedColors} preserves menu item variants and Select keyboard indicators`, async ({ page }, info) => {
   await page.addInitScript(theme => localStorage.setItem("orbis.appearance", theme), theme);
-  await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
+  await page.emulateMedia({ forcedColors, reducedMotion: "reduce" });
   await page.goto("/__ui");
   await page.evaluate(async theme => {
     const source = await (await fetch("/src/main.tsx")).text();
@@ -129,5 +129,5 @@ for (const theme of ["light", "dark"] as const) test(`forced colors preserve ${t
   await page.keyboard.press("Enter");
   await expect(select).toContainText("选项乙");
   metrics.push(await expectVisibleKeyboardFocus(select));
-  await info.attach("forced-color-indicators", { body: JSON.stringify({ theme, metrics }), contentType: "application/json" });
+  await info.attach("menu-select-color-indicators", { body: JSON.stringify({ theme, forcedColors, reducedMotion: "reduce", metrics }), contentType: "application/json" });
 });

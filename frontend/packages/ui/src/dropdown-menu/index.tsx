@@ -50,7 +50,7 @@ type ItemAttributes<State> = Omit<ComponentProps<"div">, "children" | "className
   className?: string | ((state: State) => string | undefined);
   style?: CSSProperties | ((state: State) => CSSProperties | undefined);
 };
-const itemClasses = "flex min-h-(--ob-control-height-md) items-center gap-2 rounded-ob-sm px-3 py-2 text-sm outline-none select-none data-highlighted:bg-ob-accent data-disabled:cursor-not-allowed data-disabled:opacity-50";
+const itemClasses = `flex min-h-(--ob-control-height-md) items-center gap-2 rounded-ob-sm px-3 py-2 text-sm outline-none select-none data-highlighted:bg-ob-accent data-disabled:cursor-not-allowed data-disabled:opacity-50 ${controlFocus} focus-visible:outline-offset-[-2px]`;
 type DropdownMenuItemProps = Omit<ItemAttributes<ItemState>, "children"> & ({ asChild: true; children: ReactElement } | { asChild?: false; children?: ReactNode });
 function DropdownMenuItem({ asChild, children, onSelect, onClick, textValue, variant = "default", closeOnSelect = true, className, ...props }: DropdownMenuItemProps) {
   return <Primitive.Item {...props} label={textValue} closeOnClick={closeOnSelect} render={asChild ? children : undefined} data-slot="ob-dropdown-item" className={resolveClassName(cn(itemClasses, variant === "danger" && "text-ob-danger-text"), className)} onClick={event => { onClick?.(event); if (!event.defaultPrevented) onSelect?.(); }}>{asChild ? undefined : children}</Primitive.Item>;
