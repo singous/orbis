@@ -1,39 +1,6 @@
-import { expect, test, type Page } from "@playwright/test";
-import { installSession, workspace } from "../fixtures/session";
-
-const id = (value: number) => `00000000-0000-4000-8000-${String(value).padStart(12, "0")}`;
-const fields = [
-  { id: "name", name: "名称", kind: "text", options: [], default: null },
-  { id: "status", name: "状态", kind: "select", options: [{ id: "todo", label: "待处理", color: "blue" }, { id: "done", label: "已完成", color: "green" }], default: null },
-  { id: "number", name: "数量", kind: "number", options: [], default: null },
-];
-const initialView = { id: "view-1", name: "全部记录", kind: "grid", field_ids: fields.map(field => field.id), widths: {}, filters: [{ field_id: "name", operator: "contains", value: "示例" }], sorts: [{ field_id: "number", descending: false }], group_field_id: "", row_height: 40, text_colors: {}, highlight_duplicates: [] };
-const initialSheet = { id: "sheet-1", document_id: id(3), workspace_id: workspace.id, collection_id: id(4), title: "产品计划", version: 4, schema_version: 1, data_revision: 1, definition: { fields, views: [initialView] }, created_at_ms: 1, updated_at_ms: 1 };
-const notebook = { id: id(4), group_id: id(5), workspace_id: workspace.id, title: "产品笔记本", sort_order: 0, icon: null, metadata_version: 1, directory_version: 1, is_archived: false, archived_at_ms: null, created_at_ms: 1, updated_at_ms: 1 };
-const records = [1, 2].map(value => ({ id: `row-${value}`, version: 2, position: value, values: { name: `示例记录 ${value}`, status: "todo", number: value }, created_at_ms: 1, updated_at_ms: 1, created_by: null, updated_by: null }));
-
-async function mountWorkspace(page: Page) {
-  await page.goto("/__ui");
-  await page.evaluate(async () => {
-    const source = await (await fetch("/src/main.tsx")).text();
-    const reactURL = source.match(/from\s*["']([^"']*\/react\.js[^"']*)["']/)![1];
-    const domURL = source.match(/from\s*["']([^"']*react-dom_client\.js[^"']*)["']/)![1];
-    const sheetSource = await (await fetch("/src/features/sheets/SheetWorkspace.tsx")).text();
-    const queryURL = sheetSource.match(/from\s*["']([^"']*@tanstack_react-query[^"']*)["']/)![1];
-    const routerURL = sheetSource.match(/from\s*["']([^"']*react-router-dom[^"']*)["']/)![1];
-    const [{ default: React }, { default: ReactDOM }, query, router, { SheetWorkspace }, chrome] = await Promise.all([import(reactURL), import(domURL), import(queryURL), import(routerURL), import("/src/features/sheets/SheetWorkspace.tsx"), import("/src/features/workspace/workspace-chrome.ts")]);
-    const previous = document.getElementById("root")!;
-    previous.hidden = true;
-    previous.id = "application-preview-root";
-    const host = document.createElement("div");
-    host.id = "root";
-    host.className = chrome.workspaceShellClassName;
-    host.style.padding = "20px";
-    document.body.append(host);
-    const dataRouter = router.createMemoryRouter([{ path: "/", element: React.createElement(SheetWorkspace, { id: "sheet-1", embedded: true, initialView: "view-1" }) }]);
-    ReactDOM.createRoot(host).render(React.createElement(query.QueryClientProvider, { client: new query.QueryClient({ defaultOptions: { queries: { retry: false } } }) }, React.createElement(router.RouterProvider, { router: dataRouter })));
-  });
-}
+import { expect, test } from "@playwright/test";
+import { installSession } from "../fixtures/session";
+import { initialView, initialSheet, records, mountWorkspace, sheetReadData } from "../fixtures/sheet-workspace";
 
 for (const theme of ["light", "dark"] as const) for (const width of [1280, 390]) test.describe(`${theme} sheet ${width}px`, () => {
   test.use({ hasTouch: width === 390 });
@@ -60,10 +27,7 @@ for (const theme of ["light", "dark"] as const) for (const width of [1280, 390])
         updates.push(body);
         sheet = { ...sheet, ...body, version: sheet.version + 1, schema_version: updates.length === 3 ? 2 : sheet.schema_version };
         data = sheet;
-      } else if (url.pathname.endsWith("/sheets/sheet-1")) data = sheet;
-      else if (url.pathname.endsWith("/sheets/sheet-1/records")) data = { items: records, next_cursor: "", schema_version: sheet.schema_version, duplicate_ids: {} };
-      else if (url.pathname.endsWith("/sheets/sheet-1/stats")) data = { total: 2, groups: [] };
-      else if (url.pathname.endsWith(`/collections/${notebook.id}`)) data = notebook;
+      } else data = sheetReadData(url.pathname, sheet);
       await route.fulfill({ json: { code: "OK", message: "", request_id: "sheet-chrome", data } });
     });
     await mountWorkspace(page);

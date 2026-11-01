@@ -23,5 +23,8 @@ export default defineConfig({
   },
   projects: [{ name: "chromium-linux-amd64" }],
   outputDir: "test-results/visual",
-  webServer: { command: "npm run dev -- --port 9321", url: "http://127.0.0.1:9321", reuseExistingServer: false, env: { VITEST: "1" } },
+  webServer: [
+    { command: "npm run dev -- --port 9321", url: "http://127.0.0.1:9321", reuseExistingServer: false, env: { VITEST: "1" } },
+    { command: "npm exec -- storybook dev --port 9322 --host 127.0.0.1 --config-dir packages/ui/.storybook --ci --no-version-updates --exact-port --disable-telemetry", url: "http://127.0.0.1:9322/index.json", reuseExistingServer: false, timeout: 120_000 },
+  ],
 });
