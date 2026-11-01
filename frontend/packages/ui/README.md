@@ -21,4 +21,4 @@ import { Input } from "@orbis/ui/input";
 - `npm run check:ui`：导入边界、公开入口、Story 和新增存量违规检查。
 - `npm run storybook:build`：静态组件文档。
 
-详见 [公共 API](docs/authoring.md)、[样式](docs/styling.md)、[浮层](docs/overlays.md)、[表单](docs/forms.md)、[测试](docs/testing.md)和[可访问名称](docs/accessible-names.md)。
+详见 [公共 API](docs/authoring.md)、[样式](docs/styling.md)、[浮层](docs/overlays.md)、[表单](docs/forms.md)、[测试](docs/testing.md)、[可访问名称](docs/accessible-names.md)和[依赖维护](docs/dependencies.md)。

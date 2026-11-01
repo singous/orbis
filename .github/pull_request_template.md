@@ -15,6 +15,8 @@ List commands actually run and any verification limits.
 
 ## Dependencies and copied assets (when applicable)
 
+For additions or upgrades, include evidence for the [ten admission items](../frontend/packages/ui/docs/dependencies.md#为新增或升级准备准入证据), including actual distribution, source provenance and license decisions.
+
 - [ ] Added, upgraded or removed packages are reflected in the lockfile inventory and notices.
 - [ ] Copied code and assets retain fixed source provenance, copyright and license texts.
 - [ ] Any required maintainer review and corresponding-source decision is recorded; pending items are explicit.
