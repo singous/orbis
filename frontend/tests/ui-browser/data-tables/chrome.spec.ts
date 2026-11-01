@@ -44,6 +44,27 @@ for (const theme of ["light", "dark"] as const) for (const width of [1280, 390])
   const table = page.locator(".data-table");
   await expect(table.getByRole("grid", { name: "产品计划" })).toBeVisible();
   await expect(table).toHaveCSS("font-size", "13px");
+  for (const { opener, title, initialName } of [
+    { opener: table.getByRole("button", { name: "添加字段", exact: true }), title: "添加字段", initialName: "" },
+    { opener: table.getByRole("columnheader", { name: "名称", exact: true }), title: "编辑字段", initialName: "名称" },
+  ]) {
+    for (const close of ["Escape", "关闭"]) {
+      await opener.focus();
+      await expect(opener).toBeFocused();
+      await page.keyboard.press("Enter");
+      const fieldDialog = page.getByRole("dialog", { name: title, exact: true });
+      await expect(fieldDialog).toBeVisible();
+      const name = fieldDialog.getByRole("textbox", { name: "字段名称", exact: true });
+      await expect(name).toBeFocused();
+      await expect(name).toHaveValue(initialName);
+      await name.fill("尚未保存的字段");
+      if (close === "Escape") await page.keyboard.press("Escape");
+      else await fieldDialog.getByRole("button", { name: "关闭", exact: true }).click();
+      await expect(fieldDialog).toHaveCount(0);
+      await expect(opener).toBeFocused();
+      expect(writes).toHaveLength(0);
+    }
+  }
   const settings = table.getByRole("button", { name: "视图设置", exact: true });
   await settings.click();
   const dialog = page.getByRole("dialog", { name: "视图设置", exact: true });

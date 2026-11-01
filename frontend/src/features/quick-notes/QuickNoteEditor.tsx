@@ -39,6 +39,7 @@ export function QuickNoteEditor({ initialValue, onChange, onSubmit, onError, onB
 
   const uploadInput = useRef<HTMLInputElement>(null);
   const imageInput = useRef<HTMLInputElement>(null);
+  const linkInput = useRef<HTMLInputElement>(null);
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const editor = useEditor({
@@ -110,9 +111,9 @@ export function QuickNoteEditor({ initialValue, onChange, onSubmit, onError, onB
       <input ref={uploadInput} className="sr-only" type="file" aria-label="选择随手记附件" tabIndex={-1} onChange={event => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void upload(file); }} />
       {uploading ? <p role="status" className={cn("quick-note-hint mx-4 text-xs leading-5 text-(--ob-page-muted-foreground)", !homeActions && "mb-3")}>正在上传附件…</p> : null}
     </div>
-    <Dialog open={linkOpen} onOpenChange={setLinkOpen}><DialogContent title="插入链接">
+    <Dialog open={linkOpen} onOpenChange={setLinkOpen}><DialogContent title="插入链接" initialFocus={linkInput}>
       <form onSubmit={event => { event.preventDefault(); const url = link.trim(); if (url && !safeContentUrl(url)) { reportError("请输入有效的 HTTP(S)、邮件或锚点链接"); return; } if (url) editor?.chain().focus().extendMarkRange("link").setLink({ href: url }).run(); else editor?.chain().focus().unsetLink().run(); setLinkOpen(false); }}>
-        <TextInput label="链接地址" value={link} onChange={event => setLink(event.target.value)} autoFocus placeholder="https://" />
+        <TextInput ref={linkInput} label="链接地址" value={link} onChange={event => setLink(event.target.value)} placeholder="https://" />
 
         <DialogFooter><Button type="submit" variant="primary">确定</Button></DialogFooter>
       </form>

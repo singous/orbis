@@ -197,6 +197,77 @@ test("notebook editing restores the stable actions trigger after every close pat
   expect(updates).toEqual([{ expected_version: 1, title: "修改后的笔记本", icon: null }]);
 });
 
+for (const activation of ["keyboard", "mouse"] as const) test(`notebook creation restores its focused opener after ${activation} activation`, async ({ page }, info) => {
+  await page.setViewportSize({ width: 735, height: 423 });
+  await page.goto("/documents");
+  const opener = page.getByRole("button", { name: "新建笔记本", exact: true });
+  const focusStages: Array<{ stage: string; tag: string | null; label: string | null; text: string | null }> = [];
+  async function recordFocus(stage: string) {
+    focusStages.push({ stage, ...await page.evaluate(() => {
+      const active = document.activeElement;
+      return { tag: active?.tagName ?? null, label: active?.getAttribute("aria-label") ?? null, text: active?.textContent?.trim().slice(0, 80) ?? null };
+    }) });
+  }
+  try {
+    await opener.focus();
+    await expect(opener).toBeFocused();
+    await recordFocus("before-open");
+    if (activation === "keyboard") await page.keyboard.press("Enter");
+    else await opener.click();
+    const dialog = page.getByRole("dialog", { name: "新建笔记本", exact: true });
+    await expect(dialog.getByRole("textbox", { name: "笔记本名称", exact: true })).toBeFocused();
+    await recordFocus("after-open");
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await recordFocus("after-hidden");
+    await expect(opener).toBeFocused();
+    await recordFocus("restored");
+  } finally {
+    await info.attach("notebook-create-focus", { body: JSON.stringify({ activation, focusStages }, null, 2), contentType: "application/json" });
+  }
+});
+
+test("empty notebook overview restores the actual creation opener through every dismissal", async ({ page }) => {
+  await page.setViewportSize({ width: 735, height: 423 });
+  await page.route("**/api/v1/**", async route => {
+    if (!new URL(route.request().url()).pathname.endsWith("/collections")) return route.fallback();
+    await route.fulfill({ json: { code: "OK", message: "", request_id: "empty-notebook-focus", data: { items: [], pagination: { page: 1, page_size: 20, total: 0 } } } });
+  });
+  await page.goto("/documents");
+  const openers = page.getByRole("button", { name: "新建笔记本", exact: true });
+  await expect(openers).toHaveCount(2);
+  for (const opener of await openers.all()) for (const dismissal of ["Escape", "取消", "关闭", "outside"]) {
+    await opener.focus();
+    await page.keyboard.press("Enter");
+    const dialog = page.getByRole("dialog", { name: "新建笔记本", exact: true });
+    await expect(dialog.getByRole("textbox", { name: "笔记本名称", exact: true })).toBeFocused();
+    if (dismissal === "Escape") await page.keyboard.press("Escape");
+    else if (dismissal === "outside") await page.mouse.click(5, 5);
+    else await dialog.getByRole("button", { name: dismissal, exact: true }).click();
+    await expect(dialog).toBeHidden();
+    await expect(opener).toBeFocused();
+  }
+});
+
+test("notebook group creation restores its focused opener after Escape", async ({ page }, info) => {
+  await page.setViewportSize({ width: 735, height: 423 });
+  await page.goto("/documents/collections");
+  const opener = page.getByRole("button", { name: "新建分组", exact: true });
+  await opener.focus();
+  await expect(opener).toBeFocused();
+  const before = await opener.evaluate(element => ({ tag: document.activeElement?.tagName, openerFocused: document.activeElement === element }));
+  await page.keyboard.press("Enter");
+  const dialog = page.getByRole("dialog", { name: "新建分组", exact: true });
+  const input = dialog.getByRole("textbox", { name: "分组名称", exact: true });
+  await expect(input).toBeFocused();
+  const opened = await input.evaluate(element => ({ tag: document.activeElement?.tagName, inputFocused: document.activeElement === element }));
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  const closed = await page.evaluate(() => ({ tag: document.activeElement?.tagName, text: document.activeElement?.textContent?.trim().slice(0, 80) }));
+  await info.attach("notebook-group-create-focus", { body: JSON.stringify({ before, opened, closed }, null, 2), contentType: "application/json" });
+  await expect(opener).toBeFocused();
+});
+
 for (const theme of ["light", "dark"]) test(`collection and profile ${theme} keep responsive content and readable metadata`, async ({ page }, info) => {
   await page.addInitScript(theme => localStorage.setItem("orbis.appearance", theme), theme);
   const metrics = [];

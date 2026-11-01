@@ -1,6 +1,6 @@
 import { tableFormClassName, tableFormActionsClassName, tableSettingRowClassName, tableFilterRowClassName } from "./table-chrome";
 import { reportError } from "../../shared/api/request-feedback";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "../../shared/ui/Button";
 import { Dialog, DialogContent } from "../../shared/ui/Dialog";
 import { CellEditor } from "./CellEditor";
@@ -25,6 +25,7 @@ export function FieldDialog({
   onClose: () => void;
   onSave: (definition: TableDefinition) => void;
 }) {
+  const nameInput = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(field?.name ?? "");
   const [kind, setKind] = useState<FieldKind>(field?.kind ?? "text");
   const [options, setOptions] = useState(
@@ -118,12 +119,13 @@ export function FieldDialog({
       <DialogContent
         title={field ? "编辑字段" : "添加字段"}
         description="字段标识保持稳定；删除字段后可通过撤销或文档历史恢复。"
+        initialFocus={nameInput}
       >
         <div className={tableFormClassName}>
           <label>
             字段名称
             <input
-              autoFocus
+              ref={nameInput}
               maxLength={120}
               value={name}
               onChange={(event) => setName(event.target.value)}

@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, userEvent, within, waitFor } from "storybook/test";
-import { useState, type CSSProperties } from "react";
+import { useRef, useState, type CSSProperties } from "react";
 import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
 import { Select } from "@orbis/ui/select";
 import { Dialog, DialogTrigger, DialogContent, DialogFooter, DialogClose, DialogPopup, DialogTitle } from "./index";
 
@@ -39,6 +40,29 @@ export const NestedSelect: Story = {
     await userEvent.keyboard("{Escape}");
     await waitFor(() => expect(trigger).toHaveFocus());
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  },
+};
+
+export const ControlledInitialFocus: Story = {
+  render: function ControlledForm() {
+    const [open, setOpen] = useState(false);
+    const nameInput = useRef<HTMLInputElement>(null);
+    return <><Button onClick={() => setOpen(true)}>打开受控表单</Button><Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent title="受控表单" initialFocus={nameInput}><label>名称<Input ref={nameInput} /></label></DialogContent>
+    </Dialog></>;
+  },
+  play: async ({ canvasElement }) => {
+    const trigger = within(canvasElement).getByRole("button", { name: "打开受控表单" });
+    const screen = within(canvasElement.ownerDocument.body);
+    for (const activation of ["pointer", "keyboard"]) {
+      if (activation === "pointer") await userEvent.click(trigger);
+      else await userEvent.keyboard("{Enter}");
+      const dialog = await screen.findByRole("dialog", { name: "受控表单" });
+      await waitFor(() => expect(within(dialog).getByRole("textbox", { name: "名称" })).toHaveFocus());
+      await userEvent.keyboard("{Escape}");
+      await waitFor(() => expect(screen.queryByRole("dialog", { name: "受控表单" })).not.toBeInTheDocument());
+      await waitFor(() => expect(trigger).toHaveFocus());
+    }
   },
 };
 

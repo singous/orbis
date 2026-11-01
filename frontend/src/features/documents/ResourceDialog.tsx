@@ -1,5 +1,5 @@
 import { reportError } from "../../shared/api/request-feedback";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 
 import { Button } from "../../shared/ui/Button";
 import { Dialog, DialogClose, DialogContent, DialogFooter } from "../../shared/ui/Dialog";
@@ -28,6 +28,7 @@ export function ResourceDialog({
 }) {
   const [value, setValue] = useState(initialValue);
   const [submitting,setSubmitting]=useState(false);
+  const valueInput = useRef<HTMLInputElement>(null);
 
   const busy=pending||submitting;
 
@@ -53,14 +54,14 @@ export function ResourceDialog({
         if (!nextOpen&&!busy) onClose();
       }}
     >
-      <DialogContent title={title}>
+      <DialogContent title={title} initialFocus={busy ? true : valueInput}>
         <form className="mt-4" onSubmit={handleSubmit}>
           <TextInput
             label={label}
             placeholder={placeholder}
             value={value}
             disabled={busy}
-            autoFocus
+            ref={valueInput}
             onChange={(event) => setValue(event.target.value)}
           />
 

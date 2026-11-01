@@ -4,6 +4,8 @@ Dialog 使用 Base UI 的焦点约束、滚动锁、外部点击与 Escape 生�
 
 DialogTrigger 和 DialogClose 可以通过 `asChild` 与 Button 组合，避免嵌套按钮。受控且无 Trigger 的弹窗可通过 `finalFocus` 指向返回位置。
 
+表单的初始焦点通过 `DialogContent` / `DialogPopup` 的 `initialFocus` ref 指向字段，兼容应用入口也透传该契约。不要同时使用字段的原生 `autoFocus`：React 挂载字段时会先于原语的焦点记录聚焦它，无 Trigger 的受控弹窗就可能把内部字段当成此前位置，关闭后无法返回外部按钮。目标字段在打开时禁用的场景使用默认初始焦点；来自会卸载的菜单项时，仍由调用方通过 `finalFocus` 指向稳定触发器。
+
 Portal 挂到 body，但通过隐藏锚点读取打开位置最近的 data-theme。读取锚点的全部 `--ob-*` 解析值，并在 Portal 根复制，保留局部主题覆盖。祖先的主题、class、style 属性变化和 forced-colors/reduced-motion/pointer 媒体变化会重新取值；卸载时清理订阅。普通任意业务 CSS 变量不进入 UI 平台的继承契约。
 
 独立宿主或原生浮层使用 `@orbis/ui/portal` 的 `Portal`，由调用方传 `Element | DocumentFragment` 容器。它保留逻辑位置的隐藏主题锚点，在目标以 `display: contents` 包装内容并结束外层 Toolbar 范围，不增加布局盒。空内容不创建目标包装，保留 `:empty` 布局；移动同一个容器保留子树身份。焦点、定位、关闭与容器生命周期由所属消费者管理。原生拖动预览可调用同一入口的 `readPortalTheme(element)`，在挂载前应用一次 `theme` 与 `portalStyle` 快照，不复制包内 hook。
