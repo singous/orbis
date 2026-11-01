@@ -39,6 +39,10 @@ for (const inner of ["light", "dark"] as const) {
     const dialog = page.getByRole("dialog", { name: "搜索文档", exact: true });
     const input = dialog.getByRole("combobox", { name: "搜索文档" });
     await expect(input).toBeFocused();
+    const accent = await reader.locator(".site-reader-brand-mark").evaluate(element => getComputedStyle(element).backgroundColor);
+    await expect(input).toHaveCSS("outline-width", "2px");
+    await expect(input).toHaveCSS("outline-offset", "2px");
+    await expect(input).toHaveCSS("outline-color", accent);
     expect(await dialog.evaluate(element => element.closest("[data-theme]")?.getAttribute("data-theme"))).toBe(inner);
     expect(await dialog.evaluate(element => getComputedStyle(element).backgroundColor)).toBe(await reader.evaluate(element => getComputedStyle(element).backgroundColor));
     await expect(dialog).toHaveCSS("font-family", await reader.evaluate(element => getComputedStyle(element).fontFamily));
@@ -64,6 +68,7 @@ for (const inner of ["light", "dark"] as const) {
     await page.keyboard.press("Escape");
     await expect(dialog).toHaveCount(0);
     await expect(trigger).toBeFocused();
+    await expect(trigger).toHaveCSS("outline-color", accent);
     await trigger.click();
     await input.fill("安装");
     await expect(dialog.getByRole("option", { name: /安装指南/ })).toBeVisible();
