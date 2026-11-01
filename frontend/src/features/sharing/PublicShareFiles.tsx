@@ -1,6 +1,6 @@
 import { useEffect, useMemo, type ReactNode } from "react";
 import { FileContentContext } from "../files/FileContent";
-import { parseFileReference } from "../files/managed-files";
+import { createObjectURLCache, parseFileReference } from "../files/managed-files";
 import { readSharedFile } from "./api";
 
 /** Anonymous resources are scoped to the live link and current document. */
@@ -15,8 +15,7 @@ export function PublicShareFiles({
 }) {
   const files = useMemo(() => {
     const controller = new AbortController();
-    const pending = new Map<string, Promise<string>>();
-    const urls = new Set<string>();
+    const cache = createObjectURLCache();
     let disposed = false;
     return {
       consumers: 0,
@@ -24,29 +23,15 @@ export function PublicShareFiles({
       async resolve(reference: string) {
         const id = parseFileReference(reference);
         if (!id || disposed) throw new Error("分享附件不可用");
-        const existing = pending.get(id);
-        if (existing) return existing;
-        const request = readSharedFile(token, noteId, id, controller.signal)
-          .then((blob) => {
-            if (disposed)
-              throw new DOMException("Share reader disposed", "AbortError");
-            const url = URL.createObjectURL(blob);
-            urls.add(url);
-            return url;
-          })
-          .catch((error: unknown) => {
-            pending.delete(id);
-            throw error;
-          });
-        pending.set(id, request);
-        return request;
+        return cache.resolve(id, () => readSharedFile(token, noteId, id, controller.signal), () => {
+          if (disposed)
+            throw new DOMException("Share reader disposed", "AbortError");
+        });
       },
       dispose() {
         disposed = true;
         controller.abort();
-        for (const url of urls) URL.revokeObjectURL(url);
-        pending.clear();
-        urls.clear();
+        cache.dispose();
       },
     };
   }, [token, noteId]);
