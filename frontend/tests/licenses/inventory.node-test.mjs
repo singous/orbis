@@ -39,8 +39,27 @@ function fixture(t, license = "MIT") {
     } },
   };
   write("frontend/packages/ui/ui.registry.json", registry);
-  const run = (...args) => spawnSync(process.execPath, [script, ...args], { env: { ...process.env, ORBIS_LICENSE_ROOT: root, ORBIS_SOURCE_REVISION: "a".repeat(40) }, encoding: "utf8" });
-  return { root, write, run, registry };
+  let preload = [];
+  const mockFetch = (body, init) => {
+    write("fetch-preload.mjs", `import { writeFileSync } from "node:fs";
+globalThis.fetch = async url => {
+  writeFileSync(${JSON.stringify(path.join(root, "fetch-called.txt"))}, String(url));
+  return new Response(${JSON.stringify(body)}, ${JSON.stringify(init)});
+};\n`);
+    preload = ["--import", path.join(root, "fetch-preload.mjs")];
+  };
+  const run = (...args) => spawnSync(process.execPath, [...preload, script, ...args], { env: { ...process.env, ORBIS_LICENSE_ROOT: root, ORBIS_SOURCE_REVISION: "a".repeat(40) }, encoding: "utf8" });
+  return { root, write, run, registry, mockFetch };
+}
+
+function sourceFixture(t, approved = true) {
+  const result = fixture(t, "MPL-2.0");
+  const sourceBody = "Fixture source archive\n";
+  result.write("licenses/reviews.json", { packages: approved ? { "example@1.0.0": {
+    status: "approved", approvedBy: "fixture maintainer", approvedAt: "2026-11-01", selectedLicense: "MPL-2.0", correspondingSourceRequired: true, conclusion: "fixture decision",
+  } } : {} });
+  result.write("licenses/sources/packages.tsv", `example\t1.0.0\tsha512-Zml4dHVyZQ==\t${"b".repeat(40)}\thttps://example.com/example-source.tgz\t${createHash("sha256").update(sourceBody).digest("hex")}\texample-source.tgz\n`);
+  return { ...result, sourceBody };
 }
 
 test("copied UI provenance preserves distinct immutable revisions in a distribution bundle", t => {
@@ -141,6 +160,55 @@ test("pending reviews block bundling before any distribution output is written",
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /Maintainer review pending: example@1.0.0/);
   assert.equal(existsSync(path.join(root, "frontend/dist/licenses")), false);
+});
+
+test("source download failures retain HTTP diagnostics without dumping unrelated headers", t => {
+  const { root, run, mockFetch } = sourceFixture(t);
+  const body = '{"error":"Source archive denied","detail":"Rate limit exceeded"}\nUpstream raw response\n';
+  const traceparent = "00-0123456789abcdef0123456789abcdef-0123456789abcdef-01";
+  mockFetch(body, { status: 429, statusText: "Too Many Requests", headers: {
+    "x-request-id": "fixture-request", "x-github-request-id": "fixture-github-request", traceparent,
+    "set-cookie": "unrelated-response-cookie", "x-unrelated": "unrelated-response-header",
+  } });
+  assert.equal(run().status, 0);
+  const result = run("--bundle", "dist/licenses");
+  assert.notEqual(result.status, 0);
+  assert.ok(result.stderr.includes("Corresponding-source download failed: example@1.0.0 HTTP 429 Too Many Requests"));
+  assert.ok(result.stderr.includes("x-request-id: fixture-request"));
+  assert.ok(result.stderr.includes("x-github-request-id: fixture-github-request"));
+  assert.ok(result.stderr.includes(`traceparent: ${traceparent}`));
+  assert.ok(result.stderr.includes(`Response body:\n${body}`));
+  assert.doesNotMatch(result.stderr, /unrelated-response-cookie|unrelated-response-header/);
+  assert.equal(readFileSync(path.join(root, "fetch-called.txt"), "utf8"), "https://example.com/example-source.tgz");
+  assert.equal(existsSync(path.join(root, "frontend/dist/licenses/distribution.json")), false);
+});
+
+test("pending source reviews reject bundling before the download boundary", t => {
+  const { root, run, mockFetch, sourceBody } = sourceFixture(t, false);
+  mockFetch(sourceBody, { status: 200 });
+  assert.equal(run().status, 0);
+  const result = run("--bundle", "dist/licenses");
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /Maintainer review pending: example@1.0.0/);
+  assert.equal(existsSync(path.join(root, "fetch-called.txt")), false);
+  assert.equal(existsSync(path.join(root, "frontend/dist/licenses")), false);
+});
+
+test("source download success still requires the pinned checksum and a verified bundle", t => {
+  const { root, run, mockFetch, sourceBody } = sourceFixture(t);
+  mockFetch("Changed source archive\n", { status: 200 });
+  assert.equal(run().status, 0);
+  const mismatch = run("--bundle", "dist/licenses");
+  assert.notEqual(mismatch.status, 0);
+  assert.match(mismatch.stderr, /Corresponding-source checksum mismatch: example/);
+  const bundle = path.join(root, "frontend/dist/licenses");
+  assert.equal(existsSync(path.join(bundle, "licenses/sources/example-source.tgz")), false);
+  assert.equal(existsSync(path.join(bundle, "distribution.json")), false);
+  mockFetch(sourceBody, { status: 200 });
+  const success = run("--bundle", "dist/licenses");
+  assert.equal(success.status, 0, success.stderr);
+  assert.equal(readFileSync(path.join(bundle, "licenses/sources/example-source.tgz"), "utf8"), sourceBody);
+  assert.equal(verifyLicenseBundle(bundle).sourceRevision, "a".repeat(40));
 });
 
 test("an approved permissive inventory produces a readable distribution bundle", t => {

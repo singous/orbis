@@ -204,7 +204,13 @@ async function bundle(destination, pins) {
   cpSync(path.join(root, "licenses"), path.join(target, "licenses"), { recursive: true });
   for (const pin of pins) {
     const response = await fetch(pin.sourceURL);
-    if (!response.ok) throw new Error(`Corresponding-source download failed: ${pin.name} HTTP ${response.status}`);
+    if (!response.ok) {
+      const identifiers = ["request-id", "x-request-id", "x-github-request-id", "x-amz-request-id", "x-ms-request-id", "trace-id", "x-trace-id", "x-amzn-trace-id", "traceparent"].flatMap(name => {
+        const value = response.headers.get(name);
+        return value ? [`${name}: ${value}`] : [];
+      });
+      throw new Error(`Corresponding-source download failed: ${pin.name}@${pin.version} HTTP ${response.status} ${response.statusText}${identifiers.length ? `\n${identifiers.join("\n")}` : ""}\nResponse body:\n${await response.text()}`);
+    }
     const contents = Buffer.from(await response.arrayBuffer());
     if (sha256(contents) !== pin.sourceSHA256) throw new Error(`Corresponding-source checksum mismatch: ${pin.name}`);
     writeFileSync(path.join(target, "licenses", "sources", pin.destination), contents);
