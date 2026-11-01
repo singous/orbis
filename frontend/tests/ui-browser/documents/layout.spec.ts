@@ -170,6 +170,33 @@ test("notebook import retry retains the original operation and Markdown after an
   await expect(page).toHaveURL(`/collections/${notebooks[0].id}`);
 });
 
+test("notebook editing restores the stable actions trigger after every close path", async ({ page }) => {
+  const updates: Array<Record<string, unknown>> = [];
+  await page.route(`**/collections/${notebooks[0].id}`, async route => {
+    if (route.request().method() !== "PATCH") return route.fallback();
+    const payload = route.request().postDataJSON();
+    updates.push(payload);
+    await route.fulfill({ json: { code: "OK", message: "", request_id: "notebook-edit-focus", data: { ...notebooks[0], ...payload, metadata_version: 2 } } });
+  });
+  await page.goto(`/collections/${notebooks[0].id}`);
+  const trigger = page.getByRole("article", { name: "笔记本首页" }).getByRole("button", { name: "笔记本操作", exact: true });
+
+  for (const action of ["Escape", "取消", "关闭", "outside", "保存"]) {
+    await trigger.click();
+    await page.getByRole("menuitem", { name: "编辑笔记本", exact: true }).click();
+    const editor = page.getByRole("dialog", { name: "编辑笔记本", exact: true });
+    await expect(editor.getByRole("textbox", { name: "笔记本名称", exact: true })).toBeFocused();
+    await editor.getByRole("textbox", { name: "笔记本名称", exact: true }).fill("修改后的笔记本");
+    if (action === "Escape") await page.keyboard.press("Escape");
+    else if (action === "outside") await page.mouse.click(5, 5);
+    else await editor.getByRole("button", { name: action, exact: true }).click();
+    await expect(editor).toBeHidden();
+    await expect(trigger).toBeFocused();
+  }
+
+  expect(updates).toEqual([{ expected_version: 1, title: "修改后的笔记本", icon: null }]);
+});
+
 for (const theme of ["light", "dark"]) test(`collection and profile ${theme} keep responsive content and readable metadata`, async ({ page }, info) => {
   await page.addInitScript(theme => localStorage.setItem("orbis.appearance", theme), theme);
   const metrics = [];

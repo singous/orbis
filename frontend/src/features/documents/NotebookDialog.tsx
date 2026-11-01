@@ -1,5 +1,5 @@
 import { reportError } from "../../shared/api/request-feedback";
-import { type FormEvent, useEffect, useState } from "react";
+import { type ComponentProps, type FormEvent, useEffect, useState } from "react";
 
 import { useOptionalAuthRequest } from "../../shared/auth/use-auth-request";
 import { Button } from "../../shared/ui/Button";
@@ -17,11 +17,12 @@ export type NotebookDialogProps = {
   initialIcon?: NotebookIconValue | null;
   submitLabel?: string;
   pending?: boolean;
+  finalFocus?: ComponentProps<typeof DialogContent>["finalFocus"];
   onClose: () => void;
   onSubmit: (value: NotebookDialogValue) => void | Promise<void>;
 };
 
-export function NotebookDialog({ open, title = "新建笔记本", initialValue = "", initialIcon = null, submitLabel = "创建", pending = false, onClose, onSubmit }: NotebookDialogProps) {
+export function NotebookDialog({ open, title = "新建笔记本", initialValue = "", initialIcon = null, submitLabel = "创建", pending = false, finalFocus, onClose, onSubmit }: NotebookDialogProps) {
   const auth = useOptionalAuthRequest();
   const [value, setValue] = useState(initialValue);
   const [icon, setIcon] = useState<NotebookIconValue | null>(initialIcon);
@@ -52,7 +53,7 @@ export function NotebookDialog({ open, title = "新建笔记本", initialValue =
 
   // 延续现有弹窗宽度和表单起点，避免切换图标时改变布局。
   return <Dialog open={open} dismissible={!submitting && !pending} onOpenChange={(nextOpen) => { if (!nextOpen && !submitting && !pending) onClose(); }}>
-    <DialogContent title={title} description="选择一个图标，为你的内容留个专属位置。" className="notebook-dialog max-w-[476px]">
+    <DialogContent title={title} description="选择一个图标，为你的内容留个专属位置。" className="notebook-dialog max-w-[476px]" finalFocus={finalFocus}>
       <form className="notebook-dialog-form mt-[25px]" onSubmit={handleSubmit}>
         <TextInput label="笔记本名称" placeholder="输入笔记本名称" autoFocus value={value} disabled={pending || submitting} onChange={(event) => setValue(event.target.value)} />
         <NotebookIconPicker value={icon} onChange={setIcon} onPendingChange={setUploading} disabled={pending || submitting} uploadFile={async (file) => {

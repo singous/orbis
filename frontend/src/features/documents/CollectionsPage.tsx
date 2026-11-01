@@ -15,7 +15,7 @@ import {
   Pin,
   Plus,
 } from "../../shared/ui/icons";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
 import { z } from "zod";
@@ -33,6 +33,7 @@ import { NotebookCard } from "./NotebookCard";
 import type { NotebookIconValue } from "./notebook-icons";
 import { ResourceDialog } from "./ResourceDialog";
 import { SearchGroupTarget } from "../search/SearchGroupTarget";
+import { useNotebookDocumentCounts } from "./notebook-counts";
 import {
   useArchiveDocumentGroup,
   useArchiveNotebook,
@@ -41,7 +42,6 @@ import {
   useCreateNotebook,
   useDocumentGroups,
   useNotebooks,
-  useDocumentIndex,
   useUpdateDocumentGroup,
   useUpdateNotebook,
 } from "./queries";
@@ -70,7 +70,7 @@ export function CollectionsPage() {
   const [dialog, setDialog] = useState<DialogState>(null);
   const groupsQuery = useDocumentGroups();
   const notebooksQuery = useNotebooks();
-  const notesQuery = useDocumentIndex("active", { allPages:true });
+  const { counts: notebookCounts } = useNotebookDocumentCounts();
   const createGroup = useCreateDocumentGroup();
   const updateGroup = useUpdateDocumentGroup();
   const archiveGroup = useArchiveDocumentGroup();
@@ -80,7 +80,6 @@ export function CollectionsPage() {
   const createNote = useCreateNote();
   const groups = groupsQuery.data?.items ?? [];
   const notebooks = notebooksQuery.data?.items ?? [];
-  const notes = notesQuery.data?.items ?? [];
   useEffect(() => {
     if (!targetGroupId) { focusedGroup.current = null; return; }
     if (focusedGroup.current === targetGroupId || !groups.some(group => group.id === targetGroupId)) return;
@@ -100,15 +99,6 @@ export function CollectionsPage() {
     reportError(resourceError);
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, navigate, resourceError]);
-  const notebookCounts = useMemo(
-    () =>
-      notes.reduce(
-        (counts, note) =>
-          counts.set(note.notebook_id, (counts.get(note.notebook_id) ?? 0) + 1),
-        new Map<string, number>(),
-      ),
-    [notes],
-  );
 
   async function handleDialog(value: string, icon?: NotebookIconValue | null) {
     if (!dialog) return;

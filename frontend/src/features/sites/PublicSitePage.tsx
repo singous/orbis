@@ -1,5 +1,1 @@
-import { PublicSiteDelivery } from "./PublicSiteDelivery";
-
-export function PublicSitePage() {
-  return <PublicSiteDelivery />;
-}
+export { PublicSiteDelivery as PublicSitePage } from "./PublicSiteDelivery";

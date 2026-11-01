@@ -1,6 +1,6 @@
 import { cn } from "@orbis/ui/cn";
 import { sheetActionClassName } from "./sheet-chrome";
-import { formPaperVariants, formQuestionClassName, formRequiredClassName, formDescriptionVariants, publicFormClassName, publicFormTitleClassName } from "./form-chrome";
+import { publicFormPaperClassName, formQuestionClassName, formRequiredClassName, publicFormDescriptionClassName, publicFormClassName, publicFormTitleClassName } from "./form-chrome";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
@@ -56,7 +56,7 @@ function PublicSheetFormSession({ token }: { token: string }) {
   if (query.error)
     return (
       <main className={publicFormClassName}>
-        <div className={formPaperVariants({ surface: "public" })}>
+        <div className={publicFormPaperClassName}>
           <h1 className={publicFormTitleClassName}>暂时无法填写</h1>
           <p>收集已停止，或填写链接已失效。</p>
           <ActionButton className={sheetActionClassName} size="sm" onClick={() => void query.refetch()}>
@@ -108,7 +108,7 @@ function PublicSheetFormSession({ token }: { token: string }) {
   return (
     <main className={publicFormClassName}>
       <form
-        className={formPaperVariants({ surface: "public" })}
+        className={publicFormPaperClassName}
         onSubmit={(e) => {
           e.preventDefault();
           void submit();
@@ -122,7 +122,7 @@ function PublicSheetFormSession({ token }: { token: string }) {
         ) : (
           <>
             <h1 className={publicFormTitleClassName}>{form.config.title}</h1>
-            <p className={formDescriptionVariants({ surface: "public" })}>{form.config.description}</p>
+            <p className={publicFormDescriptionClassName}>{form.config.description}</p>
             {form.config.fields.map((ff, i) => {
               const field = form.fields.find((f) => f.id === ff.field_id);
               return field ? (

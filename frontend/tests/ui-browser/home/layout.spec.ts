@@ -5,6 +5,31 @@ import { installHomeFixture, tag } from "../fixtures/home";
 
 test.beforeEach(async ({ page }) => { await installHomeFixture(page); });
 
+for (const theme of ["light", "dark"]) for (const forcedColors of ["none", "active"] as const) {
+  test(`home ${theme} links keep platform keyboard focus with forced colors ${forcedColors}`, async ({ page }, info) => {
+    await page.addInitScript(theme => localStorage.setItem("orbis.appearance", theme), theme);
+    await page.emulateMedia({ forcedColors });
+    await page.goto("/home");
+    await expect(page.locator(".home-document-row")).toHaveCount(3);
+    await page.keyboard.press("Tab");
+    const links = page.locator(".home-stats a, .home-document-row, .home-notebook");
+    const metrics = [];
+    for (const link of await links.all()) {
+      await link.focus();
+      await expect(link).toBeFocused();
+      const focus = await link.evaluate(element => {
+        const style = getComputedStyle(element);
+        return { href: element.getAttribute("href"), width: style.outlineWidth, style: style.outlineStyle, offset: style.outlineOffset, color: style.outlineColor, background: style.backgroundColor };
+      });
+      expect(focus).toMatchObject({ width: "2px", style: "solid", offset: "2px" });
+      expect(focus.color).not.toBe("rgba(0, 0, 0, 0)");
+      metrics.push(focus);
+    }
+    expect(metrics).toHaveLength(9);
+    await info.attach("home-link-focus", { body: JSON.stringify({ theme, forcedColors, links: metrics }, null, 2), contentType: "application/json" });
+  });
+}
+
 for (const theme of ["light", "dark"]) for (const width of [1280, 390]) {
   test(`home ${theme} at ${width}px keeps panel and editor layout`, async ({ page }) => {
     await page.addInitScript(theme => localStorage.setItem("orbis.appearance", theme), theme);

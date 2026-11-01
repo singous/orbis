@@ -1,6 +1,6 @@
 import { cn } from "@orbis/ui/cn";
 import { sheetActionClassName } from "./sheet-chrome";
-import { formPaperVariants, formQuestionClassName, formRequiredClassName, formDescriptionVariants } from "./form-chrome";
+import { editorFormPaperClassName, formQuestionClassName, formRequiredClassName, editorFormDescriptionClassName } from "./form-chrome";
 import { reportError } from "../../shared/api/request-feedback";
 import { ArrowDown, ArrowUp, Copy, Plus, Send, Trash2 } from "@orbis/ui/icons";
 import QRCode from "qrcode";
@@ -245,7 +245,7 @@ export function SheetForms({
             </div>
           </aside>
         )}
-        <div className={formPaperVariants({ surface: "editor" })}>
+        <div className={editorFormPaperClassName}>
           <TextInput
             className="sheet-form-title w-full border-transparent bg-transparent px-0 text-2xl font-semibold [&.sheet-form-title]:[box-shadow:none]"
             aria-label="表单标题"
@@ -260,7 +260,7 @@ export function SheetForms({
             }
           />
           <textarea
-            className={formDescriptionVariants({ surface: "editor" })}
+            className={editorFormDescriptionClassName}
             aria-label="表单描述"
             readOnly={preview || readOnly}
             placeholder="请输入表单描述"

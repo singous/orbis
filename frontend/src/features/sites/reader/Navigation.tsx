@@ -36,19 +36,8 @@ export function Navigation({ sections, currentSlug, basePath, open, close, descr
   returnFocusRef: RefObject<HTMLButtonElement | null>;
 }) {
   const drawerRef = useRef<HTMLElement>(null);
-  const hiddenByCollapsedBranch = (element: HTMLElement) => {
-    let ancestor = element.parentElement;
-    while (ancestor && ancestor !== drawerRef.current) {
-      if (ancestor instanceof HTMLDetailsElement && !ancestor.open) {
-        const summary = Array.from(ancestor.children).find((child) => child.tagName === "SUMMARY");
-        if (!summary?.contains(element)) return true;
-      }
-      ancestor = ancestor.parentElement;
-    }
-    return false;
-  };
   const drawerFocusable = () => Array.from(drawerRef.current?.querySelectorAll<HTMLElement>("a[href], summary, button:not([disabled]), [tabindex]:not([tabindex='-1'])") ?? [])
-    .filter((element) => !hiddenByCollapsedBranch(element));
+    .filter((element) => !element.closest("details:not([open]) > :not(summary)"));
 
   useEffect(() => {
     if (!modal || !open) return;

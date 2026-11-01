@@ -24,11 +24,9 @@ export function SearchDialog({ open = true, pages, basePath, close, loadPages, f
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
-  const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(null);
   const navigate = useNavigate();
-  const attempt = 0;
-  const [loaded, setLoaded] = useState<{ loader: typeof loadPages; attempt: number; query:string; pages: PublishedPage[]; error: string | null } | null>(null);
-  const current = loaded?.loader === loadPages && loaded?.attempt === attempt && loaded.query===query.trim() ? loaded : null;
+  const [loaded, setLoaded] = useState<{ loader: typeof loadPages; query:string; pages: PublishedPage[]; error: string | null } | null>(null);
+  const current = loaded && loaded.loader === loadPages && loaded.query===query.trim() ? loaded : null;
   const loading = Boolean(loadPages && query.trim() && !composing && !current);
   const searchPages = loadPages ? current?.pages ?? [] : pages;
   const results = useMemo(() => searchPublishedPages(searchPages, query,Boolean(loadPages)), [searchPages, query,loadPages]);
@@ -46,10 +44,10 @@ export function SearchDialog({ open = true, pages, basePath, close, loadPages, f
     let active=true;
     const abort=new AbortController();
     const timer=setTimeout(()=>{void loadPages(query.trim(),abort.signal).then(items=>{
-      if(active)setLoaded({loader:loadPages,attempt,query:query.trim(),pages:items,error:null});
-    }).catch(error=>{if(active)setLoaded({loader:loadPages,attempt,query:query.trim(),pages:[],error:error instanceof ApiError?error.message:"暂时无法搜索，请重试。"});});},200);
+      if(active)setLoaded({loader:loadPages,query:query.trim(),pages:items,error:null});
+    }).catch(error=>{if(active)setLoaded({loader:loadPages,query:query.trim(),pages:[],error:error instanceof ApiError?error.message:"暂时无法搜索，请重试。"});});},200);
     return()=>{active=false;clearTimeout(timer);abort.abort();};
-  },[open,loadPages,attempt,query,composing]);
+  },[open,loadPages,query,composing]);
 
   useEffect(() => { setActiveIndex(0); }, [query]);
   useEffect(() => {
@@ -64,8 +62,8 @@ export function SearchDialog({ open = true, pages, basePath, close, loadPages, f
     close();
   }
 
-  return <div className="site-reader-overlay-root contents" ref={setPortalContainer}>{portalContainer ? <Dialog open={open} onOpenChange={nextOpen => { if (!nextOpen) close(); }}>
-    <CommandPopup preset="reader" title="搜索文档" portalContainer={portalContainer} initialFocus={inputRef} finalFocus={finalFocus} ref={dialogRef} onKeyDown={event => {
+  return <Dialog open={open} onOpenChange={nextOpen => { if (!nextOpen) close(); }}>
+    <CommandPopup preset="reader" title="搜索文档" initialFocus={inputRef} finalFocus={finalFocus} ref={dialogRef} onKeyDown={event => {
       if ((event.nativeEvent.isComposing || composing || event.keyCode === 229) && event.key === "Escape") event.stopPropagation();
     }}>
       <CommandInput ref={inputRef} aria-label="搜索文档" listId="site-reader-search-results" activeId={results[activeIndex] ? `site-search-${activeIndex}` : undefined} placeholder="搜索标题与正文…" value={query} onCompositionStart={() => setComposing(true)} onCompositionEnd={() => setComposing(false)} onChange={event => setQuery(event.target.value)} onKeyDown={event => {
@@ -85,5 +83,5 @@ export function SearchDialog({ open = true, pages, basePath, close, loadPages, f
       </CommandList>
       <CommandFooter />
     </CommandPopup>
-  </Dialog> : null}</div>;
+  </Dialog>;
 }

@@ -206,12 +206,11 @@ describe("Mint-style site reader", () => {
     localStorage.setItem("orbis-reader-theme", "light");
     try {
       const user = userEvent.setup();
-      const { container } = render(<MemoryRouter initialEntries={["/s/developer"]}><SiteReader snapshot={snapshot} basePath="/s/developer" /><LocationProbe /></MemoryRouter>);
+      render(<MemoryRouter initialEntries={["/s/developer"]}><SiteReader snapshot={snapshot} basePath="/s/developer" /><LocationProbe /></MemoryRouter>);
       const trigger = screen.getByRole("button", { name: "搜索文档 ⌘ K" });
       await user.click(trigger);
       const dialog = screen.getByRole("dialog", { name: "搜索文档" });
       const input = within(dialog).getByRole("combobox", { name: "搜索文档" });
-      expect(dialog.closest(".site-reader")).toBe(container.querySelector(".site-reader"));
       expect(dialog.closest("[data-theme]")).toHaveAttribute("data-theme", "light");
       expect(document.documentElement).toHaveAttribute("data-theme", "dark");
       fireEvent.compositionStart(input);

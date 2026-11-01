@@ -1,4 +1,3 @@
-import { releaseFeatures } from "../../shared/release-features";
 import { reportError } from "../../shared/api/request-feedback";
 import { Dialog, DialogClose } from "@orbis/ui/dialog";
 import { CommandPopup, CommandInput, CommandList, CommandResult, CommandMessage, CommandFooter } from "../../shared/ui/command";
@@ -10,13 +9,13 @@ import { preparePendingNavigation } from "../../shared/navigation/pending-naviga
 import { Button } from "@orbis/ui/button";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { Select } from "@orbis/ui/select";
-import { BookOpen, FileText, Folder, Globe, Paperclip, X } from "../../shared/ui/icons";
+import { X } from "../../shared/ui/icons";
 import type { SearchFilters, SearchResult } from "./api";
 import { resultHref, SEARCH_MAX_LENGTH, SEARCH_STATUS_OPTIONS, SEARCH_TYPE_LABELS } from "./search-state";
 import { matchPaletteCategories, parsePaletteInput, SEARCH_PALETTE_CATEGORIES, type SearchPaletteCategory } from "./search-palette-model";
 import { usePaletteSearch } from "./use-palette-search";
+import { SEARCH_RESULT_ICONS, visibleSearchResults } from "./search-result-presentation";
 
-const icons = { document: FileText, notebook: BookOpen, group: Folder, site: Globe, file: Paperclip };
 const resultKey = (result: SearchResult) => `${result.type}:${result.workspace_id}:${result.id}`;
 const plainClick = (event: MouseEvent) => event.button === 0 && !event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey;
 
@@ -44,7 +43,7 @@ export function GlobalSearchPalette({ initialFilters, onClose, isOpen = true, on
   const categoryMode = !input.trim() || (!parsed.hasPrefix && /^@\S*$/.test(input.trim()) && categories.length > 0);
   const filters: SearchFilters = { q: categoryMode ? "" : parsed.q, type: parsed.type, status, page };
   const { results, pendingInput } = usePaletteSearch(filters, { enabled: isOpen, composing });
-  const resultItems = !pendingInput && !results.isError && filters.q ? results.data?.items.filter(item => releaseFeatures.sites || item.type !== "site") ?? [] : [];
+  const resultItems = !pendingInput && !results.isError && filters.q ? visibleSearchResults(results.data?.items ?? []) : [];
   const options = categoryMode ? categories.map(item => item.type) : resultItems.map(resultKey);
   const selectedIndex = Math.max(0, selected ? options.indexOf(selected) : 0);
   const activeKey = options[selectedIndex];
@@ -150,13 +149,13 @@ export function GlobalSearchPalette({ initialFilters, onClose, isOpen = true, on
         {!waiting && filters.q && !results.isError && results.data && !resultItems.length ? <CommandMessage kind="empty" description="没有匹配的内容。试试其他关键词。" /> : null}
         <CommandList ref={listRef} id={listId} aria-label={categoryMode ? "搜索内容类型" : "搜索结果"} aria-busy={waiting || opening} layout={categoryMode ? "categories" : "results"}>
           {categoryMode ? categories.map(category => {
-            const Icon = icons[category.type];
+            const Icon = SEARCH_RESULT_ICONS[category.type];
             return <Button appearance="unstyled" key={category.type} id={`${listId}-${category.type}`} role="option" aria-selected={activeKey === category.type} tabIndex={-1} type="button" className="group flex min-h-20 min-w-0 items-center gap-3 rounded-ob-xl border border-ob-border bg-ob-card p-3 text-start hover:bg-ob-accent aria-selected:border-ob-primary aria-selected:bg-ob-accent max-[560px]:min-h-18" onMouseMove={() => setSelected(category.type)} onClick={() => chooseCategory(category)}>
               <span className="grid size-10 flex-none place-items-center rounded-[10px] border border-ob-border bg-ob-card text-ob-muted-foreground group-aria-selected:text-ob-primary"><Icon aria-hidden="true" size={20} /></span>
               <span className="grid min-w-0 gap-1"><strong className="font-ob-mono text-sm font-semibold wrap-anywhere">{category.alias}</strong><span className="text-xs leading-[18px] text-ob-muted-foreground group-hover:text-ob-foreground group-aria-selected:text-ob-foreground">{category.description}</span></span>
             </Button>;
           }) : resultItems.map(result => {
-            const Icon = icons[result.type];
+            const Icon = SEARCH_RESULT_ICONS[result.type];
             const key = resultKey(result);
             return <CommandResult key={key} selected={activeKey === key} icon={Icon} title={result.title || "未命名内容"} path={result.location} excerpt={result.snippet ? <>{result.match === "comment" ? "评论：" : ""}{result.snippet}</> : undefined} metadata={<>{SEARCH_TYPE_LABELS[result.type]}{result.status === "archived" ? " · 归档" : ""}</>} element={<Link id={`${listId}-${key}`} aria-disabled={opening || undefined} data-search-result tabIndex={-1} onMouseMove={() => setSelected(key)} to={resultHref(result)} onClick={event => { if (plainClick(event)) { event.preventDefault(); void openResult(result); } }} />} />;
           })}

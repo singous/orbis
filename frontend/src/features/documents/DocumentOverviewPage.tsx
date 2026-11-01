@@ -1,7 +1,7 @@
 import { cn } from "@orbis/ui/cn";
 import { workbenchStyles } from "@/shared/ui/workbench-styles";
 import { releaseFeatures } from "../../shared/release-features";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
 import { authStore } from "../../shared/auth/auth-store";
@@ -19,7 +19,8 @@ import { NotebookDialog } from "./NotebookDialog";
 import { NotebookCard } from "./NotebookCard";
 import { usePinnedNotebooks } from "./pinned-notebooks";
 import { useCollapsedGroups } from "./collapsed-groups";
-import { useCreateNotebook, useDocumentGroups, useNotebooks, useDocumentIndex } from "./queries";
+import { useCreateNotebook, useDocumentGroups, useNotebooks } from "./queries";
+import { useNotebookDocumentCounts } from "./notebook-counts";
 
 export function DocumentOverviewPage() {
   const navigate = useNavigate();
@@ -27,7 +28,7 @@ export function DocumentOverviewPage() {
   const canEdit = canMutateWorkspaceContent(workspace);
   const groupsQuery = useDocumentGroups();
   const notebooksQuery = useNotebooks();
-  const notesQuery = useDocumentIndex("active", { allPages: true });
+  const { counts, isSuccess: countsReady } = useNotebookDocumentCounts();
   const createNotebook = useCreateNotebook();
   const [creating, setCreating] = useState(false);
   const { isPinned, togglePin } = usePinnedNotebooks(workspace?.id);
@@ -35,11 +36,6 @@ export function DocumentOverviewPage() {
   const notebooks = notebooksQuery.data?.items ?? [];
   const groups = groupsQuery.data?.items ?? [];
   const common = notebooks.filter((notebook) => isPinned(notebook.id));
-  const counts = useMemo(() => {
-    const result = new Map<string, number>();
-    for (const note of notesQuery.data?.items ?? []) result.set(note.notebook_id, (result.get(note.notebook_id) ?? 0) + 1);
-    return result;
-  }, [notesQuery.data]);
   const grouped = groups.map((group) => ({ id: group.id, title: group.name, notebooks: notebooks.filter((notebook) => notebook.group_id === group.id) })).filter((group) => group.notebooks.length > 0);
   const knownGroups = new Set(groups.map((group) => group.id));
   const ungrouped = notebooks.filter((notebook) => !knownGroups.has(notebook.group_id));
@@ -47,7 +43,7 @@ export function DocumentOverviewPage() {
 
   // 保留三个等宽卡片与 260px 可读宽度下限；窄屏改为单列。
   function card(notebook: Notebook, compact = false) {
-    return <NotebookCard key={notebook.id} notebook={notebook} variant={compact ? "compact" : "overview"} noteCount={!compact && notesQuery.isSuccess ? counts.get(notebook.id) ?? 0 : undefined} actions={releaseFeatures.documentFavorites && <Tooltip label={isPinned(notebook.id) ? "取消常用" : "设为常用"}><IconButton size="sm" className={cn("notebook-overview-pin absolute end-2 top-3 text-(--ob-page-muted-foreground) enabled:hover:bg-ob-surface-secondary enabled:hover:text-ob-foreground", isPinned(notebook.id) && "is-pinned bg-ob-surface-secondary text-ob-foreground")} aria-label={`${isPinned(notebook.id) ? "取消常用" : "设为常用"}：${notebook.title}`} aria-pressed={isPinned(notebook.id)} onClick={() => togglePin(notebook.id)}><Pin aria-hidden="true" /></IconButton></Tooltip>} />;
+    return <NotebookCard key={notebook.id} notebook={notebook} variant={compact ? "compact" : "overview"} noteCount={!compact && countsReady ? counts.get(notebook.id) ?? 0 : undefined} actions={releaseFeatures.documentFavorites && <Tooltip label={isPinned(notebook.id) ? "取消常用" : "设为常用"}><IconButton size="sm" className={cn("notebook-overview-pin absolute end-2 top-3 text-(--ob-page-muted-foreground) enabled:hover:bg-ob-surface-secondary enabled:hover:text-ob-foreground", isPinned(notebook.id) && "is-pinned bg-ob-surface-secondary text-ob-foreground")} aria-label={`${isPinned(notebook.id) ? "取消常用" : "设为常用"}：${notebook.title}`} aria-pressed={isPinned(notebook.id)} onClick={() => togglePin(notebook.id)}><Pin aria-hidden="true" /></IconButton></Tooltip>} />;
   }
   return <DocumentShell>
     <div className="notebook-overview">

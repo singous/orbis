@@ -54,13 +54,6 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
   const [editing, setEditing] = useState<Notebook | null>(null);
   function closeNotebookEditor() {
     setEditing(null);
-    // The menu item that opened the dialog has unmounted. Restore its stable trigger.
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      const active = document.activeElement;
-      if (!active || active === document.body || !active.isConnected || active.closest(".notebook-dialog")) {
-        actionsTriggerRef.current?.focus();
-      }
-    }));
   }
   const pendingImport = useRef<{intent:string;input:Parameters<typeof importMarkdown.mutateAsync>[0];uncertain:boolean}|null>(null);
   const [pendingImportTitle,setPendingImportTitle]=useState<string|null>(null);
@@ -180,7 +173,7 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
           </section>
         </article>
       </div>
-      {editing ? <NotebookDialog open title="编辑笔记本" initialValue={editing.title} initialIcon={editing.icon} submitLabel="保存" pending={updateNotebook.isPending} onClose={closeNotebookEditor} onSubmit={async ({ title, icon }) => { await updateNotebook.mutateAsync({ id: editing.id,expected_version:editing.metadata_version, title, icon }); closeNotebookEditor(); }} /> : null}
+      {editing ? <NotebookDialog open title="编辑笔记本" initialValue={editing.title} initialIcon={editing.icon} submitLabel="保存" pending={updateNotebook.isPending} finalFocus={actionsTriggerRef} onClose={closeNotebookEditor} onSubmit={async ({ title, icon }) => { await updateNotebook.mutateAsync({ id: editing.id,expected_version:editing.metadata_version, title, icon }); closeNotebookEditor(); }} /> : null}
     </DocumentShell>
   );
 }

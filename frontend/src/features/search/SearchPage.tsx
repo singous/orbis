@@ -1,4 +1,3 @@
-import { releaseFeatures } from "../../shared/release-features";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -11,13 +10,11 @@ import { PageContainer } from "../../shared/ui/PageContainer";
 import { Select } from "@orbis/ui/select";
 
 import { Input } from "@orbis/ui/input";
-import { BookOpen, FileText, Folder, Globe, Paperclip } from "../../shared/ui/icons";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
 import { GLOBAL_SEARCH_INPUT_ID } from "../workspace/use-workspace-search";
 import { searchWorkspace, type SearchFilters } from "./api";
 import { readSearchFilters, resultHref, SEARCH_DEBOUNCE_MS, SEARCH_MAX_LENGTH, SEARCH_STATUS_OPTIONS, SEARCH_TYPE_LABELS, SEARCH_TYPE_OPTIONS, writeSearchFilters } from "./search-state";
-
-const resultIcons = { document: FileText, notebook: BookOpen, group: Folder, site: Globe, file: Paperclip };
+import { SEARCH_RESULT_ICONS, visibleSearchResults } from "./search-result-presentation";
 
 export function SearchPage() {
   const [params, setParams] = useSearchParams();
@@ -52,7 +49,7 @@ export function SearchPage() {
     inputDirty.current = false;
     setParams(writeSearchFilters({ ...filters, q: input, ...patch, page: patch.page ?? 1 }));
   }
-  const data = results.data && { ...results.data, items: results.data.items.filter(item => releaseFeatures.sites || item.type !== "site") };
+  const data = results.data && { ...results.data, items: visibleSearchResults(results.data.items) };
   const loading = Boolean(filters.q.trim() && (pendingInput || results.isPending));
   const error = results.error;
 
@@ -76,7 +73,7 @@ export function SearchPage() {
       <p className="text-sm" role="status">找到 {data.pagination.total} 条结果</p>
       {!data.items.length ? <p className="py-6 text-sm text-ob-muted-foreground">没有匹配的内容。试试其他关键词。</p> : <ul className="my-4 list-none p-0">
         {data.items.map(result => {
-          const Icon = resultIcons[result.type];
+          const Icon = SEARCH_RESULT_ICONS[result.type];
           return <li key={`${result.type}:${result.id}`}><Link className="flex gap-3 rounded-ob-lg border-b border-ob-border p-4 text-ob-foreground hover:bg-ob-accent ob-focus-ring" to={resultHref(result)}>
             <Icon aria-hidden="true" className="mt-0.5 flex-none" size={20} />
             <div className="min-w-0 flex-1"><div className="flex flex-wrap items-baseline gap-3"><h2 className="m-0 text-base font-semibold wrap-anywhere">{result.title || "未命名内容"}</h2><span className="text-xs leading-[18px] text-ob-muted-foreground">{SEARCH_TYPE_LABELS[result.type]}{result.status === "archived" ? " · 已归档" : ""}</span></div>

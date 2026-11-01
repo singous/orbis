@@ -27,13 +27,25 @@ for (const inner of ["light", "dark"] as const) {
     const reader = page.locator(".site-reader");
     await expect(reader).toHaveAttribute("data-theme", inner);
     await expect(page.locator("html")).toHaveAttribute("data-theme", outer);
+    await reader.evaluate((element, theme) => {
+      const root = element as HTMLElement;
+      root.style.setProperty("--ob-font-sans", "Georgia, serif");
+      root.style.setProperty("--ob-reader-background", theme === "light" ? "#e8eef4" : "#14202b");
+      root.style.setProperty("--ob-reader-surface", theme === "light" ? "#e8eef4" : "#14202b");
+      root.style.setProperty("--ob-reader-text", theme === "light" ? "#17324d" : "#e6eef4");
+    }, inner);
     const trigger = page.getByRole("button", { name: "搜索文档 ⌘ K", exact: true });
     await trigger.click();
     const dialog = page.getByRole("dialog", { name: "搜索文档", exact: true });
     const input = dialog.getByRole("combobox", { name: "搜索文档" });
     await expect(input).toBeFocused();
-    expect(await dialog.evaluate(element => element.closest(".site-reader")?.getAttribute("data-theme"))).toBe(inner);
+    expect(await dialog.evaluate(element => element.closest("[data-theme]")?.getAttribute("data-theme"))).toBe(inner);
     expect(await dialog.evaluate(element => getComputedStyle(element).backgroundColor)).toBe(await reader.evaluate(element => getComputedStyle(element).backgroundColor));
+    await expect(dialog).toHaveCSS("font-family", await reader.evaluate(element => getComputedStyle(element).fontFamily));
+    await expect(input).toHaveCSS("font-family", await reader.evaluate(element => getComputedStyle(element).fontFamily));
+    await expect(dialog).toHaveCSS("color", await reader.evaluate(element => getComputedStyle(element).color));
+    await reader.evaluate(element => { (element as HTMLElement).style.setProperty("--ob-font-sans", "monospace"); });
+    await expect(dialog).toHaveCSS("font-family", await reader.evaluate(element => getComputedStyle(element).fontFamily));
     await input.dispatchEvent("compositionstart", { data: "安" });
     await input.fill("安装");
     await page.keyboard.press("Enter");

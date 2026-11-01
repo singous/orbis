@@ -17,7 +17,7 @@ export function CommandPopup({ preset, title, children, ...props }: CommandPopup
     backdropClassName={reader ? "site-reader-search-backdrop bg-(--ob-reader-search-scrim) motion-reduce:transition-none" : "search-palette-backdrop"}
     viewportClassName={reader ? "site-reader-search-viewport items-start justify-items-center px-5 pt-[min(12vh,110px)] pb-[30px] [@media(max-width:800px)]:p-3" : "p-0"}
     className={reader
-      ? "site-reader-search-dialog block w-[min(660px,100%)] max-w-none overflow-hidden border-(--ob-reader-border) bg-(--ob-reader-surface) p-0 text-(--ob-reader-text) motion-reduce:transition-none"
+      ? "site-reader-search-dialog block w-[min(660px,100%)] max-w-none overflow-hidden border-(--ob-reader-border) bg-(--ob-reader-surface) p-0 font-ob-sans text-(--ob-reader-text) motion-reduce:transition-none"
       : "search-palette flex h-[min(480px,calc(100dvh-48px))] min-h-0 w-[min(720px,calc(100vw-32px))] max-w-none flex-col gap-0 overflow-hidden rounded-[18px] bg-ob-popover p-0 max-[560px]:h-[min(560px,calc(100dvh-24px))] max-[560px]:max-h-[calc(100dvh-24px)] max-[560px]:w-[calc(100vw-24px)]"}>
     <DialogTitle className="sr-only">{title}</DialogTitle>
     {children}
