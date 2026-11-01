@@ -2,19 +2,36 @@
   "license": "MIT",
   "copyright": "Copyright (c) 2023 shadcn",
   "licenseFile": "licenses/texts/shadcn-ui-MIT.txt",
+  "sourceRepository": "https://github.com/shadcn-ui/ui",
   "style": "base-nova",
   "cliVersion": "4.23.0",
   "acquisition": "Registry JSON downloaded directly; no CLI overwrite",
+  "sourceRevisionSemantics": "sourceRevision with sourceRevisionKind=reproducible-content identifies upstream source whose official registry pipeline reproduces the frozen JSON byte for byte. It does not identify the historical website deployment; servedRevision is null when that deployment revision is unknown.",
+  "timestampUnit": "unix-ms",
+  "timestampSemantics": {
+    "addedAt": "Git author timestamp of the first commit introducing the local component implementation and source snapshot; not the download time.",
+    "updatedAt": "Git author timestamp of the latest direct change to src/<component>/index.tsx; excludes shared helpers, documentation, tests and metadata-only changes."
+  },
   "components": {
     "button": {
       "source": "https://ui.shadcn.com/r/styles/base-nova/button.json",
+      "sourceRevision": "c257f688cf4de7ec10cc1be84cad29cd4631182c",
+      "sourceRevisionKind": "reproducible-content",
+      "servedRevision": null,
       "sourceChecksum": "sha256:9ba7e870178813f0552b818a913a2792fb500c779e36395740b4973e3025d427",
+      "addedAt": 1793476336000,
+      "updatedAt": 1793482834000,
       "modifications": "Orbis semantic tokens, owned props, public subpaths, React 19 refs, loading semantics and nested-theme portals",
       "status": "experimental"
     },
     "dialog": {
       "source": "https://ui.shadcn.com/r/styles/base-nova/dialog.json",
+      "sourceRevision": "c257f688cf4de7ec10cc1be84cad29cd4631182c",
+      "sourceRevisionKind": "reproducible-content",
+      "servedRevision": null,
       "sourceChecksum": "sha256:40fc321d25eb9590d07db54b00d9bc1a74274a549aa06d5915a34ba302ed8b94",
+      "addedAt": 1793476336000,
+      "updatedAt": 1793495421000,
       "modifications": "Orbis semantic tokens, owned props, public subpaths, React 19 refs, loading semantics and nested-theme portals",
       "status": "experimental"
     }

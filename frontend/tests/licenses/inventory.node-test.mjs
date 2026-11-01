@@ -26,10 +26,101 @@ function fixture(t, license = "MIT") {
   write("licenses/sources/packages.tsv", "# no source pins\n");
   write("licenses/texts/copied.txt", "Copied code license\n");
   write("licenses/copied-code/shadcn-button.registry.json", "source snapshot");
-  write("frontend/packages/ui/ui.registry.json", { license: "MIT", copyright: "Fixture author", licenseFile: "licenses/texts/copied.txt", components: { button: { source: "https://example.com/button.json", sourceChecksum: `sha256:${createHash("sha256").update("source snapshot").digest("hex")}`, modifications: "fixture" } } });
+  const registry = {
+    license: "MIT", copyright: "Fixture author", licenseFile: "licenses/texts/copied.txt",
+    sourceRepository: "https://github.com/example/ui",
+    timestampUnit: "unix-ms",
+    timestampSemantics: { addedAt: "Git author time of first local introduction", updatedAt: "Git author time of latest direct implementation change" },
+    sourceRevisionSemantics: "Reproducible upstream content; servedRevision is null when the historical deployment is unknown",
+    components: { button: {
+      source: "https://example.com/button.json", sourceRevision: "a".repeat(40), sourceRevisionKind: "reproducible-content", servedRevision: null,
+      sourceChecksum: `sha256:${createHash("sha256").update("source snapshot").digest("hex")}`,
+      addedAt: 1793476336000, updatedAt: 1793482834000, modifications: "fixture", status: "experimental",
+    } },
+  };
+  write("frontend/packages/ui/ui.registry.json", registry);
   const run = (...args) => spawnSync(process.execPath, [script, ...args], { env: { ...process.env, ORBIS_LICENSE_ROOT: root, ORBIS_SOURCE_REVISION: "a".repeat(40) }, encoding: "utf8" });
-  return { root, write, run };
+  return { root, write, run, registry };
 }
+
+test("copied UI provenance preserves distinct immutable revisions in a distribution bundle", t => {
+  const { root, write, run, registry } = fixture(t);
+  registry.components.button.sourceRevision = "b".repeat(40);
+  registry.components.button.servedRevision = "c".repeat(40);
+  registry.sourceRepository = "https://code.example.com/another/ui.git";
+  write("frontend/packages/ui/ui.registry.json", registry);
+  const generated = run();
+  assert.equal(generated.status, 0, generated.stderr);
+  const bundled = run("--bundle", "dist/licenses");
+  assert.equal(bundled.status, 0, bundled.stderr);
+  assert.deepEqual(JSON.parse(readFileSync(path.join(root, "frontend/dist/licenses/frontend/packages/ui/ui.registry.json"), "utf8")), registry);
+});
+
+test("copied UI provenance rejects missing or mutable upstream revision metadata offline", async t => {
+  for (const [field, value] of [["sourceRevision", undefined], ["sourceRevision", "main"], ["sourceRevisionKind", undefined], ["servedRevision", undefined], ["servedRevision", "main"]]) {
+    await t.test(`${field}=${value}`, t => {
+      const { write, run, registry } = fixture(t);
+      registry.components.button[field] = value;
+      write("frontend/packages/ui/ui.registry.json", registry);
+      const result = run();
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /Copied UI source record is incomplete: button/);
+    });
+  }
+});
+
+test("copied UI provenance requires defined millisecond events and ordered integer timestamps", async t => {
+  const cases = [
+    ["seconds", registry => { registry.timestampUnit = "unix-seconds"; }, /Copied UI provenance semantics/],
+    ["missing event", registry => { delete registry.timestampSemantics.updatedAt; }, /Copied UI provenance semantics/],
+    ["missing source semantics", registry => { delete registry.sourceRevisionSemantics; }, /Copied UI provenance semantics/],
+    ["missing timestamp", registry => { delete registry.components.button.addedAt; }, /Copied UI timestamps/],
+    ["string timestamp", registry => { registry.components.button.addedAt = "1793476336000"; }, /Copied UI timestamps/],
+    ["fractional timestamp", registry => { registry.components.button.updatedAt += 0.5; }, /Copied UI timestamps/],
+    ["reversed events", registry => { registry.components.button.updatedAt = registry.components.button.addedAt - 1; }, /Copied UI timestamps/],
+  ];
+  for (const [name, mutate, error] of cases) {
+    await t.test(name, t => {
+      const { write, run, registry } = fixture(t);
+      mutate(registry);
+      write("frontend/packages/ui/ui.registry.json", registry);
+      const result = run();
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, error);
+    });
+  }
+});
+
+test("copied UI provenance validates the source URL and frozen artifact checksum offline", async t => {
+  for (const sourceRepository of [undefined, "http://example.com/ui", "https://"]) {
+    await t.test(`repository=${sourceRepository}`, t => {
+      const { write, run, registry } = fixture(t);
+      registry.sourceRepository = sourceRepository;
+      write("frontend/packages/ui/ui.registry.json", registry);
+      const result = run();
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /Copied UI source repository must be a valid HTTPS URL/);
+    });
+  }
+  for (const source of ["http://example.com/button.json", "https://", "licenses/copied-code/button.json"]) {
+    await t.test(source, t => {
+      const { write, run, registry } = fixture(t);
+      registry.components.button.source = source;
+      write("frontend/packages/ui/ui.registry.json", registry);
+      const result = run();
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /Copied UI source record is incomplete: button/);
+    });
+  }
+  await t.test("changed snapshot", t => {
+    const { write, run } = fixture(t);
+    assert.equal(run().status, 0);
+    write("licenses/copied-code/shadcn-button.registry.json", "changed source snapshot");
+    const result = run("--check");
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Copied UI source snapshot checksum mismatch: button/);
+  });
+});
 
 test("offline checking uses frozen license text and verifies the lockfile, notice and hashes", t => {
   const { root, write, run } = fixture(t);

@@ -138,8 +138,17 @@ function validateText(text, owner) {
 function validateCopiedCode() {
   const registry = JSON.parse(read("frontend/packages/ui/ui.registry.json"));
   if (!registry.license || !registry.copyright || !read(registry.licenseFile).trim()) throw new Error("Copied UI code is missing license/copyright/text");
+  if (typeof registry.sourceRepository !== "string" || !URL.canParse(registry.sourceRepository) || !registry.sourceRepository.startsWith("https://")) throw new Error("Copied UI source repository must be a valid HTTPS URL");
+  if (registry.timestampUnit !== "unix-ms" ||
+    typeof registry.timestampSemantics?.addedAt !== "string" || !registry.timestampSemantics.addedAt.trim() ||
+    typeof registry.timestampSemantics?.updatedAt !== "string" || !registry.timestampSemantics.updatedAt.trim() ||
+    typeof registry.sourceRevisionSemantics !== "string" || !registry.sourceRevisionSemantics.trim()) throw new Error("Copied UI provenance semantics are missing or unsupported");
   for (const [name, item] of Object.entries(registry.components)) {
-    if (!item.source || !/^sha256:[a-f0-9]{64}$/.test(item.sourceChecksum ?? "") || !item.modifications) throw new Error(`Copied UI source record is incomplete: ${name}`);
+    if (typeof item.source !== "string" || !URL.canParse(item.source) || !item.source.startsWith("https://") ||
+      !/^[a-f0-9]{40}$/.test(item.sourceRevision ?? "") || item.sourceRevisionKind !== "reproducible-content" ||
+      (item.servedRevision !== null && !/^[a-f0-9]{40}$/.test(item.servedRevision ?? "")) ||
+      !/^sha256:[a-f0-9]{64}$/.test(item.sourceChecksum ?? "") || !item.modifications) throw new Error(`Copied UI source record is incomplete: ${name}`);
+    if (!Number.isSafeInteger(item.addedAt) || item.addedAt <= 0 || !Number.isSafeInteger(item.updatedAt) || item.updatedAt < item.addedAt) throw new Error(`Copied UI timestamps must be ordered Unix milliseconds: ${name}`);
     const snapshot = read(`licenses/copied-code/shadcn-${name}.registry.json`);
     if (`sha256:${sha256(snapshot)}` !== item.sourceChecksum) throw new Error(`Copied UI source snapshot checksum mismatch: ${name}`);
   }
