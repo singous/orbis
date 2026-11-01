@@ -13,9 +13,13 @@ async function openComposer(page: Page, surface: Surface) {
     await page.route(url => url.pathname.includes("/api/v1/") && url.pathname.endsWith("/quick-notes"), route => route.fulfill({ json: { code: "OK", message: "", request_id: "link-focus", data: { items: [note], pagination: { page: 1, page_size: 20, total: 1 } } } }));
   }
   await page.goto(surface === "home" ? "/home" : "/documents/quick-notes");
+  // 首页视觉 fixture 固定了时钟；编辑器选区依赖真实的焦点/点击经过时间。
+  await page.evaluate(() => { Date.now = () => new Date().getTime(); });
   if (surface === "nested edit") {
     await page.getByRole("button", { name: "编辑记录", exact: true }).click();
-    return page.getByRole("dialog", { name: "编辑随手记", exact: true });
+    const dialog = page.getByRole("dialog", { name: "编辑随手记", exact: true });
+    await expect(dialog).toHaveCSS("opacity", "1");
+    return dialog;
   }
   return page.getByRole("region", { name: "快速记录", exact: true });
 }
@@ -40,11 +44,14 @@ for (const surface of ["home", "regular", "nested edit"] as const) {
     const dialog = page.getByRole("dialog", { name: "插入链接", exact: true });
     const input = dialog.getByRole("textbox", { name: "链接地址", exact: true });
     const apple = await page.evaluate(() => /Mac|iPhone|iPad/.test(navigator.platform));
+    await editor.click();
     await editor.fill(originalText);
+    await settleNativeEditorSelection(page, editor);
     await selectTarget(page, editor, apple);
 
     await linkTool.click();
     await expect(input).toBeFocused();
+    await expect(dialog).toHaveCSS("opacity", "1");
     await input.fill("https://example.com/cancelled");
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();
@@ -55,6 +62,7 @@ for (const surface of ["home", "regular", "nested edit"] as const) {
 
     await linkTool.click();
     await expect(input).toBeFocused();
+    await expect(dialog).toHaveCSS("opacity", "1");
     await expect(input).toHaveValue("");
     await input.fill("https://example.com/selected");
     await dialog.getByRole("button", { name: "确定", exact: true }).click();
@@ -76,6 +84,7 @@ for (const surface of ["home", "regular", "nested edit"] as const) {
     await expect(editor).toBeFocused();
     await linkTool.click();
     await expect(input).toBeFocused();
+    await expect(dialog).toHaveCSS("opacity", "1");
     await input.fill("https://example.com/caret");
     await dialog.getByRole("button", { name: "确定", exact: true }).click();
     await expect(dialog).toBeHidden();
