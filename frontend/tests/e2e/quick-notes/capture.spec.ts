@@ -24,7 +24,8 @@ test("empty quick notes retain native tag controls and a keyboard accessible edi
   await expect(page.locator(".quick-notes-search svg")).toHaveCount(0);
   await expect(page.getByRole("textbox", { name: "搜索随手记" })).toBeVisible();
   const editor = page.getByRole("textbox", { name: "随手记正文" });
-  await editor.click();
+  await page.getByRole("toolbar", { name: "随手记格式", exact: true }).getByRole("button", { name: "插入图片", exact: true }).focus();
+  await page.keyboard.press("Tab");
   await expect(editor).toBeFocused();
   await expectVisibleKeyboardFocus(editor);
   await page.screenshot({ path: testInfo.outputPath("clean-editor-light.png"), fullPage: true, animations: "disabled" });
@@ -48,7 +49,7 @@ test("capture, organize, edit and recover a personal note", async ({ page, reque
   await page.getByRole("textbox", { name: "新标签名称" }).fill(tagName);
   await page.getByRole("button", { name: "添加标签", exact: true }).click();
   await expect(page.getByRole("button", { name: `重命名标签 ${tagName}` })).toBeVisible();
-  await page.getByRole("dialog").getByRole("button", { name: "关闭", exact: true }).click();
+  await page.getByRole("dialog", { name: "管理标签", exact: true }).getByRole("button", { name: "关闭", exact: true }).click();
   await composer.getByRole("button", { name: "添加标签", exact: true }).click();
   await page.locator(".quick-note-tag-options").getByRole("button", { name: tagName, exact: true }).click();
   await composer.getByRole("button", { name: "添加标签", exact: true }).click();
@@ -77,7 +78,7 @@ test("capture, organize, edit and recover a personal note", async ({ page, reque
   await card.getByRole("button", { name: "置顶记录", exact: true }).click();
   await expect(card.getByRole("button", { name: "取消置顶" })).toBeVisible();
   await card.getByRole("button", { name: "编辑记录" }).click();
-  const dialog = page.getByRole("dialog");
+  const dialog = page.getByRole("dialog", { name: "编辑随手记", exact: true });
   await dialog.getByRole("textbox", { name: "随手记正文" }).fill(`${text}，整理为行动项`);
   await dialog.getByRole("button", { name: "保存修改" }).click();
   await expect(dialog).not.toBeVisible();
@@ -95,7 +96,7 @@ test("capture, organize, edit and recover a personal note", async ({ page, reque
   await page.getByRole("button", { name: `删除标签 ${tagName}` }).click();
   await page.getByRole("button", { name: "确认删除标签" }).click();
   await expect(page.getByRole("button", { name: `删除标签 ${tagName}` })).toHaveCount(0);
-  await page.getByRole("dialog").getByRole("button", { name: "关闭", exact: true }).click();
+  await page.getByRole("dialog", { name: "管理标签", exact: true }).getByRole("button", { name: "关闭", exact: true }).click();
   await expect(card.getByText(tagName, { exact: true })).toHaveCount(0);
   await expect(card).toContainText(text);
 });

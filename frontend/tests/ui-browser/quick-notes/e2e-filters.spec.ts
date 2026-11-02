@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { installSession, user, workspace } from "../fixtures/session";
+import { expectVisibleKeyboardFocus } from "../fixtures/media";
 
 for (const empty of [true, false]) test(`${empty ? "empty" : "tagged"} filters use pressed buttons and retain keyboard selection`, async ({ page }) => {
   await installSession(page);
@@ -16,7 +17,15 @@ for (const empty of [true, false]) test(`${empty ? "empty" : "tagged"} filters u
   const all = filters.getByRole("button", { name: `全部 (${empty ? 0 : 1})`, exact: true });
   await expect(all).toHaveAttribute("aria-pressed", "true");
   await expect(filters.getByRole("button")).toHaveCount(empty ? 1 : 2);
-  if (empty) return;
+  if (empty) {
+    const tools = page.getByRole("toolbar", { name: "随手记格式", exact: true });
+    await tools.getByRole("button", { name: "插入图片", exact: true }).focus();
+    await page.keyboard.press("Tab");
+    const editor = page.getByRole("textbox", { name: "随手记正文", exact: true });
+    await expect(editor).toBeFocused();
+    await expectVisibleKeyboardFocus(editor);
+    return;
+  }
   const tagged = filters.getByRole("button", { name: "工作 (1)", exact: true });
   const filtered = page.waitForRequest(request => new URL(request.url()).searchParams.get("tag_id") === tag.id);
   await tagged.click();
