@@ -97,10 +97,8 @@ test('document overview shares the shell and exposes its function menu alongside
   await page.keyboard.press('Escape');
   await expect(notebookHeader.getByRole('button', { name: '创建内容', exact: true })).toBeFocused();
   await notebookHeader.getByRole('button', { name: '创建内容', exact: true }).click();
-  await page.getByRole('menu', { name: '创建内容', exact: true }).evaluate(async element => {
-    await Promise.all(element.parentElement!.getAnimations({ subtree: true }).map(animation => animation.finished));
-  });
-  await page.screenshot({ path: testInfo.outputPath('notebook-create-menu.png') });
+  await expect(page.getByRole('menu', { name: '创建内容', exact: true })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('notebook-create-menu.png'), animations: 'disabled' });
   await page.getByRole('menuitem', { name: '文档', exact: true }).click();
   await expect(page).toHaveURL(/\/documents\/[^/]+$/);
   const createdDocumentPath = new URL(page.url()).pathname;
