@@ -1,3 +1,4 @@
+import { Spinner } from "@orbis/ui/spinner";
 import { reportError } from "../../shared/api/request-feedback";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -92,7 +93,7 @@ export function SearchOpenPage() {
     <div className="grid gap-4">
 
       {target.success && !ready && !error ? <LoadingState label="正在打开内容…" /> : null}
-      {ready ? <><p>文件内容仅在下载时读取。</p><Button variant="primary" loading={downloading} onClick={() => void download()}>下载文件</Button>{downloaded ? <p role="status">已开始下载。</p> : null}</> : null}
+      {ready ? <><p>文件内容仅在下载时读取。</p><Button variant="default" onClick={() => void download()} disabled={downloading} focusableWhenDisabled={(downloading)} aria-busy={downloading || undefined}>{downloading ? <Spinner aria-hidden="true" /> : null}下载文件</Button>{downloaded ? <p role="status">已开始下载。</p> : null}</> : null}
       <Link to="/search">返回全局搜索</Link>
     </div>
   </PageContainer></WorkspaceShell>;

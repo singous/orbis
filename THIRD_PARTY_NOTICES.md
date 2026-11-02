@@ -43,23 +43,34 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `@babel/code-frame` | 7.29.7 | MIT | build-only, dev-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
 | `@babel/compat-data` | 7.29.7 | MIT | build-only, dev-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
 | `@babel/core` | 7.29.7 | MIT | build-only, dev-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
-| `@babel/generator` | 7.29.7 | MIT | build-only, dev-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
+| `@babel/generator` | 7.29.12 | MIT | build-only, dev-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
+| `@babel/helper-annotate-as-pure` | 7.29.7 | MIT | build-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
 | `@babel/helper-compilation-targets` | 7.29.7 | MIT | build-only, dev-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
+| `@babel/helper-create-class-features-plugin` | 7.29.12 | MIT | build-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
 | `@babel/helper-globals` | 7.29.7 | MIT | build-only, dev-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
+| `@babel/helper-member-expression-to-functions` | 7.29.7 | MIT | build-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
 | `@babel/helper-module-imports` | 7.29.7 | MIT | build-only, dev-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
 | `@babel/helper-module-transforms` | 7.29.7 | MIT | build-only, dev-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
+| `@babel/helper-optimise-call-expression` | 7.29.7 | MIT | build-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
 | `@babel/helper-plugin-utils` | 7.29.7 | MIT | build-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
-| `@babel/helper-string-parser` | 7.29.7 | MIT | build-only, dev-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
+| `@babel/helper-replace-supers` | 7.29.7 | MIT | build-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
+| `@babel/helper-skip-transparent-expression-wrappers` | 7.29.7 | MIT | build-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
+| `@babel/helper-string-parser` | 7.29.11 | MIT | build-only, dev-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
 | `@babel/helper-validator-identifier` | 7.29.7 | MIT | build-only, dev-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
 | `@babel/helper-validator-option` | 7.29.7 | MIT | build-only, dev-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
 | `@babel/helpers` | 7.29.7 | MIT | build-only, dev-only | [1](licenses/texts/npm/4be9d87b56a306293223b490c0d0b245e9e94f39884147bf051a6c7b825aeb30.txt) |
-| `@babel/parser` | 7.29.7 | MIT | build-only, dev-only | [1](licenses/texts/npm/2e97627cb278aa7556fb9e8817368302301a595b6c7582512b8d74c57b773652.txt) |
+| `@babel/parser` | 7.29.12 | MIT | build-only, dev-only | [1](licenses/texts/npm/2e97627cb278aa7556fb9e8817368302301a595b6c7582512b8d74c57b773652.txt) |
+| `@babel/plugin-syntax-jsx` | 7.29.7 | MIT | build-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
+| `@babel/plugin-syntax-typescript` | 7.29.7 | MIT | build-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
+| `@babel/plugin-transform-modules-commonjs` | 7.29.7 | MIT | build-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
 | `@babel/plugin-transform-react-jsx-self` | 7.29.7 | MIT | build-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
 | `@babel/plugin-transform-react-jsx-source` | 7.29.7 | MIT | build-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
+| `@babel/plugin-transform-typescript` | 7.29.9 | MIT | build-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
+| `@babel/preset-typescript` | 7.29.7 | MIT | build-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
 | `@babel/runtime` | 7.29.7 | MIT | dev-only, runtime | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
 | `@babel/template` | 7.29.7 | MIT | build-only, dev-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
-| `@babel/traverse` | 7.29.7 | MIT | build-only, dev-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
-| `@babel/types` | 7.29.7 | MIT | build-only, dev-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
+| `@babel/traverse` | 7.29.12 | MIT | build-only, dev-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
+| `@babel/types` | 7.29.11 | MIT | build-only, dev-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
 | `@base-ui/react` | 1.9.0 | MIT | runtime | [1](licenses/texts/npm/07fc1b39d69d14bc7d40482a628f47226258eb01265db68ae684944b916beb2a.txt) |
 | `@base-ui/utils` | 0.5.0 | MIT | runtime | [1](licenses/texts/npm/07fc1b39d69d14bc7d40482a628f47226258eb01265db68ae684944b916beb2a.txt) |
 | `@csstools/color-helpers` | 5.1.0 | MIT-0 | dev-only | [1](licenses/texts/npm/947e32047a166cd05f04e45938d172b412c07cbee0b9735afd14bae30e02c2f6.txt) |
@@ -73,6 +84,8 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `@dnd-kit/geometry` | 0.5.0 | MIT | dev-only, runtime | [1](licenses/texts/npm/537607e3f1533ad2c5b12978967f5ab27f34ffb7e626e321017a7ccca6cc24ff.txt) |
 | `@dnd-kit/react` | 0.5.0 | MIT | runtime | [1](licenses/texts/npm/537607e3f1533ad2c5b12978967f5ab27f34ffb7e626e321017a7ccca6cc24ff.txt) |
 | `@dnd-kit/state` | 0.5.0 | MIT | dev-only, runtime | [1](licenses/texts/npm/537607e3f1533ad2c5b12978967f5ab27f34ffb7e626e321017a7ccca6cc24ff.txt) |
+| `@dotenvx/dotenvx` | 1.75.1 | BSD-3-Clause | build-only | [1](licenses/texts/npm/2edeb009148c36c249712564871d8297d92094b88e417228e4f3ce7db59ee9ed.txt) |
+| `@dotenvx/primitives` | 0.8.0 | BSD-3-Clause | build-only | [1](licenses/texts/npm/2edeb009148c36c249712564871d8297d92094b88e417228e4f3ce7db59ee9ed.txt) |
 | `@emnapi/core` | 1.10.0 | MIT | build-only | [1](licenses/texts/npm/2088f55c6731498410b20c95ebd345ed4a4a800bf74c0fba4d282fd2a021daaa.txt) |
 | `@emnapi/runtime` | 1.10.0 | MIT | build-only | [1](licenses/texts/npm/2088f55c6731498410b20c95ebd345ed4a4a800bf74c0fba4d282fd2a021daaa.txt) |
 | `@emnapi/wasi-threads` | 1.2.1 | MIT | build-only | [1](licenses/texts/npm/2088f55c6731498410b20c95ebd345ed4a4a800bf74c0fba4d282fd2a021daaa.txt) |
@@ -106,6 +119,7 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `@floating-ui/dom` | 1.8.0 | MIT | runtime | [1](licenses/texts/npm/0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce.txt) |
 | `@floating-ui/react-dom` | 2.1.9 | MIT | runtime | [1](licenses/texts/npm/0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce.txt) |
 | `@floating-ui/utils` | 0.2.12 | MIT | runtime | [1](licenses/texts/npm/0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce.txt) |
+| `@fontsource-variable/geist` | 5.3.0 | OFL-1.1 | asset | [1](licenses/texts/npm/71609cbb5c78b5870d712eab73a31d76622635c6ed034ab5cee3b9ecbda8685f.txt) |
 | `@fontsource-variable/inter` | 5.3.0 | OFL-1.1 | asset | [1](licenses/texts/npm/3b0a5fca3d17942cde889069889dedbbbd075e9b599968c82a95f4d944e9b345.txt) |
 | `@gravity-ui/icons` | 2.23.0 | MIT | runtime | [1](licenses/texts/npm/6c509237a13194071fcd99cfaae017e514204ba9493291ab6f87dec58dc2662b.txt) |
 | `@iconify-json/tabler` | 1.2.42 | MIT | asset | [1](licenses/texts/npm/b740a1d46122672da62833e97f7e7c8a13fa85cbc7445b584b297cc00dde93db.txt) |
@@ -118,7 +132,12 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `@jridgewell/sourcemap-codec` | 1.5.5 | MIT | build-only, dev-only | [1](licenses/texts/npm/769d154fbde32a915af110b1123650bc79f4cbe675acc66e005265bf069c6c6c.txt) |
 | `@jridgewell/trace-mapping` | 0.3.31 | MIT | build-only, dev-only | [1](licenses/texts/npm/769d154fbde32a915af110b1123650bc79f4cbe675acc66e005265bf069c6c6c.txt) |
 | `@mdx-js/react` | 3.1.1 | MIT | dev-only | [1](licenses/texts/npm/c274d2be30a4def0f9344506f3fe6d15668890a8e6d3e3d6bea732b44af9e124.txt) |
+| `@modelcontextprotocol/core` | 2.4.0 | Apache-2.0 | build-only | [1](licenses/texts/npm/0382b0057770ca05e9c350a50aa3b1c1fea84da0bc81d723bf00b9aa841be58a.txt) |
+| `@modelcontextprotocol/server` | 2.4.0 | Apache-2.0 | build-only | [1](licenses/texts/npm/0382b0057770ca05e9c350a50aa3b1c1fea84da0bc81d723bf00b9aa841be58a.txt) |
 | `@napi-rs/wasm-runtime` | 1.1.4 | MIT | build-only | [1](licenses/texts/npm/3f1ce66533302df3a32edbfdfc0b78f0dd34659e4c1f5817162e5ea3c2297215.txt) |
+| `@nodelib/fs.scandir` | 2.1.5 | MIT | build-only | [1](licenses/texts/npm/9363d160bf41d46d83901a5d24fc3fe2094c2afc17b4a2378914b273977ee2de.txt) |
+| `@nodelib/fs.stat` | 2.0.5 | MIT | build-only | [1](licenses/texts/npm/9363d160bf41d46d83901a5d24fc3fe2094c2afc17b4a2378914b273977ee2de.txt) |
+| `@nodelib/fs.walk` | 1.2.8 | MIT | build-only | [1](licenses/texts/npm/9363d160bf41d46d83901a5d24fc3fe2094c2afc17b4a2378914b273977ee2de.txt) |
 | `@pkgjs/parseargs` | 0.11.0 | MIT | dev-only | [1](licenses/texts/npm/c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4.txt) |
 | `@playwright/test` | 1.63.0 | Apache-2.0 | dev-only | [1](licenses/texts/npm/45873d00a0dd243596deb4aa23b2493b3d1f0671921bf2538ea431d7380220eb.txt) [2](licenses/texts/npm/6d602191187b35b9b01d2cffa01c8469c2c8d9de8a96f1bf868e0f264f51c81d.txt) |
 | `@polka/url` | 1.0.0-next.29 | MIT | dev-only | [1](licenses/texts/npm/ba573393f24555ac0528612ad39665fab5bdcc80330a61096024bbf5f736526d.txt) |
@@ -153,6 +172,9 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `@rollup/rollup-win32-ia32-msvc` | 4.62.2 | MIT | build-only, dev-only | [1](licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt) |
 | `@rollup/rollup-win32-x64-gnu` | 4.62.2 | MIT | build-only, dev-only | [1](licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt) |
 | `@rollup/rollup-win32-x64-msvc` | 4.62.2 | MIT | build-only, dev-only | [1](licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt) |
+| `@sec-ant/readable-stream` | 0.4.1 | MIT | build-only | [1](licenses/texts/npm/7e32638e170fa7342000a703a8ed950e05095b2f73fc689992a82776a3c3bd3c.txt) |
+| `@shadcn/registry` | 0.2.1 | MIT | build-only | [1](licenses/texts/npm/1564074e13439397221ffd522e2e504d56561994a23d371aa5e3ad43e4f5423f.txt) |
+| `@sindresorhus/merge-streams` | 4.0.0 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `@storybook/addon-a11y` | 9.1.21 | MIT | dev-only | [1](licenses/texts/npm/bc90586179d44dcb313a9a289d687a2f26226303b2066bd21dbefd2378e894e5.txt) |
 | `@storybook/addon-docs` | 9.1.21 | MIT | dev-only | [1](licenses/texts/npm/bc90586179d44dcb313a9a289d687a2f26226303b2066bd21dbefd2378e894e5.txt) |
 | `@storybook/addon-vitest` | 9.1.21 | MIT | dev-only | [1](licenses/texts/npm/bc90586179d44dcb313a9a289d687a2f26226303b2066bd21dbefd2378e894e5.txt) |
@@ -225,6 +247,7 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `@tiptap/pm` | 2.27.3 | MIT | runtime | [1](licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt) |
 | `@tiptap/react` | 2.27.2 | MIT | runtime | [1](licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt) |
 | `@tiptap/starter-kit` | 2.27.2 | MIT | runtime | [1](licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt) |
+| `@ts-morph/common` | 0.27.0 | MIT | build-only | [1](licenses/texts/npm/c2a4cfb69592431f4b3a179c114909bb76a979d5748c19ca595c94133c623b12.txt) |
 | `@tybys/wasm-util` | 0.10.2 | MIT | build-only | Missing upstream text |
 | `@types/aria-query` | 5.0.4 | MIT | dev-only | [1](licenses/texts/npm/c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383.txt) |
 | `@types/babel__core` | 7.20.5 | MIT | build-only, dev-only | [1](licenses/texts/npm/c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383.txt) |
@@ -245,6 +268,7 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `@types/react` | 19.2.17 | MIT | dev-only, runtime | [1](licenses/texts/npm/c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383.txt) |
 | `@types/resolve` | 1.20.6 | MIT | dev-only | [1](licenses/texts/npm/c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383.txt) |
 | `@types/use-sync-external-store` | 0.0.6 | MIT | runtime | [1](licenses/texts/npm/c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383.txt) |
+| `@types/validate-npm-package-name` | 4.0.2 | MIT | build-only | [1](licenses/texts/npm/c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383.txt) |
 | `@vitejs/plugin-react` | 4.7.0 | MIT | build-only | [1](licenses/texts/npm/29b68325fe026047d13e187b44c33b2acacf7dc647dec4583702e59f235e13b5.txt) |
 | `@vitest/browser` | 3.2.6 | MIT | dev-only | [1](licenses/texts/npm/ddc110f3b89cc397cee99d3d64c4f746928b7a3bac02fed15101eb4d367079f6.txt) |
 | `@vitest/expect` | 3.2.4 | MIT | dev-only | [1](licenses/texts/npm/ddc110f3b89cc397cee99d3d64c4f746928b7a3bac02fed15101eb4d367079f6.txt) |
@@ -261,79 +285,124 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `@vitest/utils` | 3.2.6 | MIT | dev-only | [1](licenses/texts/npm/ddc110f3b89cc397cee99d3d64c4f746928b7a3bac02fed15101eb4d367079f6.txt) |
 | `acorn` | 8.19.0 | MIT | dev-only | [1](licenses/texts/npm/76a876cf886ff9be2a8b5e2e86514fed06223c8c9f0c1e9ee9606e93841e00b7.txt) |
 | `agent-base` | 7.1.4 | MIT | dev-only | [1](licenses/texts/npm/8d8c55319c7729d57be811c747452636688d54f19701ee0752b6b15ad3771d9a.txt) |
-| `ansi-regex` | 5.0.1 | MIT | dev-only, runtime | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
-| `ansi-regex` | 6.5.0 | MIT | dev-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `ajv-formats` | 2.1.1 | MIT | build-only | [1](licenses/texts/npm/9df3bb69929a3b650ed73b3bfa1756725aaff0ac296461605753547004eafeaf.txt) |
+| `ajv` | 8.20.0 | MIT | build-only | [1](licenses/texts/npm/a05350a88e318e4f5f2c2a1ff1e2e88daa4dd38e6e78b71cccae422bdc762cc3.txt) |
+| `ansi-colors` | 4.1.3 | MIT | build-only | [1](licenses/texts/npm/94e1923e52409cfd50e97988d9772c0de15f65700097e3227fec367a39e82b94.txt) |
+| `ansi-regex` | 5.0.1 | MIT | build-only, dev-only, runtime | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
+| `ansi-regex` | 6.5.0 | MIT | build-only, dev-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `ansi-styles` | 4.3.0 | MIT | dev-only, runtime | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
 | `ansi-styles` | 5.2.0 | MIT | dev-only | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
 | `ansi-styles` | 6.2.3 | MIT | dev-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `argparse` | 2.0.1 | Python-2.0 | runtime | [1](licenses/texts/npm/de4d1f2d2ad5ad0cfd1657a106476b31cb5db5ef9d1ff842b237c0c81f0c8a23.txt) |
 | `aria-query` | 5.3.0 | Apache-2.0 | dev-only | [1](licenses/texts/npm/c8df456c7ccba74b959087dff494d4ac2a12dfb0400c08b46b2494a08a000567.txt) |
 | `assertion-error` | 2.0.1 | MIT | dev-only | [1](licenses/texts/npm/2130216d5ab4c02134f8247f32999feda0abe1eaf028218baeac445c19ce4cea.txt) |
-| `ast-types` | 0.16.3 | MIT | dev-only | [1](licenses/texts/npm/a374b737c41b30b1ec04c5fcc17d1b853f008f217cc43a9dbea441abd9afde70.txt) |
+| `ast-types` | 0.16.3 | MIT | build-only, dev-only | [1](licenses/texts/npm/a374b737c41b30b1ec04c5fcc17d1b853f008f217cc43a9dbea441abd9afde70.txt) |
+| `atomically` | 1.7.0 | MIT | build-only | [1](licenses/texts/npm/716bd9213ef82d9017ed813688703837aaa99fc56de205a7b97475d40056a500.txt) |
 | `axe-core` | 4.14.0 | MPL-2.0 | dev-only | [1](licenses/texts/npm/af175b9d96ee93c21a036152e1b905b0b95304d4ae8c2c921c7609100ba8df7e.txt) [2](licenses/texts/npm/4f8563870d0fca38bbc3e00b6f670cb7fa9f380ba9f26a7f7d1184a6b18b1653.txt) |
 | `balanced-match` | 1.0.2 | MIT | dev-only | [1](licenses/texts/npm/a1bd5deadb6a06dd74efa852c1b8b23f63b67f2214fbe9c8bd591da51da69268.txt) |
-| `baseline-browser-mapping` | 2.10.38 | Apache-2.0 | build-only, dev-only | [1](licenses/texts/npm/c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4.txt) |
+| `balanced-match` | 4.0.4 | MIT | build-only | [1](licenses/texts/npm/d408f38ffa3355c5faec517153295338892eb0f1ea43f57874bb23c6075979b5.txt) |
+| `baseline-browser-mapping` | 2.11.34 | Apache-2.0 | build-only, dev-only | [1](licenses/texts/npm/c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4.txt) |
 | `better-opn` | 3.0.2 | MIT | dev-only | [1](licenses/texts/npm/914d1872727809314c403a449c6bfed8aa7de72679ced2477bac51999dd65258.txt) |
 | `brace-expansion` | 2.1.7 | MIT | dev-only | [1](licenses/texts/npm/68f12f6e2c33688699249c01d8f9623c534da20aa71989c57b061b7bc1676d14.txt) |
-| `browserslist` | 4.28.4 | MIT | build-only, dev-only | [1](licenses/texts/npm/21c2679a63d7699c0e644409e2f17d0adbc7a965003feb06b3ff4b833d21f722.txt) |
+| `brace-expansion` | 5.0.12 | MIT | build-only | [1](licenses/texts/npm/9c63a23124d68cd30cd316a94a1a0bca34f032786df6df69fc4b5f136bac8d2e.txt) |
+| `braces` | 3.0.3 | MIT | build-only | [1](licenses/texts/npm/35bdd8a44339719441900fb50fbefc5e2dca1ca662cbaed7a687de842c8b70f2.txt) |
+| `browserslist` | 4.29.5 | MIT | build-only, dev-only | [1](licenses/texts/npm/21c2679a63d7699c0e644409e2f17d0adbc7a965003feb06b3ff4b833d21f722.txt) |
+| `bundle-name` | 4.1.1 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `cac` | 6.7.14 | MIT | dev-only | [1](licenses/texts/npm/709131d7af352b81204ada2a3d812e245a83576e327b364f92ba24c578ba9408.txt) |
 | `camelcase` | 5.3.1 | MIT | runtime | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
-| `caniuse-lite` | 1.0.30001799 | CC-BY-4.0 | build-only, dev-only | [1](licenses/texts/npm/fd3a263fe19ed8faa9068b43abaebafc02c77897b0c6fc09abc04bb592e5f16e.txt) |
+| `caniuse-lite` | 1.0.30001820 | CC-BY-4.0 | build-only, dev-only | [1](licenses/texts/npm/fd3a263fe19ed8faa9068b43abaebafc02c77897b0c6fc09abc04bb592e5f16e.txt) |
 | `chai` | 5.3.3 | MIT | dev-only | [1](licenses/texts/npm/b181da80336ff9dd1043fc8be1a764d7382363433319aa872e4d2cb5ce2a3066.txt) |
+| `chalk` | 5.6.2 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `check-error` | 2.1.3 | MIT | dev-only | [1](licenses/texts/npm/e5aee0714b6ecc416454b968d1017570ef609f20d8722ab84b07acd550b78198.txt) |
 | `class-variance-authority` | 0.7.1 | Apache-2.0 | runtime | [1](licenses/texts/npm/0ccbf956cffc8dcf515809433cb5242ee67c94513d46e48c261d68d0880de406.txt) |
+| `cli-cursor` | 5.0.0 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `cli-spinners` | 2.9.2 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `cliui` | 6.0.0 | ISC | runtime | [1](licenses/texts/npm/2dc0465729366c3a7890dfa9e972a1ba7048a26c02116fb8b419a6a1ac110149.txt) |
 | `clsx` | 2.1.1 | MIT | runtime | [1](licenses/texts/npm/9a9edad7baae52622bddf3c15b2ef8a33d2c89f2d25408ad13e8a7481c6b0c97.txt) |
+| `cn` | 0.2.6 | MIT | build-only | [1](licenses/texts/npm/00ff8408e93e2ecc4d90c0edeabdf434100c3aff50acc5d330e17eccd4a3faa5.txt) |
+| `cn` | 0.5.1 | MIT | runtime | [1](licenses/texts/npm/00ff8408e93e2ecc4d90c0edeabdf434100c3aff50acc5d330e17eccd4a3faa5.txt) |
+| `code-block-writer` | 13.0.3 | MIT | build-only | [1](licenses/texts/npm/2769ffd3960ca1197b672b10d18b5216f423cb5c07dc328590548c47724d50fd.txt) |
 | `color-convert` | 2.0.1 | MIT | dev-only, runtime | [1](licenses/texts/npm/693866fc419c6f61c8570438ec00659d156ec2b4d4a4d04091711f5f11a365d4.txt) |
 | `color-name` | 1.1.4 | MIT | dev-only, runtime | [1](licenses/texts/npm/c064f7a3e353bc1bc977f3c897941c75ef763f44f41677e0a15370ca0853d6e2.txt) |
+| `commander` | 11.1.0 | MIT | build-only | [1](licenses/texts/npm/04512a63dce4d2d506ad612dc0bd7681ccf6e3655f7b6eaef7dfac8323d1ec0b.txt) |
+| `commander` | 14.0.3 | MIT | build-only | [1](licenses/texts/npm/04512a63dce4d2d506ad612dc0bd7681ccf6e3655f7b6eaef7dfac8323d1ec0b.txt) |
+| `conf` | 10.2.0 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `convert-source-map` | 2.0.0 | MIT | build-only, dev-only | [1](licenses/texts/npm/1fa6ee8bb95a81ae3d73a5bd074a3ac380ffec13697051063ca1a601921b91db.txt) |
 | `cookie` | 1.1.1 | MIT | runtime | [1](licenses/texts/npm/c02110eedc16c7114f1a9bdc026c65626ce1d9c7e27fd51a8e0feee8a48a6858.txt) |
 | `crelt` | 1.0.6 | MIT | runtime | [1](licenses/texts/npm/23852ebf6aef7fadffc92514b3c5df163a8651f2c3ed0dbb494cb49d93bd5de5.txt) |
-| `cross-spawn` | 7.0.6 | MIT | dev-only | [1](licenses/texts/npm/aaa78451b6fecd1b9c4594c796c133c0e90cad100372ff8bc6de615e9ef9adf1.txt) |
+| `cross-spawn` | 7.0.6 | MIT | build-only, dev-only | [1](licenses/texts/npm/aaa78451b6fecd1b9c4594c796c133c0e90cad100372ff8bc6de615e9ef9adf1.txt) |
 | `css.escape` | 1.5.1 | MIT | dev-only | [1](licenses/texts/npm/483acb265f182907d1caf6cff9c16c96f31325ed23792832cc5d8b12d5f88c8a.txt) |
+| `cssesc` | 3.0.0 | MIT | build-only | [1](licenses/texts/npm/483acb265f182907d1caf6cff9c16c96f31325ed23792832cc5d8b12d5f88c8a.txt) |
 | `cssstyle` | 4.6.0 | MIT | dev-only | [1](licenses/texts/npm/768faff9f6908c78d848b18770b2a93e3361d6e2ee35edf45c6a5ddf1f7cb185.txt) |
 | `csstype` | 3.2.3 | MIT | dev-only, runtime | [1](licenses/texts/npm/11d55bd4541c75ee7879547ac49089c489163dae49551389713c3d026cab383e.txt) |
 | `data-urls` | 5.0.0 | MIT | dev-only | [1](licenses/texts/npm/528eec83cb836a0adda9f8fc3d6a2a70a710d6cc0be9a155f92212c8df28acfa.txt) |
+| `debounce-fn` | 4.0.0 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `debug` | 4.4.3 | MIT | build-only, dev-only | [1](licenses/texts/npm/3a61c6c96caf5c1d9b623fb9b04c822b783dfcb78aa7e49c76a3f643e6ed7f95.txt) |
 | `decamelize` | 1.2.0 | MIT | runtime | [1](licenses/texts/npm/6fb9754611c20f6649f68805e8c990e83261f29316e29de9e6cedae607b8634c.txt) |
 | `decimal.js` | 10.6.0 | MIT | dev-only | [1](licenses/texts/npm/3108b546bcff5d346923a82f48b2d252ca722f9088076db6d145f6b67757ad6c.txt) |
+| `dedent` | 1.7.2 | MIT | build-only | [1](licenses/texts/npm/76c9d5f5ea942054715c026f33f8717c9e24603196a3737b8899afa216bcbdab.txt) |
 | `deep-eql` | 5.0.2 | MIT | dev-only | [1](licenses/texts/npm/e5aee0714b6ecc416454b968d1017570ef609f20d8722ab84b07acd550b78198.txt) |
-| `define-lazy-prop` | 2.0.0 | MIT | dev-only | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
+| `deepmerge` | 4.3.1 | MIT | build-only | [1](licenses/texts/npm/6cfc4687cb2f2d86f4a77e6b526290d3878e5e512f3fec2f4cb36a9cb36f798b.txt) |
+| `default-browser-id` | 5.0.1 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `default-browser` | 5.5.1 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `define-lazy-prop` | 2.0.0 | MIT | build-only, dev-only | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
+| `define-lazy-prop` | 3.0.0 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `dequal` | 2.0.3 | MIT | dev-only | [1](licenses/texts/npm/306fa513e39b23a6e8747520de761809d206b99800ef41907b530226574c59ae.txt) |
 | `detect-libc` | 2.1.2 | Apache-2.0 | build-only, dev-only | [1](licenses/texts/npm/b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1.txt) |
+| `diff` | 8.0.4 | BSD-3-Clause | build-only | [1](licenses/texts/npm/eda81a415869e67809f6a9f3fd6056062cb83a462118e07eec5e92b2e0c40ce9.txt) |
 | `dijkstrajs` | 1.0.3 | MIT | runtime | [1](licenses/texts/npm/c46324e45a005413535a6fb7a97e9eacd3cc6bf30335b7d5c10b8ee3af9e60c2.txt) |
 | `doctrine` | 3.0.0 | Apache-2.0 | dev-only | [1](licenses/texts/npm/5c272e206669b79ee20fa89fa8fa888d5b56186f16c55a5614753ad3412e2ae9.txt) [2](licenses/texts/npm/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30.txt) [3](licenses/texts/npm/0e74697a68cebdcd61502c30fe80ab7f9e341d995dcd452023654d57133534b1.txt) |
 | `dom-accessibility-api` | 0.5.16 | MIT | dev-only | [1](licenses/texts/npm/0ffe67fe630169de46df2d29dc18f5857b4c98f0f95b0cd9e3c21fef51f9a9b8.txt) |
 | `dom-accessibility-api` | 0.6.3 | MIT | dev-only | [1](licenses/texts/npm/0ffe67fe630169de46df2d29dc18f5857b4c98f0f95b0cd9e3c21fef51f9a9b8.txt) |
+| `dot-prop` | 6.0.1 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `dotenv` | 17.4.2 | BSD-2-Clause | build-only | [1](licenses/texts/npm/74b629b24865e1e83c5277ee84590b7937644d6fd959d0c7bdce758676cd2ced.txt) |
 | `eastasianwidth` | 0.2.0 | MIT | dev-only | [1](licenses/texts/npm/94aa6016fb9d436508366433e9caba061443ca58f4c7eb515caec7badf90ae5a.txt) |
-| `electron-to-chromium` | 1.5.377 | ISC | build-only, dev-only | [1](licenses/texts/npm/25ba5c59dad3e0dd8f9540beaa0f0a86a10e3aec35af5fdc8e88c5f6a5c0d8c6.txt) |
+| `electron-to-chromium` | 1.5.472 | ISC | build-only, dev-only | [1](licenses/texts/npm/25ba5c59dad3e0dd8f9540beaa0f0a86a10e3aec35af5fdc8e88c5f6a5c0d8c6.txt) |
 | `elkjs` | 0.12.0 | EPL-2.0 OR GPL-3.0-or-later | runtime | [1](licenses/texts/npm/637e81f4a1b6b4079535c499fca05e238cf7605c1ff5b76d60d7da7ce96700c9.txt) |
+| `emoji-regex` | 10.6.0 | MIT | build-only | [1](licenses/texts/npm/483acb265f182907d1caf6cff9c16c96f31325ed23792832cc5d8b12d5f88c8a.txt) |
 | `emoji-regex` | 8.0.0 | MIT | dev-only, runtime | [1](licenses/texts/npm/483acb265f182907d1caf6cff9c16c96f31325ed23792832cc5d8b12d5f88c8a.txt) |
 | `emoji-regex` | 9.2.2 | MIT | dev-only | [1](licenses/texts/npm/483acb265f182907d1caf6cff9c16c96f31325ed23792832cc5d8b12d5f88c8a.txt) |
 | `enhanced-resolve` | 5.21.6 | MIT | build-only | [1](licenses/texts/npm/9068a8782d2fb4c6e432cfa25334efa56f722822180570802bf86e71b6003b1e.txt) |
+| `enquirer` | 2.4.1 | MIT | build-only | [1](licenses/texts/npm/6be6dd088b7136b4e5d99223e88d5d49ea6587b8d81e634548fec49b95ee140b.txt) |
 | `entities` | 4.5.0 | BSD-2-Clause | runtime | [1](licenses/texts/npm/cb992345949ccd6e8394b2cd6c465f7b897c864f845937dbf64e8997f389e164.txt) |
 | `entities` | 6.0.1 | BSD-2-Clause | dev-only | [1](licenses/texts/npm/cb992345949ccd6e8394b2cd6c465f7b897c864f845937dbf64e8997f389e164.txt) |
+| `env-paths` | 2.2.1 | MIT | build-only | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
 | `es-errors` | 1.3.0 | MIT | dev-only | [1](licenses/texts/npm/5e325595b4ea8cfec3802f545b1def5d7b73e4a5b8e9ba63e32a320f67732292.txt) |
 | `es-module-lexer` | 1.7.0 | MIT | dev-only | [1](licenses/texts/npm/fecc38b5e10d889686b3862e7ade17e8b3e5c94b24b7256b05a354d8524b3274.txt) |
 | `esbuild-register` | 3.6.0 | MIT | dev-only | [1](licenses/texts/npm/4a6ab1f41bbf070dcf47104128d101d444f4a6767af8169e2c44430473285b5c.txt) |
 | `esbuild` | 0.25.12 | MIT | build-only, dev-only | [1](licenses/texts/npm/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt) |
 | `escalade` | 3.2.0 | MIT | build-only, dev-only | [1](licenses/texts/npm/9a9edad7baae52622bddf3c15b2ef8a33d2c89f2d25408ad13e8a7481c6b0c97.txt) |
 | `escape-string-regexp` | 4.0.0 | MIT | runtime | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
-| `esprima` | 4.0.1 | BSD-2-Clause | dev-only | [1](licenses/texts/npm/94bcb9959136723aa4fb36e1a6c4d5c662a2369978cfae344dabfb83ae619e79.txt) |
+| `esprima` | 4.0.1 | BSD-2-Clause | build-only, dev-only | [1](licenses/texts/npm/94bcb9959136723aa4fb36e1a6c4d5c662a2369978cfae344dabfb83ae619e79.txt) |
 | `estree-walker` | 2.0.2 | MIT | dev-only | [1](licenses/texts/npm/8a6dcbabe7179f9c8489c08a7d874d0f1e093ae7449e03756ccf87cb9d0e296e.txt) |
 | `estree-walker` | 3.0.3 | MIT | dev-only | [1](licenses/texts/npm/8a6dcbabe7179f9c8489c08a7d874d0f1e093ae7449e03756ccf87cb9d0e296e.txt) |
 | `esutils` | 2.0.3 | BSD-2-Clause | dev-only | [1](licenses/texts/npm/0e74697a68cebdcd61502c30fe80ab7f9e341d995dcd452023654d57133534b1.txt) |
+| `execa` | 5.1.1 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `execa` | 9.6.1 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `expect-type` | 1.3.0 | Apache-2.0 | dev-only | [1](licenses/texts/npm/7c6cc83c84eaa249a85bf12fe3eedd831bb50c696e8890b5248223ae68c7b408.txt) |
 | `fake-indexeddb` | 6.2.6 | Apache-2.0 | dev-only | [1](licenses/texts/npm/0c2e77addd3045b932ae0de86b7cf66aa1eeed4248d4dab37e851f9e5499d85e.txt) |
-| `fast-deep-equal` | 3.1.3 | MIT | runtime | [1](licenses/texts/npm/7bf9b2de73a6b356761c948d0e9eeb4be6c1270bd04c79cd489c1e400ffdfc1a.txt) |
+| `fast-deep-equal` | 3.1.3 | MIT | build-only, runtime | [1](licenses/texts/npm/7bf9b2de73a6b356761c948d0e9eeb4be6c1270bd04c79cd489c1e400ffdfc1a.txt) |
+| `fast-glob` | 3.3.3 | MIT | build-only | [1](licenses/texts/npm/9363d160bf41d46d83901a5d24fc3fe2094c2afc17b4a2378914b273977ee2de.txt) |
+| `fast-uri` | 3.1.9 | BSD-3-Clause | build-only | [1](licenses/texts/npm/b010b0dfdfdb23d7396e03b82cd4621fc9bb8f95d6b0aea70b9c24e12074c786.txt) |
+| `fastq` | 1.20.3 | ISC | build-only | [1](licenses/texts/npm/c3367f6d01a79d368fc4fbb41b3615fcd92f243d6597ab96742f6f976f9325af.txt) |
 | `fdir` | 6.5.0 | MIT | build-only, dev-only | [1](licenses/texts/npm/9a39f2aadab11a3697edd668ff2d8ad885b649737b7ab4d3bf12b34e5ada0c86.txt) |
+| `figures` | 6.1.0 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `fill-range` | 7.1.1 | MIT | build-only | [1](licenses/texts/npm/35bdd8a44339719441900fb50fbefc5e2dca1ca662cbaed7a687de842c8b70f2.txt) |
+| `find-up` | 3.0.0 | MIT | build-only | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
 | `find-up` | 4.1.0 | MIT | runtime | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
 | `find-up` | 7.0.0 | MIT | dev-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `foreground-child` | 3.3.1 | ISC | dev-only | [1](licenses/texts/npm/93f5d82a8d59442fe3275383453a255fef761647fb28265644010ba799806148.txt) |
+| `fs-extra` | 11.4.1 | MIT | build-only | [1](licenses/texts/npm/c6a7de1428955aa5a692f4d3a3d3ede658d959616944713337cda296736442e1.txt) |
 | `fsevents` | 2.3.3 | MIT | build-only, dev-only | [1](licenses/texts/npm/2a8a5d6197bb97a018b8a190dd3ed853d750ca87c8e80c17aad41d6c6ff448e1.txt) |
 | `function-bind` | 1.1.2 | MIT | dev-only | [1](licenses/texts/npm/773e131a7684726005a7e4688a80b4620033bc08499bc1404dd1a1eb3bca725e.txt) |
+| `fuzzysort` | 3.1.0 | MIT | build-only | [1](licenses/texts/npm/626c3f57d6c312eb777f144bf8e255ece53a9bd081daf75fb12584584f75791c.txt) |
 | `gensync` | 1.0.0-beta.2 | MIT | build-only, dev-only | [1](licenses/texts/npm/e3a956681ee067f971ac413994171b3d90ca801ec6324e76c9c55366cfe31cb0.txt) |
 | `get-caller-file` | 2.0.5 | ISC | runtime | [1](licenses/texts/npm/902dbb4154679fb2b8d7c33878183f45b268d01eae5e5033dddaa8852d45f213.txt) |
+| `get-east-asian-width` | 1.7.0 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `get-own-enumerable-keys` | 1.0.0 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `get-stream` | 6.0.1 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `get-stream` | 9.0.1 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `glob-parent` | 5.1.2 | ISC | build-only | [1](licenses/texts/npm/2c46f1325bd3822a33c1e2c1e49c18d13127ac00f9c8b3b79196c7a126f73cd9.txt) |
 | `glob` | 10.4.5 | ISC | dev-only | [1](licenses/texts/npm/cdbc258d13806538e727964c2436a8806e6e2496ccd616224aace6f7bf98dbc1.txt) |
 | `graceful-fs` | 4.2.11 | ISC | build-only | [1](licenses/texts/npm/f65c5d9f22a317b2a10803bd1868461ce6499c2ed7217bc80c0cc772a748789c.txt) |
 | `hasown` | 2.0.4 | MIT | dev-only | [1](licenses/texts/npm/bf9b0d665be2a689851eea667ca9f42066ea1d903b38349c51e6a44b2577680a.txt) |
@@ -341,14 +410,35 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `html-encoding-sniffer` | 4.0.0 | MIT | dev-only | [1](licenses/texts/npm/528eec83cb836a0adda9f8fc3d6a2a70a710d6cc0be9a155f92212c8df28acfa.txt) |
 | `http-proxy-agent` | 7.0.2 | MIT | dev-only | [1](licenses/texts/npm/71368fd0f5b4129191e9afcd1e1ef2dc89a9090d3e4d80bbab92dafd032b3bef.txt) |
 | `https-proxy-agent` | 7.0.6 | MIT | dev-only | [1](licenses/texts/npm/8d8c55319c7729d57be811c747452636688d54f19701ee0752b6b15ad3771d9a.txt) |
+| `human-signals` | 2.1.0 | Apache-2.0 | build-only | [1](licenses/texts/npm/0f2c1c521a08ca2e202316a29c57cba39077ebe2618cf10f23df410f4047f60a.txt) |
+| `human-signals` | 8.0.1 | Apache-2.0 | build-only | [1](licenses/texts/npm/f4ff0f211345d2496a6e9dc56d6f13f4ee52c0223ab718bfe7ebc77945af3942.txt) |
 | `iconv-lite` | 0.6.3 | MIT | dev-only | [1](licenses/texts/npm/ac779f7314c74f232ef847ea86e714abe25cf6eeb5cc97b69451b74e2af6492d.txt) |
+| `ignore` | 5.3.2 | MIT | build-only | [1](licenses/texts/npm/9c94db23dc4b1e9aaee5d195668b916afc71efed54af226b66cf0ccc4389c1c0.txt) |
 | `indent-string` | 4.0.0 | MIT | dev-only | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
+| `ip-address` | 10.7.5 | MIT | build-only | [1](licenses/texts/npm/f8d791359a50cbcac82c29cb7b0b1b889b28be76fdd35b8ee33f0f7c8704702a.txt) |
 | `is-core-module` | 2.17.0 | MIT | dev-only | [1](licenses/texts/npm/5c496ce5ae47eb8e5ddcaa5e29c27c446a3855b19e3a66991b52f361bed22b28.txt) |
-| `is-docker` | 2.2.1 | MIT | dev-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `is-docker` | 2.2.1 | MIT | build-only, dev-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `is-docker` | 3.0.0 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `is-extglob` | 2.1.1 | MIT | build-only | [1](licenses/texts/npm/73b5283588baa142c5baaef5f56d3e8fdea7a30b214e8c5737e87640f882453a.txt) |
 | `is-fullwidth-code-point` | 3.0.0 | MIT | dev-only, runtime | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
+| `is-glob` | 4.0.3 | MIT | build-only | [1](licenses/texts/npm/4cd903859549d4b20b571041f96dfae1136ed079c476126268f9d7cc1b611150.txt) |
+| `is-in-ssh` | 1.0.0 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `is-inside-container` | 1.0.0 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `is-interactive` | 2.0.0 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `is-number` | 7.0.0 | MIT | build-only | [1](licenses/texts/npm/35bdd8a44339719441900fb50fbefc5e2dca1ca662cbaed7a687de842c8b70f2.txt) |
+| `is-obj` | 2.0.0 | MIT | build-only | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
+| `is-obj` | 3.0.0 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `is-plain-obj` | 4.1.0 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `is-potential-custom-element-name` | 1.0.1 | MIT | dev-only | [1](licenses/texts/npm/483acb265f182907d1caf6cff9c16c96f31325ed23792832cc5d8b12d5f88c8a.txt) |
-| `is-wsl` | 2.2.0 | MIT | dev-only | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
-| `isexe` | 2.0.0 | ISC | dev-only | [1](licenses/texts/npm/4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b.txt) |
+| `is-regexp` | 3.1.0 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `is-stream` | 2.0.1 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `is-stream` | 4.0.1 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `is-unicode-supported` | 1.3.0 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `is-unicode-supported` | 2.1.0 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `is-wsl` | 2.2.0 | MIT | build-only, dev-only | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
+| `is-wsl` | 3.1.1 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `isexe` | 2.0.0 | ISC | build-only, dev-only | [1](licenses/texts/npm/4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b.txt) |
+| `isexe` | 3.1.5 | BlueOak-1.0.0 | build-only | [1](licenses/texts/npm/8a1af140fdfbf5afd3df27f7e662f989c5b963a300020dfafce42033cae9e004.txt) |
 | `isomorphic.js` | 0.2.5 | MIT | runtime | [1](licenses/texts/npm/dd6488c9c1a4ce2dc978ecee067e5b6a725b52e6057a450b24f1a23bc373b057.txt) |
 | `jackspeak` | 3.4.3 | BlueOak-1.0.0 | dev-only | [1](licenses/texts/npm/2c7c5d22ed5a8ee968c64757710979afcd77438c48b4a265b94e615babd8a901.txt) |
 | `jiti` | 2.7.0 | MIT | build-only, dev-only | [1](licenses/texts/npm/46231df5a7733c3f52f11b71f3df61813007745b62b09031acfb45fb42d75082.txt) |
@@ -356,8 +446,12 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `js-tokens` | 9.0.1 | MIT | dev-only | [1](licenses/texts/npm/33038d552d766f4501d8da25b66053ed217c61274ffce1c6bee413bb037c259c.txt) |
 | `jsdom` | 26.1.0 | MIT | dev-only | [1](licenses/texts/npm/242d37e7cab25cbafc36cc973ee88f9345fddf066afe4f72b7ac3d9ad4e24cce.txt) |
 | `jsesc` | 3.1.0 | MIT | build-only, dev-only | [1](licenses/texts/npm/483acb265f182907d1caf6cff9c16c96f31325ed23792832cc5d8b12d5f88c8a.txt) |
+| `json-schema-traverse` | 1.0.0 | MIT | build-only | [1](licenses/texts/npm/7bf9b2de73a6b356761c948d0e9eeb4be6c1270bd04c79cd489c1e400ffdfc1a.txt) |
+| `json-schema-typed` | 7.0.3 | BSD-2-Clause | build-only | [1](licenses/texts/npm/59992f12a42bfad11b6586e1bffda51749bb468847ca27c7070647462a66ed7b.txt) |
 | `json5` | 2.2.3 | MIT | build-only, dev-only | [1](licenses/texts/npm/53e59feb13058722d977c699eb0407c7bce2f93c949b681bbd2ff31698535927.txt) |
-| `kleur` | 3.0.3 | MIT | dev-only | [1](licenses/texts/npm/306fa513e39b23a6e8747520de761809d206b99800ef41907b530226574c59ae.txt) |
+| `jsonfile` | 6.2.1 | MIT | build-only | [1](licenses/texts/npm/a9801fb52ba22ef808682a094da8a7a480584b7ed0dfd0d888ab543616335031.txt) |
+| `kleur` | 3.0.3 | MIT | build-only, dev-only | [1](licenses/texts/npm/306fa513e39b23a6e8747520de761809d206b99800ef41907b530226574c59ae.txt) |
+| `kleur` | 4.1.5 | MIT | build-only | [1](licenses/texts/npm/306fa513e39b23a6e8747520de761809d206b99800ef41907b530226574c59ae.txt) |
 | `konva` | 10.9.0 | MIT | runtime | [1](licenses/texts/npm/7190132c82df30243dc2ba512c9509ea3b629329b4266e9f2c3b5dbd04029613.txt) |
 | `lib0` | 0.2.119 | MIT | runtime | [1](licenses/texts/npm/5446db1e43fe52faf3faab7e9959fe3762ac11bdc61c0945934c498affd52d73.txt) |
 | `lightningcss-android-arm64` | 1.32.0 | MPL-2.0 | build-only, dev-only | [1](licenses/texts/npm/5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e.txt) |
@@ -374,8 +468,10 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `lightningcss` | 1.32.0 | MPL-2.0 | build-only, dev-only | [1](licenses/texts/npm/5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e.txt) |
 | `linkify-it` | 5.0.1 | MIT | runtime | [1](licenses/texts/npm/95e3f7f0e81e9b4940cdfaa1956aaff5e4dfd2fb1565041e7c78eb9a606f23e3.txt) |
 | `linkifyjs` | 4.3.3 | MIT | runtime | [1](licenses/texts/npm/58e6f3677452cca096ce5328ebf7de37a1406bbeeb2f263c1b2ededc8c7d0228.txt) |
+| `locate-path` | 3.0.0 | MIT | build-only | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
 | `locate-path` | 5.0.0 | MIT | runtime | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
 | `locate-path` | 7.2.0 | MIT | dev-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `log-symbols` | 6.0.0 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `loupe` | 3.2.1 | MIT | dev-only | [1](licenses/texts/npm/592141f7b861426ceeff937d85ad04ada5f66e386c5a8696ed1bd680f2cdb552.txt) |
 | `lru-cache` | 10.4.3 | ISC | dev-only | [1](licenses/texts/npm/451ec07eeb9c4e1b86de9abdaa426462a8be48f887ec7421cf0bbb9c769555ab.txt) |
 | `lru-cache` | 5.1.1 | ISC | build-only, dev-only | [1](licenses/texts/npm/4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b.txt) |
@@ -385,39 +481,63 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `markdown-it` | 14.2.0 | MIT | runtime | [1](licenses/texts/npm/792c48c5a849a15fdf9e37e8bcf9e6d1dd13b32b46c642a748a0a46a9919d473.txt) |
 | `marked` | 18.0.5 | MIT | runtime | [1](licenses/texts/npm/8e3a3f82f59a60958f56ca08f445647c32a4733dc7ca6c2c46f6eb898471ab9c.txt) |
 | `mdurl` | 2.0.0 | MIT | runtime | [1](licenses/texts/npm/6b6a356c4337e2446841f30f3cdf7e7023af8c5260b5e347c0f987b9f6aa2644.txt) |
+| `merge-stream` | 2.0.0 | MIT | build-only | [1](licenses/texts/npm/2cee71bf4612fc2efe1c6261e3f2b21f3c7259ef8a4f3593b095ae7a7bd65ad9.txt) |
+| `merge2` | 1.4.1 | MIT | build-only | [1](licenses/texts/npm/b2590e53ea6e050512c3993bfc746c394bbba9242fd6909245201bdc1dc6862a.txt) |
+| `micromatch` | 4.0.8 | MIT | build-only | [1](licenses/texts/npm/35bdd8a44339719441900fb50fbefc5e2dca1ca662cbaed7a687de842c8b70f2.txt) |
+| `mimic-fn` | 2.1.0 | MIT | build-only | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
+| `mimic-fn` | 3.1.0 | MIT | build-only | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
+| `mimic-function` | 5.0.1 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `min-indent` | 1.0.1 | MIT | dev-only | [1](licenses/texts/npm/9638fa87f845af6cecc56fab498c1f74f4a98522d3b53377bedcbdb44b5a8dcc.txt) |
+| `minimatch` | 10.2.6 | BlueOak-1.0.0 | build-only | [1](licenses/texts/npm/2c7c5d22ed5a8ee968c64757710979afcd77438c48b4a265b94e615babd8a901.txt) |
 | `minimatch` | 9.0.9 | ISC | dev-only | [1](licenses/texts/npm/d11323827fa4edeaafc437cc5b91b6971b335f0127efeeb42bf5122fe8657e8f.txt) |
-| `minimist` | 1.2.8 | MIT | dev-only | [1](licenses/texts/npm/435a6722c786b0a56fbe7387028f1d9d3f3a2d0fb615bb8fee118727c3f59b7b.txt) |
+| `minimist` | 1.2.8 | MIT | build-only, dev-only | [1](licenses/texts/npm/435a6722c786b0a56fbe7387028f1d9d3f3a2d0fb615bb8fee118727c3f59b7b.txt) |
 | `minipass` | 7.1.3 | BlueOak-1.0.0 | dev-only | [1](licenses/texts/npm/8a1af140fdfbf5afd3df27f7e662f989c5b963a300020dfafce42033cae9e004.txt) |
 | `mrmime` | 2.0.1 | MIT | dev-only | [1](licenses/texts/npm/ba573393f24555ac0528612ad39665fab5bdcc80330a61096024bbf5f736526d.txt) |
 | `ms` | 2.1.3 | MIT | build-only, dev-only | [1](licenses/texts/npm/1662fae9b5314d11cf51284e2dcd1f006a354f7343f08712a730fcff9a359801.txt) |
-| `nanoid` | 3.3.15 | MIT | build-only, dev-only | [1](licenses/texts/npm/da4db1480d9beea3483a2eda5c53b22238d0827d57da162b48f122e04d2d9987.txt) |
-| `node-releases` | 2.0.48 | MIT | build-only, dev-only | [1](licenses/texts/npm/3706296ed611888111ceccc1dff4712844dea4bde0b185c82d718c3b69895abe.txt) |
+| `nanoid` | 3.3.20 | MIT | build-only, dev-only | [1](licenses/texts/npm/da4db1480d9beea3483a2eda5c53b22238d0827d57da162b48f122e04d2d9987.txt) |
+| `node-releases` | 2.0.63 | MIT | build-only, dev-only | [1](licenses/texts/npm/3706296ed611888111ceccc1dff4712844dea4bde0b185c82d718c3b69895abe.txt) |
+| `npm-run-path` | 4.0.1 | MIT | build-only | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
+| `npm-run-path` | 6.0.0 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `nwsapi` | 2.2.24 | MIT | dev-only | [1](licenses/texts/npm/2aebdf8ae67777ccb2fa66b32066c1a16bd71085011bb4085dc7408e2947d2c2.txt) |
-| `open` | 8.4.2 | MIT | dev-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `object-treeify` | 1.1.33 | MIT | build-only | [1](licenses/texts/npm/825311b35022a789d246bad9c8f7579344784ca99503ebda403b08765e6e65f3.txt) |
+| `onetime` | 5.1.2 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `onetime` | 7.0.0 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `open` | 11.0.4 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `open` | 8.4.2 | MIT | build-only, dev-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `ora` | 8.2.0 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `orderedmap` | 2.1.1 | MIT | runtime | [1](licenses/texts/npm/869c30f368eb08735e779027b9f4bc9fea2f39624351856aebe42741f0bc0884.txt) |
-| `p-limit` | 2.3.0 | MIT | runtime | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
+| `p-limit` | 2.3.0 | MIT | build-only, runtime | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
 | `p-limit` | 4.0.0 | MIT | dev-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `p-locate` | 3.0.0 | MIT | build-only | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
 | `p-locate` | 4.1.0 | MIT | runtime | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
 | `p-locate` | 6.0.0 | MIT | dev-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
-| `p-try` | 2.2.0 | MIT | runtime | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
+| `p-try` | 2.2.0 | MIT | build-only, runtime | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
 | `package-json-from-dist` | 1.0.1 | BlueOak-1.0.0 | dev-only | [1](licenses/texts/npm/a49c9ba464796f65b59fca3f1e6ca40912df1e859f575383223f7ec6c5baae09.txt) |
+| `parse-ms` | 4.0.0 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `parse5` | 7.3.0 | MIT | dev-only | [1](licenses/texts/npm/8c535800331e1e4439835555b3f9edc7fe9dee2fab0d8bbbd5a982e8b8343d4d.txt) |
+| `path-browserify` | 1.0.1 | MIT | build-only | [1](licenses/texts/npm/a22b9d5763f574e5db347c30acc0b33eaf4846767c03d2e27d012e864e79a824.txt) |
+| `path-exists` | 3.0.0 | MIT | build-only | [1](licenses/texts/npm/6fb9754611c20f6649f68805e8c990e83261f29316e29de9e6cedae607b8634c.txt) |
 | `path-exists` | 4.0.0 | MIT | runtime | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
 | `path-exists` | 5.0.0 | MIT | dev-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
-| `path-key` | 3.1.1 | MIT | dev-only | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
+| `path-key` | 3.1.1 | MIT | build-only, dev-only | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
+| `path-key` | 4.0.0 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `path-parse` | 1.0.7 | MIT | dev-only | [1](licenses/texts/npm/3f4609137f65070541b9214300ea0d640af8192857de0eeb2b03403003d9228a.txt) |
 | `path-scurry` | 1.11.1 | BlueOak-1.0.0 | dev-only | [1](licenses/texts/npm/8a1af140fdfbf5afd3df27f7e662f989c5b963a300020dfafce42033cae9e004.txt) |
 | `pathe` | 2.0.3 | MIT | dev-only | [1](licenses/texts/npm/52e92576851154bad7737e90cc72818936f43665cb0e3f7428ed8edc8cc5709b.txt) |
 | `pathval` | 2.0.1 | MIT | dev-only | [1](licenses/texts/npm/5d45910e7ed82fecc3e29b40a5b3a17ceb609fda19f860aa2ec180d87f4f9d4a.txt) |
 | `picocolors` | 1.1.1 | ISC | build-only, dev-only | [1](licenses/texts/npm/6582629e2979466878f6014313dcc2f3756c9616148682227ce3063dde310750.txt) |
+| `picomatch` | 2.3.2 | MIT | build-only | [1](licenses/texts/npm/d0cd141b0c322fded5dfad1d4645bb2fedfc05b7321fe1009469638190d59ef9.txt) |
 | `picomatch` | 4.0.4 | MIT | build-only, dev-only | [1](licenses/texts/npm/d0cd141b0c322fded5dfad1d4645bb2fedfc05b7321fe1009469638190d59ef9.txt) |
+| `pkg-up` | 3.1.0 | MIT | build-only | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
 | `playwright-core` | 1.63.0 | Apache-2.0 | dev-only | [1](licenses/texts/npm/45873d00a0dd243596deb4aa23b2493b3d1f0671921bf2538ea431d7380220eb.txt) [2](licenses/texts/npm/6d602191187b35b9b01d2cffa01c8469c2c8d9de8a96f1bf868e0f264f51c81d.txt) |
 | `playwright` | 1.63.0 | Apache-2.0 | dev-only | [1](licenses/texts/npm/45873d00a0dd243596deb4aa23b2493b3d1f0671921bf2538ea431d7380220eb.txt) [2](licenses/texts/npm/6d602191187b35b9b01d2cffa01c8469c2c8d9de8a96f1bf868e0f264f51c81d.txt) |
 | `pngjs` | 5.0.0 | MIT | runtime | [1](licenses/texts/npm/176b07a18c0bb3836aaeb61088fd0bf11a38f66e6f15e3fbda85faa225250d6e.txt) |
-| `postcss` | 8.5.15 | MIT | build-only, dev-only | [1](licenses/texts/npm/5be1f3465bba68a626777f984878814aaf35e7ef8e9fd314d469bcf887050fb8.txt) |
+| `postcss-selector-parser` | 7.1.7 | MIT | build-only | [1](licenses/texts/npm/2998094b38f7ace25f141fb36f334d8338f65a1812978d618b1161f4d77ae10e.txt) |
+| `postcss` | 8.5.32 | MIT | build-only, dev-only | [1](licenses/texts/npm/5be1f3465bba68a626777f984878814aaf35e7ef8e9fd314d469bcf887050fb8.txt) |
+| `powershell-utils` | 0.2.1 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `pretty-format` | 27.5.1 | MIT | dev-only | [1](licenses/texts/npm/52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85.txt) |
-| `prompts` | 2.4.2 | MIT | dev-only | [1](licenses/texts/npm/ade66f698fd417addc4d948a85ef33e8abb302daff6453feda18b191d250e54d.txt) |
+| `pretty-ms` | 9.3.1 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `prompts` | 2.4.2 | MIT | build-only, dev-only | [1](licenses/texts/npm/ade66f698fd417addc4d948a85ef33e8abb302daff6453feda18b191d250e54d.txt) |
 | `prosemirror-changeset` | 2.4.1 | MIT | runtime | [1](licenses/texts/npm/7543dfe82fa61d5bb2478c78cbd9dfb2cbd500b6ac2893b24ed925773b67fb70.txt) |
 | `prosemirror-collab` | 1.3.1 | MIT | runtime | [1](licenses/texts/npm/ef0b452ced6304db2ce78ca66de1fc7b97bab05bc1750c95df359ed3fe1d65c8.txt) |
 | `prosemirror-commands` | 1.7.1 | MIT | runtime | [1](licenses/texts/npm/ef0b452ced6304db2ce78ca66de1fc7b97bab05bc1750c95df359ed3fe1d65c8.txt) |
@@ -439,6 +559,7 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `punycode.js` | 2.3.1 | MIT | runtime | [1](licenses/texts/npm/483acb265f182907d1caf6cff9c16c96f31325ed23792832cc5d8b12d5f88c8a.txt) |
 | `punycode` | 2.3.1 | MIT | dev-only | [1](licenses/texts/npm/483acb265f182907d1caf6cff9c16c96f31325ed23792832cc5d8b12d5f88c8a.txt) |
 | `qrcode` | 1.5.4 | MIT | runtime | [1](licenses/texts/npm/8df47c6ad9ac2c41eb9b2a72def9908959da0ede8dadd56c7b249c1bdb0c5ce6.txt) |
+| `queue-microtask` | 1.2.3 | MIT | build-only | [1](licenses/texts/npm/d4c2065e2b936e62a4eb400efb4576edec9ca1388a9f78aa288e147275e7bc8b.txt) |
 | `react-colorful` | 5.8.1 | MIT | runtime | [1](licenses/texts/npm/eaa62adefbadd3f8c7733d47f72b185970b4d8c1e738d12e953c1e9d74292ca3.txt) [2](licenses/texts/npm/c779efe5dfb04b7b7cac35c4898725e4d22e98b86bc81c9556311d067bf97af5.txt) |
 | `react-docgen-typescript` | 2.4.0 | MIT | dev-only | [1](licenses/texts/npm/a61b261379cbd8e1856fc16892d4c5202500af07d44bf0de58facaa0abe76afe.txt) |
 | `react-docgen` | 8.0.4 | MIT | dev-only | [1](licenses/texts/npm/52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85.txt) |
@@ -448,49 +569,63 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `react-router-dom` | 7.18.0 | MIT | runtime | [1](licenses/texts/npm/77c9ee6a9c5d5782fb0c50b50d101189116314c14f7df0a1b0d385fc96a7ba49.txt) |
 | `react-router` | 7.18.0 | MIT | runtime | [1](licenses/texts/npm/77c9ee6a9c5d5782fb0c50b50d101189116314c14f7df0a1b0d385fc96a7ba49.txt) |
 | `react` | 19.2.7 | MIT | dev-only, runtime | [1](licenses/texts/npm/da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93.txt) |
-| `recast` | 0.23.21 | MIT | dev-only | [1](licenses/texts/npm/6ca87d1dce5b82873603e566fd83dabe8771fb169013337d4a14bb9bbf794687.txt) |
+| `recast` | 0.23.21 | MIT | build-only, dev-only | [1](licenses/texts/npm/6ca87d1dce5b82873603e566fd83dabe8771fb169013337d4a14bb9bbf794687.txt) |
 | `redent` | 3.0.0 | MIT | dev-only | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
 | `require-directory` | 2.1.1 | MIT | runtime | [1](licenses/texts/npm/a92e52eb1fa7cd746e3827bf01d3a3589bbc8e1e51348b1da042aad165525ad1.txt) |
+| `require-from-string` | 2.0.2 | MIT | build-only | [1](licenses/texts/npm/6ee0feb1f6ef996ff5a68600f8cf98909cf412d39ef3cdceaefd87d636fa1b7f.txt) |
 | `require-main-filename` | 2.0.0 | ISC | runtime | [1](licenses/texts/npm/365496ca1f56da40b23c9815fc40fa9005847b2f8f8fd1c1a4929ef25ec8cd1d.txt) |
 | `reselect` | 5.3.0 | MIT | runtime | [1](licenses/texts/npm/e98047a5dee068b33f82e8c4b7a63037b5108c93393198efd4097753004af5dd.txt) |
 | `resolve` | 1.22.13 | MIT | dev-only | [1](licenses/texts/npm/60acd7711e6c138e6041836e32d922705254cc1568a30fdf16aa8f59bb87aeaa.txt) |
+| `restore-cursor` | 5.1.0 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `reusify` | 1.1.0 | MIT | build-only | [1](licenses/texts/npm/93a1506953b08ad4874e1cc0971a1d2ac387ca510da91e4d05e460a6c4966fa3.txt) |
 | `rollup` | 4.62.2 | MIT | build-only, dev-only | [1](licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt) |
 | `rope-sequence` | 1.3.4 | MIT | runtime | [1](licenses/texts/npm/530424aebdd0e73f53238d1f89df250057bc8d8ce090cf5954197fadce5bf226.txt) |
 | `rrweb-cssom` | 0.8.0 | MIT | dev-only | [1](licenses/texts/npm/e539937c489c4928ad7461669ec017f4d916fb3565fc26f5b8a0ce816d2ed23c.txt) |
+| `run-applescript` | 7.1.0 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `run-parallel` | 1.2.0 | MIT | build-only | [1](licenses/texts/npm/d4c2065e2b936e62a4eb400efb4576edec9ca1388a9f78aa288e147275e7bc8b.txt) |
 | `safer-buffer` | 2.1.2 | MIT | dev-only | [1](licenses/texts/npm/4bc935e71be198c67ddf3c2b5fddb195f6edc182bfc155a96a6db61b44b494b9.txt) |
 | `saxes` | 6.0.0 | ISC | dev-only | [1](licenses/texts/npm/0fac2374380621b22e6b50451057721a9c52935b02d16d106a9f04897f061d0e.txt) |
 | `scheduler` | 0.27.0 | MIT | dev-only, runtime | [1](licenses/texts/npm/da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93.txt) |
 | `semver` | 6.3.1 | ISC | build-only, dev-only | [1](licenses/texts/npm/4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b.txt) |
-| `semver` | 7.8.5 | ISC | dev-only | [1](licenses/texts/npm/4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b.txt) |
+| `semver` | 7.8.5 | ISC | build-only, dev-only | [1](licenses/texts/npm/4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b.txt) |
 | `set-blocking` | 2.0.0 | ISC | runtime | [1](licenses/texts/npm/365496ca1f56da40b23c9815fc40fa9005847b2f8f8fd1c1a4929ef25ec8cd1d.txt) |
 | `set-cookie-parser` | 2.7.2 | MIT | runtime | [1](licenses/texts/npm/c5c6c5183a789d122f267c405f685037efb87e27fcde28ab1dd7378a2d2f5962.txt) |
-| `shebang-command` | 2.0.0 | MIT | dev-only | [1](licenses/texts/npm/69dee148a2cc470554dfa7142e830662062394d0fe67cddd379aba90dc60d6b3.txt) |
-| `shebang-regex` | 3.0.0 | MIT | dev-only | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
+| `shadcn` | 4.23.0 | MIT | asset, build-only | [1](licenses/texts/npm/1564074e13439397221ffd522e2e504d56561994a23d371aa5e3ad43e4f5423f.txt) |
+| `shebang-command` | 2.0.0 | MIT | build-only, dev-only | [1](licenses/texts/npm/69dee148a2cc470554dfa7142e830662062394d0fe67cddd379aba90dc60d6b3.txt) |
+| `shebang-regex` | 3.0.0 | MIT | build-only, dev-only | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
 | `siginfo` | 2.0.0 | ISC | dev-only | [1](licenses/texts/npm/3bdddf0b9b08aaa2fe4365b803fc958ed32c0597ca0bd727be8d9fcb8b248d18.txt) |
-| `signal-exit` | 4.1.0 | ISC | dev-only | [1](licenses/texts/npm/b173e19b9a78df305577ace0e52ef45a4bcc915ea28b47b256dc3b68dcb1f7e7.txt) |
+| `signal-exit` | 3.0.7 | ISC | build-only | [1](licenses/texts/npm/e05b1eaf5b5f99b7ad75cd1f38858ff9a311780b97715ead67936d60bf96aa7e.txt) |
+| `signal-exit` | 4.1.0 | ISC | build-only, dev-only | [1](licenses/texts/npm/b173e19b9a78df305577ace0e52ef45a4bcc915ea28b47b256dc3b68dcb1f7e7.txt) |
 | `sirv` | 3.0.2 | MIT | dev-only | [1](licenses/texts/npm/ba573393f24555ac0528612ad39665fab5bdcc80330a61096024bbf5f736526d.txt) |
-| `sisteransi` | 1.0.5 | MIT | dev-only | [1](licenses/texts/npm/ade66f698fd417addc4d948a85ef33e8abb302daff6453feda18b191d250e54d.txt) |
-| `source-map-js` | 1.2.1 | BSD-3-Clause | build-only, dev-only | [1](licenses/texts/npm/6cb0631f71c7749763fd3dd1d5bee52dd1070ec17f2edc1710079ad070bd2fbd.txt) |
-| `source-map` | 0.6.1 | BSD-3-Clause | dev-only | [1](licenses/texts/npm/6cb0631f71c7749763fd3dd1d5bee52dd1070ec17f2edc1710079ad070bd2fbd.txt) |
+| `sisteransi` | 1.0.5 | MIT | build-only, dev-only | [1](licenses/texts/npm/ade66f698fd417addc4d948a85ef33e8abb302daff6453feda18b191d250e54d.txt) |
+| `smart-buffer` | 4.2.0 | MIT | build-only | [1](licenses/texts/npm/c46e2c333e1c9e6fcfd130cf91b8e54bf67b60fabbc04996f7e199b990353ff3.txt) |
+| `socks` | 2.8.10 | MIT | build-only | [1](licenses/texts/npm/4f4f28866154c8d758241a64296e8790d45d7d912ff7b029930778c06d8f2a72.txt) |
+| `source-map-js` | 1.2.2 | BSD-3-Clause | build-only, dev-only | [1](licenses/texts/npm/6cb0631f71c7749763fd3dd1d5bee52dd1070ec17f2edc1710079ad070bd2fbd.txt) |
+| `source-map` | 0.6.1 | BSD-3-Clause | build-only, dev-only | [1](licenses/texts/npm/6cb0631f71c7749763fd3dd1d5bee52dd1070ec17f2edc1710079ad070bd2fbd.txt) |
 | `stackback` | 0.0.2 | MIT | dev-only | Missing upstream text |
 | `std-env` | 3.10.0 | MIT | dev-only | [1](licenses/texts/npm/a6f36438e46fb911859f3b9c4cad045ba64e1af3d8f4512c60258fa2d7552d28.txt) |
+| `stdin-discarder` | 0.2.2 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `storybook` | 9.1.21 | MIT | dev-only | [1](licenses/texts/npm/bc90586179d44dcb313a9a289d687a2f26226303b2066bd21dbefd2378e894e5.txt) |
 | `string-width-cjs` | 4.2.3 | MIT | dev-only | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
 | `string-width` | 4.2.3 | MIT | dev-only, runtime | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
 | `string-width` | 5.1.2 | MIT | dev-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `string-width` | 7.2.0 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `stringify-object` | 5.0.0 | BSD-2-Clause | build-only | [1](licenses/texts/npm/55ebc02db1f1610e3b4924d0dba2dcef3c3e3f930676b4990cad04ab8d5cb842.txt) |
 | `strip-ansi-cjs` | 6.0.1 | MIT | dev-only | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
-| `strip-ansi` | 6.0.1 | MIT | dev-only, runtime | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
-| `strip-ansi` | 7.2.0 | MIT | dev-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
-| `strip-bom` | 3.0.0 | MIT | dev-only | [1](licenses/texts/npm/6fb9754611c20f6649f68805e8c990e83261f29316e29de9e6cedae607b8634c.txt) |
+| `strip-ansi` | 6.0.1 | MIT | build-only, dev-only, runtime | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
+| `strip-ansi` | 7.2.0 | MIT | build-only, dev-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `strip-bom` | 3.0.0 | MIT | build-only, dev-only | [1](licenses/texts/npm/6fb9754611c20f6649f68805e8c990e83261f29316e29de9e6cedae607b8634c.txt) |
+| `strip-final-newline` | 2.0.0 | MIT | build-only | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
+| `strip-final-newline` | 4.0.0 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `strip-indent` | 3.0.0 | MIT | dev-only | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
 | `strip-indent` | 4.1.1 | MIT | dev-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `strip-literal` | 3.1.0 | MIT | dev-only | [1](licenses/texts/npm/af32efdd008a371c77b13eef5010c81d6c5c2f67c054b6bb74317e13ac38c171.txt) |
 | `supports-preserve-symlinks-flag` | 1.0.0 | MIT | dev-only | [1](licenses/texts/npm/0f0ca96f50793990031ebc488a38f7292ff70bce8ab6a8e5eeda674abc32ccdf.txt) |
 | `symbol-tree` | 3.2.4 | MIT | dev-only | [1](licenses/texts/npm/9ea1eccdabe469767a9edb9249a840b2461cf91b2434bf8a3e2fc1f414311cb1.txt) |
-| `tailwind-merge` | 3.6.0 | MIT | runtime | [1](licenses/texts/npm/d4c70c7ce38cea8778f0aed3fc0bef0a9dbd27f13bd8b6773cbd6d37941971e5.txt) |
+| `systeminformation` | 5.33.19 | MIT | build-only | [1](licenses/texts/npm/6d8a81695f864778d1fa5bb09cf8a8743049ca472b48658b1fff24a4d41300bd.txt) |
 | `tailwindcss` | 4.3.1 | MIT | build-only | [1](licenses/texts/npm/60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985.txt) |
 | `tapable` | 2.3.3 | MIT | build-only | [1](licenses/texts/npm/824ef6c33ae5ecbbab65d37f2b37da2bfc81d76cf7676ec0f59d00a0a38bdb75.txt) |
-| `tiny-invariant` | 1.3.3 | MIT | dev-only | [1](licenses/texts/npm/b1c501095de70182748cb8e8d97ac5577701a4ef3b755ba30d59fd87b24bdb0f.txt) |
+| `tiny-invariant` | 1.3.3 | MIT | build-only, dev-only | [1](licenses/texts/npm/b1c501095de70182748cb8e8d97ac5577701a4ef3b755ba30d59fd87b24bdb0f.txt) |
 | `tinybench` | 2.9.0 | MIT | dev-only | [1](licenses/texts/npm/cebc084d54e6dd99e53292ddb4bc1cdb63d9bfcd9ce438fe3aa6eb106d79e2ea.txt) |
 | `tinyexec` | 0.3.2 | MIT | dev-only | [1](licenses/texts/npm/f95f668fe64081ddb4153b322e34fdd719b991285ed08177d5ad7133b7988d92.txt) |
 | `tinyglobby` | 0.2.17 | MIT | build-only, dev-only | [1](licenses/texts/npm/22c68811e174cbbfb3813d4135918df4f540959c14d872e601d9abe83d3cde8f.txt) |
@@ -500,19 +635,28 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `tippy.js` | 6.3.7 | MIT | runtime | [1](licenses/texts/npm/7f4929c55f525ae510a77c361496c5a86a092434a3681c95a4dc89e951c67e98.txt) |
 | `tldts-core` | 6.1.86 | MIT | dev-only | [1](licenses/texts/npm/c64182d48160db948b6aa97a984f1a32974ce4d2053900361264cd33853796cb.txt) |
 | `tldts` | 6.1.86 | MIT | dev-only | [1](licenses/texts/npm/c64182d48160db948b6aa97a984f1a32974ce4d2053900361264cd33853796cb.txt) |
+| `to-regex-range` | 5.0.1 | MIT | build-only | [1](licenses/texts/npm/e7d1fee7347ffddccc5fd03327ffdb50f8c112be0d5016d62388a92c4ae6e7a9.txt) |
 | `totalist` | 3.0.1 | MIT | dev-only | [1](licenses/texts/npm/306fa513e39b23a6e8747520de761809d206b99800ef41907b530226574c59ae.txt) |
 | `tough-cookie` | 5.1.2 | BSD-3-Clause | dev-only | [1](licenses/texts/npm/22ec6791c91ba42c0516a05f4cbdde019aae4687f8a38c5ca7e8a69ee68f851d.txt) |
 | `tr46` | 5.1.1 | MIT | dev-only | [1](licenses/texts/npm/499d6d466d064e0460427967a344e2a32fcb86ea8c6cd1a285ec4f1fa03fba67.txt) |
 | `ts-dedent` | 2.3.0 | MIT | dev-only | [1](licenses/texts/npm/eff13095d9d762c3bd9dda74370c81e2130c28f2691bc455603abf973bac25b9.txt) |
-| `tsconfig-paths` | 4.2.0 | MIT | dev-only | [1](licenses/texts/npm/8850a2d4828514113042db6ec97237b7ca6cb1599734874e5817d521f8f84e1c.txt) |
+| `ts-morph` | 26.0.0 | MIT | build-only | [1](licenses/texts/npm/c2a4cfb69592431f4b3a179c114909bb76a979d5748c19ca595c94133c623b12.txt) |
+| `tsconfig-paths` | 4.2.0 | MIT | build-only, dev-only | [1](licenses/texts/npm/8850a2d4828514113042db6ec97237b7ca6cb1599734874e5817d521f8f84e1c.txt) |
 | `tslib` | 2.8.1 | 0BSD | build-only, dev-only, runtime | [1](licenses/texts/npm/210b19e543130388c68654b7497e967119ce17145f66ab7d85688fbd70f08751.txt) |
+| `tw-animate-css` | 1.4.0 | MIT | asset | [1](licenses/texts/npm/039184dfa0a822397b3f45a435b5b1e538721587fbade96b9fa80f86cb354109.txt) |
+| `type-fest` | 4.41.0 | (MIT OR CC0-1.0) | build-only | [1](licenses/texts/npm/a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499.txt) [2](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `typescript` | 5.9.3 | Apache-2.0 | dev-only | [1](licenses/texts/npm/a7d00bfd54525bc694b6e32f64c7ebcf5e6b7ae3657be5cc12767bce74654a47.txt) |
 | `uc.micro` | 2.1.0 | MIT | runtime | [1](licenses/texts/npm/483acb265f182907d1caf6cff9c16c96f31325ed23792832cc5d8b12d5f88c8a.txt) |
 | `undici-types` | 6.21.0 | MIT | build-only, dev-only | [1](licenses/texts/npm/a6db8096b2707bc0102d256917d4d33f298ba36d8c3f25de067a2b5bb379db27.txt) |
+| `undici` | 7.30.1 | MIT | build-only | [1](licenses/texts/npm/a6db8096b2707bc0102d256917d4d33f298ba36d8c3f25de067a2b5bb379db27.txt) |
 | `unicorn-magic` | 0.1.0 | MIT | dev-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `unicorn-magic` | 0.3.0 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `universalify` | 2.0.1 | MIT | build-only | [1](licenses/texts/npm/3fda5977c0904e226190b4e21d64340c1731e2142d6fe5f3dee0090a216b8b63.txt) |
 | `unplugin` | 1.16.1 | MIT | dev-only | [1](licenses/texts/npm/2ef2cbeeb84d5e7a92d208426ef4f841b5447ae0a9e661ffb0983e8985a9f469.txt) |
-| `update-browserslist-db` | 1.2.3 | MIT | build-only, dev-only | [1](licenses/texts/npm/c414dde36704bd9c8a76c7aa2921b19270ff9abeb478ea0050250d16cf29b0f6.txt) |
+| `update-browserslist-db` | 1.3.4 | MIT | build-only, dev-only | [1](licenses/texts/npm/9877e90da14aa8c931a1f9d07cc2a20ce119106e5dab1ebb41af865266d0cd2a.txt) |
 | `use-sync-external-store` | 1.7.0 | MIT | runtime | [1](licenses/texts/npm/da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93.txt) |
+| `util-deprecate` | 1.0.2 | MIT | build-only | [1](licenses/texts/npm/0154425673db15cdfa80ecba2c9b1f1a867f7197a006764712849bfc3a93cbb7.txt) |
+| `validate-npm-package-name` | 7.0.2 | ISC | build-only | [1](licenses/texts/npm/f3e1645267f7dd77ee6545283cc1766e5883e8fb3b5088fe2cfb995defbb3dde.txt) |
 | `vite-node` | 3.2.4 | MIT | dev-only | [1](licenses/texts/npm/ddc110f3b89cc397cee99d3d64c4f746928b7a3bac02fed15101eb4d367079f6.txt) |
 | `vite` | 6.4.3 | MIT | build-only, dev-only | [1](licenses/texts/npm/008938a3441801ca3960f8e3ccb4c0738e7996442a53063141d57d3769a7344d.txt) |
 | `vitest` | 3.2.6 | MIT | dev-only | [1](licenses/texts/npm/6b861d7554fbc8488a08ee59e613bd488785a2e27bd87b80142e5125abec6f4c.txt) |
@@ -524,12 +668,14 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `whatwg-mimetype` | 4.0.0 | MIT | dev-only | [1](licenses/texts/npm/528eec83cb836a0adda9f8fc3d6a2a70a710d6cc0be9a155f92212c8df28acfa.txt) |
 | `whatwg-url` | 14.2.0 | MIT | dev-only | [1](licenses/texts/npm/db480f236292a093e77a83c35431a8496624e1e664a3547768a9ce2bdde39877.txt) |
 | `which-module` | 2.0.1 | ISC | runtime | [1](licenses/texts/npm/852bf81203aa93aa89afc9f881ebb035322dc7334aaceff435c557634c94a815.txt) |
-| `which` | 2.0.2 | ISC | dev-only | [1](licenses/texts/npm/4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b.txt) |
+| `which` | 2.0.2 | ISC | build-only, dev-only | [1](licenses/texts/npm/4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b.txt) |
+| `which` | 4.0.0 | ISC | build-only | [1](licenses/texts/npm/4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b.txt) |
 | `why-is-node-running` | 2.3.0 | MIT | dev-only | [1](licenses/texts/npm/6a134e51aa31496c15a741592fc5d782b2dbf8d8b6b8524e15c8520ae0cd6374.txt) |
 | `wrap-ansi-cjs` | 7.0.0 | MIT | dev-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `wrap-ansi` | 6.2.0 | MIT | runtime | [1](licenses/texts/npm/48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0.txt) |
 | `wrap-ansi` | 8.1.0 | MIT | dev-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `ws` | 8.21.0 | MIT | dev-only | [1](licenses/texts/npm/2b29dcfe0d6471f7e8c92c5fb38c9f93edee10330937055440192f1832b1ecef.txt) |
+| `wsl-utils` | 1.0.1 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `xml-name-validator` | 5.0.0 | Apache-2.0 | dev-only | [1](licenses/texts/npm/a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9.txt) |
 | `xmlchars` | 2.2.0 | MIT | dev-only | [1](licenses/texts/npm/45d196313c2647d313cc65ca9b093d2d6974b64d35ee7346f2c60c9d518dff2c.txt) |
 | `y-prosemirror` | 1.3.7 | MIT | runtime | [1](licenses/texts/npm/5446db1e43fe52faf3faab7e9959fe3762ac11bdc61c0945934c498affd52d73.txt) |
@@ -540,6 +686,9 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `yargs` | 15.4.1 | MIT | runtime | [1](licenses/texts/npm/2f1a503bfab84b3ba7393627308b3274501e459e3b5185bbb56bbf16cb1602d4.txt) |
 | `yjs` | 13.6.33 | MIT | runtime | [1](licenses/texts/npm/341baa53605ed85d6f95782322854cca56c655ebc7fd4712649b8e7afc6020ff.txt) |
 | `yocto-queue` | 1.2.2 | MIT | dev-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `yocto-spinner` | 1.2.2 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
+| `yoctocolors` | 2.2.0 | MIT | build-only | [1](licenses/texts/npm/5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3.txt) |
 | `zod` | 3.25.76 | MIT | runtime | [1](licenses/texts/npm/3f1189b28e3866e0d979968d466b78f813f76827cfdca1fbb124cc0a5c8841f8.txt) |
+| `zod` | 4.6.7 | MIT | build-only | [1](licenses/texts/npm/3f1189b28e3866e0d979968d466b78f813f76827cfdca1fbb124cc0a5c8841f8.txt) |
 | `zustand` | 5.0.14 | MIT | runtime | [1](licenses/texts/npm/c1e6e266563517467b1bf874817d23e426f3149252bd7d42758cd697514b8417.txt) |
 <!-- npm-inventory:end -->

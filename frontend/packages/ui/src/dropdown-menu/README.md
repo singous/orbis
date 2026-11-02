@@ -1,11 +1,7 @@
 # DropdownMenu
 
-`DropdownMenu` 用 `open/onOpenChange` 或 `defaultOpen` 管理一次菜单会话。`DropdownMenuTrigger asChild` 与 Button/原生按钮组合；不渲染重复按钮。
+采用 shadcn base-nova 原生组件和 Base UI 菜单属性，包括普通项、checkbox/radio 项、分组、分隔线与子菜单。Trigger 和链接项通过原生 `render` 组合；动作使用 `onClick`，文字检索使用 `label`。
 
-`DropdownMenuContent` 自己是 menu，需提供 aria-label，位置使用 side/align/sideOffset。Portal 仍挂 body，但使用打开位置的有效主题和局部 `--ob-*` token。className/style 属于 Popup；finalFocus 可以在菜单动作打开另一个弹窗时设为 false，避免关闭菜单夺回焦点。
+`closeOnClick`、`disabled`、`checked/onCheckedChange`、`value/onValueChange` 等保留原生语义。需要持续打开的选择菜单显式传递 `closeOnClick={false}`。不提供旧的 `asChild`、`textValue` 或 `onSelect` 动作协议。
 
-`DropdownMenuItem` 用 onSelect 执行动作，disabled 阻止选择。默认选择后关闭；closeOnSelect=false 可以保留菜单。导航用 `asChild` 包住 Link/a，保留 href 和路由行为。不要把所有动作映射成字符串 key，也不支持 HeroUI 的 onAction/render API。
-
-Label 必须属于 Group，由原语关联 group 名称。RadioGroup/RadioItem 保留泛型值；CheckboxItem 保留 checked/onCheckedChange。两种选中项默认选择后保持菜单打开，需要立即关闭时显式写 closeOnSelect。
-
-键盘导航、禁用、链接、选择和关闭恢复在 Story 中验证；用户菜单在应用浏览器测试中覆盖主栏/侧栏及窄屏位置。
+Portal 默认样式与 API 采用官方来源；应用只通过 overlay scope 补充局部主题 HTML 属性。保存、删除、路由导航与操作失败处理属于业务消费者。

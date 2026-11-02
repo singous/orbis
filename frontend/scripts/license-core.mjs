@@ -52,8 +52,8 @@ function resolvePackage(packages, from, name) {
 export function dependencyUsage(packages) {
   const usage = new Map();
   const root = packages[""];
-  const buildRoots = new Set(["@tailwindcss/vite", "tailwindcss", "vite", "@vitejs/plugin-react", "esbuild"]);
-  const assetRoots = new Set(["@fontsource-variable/inter", "@iconify-json/tabler"]);
+  const buildRoots = new Set(["@tailwindcss/vite", "tailwindcss", "vite", "@vitejs/plugin-react", "esbuild", "shadcn"]);
+  const assetRoots = new Set(["@fontsource-variable/inter", "@fontsource-variable/geist", "@iconify-json/tabler", "tw-animate-css"]);
   function visit(location, scope) {
     if (!location) return;
     const seen = usage.get(location) ?? new Set();
@@ -67,7 +67,10 @@ export function dependencyUsage(packages) {
   }
   for (const name of Object.keys({ ...root.dependencies, ...root.devDependencies })) {
     const scope = assetRoots.has(name) ? "asset" : buildRoots.has(name) ? "build-only" : Object.hasOwn(root.dependencies ?? {}, name) ? "runtime" : "dev-only";
-    visit(resolvePackage(packages, "", name), scope);
+    const location = resolvePackage(packages, "", name);
+    visit(location, scope);
+    // 仅 tailwind.css 进入前端；CLI 的 JavaScript 依赖不随该样式表交付。
+    if (name === "shadcn") usage.get(location).add("asset");
   }
   return usage;
 }

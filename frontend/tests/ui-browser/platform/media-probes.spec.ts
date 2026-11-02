@@ -70,7 +70,7 @@ for (const theme of ["light", "dark"] as const) for (const forcedColors of ["non
     const source = await (await fetch("/src/main.tsx")).text();
     const reactURL = source.match(/from\s*["']([^"']*\/react\.js[^"']*)["']/)![1];
     const domURL = source.match(/from\s*["']([^"']*react-dom_client\.js[^"']*)["']/)![1];
-    const [{ default: React }, { default: ReactDOM }, menu, { Select }] = await Promise.all([
+    const [{ default: React }, { default: ReactDOM }, menu, selectComponents] = await Promise.all([
       import(reactURL), import(domURL), import("/packages/ui/src/dropdown-menu/index.tsx"), import("/packages/ui/src/select/index.tsx"),
     ]);
     document.getElementById("root")!.hidden = true;
@@ -87,10 +87,12 @@ for (const theme of ["light", "dark"] as const) for (const forcedColors of ["non
             React.createElement(menu.DropdownMenuItem, null, "普通动作"),
             React.createElement(menu.DropdownMenuItem, { disabled: true }, "不可用动作"),
             React.createElement(menu.DropdownMenuRadioGroup, { value: layout, onValueChange: setLayout },
-              React.createElement(menu.DropdownMenuRadioItem, { value: "list" }, "列表"),
-              React.createElement(menu.DropdownMenuRadioItem, { value: "grid" }, "网格")),
-            React.createElement(menu.DropdownMenuCheckboxItem, { checked: pinned, onCheckedChange: setPinned }, "固定"))),
-        React.createElement(Select, { label: "高对比度选择", defaultValue: "a", options: [{ value: "a", label: "选项甲" }, { value: "b", label: "选项乙" }] }));
+              React.createElement(menu.DropdownMenuRadioItem, { value: "list", closeOnClick: false }, "列表"),
+              React.createElement(menu.DropdownMenuRadioItem, { value: "grid", closeOnClick: false }, "网格")),
+            React.createElement(menu.DropdownMenuCheckboxItem, { checked: pinned, onCheckedChange: setPinned, closeOnClick: false }, "固定"))),
+        React.createElement(selectComponents.Select, { defaultValue: "a", items: [{ value: "a", label: "选项甲" }, { value: "b", label: "选项乙" }] },
+          React.createElement(selectComponents.SelectTrigger, { "aria-label": "高对比度选择" }, React.createElement(selectComponents.SelectValue)),
+          React.createElement(selectComponents.SelectContent, null, React.createElement(selectComponents.SelectItem, { value: "a" }, "选项甲"), React.createElement(selectComponents.SelectItem, { value: "b" }, "选项乙"))));
     }
     ReactDOM.createRoot(host).render(React.createElement(Example));
   }, theme);

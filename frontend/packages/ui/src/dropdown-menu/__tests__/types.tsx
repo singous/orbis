@@ -1,19 +1,19 @@
-import { DropdownMenu, DropdownMenuItem, DropdownMenuCheckboxItem, DropdownMenuRadioGroup } from "@orbis/ui/dropdown-menu";
-import { Popover } from "@orbis/ui/popover";
-import { Tooltip } from "@orbis/ui/tooltip";
-import { RadioGroup } from "@orbis/ui/radio-group";
+import { DropdownMenu, DropdownMenuItem, DropdownMenuCheckboxItem, DropdownMenuRadioGroup, DropdownMenuTrigger } from "@orbis/ui/dropdown-menu";
+import { Popover, PopoverTrigger } from "@orbis/ui/popover";
+import { Tooltip, TooltipTrigger } from "@orbis/ui/tooltip";
+import { RadioGroup, RadioGroupItem } from "@orbis/ui/radio-group";
 
 <DropdownMenu open onOpenChange={() => {}}>内容</DropdownMenu>;
-<DropdownMenuItem asChild><a href="/guide">指南</a></DropdownMenuItem>;
+<DropdownMenuItem render={<a href="/guide" />}>指南</DropdownMenuItem>;
+<DropdownMenuTrigger render={<button />}>打开</DropdownMenuTrigger>;
 <DropdownMenuCheckboxItem checked onCheckedChange={checked => { const boolean: boolean = checked; void boolean; }}>固定</DropdownMenuCheckboxItem>;
-<DropdownMenuRadioGroup<number> value={0} onValueChange={value => { const number: number = value; void number; }} />;
-// @ts-expect-error a controlled menu requires an owner.
-<DropdownMenu open>内容</DropdownMenu>;
-// @ts-expect-error controlled and default open states are mutually exclusive.
-<Popover open defaultOpen onOpenChange={() => {}}>内容</Popover>;
-// @ts-expect-error tooltip render details are private; compose the trigger.
+<DropdownMenuRadioGroup value="list" onValueChange={() => {}} />;
+<Popover open onOpenChange={() => {}}><PopoverTrigger render={<button />}>打开</PopoverTrigger></Popover>;
+<Tooltip><TooltipTrigger render={<a href="/guide" />}>指南</TooltipTrigger></Tooltip>;
+<RadioGroup value="one" onValueChange={() => {}}><RadioGroupItem value="one" id="radio-one" /></RadioGroup>;
+// @ts-expect-error native Menu composition uses render, not the old asChild shorthand.
+<DropdownMenuItem asChild><a href="/guide">指南</a></DropdownMenuItem>;
+// @ts-expect-error typeahead uses the native label property.
+<DropdownMenuItem textValue="动作">动作</DropdownMenuItem>;
+// @ts-expect-error Tooltip root does not render its trigger.
 <Tooltip render={<button />}>内容</Tooltip>;
-// @ts-expect-error checkbox checked and defaultChecked cannot be combined.
-<DropdownMenuCheckboxItem checked defaultChecked onCheckedChange={() => {}}>固定</DropdownMenuCheckboxItem>;
-// @ts-expect-error radio group callback preserves the specified value type.
-<RadioGroup<number> value={0} onValueChange={(value: string) => { void value; }} />;

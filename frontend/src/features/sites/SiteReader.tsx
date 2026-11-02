@@ -1,9 +1,9 @@
 import { useMediaQuery } from "../../shared/platform/use-media-query";
-import { controlFeedbackClassName } from "../../shared/ui/control-styles";
 import { reportError } from "../../shared/api/request-feedback";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { Button } from "@orbis/ui/button";
-import { readerFocus, readerTouchTarget } from "./reader/chrome";
+import { readerFocus } from "./reader/chrome";
+import { OverlayScopeProvider, useElementTheme } from "@orbis/ui/portal";
 import { ArrowLeft, ArrowRight, BookOpen, Check, Copy, Link2 } from "../../shared/ui/icons";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Link, Navigate } from "react-router-dom";
@@ -22,7 +22,6 @@ import { navigationSections, pageAncestors, pageHref, resolveRedirect, topSectio
 import "../../styles/site-reader.css";
 import "./reader/theme.css";
 
-const copyButtonClassName = `flex h-[34px] cursor-pointer items-center gap-[7px] rounded-ob-xl border-0 border-r border-current border-r-(--ob-reader-border) bg-transparent px-2.5 py-0 text-[length:var(--ob-prose-caption-size)] text-(--ob-reader-muted) last:border-r-0 last:border-r-current hover:bg-(--ob-reader-surface-soft) hover:text-(--ob-reader-text) disabled:cursor-not-allowed disabled:opacity-45 data-disabled:opacity-45 max-[420px]:w-[38px] max-[420px]:justify-center ${controlFeedbackClassName} ${readerFocus} ${readerTouchTarget}`;
 const paginationLinkClassName = `flex min-w-0 items-center gap-3 rounded-[9px] border border-transparent p-3 text-[length:var(--ob-prose-caption-size)] leading-[1.5] text-(--ob-reader-text) hover:border-(--ob-reader-border) hover:bg-(--ob-reader-surface-soft) [@media(max-width:800px)]:px-[5px] [@media(max-width:800px)]:py-[9px] ${readerFocus}`;
 
 const THEME_STORAGE_KEY = "orbis-reader-theme";
@@ -74,6 +73,8 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false, load
   contentState?: { loading: boolean; error?: string; retry: () => void };
   canonicalBasePath?: string;
 }) {
+  const [readerElement, setReaderElement] = useState<HTMLDivElement | null>(null);
+  const readerTheme = useElementTheme(readerElement);
   const branding = useMemo(() => safeBranding(snapshot.branding, preview), [snapshot.branding, preview]);
   const [navigationOpen, setNavigationOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -158,7 +159,7 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false, load
   if (redirectTarget && redirectTarget !== pageSlug) return <Navigate replace to={pageHref(basePath, redirectTarget)} />;
 
   const updatedAt = current?.updated_at_ms ?? snapshot.published_at_ms;
-  const reader = <div className={`site-reader min-h-dvh bg-(--ob-reader-background) font-ob-sans text-(--ob-reader-text) [&_a]:no-underline ${headerSections.length ? "has-site-sections" : ""}`} data-theme={theme} data-theme-mode={themeMode} style={{ "--site-accent": snapshot.accent_color } as CSSProperties}>
+  const reader = <div ref={setReaderElement} className={`site-reader min-h-dvh bg-(--ob-reader-background) font-sans text-(--ob-reader-text) [&_a]:no-underline ${headerSections.length ? "has-site-sections" : ""}`} data-theme={theme} data-theme-mode={themeMode} style={{ "--site-accent": snapshot.accent_color } as CSSProperties}>
     <nav aria-label="页面跳转"><a className={`site-reader-skip-link fixed top-[-80px] left-[18px] z-[100] rounded-lg border border-(--ob-reader-accent) bg-(--ob-reader-surface) px-3.5 py-2.5 text-[length:var(--ob-prose-body-size)] focus:top-3 ${readerFocus}`} href="#site-content">跳转到正文</a></nav>
     {preview ? <div role="region" aria-label="发布预览说明" className="site-reader-preview-banner relative z-[45] bg-(--ob-reader-accent-soft) px-5 py-[9px] text-center text-[length:var(--ob-prose-caption-size)] font-semibold text-(--ob-reader-accent)">发布预览 · 此页面只有工作空间成员可见</div> : null}
     <Header name={snapshot.name} basePath={basePath} logoUrl={branding.logo_url} links={branding.links} cta={branding.cta} sections={headerSections} currentSection={current?.section} themeMode={themeMode} onThemeChange={changeTheme} onSearch={() => setSearchOpen(true)} searchButtonRef={searchButtonRef} navigationButtonRef={navigationButtonRef} navigationOpen={navigationOpen} onNavigationToggle={() => setNavigationOpen((open) => !open)} />
@@ -174,14 +175,14 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false, load
           <div className="site-reader-title-row mb-[35px] flex items-start justify-between gap-7 [@media(max-width:800px)]:mb-7 [@media(max-width:800px)]:block">
             <div><h1 className="m-0 text-[length:var(--ob-prose-title-size)] leading-[1.5] font-[720] tracking-[-.025em] text-(--ob-reader-text)">{current.title}</h1>{current.description ? <p className="mt-[13px] mb-0 max-w-[590px] text-[length:var(--ob-prose-body-size)] leading-[1.7] text-(--ob-reader-muted) [@media(max-width:800px)]:mt-2.5">{current.description}</p> : null}</div>
             <div className="site-reader-copy-area grid shrink-0 justify-items-end gap-[7px] [@media(max-width:800px)]:mt-[18px] [@media(max-width:800px)]:w-max [@media(max-width:800px)]:justify-items-start">
-              <div className="site-reader-copy-actions mt-px flex shrink-0 overflow-hidden rounded-[9px] border border-(--ob-reader-border) bg-(--ob-reader-surface) [box-shadow:var(--ob-reader-subtle-shadow)] [@media(max-width:800px)]:w-max">
-                <Button appearance="unstyled" type="button" className={copyButtonClassName} aria-label={copyFeedback?.action === "link" && copyFeedback.status === "success" ? "链接已复制" : "复制链接"} onClick={() => void copyLink()}>{copyFeedback?.action === "link" && copyFeedback.status === "success" ? <Check aria-hidden="true" size={16} /> : <Link2 aria-hidden="true" size={16} />}<span className="max-[420px]:hidden">{copyFeedback?.action === "link" && copyFeedback.status === "success" ? "已复制" : "复制链接"}</span></Button>
-                <Button appearance="unstyled" type="button" className={copyButtonClassName} disabled={contentState?.loading || Boolean(contentState?.error)} aria-label={copyFeedback?.action === "page" && copyFeedback.status === "success" ? "页面 Markdown 已复制" : "复制页面"} onClick={() => void copyPage()}>{copyFeedback?.action === "page" && copyFeedback.status === "success" ? <Check aria-hidden="true" size={16} /> : <Copy aria-hidden="true" size={16} />}<span className="max-[420px]:hidden">{copyFeedback?.action === "page" && copyFeedback.status === "success" ? "已复制" : "复制页面"}</span></Button>
+              <div className="site-reader-copy-actions flex shrink-0 gap-2 [@media(max-width:800px)]:w-max">
+                <Button type="button" size="sm" aria-label={copyFeedback?.action === "link" && copyFeedback.status === "success" ? "链接已复制" : "复制链接"} onClick={() => void copyLink()} variant="ghost">{copyFeedback?.action === "link" && copyFeedback.status === "success" ? <Check aria-hidden="true" size={16} /> : <Link2 aria-hidden="true" size={16} />}<span className="max-[420px]:hidden">{copyFeedback?.action === "link" && copyFeedback.status === "success" ? "已复制" : "复制链接"}</span></Button>
+                <Button type="button" size="sm" disabled={contentState?.loading || Boolean(contentState?.error)} aria-label={copyFeedback?.action === "page" && copyFeedback.status === "success" ? "页面 Markdown 已复制" : "复制页面"} onClick={() => void copyPage()} variant="ghost">{copyFeedback?.action === "page" && copyFeedback.status === "success" ? <Check aria-hidden="true" size={16} /> : <Copy aria-hidden="true" size={16} />}<span className="max-[420px]:hidden">{copyFeedback?.action === "page" && copyFeedback.status === "success" ? "已复制" : "复制页面"}</span></Button>
               </div>
             </div>
           </div>
           {compactOutline ? <Outline items={outline} mobile /> : null}
-          {contentState?.loading ? <LoadingState label="正在加载正文…" variant="editor" /> : contentState?.error ? <div className="site-reader-body-status min-h-[35vh] py-[30px] text-[length:var(--ob-prose-body-size)] text-(--ob-reader-muted)"><Button appearance="unstyled" type="button" className={`cursor-pointer rounded-ob-xl border border-(--ob-reader-border) bg-(--ob-reader-surface) px-[11px] py-[7px] text-(--ob-reader-text) ${controlFeedbackClassName} ${readerFocus}`} onClick={contentState.retry}>重新加载正文</Button></div> : <ContentRenderer blocks={current.blocks} pageTitle={current.title} />}
+          {contentState?.loading ? <LoadingState label="正在加载正文…" variant="editor" /> : contentState?.error ? <div className="site-reader-body-status min-h-[35vh] py-[30px] text-[length:var(--ob-prose-body-size)] text-(--ob-reader-muted)"><Button type="button" onClick={contentState.retry} variant="outline">重新加载正文</Button></div> : <ContentRenderer blocks={current.blocks} pageTitle={current.title} />}
           <nav className="site-reader-pagination mt-[58px] grid grid-cols-2 gap-3.5 border-t border-(--ob-reader-border) pt-[26px] [@media(max-width:800px)]:mt-[46px] [@media(max-width:800px)]:gap-[5px]" aria-label="相邻文档">
             {currentIndex > 0 ? <Link className={paginationLinkClassName} to={pageHref(basePath, snapshot.pages[currentIndex - 1].slug)}><ArrowLeft aria-hidden="true" size={18} /><span className="min-w-0 truncate"><small className="mb-0.5 block text-[length:var(--ob-prose-caption-size)] text-(--ob-reader-muted)">上一篇</small>{snapshot.pages[currentIndex - 1].title}</span></Link> : <span />}
             {currentIndex < snapshot.pages.length - 1 ? <Link className={`${paginationLinkClassName} justify-end text-right`} to={pageHref(basePath, snapshot.pages[currentIndex + 1].slug)}><span className="min-w-0 truncate"><small className="mb-0.5 block text-[length:var(--ob-prose-caption-size)] text-(--ob-reader-muted)">下一篇</small>{snapshot.pages[currentIndex + 1].title}</span><ArrowRight aria-hidden="true" size={18} /></Link> : null}
@@ -193,5 +194,5 @@ export function SiteReader({ snapshot, basePath, pageSlug, preview = false, load
     </div>
     <SearchDialog finalFocus={searchButtonRef} open={searchOpen} pages={snapshot.pages} basePath={basePath} close={closeSearch} loadPages={loadSearch} />
   </div>;
-  return preview ? <SitePreviewLinks siteSlug={snapshot.slug} basePath={basePath}>{reader}</SitePreviewLinks> : reader;
+  return <OverlayScopeProvider value={readerTheme ? { "data-theme": readerTheme.theme, className: readerTheme.theme === "dark" ? "dark" : undefined, style: readerTheme.portalStyle } : undefined}>{preview ? <SitePreviewLinks siteSlug={snapshot.slug} basePath={basePath}>{reader}</SitePreviewLinks> : reader}</OverlayScopeProvider>;
 }

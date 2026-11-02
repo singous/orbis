@@ -6,7 +6,7 @@
 
 ```tsx
 import { reportError } from "@/shared/api/request-feedback";
-import { Button } from "@/shared/ui/Button";
+import { Button } from "@orbis/ui/button";
 import { DraftActions } from "@/shared/ui/DraftActions";
 
 export function LocalDraftTools({ hasPending, busy, onRetry, onExport }: {

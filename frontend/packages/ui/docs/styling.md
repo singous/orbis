@@ -1,17 +1,15 @@
 # 样式与主题
 
-应用在根样式中导入一次 `@orbis/ui/styles.css`。Tailwind 扫描包源码，排除测试与 Story。包不导入 Tailwind reset；Storybook 在自己的独立文档中导入 Tailwind。
+应用通过 `src/styles/globals.css` 导入一次 `@orbis/ui/styles.css`。Tailwind 扫描 UI 包源码并排除测试与 Story。包的样式入口拥有 tokens、少量公共 utility 和 ColorPicker 样式；tokens 文件导入官方的 `tw-animate-css`、`shadcn/tailwind.css` 与本地 Geist 字体。Storybook 在自己的入口导入 Tailwind 和同一份 UI 样式。
 
-颜色通过 `--ob-*` token 与 `bg-ob-*` 等 utility 使用，圆角通过 `rounded-ob-*` 使用。HeroUI 的运行时和样式依赖已经移除；应用暂存的页面变量别名单向引用平台 token。迁移旧页面 CSS 时仍核对实际像素与颜色，不把名字相近当作视觉一致。
+通用控件直接使用官方 shadcn 默认类和标准语义：`bg-background`、`text-foreground`、`bg-primary`、`text-muted-foreground`、`border-border`、`ring-ring` 等。圆角与尺寸采用官方默认值。`cn` 使用原生实现所需的 `cn` 包并从 `@orbis/ui/cn` 重新导出；不再注册旧的 `ob-*` Tailwind merge 扩展。默认组件类与调用方类的组合保持上游行为。
 
-主题以最近的 `data-theme="light|dark"` 为准。每个边界重新绑定语义和组件别名；不引入匹配任意深色祖先的 `dark:` 分支。forced-colors 使用系统颜色并移除阴影；reduced-motion 将包内时长降为 0。旧应用仍有 0.01ms 的全局 reduced-motion 规则，共存期不改变它。
+标准浅/深色变量在 `styles/tokens.css` 中定义；局部 `data-theme="light|dark"` 是实际主题边界，深色变体使用有边界的 CSS scope，允许阅读器在深色工作区中独立保持浅色。`OverlayScopeProvider` 将这一边界显式传给挂到 body 的浮层。UI 默认字体为 Geist；应用另保留的 Inter 资源用于既有内容字体，不改变通用组件的默认字体。
 
-焦点效果由 `styles/utilities.css` 中的 `ob-focus-ring`（focus-visible）和 `ob-input-focus`（focus）统一维护；`internal/focus.ts` 为组件提供这两个名称。业务链接可以直接使用 `ob-focus-ring`，避免复制 outline 规则。组件默认类在前、调用方类在后；`cn` 在 tailwind-merge 的 radius theme 中登记 ob-sm/md/lg/xl，使 rounded-full 等调用方覆盖与反向覆盖按参数顺序生效。新增命名空间圆角时同步这一登记。颜色 token 仍与标准字号、边框宽度分别归类。使用逻辑方向属性。普通页面不增加零散 CSS，内容/画布/网格样式仍由业务拥有。
+应用的 `brand-tokens.css` 拥有品牌、正文、画布、网格等 `--ob-*` 角色，以及 `--status-success*`、`--status-warning*`、`--destructive-soft`、`--shadow-color` 状态角色。状态角色可引用该文件准许的 Tailwind 调色板来源。普通控件不再借这些角色复刻旧基础组件外观；业务不把原始色值散落在 TSX 或无主 CSS 中。需要用户输入颜色、图表数据颜色等真实数据时，遵循现有的有来源、有限次数的数据例外。
 
-Base UI 的 --available-width/height、--anchor-width/height、--transform-origin 是浮层定位几何，可在原语内使用；它们不属于主题变量。其他第三方主题变量仍被架构门禁拒绝。
+公共 `focus-ring` 和 `input-focus` utility 使用标准 `--ring`。通用控件保留自己的默认焦点样式；业务的原生控件可使用这些 utility。应用全局只承载根布局、原生焦点、forced-colors、reduced-motion 和通知层级等全局规则，组件布局写在拥有组件中。正文、编辑器、画布和网格的保留 CSS 通过领域样式清单限定实际导入者和根作用域。
 
+Base UI 的 `--available-width`、`--available-height`、`--anchor-width`、`--anchor-height`、`--transform-origin` 与 Toast 几何变量用于定位和堆叠，不是第三方主题。架构检查准许这些原生能力、标准主题和局部定义的变量，并拒绝无所有者的外来主题变量与 CSS 导入。
 
-平台样式不依赖 HeroUI。应用通过 `globals.css` 导入平台样式和应用品牌角色；通用变量直接使用 `--ob-*`，旧变量桥已移除。内容、编辑器和网格的保留样式由实际模块导入，并在领域样式清单中限定入口与根作用域。`--ob-page-*` 仅保留这些已存在的页面状态/文案颜色以避免本次换库改版；新控件使用正常的 foreground、danger-text 等语义。画布底色、表面层级、边缘与卡片阴影使用共享的 canvas/surface-secondary/surface-edge/shadow-card 角色。
-
-
-组件的 caption 使用 `text-ob-caption`（12px/18px），应用旧 caption 变量仅引用同一值，避免全局 `text-xs` 主题改写使渲染契约漂移。大头像沿用应用实际的 16px/24px。Storybook 独立加载与应用同一份本地 Inter 字体，并为 body（含 Portal）提供相同的 UI 基础排版；不导入应用页面样式来补组件契约。
+颜色对比与键盘焦点由真实浏览器和 axe 验证。危险色的浅色明度依据默认 destructive 变体的实际对比度调低；组件默认类仍保留官方实现。应用尊重 forced-colors 系统颜色，并在 reduced-motion 下停用动画和过渡。

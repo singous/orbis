@@ -1,7 +1,7 @@
 import { Input } from "@orbis/ui/input";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { Textarea } from "@orbis/ui/textarea";
-import { SiteActionButton as ActionButton } from "./SiteManagementLayout";
+import { Button } from "@orbis/ui/button";
 import { SiteField } from "./SiteManagementLayout";
 import { ChevronDown, ChevronRight, FileText, PencilLine } from "../../shared/ui/icons";
 import { useState } from "react";
@@ -46,8 +46,8 @@ export function SiteSourceTree({ items, rootNoteId, source, resolved, disabled, 
       const isExpanded = expanded.has(node.id);
       const resolvedPage = resolvedById.get(node.id);
       return <li key={node.id} className="[&:last-child>.site-source-node-row]:border-b-transparent" style={{ "--source-depth": depth } as React.CSSProperties}>
-        <div className="site-source-node-row flex min-h-[49px] items-center gap-[9px] border-b border-ob-border py-[7px] pe-3 ps-[calc(14px+var(--source-depth)*19px)] [&>svg]:shrink-0 [&>svg]:text-ob-muted-foreground">
-          <Checkbox wrapperClassName="grid place-items-center"
+        <div className="site-source-node-row flex min-h-[49px] items-center gap-[9px] border-b border-border py-[7px] pe-3 ps-[calc(14px+var(--source-depth)*19px)] [&>svg]:shrink-0 [&>svg]:text-muted-foreground">
+          <Checkbox
               aria-label={`公开 ${node.title}`}
               checked={publiclyIncluded}
               disabled={disabled || affectedByParent}
@@ -61,24 +61,24 @@ export function SiteSourceTree({ items, rootNoteId, source, resolved, disabled, 
           </Checkbox>
           <FileText aria-hidden="true" size={16} />
           <div className="grid min-w-0 flex-1 gap-[2px]">
-            <Link className="truncate text-xs text-ob-foreground" to={`/documents/${node.id}`}>{node.title}</Link>
-            <span className="truncate text-xs text-ob-muted-foreground">{affectedByParent ? "受上级排除影响" : explicitlyExcluded ? "已排除此子树" : resolvedPage ? `/${resolvedPage.slug}` : "保存来源后生成公开路径"}</span>
+            <Link className="truncate text-xs text-foreground" to={`/documents/${node.id}`}>{node.title}</Link>
+            <span className="truncate text-xs text-muted-foreground">{affectedByParent ? "受上级排除影响" : explicitlyExcluded ? "已排除此子树" : resolvedPage ? `/${resolvedPage.slug}` : "保存来源后生成公开路径"}</span>
           </div>
-          <ActionButton
+          <Button variant="ghost"
 
-            className="inline-flex size-(--ob-control-height-sm) pointer-coarse:size-(--ob-control-height-touch) items-center justify-center gap-[2px] text-ob-muted-foreground enabled:hover:bg-(--ob-item-hover-bg) enabled:hover:text-ob-foreground"
+            size="sm"
             aria-label={`设置 ${node.title} 的公开信息`}
             aria-expanded={isExpanded}
             onClick={() => toggleExpanded(node.id)}
           >
             <PencilLine aria-hidden="true" size={14} />
             {isExpanded ? <ChevronDown aria-hidden="true" size={14} /> : <ChevronRight aria-hidden="true" size={14} />}
-          </ActionButton>
+          </Button>
         </div>
-        {isExpanded ? <div className="grid grid-cols-1 gap-[11px] border-b border-ob-border bg-ob-card pt-3 pe-[15px] pb-[15px] ps-[calc(54px+var(--source-depth,0)*19px)] min-[721px]:grid-cols-2 [&_input]:min-w-0 [&_textarea]:min-w-0">
-          <SiteField variant="source">公开标题<Input aria-label={`公开标题：${node.title}`} value={override?.title ?? ""} disabled={disabled} placeholder={node.title} onChange={(event) => onChange(updatePageOverride(source, node.id, { title: event.target.value || null }))} /></SiteField>
-          <SiteField variant="source">公开路径<Input aria-label={`公开路径：${node.title}`} value={override?.slug ?? ""} disabled={disabled} pattern="[a-z0-9]+(-[a-z0-9]+)*(/[a-z0-9]+(-[a-z0-9]+)*)*" placeholder={resolvedPage?.slug ?? "保存后生成"} onChange={(event) => onChange(updatePageOverride(source, node.id, { slug: event.target.value || null }))} /></SiteField>
-          <SiteField variant="source" className="col-auto min-[721px]:col-span-full">公开简介<Textarea aria-label={`公开简介：${node.title}`} value={override?.description ?? ""} disabled={disabled} rows={2} onChange={(event) => onChange(updatePageOverride(source, node.id, { description: event.target.value || null }))} /></SiteField>
+        {isExpanded ? <div className="grid grid-cols-1 gap-[11px] border-b border-border bg-card pt-3 pe-[15px] pb-[15px] ps-[calc(54px+var(--source-depth,0)*19px)] min-[721px]:grid-cols-2 [&_input]:min-w-0 [&_textarea]:min-w-0">
+          <SiteField>公开标题<Input aria-label={`公开标题：${node.title}`} value={override?.title ?? ""} disabled={disabled} placeholder={node.title} onChange={(event) => onChange(updatePageOverride(source, node.id, { title: event.target.value || null }))} /></SiteField>
+          <SiteField>公开路径<Input aria-label={`公开路径：${node.title}`} value={override?.slug ?? ""} disabled={disabled} pattern="[a-z0-9]+(-[a-z0-9]+)*(/[a-z0-9]+(-[a-z0-9]+)*)*" placeholder={resolvedPage?.slug ?? "保存后生成"} onChange={(event) => onChange(updatePageOverride(source, node.id, { slug: event.target.value || null }))} /></SiteField>
+          <SiteField className="col-auto min-[721px]:col-span-full">公开简介<Textarea aria-label={`公开简介：${node.title}`} value={override?.description ?? ""} disabled={disabled} rows={2} onChange={(event) => onChange(updatePageOverride(source, node.id, { description: event.target.value || null }))} /></SiteField>
         </div> : null}
         {node.children.length ? <ul className="m-0 list-none p-0">{renderNodes(node.children, depth + 1, affectedByParent || explicitlyExcluded)}</ul> : null}
       </li>;
@@ -87,11 +87,11 @@ export function SiteSourceTree({ items, rootNoteId, source, resolved, disabled, 
 
   const scoped = scopedNoteTree(items, rootNoteId);
   return <>
-    {hiddenExcludedAncestors.length ? <aside className="grid gap-1.5 border-b border-[color-mix(in_oklab,var(--ob-page-warning)_25%,var(--ob-surface))] bg-ob-warning-soft px-[15px] py-3 text-xs text-(--ob-page-warning-soft-foreground)" aria-label="隐藏上级排除提示">
+    {hiddenExcludedAncestors.length ? <aside className="grid gap-1.5 border-b border-[color-mix(in_oklab,var(--status-warning)_25%,var(--card))] bg-status-warning-background px-[15px] py-3 text-xs text-(--status-warning-foreground)" aria-label="隐藏上级排除提示">
       <p className="m-0 leading-[1.55]">隐藏上级“{hiddenExcludedAncestors.map((item) => item.title).join("、")}”已被全局排除，当前范围也不会公开。</p>
       <p className="m-0 leading-[1.55]">清除全局排除会影响所有包含该文档的来源范围，请确认后再恢复。</p>
-      <div className="flex flex-wrap gap-2">{hiddenExcludedAncestors.map((item) => <ActionButton className="border-b border-current bg-transparent font-semibold text-ob-foreground enabled:hover:bg-ob-secondary data-disabled:opacity-45" key={item.id} disabled={disabled} onClick={() => onChange({ ...source, excluded_note_ids: source.excluded_note_ids.filter((id) => id !== item.id) })}>清除全局排除 {item.title}</ActionButton>)}</div>
+      <div className="flex flex-wrap gap-2">{hiddenExcludedAncestors.map((item) => <Button variant="outline" key={item.id} disabled={disabled} onClick={() => onChange({ ...source, excluded_note_ids: source.excluded_note_ids.filter((id) => id !== item.id) })}>清除全局排除 {item.title}</Button>)}</div>
     </aside> : null}
-    {scoped.length ? <ul className="m-0 list-none px-0 py-1">{renderNodes(scoped, 0, hiddenExcludedAncestors.length > 0)}</ul> : <p className="mt-[5px] text-xs text-ob-muted-foreground">此范围内还没有文档。你仍可以保存来源，添加文档后会自动纳入。</p>}
+    {scoped.length ? <ul className="m-0 list-none px-0 py-1">{renderNodes(scoped, 0, hiddenExcludedAncestors.length > 0)}</ul> : <p className="mt-[5px] text-xs text-muted-foreground">此范围内还没有文档。你仍可以保存来源，添加文档后会自动纳入。</p>}
   </>;
 }

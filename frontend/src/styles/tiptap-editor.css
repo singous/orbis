@@ -1,11 +1,11 @@
-.orbis-tiptap { --reading-text: var(--ob-foreground); --reading-muted: var(--ob-page-muted-foreground); --reading-accent: var(--ob-primary); --reading-border: var(--ob-editor-border); --reading-muted-bg: var(--ob-item-hover-bg); --reading-bg: var(--ob-surface); min-width: 0; }
+.orbis-tiptap { --reading-text: var(--foreground); --reading-muted: var(--muted-foreground); --reading-accent: var(--primary); --reading-border: var(--ob-editor-border); --reading-muted-bg: var(--accent); --reading-bg: var(--card); min-width: 0; }
 .orbis-tiptap .ProseMirror { min-height: 50vh; padding: 4px 0 60px; outline: none; color: var(--reading-text); font-size: var(--ob-prose-body-size); line-height: var(--ob-prose-body-leading); overflow-wrap: anywhere; }
 .orbis-tiptap .ProseMirror:focus-visible { outline: none; }
 .orbis-tiptap .ProseMirror h1, .orbis-tiptap .ProseMirror h2, .orbis-tiptap .ProseMirror h3 { font-weight: 680; letter-spacing: -.026em; }
 .orbis-tiptap .ProseMirror h2 { margin: 43px 0 15px; }
 .orbis-tiptap .ProseMirror h3 { margin: 34px 0 12px; }
 .orbis-tiptap .ProseMirror p { margin: 15px 0; }
-.orbis-tiptap .ProseMirror p.is-editor-empty:first-child::before { content: attr(data-placeholder); float: left; color: var(--ob-page-muted-foreground); pointer-events: none; height: 0; }
+.orbis-tiptap .ProseMirror p.is-editor-empty:first-child::before { content: attr(data-placeholder); float: left; color: var(--muted-foreground); pointer-events: none; height: 0; }
 .orbis-tiptap .ProseMirror .orbis-code { border: 1px solid var(--reading-border); border-radius: 10px; margin: 23px 0; overflow: hidden; background: var(--reading-muted-bg); }
 .orbis-tiptap .orbis-code pre { margin: 0; padding: 18px; overflow-x: auto; white-space: pre; line-height: 1.8; }
 .orbis-tiptap .orbis-code code { padding: 0; border: 0; background: none; font-size: var(--ob-prose-caption-size); }
@@ -13,11 +13,11 @@
 .orbis-tiptap .ProseMirror td, .orbis-tiptap .ProseMirror th { border: 1px solid var(--reading-border); text-align: left; padding: 10px 14px; min-width: 90px; vertical-align: top; }
 .orbis-tiptap .ProseMirror th { background: var(--reading-muted-bg); font-weight: 600; }
 .orbis-tiptap .ProseMirror td p, .orbis-tiptap .ProseMirror th p { margin: 0; }
-.orbis-tiptap .ProseMirror .selectedCell { background: color-mix(in srgb, var(--ob-primary) 15%, transparent); }
+.orbis-tiptap .ProseMirror .selectedCell { background: color-mix(in srgb, var(--primary) 15%, transparent); }
 .orbis-tiptap .ProseMirror ul[data-type="taskList"] { list-style: none; padding-left: 0; }
 .orbis-tiptap .ProseMirror ul[data-type="taskList"] li { display: flex; gap: 10px; }
 .orbis-tiptap .ProseMirror ul[data-type="taskList"] li > label { flex: none; }
-.orbis-tiptap .ProseMirror ul[data-type="taskList"] input { accent-color: var(--ob-primary); }
+.orbis-tiptap .ProseMirror ul[data-type="taskList"] input { accent-color: var(--primary); }
 .orbis-tiptap .orbis-media figure { margin: 25px 0; }
 .orbis-tiptap .orbis-media img, .orbis-tiptap .orbis-media video { max-width: 100%; border-radius: 8px; }
 .orbis-tiptap .orbis-media audio { max-width: 100%; }

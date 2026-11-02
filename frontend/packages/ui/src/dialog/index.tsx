@@ -1,79 +1,162 @@
-import { Dialog as Primitive } from "@base-ui/react/dialog";
-import { createContext, useContext, useState, type ComponentProps, type CSSProperties, type RefObject, type ReactElement, type ReactNode } from "react";
-import { ToolbarScopeBoundary } from "../internal/toolbar-scope";
-import { cn } from "../cn";
-import { resolveClassName } from "../internal/resolve-class-name";
-import { controlFocus } from "../internal/focus";
-import { usePortalTheme } from "../internal/use-portal-theme";
+import { useOverlayScope } from "../internal/overlay-scope"
+"use client"
 
-type DialogProps = { children: ReactNode; onOpenChangeComplete?: (open: boolean) => void; dismissOnOutsidePress?: boolean; dismissible?: boolean } & (
-  | { open: boolean; onOpenChange: (open: boolean) => void; defaultOpen?: never }
-  | { open?: never; defaultOpen?: boolean; onOpenChange?: (open: boolean) => void }
-);
-const ThemeContext = createContext<{ theme: "light" | "dark"; portalStyle: CSSProperties }>({ theme: "light", portalStyle: {} });
-function Dialog({ children, onOpenChange, dismissOnOutsidePress = true, dismissible = true, ...props }: DialogProps) {
-  const [openingElement, setOpeningElement] = useState<Element | null>(null);
-  const { anchor, theme, portalStyle } = usePortalTheme(openingElement);
-  return <ThemeContext.Provider value={{ theme, portalStyle }}><span hidden ref={anchor} /><Primitive.Root {...props} disablePointerDismissal={!dismissOnOutsidePress || !dismissible} onOpenChange={(open, details) => {
-    if (!open && !dismissible) {
-      details.cancel();
-      return;
-    }
-    if (open) setOpeningElement(details.event.target instanceof Element ? details.event.target : null);
-    onOpenChange?.(open);
-  }}>{children}</Primitive.Root></ThemeContext.Provider>;
+import * as React from "react"
+import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
+import { cn } from "cn"
+
+import { Button } from "@orbis/ui/button"
+import { XIcon } from "lucide-react"
+
+function Dialog({ ...props }: DialogPrimitive.Root.Props) {
+  return <DialogPrimitive.Root data-slot="dialog" {...props} />
 }
 
-type DialogTriggerProps = Omit<ComponentProps<"button">, "children" | "className" | "style"> & {
-  className?: string | ((state: { disabled: boolean; open: boolean }) => string | undefined);
-  style?: CSSProperties | ((state: { disabled: boolean; open: boolean }) => CSSProperties | undefined);
-} & ({ asChild: true; children: ReactElement } | { asChild?: false; children?: ReactNode });
-function DialogTrigger({ asChild, children, className, ...props }: DialogTriggerProps) {
-  return <Primitive.Trigger {...props} data-slot="ob-dialog-trigger" className={resolveClassName(controlFocus, className)} render={asChild ? children : undefined}>{asChild ? undefined : children}</Primitive.Trigger>;
+function DialogTrigger({ ...props }: DialogPrimitive.Trigger.Props) {
+  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
 }
-type DialogCloseProps = Omit<ComponentProps<"button">, "children" | "className" | "style"> & {
-  className?: string | ((state: { disabled: boolean }) => string | undefined);
-  style?: CSSProperties | ((state: { disabled: boolean }) => CSSProperties | undefined);
-} & ({ asChild: true; children: ReactElement } | { asChild?: false; children?: ReactNode });
-function DialogClose({ asChild, children, ...props }: DialogCloseProps) {
-  return <Primitive.Close {...props} render={asChild ? children : undefined}>{asChild ? undefined : children}</Primitive.Close>;
+
+function DialogPortal({ ...props }: DialogPrimitive.Portal.Props) {
+  const scope = useOverlayScope()
+  return <DialogPrimitive.Portal data-slot="dialog-portal" {...scope} {...props} />
 }
-type DialogContentState = { open: boolean; transitionStatus: "starting" | "ending" | "idle" | undefined; nested: boolean; nestedDialogOpen: boolean };
-type DialogPopupProps = Omit<ComponentProps<"div">, "className" | "style"> & {
-  initialFocus?: boolean | RefObject<HTMLElement | null>;
-  finalFocus?: boolean | RefObject<HTMLElement | null>;
-  className?: string | ((state: DialogContentState) => string | undefined);
-  style?: CSSProperties | ((state: DialogContentState) => CSSProperties | undefined);
-  portalContainer?: HTMLElement | RefObject<HTMLElement | null> | null;
-  backdropClassName?: string;
-  viewportClassName?: string;
-};
-function DialogPopup({ className, portalContainer, backdropClassName, viewportClassName, children, ...props }: DialogPopupProps) {
-  const { theme, portalStyle } = useContext(ThemeContext);
-  return <ToolbarScopeBoundary><Primitive.Portal container={portalContainer} data-theme={theme} style={portalStyle}>
-    <Primitive.Backdrop data-slot="ob-dialog-backdrop" className={cn("fixed inset-0 z-(--ob-z-dialog) bg-(--ob-scrim) transition-opacity duration-(--ob-motion-dialog) data-starting-style:opacity-0 data-ending-style:opacity-0", backdropClassName)} />
-    <Primitive.Viewport className={cn("fixed inset-0 z-(--ob-z-dialog) grid items-center justify-items-center overflow-y-auto p-4", viewportClassName)}>
-      <Primitive.Popup aria-modal="true" {...props} data-slot="ob-dialog" className={resolveClassName("relative grid w-full max-w-lg gap-5 rounded-ob-xl border border-ob-border bg-ob-card p-6 text-ob-foreground shadow-lg outline-none transition-opacity duration-(--ob-motion-dialog) data-starting-style:opacity-0 data-ending-style:opacity-0", className)}>
+
+function DialogClose({ ...props }: DialogPrimitive.Close.Props) {
+  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />
+}
+
+function DialogOverlay({
+  className,
+  ...props
+}: DialogPrimitive.Backdrop.Props) {
+  return (
+    <DialogPrimitive.Backdrop
+      data-slot="dialog-overlay"
+      className={cn(
+        "fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function DialogContent({
+  className,
+  children,
+  showCloseButton = true,
+  ...props
+}: DialogPrimitive.Popup.Props & {
+  showCloseButton?: boolean
+}) {
+  return (
+    <DialogPortal>
+      <DialogOverlay />
+      <DialogPrimitive.Popup
+        data-slot="dialog-content"
+        className={cn(
+          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          className
+        )}
+        {...props}
+      >
         {children}
-      </Primitive.Popup>
-    </Primitive.Viewport>
-  </Primitive.Portal></ToolbarScopeBoundary>;
+        {showCloseButton && (
+          <DialogPrimitive.Close
+            data-slot="dialog-close"
+            render={
+              <Button
+                variant="ghost"
+                className="absolute top-2 right-2"
+                size="icon-sm"
+              />
+            }
+          >
+            <XIcon
+            />
+            <span className="sr-only">关闭</span>
+          </DialogPrimitive.Close>
+        )}
+      </DialogPrimitive.Popup>
+    </DialogPortal>
+  )
 }
-type DialogTitleProps = ComponentProps<"h2">;
-function DialogTitle({ className, ...props }: DialogTitleProps) {
-  return <Primitive.Title {...props} className={cn("text-base font-semibold", className)} />;
+
+function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="dialog-header"
+      className={cn("flex flex-col gap-2", className)}
+      {...props}
+    />
+  )
 }
-type DialogContentProps = DialogPopupProps & { title: string; description?: string };
-function DialogContent({ title, description, children, ...props }: DialogContentProps) {
-  return <DialogPopup {...props}>
-    <div className="grid gap-2 pe-8"><DialogTitle>{title}</DialogTitle>{description ? <Primitive.Description className="text-sm text-ob-muted-foreground">{description}</Primitive.Description> : null}</div>
-    {children}
-    <Primitive.Close aria-label="关闭" className={cn("absolute end-3 top-3 grid size-8 place-items-center rounded-ob-sm text-ob-muted-foreground hover:bg-ob-accent", controlFocus)}><span aria-hidden="true">×</span></Primitive.Close>
-  </DialogPopup>;
+
+function DialogFooter({
+  className,
+  showCloseButton = false,
+  children,
+  ...props
+}: React.ComponentProps<"div"> & {
+  showCloseButton?: boolean
+}) {
+  return (
+    <div
+      data-slot="dialog-footer"
+      className={cn(
+        "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 sm:flex-row sm:justify-end",
+        className
+      )}
+      {...props}
+    >
+      {children}
+      {showCloseButton && (
+        <DialogPrimitive.Close render={<Button variant="outline" />}>
+          关闭
+        </DialogPrimitive.Close>
+      )}
+    </div>
+  )
 }
-type DialogFooterProps = ComponentProps<"div">;
-function DialogFooter({ className, ...props }: DialogFooterProps) {
-  return <div {...props} data-slot="ob-dialog-footer" className={cn("flex flex-wrap justify-end gap-2", className)} />;
+
+function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
+  return (
+    <DialogPrimitive.Title
+      data-slot="dialog-title"
+      className={cn(
+        "text-base leading-none font-medium",
+        className
+      )}
+      {...props}
+    />
+  )
 }
-export { Dialog, DialogTrigger, DialogContent, DialogPopup, DialogTitle, DialogClose, DialogFooter };
-export type { DialogProps, DialogTriggerProps, DialogContentProps, DialogPopupProps, DialogTitleProps, DialogCloseProps, DialogFooterProps };
+
+function DialogDescription({
+  className,
+  ...props
+}: DialogPrimitive.Description.Props) {
+  return (
+    <DialogPrimitive.Description
+      data-slot="dialog-description"
+      className={cn(
+        "text-sm text-muted-foreground *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+export {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
+  DialogTrigger,
+}

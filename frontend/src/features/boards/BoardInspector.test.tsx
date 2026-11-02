@@ -45,7 +45,7 @@ it("uses keyboard tabs and checkboxes to commit style changes", async () => {
   expect(submit).toHaveBeenCalledWith([{ type: "elements.update", patches: [expect.objectContaining({ id: element.id, style: expect.objectContaining({ bold: !element.style.bold }) })] }]);
 });
 
-it("preserves the empty parent value when selecting none through the shared SelectField", async () => {
+it("preserves the empty parent value when selecting none through the native Select", async () => {
   const { submit, element } = mount(false, true);
   const user = userEvent.setup();
   await user.click(screen.getByRole("combobox", { name: /父容器/ }));
@@ -76,7 +76,7 @@ it("disables input, selection, checkbox and color controls for readers", async (
   await user.click(screen.getByRole("tab", { name: "样式" }));
   expect(screen.getByRole("button", { name: /选择填充颜色/ })).toBeDisabled();
   const bold = screen.getByRole("checkbox", { name: "粗体" });
-  expect(bold).toBeDisabled();
+  expect(bold).toHaveAttribute("aria-disabled", "true");
   await user.click(bold);
   expect(submit).not.toHaveBeenCalled();
 });

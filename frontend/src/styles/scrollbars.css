@@ -1,7 +1,7 @@
 /* One scrollbar skin for document, nested and portalled scroll regions. */
 :root { --ob-scrollbar-size: 8px; }
 :where(html, body, body *) {
-  --ob-scrollbar-ink: var(--ob-foreground);
+  --ob-scrollbar-ink: var(--foreground);
   --ob-scrollbar-thumb: color-mix(in oklab, var(--ob-scrollbar-ink) 18%, transparent);
   scrollbar-width: thin;
   scrollbar-color: var(--ob-scrollbar-thumb) transparent;

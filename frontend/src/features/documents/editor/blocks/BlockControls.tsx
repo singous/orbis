@@ -1,6 +1,6 @@
 import { cn } from "@orbis/ui/cn";
 import { blockControlsClassName, blockGripClassName, blockMenuClassName, blockMenuHeadingClassName, blockMenuShortcutClassName, blockMenuSeparatorClassName, blockDragPreviewClassName, blockDragPreviewLabelClassName, blockDragPreviewTextClassName, blockDropVariantsClassName, blockDropLabelClassName } from "./block-control-styles";
-import { blockMenuItemClassName, editorControlItemVariants } from "../editor-control-styles";
+import { blockMenuItemClassName } from "../editor-control-styles";
 import { NAVIGATE_OUTLINE_EVENT } from "../outline-navigation";
 import { BOARD_REMOVAL_EVENT, confirmBoardRemoval, type BoardRemovalRequest } from "./board-removal";
 import { BoardDiscardDialog } from "../../../boards/BoardDiscardDialog";
@@ -13,8 +13,8 @@ import { inlineTransactionsOnly } from '../tiptap-inline-change';
 import { useContext,useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Portal, readPortalTheme } from "@orbis/ui/portal";
 import { GripVertical, Plus, Copy, Link2, ArrowUp, ArrowDown, Layers, Trash2, ChevronRight } from '../../../../shared/ui/icons';
-import { ActionButton } from '../../../../shared/ui/ActionButton';
-import { SelectField } from '../../../../shared/ui/SelectField';
+import { Button } from "@orbis/ui/button";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@orbis/ui/select";
 import { DOCUMENT_BLOCKS } from '../../../content/model/document-components';
 import { newBlockId } from '../../../content/blocks';
 import { fromTiptapDocument } from '../tiptap-model';
@@ -338,7 +338,7 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
  const availability=(action:BlockAction)=>blockActionAvailability(source,ids,action,actionContext);
  const actionItem=(label:string,action:BlockAction,icon?:React.ReactNode)=>{
   const allowed=availability(action);
-  return <ActionButton key={label} role="menuitem" className={editorControlItemVariants({ surface: 'block-menu', tone: action.type === 'delete' ? 'danger' : undefined })} disabled={!allowed.ok} title={allowed.message} onClick={()=>run(action)}>{icon}<span>{label}</span></ActionButton>;
+  return <Button key={label} role="menuitem" className="w-full justify-start" disabled={!allowed.ok} title={allowed.message} onClick={()=>run(action)} variant={action.type === "delete" ? "destructive" : "ghost"}>{icon}<span>{label}</span></Button>;
  };
  const convertOptions=open?CONVERSIONS.filter(option=>{const [target,level]=option.value.split(':');return availability({type:'convert',target,level:level?Number(level):undefined}).ok;}):[];
  return <>
@@ -364,7 +364,7 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
     event.dataTransfer.setDragImage(preview,16,16);
     editor.view.dom.closest('.orbis-tiptap')?.classList.add('is-block-dragging');
    }}><GripVertical className="size-(--block-grip-icon-size)" size="1em" viewBox="3 3 18 18"/></button>
-   {selection?.ids.length? <span className="block-selection-count absolute right-[calc(var(--block-grip-size)+.5rem)] text-xs leading-[18px] whitespace-nowrap text-(--ob-page-muted-foreground) [@media(max-width:700px)]:hidden" aria-live="polite">{selection.ids.length>1?`${selection.ids.length} 块`:''}</span>:null}
+   {selection?.ids.length? <span className="block-selection-count absolute right-[calc(var(--block-grip-size)+.5rem)] text-xs leading-[18px] whitespace-nowrap text-(--muted-foreground) [@media(max-width:700px)]:hidden" aria-live="polite">{selection.ids.length>1?`${selection.ids.length} 块`:''}</span>:null}
   </div>:null}
   {open&&current?<Portal container={document.body}><div ref={menuRef} className={blockMenuClassName} role="menu" aria-label="块操作" style={{top:menuPoint.top,left:menuPoint.left}} onKeyDown={event=>{
    if ((event.ctrlKey||event.metaKey) && ['c','x','v'].includes(event.key.toLowerCase())) {
@@ -375,15 +375,26 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
    if(['ArrowDown','ArrowUp','Home','End'].includes(event.key)&&!(event.target instanceof Element&&event.target.closest('[role="listbox"]'))){const buttons=Array.from(menuRef.current?.querySelectorAll<HTMLButtonElement>('button[role="menuitem"]:not(:disabled)')??[]);if(!buttons.length)return;event.preventDefault();const current=buttons.indexOf(document.activeElement as HTMLButtonElement);const next=event.key==='Home'?0:event.key==='End'?buttons.length-1:(current+(event.key==='ArrowUp'?-1:1)+buttons.length)%buttons.length;buttons[next].focus();}
   }}>
    <div className={blockMenuHeadingClassName}>{ids.length>1?`已选择 ${ids.length} 个块`:LABELS[current.type]??current.type}<span>块操作</span></div>
-   {parentBlock?<ActionButton className={blockMenuItemClassName} role="menuitem" onClick={()=>{setBlockSelection(editor,[parentBlock.id]);setActiveId(parentBlock.id);}}><ArrowUp size={15}/><span>选择父块：{LABELS[parentBlock.type]??parentBlock.type}</span></ActionButton>:null}
-   <ActionButton className={blockMenuItemClassName} role="menuitem" onClick={()=>copySelected()}><Copy size={15}/><span>复制块</span><kbd aria-hidden="true" className={blockMenuShortcutClassName}>⌘ C</kbd></ActionButton>
-   {!readOnly?<ActionButton className={blockMenuItemClassName} role="menuitem" onClick={()=>{editor.view.focus();void pasteBlocks(editor,ids).then(receive);setOpen(false);}}><Copy size={15}/><span>粘贴块</span><kbd aria-hidden="true" className={blockMenuShortcutClassName}>⌘ V</kbd></ActionButton>:null}
-   <ActionButton className={blockMenuItemClassName} role="menuitem" disabled={!noteId} onClick={()=>void copyLink()}><Link2 size={15}/><span>复制块链接</span></ActionButton>
+   {parentBlock?<Button className={blockMenuItemClassName} role="menuitem" onClick={()=>{setBlockSelection(editor,[parentBlock.id]);setActiveId(parentBlock.id);}} variant="ghost"><ArrowUp size={15}/><span>选择父块：{LABELS[parentBlock.type]??parentBlock.type}</span></Button>:null}
+   <Button className={blockMenuItemClassName} role="menuitem" onClick={()=>copySelected()} variant="ghost"><Copy size={15}/><span>复制块</span><kbd aria-hidden="true" className={blockMenuShortcutClassName}>⌘ C</kbd></Button>
+   {!readOnly?<Button className={blockMenuItemClassName} role="menuitem" onClick={()=>{editor.view.focus();void pasteBlocks(editor,ids).then(receive);setOpen(false);}} variant="ghost"><Copy size={15}/><span>粘贴块</span><kbd aria-hidden="true" className={blockMenuShortcutClassName}>⌘ V</kbd></Button>:null}
+   <Button className={blockMenuItemClassName} role="menuitem" disabled={!noteId} onClick={()=>void copyLink()} variant="ghost"><Link2 size={15}/><span>复制块链接</span></Button>
    {!readOnly?<>
-    <ActionButton className={blockMenuItemClassName} role="menuitem" onClick={()=>copySelected(true)}><span className="block-menu-icon w-[15px] text-center">✂</span><span>剪切块</span><kbd aria-hidden="true" className={blockMenuShortcutClassName}>⌘ X</kbd></ActionButton>
+    <Button className={blockMenuItemClassName} role="menuitem" onClick={()=>copySelected(true)} variant="ghost"><span className="block-menu-icon w-[15px] text-center">✂</span><span>剪切块</span><kbd aria-hidden="true" className={blockMenuShortcutClassName}>⌘ X</kbd></Button>
     {actionItem('创建副本',{type:'duplicate'},<Copy size={15}/>)}
     <div className={blockMenuSeparatorClassName}/>
-    {convertOptions.length?<SelectField className="mt-1 mb-1.5" aria-label="转换块类型" value={current.type==='heading'?`heading:${current.props.level??1}`:current.type} options={convertOptions} onChange={value=>{const [target,level]=value.split(':');run({type:'convert',target,level:level?Number(level):undefined});}}/>:null}
+    {convertOptions.length?<Select
+      value={current.type==='heading'?`heading:${current.props.level??1}`:current.type}
+      onValueChange={value => { if (value === null) return; const [target,level]=value.split(':');run({type:'convert',target,level:level?Number(level):undefined}); }}
+      items={convertOptions}
+    >
+      <SelectTrigger aria-label="转换块类型" className={"mt-1 mb-1.5"}><SelectValue /></SelectTrigger>
+      <SelectContent>
+        {convertOptions.map(item => (
+          <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>:null}
     {actionItem('在上方插入',{type:'insert',side:'before'},<Plus size={15}/>)}
     {actionItem('在下方插入',{type:'insert',side:'after'},<Plus size={15}/>)}
     {actionItem('上移',{type:'up'},<ArrowUp size={15}/>)}

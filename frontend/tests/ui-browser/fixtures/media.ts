@@ -2,13 +2,18 @@ import { expect, type Locator } from "@playwright/test";
 import { readContrasts } from "./contrast";
 
 const MAX_REDUCED_MOTION_MS = 1;
+const MAX_FOCUS_COLOR_TRANSITION_MS = 200;
 
-// 用于以 outline 呈现焦点的控件；菜单项的高亮背景由所属场景另验。
+// 应用主题为键盘焦点提供独立轮廓；原生组件自己的 ring/border 样式继续保留。
 export async function expectVisibleKeyboardFocus(target: Locator, indicator: Locator = target) {
   await expect(target).toBeFocused();
   await expect(indicator).toBeInViewport();
   // Base UI 在首帧撤掉 starting 样式；跨过实际绘制帧再测量最终可见颜色。
   await indicator.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  await indicator.evaluate(async (element, maximum) => {
+    const colorTransitions = element.getAnimations().filter(animation => animation instanceof CSSTransition && /color$/.test(animation.transitionProperty) && Number(animation.effect?.getComputedTiming().endTime) <= maximum);
+    await Promise.all(colorTransitions.map(animation => animation.finished));
+  }, MAX_FOCUS_COLOR_TRANSITION_MS);
   await expect(target).toBeFocused();
   const metrics = await indicator.evaluate(element => {
     const style = getComputedStyle(element);

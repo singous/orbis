@@ -2,17 +2,13 @@ import { CommandExample } from "./CommandExample";
 import { useState } from "react";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
-import { Dialog, DialogContent, DialogTrigger, DialogFooter, DialogClose } from "@orbis/ui/dialog";
-import { Select } from "@orbis/ui/select";
+import { Dialog, DialogContent, DialogTrigger, DialogFooter, DialogClose, DialogHeader, DialogTitle, DialogDescription } from "@orbis/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@orbis/ui/select";
+import { Spinner } from "@orbis/ui/spinner";
 import { ColorField } from "../../shared/ui/ColorField";
-import { Button as CompatibleButton } from "@/shared/ui/Button";
-import { iconActionVariants, textActionClassName } from "@/shared/ui/control-styles";
-import { ActionButton } from "@/shared/ui/ActionButton";
-import { IconButton } from "@/shared/ui/IconButton";
-import { TextInput } from "@/shared/ui/TextInput";
-import { SelectField } from "@/shared/ui/SelectField";
 import { Plus } from "@orbis/ui/icons";
 import { LoadingState } from "../../shared/ui/LoadingState";
+import { OverlayScopeProvider } from "@orbis/ui/portal";
 
 const colorSamples = [
   { value: "rgb(18, 52, 86)", label: "RGB" },
@@ -20,47 +16,47 @@ const colorSamples = [
   { value: "hsb(240, 100%, 100%)", label: "HSB" },
   { value: "#12345680", label: "带透明度的十六进制" },
 ];
+const groupOptions = [{ value: "", label: "不分组" }, { value: "name", label: "按名称" }];
 
 export function UICatalog() {
   const [group, setGroup] = useState<string | null>("");
   const [color, setColor] = useState(colorSamples[0].value);
   const [colorCommits, setColorCommits] = useState(0);
-  const [compatiblePending, setCompatiblePending] = useState(false);
-  const [compatibleActivations, setCompatibleActivations] = useState(0);
-  const [nativeActionActive, setNativeActionActive] = useState(false);
-  const [compatibleSelection, setCompatibleSelection] = useState("name");
-  return <main className="mx-auto grid max-w-4xl gap-6 p-6 text-ob-foreground">
+  const [pending, setPending] = useState(false);
+  const [activations, setActivations] = useState(0);
+  const [actionActive, setActionActive] = useState(false);
+  return <main className="mx-auto grid max-w-4xl gap-6 p-6">
     <h1 className="text-2xl font-semibold">界面组合预览</h1>
-    <p>通用原语的详细状态见 Storybook；这里验证应用样式、嵌套主题与浮层组合。</p>
-    {(["light", "dark"] as const).map(theme => <section key={theme} data-theme={theme} className="grid gap-4 rounded-ob-xl bg-ob-background p-6 text-ob-foreground">
+    <p>通用组件的详细状态见 Storybook；这里验证应用组合、主题与浮层。</p>
+    {(["light", "dark"] as const).map(theme => <OverlayScopeProvider key={theme} value={{ "data-theme": theme }}><section data-theme={theme} className={`grid gap-4 rounded-xl border bg-background p-6 text-foreground ${theme === "dark" ? "dark" : ""}`}>
       <h2>{theme === "light" ? "浅色" : "深色"}表单</h2>
       <label className="grid gap-2">名称<Input defaultValue="我的视图" /></label>
-      <Dialog><DialogTrigger asChild><Button>编辑分组</Button></DialogTrigger><DialogContent title="编辑分组" description="选择视图的分组方式。">
-        <Select label="分组方式" value={group} onValueChange={setGroup} options={[{ value: "", label: "不分组" }, { value: "name", label: "按名称" }]} />
-        <ColorField label="浮层颜色" value={color} onChange={setColor} onChangeEnd={() => setColorCommits(count => count + 1)} />
-        <DialogFooter><DialogClose asChild><Button>完成</Button></DialogClose></DialogFooter>
-      </DialogContent></Dialog>
-      <Select label="颜色格式" value={color} options={colorSamples} onValueChange={value => { if (value !== null) setColor(value); }} />
+      <Dialog>
+        <DialogTrigger render={<Button />}>编辑分组</DialogTrigger>
+        <DialogContent>
+          <DialogHeader><DialogTitle>编辑分组</DialogTitle><DialogDescription>选择视图的分组方式。</DialogDescription></DialogHeader>
+          <div className="grid gap-2"><label htmlFor={`catalog-group-${theme}`}>分组方式</label><Select items={groupOptions} value={group} onValueChange={setGroup}><SelectTrigger id={`catalog-group-${theme}`} className="w-full"><SelectValue /></SelectTrigger><SelectContent role="region" aria-label="分组方式选项">{groupOptions.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></div>
+          <ColorField label="浮层颜色" value={color} onChange={setColor} onChangeEnd={() => setColorCommits(count => count + 1)} />
+          <DialogFooter><DialogClose render={<Button />}>完成</DialogClose></DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <div className="grid gap-2"><label htmlFor={`catalog-color-${theme}`}>颜色格式</label><Select items={colorSamples} value={color} onValueChange={value => { if (value !== null) setColor(value); }}><SelectTrigger id={`catalog-color-${theme}`} className="w-full"><SelectValue /></SelectTrigger><SelectContent role="region" aria-label="颜色格式选项">{colorSamples.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></div>
       <ColorField label="示例颜色" value={color} onChange={setColor} onChangeEnd={() => setColorCommits(count => count + 1)} />
       <output aria-label="已选颜色">{color}</output><output aria-label="颜色提交次数">{colorCommits}</output>
-    </section>)}
-    <section aria-label="兼容控件" className="grid justify-items-start gap-4 rounded-ob-xl bg-ob-background p-6 text-ob-foreground">
-      <h2>兼容控件</h2>
-      <CompatibleButton data-testid="compatible-primary" variant="primary" icon={<Plus aria-hidden="true" size={18} />}>兼容保存</CompatibleButton>
-      <CompatibleButton data-testid="compatible-compact" size="sm">兼容取消</CompatibleButton>
-      <CompatibleButton isPending={compatiblePending} onPress={() => { setCompatibleActivations(count => count + 1); setCompatiblePending(true); }}>{compatiblePending ? "兼容处理中" : "开始兼容操作"}</CompatibleButton>
-      <CompatibleButton onClick={() => setCompatiblePending(false)}>结束兼容操作</CompatibleButton>
-      <CompatibleButton disabled>兼容禁用</CompatibleButton>
-      <ActionButton aria-label="兼容连接点" style={{ width: 12, height: 12, padding: 0 }}><Plus aria-hidden="true" size={10} /></ActionButton>
-      <IconButton size="sm" aria-label="兼容图标操作"><Plus aria-hidden="true" size={16} /></IconButton>
-      <ActionButton className={iconActionVariants()} aria-label="原生图标操作" aria-pressed={nativeActionActive} onClick={() => setNativeActionActive(active => !active)}><Plus aria-hidden="true" size={14} /></ActionButton>
-      <ActionButton className={iconActionVariants({ tone: "danger" })} aria-label="原生危险操作"><Plus aria-hidden="true" size={14} /></ActionButton>
-      <ActionButton className={iconActionVariants()} aria-label="原生禁用操作" disabled><Plus aria-hidden="true" size={14} /></ActionButton>
-      <ActionButton className={textActionClassName}>原生文字操作</ActionButton>
-      <div className="sheet-cell"><ActionButton aria-label="网格内连接点" style={{ width: 12, height: 12, padding: 0 }}><Plus aria-hidden="true" size={10} /></ActionButton></div>
-      <TextInput label="兼容名称" defaultValue="名称" />
-      <SelectField label="兼容分组" value={compatibleSelection} options={[{ value: "", label: "兼容不分组" }, { value: "name", label: "兼容按名称" }]} onChange={setCompatibleSelection} />
-      <output aria-label="兼容激活次数">{compatibleActivations}</output><output aria-label="兼容选择">{compatibleSelection || "（空值）"}</output>
+    </section></OverlayScopeProvider>)}
+    <section aria-label="原生控件" className="grid justify-items-start gap-4 rounded-xl border p-6">
+      <h2>原生控件</h2>
+      <Button data-testid="native-primary"><Plus aria-hidden="true" />保存</Button>
+      <Button data-testid="native-compact" variant="outline" size="sm">取消</Button>
+      <Button disabled={pending} focusableWhenDisabled={pending} aria-busy={pending || undefined} onClick={() => { setActivations(count => count + 1); setPending(true); }}>{pending ? <Spinner aria-hidden="true" /> : null}{pending ? "处理中" : "开始操作"}</Button>
+      <Button variant="outline" onClick={() => setPending(false)}>结束操作</Button>
+      <Button disabled>不可用</Button>
+      <Button variant="ghost" size="icon" aria-label="图标操作" aria-pressed={actionActive} onClick={() => setActionActive(active => !active)}><Plus aria-hidden="true" /></Button>
+      <Button variant="destructive">危险操作</Button>
+      <label className="grid gap-2">普通字段<Input defaultValue="名称" /></label>
+      <div className="grid gap-2"><label htmlFor="native-group">分组</label><Select items={groupOptions} value={group} onValueChange={setGroup}><SelectTrigger id="native-group"><SelectValue /></SelectTrigger><SelectContent role="region" aria-label="分组选项">{groupOptions.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></div>
+      <output aria-label="选择">{group || "（空值）"}</output>
+      <output aria-label="激活次数">{activations}</output>
     </section>
     <CommandExample />
     <section aria-label="加载布局" className="grid gap-6">

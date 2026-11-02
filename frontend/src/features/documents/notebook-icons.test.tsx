@@ -130,9 +130,10 @@ describe("notebook icons", () => {
     openDialog();
     const input = screen.getByLabelText("上传自定义图标");
     fireEvent.change(input, { target: { files: [new File(["<svg/>"], "icon.svg", { type: "image/svg+xml" })] } });
-    expect(screen.getByText(/PNG、JPEG 或 WebP/)).toBeInTheDocument();
+    expect(screen.getByText(/PNG、JPEG 或 WebP/, { selector: '[data-slot="toast-title"]' })).toBeVisible();
+    expect(screen.getByRole("region", { name: "通知" })).toHaveAttribute("aria-live", "polite");
     fireEvent.change(input, { target: { files: [new File([new Uint8Array(2 * 1024 * 1024 + 1)], "large.png", { type: "image/png" })] } });
-    expect(screen.getByText("图片大小不能超过 2 MB。")).toBeInTheDocument();
+    expect(screen.getByText("图片大小不能超过 2 MB。", { selector: '[data-slot="toast-title"]' })).toBeVisible();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -145,9 +146,9 @@ describe("notebook icons", () => {
     await user.type(screen.getByRole("textbox", { name: "笔记本名称" }), "测试");
     await user.click(screen.getByRole("radio", { name: "火箭" }));
     await user.upload(screen.getByLabelText("上传自定义图标"), new File(["image"], "icon.png", { type: "image/png" }));
-    expect(await screen.findByText("图标上传失败，请重试")).toBeInTheDocument();
+    expect(await screen.findByText("图标上传失败，请重试", { selector: '[data-slot="toast-title"]' })).toBeVisible();
     expect(screen.getByRole("radio", { name: "火箭" })).toBeChecked();
     await user.click(screen.getByRole("button", { name: "创建" }));
-    expect(await screen.findByText("笔记本名称已存在")).toBeInTheDocument();
+    expect(await screen.findByText("笔记本名称已存在", { selector: '[data-slot="toast-title"]' })).toBeVisible();
   });
 });

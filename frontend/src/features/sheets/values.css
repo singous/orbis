@@ -5,36 +5,36 @@
 :where(.sheet-data-theme) .sheet-tag {
   display: inline-flex;
   align-items: center;
-  font-size: var(--ob-text-caption-size);
+  font-size: var(--text-xs);
   border-radius: 6px;
   padding: 2px 8px;
   line-height: 20px;
-  color: var(--ob-foreground);
+  color: var(--foreground);
 }
 :where(.sheet-data-theme) .sheet-progress {
   display: flex;
   align-items: center;
   gap: 8px;
   width: 100%;
-  font-size: var(--ob-text-caption-size);
-  color: var(--ob-page-muted-foreground);
+  font-size: var(--text-xs);
+  color: var(--muted-foreground);
 }
 :where(.sheet-data-theme) .sheet-progress-track {
   flex: 0 1 100px;
   height: 5px;
   border-radius: 999px;
-  background: var(--ob-surface-tertiary);
+  background: var(--accent);
   overflow: hidden;
 }
 :where(.sheet-data-theme) .sheet-progress-fill {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--ob-primary);
+  background: var(--primary);
   transition: width var(--ob-motion-feedback) var(--ob-ease-out);
 }
 :where(.sheet-data-theme) .sheet-progress-fill.done {
-  background: var(--ob-page-success);
+  background: var(--status-success);
 }
 :where(.sheet-data-theme) .sheet-person {
   display: inline-flex;
@@ -55,7 +55,7 @@
   display: grid;
   place-items: center;
   font-size: 10px;
-  font-weight: var(--ob-weight-action);
+  font-weight: var(--font-weight-medium);
   flex: none;
 }
 :where(.sheet-data-theme) .sheet-person-name {

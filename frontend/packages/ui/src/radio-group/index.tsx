@@ -1,36 +1,37 @@
-import { RadioGroup as GroupPrimitive } from "@base-ui/react/radio-group";
-import { Radio as Primitive } from "@base-ui/react/radio";
-import type { ComponentProps, CSSProperties, ReactNode, Ref } from "react";
-import { resolveClassName } from "../internal/resolve-class-name";
-import { controlFocus } from "../internal/focus";
+"use client"
 
-type GroupState = { disabled: boolean; readOnly: boolean; required: boolean; valid: boolean | null };
-type RadioGroupProps<Value extends string | number> = Omit<ComponentProps<"div">, "defaultValue" | "onChange" | "className" | "style"> & {
-  disabled?: boolean;
-  readOnly?: boolean;
-  required?: boolean;
-  name?: string;
-  form?: string;
-  className?: string | ((state: GroupState) => string | undefined);
-  style?: CSSProperties | ((state: GroupState) => CSSProperties | undefined);
-} & (
-  | { value: Value; onValueChange: (value: Value) => void; defaultValue?: never }
-  | { value?: never; defaultValue?: Value; onValueChange?: (value: Value) => void }
-);
-function RadioGroup<Value extends string | number>({ onValueChange, className, ...props }: RadioGroupProps<Value>) { return <GroupPrimitive {...props} data-slot="ob-radio-group" className={resolveClassName("grid gap-2", className)} onValueChange={value => onValueChange?.(value)} />; }
-type RadioState = GroupState & { checked: boolean };
-type RadioGroupItemProps<Value extends string | number> = Omit<ComponentProps<"span">, "children" | "className" | "style" | "ref"> & {
-  value: Value;
-  appearance?: "control" | "choice";
-  children: ReactNode;
-  disabled?: boolean;
-  readOnly?: boolean;
-  ref?: Ref<HTMLElement>;
-  className?: string | ((state: RadioState) => string | undefined);
-  style?: CSSProperties | ((state: RadioState) => CSSProperties | undefined);
-};
-function RadioGroupItem<Value extends string | number>({ children, className, appearance = "control", ...props }: RadioGroupItemProps<Value>) {
-  return <Primitive.Root {...props} data-slot="ob-radio" className={resolveClassName(`${appearance === "control" ? "flex min-h-(--ob-control-height-lg) items-center gap-3 rounded-ob-md text-sm text-ob-foreground" : ""} data-disabled:cursor-not-allowed data-disabled:opacity-50 ${controlFocus}`, className)}>{appearance === "control" ? <span aria-hidden="true" className="grid size-4 shrink-0 place-items-center rounded-full border border-ob-border"><Primitive.Indicator className="size-2 rounded-full bg-ob-primary" /></span> : null}{children}</Primitive.Root>;
+import { Radio as RadioPrimitive } from "@base-ui/react/radio"
+import { RadioGroup as RadioGroupPrimitive } from "@base-ui/react/radio-group"
+import { cn } from "cn"
+
+function RadioGroup({ className, ...props }: RadioGroupPrimitive.Props) {
+  return (
+    <RadioGroupPrimitive
+      data-slot="radio-group"
+      className={cn("grid w-full gap-2", className)}
+      {...props}
+    />
+  )
 }
-export { RadioGroup, RadioGroupItem };
-export type { RadioGroupProps, RadioGroupItemProps };
+
+function RadioGroupItem({ className, ...props }: RadioPrimitive.Root.Props) {
+  return (
+    <RadioPrimitive.Root
+      data-slot="radio-group-item"
+      className={cn(
+        "group/radio-group-item peer relative flex aspect-square size-4 shrink-0 rounded-full border border-input outline-none group-has-[:focus-visible]/field-label:ring-0 group-has-[:focus-visible]/field-label:not-data-checked:border-input after:absolute after:-inset-x-3 after:-inset-y-2 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 aria-invalid:aria-checked:border-primary dark:bg-input/30 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 data-checked:border-primary data-checked:bg-primary data-checked:text-primary-foreground group-has-[:focus-visible]/field-label:data-checked:border-primary dark:data-checked:bg-primary",
+        className
+      )}
+      {...props}
+    >
+      <RadioPrimitive.Indicator
+        data-slot="radio-group-indicator"
+        className="flex size-4 items-center justify-center"
+      >
+        <span className="absolute top-1/2 left-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary-foreground" />
+      </RadioPrimitive.Indicator>
+    </RadioPrimitive.Root>
+  )
+}
+
+export { RadioGroup, RadioGroupItem }

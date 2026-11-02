@@ -94,7 +94,7 @@ it("reports conversion failures and retries the retained live document", async (
   vi.spyOn(model, "fromTiptapDocument").mockImplementationOnce(() => { throw new Error("Conversion failure"); });
   await userEvent.click(screen.getByRole("combobox", { name: /段落类型/ }));
   await userEvent.click(await screen.findByRole("option", { name: "标题 1" }));
-  expect(await screen.findByRole("alertdialog")).toHaveTextContent("正文暂未保存");
+  expect(await screen.findByText(/./, { selector: '[data-slot="toast-title"]' })).toHaveTextContent("正文暂未保存");
   expect(changed).not.toHaveBeenCalled();
   expect(failed).toHaveBeenCalledWith(expect.stringContaining("正文暂未保存"));
   await userEvent.click(screen.getByRole("combobox", { name: /段落类型/ }));

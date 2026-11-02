@@ -7,7 +7,7 @@ const readStatusStyles = {
     message: "mb-6 leading-[1.7] text-(--ob-share-muted-foreground)",
   },
   reader: {
-    root: "site-reader-status grid min-h-[70vh] content-center justify-items-center gap-4 bg-ob-card p-[30px] text-ob-foreground",
+    root: "site-reader-status grid min-h-[70vh] content-center justify-items-center gap-4 bg-card p-[30px] text-foreground",
     title: "m-0 text-[length:var(--ob-prose-title-size)] font-[680]",
     message: "m-0 text-[length:var(--ob-prose-body-size)] text-(--ob-reader-status-muted)",
   },

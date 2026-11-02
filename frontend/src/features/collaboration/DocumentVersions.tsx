@@ -15,10 +15,10 @@ import { reportError } from "../../shared/api/request-feedback";
 import { useRef, useState, type FormEvent } from "react";
 import { Textarea as TextArea } from "@orbis/ui/textarea";
 import { ApiError } from "../../shared/api/api-client";
-import { ActionButton } from "../../shared/ui/ActionButton";
-import { Button } from "../../shared/ui/Button";
-import { TextInput } from "../../shared/ui/TextInput";
-import { SelectField } from "../../shared/ui/SelectField";
+import { Button } from "@orbis/ui/button";
+
+import { Input } from "@orbis/ui/input";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@orbis/ui/select";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { documentVersionLabel, type DocumentVersion, type SaveVersionInput } from "./version-api";
 import { useDocumentVersion, useDocumentVersionComparison, useDocumentVersions, useEditDocumentVersion, useRestoreDocumentVersion, useSaveDocumentVersion } from "./version-queries";
@@ -56,10 +56,10 @@ function VersionMetadata({ version, noteId, onBusyChange }: { version: DocumentV
   }
   if (!editing) return <Button type="button" variant="secondary" onClick={() => { setName(version.name ?? ""); setDescription(version.description); setBaseVersion(version.metadata_version); setEditing(true); }}>编辑名称与说明</Button>;
   return <form className={collaborationFormClassName} onSubmit={submit}>
-    <TextInput label="版本名称" value={name} maxLength={120} disabled={update.isPending || uncertain(update.error)} onChange={event => setName(event.target.value)} />
+    <label className="grid gap-2 text-sm font-medium"><span>{"版本名称"}</span><Input value={name} maxLength={120} disabled={update.isPending || uncertain(update.error)} onChange={event => setName(event.target.value)} /></label>
     <label className={collaborationLabelClassName}><span>版本说明</span><TextArea className={collaborationTextareaClassName} value={description} maxLength={2000} disabled={update.isPending || uncertain(update.error)} onChange={event => setDescription(event.target.value)} /></label>
 
-    <div className={collaborationActionsClassName}><Button type="submit" variant="primary" disabled={update.isPending}>{update.isPending ? "正在更新…" : uncertain(update.error) ? "重试更新信息" : "更新版本信息"}</Button><Button type="button" variant="secondary" disabled={update.isPending || uncertain(update.error)} onClick={() => setEditing(false)}>取消</Button></div>
+    <div className={collaborationActionsClassName}><Button type="submit" variant="default" disabled={update.isPending}>{update.isPending ? "正在更新…" : uncertain(update.error) ? "重试更新信息" : "更新版本信息"}</Button><Button type="button" variant="secondary" disabled={update.isPending || uncertain(update.error)} onClick={() => setEditing(false)}>取消</Button></div>
   </form>;
 }
 
@@ -74,9 +74,9 @@ function VersionComparison({ noteId, from, to }: { noteId: string; from: string;
     {comparison.isError ? <Button type="button" variant="secondary" onClick={() => void comparison.refetch()}>重试比较版本</Button> : null}
     {result && result.from.title !== result.to.title ? <p>标题：<del>{result.from.title}</del> → <ins>{result.to.title}</ins></p> : null}
     {result && result.items.length === 0 ? <p className={collaborationHintClassName}>正文内容与结构相同。</p> : null}
-    {comparison.data?.pages.flatMap(page => page.items).map(item => <article className="grid min-w-0 gap-3 rounded-ob-lg border border-ob-border p-4 [&_p]:mt-1 [&_p]:mb-0 [&_p]:whitespace-pre-wrap [&_p]:wrap-anywhere [&_p]:text-sm" key={item.block_id}>
+    {comparison.data?.pages.flatMap(page => page.items).map(item => <article className="grid min-w-0 gap-3 rounded-lg border border-border p-4 [&_p]:mt-1 [&_p]:mb-0 [&_p]:whitespace-pre-wrap [&_p]:wrap-anywhere [&_p]:text-sm" key={item.block_id}>
       <strong>{labels[item.change]}{item.change === "modified" && item.position_changed ? "并移动" : ""}</strong>
-      {item.content_changed ? <><div><span className="text-ob-caption text-(--ob-page-muted-foreground)">之前</span><p>{item.before_text || "（无文本内容）"}</p></div><div><span className="text-ob-caption text-(--ob-page-muted-foreground)">之后</span><p>{item.after_text || "（无文本内容）"}</p></div></> : <p className={collaborationHintClassName}>块的位置或层级发生变化。</p>}
+      {item.content_changed ? <><div><span className="text-xs text-(--muted-foreground)">之前</span><p>{item.before_text || "（无文本内容）"}</p></div><div><span className="text-xs text-(--muted-foreground)">之后</span><p>{item.after_text || "（无文本内容）"}</p></div></> : <p className={collaborationHintClassName}>块的位置或层级发生变化。</p>}
     </article>)}
     {comparison.hasNextPage ? <Button type="button" variant="secondary" disabled={comparison.isFetchingNextPage} onClick={() => void comparison.fetchNextPage()}>加载更多差异</Button> : null}
     {result ? <p className={collaborationHintClassName}>文本显示摘要；完整内容可在版本预览中查看。共享表格和外部链接的内容由来源管理。</p> : null}
@@ -131,15 +131,16 @@ export function DocumentVersions({ noteId, canManage, onPrepare, onRestore, onBu
     finally { onBusyChange(false); }
   }
 
-  return <section aria-label="文档版本管理" className="grid gap-5 max-[600px]:[&_.ui-button]:min-h-(--ob-control-height-touch) max-[600px]:[&_.orbis-text-input]:min-h-(--ob-control-height-touch) max-[600px]:[&_[data-slot=select-trigger]]:min-h-(--ob-control-height-touch)">
+  const comparisonItems = [{ value: "", label: "选择另一个版本" }, ...versions.filter(version => version.id !== selectedId).map(version => ({ value: version.id, label: `${documentVersionLabel(version)} · ${formatTime.format(version.captured_at_ms)}` }))];
+  return <section aria-label="文档版本管理" className="grid gap-5 max-[600px]:[&_[data-slot=button]]:min-h-(--ob-control-height-touch) max-[600px]:[&_[data-slot=input]]:min-h-(--ob-control-height-touch) max-[600px]:[&_[data-slot=select-trigger]]:min-h-(--ob-control-height-touch)">
     <p className={collaborationHintClassName}>自动历史按编辑活动汇总。命名版本会固定已保存的内容，便于评审、比较和恢复。</p>
     {list.isSuccess && !list.data.pages[0].automatic_history_enabled ? <p className={collaborationHintClassName}>自动历史未启用，可以手动保存命名版本。</p> : null}
     {!canManage ? <p className={collaborationHintClassName}>只读成员可以查看历史，保存和恢复版本需要编辑权限。</p> : null}
-    {canManage && onPrepare && !creating ? <Button type="button" variant="primary" disabled={busy || restoreUncertain} onClick={() => setCreating(true)}>新建命名版本</Button> : null}
-    {canManage && onPrepare && creating ? <form className="grid gap-2.5 border-b border-ob-border pb-5" onSubmit={saveVersion}>
-      <TextInput label="新版本名称" placeholder="例如：评审稿" value={name} maxLength={120} required disabled={busy || saveUncertain || restoreUncertain} onChange={event => setName(event.target.value)} />
+    {canManage && onPrepare && !creating ? <Button type="button" variant="default" disabled={busy || restoreUncertain} onClick={() => setCreating(true)}>新建命名版本</Button> : null}
+    {canManage && onPrepare && creating ? <form className="grid gap-2.5 border-b border-border pb-5" onSubmit={saveVersion}>
+      <label className="grid gap-2 text-sm font-medium"><span>{"新版本名称"}</span><Input placeholder="例如：评审稿" value={name} maxLength={120} required disabled={busy || saveUncertain || restoreUncertain} onChange={event => setName(event.target.value)} /></label>
       <label className={collaborationLabelClassName}><span>版本说明（可选）</span><TextArea className={collaborationTextareaClassName} value={description} maxLength={2000} disabled={busy || saveUncertain} onChange={event => setDescription(event.target.value)} /></label>
-      <Button type="submit" variant="primary" disabled={busy || restoreUncertain || !name.trim()}>{busy ? "正在保存版本…" : saveUncertain ? "重试保存版本" : "保存命名版本"}</Button>
+      <Button type="submit" variant="default" disabled={busy || restoreUncertain || !name.trim()}>{busy ? "正在保存版本…" : saveUncertain ? "重试保存版本" : "保存命名版本"}</Button>
       <Button type="button" variant="secondary" disabled={busy || saveUncertain} onClick={() => setCreating(false)}>取消新建版本</Button>
     </form> : null}
 
@@ -147,12 +148,12 @@ export function DocumentVersions({ noteId, canManage, onPrepare, onRestore, onBu
 
     {list.isError ? <Button type="button" variant="secondary" onClick={() => void list.refetch()}>重试加载版本</Button> : null}
     {list.isSuccess && versions.length === 0 ? <p className={collaborationEmptyClassName}>暂无版本。可以保存命名版本，或在停笔后查看自动历史。</p> : null}
-    <div className="grid gap-1.25">{versions.map(version => <ActionButton type="button" className={collaborationRevisionClassName} key={version.id} aria-label={`查看版本 ${documentVersionLabel(version)}`} aria-pressed={selectedId === version.id} disabled={busy || saveUncertain || restoreUncertain} onClick={() => { setSelectedId(version.id); setCompareFrom("");  }}>
+    <div className="grid gap-1.25">{versions.map(version => <Button type="button" className={collaborationRevisionClassName} key={version.id} aria-label={`查看版本 ${documentVersionLabel(version)}`} aria-pressed={selectedId === version.id} disabled={busy || saveUncertain || restoreUncertain} onClick={() => { setSelectedId(version.id); setCompareFrom("");  }} variant="ghost">
       <span>{documentVersionLabel(version)}</span><small className={collaborationRevisionMetaClassName}>{version.author_name || "历史作者"} · {formatTime.format(version.captured_at_ms)}</small>
       {version.description ? <small className={collaborationRevisionMetaClassName}>{version.description}</small> : null}
-    </ActionButton>)}</div>
+    </Button>)}</div>
     {list.hasNextPage ? <Button type="button" variant="secondary" disabled={busy || list.isFetchingNextPage} onClick={() => void list.fetchNextPage()}>加载更多版本</Button> : null}
-    {selectedId ? <div className={`${collaborationPreviewClassName} [&>form]:my-4 [&>.orbis-select-field]:my-4`}>
+    {selectedId ? <div className={`${collaborationPreviewClassName} [&>form]:my-4 [&>label]:my-4`}>
       {detail.isPending ? <LoadingState label="正在加载版本正文…" compact /> : null}
 
       {detail.isError ? <Button type="button" variant="secondary" onClick={() => void detail.refetch()}>重试加载正文</Button> : null}
@@ -162,9 +163,21 @@ export function DocumentVersions({ noteId, canManage, onPrepare, onRestore, onBu
         {detail.data.dependencies.some(dep => dep.kind === "sheet_link") ? <p className={collaborationHintClassName}>此文档包含共享表格链接。预览显示来源当前可见的数据；恢复只恢复链接，表格数据由来源独立管理。</p> : null}
         {canManage && !saveUncertain && !restoreUncertain ? <VersionMetadata key={selectedId} noteId={noteId} version={detail.data.version} onBusyChange={value => { setMetadataBusy(value); onBusyChange(value); }} /> : null}
         <RevisionContent noteId={noteId} version={detail.data.version.source_revision} blocks={detail.data.blocks} />
-        {versions.some(version => version.id !== selectedId) ? <SelectField label="选择比较起点" value={compareFrom} options={[{ value: "", label: "选择另一个版本" }, ...versions.filter(version => version.id !== selectedId).map(version => ({ value: version.id, label: `${documentVersionLabel(version)} · ${formatTime.format(version.captured_at_ms)}` }))]} disabled={busy} onChange={setCompareFrom} /> : null}
+        {versions.some(version => version.id !== selectedId) ? <label className="grid gap-2 text-sm font-medium"><span>{"选择比较起点"}</span><Select
+          value={compareFrom}
+          disabled={busy}
+          onValueChange={value => { if (value !== null) setCompareFrom(value); }}
+          items={comparisonItems}
+        >
+          <SelectTrigger aria-label={"选择比较起点"}><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {comparisonItems.map(item => (
+              <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select></label> : null}
         {compareFrom ? <VersionComparison noteId={noteId} from={compareFrom} to={selectedId} /> : null}
-        {canManage ? <div className={collaborationRestoreClassName}><p className={collaborationHintClassName}>恢复会先保存当前草稿，再生成新的编辑状态。恢复前的内容会保留在历史中。</p><Button type="button" variant="primary" disabled={busy} onClick={restoreSelected}>{restore.isPending ? "正在恢复…" : "恢复此版本"}</Button></div> : null}
+        {canManage ? <div className={collaborationRestoreClassName}><p className={collaborationHintClassName}>恢复会先保存当前草稿，再生成新的编辑状态。恢复前的内容会保留在历史中。</p><Button type="button" variant="default" disabled={busy} onClick={restoreSelected}>{restore.isPending ? "正在恢复…" : "恢复此版本"}</Button></div> : null}
       </> : null}
     </div> : null}
     <Button type="button" variant="secondary" disabled={busy || saveUncertain || restoreUncertain} onClick={onLegacy}>查看全部保存记录</Button>

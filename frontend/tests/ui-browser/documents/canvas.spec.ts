@@ -28,25 +28,24 @@ for (const touch of [false, true]) test.describe(touch ? "touch document canvas"
     await expect(title).toBeVisible();
     for (const width of [1280, 900, 640, 390]) {
       await page.setViewportSize({ width, height: 900 });
-      await expect(title).toHaveCSS("font-size", "28px");
-      await expect(title).toHaveCSS("line-height", "42px");
-      await expect(title).toHaveCSS("border-width", "0px");
-      await expect(title).toHaveCSS("border-radius", "0px");
-      const gutter = touch ? 100 : 76;
-      const inset = width <= 640 ? 20 : gutter;
-      await expect(title).toHaveCSS("padding-left", `${inset}px`);
-      await expect(host.getByTestId("document-body-preview")).toHaveCSS("margin-left", `${inset}px`);
+      await expect(title).toHaveAttribute("data-slot", "input");
+      await expect(title).toBeEditable();
+      const inset = await title.evaluate(element => getComputedStyle(element).paddingLeft);
+      expect(parseFloat(inset)).toBeGreaterThan(0);
+      await expect(host.getByTestId("document-body-preview")).toHaveCSS("margin-left", inset);
       await expect(host.locator("article")).toHaveCSS("padding-bottom", width <= 640 ? "52px" : width <= 1023 ? "64px" : "0px");
       expect(await host.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
     }
     await host.getByRole("button", { name: "标题前的操作", exact: true }).focus();
     await page.keyboard.press("Tab");
     await expect(title).toBeFocused();
-    await expect(title).toHaveCSS("outline-style", "none");
+    expect(await title.evaluate(element => getComputedStyle(element).boxShadow !== "none" || getComputedStyle(element).outlineStyle !== "none")).toBe(true);
     await host.getByTestId("document-body-preview").evaluate(element => element.classList.add("orbis-tiptap"));
     const contentCSS = "/src/features/documents/editor/blocks/block-selection.css";
     await page.evaluate(url => import(url), contentCSS);
-    await expect(title).toHaveCSS("padding-left", `${touch ? 100 : 76}px`);
-    await expect(host.getByTestId("document-body-preview")).toHaveCSS("margin-left", `${touch ? 100 : 76}px`);
+    const contentGutter = await title.evaluate(element => getComputedStyle(element).paddingLeft);
+    await expect(host.getByTestId("document-body-preview")).toHaveCSS("margin-left", contentGutter);
+    await title.fill("原生标题输入");
+    await expect(title).toHaveValue("原生标题输入");
   });
 });

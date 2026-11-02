@@ -170,8 +170,8 @@ for (const { name: surface, path, entry, setup, verify } of surfaces) test(`${su
   expect(responses.filter(response => (response.type === "stylesheet" || new URL(response.url).pathname.endsWith(".css")) && response.status === 200).length).toBeGreaterThan(0);
   expect(responses.filter(response => response.type === "font" && response.status === 200).length).toBeGreaterThan(0);
   expect(rendered.stylesheets.length).toBeGreaterThan(0);
-  expect(rendered.loadedFonts).toContain("Inter Variable");
-  expect(rendered.bodyFont).toContain("Inter Variable");
+  expect(rendered.loadedFonts).toContain("Geist Variable");
+  expect(rendered.bodyFont).toContain("Geist Variable");
   expect(rendered.entryScripts.length).toBeGreaterThan(0);
   if (production) {
     for (const script of rendered.entryScripts) expect(new URL(script).pathname).toMatch(/^\/assets\/[^/]+-[\w-]{8,}\.js$/);

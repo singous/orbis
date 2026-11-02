@@ -1,31 +1,44 @@
-import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { useLayoutEffect, useState, type CSSProperties } from "react";
 
 export type PortalThemeSnapshot = { theme: "light" | "dark"; portalStyle: CSSProperties };
 
+const themeVariables = new Set([
+  "--background", "--foreground", "--card", "--card-foreground", "--popover", "--popover-foreground",
+  "--primary", "--primary-foreground", "--secondary", "--secondary-foreground", "--muted", "--muted-foreground",
+  "--accent", "--accent-foreground", "--destructive", "--border", "--input", "--ring", "--radius",
+  "--font-sans", "--font-heading", "--font-mono",
+]);
+
 export function readPortalTheme(element: Element): PortalThemeSnapshot {
   const computed = getComputedStyle(element);
-  const portalStyle = Object.fromEntries(Array.from(computed).filter(name => name.startsWith("--ob-")).map(name => [name, computed.getPropertyValue(name)]));
+  const portalStyle = Object.fromEntries(Array.from(computed)
+    .filter(name => themeVariables.has(name) || name.startsWith("--ob-") || name.startsWith("--reading-"))
+    .map(name => [name, computed.getPropertyValue(name)]));
+  portalStyle["--font-sans"] = computed.fontFamily;
   return { theme: element.closest("[data-theme]")?.getAttribute("data-theme") === "dark" ? "dark" : "light", portalStyle };
 }
 
-export function usePortalTheme(openingElement?: Element | null) {
-  const anchor = useRef<HTMLSpanElement>(null);
-  const [snapshot, setSnapshot] = useState<PortalThemeSnapshot>({ theme: "light", portalStyle: {} });
+export function useElementTheme(element: Element | null) {
+  const [snapshot, setSnapshot] = useState<PortalThemeSnapshot>();
   useLayoutEffect(() => {
-    const update = () => {
-      const element = openingElement ?? anchor.current!;
-      setSnapshot(readPortalTheme(element));
-    };
+    if (!element) return;
+    const update = () => setSnapshot(readPortalTheme(element));
     update();
-    // Portal 保留 body 的浮层边界，同时继承打开位置的主题和局部 token。
     const observer = new MutationObserver(update);
-    for (let element = openingElement ?? anchor.current?.parentElement; element; element = element.parentElement) observer.observe(element, { attributes: true, attributeFilter: ["data-theme", "class", "style"] });
+    for (let current: Element | null = element; current; current = current.parentElement) {
+      observer.observe(current, { attributes: true, attributeFilter: ["data-theme", "class", "style"] });
+    }
     const media = ["(forced-colors: active)", "(prefers-reduced-motion: reduce)", "(pointer: coarse)"].map(query => window.matchMedia(query));
     for (const query of media) query.addEventListener("change", update);
     return () => {
       observer.disconnect();
       for (const query of media) query.removeEventListener("change", update);
     };
-  }, [openingElement]);
-  return { anchor, ...snapshot };
+  }, [element]);
+  return snapshot;
+}
+
+export function usePortalTheme() {
+  const [element, anchor] = useState<HTMLSpanElement | null>(null);
+  return { anchor, ...useElementTheme(element) };
 }

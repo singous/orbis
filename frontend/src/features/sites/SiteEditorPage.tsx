@@ -1,21 +1,21 @@
+import { Badge } from "@orbis/ui/badge";
+import { Spinner } from "@orbis/ui/spinner";
 import { reportError } from "../../shared/api/request-feedback";
 import { newUUID } from "../../shared/ids";
 import { LoadingState } from "../../shared/ui/LoadingState";
-import { Tag } from "../../shared/ui/Tag";
-import { ActionButton } from "../../shared/ui/ActionButton";
 import { ArrowLeft, ExternalLink, Eye, Globe, History, Rocket, RotateCcw } from "../../shared/ui/icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useBlocker, useNavigate, useParams } from "react-router-dom";
 import { useStore } from "zustand";
-import { Button } from "../../shared/ui/Button";
+import { Button } from "@orbis/ui/button";
 import { workbenchStyles } from "../../shared/ui/workbench-styles";
-import { SiteManagementScope, SiteSectionHeading, SitePagination, SiteDialogActions, SiteWideDialogContent } from "./SiteManagementLayout";
+import { SiteSectionHeading, SitePagination } from "./SiteManagementLayout";
 
 import { authStore } from "../../shared/auth/auth-store";
 import { registerPendingNavigation } from "../../shared/navigation/pending-navigation";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
-import { Dialog, DialogContent } from "../../shared/ui/Dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@orbis/ui/dialog";
 import { PageContainer, pageBaseColumnClassName } from "../../shared/ui/PageContainer";
 import { canManageWorkspaceMembers, canMutateWorkspaceContent } from "../workspace/capabilities";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
@@ -147,36 +147,36 @@ function SiteEditor({ site }: { site: Site }) {
   const sourceReady = draftSource.kind === "manual" || draftSource.notebooks.length > 0;
   const canPreparePublish = draftSource.kind === "notebooks" ? sourceReady : draft.navigation.length > 0;
 
-  return <PageContainer title={site.name} description="管理站点设置、内容来源与公开版本。" actions={<Tag tone={site.published_release_id ? "success" : "neutral"}>{site.published_release_id ? "已发布" : "尚未发布"}</Tag>}><SiteManagementScope appearance="editor"><div data-ui="site-management">
+  return <PageContainer title={site.name} description="管理站点设置、内容来源与公开版本。" actions={<Badge variant="secondary">{site.published_release_id ? "已发布" : "尚未发布"}</Badge>}><div data-ui="site-management">
     <Link className={workbenchStyles.back} to="/sites"><ArrowLeft />所有站点</Link>
-    <div className="mb-8 flex items-center justify-between gap-5 border-b border-ob-border pb-6 max-[850px]:flex-col max-[850px]:items-start max-[850px]:gap-[17px]"><span className="flex items-center gap-[9px] text-xs text-ob-muted-foreground"><Globe size={18} />{site.published_slug ? <Link className="flex items-center gap-[9px] text-ob-primary" to={`/s/${site.published_slug}`} target="_blank" rel="noopener noreferrer">查看公开站点<ExternalLink size={14} /></Link> : "站点将在发布后对外开放"}</span><div className="flex items-center gap-[9px]"><Button disabled={busy} onClick={openReaderPreview}><Eye />预览</Button>{canPublish ? <Button variant="primary" disabled={busy || !canPreparePublish} onClick={preparePublishPreview}><Rocket />发布站点</Button> : <span className="text-ob-muted-foreground">由所有者或管理员发布</span>}</div></div>
+    <div className="mb-8 flex items-center justify-between gap-5 border-b border-border pb-6 max-[850px]:flex-col max-[850px]:items-start max-[850px]:gap-[17px]"><span className="flex items-center gap-[9px] text-xs text-muted-foreground"><Globe size={18} />{site.published_slug ? <Link className="flex items-center gap-[9px] text-primary" to={`/s/${site.published_slug}`} target="_blank" rel="noopener noreferrer">查看公开站点<ExternalLink size={14} /></Link> : "站点将在发布后对外开放"}</span><div className="flex items-center gap-[9px]"><Button disabled={busy} onClick={openReaderPreview} variant="outline"><Eye />预览</Button>{canPublish ? <Button variant="default" disabled={busy || !canPreparePublish} onClick={preparePublishPreview}><Rocket />发布站点</Button> : <span className="text-muted-foreground">由所有者或管理员发布</span>}</div></div>
 
     <form onSubmit={submit}>
-      <SiteDraftFields value={draft} onChange={setDraft} disabled={!canEdit || busy} saved={sourceIsSaved} sources={sourceIsSaved ? sourceState.data : undefined} savedAtMs={savedAtMs}>
+      <SiteDraftFields layout="columns" value={draft} onChange={setDraft} disabled={!canEdit || busy} saved={sourceIsSaved} sources={sourceIsSaved ? sourceState.data : undefined} savedAtMs={savedAtMs}>
         {draftSource.kind === "manual" && <SiteNavigationEditor value={draft.navigation} onChange={(navigation) => setDraft({ ...draft, navigation })} disabled={!canEdit || busy} />}
       </SiteDraftFields>
-      <div className="mt-9 flex items-center justify-between border-t border-ob-border pt-5"><span className="text-ob-muted-foreground">{!sourceReady ? "请添加来源或切换到手动选择" : dirty ? "有尚未保存的设置" : "设置已与服务器同步"}</span>{canEdit && <Button variant="primary" type="submit" disabled={busy || !sourceReady}>{busy ? "处理中…" : "保存设置"}</Button>}</div>
+      <div className="mt-9 flex items-center justify-between border-t border-border pt-5"><span className="text-muted-foreground">{!sourceReady ? "请添加来源或切换到手动选择" : dirty ? "有尚未保存的设置" : "设置已与服务器同步"}</span>{canEdit && <Button variant="default" type="submit" disabled={busy || !sourceReady}>{busy ? "处理中…" : "保存设置"}</Button>}</div>
     </form>
-    <section className="mt-[44px] border-t border-ob-border pt-7"><SiteSectionHeading title={<><History size={18} />发布历史</>} description="切换版本只改变公开站点，草稿仍可继续编辑。" actions={canPublish && site.published_release_id && <Button className="text-(--ob-page-danger)" disabled={busy} onClick={() => setPendingAction({ type: "unpublish",expectedVersion:versionRef.current,operationId:newUUID() })}>撤回站点</Button>} />
+    <section className="mt-[44px] border-t border-border pt-7"><SiteSectionHeading title={<><History size={18} />发布历史</>} description="切换版本只改变公开站点，草稿仍可继续编辑。" actions={canPublish && site.published_release_id && <Button disabled={busy} onClick={() => setPendingAction({ type: "unpublish",expectedVersion:versionRef.current,operationId:newUUID() })} variant="destructive">撤回站点</Button>} />
       {releases.isPending ? <LoadingState label="正在加载发布记录…" compact /> : releases.isError ? null : releases.data.items.length ? <>
-        {releases.data.items.map((release) => <div className="flex items-center gap-[22px] border-b border-ob-border py-3.5 text-xs text-ob-muted-foreground [&>:last-child]:ml-auto max-[800px]:flex-wrap max-[800px]:gap-3" key={release.id}><span className="min-w-[34px] font-semibold text-ob-foreground">v{release.release_number}</span><span>{formatSavedTime(release.published_at_ms)}</span>{release.is_active ? <Tag tone="success">当前公开版本</Tag> : canPublish && <Button disabled={busy} onClick={() => setPendingAction({ type: "activate", releaseId: release.id, number: release.release_number,expectedVersion:versionRef.current,operationId:newUUID() })}><RotateCcw size={14} />切换到此版本</Button>}</div>)}
+        {releases.data.items.map((release) => <div className="flex items-center gap-[22px] border-b border-border py-3.5 text-xs text-muted-foreground [&>:last-child]:ml-auto max-[800px]:flex-wrap max-[800px]:gap-3" key={release.id}><span className="min-w-[34px] font-semibold text-foreground">v{release.release_number}</span><span>{formatSavedTime(release.published_at_ms)}</span>{release.is_active ? <Badge variant="secondary">当前公开版本</Badge> : canPublish && <Button disabled={busy} onClick={() => setPendingAction({ type: "activate", releaseId: release.id, number: release.release_number,expectedVersion:versionRef.current,operationId:newUUID() })} variant="outline"><RotateCcw size={14} />切换到此版本</Button>}</div>)}
         <SitePagination hasPrevious={releases.data.pagination.has_previous} hasNext={releases.data.pagination.has_next} onPrevious={() => setReleasePage(releasePage - 1)} onNext={() => setReleasePage(releasePage + 1)}>第 {releasePage} 页</SitePagination>
-      </> : <p className="py-[15px] text-xs text-ob-muted-foreground">第一次发布后，版本会保存在这里。</p>}
+      </> : <p className="py-[15px] text-xs text-muted-foreground">第一次发布后，版本会保存在这里。</p>}
     </section>
-    <Dialog dismissible={!busy} open={previewBundle !== null} onOpenChange={(open) => { if (!open && !busy) { setPreviewBundle(null);  } }}><SiteWideDialogContent title="确认发布站点" description="核对来源变化与冻结正文。确认后只会发布这里显示的版本。">{previewBundle && <SitePublishPreview siteId={site.id} preview={previewBundle.preview} sources={previewBundle.sources} busy={busy} onConfirm={confirmPublish} onRefresh={preparePublishPreview} onCancel={() => setPreviewBundle(null)} />}</SiteWideDialogContent></Dialog>
-    <Dialog dismissible={!busy} open={pendingAction !== null} onOpenChange={(open) => { if (!open && !busy) setPendingAction(null); }}><DialogContent title={pendingAction?.type === "unpublish" ? "确认撤回站点" : "切换公开版本"} description={pendingAction?.type === "unpublish" ? "公开链接将不再提供内容，内部文档和发布历史会保留。" : `将公开站点切换到版本 ${pendingAction?.type === "activate" ? pendingAction.number : ""}，内部草稿保持不变。`}>
-      <SiteDialogActions><Button disabled={busy} onClick={() => setPendingAction(null)}>取消</Button><Button variant="primary" disabled={busy} onClick={confirmReleaseAction}>{busy ? "处理中…" : "确认操作"}</Button></SiteDialogActions>
+    <Dialog open={previewBundle !== null} onOpenChange={(open, details) => { if (!open && busy) { details.cancel(); return; } if (!open) setPreviewBundle(null); }}><DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-4xl"><DialogHeader><DialogTitle>{"确认发布站点"}</DialogTitle><DialogDescription>{"核对来源变化与冻结正文。确认后只会发布这里显示的版本。"}</DialogDescription></DialogHeader>{previewBundle && <SitePublishPreview siteId={site.id} preview={previewBundle.preview} sources={previewBundle.sources} busy={busy} onConfirm={confirmPublish} onRefresh={preparePublishPreview} onCancel={() => setPreviewBundle(null)} />}</DialogContent></Dialog>
+    <Dialog open={pendingAction !== null} onOpenChange={(open, details) => { if (!open && busy) { details.cancel(); return; } if (!open) setPendingAction(null); }}><DialogContent><DialogHeader><DialogTitle>{pendingAction?.type === "unpublish" ? "确认撤回站点" : "切换公开版本"}</DialogTitle><DialogDescription>{pendingAction?.type === "unpublish" ? "公开链接将不再提供内容，内部文档和发布历史会保留。" : `将公开站点切换到版本 ${pendingAction?.type === "activate" ? pendingAction.number : ""}，内部草稿保持不变。`}</DialogDescription></DialogHeader>
+      <DialogFooter><Button disabled={busy} onClick={() => setPendingAction(null)} variant="outline">取消</Button><Button variant="default" disabled={busy} onClick={confirmReleaseAction}>{busy ? "处理中…" : "确认操作"}</Button></DialogFooter>
     </DialogContent></Dialog>
-    <Dialog dismissible={!busy} open={navigationBlocker.state === "blocked"} onOpenChange={(open) => { if (!open && !busy && navigationBlocker.state === "blocked") navigationBlocker.reset(); }}>
-      <DialogContent title="站点设置尚未保存" description="离开前可以保存设置、放弃本次修改，或返回继续编辑。保存设置不会发布站点。">
-        <SiteDialogActions>
-          <ActionButton disabled={busy} onClick={() => { if (navigationBlocker.state === "blocked") navigationBlocker.reset(); }}>继续编辑</ActionButton>
-          <ActionButton disabled={busy} onClick={() => { if (navigationBlocker.state === "blocked") navigationBlocker.proceed(); }}>放弃修改并离开</ActionButton>
-          <ActionButton variant="primary" isPending={busy} disabled={busy} onClick={() => void perform(async () => { await saveCurrent(); if (navigationBlocker.state === "blocked") navigationBlocker.proceed(); })}>保存并离开</ActionButton>
-        </SiteDialogActions>
+    <Dialog open={navigationBlocker.state === "blocked"} onOpenChange={(open, details) => { if (!open && busy) { details.cancel(); return; } if (!open && navigationBlocker.state === "blocked") navigationBlocker.reset(); }}>
+      <DialogContent><DialogHeader><DialogTitle>{"站点设置尚未保存"}</DialogTitle><DialogDescription>{"离开前可以保存设置、放弃本次修改，或返回继续编辑。保存设置不会发布站点。"}</DialogDescription></DialogHeader>
+        <DialogFooter>
+          <Button disabled={busy} onClick={() => { if (navigationBlocker.state === "blocked") navigationBlocker.reset(); }} variant="ghost">继续编辑</Button>
+          <Button disabled={busy} onClick={() => { if (navigationBlocker.state === "blocked") navigationBlocker.proceed(); }} variant="ghost">放弃修改并离开</Button>
+          <Button variant="default" disabled={busy} onClick={() => void perform(async () => { await saveCurrent(); if (navigationBlocker.state === "blocked") navigationBlocker.proceed(); })} aria-busy={busy || undefined}>{busy ? <Spinner aria-hidden="true" /> : null}保存并离开</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
-  </div></SiteManagementScope></PageContainer>;
+  </div></PageContainer>;
 }
 
 export function SiteEditorPage() {

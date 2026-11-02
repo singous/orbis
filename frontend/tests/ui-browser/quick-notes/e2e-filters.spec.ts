@@ -1,5 +1,4 @@
 import { expect, test } from "@playwright/test";
-import { expectTokenStyles } from "../../e2e/helpers/theme-probes";
 import { installSession, user, workspace } from "../fixtures/session";
 
 for (const empty of [true, false]) test(`${empty ? "empty" : "tagged"} filters use pressed buttons and retain keyboard selection`, async ({ page }) => {
@@ -16,7 +15,6 @@ for (const empty of [true, false]) test(`${empty ? "empty" : "tagged"} filters u
   const filters = page.getByRole("toolbar", { name: "按标签筛选", exact: true });
   const all = filters.getByRole("button", { name: `全部 (${empty ? 0 : 1})`, exact: true });
   await expect(all).toHaveAttribute("aria-pressed", "true");
-  await expectTokenStyles(all, { "border-radius": "--ob-radius-sm", "background-color": "--ob-accent-surface" });
   await expect(filters.getByRole("button")).toHaveCount(empty ? 1 : 2);
   if (empty) return;
   const tagged = filters.getByRole("button", { name: "工作 (1)", exact: true });

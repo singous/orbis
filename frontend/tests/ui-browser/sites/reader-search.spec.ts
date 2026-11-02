@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { expectVisibleKeyboardFocus } from "../fixtures/media";
 
 const releaseId = "00000000-0000-4000-8000-000000000001";
 const pages = [{ slug: "start", title: "快速开始", group: "指南", parent_slug: null, section: "指南", description: "", updated_at_ms: 1 }, { slug: "guides/install", title: "安装指南", group: "指南", parent_slug: null, section: "指南", description: "", updated_at_ms: 1 }];
@@ -29,26 +30,22 @@ for (const inner of ["light", "dark"] as const) {
     await expect(page.locator("html")).toHaveAttribute("data-theme", outer);
     await reader.evaluate((element, theme) => {
       const root = element as HTMLElement;
-      root.style.setProperty("--ob-font-sans", "Georgia, serif");
-      root.style.setProperty("--ob-reader-background", theme === "light" ? "#e8eef4" : "#14202b");
-      root.style.setProperty("--ob-reader-surface", theme === "light" ? "#e8eef4" : "#14202b");
-      root.style.setProperty("--ob-reader-text", theme === "light" ? "#17324d" : "#e6eef4");
+      root.style.setProperty("--font-sans", "Georgia, serif");
+      root.style.setProperty("--popover", theme === "light" ? "#e8eef4" : "#14202b");
+      root.style.setProperty("--popover-foreground", theme === "light" ? "#17324d" : "#e6eef4");
     }, inner);
     const trigger = page.getByRole("button", { name: "搜索文档 ⌘ K", exact: true });
     await trigger.click();
     const dialog = page.getByRole("dialog", { name: "搜索文档", exact: true });
     const input = dialog.getByRole("combobox", { name: "搜索文档" });
     await expect(input).toBeFocused();
-    const accent = await reader.locator(".site-reader-brand-mark").evaluate(element => getComputedStyle(element).backgroundColor);
-    await expect(input).toHaveCSS("outline-width", "2px");
-    await expect(input).toHaveCSS("outline-offset", "2px");
-    await expect(input).toHaveCSS("outline-color", accent);
+    await expectVisibleKeyboardFocus(input);
     expect(await dialog.evaluate(element => element.closest("[data-theme]")?.getAttribute("data-theme"))).toBe(inner);
-    expect(await dialog.evaluate(element => getComputedStyle(element).backgroundColor)).toBe(await reader.evaluate(element => getComputedStyle(element).backgroundColor));
+    await expect(dialog).toHaveCSS("background-color", inner === "light" ? "rgb(232, 238, 244)" : "rgb(20, 32, 43)");
     await expect(dialog).toHaveCSS("font-family", await reader.evaluate(element => getComputedStyle(element).fontFamily));
     await expect(input).toHaveCSS("font-family", await reader.evaluate(element => getComputedStyle(element).fontFamily));
-    await expect(dialog).toHaveCSS("color", await reader.evaluate(element => getComputedStyle(element).color));
-    await reader.evaluate(element => { (element as HTMLElement).style.setProperty("--ob-font-sans", "monospace"); });
+    await expect(dialog).toHaveCSS("color", inner === "light" ? "rgb(23, 50, 77)" : "rgb(230, 238, 244)");
+    await reader.evaluate(element => { (element as HTMLElement).style.setProperty("--font-sans", "monospace"); });
     await expect(dialog).toHaveCSS("font-family", await reader.evaluate(element => getComputedStyle(element).fontFamily));
     await input.dispatchEvent("compositionstart", { data: "安" });
     await input.fill("安装");
@@ -68,7 +65,7 @@ for (const inner of ["light", "dark"] as const) {
     await page.keyboard.press("Escape");
     await expect(dialog).toHaveCount(0);
     await expect(trigger).toBeFocused();
-    await expect(trigger).toHaveCSS("outline-color", accent);
+    await expectVisibleKeyboardFocus(trigger);
     await trigger.click();
     await input.fill("安装");
     await expect(dialog.getByRole("option", { name: /安装指南/ })).toBeVisible();

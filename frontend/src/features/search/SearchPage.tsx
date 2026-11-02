@@ -7,7 +7,7 @@ import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { Button } from "@orbis/ui/button";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { PageContainer } from "../../shared/ui/PageContainer";
-import { Select } from "@orbis/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@orbis/ui/select";
 
 import { Input } from "@orbis/ui/input";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
@@ -56,37 +56,37 @@ export function SearchPage() {
   return <WorkspaceShell><PageContainer title="全局搜索" description="搜索有权访问的文档、评论、笔记本、分组与文件。">
     <form className="grid gap-4 mb-6" role="search" aria-label="内容搜索" onSubmit={(event) => { event.preventDefault(); if (!composing) updateFilters({ q: input }); }}>
       <div className="flex flex-wrap items-end gap-3">
-        <label className="grid min-w-0 flex-[1_1_16rem] gap-1.5 text-sm font-medium text-ob-foreground">搜索内容<Input id={GLOBAL_SEARCH_INPUT_ID} type="search" autoFocus maxLength={SEARCH_MAX_LENGTH} placeholder="搜索标题、正文、评论或文件名…" value={input} onChange={(event) => { inputDirty.current = true; setInput(event.target.value); }} onCompositionStart={() => setComposing(true)} onCompositionEnd={(event) => { inputDirty.current = true; setInput(event.currentTarget.value); setComposing(false); }} /></label>
-        <Button type="submit" variant="primary">搜索</Button>
+        <label className="grid min-w-0 flex-[1_1_16rem] gap-1.5 text-sm font-medium text-foreground">搜索内容<Input id={GLOBAL_SEARCH_INPUT_ID} type="search" autoFocus maxLength={SEARCH_MAX_LENGTH} placeholder="搜索标题、正文、评论或文件名…" value={input} onChange={(event) => { inputDirty.current = true; setInput(event.target.value); }} onCompositionStart={() => setComposing(true)} onCompositionEnd={(event) => { inputDirty.current = true; setInput(event.currentTarget.value); setComposing(false); }} /></label>
+        <Button type="submit" variant="default">搜索</Button>
         {input ? <Button variant="ghost" onClick={() => { setInput(""); setComposing(false); updateFilters({ q: "" }); }}>清空搜索</Button> : null}
       </div>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <Select<SearchFilters["type"]> label="内容类型" value={filters.type} options={SEARCH_TYPE_OPTIONS} onValueChange={type => { if (type !== null) updateFilters({ type }); }} />
-        <Select<SearchFilters["status"]> label="内容状态" value={filters.status} options={SEARCH_STATUS_OPTIONS} onValueChange={status => { if (status !== null) updateFilters({ status }); }} />
+        <div className="grid gap-2"><label htmlFor="search-content-type" className="text-sm font-medium">内容类型</label><Select<SearchFilters["type"]> items={SEARCH_TYPE_OPTIONS} value={filters.type} onValueChange={type => { if (type !== null) updateFilters({ type }); }}><SelectTrigger id="search-content-type" className="w-full"><SelectValue /></SelectTrigger><SelectContent role="region" aria-label="内容类型选项">{SEARCH_TYPE_OPTIONS.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></div>
+        <div className="grid gap-2"><label htmlFor="search-content-status" className="text-sm font-medium">内容状态</label><Select<SearchFilters["status"]> items={SEARCH_STATUS_OPTIONS} value={filters.status} onValueChange={status => { if (status !== null) updateFilters({ status }); }}><SelectTrigger id="search-content-status" className="w-full"><SelectValue /></SelectTrigger><SelectContent role="region" aria-label="内容状态选项">{SEARCH_STATUS_OPTIONS.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></div>
       </div>
-      <p className="text-xs leading-[18px] text-ob-muted-foreground">文件与附件支持名称和已有元数据检索。</p>
+      <p className="text-xs leading-[18px] text-muted-foreground">文件与附件支持名称和已有元数据检索。</p>
     </form>
 
-    {!filters.q.trim() && !pendingInput ? <p className="py-6 text-sm text-ob-muted-foreground">输入关键词，查找文档、评论或文件。</p> : null}
+    {!filters.q.trim() && !pendingInput ? <p className="py-6 text-sm text-muted-foreground">输入关键词，查找文档、评论或文件。</p> : null}
     {loading ? <LoadingState label="正在搜索…" /> : null}
     {!loading && !pendingInput && !error && filters.q.trim() && data ? <>
       <p className="text-sm" role="status">找到 {data.pagination.total} 条结果</p>
-      {!data.items.length ? <p className="py-6 text-sm text-ob-muted-foreground">没有匹配的内容。试试其他关键词。</p> : <ul className="my-4 list-none p-0">
+      {!data.items.length ? <p className="py-6 text-sm text-muted-foreground">没有匹配的内容。试试其他关键词。</p> : <ul className="my-4 list-none p-0">
         {data.items.map(result => {
           const Icon = SEARCH_RESULT_ICONS[result.type];
-          return <li key={`${result.type}:${result.id}`}><Link className="flex gap-3 rounded-ob-lg border-b border-ob-border p-4 text-ob-foreground hover:bg-ob-accent ob-focus-ring" to={resultHref(result)}>
+          return <li key={`${result.type}:${result.id}`}><Link className="flex gap-3 rounded-lg border-b border-border p-4 text-foreground hover:bg-accent focus-ring" to={resultHref(result)}>
             <Icon aria-hidden="true" className="mt-0.5 flex-none" size={20} />
-            <div className="min-w-0 flex-1"><div className="flex flex-wrap items-baseline gap-3"><h2 className="m-0 text-base font-semibold wrap-anywhere">{result.title || "未命名内容"}</h2><span className="text-xs leading-[18px] text-ob-muted-foreground">{SEARCH_TYPE_LABELS[result.type]}{result.status === "archived" ? " · 已归档" : ""}</span></div>
-              <p className="my-1 text-xs leading-[18px] text-ob-muted-foreground wrap-anywhere">{result.location}</p>
+            <div className="min-w-0 flex-1"><div className="flex flex-wrap items-baseline gap-3"><h2 className="m-0 text-base font-semibold wrap-anywhere">{result.title || "未命名内容"}</h2><span className="text-xs leading-[18px] text-muted-foreground">{SEARCH_TYPE_LABELS[result.type]}{result.status === "archived" ? " · 已归档" : ""}</span></div>
+              <p className="my-1 text-xs leading-[18px] text-muted-foreground wrap-anywhere">{result.location}</p>
               <p className="mt-2 text-sm wrap-anywhere">{result.match === "comment" ? "评论：" : ""}{result.snippet || "无摘要"}</p>
             </div>
           </Link></li>;
         })}
       </ul>}
       {data.pagination.total_pages > 1 ? <nav className="flex flex-wrap items-center justify-center gap-4 text-sm" aria-label="搜索结果分页">
-        <Button disabled={!data.pagination.has_previous || results.isFetching} onClick={() => updateFilters({ page: filters.page - 1 })}>上一页</Button>
+        <Button disabled={!data.pagination.has_previous || results.isFetching} onClick={() => updateFilters({ page: filters.page - 1 })} variant="default">上一页</Button>
         <span>第 {data.pagination.page} / {data.pagination.total_pages} 页</span>
-        <Button disabled={!data.pagination.has_next || results.isFetching} onClick={() => updateFilters({ page: filters.page + 1 })}>下一页</Button>
+        <Button disabled={!data.pagination.has_next || results.isFetching} onClick={() => updateFilters({ page: filters.page + 1 })} variant="default">下一页</Button>
       </nav> : null}
     </> : null}
   </PageContainer></WorkspaceShell>;

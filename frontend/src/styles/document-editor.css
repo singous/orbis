@@ -1,5 +1,5 @@
 .orbis-tiptap .doc-editor-block { position: relative; width: 100%; min-width: 0; margin: 24px 0; color: var(--reading-text); }
-.orbis-tiptap .doc-editor-heading { display: flex; align-items: center; gap: 7px; color: var(--reading-muted); font-size: var(--ob-text-caption-size); line-height: 1.6; margin-bottom: 7px; }
+.orbis-tiptap .doc-editor-heading { display: flex; align-items: center; gap: 7px; color: var(--reading-muted); font-size: var(--text-xs); line-height: 1.6; margin-bottom: 7px; }
 .orbis-tiptap .doc-editor-heading svg { color: var(--reading-accent); }
 .orbis-tiptap .doc-editor-title { display: block; margin: 0 0 8px; font-size: var(--ob-prose-h3-size); font-weight: 650; line-height: 1.5; }
 .orbis-tiptap .doc-editor-content { min-width: 0; }

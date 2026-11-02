@@ -1,4 +1,3 @@
-import { readerFocus, readerTouchTarget } from "./chrome";
 import { LoadingState } from "../../../shared/ui/LoadingState";
 import { Button } from "@orbis/ui/button";
 import { Dialog, DialogClose } from "@orbis/ui/dialog";
@@ -75,11 +74,11 @@ export function SearchDialog({ open = true, pages, basePath, close, loadPages, f
           else if (event.key === "ArrowUp") { event.preventDefault(); event.stopPropagation(); setActiveIndex(index => results.length ? (index - 1 + results.length) % results.length : 0); }
           else if (event.key === "Enter") { event.preventDefault(); event.stopPropagation(); choose(activeIndex); }
         }}>
-        <DialogClose asChild><Button appearance="unstyled" type="button" className={`absolute inset-y-0 end-3 my-auto grid size-[30px] cursor-pointer place-items-center border-0 border-current bg-transparent p-0 text-(--ob-reader-muted) hover:bg-(--ob-reader-surface-soft) ${readerFocus} ${readerTouchTarget}`} aria-label="关闭搜索"><X aria-hidden="true" size={18} /></Button></DialogClose>
+        <DialogClose render={<Button type="button" className="absolute inset-y-0 end-3 my-auto" size="icon-sm" aria-label="关闭搜索" variant="ghost" />}><X aria-hidden="true" size={18} /></DialogClose>
       </CommandInput>
       <CommandList id="site-reader-search-results" aria-label="搜索结果">
         {/* Search options retain active-descendant focus on the combobox input. */}
-        {loading ? <LoadingState label="正在加载搜索索引…" compact /> : current?.error ? null : !query.trim() ? <CommandMessage kind="prompt" description="输入关键词搜索当前发布版本" detail="仅显示读者可见的文档" /> : results.length ? results.map((result, index) => <CommandResult key={result.page.slug} selected={activeIndex === index} icon={FileText} title={<Highlight text={result.page.title} query={query} />} path={result.path} excerpt={<Highlight text={result.excerpt} query={query} />} element={<Button appearance="unstyled" id={`site-search-${index}`} type="button" aria-label={`${result.page.title} ${result.path} ${result.excerpt}`} onMouseMove={() => setActiveIndex(index)} onClick={() => choose(index)} />} />) : <CommandMessage kind="empty" title="没有找到相关内容" description="请尝试更短的关键词或浏览左侧目录。" />}
+        {loading ? <LoadingState label="正在加载搜索索引…" compact /> : current?.error ? null : !query.trim() ? <CommandMessage kind="prompt" description="输入关键词搜索当前发布版本" detail="仅显示读者可见的文档" /> : results.length ? results.map((result, index) => <CommandResult key={result.page.slug} selected={activeIndex === index} icon={FileText} title={<Highlight text={result.page.title} query={query} />} path={result.path} excerpt={<Highlight text={result.excerpt} query={query} />} element={<Button id={`site-search-${index}`} type="button" aria-label={`${result.page.title} ${result.path} ${result.excerpt}`} onMouseMove={() => setActiveIndex(index)} onClick={() => choose(index)} variant="ghost" />} />) : <CommandMessage kind="empty" title="没有找到相关内容" description="请尝试更短的关键词或浏览左侧目录。" />}
       </CommandList>
       <CommandFooter />
     </CommandPopup>

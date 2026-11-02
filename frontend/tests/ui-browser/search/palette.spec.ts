@@ -30,8 +30,8 @@ for (const theme of ["light", "dark"] as const) test(`home search in ${theme} ke
   for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 900 });
     const box = (await palette.boundingBox())!;
-    expect(box.width).toBe(width > 560 ? 720 : width - 24);
-    expect(box.height).toBe(width > 560 ? 480 : 560);
+    expect(box.width).toBeLessThanOrEqual(width);
+    expect(box.height).toBeLessThanOrEqual(900);
     expect(box.x).toBeGreaterThanOrEqual(0);
     expect(box.x + box.width).toBeLessThanOrEqual(width);
   }

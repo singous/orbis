@@ -1,7 +1,70 @@
 import ts from "typescript";
 import path from "node:path";
 
-const geometryTokens = new Set(["var(--available-width)", "var(--available-height)", "var(--anchor-width)", "var(--anchor-height)", "var(--transform-origin)"]);
+const geometryTokens = new Set(["available-width", "available-height", "anchor-width", "anchor-height", "transform-origin"]);
+const standardThemeTokens = new Set([
+  "background", "foreground", "card", "card-foreground", "popover", "popover-foreground", "primary", "primary-foreground",
+  "secondary", "secondary-foreground", "muted", "muted-foreground", "accent", "accent-foreground", "destructive",
+  "border", "input", "ring", "radius", "radius-sm", "radius-md", "radius-lg", "radius-xl", "radius-2xl", "radius-3xl", "radius-4xl",
+  "font-sans", "font-heading", "font-mono", "spacing", "ease-out",
+  "chart-1", "chart-2", "chart-3", "chart-4", "chart-5", "sidebar", "sidebar-foreground", "sidebar-primary", "sidebar-primary-foreground",
+  "sidebar-accent", "sidebar-accent-foreground", "sidebar-border", "sidebar-ring",
+]);
+const applicationRoleTokens = new Set([
+  "status-success", "status-success-background", "status-success-foreground", "status-warning", "status-warning-background", "status-warning-foreground",
+  "destructive-soft", "shadow-color",
+]);
+const brandSourceTokens = new Set(["color-green-300", "color-green-400", "color-green-600", "color-green-800", "color-amber-300", "color-amber-400", "color-amber-500", "color-amber-800", "text-xs", "text-sm"]);
+const retiredUIPaths = new Set(["Button", "ActionButton", "IconButton", "TextInput", "SelectField", "Tag", "Dialog", "Tooltip"].map(name => `src/shared/ui/${name}`));
+const nativeUIComponents = new Set(["button", "input", "textarea", "dialog", "select", "avatar", "badge", "spinner", "skeleton", "dropdown-menu", "popover", "tooltip", "radio-group", "tabs", "checkbox", "toggle", "sheet", "toast"]);
+const retiredNativeProps = {
+  Button: ["loading", "appearance", "isPending", "isDisabled", "onPress", "icon"],
+  Select: ["label", "options", "description", "density", "wrapperClassName", "placeholder"],
+  Badge: ["tone"],
+  Dialog: ["dismissible", "dismissOnOutsidePress"],
+  DialogContent: ["description", "portalContainer", "backdropClassName", "viewportClassName"],
+  Tooltip: ["delayMs"],
+  Spinner: ["size"],
+  Skeleton: ["animationType"],
+};
+
+const modulePath = value => value.replace(/\.[cm]?[jt]sx?$/, "").replace(/\/index$/, "");
+
+function hasOwnedToken(token, text) {
+  const name = /^var\(--([\w-]+)/.exec(token)?.[1];
+  return name && (geometryTokens.has(name) || standardThemeTokens.has(name) || applicationRoleTokens.has(name) || name.startsWith("toast-") || new RegExp(`--${name}\\s*:`).test(text));
+}
+
+function inspectNativeProps(file, source, add) {
+  const imports = source.statements.filter(node => ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier) && node.moduleSpecifier.text.startsWith("@orbis/ui/") && nativeUIComponents.has(node.moduleSpecifier.text.slice("@orbis/ui/".length)));
+  if (!imports.length) return;
+  // 只绑定当前文件的导入符号；不解析依赖或分析业务类型，避免误报同名的局部组件。
+  const host = { ...ts.createCompilerHost({}), getCurrentDirectory: () => "", getSourceFile: name => name === file ? source : undefined, fileExists: name => name === file, readFile: name => name === file ? source.text : undefined };
+  const checker = ts.createProgram([file], { noLib: true, noResolve: true, types: [] }, host).getTypeChecker();
+  const bindings = new Map();
+  for (const node of imports) {
+    const names = node.importClause?.namedBindings;
+    if (names && ts.isNamedImports(names)) for (const item of names.elements) bindings.set(checker.getSymbolAtLocation(item.name), item.propertyName?.text ?? item.name.text);
+    if (names && ts.isNamespaceImport(names)) bindings.set(checker.getSymbolAtLocation(names.name), "*");
+  }
+  function visit(node) {
+    if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
+      const tag = node.tagName;
+      const component = ts.isIdentifier(tag) ? bindings.get(checker.getSymbolAtLocation(tag)) : ts.isPropertyAccessExpression(tag) && bindings.get(checker.getSymbolAtLocation(tag.expression)) === "*" ? tag.name.text : undefined;
+      if (component && component !== "*") for (const attribute of node.attributes.properties) {
+        if (!ts.isJsxAttribute(attribute)) continue;
+        const name = attribute.name.getText(source);
+        if (name === "asChild" || retiredNativeProps[component]?.includes(name)) add(file, "retired-native-prop", `${component}.${name}`);
+        if (component === "Button" && attribute.initializer && ts.isStringLiteral(attribute.initializer)) {
+          const value = attribute.initializer.text;
+          if ((name === "variant" && ["primary", "danger"].includes(value)) || (name === "size" && value === "md")) add(file, "retired-native-prop", `Button.${name}=${value}`);
+        }
+      }
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(source);
+}
 
 export const isProduction = file => !/(?:\.(?:test|spec|stories)\.[cm]?[jt]sx?$|(?:^|\/)(?:__tests__|tests)\/)/.test(file);
 
@@ -10,19 +73,20 @@ export function analyzeUI(sources, exports) {
   const consumers = new Set();
   const add = (file, rule, detail) => findings.push({ file, rule, detail });
   for (const [file, text] of sources) {
+    if (retiredUIPaths.has(modulePath(file))) add(file, "legacy-ui-definition", modulePath(file));
     if (!isProduction(file)) continue;
     const inPackage = file.startsWith("packages/ui/src/");
     if (/packages\/ui\/src\/index\.tsx?$/.test(file)) add(file, "root-barrel", "Use public component subpaths");
     if (file.endsWith(".css")) {
       const stylesheet = text.replace(/\/\*[\s\S]*?\*\//g, "");
-      for (const match of stylesheet.matchAll(/@import\s+(?:url\(\s*(?:"([^"]+)"|'([^']+)'|([^\s)]+))\s*\)|"([^"]+)"|'([^']+)')/g)) {
-        const name = match.slice(1).find(Boolean);
+      for (const name of globalCSSImports(stylesheet)) {
         if (name.startsWith("@heroui/")) add(file, "legacy-heroui", name);
+        add(file, "css-import", name);
       }
       if (!["packages/ui/src/styles/tokens.css", "src/styles/brand-tokens.css"].includes(file)) {
         for (const match of text.matchAll(/#[\da-f]{3,8}\b|\b(?:rgb|rgba|hsl|hsla|oklch)\([^)]*\)/gi)) add(file, "raw-color", match[0]);
       }
-      if (inPackage) for (const match of text.matchAll(/var\(--(?!ob-)[\w-]+\)/g)) if (!geometryTokens.has(match[0])) add(file, "foreign-token", match[0]);
+      if (inPackage) for (const match of text.matchAll(/var\(--(?!ob-)[\w-]+\)?/g)) if (!hasOwnedToken(match[0], text)) add(file, "foreign-token", match[0]);
       continue;
     }
     const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true);
@@ -34,11 +98,12 @@ export function analyzeUI(sources, exports) {
       if (specifier && ts.isStringLiteral(specifier)) {
         const name = specifier.text;
         const resolved = name.startsWith(".") ? path.posix.normalize(path.posix.join(path.posix.dirname(file), name)) : name.startsWith("@/") ? `src/${name.slice(2)}` : name;
+        if (retiredUIPaths.has(modulePath(resolved))) add(file, "legacy-ui-import", name);
         if (name.startsWith("@heroui/")) add(file, "legacy-heroui", name);
         if (/^(?:@radix-ui\/|radix-ui(?:\/|$)|sonner(?:\/|$)|cmdk(?:\/|$))/.test(name)) add(file, "foreign-primitive", name);
         if (name === "react-colorful" && file !== "packages/ui/src/color-picker/index.tsx") add(file, "primitive-boundary", name);
         if (name.startsWith("@base-ui/") && !/^packages\/ui\/src\/[^/]+\/index\.tsx$/.test(file)) add(file, "primitive-boundary", name);
-        if (name === "lucide-react" && !["src/shared/ui/icons.tsx", "packages/ui/src/icons/index.tsx"].includes(file)) add(file, "icon-boundary", name);
+        if (name === "lucide-react" && !inPackage && file !== "src/shared/ui/icons.tsx") add(file, "icon-boundary", name);
         if (inPackage && (/^(?:src\/|@\/|react-router|@tanstack\/react-query|zustand)/.test(resolved))) add(file, "package-boundary", name);
         if (!inPackage && (resolved.startsWith("packages/ui/") || name.startsWith("@orbis-ui-src/"))) add(file, "private-import", name);
         if (name === "@orbis/ui" || name.startsWith("@orbis/ui/")) {
@@ -52,8 +117,9 @@ export function analyzeUI(sources, exports) {
       ts.forEachChild(node, inspect);
     }
     inspect(source);
+    inspectNativeProps(file, source, add);
     for (const match of text.matchAll(/#[\da-f]{3,8}\b|\b(?:rgb|rgba|hsl|hsla|oklch)\([^)]*\)/gi)) add(file, "raw-color", match[0]);
-    if (inPackage) for (const match of text.matchAll(/var\(--(?!ob-)[\w-]+\)/g)) if (!geometryTokens.has(match[0])) add(file, "foreign-token", match[0]);
+    if (inPackage) for (const match of text.matchAll(/var\(--(?!ob-)[\w-]+\)?/g)) if (!hasOwnedToken(match[0], text)) add(file, "foreign-token", match[0]);
   }
   if (Object.hasOwn(exports, ".")) add("packages/ui/package.json", "root-barrel", ".");
   for (const file of sources.keys()) {
@@ -120,6 +186,10 @@ const globalStyleFiles = {
   tokens: "src/styles/brand-tokens.css",
 };
 const globalStyleImports = ["tailwindcss", "@fontsource-variable/inter", "@orbis/ui/styles.css", "./brand-tokens.css", "./motion.css", "./scrollbars.css"];
+const packageStyleImports = {
+  "packages/ui/src/styles/styles.css": ["./tokens.css", "./utilities.css", "../color-picker/styles.css"],
+  "packages/ui/src/styles/tokens.css": ["tw-animate-css", "shadcn/tailwind.css", "@fontsource-variable/geist"],
+};
 const globalStyleSources = ["../../packages/ui/src", "not ../../packages/ui/src/**/*.stories.tsx", "not ../../packages/ui/src/**/__tests__/**"];
 const scrollbarRoot = ":where(html, body, body *)";
 const scrollbarNone = ':where([data-scrollbar="none"], [data-scrollbar="none"] *, .scrollbar-none)';
@@ -129,9 +199,12 @@ const globalStyleRules = {
     ["", [":root"], ["font-family", "font-size"]],
     ["", ["*"], ["box-sizing"]],
     ["", ["body"], ["margin", "min-width", "background", "color", "font-size", "-webkit-font-smoothing", "line-height"]],
+    ["", ['[data-slot="toast-viewport"]'], ["z-index"]],
+    ["", [":where(button, input, textarea, a[href], [tabindex]):focus-visible"], ["outline", "outline-offset"]],
+    ["@media (forced-colors: active)", [":where(button, input, textarea, a[href], [tabindex]):focus-visible"], ["outline-color"]],
     ["", ["::selection"], ["background"]],
     ["@layer base", ["*", "::before", "::after", "::backdrop", "::file-selector-button"], ["border-color"]],
-    ["@media (prefers-reduced-motion: reduce)", ["*", "*::before", "*::after"], ["scroll-behavior", "transition-duration", "animation-duration", "animation-iteration-count"]],
+    ["@media (prefers-reduced-motion: reduce)", ["*", "*::before", "*::after"], ["scroll-behavior", "transition-property", "transition-duration", "animation-name", "animation-duration", "animation-iteration-count"]],
     ["@media (pointer: coarse)", [":is(input, textarea):not(.editor-title)"], ["font-size"]],
   ],
   scrollbars: [
@@ -199,7 +272,6 @@ export function applyGlobalStylesPolicy(findings, sources) {
   const entries = findings.filter(item => item.rule === "css-import" && item.file === entry.file && item.detail === entry.detail);
   if (entries.length !== 1) add(entry.file, "global-style-entry", `${entry.detail}: expected 1 import, found ${entries.length}`);
   const edges = findings.filter(item => item.rule === "css-import").map(({ file, detail }) => ({ file, detail }));
-  for (const [file, stylesheet] of sources) if (file.endsWith(".css")) for (const detail of globalCSSImports(stylesheet)) edges.push({ file, detail });
   for (const { file, detail } of edges) {
     const target = detail.startsWith(".") ? path.posix.normalize(path.posix.join(path.posix.dirname(file), detail)) : detail.startsWith("@/") ? `src/${detail.slice(2)}` : detail;
     if (!Object.values(globalStyleFiles).includes(target)) continue;
@@ -210,7 +282,10 @@ export function applyGlobalStylesPolicy(findings, sources) {
     const stylesheet = sources.get(file);
     if (stylesheet === undefined) { add(file, "global-style-missing", "Required global stylesheet is missing"); continue; }
     const root = globalCSSBlocks(stylesheet);
-    for (const match of stripGlobalCSSComments(stylesheet).matchAll(/var\(--(?!ob-)[\w-]+/g)) add(file, "global-style-token", match[0]);
+    for (const match of stripGlobalCSSComments(stylesheet).matchAll(/var\(--(?!ob-)([\w-]+)/g)) {
+      const name = match[1];
+      if (!standardThemeTokens.has(name) && !applicationRoleTokens.has(name) && !(kind === "tokens" && brandSourceTokens.has(name))) add(file, "global-style-token", match[0]);
+    }
     if (kind === "globals") {
       const imports = globalCSSImports(stylesheet);
       for (const detail of new Set([...globalStyleImports, ...imports])) {
@@ -239,8 +314,10 @@ export function applyGlobalStylesPolicy(findings, sources) {
           const keyframes = kind === "motion" && context === "@theme" && /^@keyframes [\w-]+$/.test(header);
           if (!wrapper && !keyframes) { add(file, "global-style-rule", rule.header); continue; }
           for (const declaration of rule.declarations) {
-            const allowed = kind === "motion" && header === "@theme" ? /^--animate-ob-[\w-]+\s*:/ : kind === "tokens" && header === "@theme inline" ? /^--(?:color|shadow)-ob-[\w-]+\s*:/ : null;
-            if (!allowed?.test(declaration)) add(file, "global-style-declaration", declaration);
+            const property = declaration.slice(0, declaration.indexOf(":")).trim();
+            const name = property.replace(/^--color-/, "");
+            const allowed = kind === "motion" && header === "@theme" ? /^--animate-ob-[\w-]+$/.test(property) : kind === "tokens" && header === "@theme inline" && (/^--(?:color|shadow)-ob-[\w-]+$/.test(property) || (property.startsWith("--color-") && (standardThemeTokens.has(name) || applicationRoleTokens.has(name))));
+            if (!allowed) add(file, "global-style-declaration", declaration);
           }
           visit(rule, header);
           continue;
@@ -251,7 +328,7 @@ export function applyGlobalStylesPolicy(findings, sources) {
           if (!allowed && !frame && kind !== "tokens") add(file, "global-style-selector", selector);
           for (const declaration of rule.declarations) {
             const property = declaration.slice(0, declaration.indexOf(":")).trim();
-            if (kind === "tokens" ? !/^--ob-[\w-]+$/.test(property) : frame ? !["opacity", "transform"].includes(property) : allowed && !allowed.includes(property)) add(file, "global-style-property", `${selector}: ${property}`);
+            if (kind === "tokens" ? !(/^--ob-[\w-]+$/.test(property) || standardThemeTokens.has(property.slice(2)) || applicationRoleTokens.has(property.slice(2))) : frame ? !["opacity", "transform"].includes(property) : allowed && !allowed.includes(property)) add(file, "global-style-property", `${selector}: ${property}`);
           }
         }
         if (rule.rules.length) { add(file, "global-style-rule", `${rule.header}: nested rules are not admitted`); }
@@ -259,10 +336,14 @@ export function applyGlobalStylesPolicy(findings, sources) {
     }
     visit(root);
   }
-  let admittedEntry = false;
+  const admittedImports = new Map([[JSON.stringify([entry.file, entry.detail]), 1]]);
+  for (const [file, imports] of Object.entries({ [globalStyleFiles.globals]: globalStyleImports, ...packageStyleImports })) for (const detail of imports) admittedImports.set(JSON.stringify([file, detail]), 1);
   return [...findings.filter(item => {
-    if (item.rule !== "css-import" || item.file !== entry.file || item.detail !== entry.detail || admittedEntry) return true;
-    admittedEntry = true;
+    if (item.rule !== "css-import") return true;
+    const key = JSON.stringify([item.file, item.detail]);
+    const allowed = admittedImports.get(key) ?? 0;
+    if (!allowed) return true;
+    admittedImports.set(key, allowed - 1);
     return false;
   }), ...violations];
 }

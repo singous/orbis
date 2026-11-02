@@ -714,6 +714,7 @@ export function BoardCanvas(props: Props) {
             fontSize: editing.style.font_size * props.camera.zoom,
           }}
           onKeyDown={(event) => {
+            if (event.key === "F6") return;
             event.stopPropagation();
             if (event.nativeEvent.isComposing) return;
             if (event.key === "Escape") {

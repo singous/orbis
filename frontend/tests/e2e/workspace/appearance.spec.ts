@@ -62,7 +62,8 @@ for (const surface of ["web", "desktop"] as const) for (const width of [1440, 39
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     await page.mouse.move(0, 0);
     const email = page.getByLabel("邮箱", { exact: true });
-    await expectTokenStyles(email, { "background-color": "--ob-auth-input-background" });
+    await expectTokenStyles(email, { color: "--foreground" });
+    await expect(email).toHaveCSS("font-family", /Geist Variable/);
   });
 }
 

@@ -12,7 +12,7 @@ for (const theme of ["light", "dark"] as const) for (const width of [1280, 390])
       await page.goto("/login");
       await expect(page.getByLabel("邮箱", { exact: true })).toBeVisible();
       await page.evaluate(() => document.fonts.ready);
-      await expect(page).toHaveScreenshot(`authentication-${theme}-${width}.png`);
+      await expect.soft(page).toHaveScreenshot(`authentication-${theme}-${width}.png`);
     });
 
     test("workspace profile and user menu", async ({ page }) => {
@@ -25,11 +25,11 @@ for (const theme of ["light", "dark"] as const) for (const width of [1280, 390])
       await page.goto("/settings/account");
       await expect(page.getByLabel("名称", { exact: true })).toHaveValue(user.display_name!);
       await page.evaluate(() => document.fonts.ready);
-      await expect(page).toHaveScreenshot(`profile-${theme}-${width}.png`);
+      await expect.soft(page).toHaveScreenshot(`profile-${theme}-${width}.png`);
       if (width < 768) await page.getByRole("button", { name: "打开主导航", exact: true }).click();
       await page.getByRole("button", { name: "打开用户菜单", exact: true }).click();
       await expect(page.getByRole("menu", { name: "用户操作", exact: true })).toBeVisible();
-      await expect(page).toHaveScreenshot(`user-menu-${theme}-${width}.png`);
+      await expect.soft(page).toHaveScreenshot(`user-menu-${theme}-${width}.png`);
     });
 
     test("nested dialog and select", async ({ page }) => {
@@ -37,14 +37,14 @@ for (const theme of ["light", "dark"] as const) for (const width of [1280, 390])
       const section = page.locator(`section[data-theme="${theme}"]`);
       await expect(section.getByRole("button", { name: "编辑分组" })).toBeVisible();
       await page.evaluate(() => document.fonts.ready);
-      await expect(section).toHaveScreenshot(`form-${theme}-${width}.png`);
+      await expect.soft(section).toHaveScreenshot(`form-${theme}-${width}.png`);
       await section.getByRole("button", { name: "编辑分组" }).click();
       const dialog = page.getByRole("dialog", { name: "编辑分组", exact: true });
       await expect(dialog).toBeVisible();
-      await expect(page).toHaveScreenshot(`dialog-${theme}-${width}.png`);
+      await expect.soft(page).toHaveScreenshot(`dialog-${theme}-${width}.png`);
       await dialog.getByRole("combobox", { name: "分组方式", exact: true }).click();
       await expect(page.getByRole("option", { name: "按名称", exact: true })).toBeVisible();
-      await expect(page).toHaveScreenshot(`select-${theme}-${width}.png`);
+      await expect.soft(page).toHaveScreenshot(`select-${theme}-${width}.png`);
     });
   });
 }

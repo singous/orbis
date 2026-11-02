@@ -214,14 +214,14 @@ describe("WorkspaceShell (desktop surface)", () => {
 
     expect(window.localStorage.getItem("orbis.sidebarCollapsed")).toBeNull();
     expect(screen.queryByRole("navigation", { name: "文档导航" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "展开侧栏" })).toHaveFocus();
+    await waitFor(() => expect(screen.getByRole("button", { name: "展开侧栏" })).toHaveFocus());
     const rail = screen.getByRole("navigation", { name: "业务板块" });
     expect(within(rail).getByRole("link", { name: "在线文档" })).toHaveAttribute("href", "/documents");
     expect(within(screen.getByRole("complementary", { name: "应用导航" })).getByRole("button", { name: "搜索" })).toHaveAttribute("aria-haspopup", "dialog");
 
     await actor.click(screen.getByRole("button", { name: "展开侧栏" }));
     expect(screen.getByRole("navigation", { name: "文档导航" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "收起侧栏" })).toHaveFocus();
+    await waitFor(() => expect(screen.getByRole("button", { name: "收起侧栏" })).toHaveFocus());
     expect(window.localStorage.getItem("orbis.sidebarCollapsed")).not.toBe("1");
   });
 

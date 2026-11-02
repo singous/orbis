@@ -30,7 +30,7 @@ beforeEach(() => {
 afterEach(() => { cleanup(); authStore.getState().clearSession(); vi.restoreAllMocks(); });
 const shell = (config: WorkspaceSidebarConfig) => <MemoryRouter initialEntries={["/collections/notebook"]}><WorkspaceShell sidebar={config}>笔记本首页</WorkspaceShell></MemoryRouter>;
 
-it("retains the tree while collapsed and supports public keyboard resizing", () => {
+it("retains the tree while collapsed and supports public keyboard resizing", async () => {
   render(shell(createNotebookSidebar("notebook")));
   const resize = screen.getByRole("separator", { name: "调整笔记本目录宽度" });
   expect(screen.getByRole("link", { name: "当前笔记本" })).toHaveAttribute("href", "/collections/notebook");
@@ -40,7 +40,7 @@ it("retains the tree while collapsed and supports public keyboard resizing", () 
   fireEvent.click(screen.getByRole("button", { name: "收起笔记本目录" }));
   expect(screen.queryByRole("navigation", { name: "测试目录" })).toBeNull();
   expect(screen.getByRole("navigation", { name: "测试目录", hidden: true })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "展开笔记本目录" })).toHaveFocus();
+  await waitFor(() => expect(screen.getByRole("button", { name: "展开笔记本目录" })).toHaveFocus());
   fireEvent.click(screen.getByRole("button", { name: "展开笔记本目录" }));
   expect(resize).not.toBeInTheDocument();
   expect(screen.getByRole("separator", { name: "调整笔记本目录宽度" })).toHaveAttribute("aria-valuenow", "248");

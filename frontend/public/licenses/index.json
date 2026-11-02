@@ -10,6 +10,30 @@
       "sha256": "3b0a5fca3d17942cde889069889dedbbbd075e9b599968c82a95f4d944e9b345"
     },
     {
+      "name": "@fontsource-variable/geist",
+      "version": "5.3.0",
+      "license": "OFL-1.1",
+      "use": "Native shadcn application font, unchanged",
+      "file": "geist-OFL-1.1.txt",
+      "sha256": "71609cbb5c78b5870d712eab73a31d76622635c6ed034ab5cee3b9ecbda8685f"
+    },
+    {
+      "name": "tw-animate-css",
+      "version": "1.4.0",
+      "license": "MIT",
+      "use": "Native shadcn CSS animations",
+      "file": "tw-animate-MIT.txt",
+      "sha256": "039184dfa0a822397b3f45a435b5b1e538721587fbade96b9fa80f86cb354109"
+    },
+    {
+      "name": "shadcn",
+      "version": "4.23.0",
+      "license": "MIT",
+      "use": "Native shadcn tailwind.css helpers; CLI dependencies remain build-only",
+      "file": "shadcn-styles-MIT.txt",
+      "sha256": "1564074e13439397221ffd522e2e504d56561994a23d371aa5e3ad43e4f5423f"
+    },
+    {
       "name": "lucide-react",
       "version": "0.468.0",
       "license": "ISC",

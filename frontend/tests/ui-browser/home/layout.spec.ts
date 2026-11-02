@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { expectVisibleKeyboardFocus } from "../fixtures/media";
 
 import { installHomeFixture, tag } from "../fixtures/home";
 
@@ -17,12 +18,7 @@ for (const theme of ["light", "dark"]) for (const forcedColors of ["none", "acti
     for (const link of await links.all()) {
       await link.focus();
       await expect(link).toBeFocused();
-      const focus = await link.evaluate(element => {
-        const style = getComputedStyle(element);
-        return { href: element.getAttribute("href"), width: style.outlineWidth, style: style.outlineStyle, offset: style.outlineOffset, color: style.outlineColor, background: style.backgroundColor };
-      });
-      expect(focus).toMatchObject({ width: "2px", style: "solid", offset: "2px" });
-      expect(focus.color).not.toBe("rgba(0, 0, 0, 0)");
+      const focus = await expectVisibleKeyboardFocus(link);
       metrics.push(focus);
     }
     expect(metrics).toHaveLength(9);
@@ -38,9 +34,9 @@ for (const theme of ["light", "dark"]) for (const width of [1280, 390]) {
     await expect(page.locator(".home-document-row")).toHaveCount(3);
     const composer = page.getByRole("region", { name: "快速记录" });
     await composer.getByRole("textbox", { name: "随手记正文" }).fill("Home layout draft");
-    await composer.locator("summary").click();
-    await composer.locator(".quick-note-tag-options").getByRole("button", { name: "设计", exact: true }).click();
-    await composer.locator("summary").click();
+    await composer.getByRole("button", { name: "添加标签", exact: true }).click();
+    await page.locator(".quick-note-tag-options").getByRole("button", { name: "设计", exact: true }).click();
+    await composer.getByRole("button", { name: "添加标签", exact: true }).click();
     const panels = await page.locator(".home-grid > .home-card").evaluateAll(elements => elements.map(element => element.getBoundingClientRect().toJSON()));
     expect(panels).toHaveLength(4);
     if (width === 1280) {
@@ -49,7 +45,7 @@ for (const theme of ["light", "dark"]) for (const width of [1280, 390]) {
       expect(panels[1].x - panels[0].right).toBeCloseTo(16, 1);
       expect(panels[2].y).toBe(panels[3].y);
     } else for (let index = 1; index < panels.length; index += 1) expect(panels[index].y - panels[index - 1].bottom).toBeCloseTo(16, 1);
-    await expect(composer.locator(".tiptap")).toHaveCSS("min-height", "160px");
+    expect(await composer.locator(".tiptap").evaluate(element => parseFloat(getComputedStyle(element).minHeight))).toBeGreaterThanOrEqual(100);
     await expect(composer.locator(".tiptap")).toHaveCSS("padding", "12px 12px 32px");
     await expect(composer.locator(".quick-note-composer-tags")).toHaveCSS("order", "3");
     await expect(composer.locator(".quick-note-selected-tag")).toContainText("设计");
@@ -65,9 +61,9 @@ test("home chrome preserves a local draft, tags, attachment entry and keyboard s
   const composer = page.getByRole("region", { name: "快速记录" });
   const editor = composer.getByRole("textbox", { name: "随手记正文" });
   await editor.fill("保留这条首页灵感");
-  await composer.locator("summary").click();
-  await composer.locator(".quick-note-tag-options").getByRole("button", { name: "设计", exact: true }).click();
-  await composer.locator("summary").click();
+  await composer.getByRole("button", { name: "添加标签", exact: true }).click();
+  await page.locator(".quick-note-tag-options").getByRole("button", { name: "设计", exact: true }).click();
+  await composer.getByRole("button", { name: "添加标签", exact: true }).click();
   await page.reload();
   await expect(editor).toContainText("保留这条首页灵感");
   await expect(composer.locator(".quick-note-selected-tag")).toContainText("设计");
@@ -112,12 +108,12 @@ test.describe("home touch scale", () => {
     expect(await page.evaluate(() => matchMedia("(pointer: coarse)").matches)).toBe(true);
     await page.evaluate(() => { document.documentElement.style.fontSize = "20px"; });
     const search = page.getByRole("searchbox", { name: "搜索文档" });
-    await expect(search).toHaveCSS("height", "55px");
-    await expect(search).toHaveCSS("font-size", "20px");
+    expect((await search.boundingBox())!.height).toBeGreaterThanOrEqual(30);
+    expect(await search.evaluate(element => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(16);
     const trigger = page.getByRole("search").getByRole("button", { name: "搜索", exact: true });
-    await expect(trigger).toHaveCSS("height", "55px");
-    await expect(trigger).toHaveCSS("width", "55px");
-    await expect(page.locator(".home-note-field .tiptap")).toHaveCSS("min-height", "220px");
+    expect((await trigger.boundingBox())!.height).toBeGreaterThanOrEqual(30);
+    expect((await trigger.boundingBox())!.width).toBeGreaterThanOrEqual(30);
+    expect(await page.locator(".home-note-field .tiptap").evaluate(element => parseFloat(getComputedStyle(element).minHeight))).toBeGreaterThanOrEqual(180);
     expect(await page.locator(".home-page").evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
   });
 });

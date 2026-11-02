@@ -64,7 +64,7 @@ export function CellEditor({
         <summary className="cursor-pointer overflow-hidden whitespace-nowrap" aria-label={field.name}>
           {cellText(field, value) || "选择标签"}
         </summary>
-        <div className="absolute top-full left-0 z-10 flex min-w-[170px] flex-col gap-[7px] border-0 border-current bg-transparent p-2.5 [box-shadow:var(--ob-shadow-table-picker)] in-[.data-table]:border in-[.data-table]:border-ob-border in-[.data-table]:bg-ob-card">
+        <div className="absolute top-full left-0 z-10 flex min-w-[170px] flex-col gap-[7px] border-0 border-current bg-transparent p-2.5 [box-shadow:var(--ob-shadow-table-picker)] in-[.data-table]:border in-[.data-table]:border-border in-[.data-table]:bg-card">
           {field.options.map((option) => (
             <label className="dt-multi-label flex items-center [&.dt-multi-label]:gap-2" key={option.id}>
               <input

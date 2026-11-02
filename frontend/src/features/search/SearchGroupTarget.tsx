@@ -23,7 +23,7 @@ export function SearchGroupTarget({ id, canCreate, onCreate }: { id: string; can
   if (group.isError) return null;
   if (!group.data) return null;
   return <section ref={target} tabIndex={-1} className="workbench-collection-group" aria-label={`搜索定位的分组 ${group.data.title}`}>
-    <SectionHeading title={group.data.title} description={group.data.location} actions={canCreate ? <Button onClick={onCreate}>新建笔记本</Button> : null} />
+    <SectionHeading title={group.data.title} description={group.data.location} actions={canCreate ? <Button onClick={onCreate} variant="default">新建笔记本</Button> : null} />
     {notebooks.isLoading ? <LoadingState label="正在读取分组笔记本…" /> : null}
 
     <div className={workbenchStyles.documentList}>{notebooks.data?.items.map(notebook => <Link key={notebook.id} to={`/collections/${notebook.id}`} className={workbenchStyles.documentRow}><NotebookIcon icon={notebook.icon} size="sm" /><span>{notebook.title}</span></Link>)}</div>

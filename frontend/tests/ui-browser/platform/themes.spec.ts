@@ -1,20 +1,20 @@
 import { expect, test } from "@playwright/test";
 
-test("semantic radii preserve their existing scale when the root font changes", async ({ page }) => {
+test("native radii scale with the root font", async ({ page }) => {
   await page.goto("/__ui");
   await page.evaluate(() => {
     const host = document.createElement("div");
     host.dataset.testid = "radius-scale";
     for (const name of ["sm", "md", "lg", "xl"]) {
       const sample = document.createElement("div");
-      sample.className = `rounded-ob-${name}`;
+      sample.className = `rounded-${name}`;
       sample.dataset.radius = name;
       host.append(sample);
     }
     document.body.append(host);
   });
   const host = page.getByTestId("radius-scale");
-  for (const [fontSize, radii] of [[16, [4, 6, 8, 12]], [20, [5, 7.5, 10, 15]]] as const) {
+  for (const [fontSize, radii] of [[16, [6, 8, 10, 14]], [20, [7.5, 10, 12.5, 17.5]]] as const) {
     await page.locator("html").evaluate((element, size) => { element.style.fontSize = `${size}px`; }, fontSize);
     for (const [index, name] of ["sm", "md", "lg", "xl"].entries()) await expect(host.locator(`[data-radius="${name}"]`)).toHaveCSS("border-radius", `${radii[index]}px`);
   }
@@ -26,7 +26,7 @@ for (const outer of ["light", "dark"] as const) {
     await page.goto("/__ui");
     const root = page.locator("html");
     await expect(root).toHaveAttribute("data-theme", outer);
-    const originalPrimary = await root.evaluate(element => getComputedStyle(element).getPropertyValue("--ob-primary"));
+    const originalPrimary = await root.evaluate(element => getComputedStyle(element).getPropertyValue("--primary"));
     for (const theme of ["light", "dark"]) {
       const section = page.locator(`section[data-theme="${theme}"]`);
       await section.getByRole("button", { name: "编辑分组" }).click();
@@ -43,10 +43,10 @@ for (const outer of ["light", "dark"] as const) {
       await expect(dialog).toBeVisible();
       await expect(dialog.getByRole("combobox")).toBeFocused();
       await page.keyboard.press("Escape");
-      await expect(dialog).toHaveCount(0);
+      await expect(dialog).toBeHidden();
       await expect(section.getByRole("button", { name: "编辑分组" })).toBeFocused();
     }
-    expect(await root.evaluate(element => getComputedStyle(element).getPropertyValue("--ob-primary"))).toBe(originalPrimary);
+    expect(await root.evaluate(element => getComputedStyle(element).getPropertyValue("--primary"))).toBe(originalPrimary);
     await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
     await page.locator('section[data-theme="light"]').getByRole("button", { name: "编辑分组" }).focus();
     await page.keyboard.press("Enter");

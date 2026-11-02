@@ -1,15 +1,17 @@
 # 公共 API
 
-组件属于 `src/<component>/index.tsx`，在文件底部显式导出组件和同名 Props，并登记 `package.json#exports`。不设置 root barrel、不暴露 Base UI 类型、render/context 或内部工具。应用只通过 `@orbis/ui/<component>` 使用。
+组件属于 `src/<component>/index.tsx`，在文件底部显式导出，并登记 `package.json#exports`。应用只通过 `@orbis/ui/<component>` 使用；没有 root barrel，不导入包的内部目录。包内不引入路由、业务 schema、查询、应用状态或应用目录。
 
-包内不引入路由、业务 schema、查询、应用状态或应用目录。带产品文案、业务状态和保存策略的组合留在 `src/shared/ui` 或相应 feature。
+通用组件采用 shadcn 的 `base-nova` 官方源码、默认样式与组合 API。Base UI 的 `render`、事件详情、受控与非受控属性以及原语类型均为正常公共能力。Props 直接来自实现的上游类型，消费者需要类型时使用 `ComponentProps<typeof Button>` 等派生方式；不再复制一套 owned Props、状态类型或旧组件接口。
 
-先由真实消费者证明需求，再补组件。当前 Select 支持单选字符串或数字，`null` 表示无选择，空字符串和 0 是有效选项；没有多选消费者，暂不扩展多选 API。Dialog 使用受控/非受控判别联合。Ref 使用 React 19 的 ref prop。交互原语保留 `className(state)` / `style(state)`，状态使用自有类型，默认类先合并，调用方类后合并。Textarea 使用 disabled/readOnly/aria-invalid 推导样式状态，不另存镜像状态。
+Button 使用 `default`、`outline`、`secondary`、`ghost`、`destructive`、`link` 变体。组合元素使用 `render`；链接保留 Link/a 的语义。加载、业务文案和保存策略由消费者显式组合 `disabled`、`focusableWhenDisabled`、`aria-busy` 与 Spinner。旧 `loading`、`appearance`、`asChild`、`onPress` 和 `isPending` 接口已退出，不在新目录中复刻。
 
-Button 的 `asChild` 只用于单个能接收原生按钮属性和 ref 的元素；导航链接使用 Link/a 与 `buttonVariants`，保留链接语义。业务不使用第三方 render API。
+Select 使用 Select/SelectTrigger/SelectValue/SelectContent/SelectItem 组合，选项标签需要在首次打开前显示时给 Root 提供 `items`。可见标签、描述和错误消息由表单拥有者与触发器显式关联。Dialog 使用 DialogHeader/Title/Description/Footer 组合标题和正文，采用上游的关闭与焦点 API。产品文案、请求生命周期、空值转换和保存失败恢复留在 `src/shared/ui` 的业务组合或相应 feature。
 
-新增组件附适用的 Story、交互验证和类型用例。依赖和 copied code 按[准入、升级及移除流程](dependencies.md)维护；升级 shadcn 时先下载候选文件，与 `ui.registry.json` 中的来源核对后人工合并，禁止覆盖本地契约。
+Toolbar 的键盘成员通过显式的 ToolbarButton、ToolbarLink、ToolbarInput 等原语注册。普通 Button 不会自动变成 ToolbarButton；浮层正文也不会因位于工具栏的 React 子树而自动注册。需要按钮默认样式时用 `ToolbarButton render={<Button />}` 组合，Select 等复合控件同样显式组合其触发器。
 
-`Button appearance="unstyled"` 保留 Base UI 的按钮、禁用和焦点行为，同时把尺寸、间距、颜色及内容 DOM 交给领域控件。它保留直接子节点与原生内容命名，不自动包裹 label；适用于画布端点、网格控件和兼容入口，复杂的加载文案由调用方显式关联 aria-labelledby。普通按钮继续使用默认外观。
+独立阅读主题与外部宿主是应用的实际集成需求。通用浮层只通过 `OverlayScopeProvider` 接收显式主题范围，标准 Portal 属性仍可覆盖范围值；独立宿主使用 `@orbis/ui/portal`。详见[浮层契约](overlays.md)。这些能力不承担旧控件外观兼容。
 
-`Toolbar` 的键盘参与范围由包内 context 拥有：Button 自动使用 Base UI Toolbar.Button，Select 用它组合触发器并保留自己的值和状态样式。浮层 Portal 通过内部 ToolbarScopeBoundary 结束该范围，避免把弹窗正文按钮注册进背后的工具栏。不要把这个 context 暴露成业务 API，也不要通过克隆或扫描业务 DOM 来重建控件注册。
+新增组件先有真实消费者，再附适用的 Story、交互验证和类型用例。`check:ui` 检查组件子路径、包与应用依赖方向、原语和图标入口、CSS 所有权、主题角色，以及退役 shared UI 文件、导入和原生组件上的旧属性。业务的 `query.isPending`、ReadStatus `appearance` 等不受旧组件属性检查影响。
+
+依赖和 copied code 按[准入、升级及移除流程](dependencies.md)维护。官方候选在隔离目录用已记录的 shadcn CLI 版本生成；`ui.registry.json` 与 `licenses/copied-code/*.registry.json` 保存来源、实际获取记录、冻结内容及校验值。升级时比较真实上游输出，保留必要的导入路径、图标、本地化、主题范围与可访问性适配，并同步记录；不把手写旧外观当作上游生成结果。

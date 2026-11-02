@@ -12,6 +12,8 @@ export const Keyboard: Story = { play: async ({ canvasElement }) => {
   await userEvent.keyboard("{ArrowRight}");
   const second = canvas.getByRole("tab", { name: "内容二" });
   await expect(second).toHaveFocus();
+  await expect(canvas.getByRole("tabpanel", { name: "内容一" })).toBeVisible();
+  await userEvent.keyboard("{Enter}");
   await expect(canvas.getByRole("tabpanel", { name: "内容二" })).toHaveTextContent("第二部分");
   await userEvent.keyboard("{ArrowRight}");
   const disabled = canvas.getByRole("tab", { name: "不可用" });
@@ -20,14 +22,14 @@ export const Keyboard: Story = { play: async ({ canvasElement }) => {
   await expect(canvas.getByRole("tabpanel", { name: "内容二" })).toBeVisible();
   await userEvent.keyboard("{ArrowRight}");
   await expect(first).toHaveFocus();
+  await userEvent.keyboard("{Enter}");
+  await expect(canvas.getByRole("tabpanel", { name: "内容一" })).toBeVisible();
 } };
 
-export const Manual: Story = { render: () => <Tabs defaultValue="one"><TabsList aria-label="手动切换" activateOnFocus={false}><TabsTrigger value="one">内容一</TabsTrigger><TabsTrigger value="two">内容二</TabsTrigger></TabsList><TabsContent value="one">第一部分</TabsContent><TabsContent value="two">第二部分</TabsContent></Tabs>, play: async ({ canvasElement }) => {
+export const Automatic: Story = { render: () => <Tabs defaultValue="one"><TabsList aria-label="自动切换" activateOnFocus><TabsTrigger value="one">内容一</TabsTrigger><TabsTrigger value="two">内容二</TabsTrigger></TabsList><TabsContent value="one">第一部分</TabsContent><TabsContent value="two">第二部分</TabsContent></Tabs>, play: async ({ canvasElement }) => {
   const canvas = within(canvasElement);
   canvas.getByRole("tab", { name: "内容一" }).focus();
   await userEvent.keyboard("{ArrowRight}");
   await expect(canvas.getByRole("tab", { name: "内容二" })).toHaveFocus();
-  await expect(canvas.getByRole("tabpanel", { name: "内容一" })).toBeVisible();
-  await userEvent.keyboard("{Enter}");
   await expect(canvas.getByRole("tabpanel", { name: "内容二" })).toBeVisible();
 } };

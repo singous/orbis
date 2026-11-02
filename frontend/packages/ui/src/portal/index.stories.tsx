@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
-import { Toolbar } from "@orbis/ui/toolbar";
+import { Toolbar, ToolbarButton } from "@orbis/ui/toolbar";
 import { Portal, readPortalTheme } from "./index";
 
 function StableHost() {
@@ -14,14 +14,14 @@ function StableHost() {
   const [custom, setCustom] = useState(false);
   useLayoutEffect(() => { (expanded ? document.body : landing.current!).append(host); }, [expanded, host]);
   useLayoutEffect(() => () => host.remove(), [host]);
-  return <div data-testid="portal-source" data-theme={theme} style={{ "--ob-primary": custom ? "#abcdef" : "#123456" } as CSSProperties}>
+  return <div data-testid="portal-source" data-theme={theme} style={{ "--primary": custom ? "#abcdef" : "#123456" } as CSSProperties}>
     <div className="mb-3 flex flex-wrap gap-2">
       <Button onClick={() => setExpanded(value => !value)}>{expanded ? "收回宿主" : "移动到 body"}</Button>
       <Button onClick={() => setTheme(value => value === "light" ? "dark" : "light")}>切换局部主题</Button>
       <Button onClick={() => setCustom(value => !value)}>切换局部颜色</Button>
     </div>
     <div ref={landing} />
-    <Portal container={host}><div data-testid="portal-colors" className="bg-ob-background p-3 text-ob-primary"><label className="grid gap-2">保留的草稿<Input defaultValue="草稿" /></label></div></Portal>
+    <Portal container={host}><div data-testid="portal-colors" className="bg-background p-3 text-primary"><label className="grid gap-2">保留的草稿<Input defaultValue="草稿" /></label></div></Portal>
   </div>;
 }
 
@@ -39,7 +39,7 @@ function EmptyTarget() {
 }
 
 function ToolbarPortal() {
-  return <Toolbar aria-label="源工具栏"><Portal container={document.body}><div className="flex gap-2"><Button>浮层保存</Button><Button>浮层取消</Button></div></Portal><Button>源操作</Button></Toolbar>;
+  return <Toolbar aria-label="源工具栏"><Portal container={document.body}><div className="flex gap-2"><Button>浮层保存</Button><Button>浮层取消</Button></div></Portal><ToolbarButton render={<Button />}>源操作</ToolbarButton></Toolbar>;
 }
 
 const meta = { title: "Primitives/Portal", component: StableHost } satisfies Meta<typeof StableHost>;
@@ -52,7 +52,7 @@ export const StableHostAndScope: Story = {
     const screen = within(canvasElement.ownerDocument.body);
     const source = canvas.getByTestId("portal-source");
     const probe = screen.getByTestId("portal-colors");
-    const wrapper = probe.closest('[data-slot="ob-portal"]')!;
+    const wrapper = probe.closest('[data-slot="portal"]')!;
     const input = screen.getByRole("textbox", { name: "保留的草稿" });
     const lightBackground = getComputedStyle(probe).backgroundColor;
     await expect(getComputedStyle(wrapper).display).toBe("contents");
@@ -68,7 +68,7 @@ export const StableHostAndScope: Story = {
     await waitFor(() => expect(getComputedStyle(probe).backgroundColor).not.toBe(lightBackground));
     await userEvent.click(canvas.getByRole("button", { name: "切换局部颜色" }));
     await waitFor(() => expect(getComputedStyle(probe).color).toBe("rgb(171, 205, 239)"));
-    await expect(readPortalTheme(source)).toMatchObject({ theme: "dark", portalStyle: { "--ob-primary": "#abcdef" } });
+    await expect(readPortalTheme(source)).toMatchObject({ theme: "dark", portalStyle: { "--primary": "#abcdef" } });
     await userEvent.click(canvas.getByRole("button", { name: "收回宿主" }));
     await expect(canvas.getByRole("textbox", { name: "保留的草稿" })).toBe(input);
     await expect(input).toHaveValue(draft);

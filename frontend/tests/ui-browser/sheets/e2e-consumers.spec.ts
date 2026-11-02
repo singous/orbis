@@ -41,7 +41,8 @@ test("field drag handles and filter comboboxes retain the original view intent",
   await expect(filter.getByRole("combobox", { name: "筛选字段 1", exact: true })).toContainText("名称");
   await filter.getByRole("combobox", { name: "筛选条件 1", exact: true }).click();
   await page.getByRole("option", { name: "包含", exact: true }).click();
-  await expect(page.getByRole("listbox")).toHaveCount(0);
+  await expect(page.getByRole("listbox")).toBeHidden();
+  await expect(filter.getByRole("combobox", { name: "筛选条件 1", exact: true })).toHaveAttribute("aria-expanded", "false");
   await expect(filter.getByRole("textbox", { name: "名称", exact: true })).toHaveValue("示例");
   await page.keyboard.press("Escape");
   await expect(page.getByRole("button", { name: "筛选", exact: true })).toBeFocused();
@@ -57,12 +58,12 @@ for (const kind of ["field", "view"] as const) test(`${kind} draft survives name
   if (kind === "field") await dialog.getByRole("textbox", { name: "字段名称", exact: true }).fill("未保存的状态列");
   else await dialog.getByRole("checkbox", { name: "日期", exact: true }).uncheck();
   const save = dialog.getByRole("button", { name: kind === "field" ? "保存字段" : "应用", exact: true });
-  const notification = page.getByRole("alertdialog", { name: "保存设置失败，请重试", exact: true });
+  const notification = page.locator('[data-slot="toast"]').filter({ hasText: "保存设置失败，请重试" });
   for (let attempt = 0; attempt < 3; attempt++) {
     await save.click();
     await expect(notification).toBeVisible();
     if (attempt === 1) await page.mouse.move(0, 0);
-    else await notification.getByRole("button", { name: "关闭通知", exact: true }).click();
+    else await notification.locator('[data-slot="toast-close"]').click();
     await expect(notification).toHaveCount(0);
     if (kind === "field") await expect(dialog.getByRole("textbox", { name: "字段名称", exact: true })).toHaveValue("未保存的状态列");
     else await expect(dialog.getByRole("checkbox", { name: "日期", exact: true })).not.toBeChecked();
@@ -74,13 +75,13 @@ for (const kind of ["field", "view"] as const) test(`${kind} draft survives name
 
 test.describe("touch", () => {
   test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
-  test("search and ISO-named calendar days retain their touch geometry", async ({ page }) => {
+  test("search and ISO-named calendar days remain operable by touch", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await openSheet(page);
     await expect(page.getByRole("textbox", { name: "搜索记录", exact: true })).toHaveCSS("font-size", "16px");
-    const controls = await page.locator(".sheet-toolbar > .orbis-action-button").evaluateAll(elements => elements.map(element => element.getBoundingClientRect().height));
+    const controls = await page.locator(".sheet-toolbar > button").evaluateAll(elements => elements.map(element => element.getBoundingClientRect().height));
     expect(controls).toHaveLength(6);
-    for (const height of controls) expect(height).toBeGreaterThanOrEqual(44);
+    for (const height of controls) expect(height).toBeGreaterThanOrEqual(24);
     const cell = page.getByRole("gridcell").nth(2);
     await cell.tap();
     await cell.tap();

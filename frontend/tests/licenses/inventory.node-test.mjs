@@ -13,7 +13,7 @@ function fixture(t, license = "MIT") {
   const root = mkdtempSync(path.join(tmpdir(), "orbis-license-fixture-"));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const write = (file, content) => { mkdirSync(path.dirname(path.join(root, file)), { recursive: true }); writeFileSync(path.join(root, file), typeof content === "string" ? content : JSON.stringify(content)); };
-  const assets = ["@fontsource-variable/inter", "lucide-react", "@gravity-ui/icons", "@iconify-json/tabler", "@remixicon/react"];
+  const assets = ["@fontsource-variable/inter", "@fontsource-variable/geist", "tw-animate-css", "shadcn", "lucide-react", "@gravity-ui/icons", "@iconify-json/tabler", "@remixicon/react"];
   const packages = Object.fromEntries(["example", ...assets].map(name => [`node_modules/${name}`, { version: "1.0.0", license: name === "example" ? license : "MIT", integrity: "sha512-Zml4dHVyZQ==", resolved: `https://example.com/${name}.tgz` }]));
   write("frontend/package-lock.json", { packages: { "": { dependencies: Object.fromEntries(["example", ...assets].map(name => [name, "1.0.0"])) }, ...packages } });
   for (const [location, entry] of Object.entries(packages)) { write(`frontend/${location}/package.json`, entry); write(`frontend/${location}/LICENSE`, "Fixture license and copyright\n"); }
@@ -73,6 +73,19 @@ test("copied UI provenance preserves distinct immutable revisions in a distribut
   const bundled = run("--bundle", "dist/licenses");
   assert.equal(bundled.status, 0, bundled.stderr);
   assert.deepEqual(JSON.parse(readFileSync(path.join(root, "frontend/dist/licenses/frontend/packages/ui/ui.registry.json"), "utf8")), registry);
+});
+
+test("a registry snapshot records the captured artifact without inventing an upstream commit", t => {
+  const { root, write, run, registry } = fixture(t);
+  Object.assign(registry.components.button, { sourceRevisionKind: "registry-snapshot", sourceRevision: null, servedRevision: null });
+  write("frontend/packages/ui/ui.registry.json", registry);
+  const generated = run();
+  assert.equal(generated.status, 0, generated.stderr);
+  const bundled = run("--bundle", "dist/licenses");
+  assert.equal(bundled.status, 0, bundled.stderr);
+  assert.deepEqual(JSON.parse(readFileSync(path.join(root, "frontend/dist/licenses/frontend/packages/ui/ui.registry.json"), "utf8")), registry);
+  write("licenses/copied-code/shadcn-button.registry.json", "changed source snapshot");
+  assert.match(run("--check").stderr, /Copied UI source snapshot checksum mismatch: button/);
 });
 
 test("copied UI provenance rejects missing or mutable upstream revision metadata offline", async t => {
@@ -218,7 +231,7 @@ test("an approved permissive inventory produces a readable distribution bundle",
   assert.equal(readFileSync(path.join(root, "frontend/dist/licenses/LICENSE"), "utf8"), "Project license\n");
   assert.ok(readFileSync(path.join(root, "frontend/dist/licenses/THIRD_PARTY_NOTICES.md"), "utf8").includes("Locked npm components"));
   assert.ok(JSON.parse(readFileSync(path.join(root, "frontend/dist/licenses/licenses/npm-manifest.json"), "utf8")).packages.length > 0);
-  assert.equal(JSON.parse(readFileSync(path.join(root, "frontend/dist/licenses/index.json"), "utf8")).assets.length, 5);
+  assert.equal(JSON.parse(readFileSync(path.join(root, "frontend/dist/licenses/index.json"), "utf8")).assets.length, 8);
   const bundle = path.join(root, "frontend/dist/licenses");
   assert.equal(verifyLicenseBundle(bundle).sourceRevision, "a".repeat(40));
   const html = readFileSync(path.join(bundle, "index.html"), "utf8");
@@ -299,7 +312,7 @@ test("tooling review and missing text remain visible without blocking the static
   const bundle = path.join(root, "frontend/dist/licenses");
   assert.deepEqual(JSON.parse(readFileSync(path.join(bundle, "licenses/reviews.json"), "utf8")), reviews);
   assert.equal(JSON.parse(readFileSync(path.join(bundle, "licenses/pending-review-summary.json"), "utf8")).toolingIssues.length, 2);
-  assert.equal(verifyLicenseBundle(bundle).packages, 8);
+  assert.equal(verifyLicenseBundle(bundle).packages, 11);
 });
 
 test("runtime and asset license gaps still block their frontend distribution", async t => {

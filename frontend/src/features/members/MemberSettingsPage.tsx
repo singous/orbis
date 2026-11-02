@@ -1,8 +1,8 @@
+import { Badge } from "@orbis/ui/badge";
 import { SectionHeading } from "../../shared/ui/SectionHeading";
 import { reportError } from "../../shared/api/request-feedback";
 import { LoadingState } from "../../shared/ui/LoadingState";
-import { Avatar } from "@orbis/ui/avatar";
-import { Tag } from "../../shared/ui/Tag";
+import { Avatar, AvatarFallback } from "@orbis/ui/avatar";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Crown, Mail, RefreshCw, Shield, Trash2, UserPlus, Users } from "../../shared/ui/icons";
 import { type FormEvent, useState } from "react";
@@ -12,7 +12,7 @@ import { authStore } from "../../shared/auth/auth-store";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
-import { Select } from "@orbis/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@orbis/ui/select";
 
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
 import { PageContainer } from "../../shared/ui/PageContainer";
@@ -102,15 +102,15 @@ export function MemberSettingsPage() {
       <PageContainer title="成员与权限" description="管理工作空间中的协作者与访问权限。">
 
         {canManage ? (
-          <section className="workbench-member-invite mb-[34px] max-w-[860px] border-b border-ob-workspace-divider pb-7">
+          <section className="workbench-member-invite mb-[34px] max-w-[860px] border-b border-border pb-7">
             <div className="mb-5 flex items-center gap-3">
-              <div className="grid size-[38px] place-items-center rounded-ob-xl bg-(--ob-item-hover-bg) text-ob-foreground"><UserPlus aria-hidden="true" size={18} /></div>
-              <div><h2 className="text-base font-semibold">邀请成员</h2><p className="mt-1 text-xs text-ob-muted-foreground">{mailQuery.data?.enabled ? "邀请链接会通过邮件发送。" : "当前邮件服务未启用，邀请发送不可用。"}</p></div>
+              <div className="grid size-[38px] place-items-center rounded-xl bg-(--accent) text-foreground"><UserPlus aria-hidden="true" size={18} /></div>
+              <div><h2 className="text-base font-semibold">邀请成员</h2><p className="mt-1 text-xs text-muted-foreground">{mailQuery.data?.enabled ? "邀请链接会通过邮件发送。" : "当前邮件服务未启用，邀请发送不可用。"}</p></div>
             </div>
             <form className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_150px_auto] sm:items-end" onSubmit={submitInvite}>
-              <label className="grid gap-1.5 text-sm font-medium text-ob-foreground">邮箱<Input type="email" placeholder="member@example.com" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
-              <Select<AssignableRole> label="角色" value={role} onValueChange={next => { if (next !== null) setRole(next); }} options={roleOptions} />
-              <Button type="submit" variant="primary" disabled={!mailQuery.data?.enabled || !email.trim() || invite.isPending}><span className="inline-flex items-center gap-2"><Mail aria-hidden="true" size={14} />发送邀请</span></Button>
+              <label className="grid gap-1.5 text-sm font-medium text-foreground">邮箱<Input type="email" placeholder="member@example.com" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
+              <div className="grid gap-2"><label htmlFor="member-invitation-role" className="text-sm font-medium">角色</label><Select<AssignableRole> items={roleOptions} value={role} onValueChange={next => { if (next !== null) setRole(next); }}><SelectTrigger id="member-invitation-role" className="w-full"><SelectValue /></SelectTrigger><SelectContent role="region" aria-label="邀请角色选项">{roleOptions.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></div>
+              <Button type="submit" variant="default" disabled={!mailQuery.data?.enabled || !email.trim() || invite.isPending}><Mail aria-hidden="true" />发送邀请</Button>
             </form>
           </section>
         ) : null}
@@ -122,37 +122,37 @@ export function MemberSettingsPage() {
             {membersQuery.data?.items.map((member) => {
               const actorCanChange = canManage && (workspace?.role === "owner" || member.role !== "admin");
               return (
-                <div key={member.user_id} className="workbench-member-row flex flex-wrap items-center gap-4 border-b border-ob-workspace-divider px-1 py-[19px]">
-                  <Avatar size="sm" className="size-9" fallback={(member.display_name || member.email).slice(0, 1).toUpperCase()} />
-                  <div className="min-w-[180px] flex-1"><div className="text-sm font-semibold">{member.display_name || member.email}</div><div className="mt-1 text-xs text-ob-muted-foreground">{member.email}</div></div>
+                <div key={member.user_id} className="workbench-member-row flex flex-wrap items-center gap-4 border-b border-border px-1 py-[19px]">
+                  <Avatar size="sm"><AvatarFallback>{(member.display_name || member.email).slice(0, 1).toUpperCase()}</AvatarFallback></Avatar>
+                  <div className="min-w-[180px] flex-1"><div className="text-sm font-semibold">{member.display_name || member.email}</div><div className="mt-1 text-xs text-muted-foreground">{member.email}</div></div>
                   <div className="flex items-center gap-2">
-                    {member.role === "owner" ? <Tag><Crown aria-hidden="true" className="mr-1" size={12} />所有者</Tag> : actorCanChange ? (
-                      <Select<AssignableRole> aria-label={`调整 ${member.email} 的角色`} wrapperClassName="min-w-30" value={member.role} disabled={roleMutation.isPending} onValueChange={nextRole => { if (nextRole !== null) roleMutation.mutate({ id: member.user_id, version: member.version, nextRole }); }} options={roleOptions} />
-                    ) : <Tag><Shield aria-hidden="true" className="mr-1" size={12} />{member.role}</Tag>}
+                    {member.role === "owner" ? <Badge variant="secondary"><Crown aria-hidden="true" className="mr-1" size={12} />所有者</Badge> : actorCanChange ? (
+                      <Select<AssignableRole> items={roleOptions} value={member.role} disabled={roleMutation.isPending} onValueChange={nextRole => { if (nextRole !== null) roleMutation.mutate({ id: member.user_id, version: member.version, nextRole }); }}><SelectTrigger aria-label={`调整 ${member.email} 的角色`} className="min-w-30"><SelectValue /></SelectTrigger><SelectContent role="region" aria-label="成员角色选项">{roleOptions.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select>
+                    ) : <Badge variant="secondary"><Shield aria-hidden="true" className="mr-1" size={12} />{member.role}</Badge>}
                     {workspace?.role === "owner" && member.role === "admin" ? <Button variant="secondary" onClick={() => confirmTransfer(member.user_id)} disabled={!mailQuery.data?.enabled || transferMutation.isPending}>转让所有权</Button> : null}
-                    {member.role !== "owner" && actorCanChange ? <Button type="button" variant="ghost" size="sm" className="size-8 p-0 text-ob-destructive" aria-label={`移除 ${member.email}`} onClick={() => confirmRemove(member.user_id, member.version, member.email)}><Trash2 aria-hidden="true" size={14} /></Button> : null}
+                    {member.role !== "owner" && actorCanChange ? <Button type="button" variant="destructive" size="icon-sm" aria-label={`移除 ${member.email}`} onClick={() => confirmRemove(member.user_id, member.version, member.email)}><Trash2 aria-hidden="true" size={14} /></Button> : null}
                   </div>
                 </div>
               );
             })}
           </div>
-          <div className="collaboration-actions"><Button size="sm" disabled={memberPage <= 1 || membersQuery.isFetching} onClick={() => setMemberPage(value => value - 1)}>上一页成员</Button><span>第 {memberPage} 页</span><Button size="sm" disabled={!membersQuery.data?.pagination.has_next || membersQuery.isFetching} onClick={() => setMemberPage(value => value + 1)}>下一页成员</Button></div>
+          <div className="collaboration-actions flex flex-wrap items-center gap-2"><Button size="sm" disabled={memberPage <= 1 || membersQuery.isFetching} onClick={() => setMemberPage(value => value - 1)} variant="default">上一页成员</Button><span>第 {memberPage} 页</span><Button size="sm" disabled={!membersQuery.data?.pagination.has_next || membersQuery.isFetching} onClick={() => setMemberPage(value => value + 1)} variant="default">下一页成员</Button></div>
         </section>
-        {workspace?.role === "owner" && ownershipQuery.data?.status === "pending" ? <section aria-label="待确认所有权转让"><h2>所有权转让待确认</h2><p>当前所有者通过邮件确认后，目标管理员成为所有者。</p><dl><dt>确认邮件</dt><dd>{ownershipQuery.data.email_sent ? "已发送" : "未发送"}</dd></dl><Button disabled={resendTransfer.isPending} onClick={() => resendTransfer.mutate(ownershipQuery.data!.id)}>重发所有权确认邮件</Button><Button disabled={cancelTransfer.isPending} onClick={() => cancelTransfer.mutate(ownershipQuery.data!.id)}>取消所有权转让</Button></section> : null}
+        {workspace?.role === "owner" && ownershipQuery.data?.status === "pending" ? <section aria-label="待确认所有权转让"><h2>所有权转让待确认</h2><p>当前所有者通过邮件确认后，目标管理员成为所有者。</p><dl><dt>确认邮件</dt><dd>{ownershipQuery.data.email_sent ? "已发送" : "未发送"}</dd></dl><Button disabled={resendTransfer.isPending} onClick={() => resendTransfer.mutate(ownershipQuery.data!.id)} variant="default">重发所有权确认邮件</Button><Button disabled={cancelTransfer.isPending} onClick={() => cancelTransfer.mutate(ownershipQuery.data!.id)} variant="default">取消所有权转让</Button></section> : null}
         {canManage && (pendingInvitations.length || (invitesQuery.data?.pagination.total ?? 0) > 0) ? (
           <section>
             <SectionHeading title="待处理邀请" description="过期后需要重新发送" />
             <div className="workbench-member-list overflow-hidden">
               {pendingInvitations.map((item) => (
-                <div key={item.id} className="workbench-member-row flex flex-wrap items-center gap-4 border-b border-ob-workspace-divider px-1 py-[19px]">
-                  <Users aria-hidden="true" size={18} className="text-ob-muted-foreground" />
-                  <div className="min-w-[200px] flex-1"><div className="text-sm font-semibold">{item.email}</div><div className="mt-1 text-xs text-ob-muted-foreground">{item.role} · {item.email_sent ? "已发送" : "发送失败"}</div></div>
-                  <Button type="button" variant="ghost" size="sm" className="size-8 p-0" aria-label={`重发 ${item.email}`} onClick={() => resendMutation.mutate(item.id)}><RefreshCw aria-hidden="true" size={14} /></Button>
-                  <Button type="button" variant="ghost" size="sm" className="size-8 p-0 text-ob-destructive" aria-label={`撤销 ${item.email} 的邀请`} onClick={() => revokeMutation.mutate(item.id)}><Trash2 aria-hidden="true" size={14} /></Button>
+                <div key={item.id} className="workbench-member-row flex flex-wrap items-center gap-4 border-b border-border px-1 py-[19px]">
+                  <Users aria-hidden="true" size={18} className="text-muted-foreground" />
+                  <div className="min-w-[200px] flex-1"><div className="text-sm font-semibold">{item.email}</div><div className="mt-1 text-xs text-muted-foreground">{item.role} · {item.email_sent ? "已发送" : "发送失败"}</div></div>
+                  <Button type="button" variant="ghost" size="icon-sm" aria-label={`重发 ${item.email}`} onClick={() => resendMutation.mutate(item.id)}><RefreshCw aria-hidden="true" size={14} /></Button>
+                  <Button type="button" variant="destructive" size="icon-sm" aria-label={`撤销 ${item.email} 的邀请`} onClick={() => revokeMutation.mutate(item.id)}><Trash2 aria-hidden="true" size={14} /></Button>
                 </div>
               ))}
             </div>
-            <div className="collaboration-actions"><Button size="sm" disabled={invitationPage <= 1 || invitesQuery.isFetching} onClick={() => setInvitationPage(value => value - 1)}>上一页邀请</Button><span>第 {invitationPage} 页</span><Button size="sm" disabled={!invitesQuery.data?.pagination.has_next || invitesQuery.isFetching} onClick={() => setInvitationPage(value => value + 1)}>下一页邀请</Button></div>
+            <div className="collaboration-actions flex flex-wrap items-center gap-2"><Button size="sm" disabled={invitationPage <= 1 || invitesQuery.isFetching} onClick={() => setInvitationPage(value => value - 1)} variant="default">上一页邀请</Button><span>第 {invitationPage} 页</span><Button size="sm" disabled={!invitesQuery.data?.pagination.has_next || invitesQuery.isFetching} onClick={() => setInvitationPage(value => value + 1)} variant="default">下一页邀请</Button></div>
           </section>
         ) : null}
 

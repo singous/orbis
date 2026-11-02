@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { expectNoContinuingMotion } from "../fixtures/media";
 import { expectUnpaintedBoxShadow, sampleSidebarToggle } from "../../e2e/helpers/workspace-rendering";
 import { installHomeFixture, notebooks } from "../fixtures/home";
 
@@ -79,12 +80,13 @@ test("E2E sidebar motion samples the completed transition while retaining interm
     const collapse = await sampleSidebarToggle(page, entry.collapse);
     expect(collapse.intermediateFrames).toBeGreaterThan(2);
     expect(collapse.railIntermediateFrames).toBeGreaterThan(2);
-    expect(collapse.endRailTop - collapse.startRailTop).toBeCloseTo(32, 0);
+    const expandHeight = (await page.getByRole("button", { name: entry.expand, exact: true }).boundingBox())!.height;
+    expect(collapse.endRailTop - collapse.startRailTop).toBeCloseTo(expandHeight, 0);
     expect(collapse.endWidth).toBeCloseTo(collapse.railWidth, 0);
     expect(collapse.transitions).toEqual(expect.arrayContaining(["grid-template-columns:420", "height:420"]));
     await expect(page.getByRole("button", { name: entry.expand, exact: true })).toBeFocused();
     const expanded = await sampleSidebarToggle(page, entry.expand);
-    expect(expanded.endRailTop - expanded.startRailTop).toBeCloseTo(-32, 0);
+    expect(expanded.endRailTop - expanded.startRailTop).toBeCloseTo(-expandHeight, 0);
     expect(expanded.endWidth).toBeCloseTo(collapse.startWidth, 0);
     await expect(page.getByRole("button", { name: entry.collapse, exact: true })).toBeFocused();
     await page.emulateMedia({ reducedMotion: "reduce" });
@@ -104,7 +106,7 @@ test("E2E delayed notebook loading keeps visible skeletons and live navigation",
   const placeholder = page.getByRole("status", { name: "正在加载笔记本…", exact: true });
   try {
     await expect(placeholder).toBeVisible();
-    await expect(placeholder.locator('[data-slot="ob-skeleton"]').first()).toBeVisible();
+    await expect(placeholder.locator('[data-slot="skeleton"]').first()).toBeVisible();
     await expect(page.getByRole("link", { name: "在线文档", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "新建资产", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "搜索", exact: true })).toBeVisible();
@@ -122,7 +124,7 @@ test("E2E cold startup checks the real skeleton reduced-motion contract and reta
     await expect(startup).toBeVisible();
     await page.setViewportSize({ width: 390, height: 844 });
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await expect(startup.locator('[data-slot="ob-skeleton"]').first()).toHaveCSS("animation-name", "none");
+    await expectNoContinuingMotion(startup);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   } finally { release(); }
   await opening;

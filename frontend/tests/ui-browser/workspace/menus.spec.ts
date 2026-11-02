@@ -42,14 +42,14 @@ for (const surface of ["web", "desktop"] as const) {
       const menu = page.getByRole("menu", { name: "用户操作", exact: true });
       await expectInViewport(page, menu);
       await expect(menu.getByRole("menuitem", { name: "账号", exact: true })).toHaveAttribute("href", "/settings/account");
-      expect((await new AxeBuilder({ page }).include('[data-slot="ob-dropdown-menu"]').analyze()).violations).toEqual([]);
+      expect((await new AxeBuilder({ page }).include('[data-slot="dropdown-menu-content"]').analyze()).violations).toEqual([]);
       await menu.getByRole("menuitem", { name: "外观", exact: true }).click();
       const appearance = page.getByRole("dialog", { name: "外观", exact: true });
       await expectInViewport(page, appearance);
       await appearance.getByRole("radio", { name: "夜间", exact: true }).click();
       await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
       expect(await page.evaluate(() => localStorage.getItem("orbis.appearance"))).toBe("dark");
-      expect((await new AxeBuilder({ page }).include('[data-slot="ob-dialog"]').analyze()).violations).toEqual([]);
+      expect((await new AxeBuilder({ page }).include('[data-slot="dialog-content"]').analyze()).violations).toEqual([]);
       await page.keyboard.press("Escape");
       await expect(appearance).toHaveCount(0);
       await expect(accountTrigger).toBeFocused();

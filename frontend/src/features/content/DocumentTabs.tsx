@@ -1,12 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { Button } from "@orbis/ui/button";
-import { contentTabClassName, contentTabListClassName } from "./content-control-styles";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
 
 export function DocumentTabs({ id, panels }: { id: string; panels: Array<{ title: string; content: ReactNode }> }) {
   // Published HTML owns these stable anchor IDs. Keep every panel mounted so a
   // hash link into hidden content can reveal its panel before scrolling.
   const [selected, setSelected] = useState(0);
-  const controls = useRef<Array<HTMLButtonElement | null>>([]);
   const containers = useRef<Array<HTMLDivElement | null>>([]);
   const pendingScroll = useRef<HTMLElement | null>(null);
   const active = Math.min(selected, Math.max(0, panels.length - 1));
@@ -25,27 +23,17 @@ export function DocumentTabs({ id, panels }: { id: string; panels: Array<{ title
     pendingScroll.current?.scrollIntoView?.({ block: "start" });
     pendingScroll.current = null;
   }, [active]);
-  function choose(index: number, focus = false) {
+  function choose(index: number) {
     pendingScroll.current = null;
     setSelected(index);
     const panelId = id + "-panel-" + index;
     window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search + "#" + panelId);
-    if (focus) controls.current[index]?.focus();
   }
   if (!panels.length) return null;
-  return <div className="doc-tabs">
-    <div className={contentTabListClassName} role="tablist" aria-label="内容标签">{panels.map((panel, index) => <Button appearance="unstyled" className={contentTabClassName}
-      key={index} ref={(element) => { controls.current[index] = element; }} type="button" role="tab"
-      id={id + "-tab-" + index} aria-controls={id + "-panel-" + index} aria-selected={active === index} tabIndex={active === index ? 0 : -1}
-      onClick={() => choose(index)} onKeyDown={(event) => {
-        const offsets: Record<string, number> = { ArrowRight: 1, ArrowLeft: -1 };
-        let target: number | undefined;
-        if (event.key in offsets) target = (active + offsets[event.key] + panels.length) % panels.length;
-        if (event.key === "Home") target = 0;
-        if (event.key === "End") target = panels.length - 1;
-        if (target !== undefined) { event.preventDefault(); choose(target, true); }
-      }}>{panel.title}</Button>)}</div>
-    {panels.map((panel, index) => <div key={index} ref={(element) => { containers.current[index] = element; }}
-      id={id + "-panel-" + index} role="tabpanel" aria-labelledby={id + "-tab-" + index} hidden={active !== index} className="doc-tab-panel">{panel.content}</div>)}
-  </div>;
+  return <Tabs className="doc-tabs" value={active} onValueChange={value => choose(Number(value))}>
+    <TabsList aria-label="内容标签" activateOnFocus>{panels.map((panel, index) => <TabsTrigger key={index} value={index} id={id + "-tab-" + index}>{panel.title}</TabsTrigger>)}</TabsList>
+    {panels.map((panel, index) => <TabsContent key={index} value={index} keepMounted className="doc-tab-panel">
+      <div id={id + "-panel-" + index} ref={(element) => { containers.current[index] = element; }}>{panel.content}</div>
+    </TabsContent>)}
+  </Tabs>;
 }

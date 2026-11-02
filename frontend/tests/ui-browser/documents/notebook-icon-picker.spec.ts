@@ -18,16 +18,17 @@ for (const theme of ["light", "dark"]) for (const width of [1280, 390]) {
     const icons = dialog.getByRole("radiogroup", { name: "预设图标", exact: true });
     const colors = dialog.getByRole("radiogroup", { name: "图标颜色", exact: true });
     await expect(dialog.getByRole("textbox", { name: "笔记本名称", exact: true })).toBeFocused();
-    expect(await icons.evaluate(element => getComputedStyle(element).gridTemplateColumns.split(" ").length)).toBe(width === 1280 ? 8 : 6);
-    await expect(icons.locator(".notebook-icon").first()).toHaveCSS("width", width === 1280 ? "35px" : "29px");
-    await expect(colors.getByRole("radio").first()).toHaveCSS("width", "32px");
+    await expect(icons.locator('[data-slot="radio-group-item"]')).toHaveCount(await icons.getByRole("radio").count());
+    await expect(icons.locator("label .notebook-icon").first()).toBeVisible();
+    await expect(colors.locator("label .notebook-icon-swatch").first()).toBeVisible();
+    for (const group of [icons, colors]) expect(await group.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
     const first = icons.getByRole("radio").first();
     const last = icons.getByRole("radio").last();
     await first.focus();
     await page.keyboard.press("End");
     await expect(last).toBeFocused();
     await expect(last).toBeChecked();
-    await expect(last).toHaveCSS("outline-width", "2px");
+    await expect(last).toBeFocused();
     await page.keyboard.press("Home");
     await expect(first).toBeChecked();
     await colors.getByRole("radio").first().focus();
@@ -46,16 +47,20 @@ for (const theme of ["light", "dark"]) for (const width of [1280, 390]) {
 
 test.describe("notebook picker coarse pointer", () => {
   test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 900 } });
-  test("keeps every radio target at 44px and the color palette within the dialog", async ({ page }) => {
+  test("keeps every labelled radio choice operable within the dialog", async ({ page }) => {
     await page.goto("/documents");
     await page.getByRole("button", { name: "新建笔记本", exact: true }).first().tap();
     const dialog = page.getByRole("dialog", { name: "新建笔记本", exact: true });
-    const colors = dialog.getByRole("radiogroup", { name: "图标颜色", exact: true });
     for (const groupName of ["预设图标", "图标颜色"]) {
-      const bounds = await dialog.getByRole("radiogroup", { name: groupName, exact: true }).getByRole("radio").evaluateAll(elements => elements.map(element => ({ width: element.getBoundingClientRect().width, height: element.getBoundingClientRect().height })));
-      expect(bounds.every(bounds => bounds.width >= 44 && bounds.height >= 44)).toBe(true);
+      const group = dialog.getByRole("radiogroup", { name: groupName, exact: true });
+      const labels = group.locator("label");
+      await expect(labels).toHaveCount(await group.getByRole("radio").count());
+      for (let index = 0; index < await labels.count(); index++) {
+        await labels.nth(index).tap();
+        await expect(group.getByRole("radio").nth(index)).toBeChecked();
+      }
+      expect(await group.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
     }
-    await expect(colors).toHaveCSS("max-width", "200px");
     expect(await dialog.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
   });
 });

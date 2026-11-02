@@ -51,7 +51,7 @@ describe("community auth flow", () => {
     await userEvent.type(screen.getByLabelText("邮箱"), "owner@example.com");
     await userEvent.type(screen.getByLabelText("密码"), "correct horse battery staple");
     await userEvent.click(screen.getByRole("button", { name: "创建并进入工作空间" }));
-    expect(await screen.findByText("系统已经完成初始化")).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent("系统已经完成初始化");
     expect(screen.getAllByRole("link", { name: "返回登录" })[0]).toHaveAttribute("href", "/login");
   });
 
@@ -64,7 +64,7 @@ describe("community auth flow", () => {
     await userEvent.type(screen.getByLabelText("密码"), "OrbisDev123!");
     await userEvent.click(screen.getByRole("button", { name: "登录 Orbis" }));
 
-    expect(await screen.findByText("请求字段校验失败")).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent("请求字段校验失败");
     expect(screen.queryByText(/密码至少需要 8 位/)).not.toBeInTheDocument();
     expect(screen.queryByText("无法继续")).not.toBeInTheDocument();
     expect(screen.getByRole("form", { name: "欢迎回到 Orbis" })).not.toHaveTextContent("邮箱格式不正确");
@@ -79,7 +79,7 @@ describe("community auth flow", () => {
     await userEvent.type(screen.getByLabelText("密码"), "OrbisDev123!");
     await userEvent.click(screen.getByRole("button", { name: "登录 Orbis" }));
 
-    expect(await screen.findByText("请求字段校验失败")).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent("请求字段校验失败");
     expect(screen.queryByText(/密码至少需要 8 位/)).not.toBeInTheDocument();
   });
 
@@ -91,7 +91,7 @@ describe("community auth flow", () => {
     await userEvent.click(screen.getByRole("button", { name: "登录 Orbis" }));
 
     expect(loginMock).toHaveBeenCalledWith({ email: "dev@example.com", password: "short" });
-    expect(await screen.findByText("Invalid credentials")).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent("Invalid credentials");
     expect(screen.queryByText(/至少需要 8 位/)).not.toBeInTheDocument();
   });
 
@@ -103,7 +103,7 @@ describe("community auth flow", () => {
     await userEvent.click(screen.getByRole("button", { name: "创建并进入工作空间" }));
 
     expect(setupMock).not.toHaveBeenCalled();
-    expect(await screen.findByText("密码需要 12 至 128 字节。")).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent("密码需要 12 至 128 字节。");
   });
 });
 

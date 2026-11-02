@@ -1,71 +1,276 @@
-import { Toast as Primitive } from "@base-ui/react/toast";
-import { useEffect, type ReactNode } from "react";
-import { cn } from "../cn";
-import { controlFocus } from "../internal/focus";
-import { ToolbarScopeBoundary } from "../internal/toolbar-scope";
-import { CircleCheck, OctagonAlert, TriangleAlert, Info, X } from "../icons";
-import { usePortalTheme } from "../internal/use-portal-theme";
+import * as React from "react"
+import { Toast as ToastPrimitive } from "@base-ui/react/toast"
+import { useRender } from "@base-ui/react/use-render"
+import { cn } from "cn"
+import { useOverlayScope } from "../internal/overlay-scope"
 
-type ToastOptions = { id?: string; title: ReactNode; description?: ReactNode; tone?: "default" | "accent" | "success" | "warning" | "danger"; timeout?: number };
-type ToastManager = { add: (options: ToastOptions) => string; update: (id: string, options: Partial<Omit<ToastOptions, "id">>) => void; close: (id: string) => void; clear: () => void };
-type Engine = ReturnType<typeof Primitive.createToastManager>;
-const managers = new WeakMap<ToastManager, { engine: Engine; mount: () => void; unmount: () => void }>();
-let nextId = 0;
+import { Button } from "@orbis/ui/button"
+import { XIcon, CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
 
-function createToastManager(): ToastManager {
-  const engine = Primitive.createToastManager();
-  const pending = new Map<string, ToastOptions>();
-  let mounted = false;
-  const nativeOptions = ({ tone, ...options }: ToastOptions) => ({ ...options, type: tone });
-  const manager: ToastManager = {
-    add(options) {
-      const id = options.id ?? `ob-toast-${++nextId}`;
-      if (mounted) engine.add({ ...nativeOptions(options), id });
-      else pending.set(id, options);
-      return id;
+const ToastHiddenContext = React.createContext(false)
+
+function AccessibleToastElement<State>({
+  render,
+  state,
+  defaultTagName,
+  ...elementProps
+}: React.HTMLAttributes<HTMLElement> & {
+  ref?: React.Ref<HTMLElement>
+  render?: useRender.RenderProp<State>
+  state: State
+  defaultTagName: "div" | "button"
+}) {
+  const parentHidden = React.useContext(ToastHiddenContext)
+  const [focused, setFocused] = React.useState(false)
+  const hidden = parentHidden || (!focused && (elementProps["aria-hidden"] === true || elementProps["aria-hidden"] === "true"))
+  // Base UI 1.9 的隐藏通知与 Close 仍带 tabIndex=0；隐藏时退出 Tab，真实聚焦后暴露给辅助技术。
+  const element = useRender({
+    defaultTagName,
+    render: typeof render === "function" ? props => render(props, state) : render,
+    props: {
+      ...elementProps,
+      ...(focused ? { "aria-hidden": undefined } : {}),
+      tabIndex: hidden ? -1 : elementProps.tabIndex,
+      onFocusCapture(event: React.FocusEvent<HTMLElement>) {
+        setFocused(true)
+        elementProps.onFocusCapture?.(event)
+      },
+      onBlurCapture(event: React.FocusEvent<HTMLElement>) {
+        if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false)
+        elementProps.onBlurCapture?.(event)
+      },
     },
-    update(id, options) {
-      if (mounted) { const { tone, ...updates } = options; engine.update(id, { ...updates, ...(tone === undefined ? {} : { type: tone }) }); }
-      else { const previous = pending.get(id); if (previous) pending.set(id, { ...previous, ...options }); }
-    },
-    close(id) { pending.delete(id); engine.close(id); },
-    clear() { pending.clear(); engine.close(); },
-  };
-  managers.set(manager, {
-    engine,
-    mount() { mounted = true; for (const [id, options] of pending) engine.add({ ...nativeOptions(options), id }); pending.clear(); },
-    unmount() { mounted = false; },
-  });
-  return manager;
+  })
+  return <ToastHiddenContext.Provider value={hidden}>{element}</ToastHiddenContext.Provider>
 }
 
-type ToastProviderProps = { manager: ToastManager; children?: ReactNode; timeout?: number; limit?: number; closeLabel?: string; className?: string; notificationRole?: "dialog" | "alertdialog" };
-function ToastProvider({ manager, timeout = 5000, limit = 3, closeLabel = "关闭通知", notificationRole = "dialog", children, className }: ToastProviderProps) {
-  const registered = managers.get(manager)!;
-  const { anchor, theme, portalStyle } = usePortalTheme();
-  // 子 Provider 先订阅事件，再重放挂载前产生的通知。
-  useEffect(() => { registered.mount(); return registered.unmount; }, [registered]);
-  return <><span hidden ref={anchor} /><Primitive.Provider toastManager={registered.engine} timeout={timeout} limit={limit}>
-    {children}
-    <ToolbarScopeBoundary><Primitive.Portal data-theme={theme} style={portalStyle}>
-      <Primitive.Viewport data-slot="ob-toast-viewport" aria-label="通知" role="region" aria-live="off" className={cn("fixed end-4 bottom-4 z-(--ob-z-toast) flex w-90 max-w-[calc(100vw-2rem)] flex-col gap-2 outline-none", className)}>
-        <ToastList closeLabel={closeLabel} notificationRole={notificationRole} />
-      </Primitive.Viewport>
-    </Primitive.Portal></ToolbarScopeBoundary>
-  </Primitive.Provider></>;
+const toast = ToastPrimitive.createToastManager()
+
+function ToastProvider({ ...props }: ToastPrimitive.Provider.Props) {
+  return <ToastPrimitive.Provider {...props} />
 }
-function ToastList({ closeLabel, notificationRole }: { closeLabel: string; notificationRole: "dialog" | "alertdialog" }) {
-  const { toasts } = Primitive.useToastManager();
-  return toasts.map(toast => {
-    const Icon = toast.type === "success" ? CircleCheck : toast.type === "danger" ? OctagonAlert : toast.type === "warning" ? TriangleAlert : Info;
-    const toneClass = toast.type === "success" ? "text-ob-toast-success" : toast.type === "danger" ? "text-ob-toast-danger" : toast.type === "warning" ? "text-ob-toast-warning" : toast.type === "accent" ? "text-ob-primary" : "text-ob-popover-foreground";
-    return <Primitive.Root key={toast.id} toast={toast} role={notificationRole} data-slot="ob-toast" className="relative flex items-start gap-1.5 rounded-ob-xl border border-ob-border bg-ob-popover px-4 py-3 pe-11 text-ob-popover-foreground shadow-lg outline-none transition-opacity duration-(--ob-motion-popover) data-starting-style:opacity-0 data-ending-style:opacity-0 data-limited:hidden">
-      <span aria-hidden="true" data-slot="ob-toast-indicator" className={cn("grid size-6 shrink-0 place-items-center", toneClass)}><Icon size={16} /></span>
-      <Primitive.Content role={notificationRole === "alertdialog" ? "alert" : "status"} aria-atomic="true" className="min-w-0 flex-1 self-center wrap-anywhere"><Primitive.Title className={cn("text-sm leading-5 font-medium", toneClass)} />{toast.description ? <Primitive.Description className="mt-1 text-sm text-ob-muted-foreground" /> : null}</Primitive.Content>
-      {/* 列表逐条完整展开，关闭按钮始终可见，也应始终对辅助技术可见。 */}
-      <Primitive.Close aria-hidden={false} aria-label={closeLabel} className={cn("absolute end-2 top-2 grid size-8 place-items-center rounded-ob-sm text-ob-muted-foreground hover:bg-ob-accent", controlFocus)}><X aria-hidden="true" size={14} /></Primitive.Close>
-    </Primitive.Root>;
-  });
+
+function ToastPortal({ ...props }: ToastPrimitive.Portal.Props) {
+  const scope = useOverlayScope()
+  return <ToastPrimitive.Portal data-slot="toast-portal" {...scope} {...props} />
 }
-export { createToastManager, ToastProvider };
-export type { ToastManager, ToastOptions, ToastProviderProps };
+
+function ToastViewport({ className, ...props }: ToastPrimitive.Viewport.Props) {
+  return (
+    <ToastPrimitive.Viewport
+      data-slot="toast-viewport"
+      aria-label="通知"
+      className={cn(
+        "pointer-events-none fixed inset-x-4 bottom-4 z-50 mx-auto w-auto max-w-sm outline-none sm:right-4 sm:left-auto sm:mx-0 sm:w-full",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function Toast({ className, render, ...props }: ToastPrimitive.Root.Props) {
+  return (
+    <ToastPrimitive.Root
+      data-slot="toast"
+      className={cn(
+        "group/toast pointer-events-auto absolute right-0 bottom-0 z-[calc(1000-var(--toast-index))] w-full origin-bottom rounded-2xl border bg-popover text-popover-foreground shadow-lg will-change-transform outline-none select-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50",
+        "[--gap:0.75rem] [--height:var(--toast-frontmost-height,var(--toast-height))] [--offset-y:calc(var(--toast-offset-y)*-1+calc(var(--toast-index)*var(--gap)*-1)+var(--toast-swipe-movement-y))] [--peek:0.75rem] [--scale:calc(max(0,1-(var(--toast-index)*0.1)))] [--shrink:calc(1-var(--scale))]",
+        "h-(--height) [transform:translateX(var(--toast-swipe-movement-x))_translateY(calc(var(--toast-swipe-movement-y)-(var(--toast-index)*var(--peek))-(var(--shrink)*var(--height))))_scale(var(--scale))] [transition:transform_500ms_cubic-bezier(0.22,1,0.36,1),opacity_500ms,height_150ms]",
+        "after:absolute after:top-full after:left-0 after:h-[calc(var(--gap)+1px)] after:w-full after:content-['']",
+        "data-expanded:h-(--toast-height) data-expanded:[transform:translateX(var(--toast-swipe-movement-x))_translateY(var(--offset-y))]",
+        "data-limited:opacity-0 data-starting-style:[transform:translateY(150%)]",
+        "[&[data-ending-style]:not([data-limited]):not([data-swipe-direction])]:[transform:translateY(150%)]",
+        "data-ending-style:data-[swipe-direction=down]:[transform:translateY(calc(var(--toast-swipe-movement-y)+150%))]",
+        "data-ending-style:data-[swipe-direction=left]:[transform:translateX(calc(var(--toast-swipe-movement-x)-150%))_translateY(var(--offset-y))]",
+        "data-ending-style:data-[swipe-direction=right]:[transform:translateX(calc(var(--toast-swipe-movement-x)+150%))_translateY(var(--offset-y))]",
+        "data-ending-style:data-[swipe-direction=up]:[transform:translateY(calc(var(--toast-swipe-movement-y)-150%))]",
+        "data-expanded:data-ending-style:data-[swipe-direction=down]:[transform:translateY(calc(var(--toast-swipe-movement-y)+150%))]",
+        "data-expanded:data-ending-style:data-[swipe-direction=left]:[transform:translateX(calc(var(--toast-swipe-movement-x)-150%))_translateY(var(--offset-y))]",
+        "data-expanded:data-ending-style:data-[swipe-direction=right]:[transform:translateX(calc(var(--toast-swipe-movement-x)+150%))_translateY(var(--offset-y))]",
+        "data-expanded:data-ending-style:data-[swipe-direction=up]:[transform:translateY(calc(var(--toast-swipe-movement-y)-150%))]",
+        className
+      )}
+      {...props}
+      render={(elementProps, state) => <AccessibleToastElement {...elementProps} render={render} state={state} defaultTagName="div" />}
+    />
+  )
+}
+
+function ToastContent({ className, ...props }: ToastPrimitive.Content.Props) {
+  return (
+    <ToastPrimitive.Content
+      data-slot="toast-content"
+      className={cn(
+        "flex h-full items-center gap-3 overflow-hidden p-4 transition-opacity duration-250 ease-[cubic-bezier(0.22,1,0.36,1)] data-behind:opacity-0 data-expanded:opacity-100",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function ToastTitle({ className, ...props }: ToastPrimitive.Title.Props) {
+  return (
+    <ToastPrimitive.Title
+      data-slot="toast-title"
+      className={cn("text-sm font-medium", className)}
+      {...props}
+    />
+  )
+}
+
+function ToastDescription({
+  className,
+  ...props
+}: ToastPrimitive.Description.Props) {
+  return (
+    <ToastPrimitive.Description
+      data-slot="toast-description"
+      className={cn("text-sm text-muted-foreground", className)}
+      {...props}
+    />
+  )
+}
+
+function ToastAction({
+  className,
+  render = <Button variant="outline" size="sm" />,
+  ...props
+}: ToastPrimitive.Action.Props) {
+  const hidden = React.useContext(ToastHiddenContext)
+  return (
+    <ToastPrimitive.Action
+      data-slot="toast-action"
+      render={render}
+      tabIndex={hidden ? -1 : undefined}
+      className={cn("shrink-0", className)}
+      {...props}
+    />
+  )
+}
+
+function ToastClose({
+  className,
+  children,
+  render = <Button variant="ghost" size="icon-sm" />,
+  ...props
+}: ToastPrimitive.Close.Props) {
+  return (
+    <ToastPrimitive.Close
+      data-slot="toast-close"
+      aria-label="关闭通知"
+      render={(elementProps, state) => <AccessibleToastElement {...elementProps} render={render} state={state} defaultTagName="button" />}
+      className={cn(
+        "relative shrink-0 text-muted-foreground after:absolute after:-inset-2 after:content-[''] hover:text-foreground",
+        className
+      )}
+      {...props}
+    >
+      {children ?? (
+        <XIcon aria-hidden="true" />
+      )}
+    </ToastPrimitive.Close>
+  )
+}
+
+function ToastIcon({ type }: { type: string | undefined }) {
+  let icon: React.ReactNode = null
+
+  if (type === "success") {
+    icon = (
+      <CircleCheckIcon aria-hidden="true" />
+    )
+  }
+
+  if (type === "info") {
+    icon = (
+      <InfoIcon aria-hidden="true" />
+    )
+  }
+
+  if (type === "warning") {
+    icon = (
+      <TriangleAlertIcon aria-hidden="true" />
+    )
+  }
+
+  if (type === "error") {
+    icon = (
+      <OctagonXIcon className="text-destructive" aria-hidden="true" />
+    )
+  }
+
+  if (type === "loading") {
+    icon = (
+      <Loader2Icon className="animate-spin" aria-hidden="true" />
+    )
+  }
+
+  if (!icon) {
+    return null
+  }
+
+  return (
+    <span
+      data-slot="toast-icon"
+      className="shrink-0 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4"
+    >
+      {icon}
+    </span>
+  )
+}
+
+function ToastList() {
+  const { toasts } = ToastPrimitive.useToastManager()
+
+  return toasts.map((toastItem) => (
+    <Toast key={toastItem.id} toast={toastItem}>
+      <ToastContent>
+        <ToastIcon type={toastItem.type} />
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <ToastTitle />
+          <ToastDescription />
+        </div>
+        <ToastAction />
+        <ToastClose />
+      </ToastContent>
+    </Toast>
+  ))
+}
+
+function Toaster({
+  children,
+  toastManager = toast,
+  ...props
+}: ToastPrimitive.Provider.Props) {
+  return (
+    <ToastProvider toastManager={toastManager} {...props}>
+      {children}
+      <ToastPortal>
+        <ToastViewport>
+          <ToastList />
+        </ToastViewport>
+      </ToastPortal>
+    </ToastProvider>
+  )
+}
+
+const createToastManager = ToastPrimitive.createToastManager
+const useToastManager = ToastPrimitive.useToastManager
+
+export {
+  Toaster,
+  Toast,
+  ToastAction,
+  ToastClose,
+  ToastContent,
+  ToastDescription,
+  ToastPortal,
+  ToastProvider,
+  ToastTitle,
+  ToastViewport,
+  createToastManager,
+  toast,
+  useToastManager,
+}

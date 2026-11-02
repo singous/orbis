@@ -1,4 +1,4 @@
-.document-prose .doc-callout { display: flex; gap: 13px; margin: 24px 0; padding: 17px 20px; border: 1px solid var(--ob-content-callout-border, var(--ob-content-callout-info-border)); border-radius: 10px; background: var(--ob-content-callout-background, var(--ob-content-callout-info-background)); color: var(--reading-text, var(--ob-foreground)); font-size: var(--ob-prose-body-size); line-height: 1.85; }
+.document-prose .doc-callout { display: flex; gap: 13px; margin: 24px 0; padding: 17px 20px; border: 1px solid var(--ob-content-callout-border, var(--ob-content-callout-info-border)); border-radius: 10px; background: var(--ob-content-callout-background, var(--ob-content-callout-info-background)); color: var(--reading-text, var(--foreground)); font-size: var(--ob-prose-body-size); line-height: 1.85; }
 .document-prose .doc-callout > svg { flex: none; margin-top: 3px; color: var(--ob-content-callout-icon, var(--ob-content-callout-info-icon)); }
 .document-prose .doc-callout > div { min-width: 0; }
 .document-prose .doc-callout-title { display: block; margin-bottom: 4px; }
@@ -8,16 +8,16 @@
 .document-prose .doc-callout-success { --ob-content-callout-border: var(--ob-content-callout-success-border); --ob-content-callout-background: var(--ob-content-callout-success-background); --ob-content-callout-icon: var(--ob-content-callout-success-icon); }
 .document-prose .doc-callout-danger { --ob-content-callout-border: var(--ob-content-callout-danger-border); --ob-content-callout-background: var(--ob-content-callout-danger-background); --ob-content-callout-icon: var(--ob-content-callout-danger-icon); }
 .document-prose .doc-card-grid { display: grid; grid-template-columns: repeat(var(--doc-card-columns, 2), minmax(0, 1fr)); gap: 15px; margin: 25px 0; }
-.document-prose .doc-card { border: 1px solid var(--reading-border, var(--ob-content-border)); border-radius: 12px; padding: 22px; min-width: 0; background: var(--reading-bg, var(--ob-surface)); transition: border-color 140ms ease; }
-.document-prose .doc-card:hover { border-color: color-mix(in srgb, var(--reading-accent, var(--ob-primary)) 45%, var(--reading-border, var(--ob-content-border))); }
-.document-prose .doc-card > svg { color: var(--reading-accent, var(--ob-primary)); margin-bottom: 12px; }
+.document-prose .doc-card { border: 1px solid var(--reading-border, var(--ob-content-border)); border-radius: 12px; padding: 22px; min-width: 0; background: var(--reading-bg, var(--card)); transition: border-color 140ms ease; }
+.document-prose .doc-card:hover { border-color: color-mix(in srgb, var(--reading-accent, var(--primary)) 45%, var(--reading-border, var(--ob-content-border))); }
+.document-prose .doc-card > svg { color: var(--reading-accent, var(--primary)); margin-bottom: 12px; }
 .document-prose .doc-card h3 { margin: 0 0 8px; font-size: var(--ob-prose-h3-size); line-height: 1.5; letter-spacing: -.01em; }
 .document-prose .doc-card h3 a { display: flex; align-items: center; justify-content: space-between; gap: 10px; text-decoration: none; color: inherit; }
 .document-prose .doc-card h3 a svg { opacity: .5; flex: none; }
-.document-prose .doc-card p { margin: 6px 0; font-size: var(--ob-prose-body-size); line-height: 1.8; color: var(--reading-muted, var(--ob-page-muted-foreground)); }
+.document-prose .doc-card p { margin: 6px 0; font-size: var(--ob-prose-body-size); line-height: 1.8; color: var(--reading-muted, var(--muted-foreground)); }
 .document-prose .doc-steps { list-style: none; padding: 0; margin: 28px 0; counter-reset: doc-step; }
 .document-prose .doc-steps > li { position: relative; counter-increment: doc-step; margin: 0; padding: 0 0 28px 46px; min-height: 48px; }
-.document-prose .doc-steps > li::before { content: counter(doc-step); display: grid; place-items: center; position: absolute; top: 2px; left: 0; height: 28px; width: 28px; border-radius: 50%; font-size: var(--ob-prose-caption-size); font-weight: 600; color: var(--reading-muted, var(--ob-page-muted-foreground)); background: var(--reading-muted-bg, var(--ob-item-hover-bg)); border: 1px solid var(--reading-border, var(--ob-content-border)); }
+.document-prose .doc-steps > li::before { content: counter(doc-step); display: grid; place-items: center; position: absolute; top: 2px; left: 0; height: 28px; width: 28px; border-radius: 50%; font-size: var(--ob-prose-caption-size); font-weight: 600; color: var(--reading-muted, var(--muted-foreground)); background: var(--reading-muted-bg, var(--accent)); border: 1px solid var(--reading-border, var(--ob-content-border)); }
 .document-prose .doc-steps > li:not(:last-child)::after { content: ""; position: absolute; left: 14px; top: 38px; bottom: 9px; border-left: 1px solid var(--reading-border, var(--ob-content-border)); }
 .document-prose .doc-step > h3 { margin: 0 0 12px; padding-top: 1px; font-size: var(--ob-prose-h3-size); line-height: 1.6; }
 .document-prose .doc-step > :last-child { margin-bottom: 0; }
@@ -29,6 +29,6 @@
 .document-prose .hljs-string, .document-prose .hljs-attr, .document-prose .hljs-regexp { color: var(--ob-content-code-string); }
 .document-prose .hljs-number, .document-prose .hljs-literal, .document-prose .hljs-symbol { color: var(--ob-content-code-number); }
 .document-prose .hljs-comment, .document-prose .hljs-quote, .document-prose .hljs-meta { color: var(--ob-content-code-comment); }
-.document-prose .hljs-title, .document-prose .hljs-name { color: var(--reading-accent, var(--ob-primary)); }
+.document-prose .hljs-title, .document-prose .hljs-name { color: var(--reading-accent, var(--primary)); }
 @media (max-width: 700px) { .document-prose .doc-card-grid { grid-template-columns: 1fr; }.document-prose .doc-card { padding: 19px; }.document-prose .doc-callout { padding: 14px; }.document-prose .doc-steps > li { padding-left: 40px; } }
 @media (prefers-reduced-motion: reduce) { .document-prose .doc-card { transition: none; } }

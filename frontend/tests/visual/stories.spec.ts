@@ -9,21 +9,21 @@ type StoryCase = {
 
 const stories: StoryCase[] = [
   { name: "avatar", id: "primitives-avatar--sizes", prepare: async page => {
-    await expect(page.locator('[data-slot="ob-avatar"]')).toHaveCount(3);
+    await expect(page.locator('[data-slot="avatar"]')).toHaveCount(3);
     await expect(page.getByText("张", { exact: true })).toHaveCount(3);
   } },
-  { name: "badge", id: "primitives-badge--tones", prepare: async page => {
-    await expect(page.getByText("neutral", { exact: true })).toBeVisible();
-    await expect(page.getByText("danger", { exact: true })).toBeVisible();
+  { name: "badge", id: "primitives-badge--variants", prepare: async page => {
+    await expect(page.getByText("default", { exact: true })).toBeVisible();
+    await expect(page.getByText("destructive", { exact: true })).toBeVisible();
   } },
   { name: "button", id: "primitives-button--variants", prepare: async page => {
-    await expect(page.getByRole("button", { name: "primary", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "default", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "不可用", exact: true })).toBeDisabled();
   } },
   { name: "button-loading", id: "primitives-button--loading", prepare: async page => {
     const button = page.getByRole("button", { name: "保存中…", exact: true });
     await expect(button).toHaveAttribute("aria-disabled", "true");
-    await expect(button).toHaveAttribute("data-loading", "true");
+    await expect(button).toHaveAttribute("aria-busy", "true");
     await expect(button.locator('[aria-hidden="true"]')).toBeVisible();
   } },
   { name: "checkbox", id: "primitives-checkbox--keyboard", prepare: async page => {
@@ -66,8 +66,8 @@ const stories: StoryCase[] = [
     await expect(page.getByRole("radiogroup", { name: "外观", exact: true })).toBeVisible();
     await expect(page.getByRole("radio", { name: "白天", exact: true })).toBeChecked();
   } },
-  { name: "select", id: "primitives-select--description-and-density", prepare: async page => {
-    await page.getByRole("combobox", { name: "form", exact: true }).click();
+  { name: "select", id: "primitives-select--labeled-items", prepare: async page => {
+    await page.getByRole("combobox", { name: "default", exact: true }).click();
     await expect(page.getByRole("option", { name: "零", exact: true })).toBeVisible();
   } },
   { name: "sheet", id: "primitives-sheet--focus", prepare: async page => {
@@ -77,8 +77,8 @@ const stories: StoryCase[] = [
     await expect(popup.getByText("查看和恢复已保存的正文。", { exact: true })).toBeVisible();
   } },
   { name: "skeleton", id: "primitives-skeleton--default", prepare: async page => {
-    await expect(page.locator('[data-slot="ob-skeleton"]')).toHaveCount(3);
-    await expect(page.locator('[data-slot="ob-skeleton"]').first()).toBeVisible();
+    await expect(page.locator('[data-slot="skeleton"]')).toHaveCount(3);
+    await expect(page.locator('[data-slot="skeleton"]').first()).toBeVisible();
   } },
   { name: "spinner", id: "primitives-spinner--default", prepare: async page => {
     await expect(page.getByRole("status", { name: "加载中", exact: true })).toBeVisible();

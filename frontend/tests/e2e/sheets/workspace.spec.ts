@@ -1,4 +1,5 @@
 import { expectTokenStyles } from "../helpers/theme-probes";
+import { notification } from "../helpers/notifications";
 import { expect, test } from "@playwright/test";
 import {
   ownerSession,
@@ -465,19 +466,20 @@ test("sheet controls follow the Orbis theme in light and dark appearances", asyn
       exact: true,
     });
 
-    // 主操作和输入框使用各自拥有的 canonical 角色；输入框在 hover/focus 时保留表面颜色。
+    // 主操作使用原生主题色，输入框的边框、圆角、字体与焦点遵循原生 token。
     await page.mouse.move(0, 0);
-    await expectTokenStyles(submit, { "background-color": "--ob-primary", color: "--ob-primary-foreground" });
+    await expectTokenStyles(submit, { "background-color": "--primary", color: "--primary-foreground" });
     const field = dialog.getByRole("textbox", { name: "字段名称", exact: true });
     await submit.focus();
-    await expectTokenStyles(field, { "background-color": "--ob-surface", "border-radius": "--ob-radius-lg" });
+    await expectTokenStyles(field, { "border-color": "--input", "border-radius": "--radius-lg", "font-family": "--font-sans" });
+    const fieldBackground = await field.evaluate(element => getComputedStyle(element).backgroundColor);
     await field.hover();
-    await expectTokenStyles(field, { "background-color": "--ob-surface" });
+    await expect(field).toHaveCSS("background-color", fieldBackground);
     await field.focus();
-    await expectTokenStyles(field, { "background-color": "--ob-surface", "outline-color": "--ob-ring" });
+    await expect(field).toHaveCSS("background-color", fieldBackground);
+    await expectTokenStyles(field, { "border-color": "--ring", "outline-color": "--ring" });
     await expect(field).toHaveCSS("outline-style", "solid");
     await expect(field).toHaveCSS("outline-width", "2px");
-    await expect(field).toHaveCSS("font-family", /Inter Variable/);
     await page.screenshot({
       path: test.info().outputPath(`native-field-${mode}.png`),
       animations: "disabled",
@@ -800,7 +802,7 @@ test("inline edits preserve newer typing through a lost save response and retry"
   const input = page.getByRole("textbox", { name: "文本", exact: true });
   await input.fill("第一次保存");
   await input.press("Enter");
-  await expect(page.getByRole("alertdialog", { name: "网络异常，请稍后重试", exact: true })).toBeVisible();
+  await expect(notification(page, "网络异常，请稍后重试")).toBeVisible();
   await input.fill("继续输入的新内容");
   await page.getByRole("button", { name: "本机修改", exact: true }).click();
   const retry = page.getByRole("dialog", { name: "本机修改", exact: true }).getByRole("button", { name: "重试保存", exact: true });

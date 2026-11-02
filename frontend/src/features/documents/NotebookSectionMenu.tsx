@@ -10,7 +10,7 @@ import { sheetAPI } from "../sheets/api";
 import { boardAPI } from "../boards/api";
 import { Shapes, StickyNote, Table2 } from "@orbis/ui/icons";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@orbis/ui/dropdown-menu";
-import { Button as MenuButton } from "@orbis/ui/button";
+import { Button } from "@orbis/ui/button";
 import type { WorkspaceSidebarConfig } from "../workspace/workspace-sidebar-config";
 import { useStore } from "zustand";
 import { Link, NavLink, useNavigate } from "react-router-dom";
@@ -41,7 +41,7 @@ export function createNotebookSidebar(
     title: <NotebookSidebarTitle notebookId={notebookId} />,
     titlePlacement: "below-header",
     leadingActions: (
-      <Link to="/documents" className="notebook-menu-back ob-focus-ring m-0 grid size-(--ob-control-height-sm) shrink-0 place-items-center gap-[5px] rounded-ob-xl px-1 py-0.5 text-sm font-medium leading-5 transition-colors duration-(--ob-motion-feedback) ease-[ease] motion-reduce:transition-none text-(--ob-page-muted-foreground) hover:bg-(--ob-item-hover-bg) hover:text-ob-foreground" aria-label="返回文档中心" title="返回文档中心">
+      <Link to="/documents" className="notebook-menu-back focus-ring m-0 grid size-(--ob-control-height-sm) shrink-0 place-items-center gap-[5px] rounded-xl px-1 py-0.5 text-sm font-medium leading-5 transition-colors duration-(--ob-motion-feedback) ease-[ease] motion-reduce:transition-none text-(--muted-foreground) hover:bg-(--accent) hover:text-foreground" aria-label="返回文档中心" title="返回文档中心">
         <ArrowLeft aria-hidden="true" size={18} />
       </Link>
     ),
@@ -63,7 +63,7 @@ export function createNotebookSidebar(
 function NotebookSidebarTitle({ notebookId }: { notebookId: string }) {
   const notebook = useNotebook(notebookId).data;
   return (
-    <Link to={`/collections/${notebookId}`} className="notebook-menu-title ob-focus-ring mt-1.5 flex min-h-(--ob-control-height-md) min-w-0 items-center gap-2 text-base font-semibold leading-6 tracking-[-.01em] text-ob-foreground hover:text-ob-primary [&>.notebook-icon]:shrink-0" title={notebook?.title}>
+    <Link to={`/collections/${notebookId}`} className="notebook-menu-title focus-ring mt-1.5 flex min-h-(--ob-control-height-md) min-w-0 items-center gap-2 text-base font-semibold leading-6 tracking-[-.01em] text-foreground hover:text-primary [&>.notebook-icon]:shrink-0" title={notebook?.title}>
       <NotebookIdentity notebook={notebook} variant="sidebar" />
     </Link>
   );
@@ -136,12 +136,12 @@ function NotebookCreateAction({ notebookId }: { notebookId: string }) {
   const creating = createNote.isPending || creatingTable || creatingBoard;
   return canMutateWorkspaceContent(workspace) ? (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild disabled={creating}><MenuButton appearance="unstyled" type="button" className="notebook-menu-create grid size-(--ob-control-height-sm) shrink-0 place-items-center rounded-ob-xl border border-ob-workspace-outline bg-ob-card text-ob-foreground" aria-label="创建内容" title="创建内容"><Plus aria-hidden="true" size={18} /></MenuButton></DropdownMenuTrigger>
+      <DropdownMenuTrigger disabled={creating} render={<Button  type="button" className="notebook-menu-create grid size-(--ob-control-height-sm) shrink-0 place-items-center rounded-xl border border-border bg-card text-foreground" aria-label="创建内容" title="创建内容" variant="ghost" size="icon"><Plus aria-hidden="true" size={18} /></Button>} />
       <DropdownMenuContent align="start" sideOffset={6} className="notebook-create-popover w-45 p-1 [&_[role=menuitem]]:min-h-(--ob-control-height-lg) [&_[role=menuitem]]:gap-3 [&_svg]:size-4.5 [&_svg]:shrink-0" aria-label="创建内容">
-        <DropdownMenuItem textValue="随手记" onSelect={() => navigate("/documents/quick-notes")}><StickyNote aria-hidden="true" size={16} className="notebook-create-quick-note text-(--ob-icon-mint)" /><span>随手记</span></DropdownMenuItem>
-        <DropdownMenuItem textValue="文档" disabled={!tree.isSuccess} onSelect={() => { void createDocument(); }}><FilePlus2 aria-hidden="true" size={16} className="notebook-create-document text-(--ob-icon-blue)" /><span>文档</span></DropdownMenuItem>
-        {releaseFeatures.boardCreation && <DropdownMenuItem textValue="画板" disabled={!tree.isSuccess} onSelect={() => { void createBoard(); }}><Shapes aria-hidden="true" size={16} className="notebook-create-board text-(--ob-icon-violet)" /><span>画板</span></DropdownMenuItem>}
-        <DropdownMenuItem textValue="数据表" disabled={!tree.isSuccess} onSelect={() => { void createTable(); }}><Table2 aria-hidden="true" size={16} className="notebook-create-table text-(--ob-icon-cyan)" /><span>数据表</span></DropdownMenuItem>
+        <DropdownMenuItem label="随手记" onClick={() => navigate("/documents/quick-notes")}><StickyNote aria-hidden="true" size={16} className="notebook-create-quick-note text-(--ob-icon-mint)" /><span>随手记</span></DropdownMenuItem>
+        <DropdownMenuItem label="文档" disabled={!tree.isSuccess} onClick={() => { void createDocument(); }}><FilePlus2 aria-hidden="true" size={16} className="notebook-create-document text-(--ob-icon-blue)" /><span>文档</span></DropdownMenuItem>
+        {releaseFeatures.boardCreation && <DropdownMenuItem label="画板" disabled={!tree.isSuccess} onClick={() => { void createBoard(); }}><Shapes aria-hidden="true" size={16} className="notebook-create-board text-(--ob-icon-violet)" /><span>画板</span></DropdownMenuItem>}
+        <DropdownMenuItem label="数据表" disabled={!tree.isSuccess} onClick={() => { void createTable(); }}><Table2 aria-hidden="true" size={16} className="notebook-create-table text-(--ob-icon-cyan)" /><span>数据表</span></DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   ) : null;
@@ -169,9 +169,9 @@ export function NotebookSectionMenu({
           <span>首页</span>
         </NavLink>
         {releaseFeatures.documentFavorites && <DropdownMenu>
-          <DropdownMenuTrigger asChild><MenuButton appearance="unstyled" type="button" className="notebook-home-more grid size-(--ob-control-height-sm) shrink-0 place-items-center text-(--ob-page-muted-foreground)" aria-label="笔记本快捷操作" title="笔记本快捷操作"><MoreHorizontal aria-hidden="true" size={18} /></MenuButton></DropdownMenuTrigger>
+          <DropdownMenuTrigger render={<Button  type="button" className="notebook-home-more grid size-(--ob-control-height-sm) shrink-0 place-items-center text-(--muted-foreground)" aria-label="笔记本快捷操作" title="笔记本快捷操作" variant="ghost" size="icon"><MoreHorizontal aria-hidden="true" size={18} /></Button>} />
           <DropdownMenuContent align="end" sideOffset={4} aria-label="笔记本快捷操作">
-            <DropdownMenuItem textValue={isPinned(notebookId) ? "取消常用" : "设为常用"} onSelect={() => togglePin(notebookId)}><Pin aria-hidden="true" size={16} /><span>{isPinned(notebookId) ? "取消常用" : "设为常用"}</span></DropdownMenuItem>
+            <DropdownMenuItem label={isPinned(notebookId) ? "取消常用" : "设为常用"} onClick={() => togglePin(notebookId)}><Pin aria-hidden="true" size={16} /><span>{isPinned(notebookId) ? "取消常用" : "设为常用"}</span></DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>}
       </div>

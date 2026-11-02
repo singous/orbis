@@ -1,6 +1,6 @@
 import { ReadStatus } from "../../shared/ui/ReadStatus";
 import { LoadingState } from "../../shared/ui/LoadingState";
-import { Button } from "../../shared/ui/Button";
+import { Button } from "@orbis/ui/button";
 import { ApiError } from "../../shared/api/api-client";
 import { useReaderMetadata } from "./reader/head-metadata";
 

@@ -19,7 +19,7 @@ async function mountEditor(page: Page, placement: "inline" | "document", loader 
     const insertURL = "/src/features/documents/editor/tiptap-insert.ts";
     const layoutURL = "/src/features/documents/editor/EditorLayout.tsx";
     const chromeURL = "/src/features/workspace/workspace-chrome.ts";
-    const [{ default: React }, { default: ReactDOM }, router, query, { TiptapEditor }, { EditorToolbarFrame }, { createDocumentBlock }, { EditorLayout, EditorOutlineStore }, chrome] = await Promise.all([import(reactURL), import(domURL), import(routerURL), import(queryURL), import(editorURL), import(frameURL), import(insertURL), import(layoutURL), import(chromeURL)]);
+    const [{ default: React }, { default: ReactDOM }, router, query, { TiptapEditor }, { EditorToolbarFrame }, { createDocumentBlock }, { EditorLayout, EditorOutlineStore }, chrome, { useElementTheme, OverlayScopeProvider }] = await Promise.all([import(reactURL), import(domURL), import(routerURL), import(queryURL), import(editorURL), import(frameURL), import(insertURL), import(layoutURL), import(chromeURL), import("/packages/ui/src/portal/index.tsx")]);
     const heading = { id: "editor-heading", type: "heading", props: { level: 2 }, content: [{ type: "text", text: "章节标题", styles: {} }], children: [] };
     const paragraph = { id: "editor-paragraph", type: "paragraph", props: {}, content: [{ type: "text", text: "编辑正文", styles: {} }], children: [] };
     const callout = createDocumentBlock("callout");
@@ -33,19 +33,20 @@ async function mountEditor(page: Page, placement: "inline" | "document", loader 
     host.className = placement === "document" ? chrome.workspaceShellClassName + " flex flex-col" : "p-6";
     if (scope) {
       host.dataset.theme = scope.theme;
-      host.style.setProperty("--ob-foreground", scope.foreground);
-      host.style.setProperty("--ob-item-foreground", scope.foreground);
-      host.style.setProperty("--ob-surface-raised", scope.surface);
+      host.style.setProperty("--foreground", scope.foreground);
+      host.style.setProperty("--popover-foreground", scope.foreground);
+      host.style.setProperty("--popover", scope.surface);
     }
     document.body.append(host);
     function Preview() {
+      const theme = useElementTheme(host);
       const [blocks, setBlocks] = React.useState(initial);
       const [loads, setLoads] = React.useState(() => new Map(loader ? [[paragraph.id, { id: paragraph.id, parent_id: null, child_count: 2, has_children: true, children_loaded: false, payload_loaded: true, payload_bytes: 16, cursor: null, loaded_count: 0, error: "原始载入错误" }]] : []));
       const [receipt, setReceipt] = React.useState("");
       const [outline] = React.useState(() => { const value = new EditorOutlineStore(); value.update(initial); return value; });
       const editor = React.createElement(TiptapEditor, { blocks, onChange: ({ blocks }: { blocks: typeof initial }) => { setBlocks(blocks); outline.update(blocks); }, noteId: "00000000-0000-4000-8000-000000000020", loadStates: loads, onLoadBlock: async (id: string) => { setReceipt(id); setLoads(new Map()); } });
       const content = React.createElement(EditorLayout, { outlineStore: outline }, editor);
-      return React.createElement(React.Fragment, null,
+      return React.createElement(OverlayScopeProvider, { value: theme ? { "data-theme": theme.theme, className: theme.theme, style: theme.portalStyle } : undefined },
         placement === "document" ? React.createElement(EditorToolbarFrame, null, content) : content,
         React.createElement("output", { "data-testid": "editor-model", hidden: true }, JSON.stringify(blocks)),
         React.createElement("output", { "data-testid": "loader-receipt", hidden: true }, receipt));
@@ -66,13 +67,12 @@ for (const theme of ["light", "dark"]) test(`content loader ${theme} retains its
   await expect(loader.getByRole("alert")).toHaveText("原始载入错误");
   const [readability] = await readContrasts(page.getByTestId("editor-preview"), [".editor-content-loader-error"]);
   expect(readability.ratio, `${theme} loader error: ${readability.color} on ${readability.background}`).toBeGreaterThanOrEqual(4.5);
-  await expect(button).toHaveCSS("font-size", "13px");
-  await expect(button).toHaveCSS("border-width", "0px");
+  await expect(button).toBeEnabled();
   await editor.focus();
   await page.keyboard.press("Tab");
   await expect(button).toBeFocused();
   await expect(button).toHaveCSS("outline-style", "solid");
-  await expect(button).toHaveCSS("outline-width", "2px");
+  expect(await button.evaluate(element => parseFloat(getComputedStyle(element).outlineWidth))).toBeGreaterThanOrEqual(2);
   await page.keyboard.press("Enter");
   await expect(loader).toHaveCount(0);
   await expect(page.getByTestId("loader-receipt")).toHaveText("editor-paragraph");
@@ -152,7 +152,7 @@ async function recordEditor(page: Page, state: string, theme: string, placement:
     await Promise.all(document.getAnimations().filter(animation => animation instanceof CSSTransition).map(animation => animation.finished.catch(() => {})));
   });
   const values = await page.evaluate(() => {
-    const selectors = [".orbis-tiptap-toolbar", ".editor-block-type", ".orbis-tiptap-toolbar button", ".orbis-tiptap-toolbar-divider", ".editor-text-style-tools", ".orbis-tiptap-menu", ".orbis-tiptap-menu button", ".editor-more-menu", ".editor-more-menu button", ".orbis-block-controls", ".block-grip", ".orbis-block-menu", ".block-menu-heading", ".orbis-block-menu button", ".orbis-block-menu kbd", ".orbis-block-menu .orbis-select-field", ".block-menu-separator", ".doc-editor-callout", ".doc-editor-settings", ".doc-editor-controls", ".doc-editor-controls label", ".doc-editor-controls button", ".doc-editor-panes", ".doc-editor-panes button", ".orbis-code-toolbar", ".editor-outline-link"];
+    const selectors = [".orbis-tiptap-toolbar", ".editor-block-type", ".orbis-tiptap-toolbar button", ".orbis-tiptap-toolbar-divider", ".editor-text-style-tools", ".orbis-tiptap-menu", ".orbis-tiptap-menu button", ".editor-more-menu", ".editor-more-menu button", ".orbis-block-controls", ".block-grip", ".orbis-block-menu", ".block-menu-heading", ".orbis-block-menu button", ".orbis-block-menu kbd", '.orbis-block-menu [data-slot="select-trigger"]', ".block-menu-separator", ".doc-editor-callout", ".doc-editor-settings", ".doc-editor-controls", ".doc-editor-controls label", ".doc-editor-controls button", ".doc-editor-panes", ".doc-editor-panes button", ".orbis-code-toolbar", ".editor-outline-link"];
     return selectors.flatMap(selector => Array.from(document.querySelectorAll<HTMLElement>(selector)).slice(0, 12).map((element, index) => {
       const style = getComputedStyle(element), rect = element.getBoundingClientRect();
       return { selector, index, x: rect.x, y: rect.y, width: rect.width, height: rect.height, display: style.display, position: style.position, color: style.color, background: style.backgroundColor, border: style.border, radius: style.borderRadius, padding: style.padding, margin: style.margin, gap: style.gap, fontSize: style.fontSize, lineHeight: style.lineHeight, fontWeight: style.fontWeight, shadow: style.boxShadow, overflow: style.overflow };
@@ -212,6 +212,19 @@ for (const theme of ["light", "dark"]) for (const placement of ["inline", "docum
     await recordEditor(page, "properties", theme, placement, width);
     await callout.getByRole("textbox", { name: /标题/ }).fill("保留的属性标题");
     await expect(callout.locator(".doc-editor-title")).toHaveText("保留的属性标题");
+    await page.evaluate(async () => {
+      const { showToast } = await import("/src/shared/ui/Toast.tsx");
+      showToast({ title: "键盘结果反馈", tone: "danger" });
+    });
+    await page.keyboard.press("F6");
+    await expect(page.locator('[data-slot="toast-viewport"]')).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(page.locator('[data-slot="toast"]')).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(page.locator('[data-slot="toast-close"]')).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(page.locator('[data-slot="toast-title"]').filter({ hasText: "键盘结果反馈" })).toBeHidden();
+    await expect(callout.getByRole("textbox", { name: /标题/ })).toHaveValue("保留的属性标题");
     await page.locator('.doc-editor-tabs').getByRole("tab").nth(1).click();
     await expect(page.locator('.doc-editor-tabs').getByRole("tab").nth(1)).toHaveAttribute("aria-selected", "true");
     const [readability] = await readContrasts(page.getByTestId("editor-preview"), [".doc-editor-callout > .doc-editor-title"]);

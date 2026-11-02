@@ -1,16 +1,17 @@
+import { Spinner } from "@orbis/ui/spinner";
 import { cn } from "@orbis/ui/cn";
-import { boardControlStyles, boardFloatingPanelStyles } from "./board-control-styles";
+import { boardFloatingPanelStyles } from "./board-control-styles";
 import { releaseFeatures } from "../../shared/release-features";
 import { ConfirmAction } from "../../shared/ui/ConfirmAction";
 import { reportError } from "../../shared/api/request-feedback";
 import { DraftActions } from "../../shared/ui/DraftActions";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@orbis/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
-import { Toolbar } from "@orbis/ui/toolbar";
+import { Toolbar, ToolbarButton } from "@orbis/ui/toolbar";
 import { Toggle } from "@orbis/ui/toggle";
 
 import { LoadingState } from "../../shared/ui/LoadingState";
-import { Tooltip } from "../../shared/ui/Tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@orbis/ui/tooltip";
 import { newUUID } from "../../shared/ids";
 import { selectionForCopy, selectionForLayout } from "./transforms";
 import {
@@ -51,9 +52,9 @@ import {
   RiPencilLine,
   RiFunctionAddLine,
 } from "../../shared/ui/icons";
-import { ActionButton } from "../../shared/ui/ActionButton";
-import { Button } from "../../shared/ui/Button";
-import { Dialog, DialogContent } from "../../shared/ui/Dialog";
+import { Button } from "@orbis/ui/button";
+
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@orbis/ui/dialog";
 import { boardCanvasBackground, boardCanvasTextColor, DEFAULT_BOARD_BACKGROUND } from "./board-appearance";
 import { TemplatePreview } from "./TemplatePreview";
 import { PREVIEW_ZOOMS } from "./BoardPreviewViewport";
@@ -91,13 +92,13 @@ const DocumentComments = lazy(() =>
     default: m.DocumentComments,
   })),
 );
-const boardToolActionClassName = cn(boardControlStyles(), "board-toolbar-action h-8 w-8 min-h-7 min-w-7 shrink-0 p-0 text-(--ob-board-toolbar-foreground) enabled:hover:bg-(--ob-item-hover-bg) enabled:hover:text-ob-foreground aria-pressed:bg-(--ob-item-selected-bg) aria-pressed:text-ob-foreground [&.board-toolbar-action>svg]:m-0 [&.board-toolbar-action>svg]:size-[17px] [&.board-toolbar-action>svg]:shrink-0");
-const boardHeaderActionClassName = cn(boardControlStyles({ context: "header" }), "board-header-action border border-(--ob-board-border) bg-ob-card text-(--ob-page-muted-foreground) [box-shadow:var(--ob-board-header-action-shadow)] enabled:hover:bg-ob-card");
-const boardFloatingToolbarClassName = "absolute z-16 flex h-[34px] items-center gap-0.5 rounded-[7px] border border-(--ob-board-border) bg-ob-card px-1 py-0.5 text-(--ob-board-zoom-foreground) [box-shadow:var(--ob-shadow-card)] pointer-coarse:h-[calc(var(--ob-control-height-touch)+6px)]";
-const boardPageBarClassName = "row-start-2 z-16 mb-3 flex h-[34px] items-center gap-0.5 rounded-[7px] border border-(--ob-board-border) bg-ob-card px-1 py-0.5 [box-shadow:var(--ob-shadow-card)] pointer-coarse:h-[calc(var(--ob-control-height-touch)+6px)]";
-const boardStarterActionClassName = cn(boardControlStyles(), "board-starter-action pointer-events-auto h-auto min-w-0 [justify-content:flex-start] [gap:12px] rounded-lg border border-(--ob-board-border) bg-ob-card p-3 [font:inherit] text-(--ob-page-muted-foreground) [box-shadow:var(--ob-shadow-panel)] enabled:hover:border-ob-primary enabled:hover:bg-ob-card enabled:hover:text-ob-primary [@container(max-width:640px)]:[gap:8px] [@container(max-width:640px)]:p-2.5 [&.board-starter-action>svg]:h-[38px] [&.board-starter-action>svg]:w-[42px] [&.board-starter-action>svg]:shrink-0 [&.board-starter-action>svg]:[@container(max-width:640px)]:size-7");
+const boardToolActionClassName = "board-toolbar-action shrink-0";
+const boardHeaderActionClassName = "board-header-action shrink-0";
+const boardFloatingToolbarClassName = "absolute z-16 flex h-[34px] items-center gap-0.5 rounded-[7px] border border-(--ob-board-border) bg-card px-1 py-0.5 text-(--ob-board-zoom-foreground) [box-shadow:var(--shadow-sm)] pointer-coarse:h-[calc(var(--ob-control-height-touch)+6px)]";
+const boardPageBarClassName = "row-start-2 z-16 mb-3 flex h-[34px] items-center gap-0.5 rounded-[7px] border border-(--ob-board-border) bg-card px-1 py-0.5 [box-shadow:var(--shadow-sm)] pointer-coarse:h-[calc(var(--ob-control-height-touch)+6px)]";
+const boardStarterActionClassName = "board-starter-action pointer-events-auto h-auto min-w-0 justify-start gap-3 p-3";
 const boardSeparatorClassName = "board-separator my-1 block h-px w-5 shrink-0 bg-(--ob-board-border)";
-const boardToolHintClassName = "board-tool-hint pointer-events-none absolute top-[54px] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-[5px] border border-(--ob-board-hint-border) bg-ob-card px-2.5 py-1.5 text-[11px] text-(--ob-board-hint-foreground) [@container(max-width:640px)]:top-[58px] [@container(max-width:640px)]:right-3 [@container(max-width:640px)]:left-auto [@container(max-width:640px)]:translate-x-0";
+const boardToolHintClassName = "board-tool-hint pointer-events-none absolute top-[54px] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-[5px] border border-(--ob-board-hint-border) bg-card px-2.5 py-1.5 text-[11px] text-(--ob-board-hint-foreground) [@container(max-width:640px)]:top-[58px] [@container(max-width:640px)]:right-3 [@container(max-width:640px)]:left-auto [@container(max-width:640px)]:translate-x-0";
 
 const ZOOM_STEP = 1.2;
 const STATUS = {
@@ -339,12 +340,12 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
   ) : null;
   const saveState = (
     <>
-    <span className={cn("board-save-state inline-flex shrink-0 items-center gap-1 text-[11px] font-normal", `is-${state.status}`, state.status === "conflict" || state.status === "error" ? "text-(--ob-board-save-danger)" : state.status === "save_failed" ? "text-(--ob-board-save-warning)" : "text-(--ob-page-muted-foreground)", embed ? "rounded-[5px] bg-ob-card px-[7px] py-1" : "[@media(max-width:760px)]:hidden")} role="status">
+    <span className={cn("board-save-state inline-flex shrink-0 items-center gap-1 text-[11px] font-normal", `is-${state.status}`, state.status === "conflict" || state.status === "error" ? "text-(--ob-board-save-danger)" : state.status === "save_failed" ? "text-(--ob-board-save-warning)" : "text-(--muted-foreground)", embed ? "rounded-[5px] bg-card px-[7px] py-1" : "[@media(max-width:760px)]:hidden")} role="status">
       {state.status === "saved" ? <Check size={13} /> : null}
       {STATUS[state.status]}
     </span>
     {embed ? pendingActions : null}
-    {state.pending > 0 && (state.status === "save_failed" || state.status === "conflict") && <ActionButton className={embed ? boardControlStyles() : undefined} size="sm" onPress={() => void recover(() => session.retry())}>重试保存</ActionButton>}
+    {state.pending > 0 && (state.status === "save_failed" || state.status === "conflict") && <Button className={embed ? "" : undefined} size="sm" onClick={event => { event.stopPropagation(); void recover(() => session.retry()); }} variant="ghost">重试保存</Button>}
     </>
   );
   const openHistory = () =>
@@ -360,42 +361,42 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
         noteId={board.document_id}
         title={board.title}
       />}
-      {releaseFeatures.documentCollaboration && <ActionButton
+      {releaseFeatures.documentCollaboration && <Button
                     className={boardHeaderActionClassName}
         aria-label="画板评论"
         title="评论"
         aria-pressed={comments}
-        onClick={() => setComments(!comments)}
+        onClick={() => setComments(!comments)} variant="ghost" size="icon"
       >
         <MessageSquare size={17} />
-      </ActionButton>}
-      {releaseFeatures.documentCollaboration && <ActionButton
+      </Button>}
+      {releaseFeatures.documentCollaboration && <Button
                     className={boardHeaderActionClassName}
         aria-label="画板历史"
         title="历史版本"
-        onClick={openHistory}
+        onClick={openHistory} variant="ghost" size="icon"
       >
         <History size={17} />
-      </ActionButton>}
-      <ActionButton
+      </Button>}
+      <Button
         className={boardHeaderActionClassName}
         aria-label="画布设置"
         title="画布设置"
         aria-expanded={inspector && !comments && !selection.size}
         aria-controls={inspectorID}
-        onClick={() => { setSelection(new Set()); setComments(false); setInspector(true); }}
+        onClick={() => { setSelection(new Set()); setComments(false); setInspector(true); }} variant="ghost" size="icon"
       >
         <Settings2 size={17} />
-      </ActionButton>
+      </Button>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild><ActionButton aria-label="导入与导出画板" className={cn(boardHeaderActionClassName, "board-export-trigger")}>
+        <DropdownMenuTrigger render={<Button aria-label="导入与导出画板" className={cn(boardHeaderActionClassName, "board-export-trigger")} variant="ghost">
           <Download size={16} /><span className="[@media(max-width:760px)]:hidden">导出</span>
-        </ActionButton></DropdownMenuTrigger>
+        </Button>} />
         <DropdownMenuContent align="end" className="board-export-popover z-(--ob-z-popover) min-w-[180px]" aria-label="导入与导出画板">
-          <DropdownMenuItem textValue="导入画板文件" disabled={!canEdit} onSelect={() => importRef.current?.click()}>导入画板文件</DropdownMenuItem>
-          <DropdownMenuItem textValue="SVG" disabled={exporting} onSelect={() => void exportFile("svg")}>SVG</DropdownMenuItem>
-          <DropdownMenuItem textValue="PNG" disabled={exporting} onSelect={() => void exportFile("png")}>PNG</DropdownMenuItem>
-          <DropdownMenuItem textValue="当前页可编辑文件" disabled={exporting} onSelect={() => void exportFile("json")}>当前页可编辑文件</DropdownMenuItem>
+          <DropdownMenuItem label="导入画板文件" disabled={!canEdit} onClick={() => importRef.current?.click()}>导入画板文件</DropdownMenuItem>
+          <DropdownMenuItem label="SVG" disabled={exporting} onClick={() => void exportFile("svg")}>SVG</DropdownMenuItem>
+          <DropdownMenuItem label="PNG" disabled={exporting} onClick={() => void exportFile("png")}>PNG</DropdownMenuItem>
+          <DropdownMenuItem label="当前页可编辑文件" disabled={exporting} onClick={() => void exportFile("json")}>当前页可编辑文件</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </>
@@ -405,23 +406,23 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
                 {selection.size === 1 &&
                 state.elements.get([...selection][0])?.shape_type ===
                   "basic.image" ? (
-                  <ActionButton
-                    className={boardControlStyles()}
+                  <ToolbarButton focusableWhenDisabled={false} render={<Button
+
                     onClick={() => {
                       imageTarget.current = state.elements.get(
                         [...selection][0],
                       )!;
                       imageInput.current?.click();
-                    }}
+                    }} variant="ghost"
                   >
                     替换图片
-                  </ActionButton>
+                  </Button>} />
                 ) : null}{" "}
-                <ActionButton
-                  className={boardControlStyles()}
+                <ToolbarButton focusableWhenDisabled={false} disabled={!canEdit || !selection.size} render={<Button
+
                   title="复制所选对象"
                   aria-label="复制所选对象"
-                  disabled={!canEdit || !selection.size}
+
                   onClick={() => {
                     let copies: Element[];
                     try {
@@ -441,15 +442,15 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
                         selectElements(new Set(copies.map((e) => e.id))),
                       )
                       .catch(fail);
-                  }}
+                  }} variant="ghost" size="icon"
                 >
                   <Copy size={17} />
-                </ActionButton>
-                <ActionButton
-                  className={boardControlStyles()}
+                </Button>} />
+                <ToolbarButton focusableWhenDisabled={false} disabled={!canEdit || !selection.size} render={<Button
+
                   title="删除所选对象"
                   aria-label="删除所选对象"
-                  disabled={!canEdit || !selection.size}
+
                   onClick={() =>
                     void submit([
                       {
@@ -462,20 +463,20 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
                     ])
                       .then(() => selectElements(new Set()))
                       .catch(fail)
-                  }
+                  } variant="ghost" size="icon"
                 >
                   <Trash2 size={17} />
-                </ActionButton>
-                <ActionButton
-                  className={boardControlStyles()}
+                </Button>} />
+                <ToolbarButton focusableWhenDisabled={false} render={<Button
+
                   title="设置"
                   aria-label="设置选中对象"
                   aria-expanded={inspector && !comments}
                   aria-controls={inspectorID}
-                  onClick={() => { setComments(false); setInspector(true); }}
+                  onClick={() => { setComments(false); setInspector(true); }} variant="ghost" size="icon"
                 >
                   <Settings2 size={17} />
-                </ActionButton>
+                </Button>} />
                 </>) : null;
   return (
     <BoardShell
@@ -484,7 +485,7 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
       status={saveState}
       actions={actions}
     >
-      <section className={cn("board-workspace absolute inset-0 grid grid-cols-[minmax(0,max-content)_max-content_minmax(0,1fr)] grid-rows-[minmax(0,1fr)_auto] overflow-hidden bg-ob-canvas", (inspector || comments) && "has-inspector", embed?.readOnly && "is-embed-reading")}>
+      <section className={cn("board-workspace absolute inset-0 grid grid-cols-[minmax(0,max-content)_max-content_minmax(0,1fr)] grid-rows-[minmax(0,1fr)_auto] overflow-hidden bg-background", (inspector || comments) && "has-inspector", embed?.readOnly && "is-embed-reading")}>
         <Tabs className="board-page-host contents"
         value={state.pageID}
         onValueChange={key => { if (!embed && typeof key === "string") void session.switchPage(key).catch(fail); }}
@@ -583,7 +584,7 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
             />
             {!state.elements.size && canEdit && tool === "select" && !library ? (
               <div className="board-empty pointer-events-none absolute right-6 bottom-[74px] left-[76px] m-auto max-w-[800px] [@container(max-width:900px)]:max-w-[520px] [@container(max-width:640px)]:right-3">
-                <p className="mb-3 text-[12px] text-ob-muted-foreground">直接开始创作，或选择一个模板</p>
+                <p className="mb-3 text-[12px] text-muted-foreground">直接开始创作，或选择一个模板</p>
                 <div className="board-starter-templates grid grid-cols-4 gap-2.5 [@container(max-width:900px)]:grid-cols-2">
                   {TEMPLATES.filter((t) =>
                     [
@@ -592,45 +593,45 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
                       "architecture.three-tier",
                     ].includes(t.id),
                   ).map((t) => (
-                    <ActionButton className={boardStarterActionClassName} key={t.id} onClick={() => insertTemplate(t)}>
+                    <Button className={boardStarterActionClassName} key={t.id} onClick={() => insertTemplate(t)} variant="ghost">
                       <TemplatePreview template={t} />
                       <span className="truncate">{t.name}</span>
-                    </ActionButton>
+                    </Button>
                   ))}
-                  <ActionButton className={boardStarterActionClassName} onClick={() => openLibrary("templates")}>
+                  <Button className={boardStarterActionClassName} onClick={() => openLibrary("templates")} variant="ghost">
                     <LayoutTemplate size={22} aria-hidden="true" />
                     <span className="truncate">更多模板</span>
-                  </ActionButton>
+                  </Button>
                 </div>
               </div>
             ) : null}
             <Toolbar className={cn(boardFloatingToolbarClassName, "board-zoom right-3", embed ? "top-2" : "top-3")} aria-label="画板视图">
-              <ActionButton
-                className={boardControlStyles()}
+              <ToolbarButton focusableWhenDisabled={false} render={<Button
+
                 aria-label="缩小画板"
                 title="缩小画板"
-                onClick={() => zoom(camera.zoom / ZOOM_STEP)}
+                onClick={() => zoom(camera.zoom / ZOOM_STEP)} variant="ghost" size="icon"
               >
                 <Minus size={15} />
-              </ActionButton>
+              </Button>} />
               <DropdownMenu>
-                <DropdownMenuTrigger asChild><ActionButton className={boardControlStyles()} aria-label={`缩放比例 ${Math.round(camera.zoom * 100)}%`}>{Math.round(camera.zoom * 100)}%</ActionButton></DropdownMenuTrigger>
+                <ToolbarButton focusableWhenDisabled={false} render={<DropdownMenuTrigger render={<Button  aria-label={`缩放比例 ${Math.round(camera.zoom * 100)}%`} variant="ghost">{Math.round(camera.zoom * 100)}%</Button>} />} />
                 <DropdownMenuContent align="end" aria-label="画板缩放比例">
-                  {PREVIEW_ZOOMS.map(value => <DropdownMenuItem key={value} textValue={`${value * 100}%`} onSelect={() => zoom(value)}>{value * 100}%</DropdownMenuItem>)}
+                  {PREVIEW_ZOOMS.map(value => <DropdownMenuItem key={value} label={`${value * 100}%`} onClick={() => zoom(value)}>{value * 100}%</DropdownMenuItem>)}
                 </DropdownMenuContent>
               </DropdownMenu>
-              <ActionButton
-                className={boardControlStyles()}
+              <ToolbarButton focusableWhenDisabled={false} render={<Button
+
                 aria-label="放大画板"
                 title="放大画板"
-                onClick={() => zoom(camera.zoom * ZOOM_STEP)}
+                onClick={() => zoom(camera.zoom * ZOOM_STEP)} variant="ghost" size="icon"
               >
                 <Plus size={15} />
-              </ActionButton>
+              </Button>} />
               <span className="board-separator mx-[3px] my-0 h-4 w-px shrink-0 bg-(--ob-board-border)" />
-              <ActionButton className={boardControlStyles()} aria-label="适应全部内容" title="适应全部内容" onClick={fit}>
+              <ToolbarButton focusableWhenDisabled={false} render={<Button  aria-label="适应全部内容" title="适应全部内容" onClick={fit} variant="ghost" size="icon">
                 <Maximize size={16} />
-              </ActionButton>
+              </Button>} />
             </Toolbar>
             {tool === "connect" ? (
               <div className={boardToolHintClassName}>
@@ -646,25 +647,25 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
               onCamera={setCamera}
             />
             <Toolbar className={cn(boardFloatingToolbarClassName, "board-history-controls left-3", embed ? "bottom-[38px]" : "top-3", embed?.readOnly && "hidden")} aria-label="画板历史操作">
-              <ActionButton
-                className={cn(boardControlStyles(), "text-(--ob-board-history-foreground)")}
+              <ToolbarButton focusableWhenDisabled={false} disabled={!canEdit || !state.canUndo} render={<Button
+                className={"text-(--ob-board-history-foreground)"}
                 aria-label="撤销画板操作"
-                disabled={!canEdit || !state.canUndo}
-                onClick={() => void session.undo().catch(fail)}
+
+                onClick={() => void session.undo().catch(fail)} variant="ghost" size="icon"
               >
                 <Undo2 size={17} />
-              </ActionButton>
-              <ActionButton
-                className={cn(boardControlStyles(), "text-(--ob-board-history-foreground)")}
+              </Button>} />
+              <ToolbarButton focusableWhenDisabled={false} disabled={!canEdit || !state.canRedo} render={<Button
+                className={"text-(--ob-board-history-foreground)"}
                 aria-label="重做画板操作"
-                disabled={!canEdit || !state.canRedo}
-                onClick={() => void session.redo().catch(fail)}
+
+                onClick={() => void session.redo().catch(fail)} variant="ghost" size="icon"
               >
                 <Redo2 size={17} />
-              </ActionButton>
-              {releaseFeatures.documentCollaboration && <ActionButton className={cn(boardControlStyles(), "text-(--ob-board-history-foreground)")} aria-label="查看画板历史" onClick={openHistory}>
+              </Button>} />
+              {releaseFeatures.documentCollaboration && <ToolbarButton focusableWhenDisabled={false} render={<Button className={"text-(--ob-board-history-foreground)"} aria-label="查看画板历史" onClick={openHistory} variant="ghost" size="icon">
                 <History size={16} />
-              </ActionButton>}
+              </Button>} />}
             </Toolbar>
           </div>
           {inspector && !comments ? (
@@ -683,8 +684,8 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
         </Tabs>
         <footer className={cn(boardPageBarClassName, "board-page-actions col-start-2", embed?.readOnly && "hidden")}>
 
-          <ActionButton
-            className={cn(boardControlStyles(), embed && "hidden")}
+          <Button
+            className={embed && "hidden"}
             aria-label="添加画板页面"
             disabled={!!embed || !canEdit || board.pages.length >= 20}
             onClick={() =>
@@ -700,28 +701,28 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
                   },
                 },
               ]).catch(fail)
-            }
+            } variant="ghost" size="icon"
           >
             <Plus size={15} />
-          </ActionButton>
+          </Button>
           <span className="board-toolbar-spacer flex-1" />
-          <small className="block px-2.5 whitespace-nowrap text-(--ob-page-muted-foreground) [@container(max-width:640px)]:hidden">
+          <small className="block px-2.5 whitespace-nowrap text-(--muted-foreground) [@container(max-width:640px)]:hidden">
             {selection.size
               ? `已选择 ${selection.size} 个对象`
               : `${state.elements.size} 个对象`}
           </small>
         </footer>
 
-        <Toolbar className={cn("board-toolbar absolute left-3 z-18 flex w-11 flex-col items-center gap-px overflow-y-auto rounded-[9px] border border-(--ob-board-border) bg-ob-card p-[5px] [box-shadow:var(--ob-shadow-card)] pointer-coarse:w-[calc(var(--ob-control-height-touch)+12px)]", embed ? "top-[52px] bottom-[60px] h-fit max-h-[calc(100%-112px)] [scrollbar-width:thin]" : "top-1/2 max-h-[calc(100%-128px)] -translate-y-1/2 [@container(max-width:640px)]:top-16 [@container(max-width:640px)]:bottom-16 [@container(max-width:640px)]:h-fit [@container(max-width:640px)]:translate-y-0", embed?.readOnly && "hidden")} orientation="vertical" aria-label="画板工具">
-          <ActionButton
+        <Toolbar className={cn("board-toolbar absolute left-3 z-18 flex w-11 flex-col items-center gap-px overflow-y-auto rounded-[9px] border border-(--ob-board-border) bg-card p-[5px] [box-shadow:var(--shadow-sm)] pointer-coarse:w-[calc(var(--ob-control-height-touch)+12px)]", embed ? "top-[52px] bottom-[60px] h-fit max-h-[calc(100%-112px)] [scrollbar-width:thin]" : "top-1/2 max-h-[calc(100%-128px)] -translate-y-1/2 [@container(max-width:640px)]:top-16 [@container(max-width:640px)]:bottom-16 [@container(max-width:640px)]:h-fit [@container(max-width:640px)]:translate-y-0", embed?.readOnly && "hidden")} orientation="vertical" aria-label="画板工具">
+          <ToolbarButton focusableWhenDisabled={false} render={<Button
             className={boardToolActionClassName}
             aria-label="切换素材面板"
             title="图形与素材"
             aria-pressed={library && (libraryTab === "shapes" || libraryTab === "icons")}
-            onClick={() => openLibrary("shapes")}
+            onClick={() => openLibrary("shapes")} variant="ghost" size="icon"
           >
             <RiAddCircleFill size={17} />
-          </ActionButton>
+          </Button>} />
           <span className={boardSeparatorClassName} />
           {(
             [
@@ -733,71 +734,69 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
               { id: "draw", label: "画笔", shortcut: "P", Icon: RiPencilLine },
             ] as const
           ).map(({ id, label, shortcut, Icon }) => (
-            <Tooltip key={id} label={`${label} (${shortcut})`} side="right">
-              <Toggle
-                className="aria-pressed:bg-(--ob-item-selected-bg) aria-pressed:text-ob-foreground pointer-coarse:min-h-(--ob-control-height-touch) pointer-coarse:min-w-(--ob-control-height-touch)"
+            <Tooltip key={id}><TooltipTrigger render={<ToolbarButton focusableWhenDisabled={false} disabled={!canEdit && !["select", "pan"].includes(id)} render={<Toggle
+
                 aria-label={label}
                 pressed={tool === id}
-                disabled={!canEdit && !["select", "pan"].includes(id)}
+
                 onPressedChange={() => { setTool(id); setLibrary(false); }}
               >
                 <Icon size={17} />
-              </Toggle>
-            </Tooltip>
+              </Toggle>} />} /><TooltipContent side="right">{`${label} (${shortcut})`}</TooltipContent></Tooltip>
           ))}
 
-          <ActionButton
+          <ToolbarButton focusableWhenDisabled={false} disabled={!canEdit} render={<Button
             className={boardToolActionClassName}
             aria-label="插入图片"
             title="插入图片"
-            disabled={!canEdit}
-            onClick={() => { imageTarget.current = null; imageInput.current?.click(); }}
+
+            onClick={() => { imageTarget.current = null; imageInput.current?.click(); }} variant="ghost" size="icon"
           >
             <ImagePlus size={17} />
-          </ActionButton>
+          </Button>} />
           <span className={boardSeparatorClassName} />
-          <ActionButton
+          <ToolbarButton focusableWhenDisabled={false} render={<Button
             className={boardToolActionClassName}
             aria-label="模板库"
             title="模板库"
             aria-pressed={library && libraryTab === "templates"}
-            onClick={() => openLibrary("templates")}
+            onClick={() => openLibrary("templates")} variant="ghost" size="icon"
           >
             <LayoutTemplate size={17} />
-          </ActionButton>
-          <ActionButton
+          </Button>} />
+          <ToolbarButton focusableWhenDisabled={false} render={<Button
             className={boardToolActionClassName}
             aria-label="页面与图层"
             title="页面与图层"
             aria-pressed={library && libraryTab === "layers"}
-            onClick={() => openLibrary("layers")}
+            onClick={() => openLibrary("layers")} variant="ghost" size="icon"
           >
             <Layers size={17} />
-          </ActionButton>
+          </Button>} />
           <span className={boardSeparatorClassName} />
-          <ActionButton
+          <ToolbarButton focusableWhenDisabled={false} disabled={layoutBusy || (!canEdit || layoutBusy || !state.elements.size)} render={<Button
             className={boardToolActionClassName}
-            disabled={!canEdit || layoutBusy || !state.elements.size}
-            isPending={layoutBusy}
+
+
             aria-label="自动布局"
             title="自动布局"
-            onClick={() => void arrange()}
-          >
+            onClick={() => void arrange()} aria-busy={layoutBusy || undefined} variant="ghost"
+          >{layoutBusy ? <Spinner aria-hidden="true" /> : null}
             <RiFunctionAddLine size={16} />
-          </ActionButton>
+          </Button>} />
         </Toolbar>
 
         {comments ? (
           <section className={cn(boardFloatingPanelStyles, "board-comments px-3.5 pb-4")}>
             <header className="mb-3.5 flex min-h-[52px] items-center justify-between gap-[9px] pt-2.5 pb-1.5">
               <strong>画板评论</strong>
-              <ActionButton
-                className={boardControlStyles()}
+              <Button
+
                 aria-label="关闭评论"
-                onClick={() => setComments(false)}
+                onClick={() => setComments(false)} variant="ghost" size="icon"
               >
                 <X size={16} />
-              </ActionButton>
+              </Button>
             </header>
             <Suspense fallback={<p>正在读取评论…</p>}>
               {releaseFeatures.documentCollaboration && <DocumentComments
@@ -870,8 +869,8 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
         open={historyOpen}
         onOpenChange={setHistoryOpen}
       >
-        <DialogContent title="画板历史">
-          <div className="board-history-list flex max-h-[60vh] flex-col gap-2 overflow-auto [&>div]:flex [&>div]:items-center [&>div]:gap-3.5 [&>div]:border-b [&>div]:border-ob-border [&>div]:py-2 [&_time]:text-[12px] [&_time]:text-(--ob-page-muted-foreground)">
+        <DialogContent ><DialogHeader><DialogTitle>{"画板历史"}</DialogTitle></DialogHeader>
+          <div className="board-history-list flex max-h-[60vh] flex-col gap-2 overflow-auto [&>div]:flex [&>div]:items-center [&>div]:gap-3.5 [&>div]:border-b [&>div]:border-border [&>div]:py-2 [&_time]:text-[12px] [&_time]:text-(--muted-foreground)">
             {history.map((item) => (
               <div key={item.revision}>
                 <span>版本 {item.revision}</span>
@@ -880,7 +879,7 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
                     timeZone: "Asia/Shanghai",
                   })}
                 </time>
-                <ActionButton
+                <Button
                   onClick={() =>
                     void boardAPI(auth)
                       .snapshot(id, item.revision)
@@ -898,10 +897,10 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
                         ),
                       )
                       .catch(fail)
-                  }
+                  } variant="ghost"
                 >
                   导出该版本
-                </ActionButton>
+                </Button>
               </div>
             ))}
           </div>

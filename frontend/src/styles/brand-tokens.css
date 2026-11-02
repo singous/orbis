@@ -1,3 +1,19 @@
+/* 应用与领域表面的布局层级；通用控件使用 shadcn 自带尺寸与样式。 */
+:root {
+  --ob-control-height-sm: calc(var(--spacing) * 7);
+  --ob-control-height-md: calc(var(--spacing) * 8);
+  --ob-control-height-lg: calc(var(--spacing) * 9);
+  --ob-control-height-touch: calc(var(--spacing) * 11);
+  --ob-motion-feedback: 100ms;
+  --ob-motion-popover: 100ms;
+  --ob-motion-dialog: 150ms;
+  --ob-ease-out: var(--ease-out);
+  --ob-z-dialog: 50;
+  --ob-z-popover: 50;
+  --ob-z-tooltip: 50;
+  --ob-z-toast: 50;
+}
+
 /* 品牌插画区固定为明亮色板，独立于表单的浅/深主题。 */
 [data-ui="auth"] {
   --ob-auth-showcase-background: #edf3cd;
@@ -5,9 +21,6 @@
   --ob-auth-showcase-muted: color-mix(in oklab, var(--ob-auth-showcase-foreground) 70%, var(--ob-auth-showcase-background));
   --ob-auth-showcase-footer: color-mix(in oklab, var(--ob-auth-showcase-foreground) 66%, var(--ob-auth-showcase-background));
   --ob-auth-showcase-border: color-mix(in oklab, var(--ob-auth-showcase-foreground) 16%, transparent);
-  --ob-auth-input-background: color-mix(in oklab, var(--ob-surface) 20.67%, var(--ob-secondary));
-  --ob-auth-input-focus-border: color-mix(in oklab, var(--ob-foreground) 24%, var(--ob-surface));
-  --ob-auth-input-focus-shadow: color-mix(in oklab, var(--ob-foreground) 6%, transparent);
 }
 @theme inline {
   --color-ob-auth-showcase: var(--ob-auth-showcase-background);
@@ -15,21 +28,14 @@
   --color-ob-auth-showcase-muted: var(--ob-auth-showcase-muted);
   --color-ob-auth-showcase-footer: var(--ob-auth-showcase-footer);
   --color-ob-auth-showcase-border: var(--ob-auth-showcase-border);
-  --color-ob-auth-input-background: var(--ob-auth-input-background);
-  --color-ob-auth-input-focus-border: var(--ob-auth-input-focus-border);
-  --color-ob-auth-input-focus-shadow: var(--ob-auth-input-focus-shadow);
 }
 
 /* 正文代码与引用的既有默认底色；阅读器主题仍可通过 --reading-* 覆盖。 */
 .document-prose {
-  --ob-content-plain-background: var(--ob-surface);
-  --ob-content-border: var(--ob-border);
+  --ob-content-plain-background: var(--card);
+  --ob-content-border: var(--border);
 }
-.workspace-shell .document-prose { --ob-content-border: var(--ob-workspace-outline); }
-
-[data-ui="site-management"] {
-  --ob-site-preview-active-shadow: 0 1px 3px rgb(29 30 34 / 7%);
-}
+.workspace-shell .document-prose { --ob-content-border: var(--border); }
 
 /* 导航与内容类型图标沿用现有浅/深主题色板。 */
 :root, .light, .default, [data-theme="light"], [data-theme="default"] {
@@ -59,21 +65,6 @@
 
 
 
-/* 公开分享保持原有独立浅色材料，不随工作区主题切换。 */
-[data-ui="public-share"] {
-  --ob-share-background: var(--ob-gray-0);
-  --ob-share-foreground: #23303a;
-  --ob-share-muted-foreground: #697882;
-  --ob-share-border: #e5e9ec;
-  --ob-share-link: #455762;
-  --ob-share-active-background: #eef6f4;
-  --ob-share-active-foreground: #08765e;
-}
-[data-ui="share-management"] {
-  --ob-share-manager-border: #dce2e5;
-  --ob-share-manager-background: #f6f8f9;
-}
-
 /* 阅读器的品牌混色锚点与浮层材料由自己的主题边界拥有。 */
 .site-reader {
   --ob-reader-accent-anchor: #0c3523;
@@ -88,7 +79,7 @@
   --ob-reader-accent-soft-anchor: #111815;
 }
 :root, .light, .default, [data-theme="light"], [data-theme="default"] { --ob-reader-status-muted: #66736c; }
-.dark, [data-theme="dark"] { --ob-reader-status-muted: var(--ob-muted-foreground); }
+.dark, [data-theme="dark"] { --ob-reader-status-muted: var(--muted-foreground); }
 .site-preview-back {
   --ob-reader-preview-background: #eaf8f0;
   --ob-reader-preview-foreground: #156144;
@@ -121,8 +112,8 @@
   --ob-board-header-action-shadow: 0 1px 2px #18263b04;
   --ob-board-header-primary-shadow: 0 1px 3px #2458ff20;
 }
-.board-shell, .board-header-actions { --ob-board-border: var(--ob-border); }
-.workspace-shell :is(.board-shell, .board-header-actions) { --ob-board-border: var(--ob-workspace-outline); }
+.board-shell, .board-header-actions { --ob-board-border: var(--border); }
+.workspace-shell :is(.board-shell, .board-header-actions) { --ob-board-border: var(--border); }
 .board-library {
   --ob-board-library-icon-preview: #475569;
   --ob-board-library-shape-hover-border: #e8edf5;
@@ -133,8 +124,8 @@
   --ob-board-library-close-foreground: #8a94a6;
 }
 .board-inspector { --ob-board-inspector-close-foreground: #8792a5; }
-.orbis-tiptap { --ob-editor-border: var(--ob-border); }
-.workspace-shell .orbis-tiptap { --ob-editor-border: var(--ob-workspace-outline); }
+.orbis-tiptap { --ob-editor-border: var(--border); }
+.workspace-shell .orbis-tiptap { --ob-editor-border: var(--border); }
 .orbis-tiptap-toolbar { --ob-editor-toolbar-shadow: 0 3px 14px #0000000a; }
 
 :root {
@@ -145,9 +136,9 @@
   --ob-sheet-qr-surface: #fff;
 }
 :root, .light, .default, [data-theme="light"], [data-theme="default"] {
-  --ob-board-hint-foreground: var(--ob-muted-foreground);
+  --ob-board-hint-foreground: var(--muted-foreground);
   --ob-board-save-danger: #c03939;
-  --ob-board-save-warning: var(--ob-page-warning-soft-foreground);
+  --ob-board-save-warning: var(--status-warning-foreground);
   --ob-sheet-toolbar-bg: #f4f4f4;
   --ob-sheet-chrome-border: #dedede;
   --ob-sheet-workspace-chrome-border: #dedede;
@@ -164,12 +155,12 @@
 }
 .dark, [data-theme="dark"] {
   --ob-board-hint-foreground: #8995a8;
-  --ob-board-save-danger: var(--ob-danger-text);
-  --ob-board-save-warning: var(--ob-page-warning-soft-foreground);
-  --ob-sheet-toolbar-bg: var(--ob-surface-secondary);
-  --ob-sheet-chrome-border: var(--ob-border);
-  --ob-sheet-workspace-chrome-border: var(--ob-workspace-outline);
-  --ob-sheet-record-selected: color-mix(in oklab, #00b5ad 20%, var(--ob-surface));
+  --ob-board-save-danger: var(--destructive);
+  --ob-board-save-warning: var(--status-warning-foreground);
+  --ob-sheet-toolbar-bg: var(--muted);
+  --ob-sheet-chrome-border: var(--border);
+  --ob-sheet-workspace-chrome-border: var(--border);
+  --ob-sheet-record-selected: color-mix(in oklab, #00b5ad 20%, var(--card));
   --ob-sheet-selection-ink: #00b578;
   --ob-sheet-active-border: #3b8cff;
   --ob-sheet-blue-base: #4084d5;
@@ -190,7 +181,7 @@
   --ob-content-code-keyword: #7951a1;
   --ob-content-code-string: #247657;
   --ob-content-code-number: #a45320;
-  --ob-content-code-comment: var(--ob-muted-foreground);
+  --ob-content-code-comment: color-mix(in oklab, var(--muted-foreground) 94%, var(--foreground));
   --ob-content-callout-info-border: #cae1ee;
   --ob-content-callout-info-background: #eff8fd;
   --ob-content-callout-info-icon: #367caa;
@@ -205,20 +196,20 @@
   --ob-content-callout-danger-icon: #b5433e;
 }
 .dark, [data-theme="dark"] {
-  --ob-content-inline-code-bg: var(--ob-surface-secondary);
-  --ob-content-code-block-bg: var(--ob-surface-secondary);
+  --ob-content-inline-code-bg: var(--muted);
+  --ob-content-code-block-bg: var(--muted);
   --ob-content-code-keyword: #c5a5ed;
   --ob-content-code-string: #88d5a8;
   --ob-content-code-number: #eeb878;
   --ob-content-code-comment: #94a49c;
-  --ob-content-callout-info-background: color-mix(in srgb, var(--ob-content-callout-info-icon) 13%, var(--ob-surface));
-  --ob-content-callout-info-border: color-mix(in srgb, var(--ob-content-callout-info-icon) 50%, var(--ob-border));
-  --ob-content-callout-warning-background: color-mix(in srgb, var(--ob-content-callout-warning-icon) 13%, var(--ob-surface));
-  --ob-content-callout-warning-border: color-mix(in srgb, var(--ob-content-callout-warning-icon) 50%, var(--ob-border));
-  --ob-content-callout-success-background: color-mix(in srgb, var(--ob-content-callout-success-icon) 13%, var(--ob-surface));
-  --ob-content-callout-success-border: color-mix(in srgb, var(--ob-content-callout-success-icon) 50%, var(--ob-border));
-  --ob-content-callout-danger-background: color-mix(in srgb, var(--ob-content-callout-danger-icon) 13%, var(--ob-surface));
-  --ob-content-callout-danger-border: color-mix(in srgb, var(--ob-content-callout-danger-icon) 50%, var(--ob-border));
+  --ob-content-callout-info-background: color-mix(in srgb, var(--ob-content-callout-info-icon) 13%, var(--card));
+  --ob-content-callout-info-border: color-mix(in srgb, var(--ob-content-callout-info-icon) 50%, var(--border));
+  --ob-content-callout-warning-background: color-mix(in srgb, var(--ob-content-callout-warning-icon) 13%, var(--card));
+  --ob-content-callout-warning-border: color-mix(in srgb, var(--ob-content-callout-warning-icon) 50%, var(--border));
+  --ob-content-callout-success-background: color-mix(in srgb, var(--ob-content-callout-success-icon) 13%, var(--card));
+  --ob-content-callout-success-border: color-mix(in srgb, var(--ob-content-callout-success-icon) 50%, var(--border));
+  --ob-content-callout-danger-background: color-mix(in srgb, var(--ob-content-callout-danger-icon) 13%, var(--card));
+  --ob-content-callout-danger-border: color-mix(in srgb, var(--ob-content-callout-danger-icon) 50%, var(--border));
 }
 
 :root {
@@ -230,7 +221,36 @@
   --ob-prose-h4-size: 18px;
   --ob-prose-h5-size: 16px;
   --ob-prose-h6-size: 15px;
-  --ob-prose-table-size: var(--ob-text-ui-size);
-  --ob-prose-caption-size: var(--ob-text-caption-size);
+  --ob-prose-table-size: var(--text-sm);
+  --ob-prose-caption-size: var(--text-xs);
   --ob-prose-title-size: 28px;
+}
+
+:root, [data-theme="light"] {
+  --status-success: var(--color-green-600);
+  --status-success-foreground: var(--color-green-800);
+  --status-warning: var(--color-amber-500);
+  --status-warning-foreground: var(--color-amber-800);
+  --shadow-color: rgb(0 0 0 / 10%);
+}
+[data-theme="dark"] {
+  --status-success: var(--color-green-400);
+  --status-success-foreground: var(--color-green-300);
+  --status-warning: var(--color-amber-400);
+  --status-warning-foreground: var(--color-amber-300);
+  --shadow-color: rgb(0 0 0 / 25%);
+}
+:root, [data-theme="light"], [data-theme="dark"] {
+  --status-success-background: color-mix(in oklab, var(--status-success) 12%, var(--card));
+  --status-warning-background: color-mix(in oklab, var(--status-warning) 12%, var(--card));
+  --destructive-soft: color-mix(in oklab, var(--destructive) 10%, transparent);
+}
+@theme inline {
+  --color-status-success: var(--status-success);
+  --color-status-success-background: var(--status-success-background);
+  --color-status-success-foreground: var(--status-success-foreground);
+  --color-status-warning: var(--status-warning);
+  --color-status-warning-background: var(--status-warning-background);
+  --color-status-warning-foreground: var(--status-warning-foreground);
+  --color-destructive-soft: var(--destructive-soft);
 }

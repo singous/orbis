@@ -164,8 +164,10 @@ for (const { theme, width } of [{ theme: "light", width: 1280 }, { theme: "dark"
     await expect(page.getByRole("option", { name: "文档与评论", exact: true })).toBeFocused();
     await page.keyboard.press("ArrowDown");
     const notebookOption = page.getByRole("option", { name: "笔记本", exact: true });
-    evidence.optionFocus = await expectVisibleKeyboardFocus(notebookOption);
-    evidence.selectMotion = await expectNoContinuingMotion(page.locator('[data-slot="ob-select-popup"]'));
+    await expect(notebookOption).toBeFocused();
+    await expect(notebookOption).toHaveAttribute("data-highlighted", "");
+    evidence.optionFocus = await notebookOption.evaluate(element => ({ background: getComputedStyle(element).backgroundColor, color: getComputedStyle(element).color }));
+    evidence.selectMotion = await expectNoContinuingMotion(page.locator('[data-slot="select-content"]'));
     const optionAxe = await new AxeBuilder({ page }).analyze();
     expect(optionAxe.violations).toEqual([]);
     await page.keyboard.press("Enter");
@@ -189,7 +191,9 @@ for (const { theme, width } of [{ theme: "light", width: 1280 }, { theme: "dark"
     await expect(page.getByRole("option", { name: "当前内容", exact: true })).toBeFocused();
     await page.keyboard.press("ArrowDown");
     const archived = page.getByRole("option", { name: "已归档", exact: true });
-    evidence.statusOptionFocus = await expectVisibleKeyboardFocus(archived);
+    await expect(archived).toBeFocused();
+    await expect(archived).toHaveAttribute("data-highlighted", "");
+    evidence.statusOptionFocus = await archived.evaluate(element => ({ background: getComputedStyle(element).backgroundColor, color: getComputedStyle(element).color }));
     await page.keyboard.press("Enter");
     await expectSearchLocation(page, { q: "设计检索", type: "notebook", status: "archived" });
     await expect(content.getByRole("heading", { level: 2 })).toHaveText(archivedNotebooks.map(item => item.title));
@@ -233,7 +237,7 @@ for (const { theme, width } of [{ theme: "light", width: 1280 }, { theme: "dark"
     const appearanceDialog = page.getByRole("dialog", { name: "外观", exact: true });
     await expect(appearanceDialog.getByRole("radio", { name: theme === "light" ? "白天" : "夜间", exact: true })).toBeChecked();
     evidence.dialogMotion = await expectNoContinuingMotion(appearanceDialog);
-    evidence.backdropMotion = await expectNoContinuingMotion(page.locator('[data-slot="ob-dialog-backdrop"]'));
+    evidence.backdropMotion = await expectNoContinuingMotion(page.locator('[data-slot="dialog-overlay"]'));
     const dialogAxe = await new AxeBuilder({ page }).analyze();
     expect(dialogAxe.violations).toEqual([]);
     await page.keyboard.press("Escape");

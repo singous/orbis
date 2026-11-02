@@ -1,8 +1,12 @@
+import { Checkbox } from "@orbis/ui/checkbox";
+import { Input } from "@orbis/ui/input";
+import { Textarea } from "@orbis/ui/textarea";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@orbis/ui/select";
 import { tableFormClassName, tableFormActionsClassName, tableSettingRowClassName, tableFilterRowClassName } from "./table-chrome";
 import { reportError } from "../../shared/api/request-feedback";
-import { useRef, useState } from "react";
-import { Button } from "../../shared/ui/Button";
-import { Dialog, DialogContent } from "../../shared/ui/Dialog";
+import { useId, useRef, useState } from "react";
+import { Button } from "@orbis/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@orbis/ui/dialog";
 import { CellEditor } from "./CellEditor";
 import {
   FIELD_LABELS,
@@ -109,6 +113,7 @@ export function FieldDialog({
     });
     onClose();
   }
+  const fieldTypeItems = [...Object.entries(FIELD_LABELS).map(([value, label]) => ({ value: String(value), label: label }))];
   return (
     <Dialog
       open
@@ -117,38 +122,40 @@ export function FieldDialog({
       }}
     >
       <DialogContent
-        title={field ? "编辑字段" : "添加字段"}
-        description="字段标识保持稳定；删除字段后可通过撤销或文档历史恢复。"
+
+
         initialFocus={nameInput}
-      >
+      ><DialogHeader><DialogTitle>{field ? "编辑字段" : "添加字段"}</DialogTitle><DialogDescription>{"字段标识保持稳定；删除字段后可通过撤销或文档历史恢复。"}</DialogDescription></DialogHeader>
         <div className={tableFormClassName}>
-          <label>
+          <label className="grid gap-2 text-sm font-medium">
             字段名称
-            <input
+            <Input
               ref={nameInput}
               maxLength={120}
               value={name}
               onChange={(event) => setName(event.target.value)}
             />
           </label>
-          <label>
+          <label className="grid gap-2 text-sm font-medium">
             字段类型
-            <select
+            <Select
               value={kind}
               disabled={Boolean(field)}
-              onChange={(event) => setKind(event.target.value as FieldKind)}
+              onValueChange={nextValue => { if (nextValue === null) return; setKind(nextValue as FieldKind); }}
+              items={fieldTypeItems}
             >
-              {Object.entries(FIELD_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger aria-label="字段类型"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {fieldTypeItems.map(item => (
+                  <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </label>
           {["select", "multi_select"].includes(kind) ? (
-            <label>
+            <label className="grid gap-2 text-sm font-medium">
               选项（每行一个）
-              <textarea
+              <Textarea
                 rows={5}
                 value={options}
                 onChange={(event) => setOptions(event.target.value)}
@@ -159,14 +166,14 @@ export function FieldDialog({
           <div className={tableFormActionsClassName}>
             {field ? (
               <Button
-                variant="danger"
+                variant="destructive"
                 disabled={definition.fields.length === 1}
                 onClick={remove}
               >
                 删除字段
               </Button>
             ) : null}
-            <Button variant="primary" onClick={submit}>
+            <Button variant="default" onClick={submit}>
               保存字段
             </Button>
           </div>
@@ -187,6 +194,7 @@ export function ViewDialog({
   onClose: () => void;
   onSave: (definition: TableDefinition) => void;
 }) {
+  const checkboxId = useId();
   const [draft, setDraft] = useState(() => structuredClone(view));
   const [publicFields, setPublicFields] = useState(definition.public_field_ids);
   const [publicView, setPublicView] = useState(definition.public_view_id);
@@ -212,6 +220,13 @@ export function ViewDialog({
     ),
     ...definition.fields.filter((field) => !draft.field_ids.includes(field.id)),
   ];
+  const viewKindItems = [{ value: "grid", label: "表格" }, { value: "kanban", label: "看板" }];
+  const groupFieldItems = [{ value: "", label: "不分组" }, ...definition.fields
+                .filter((field) => field.kind === "select")
+                .map((field) => ({ value: String(field.id), label: field.name }))];
+  const sortFieldItems = [...definition.fields.map((field) => ({ value: String(field.id), label: field.name }))];
+  const sortDirectionItems = [{ value: "false", label: "升序" }, { value: "true", label: "降序" }];
+  const publicViewItems = [...definition.views.map((item) => ({ value: String(item.id), label: item.name }))];
   return (
     <Dialog
       open
@@ -220,14 +235,14 @@ export function ViewDialog({
       }}
     >
       <DialogContent
-        title="视图设置"
-        description="筛选与排序作用于整张表；公开字段由服务端限制。"
+
+
         className="w-[min(680px,95vw)]! max-w-[680px]!"
-      >
+      ><DialogHeader><DialogTitle>{"视图设置"}</DialogTitle><DialogDescription>{"筛选与排序作用于整张表；公开字段由服务端限制。"}</DialogDescription></DialogHeader>
         <div className={tableFormClassName}>
-          <label>
+          <label className="grid gap-2 text-sm font-medium">
             视图名称
-            <input
+            <Input
               value={draft.name}
               maxLength={120}
               onChange={(event) =>
@@ -235,54 +250,54 @@ export function ViewDialog({
               }
             />
           </label>
-          <label>
+          <label className="grid gap-2 text-sm font-medium">
             展示方式
-            <select
+            <Select
               value={draft.kind}
-              onChange={(event) =>
-                setDraft({
-                  ...draft,
-                  kind: event.target.value as TableView["kind"],
-                })
-              }
+              onValueChange={nextValue => { if (nextValue === null) return; setDraft({
+                                ...draft,
+                                kind: nextValue as TableView["kind"],
+                              }); }}
+              items={viewKindItems}
             >
-              <option value="grid">表格</option>
-              <option value="kanban">看板</option>
-            </select>
-          </label>
-          <label>
-            分组字段
-            <select
-              value={draft.group_field_id ?? ""}
-              onChange={(event) =>
-                setDraft({
-                  ...draft,
-                  group_field_id: event.target.value || null,
-                })
-              }
-            >
-              <option value="">不分组</option>
-              {definition.fields
-                .filter((field) => field.kind === "select")
-                .map((field) => (
-                  <option key={field.id} value={field.id}>
-                    {field.name}
-                  </option>
+              <SelectTrigger aria-label="展示方式"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {viewKindItems.map(item => (
+                  <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
                 ))}
-            </select>
+              </SelectContent>
+            </Select>
+          </label>
+          <label className="grid gap-2 text-sm font-medium">
+            分组字段
+            <Select
+              value={draft.group_field_id ?? ""}
+              onValueChange={nextValue => { if (nextValue === null) return; setDraft({
+                                ...draft,
+                                group_field_id: nextValue || null,
+                              }); }}
+              items={groupFieldItems}
+            >
+              <SelectTrigger aria-label="分组字段"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {groupFieldItems.map(item => (
+                  <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </label>
           <fieldset>
             <legend>显示字段与列宽</legend>
             {ordered.map((field) => (
               <div className={tableSettingRowClassName} key={field.id}>
-                <label>
-                  <input
-                    type="checkbox"
+                <label htmlFor={`${checkboxId}-visible-${field.id}`} className="flex items-center gap-2">
+                  <Checkbox
+                    id={`${checkboxId}-visible-${field.id}`}
                     checked={draft.field_ids.includes(field.id)}
-                    onChange={(event) =>
+                    onCheckedChange={(checked) =>
                       setDraft({
                         ...draft,
-                        field_ids: event.target.checked
+                        field_ids: checked
                           ? [...draft.field_ids, field.id]
                           : draft.field_ids.filter((id) => id !== field.id),
                       })
@@ -290,7 +305,7 @@ export function ViewDialog({
                   />
                   {field.name}
                 </label>
-                <input
+                <Input
                   type="number"
                   aria-label={`${field.name}列宽`}
                   min={100}
@@ -306,20 +321,20 @@ export function ViewDialog({
                     })
                   }
                 />
-                <button
+                <Button
                   type="button"
                   aria-label={`上移${field.name}`}
-                  onClick={() => moveField(field.id, -1)}
+                  onClick={() => moveField(field.id, -1)} variant="ghost" size="icon"
                 >
                   ↑
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   aria-label={`下移${field.name}`}
-                  onClick={() => moveField(field.id, 1)}
+                  onClick={() => moveField(field.id, 1)} variant="ghost" size="icon"
                 >
                   ↓
-                </button>
+                </Button>
               </div>
             ))}
           </fieldset>
@@ -329,40 +344,8 @@ export function ViewDialog({
               const field = definition.fields.find(
                 (field) => field.id === filter.field_id,
               )!;
-              return (
-                <div className={tableFilterRowClassName} key={index}>
-                  <select
-                    aria-label={`筛选字段 ${index + 1}`}
-                    value={filter.field_id}
-                    onChange={(event) =>
-                      setFilter(index, {
-                        field_id: event.target.value,
-                        operator:
-                          definition.fields.find(
-                            (field) => field.id === event.target.value,
-                          )?.kind === "multi_select"
-                            ? "contains"
-                            : "eq",
-                        value: null,
-                      })
-                    }
-                  >
-                    {definition.fields.map((field) => (
-                      <option key={field.id} value={field.id}>
-                        {field.name}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    aria-label={`筛选条件 ${index + 1}`}
-                    value={filter.operator}
-                    onChange={(event) =>
-                      setFilter(index, {
-                        operator: event.target.value as TableFilter["operator"],
-                      })
-                    }
-                  >
-                    {Object.entries({
+              const filterFieldItems = [...definition.fields.map((field) => ({ value: String(field.id), label: field.name }))];
+  const filterOperatorItems = [...Object.entries({
                       ...(field.kind !== "multi_select"
                         ? { eq: "等于", ne: "不等于" }
                         : {}),
@@ -379,30 +362,61 @@ export function ViewDialog({
                             lte: "小于等于",
                           }
                         : {}),
-                    }).map(([key, value]) => (
-                      <option key={key} value={key}>
-                        {value}
-                      </option>
-                    ))}
-                  </select>
+                    }).map(([key, value]) => ({ value: String(key), label: value }))];
+  const filterValueItems = [{ value: "", label: "未选择" }, ...field.options.map((option) => ({ value: String(option.id), label: option.label }))];
+  return (
+                <div className={tableFilterRowClassName} key={index}>
+                  <Select
+                    value={filter.field_id}
+                    onValueChange={nextValue => { if (nextValue === null) return; setFilter(index, {
+                                            field_id: nextValue,
+                                            operator:
+                                              definition.fields.find(
+                                                (field) => field.id === nextValue,
+                                              )?.kind === "multi_select"
+                                                ? "contains"
+                                                : "eq",
+                                            value: null,
+                                          }); }}
+                    items={filterFieldItems}
+                  >
+                    <SelectTrigger aria-label={`筛选字段 ${index + 1}`}><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {filterFieldItems.map(item => (
+                        <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={filter.operator}
+                    onValueChange={nextValue => { if (nextValue === null) return; setFilter(index, {
+                                            operator: nextValue as TableFilter["operator"],
+                                          }); }}
+                    items={filterOperatorItems}
+                  >
+                    <SelectTrigger aria-label={`筛选条件 ${index + 1}`}><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {filterOperatorItems.map(item => (
+                        <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   {!["empty", "not_empty"].includes(filter.operator) ? (
                     field.kind === "select" || field.kind === "multi_select" ? (
-                      <select
-                        aria-label={`筛选值 ${index + 1}`}
+                      <Select
                         value={String(filter.value ?? "")}
-                        onChange={(event) =>
-                          setFilter(index, {
-                            value: event.target.value || null,
-                          })
-                        }
+                        onValueChange={nextValue => { if (nextValue === null) return; setFilter(index, {
+                                                    value: nextValue || null,
+                                                  }); }}
+                        items={filterValueItems}
                       >
-                        <option value="">未选择</option>
-                        {field.options.map((option) => (
-                          <option key={option.id} value={option.id}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
+                        <SelectTrigger aria-label={`筛选值 ${index + 1}`}><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {filterValueItems.map(item => (
+                            <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     ) : (
                       <CellEditor
                         field={{ ...field, name: `筛选值 ${index + 1}` }}
@@ -413,7 +427,7 @@ export function ViewDialog({
                       />
                     )
                   ) : null}
-                  <button
+                  <Button
                     type="button"
                     aria-label={`移除筛选 ${index + 1}`}
                     onClick={() =>
@@ -421,10 +435,10 @@ export function ViewDialog({
                         ...draft,
                         filters: draft.filters.filter((_, i) => i !== index),
                       })
-                    }
+                    } variant="ghost" size="icon"
                   >
                     ×
-                  </button>
+                  </Button>
                 </div>
               );
             })}
@@ -451,47 +465,48 @@ export function ViewDialog({
             <legend>排序</legend>
             {draft.sorts.map((sort, index) => (
               <div className={tableSettingRowClassName} key={index}>
-                <select
-                  aria-label={`排序字段 ${index + 1}`}
+                <Select
                   value={sort.field_id}
-                  onChange={(event) =>
-                    setDraft({
-                      ...draft,
-                      sorts: draft.sorts.map((item, i) =>
-                        i === index
-                          ? { ...item, field_id: event.target.value }
-                          : item,
-                      ),
-                    })
-                  }
+                  onValueChange={nextValue => { if (nextValue === null) return; setDraft({
+                                        ...draft,
+                                        sorts: draft.sorts.map((item, i) =>
+                                          i === index
+                                            ? { ...item, field_id: nextValue }
+                                            : item,
+                                        ),
+                                      }); }}
+                  items={sortFieldItems}
                 >
-                  {definition.fields.map((field) => (
-                    <option key={field.id} value={field.id}>
-                      {field.name}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  aria-label={`排序方向 ${index + 1}`}
+                  <SelectTrigger aria-label={`排序字段 ${index + 1}`}><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {sortFieldItems.map(item => (
+                      <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
                   value={String(sort.descending)}
-                  onChange={(event) =>
-                    setDraft({
-                      ...draft,
-                      sorts: draft.sorts.map((item, i) =>
-                        i === index
-                          ? {
-                              ...item,
-                              descending: event.target.value === "true",
-                            }
-                          : item,
-                      ),
-                    })
-                  }
+                  onValueChange={nextValue => { if (nextValue === null) return; setDraft({
+                                        ...draft,
+                                        sorts: draft.sorts.map((item, i) =>
+                                          i === index
+                                            ? {
+                                                ...item,
+                                                descending: nextValue === "true",
+                                              }
+                                            : item,
+                                        ),
+                                      }); }}
+                  items={sortDirectionItems}
                 >
-                  <option value="false">升序</option>
-                  <option value="true">降序</option>
-                </select>
-                <button
+                  <SelectTrigger aria-label={`排序方向 ${index + 1}`}><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {sortDirectionItems.map(item => (
+                      <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
                   type="button"
                   aria-label={`移除排序 ${index + 1}`}
                   onClick={() =>
@@ -499,10 +514,10 @@ export function ViewDialog({
                       ...draft,
                       sorts: draft.sorts.filter((_, i) => i !== index),
                     })
-                  }
+                  } variant="ghost" size="icon"
                 >
                   ×
-                </button>
+                </Button>
               </div>
             ))}
             <Button
@@ -522,27 +537,29 @@ export function ViewDialog({
           </fieldset>
           <fieldset>
             <legend>公开内容</legend>
-            <label>
+            <label className="grid gap-2 text-sm font-medium">
               公开视图
-              <select
+              <Select
                 value={publicView}
-                onChange={(event) => setPublicView(event.target.value)}
+                onValueChange={nextValue => { if (nextValue === null) return; setPublicView(nextValue); }}
+                items={publicViewItems}
               >
-                {definition.views.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger aria-label="公开视图"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {publicViewItems.map(item => (
+                    <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </label>
             {definition.fields.map((field) => (
-              <label className="flex-row! items-center" key={field.id}>
-                <input
-                  type="checkbox"
+              <label htmlFor={`${checkboxId}-public-${field.id}`} className="flex items-center gap-2" key={field.id}>
+                <Checkbox
+                  id={`${checkboxId}-public-${field.id}`}
                   checked={publicFields.includes(field.id)}
-                  onChange={(event) =>
+                  onCheckedChange={(checked) =>
                     setPublicFields(
-                      event.target.checked
+                      checked
                         ? [...publicFields, field.id]
                         : publicFields.filter((id) => id !== field.id),
                     )
@@ -555,7 +572,7 @@ export function ViewDialog({
 
           <div className={tableFormActionsClassName}>
             <Button
-              variant="primary"
+              variant="default"
               onClick={() => {
                 if (
                   !draft.name.trim() ||

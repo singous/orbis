@@ -4,15 +4,4 @@ import { Checkbox } from "./index";
 const meta = { title: "Primitives/Checkbox", component: Checkbox } satisfies Meta<typeof Checkbox>;
 export default meta;
 type Story = StoryObj<typeof meta>;
-export const Keyboard: Story = { render: () => <div className="grid gap-3"><Checkbox>显示内容</Checkbox><Checkbox disabled defaultChecked>不可用</Checkbox></div>, play: async ({ canvasElement }) => {
-  const canvas = within(canvasElement);
-  const checkbox = canvas.getByRole("checkbox", { name: "显示内容" });
-  checkbox.focus();
-  await userEvent.keyboard(" ");
-  await expect(checkbox).toBeChecked();
-  await userEvent.keyboard("{Enter}");
-  await expect(checkbox).toBeChecked();
-  await userEvent.click(canvas.getByText("显示内容"));
-  await expect(checkbox).not.toBeChecked();
-  await expect(canvas.getByRole("checkbox", { name: "不可用" })).toBeDisabled();
-} };
+export const Keyboard: Story = { render: () => <div className="grid gap-3"><div className="flex items-center gap-2"><Checkbox id="show-content" /><label htmlFor="show-content">显示内容</label></div><div className="flex items-center gap-2"><Checkbox id="disabled-content" disabled defaultChecked /><label htmlFor="disabled-content">不可用</label></div></div>, play: async ({ canvasElement }) => { const control = within(canvasElement).getByRole("checkbox", { name: "显示内容" }); control.focus(); await userEvent.keyboard(" "); await expect(control).toBeChecked(); await userEvent.keyboard(" "); await expect(control).not.toBeChecked(); await expect(within(canvasElement).getByRole("checkbox", { name: "不可用" })).toHaveAttribute("aria-disabled", "true"); } };

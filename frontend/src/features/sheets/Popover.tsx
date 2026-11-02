@@ -20,7 +20,7 @@ const FOCUSABLE = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(", ");
 // Toast 位于独立门户中，其交互不应关闭当前设置或丢失草稿。
-const NESTED_OVERLAY = '.orbis-select-popover, .orbis-color-popover, [data-slot="ob-select-popup"], [data-slot="ob-toast-viewport"]';
+const NESTED_OVERLAY = '[data-slot="select-content"], [data-slot="popover-content"], [data-slot="toast-viewport"]';
 
 export type Anchor = { left: number; top: number; element?: HTMLElement };
 export function anchorAt(element: Element): Anchor {
@@ -173,6 +173,8 @@ export function Popover({
       className={cn(sheetPopoverClassName, className, wide && "wide w-90 [@media(max-width:760px)]:w-[min(360px,calc(100vw-16px))]")}
       style={position}
       onKeyDown={(e) => {
+        // 原生 Toast 的 F6 入口监听在 window。
+        if (e.key === "F6") return;
         e.stopPropagation();
         if (e.key === "Tab" && onTab) {
           e.preventDefault();

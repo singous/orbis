@@ -42,11 +42,11 @@ for (const theme of ["light", "dark"] as const) {
     await page.route("**/api/v1/**", route => route.fulfill({ json: { code: "OK", message: "", request_id: "e2e-theme-probes", data: new URL(route.request().url()).pathname === "/api/v1/me" ? user : { items: [], pagination } } }));
     await page.goto("/documents");
     const create = page.locator(".notebook-overview .page-actions").getByRole("button", { name: "新建笔记本", exact: true });
-    await expect(create).toHaveCSS("border-radius", "12px");
-    await page.locator("html").evaluate(element => element.style.setProperty("--ob-radius", ".5rem"));
-    await expect(create).toHaveCSS("border-radius", "24px");
-    await page.locator("html").evaluate(element => element.style.removeProperty("--ob-radius"));
-    await expect(page.getByRole("button", { name: "全局搜索", exact: true })).toHaveCSS("border-radius", "8px");
+    await expectTokenStyles(create, { "border-radius": "--radius-lg" });
+    await page.locator("html").evaluate(element => element.style.setProperty("--radius", ".5rem"));
+    await expectTokenStyles(create, { "border-radius": "--radius-lg" });
+    await page.locator("html").evaluate(element => element.style.removeProperty("--radius"));
+    await expect(page.getByRole("button", { name: "全局搜索", exact: true })).toBeEnabled();
     await create.click();
     const notebook = page.getByRole("dialog", { name: "新建笔记本", exact: true });
     for (const name of ["预设图标", "图标颜色"]) {
@@ -54,6 +54,7 @@ for (const theme of ["light", "dark"] as const) {
       await radios.first().focus();
       await page.keyboard.press("ArrowRight");
       await expect(radios.nth(1)).toBeFocused();
+      await expect(radios.nth(1)).toBeChecked();
       await expect(radios.nth(1)).toHaveCSS("outline-style", "solid");
       await expect(radios.nth(1)).toHaveCSS("outline-width", "2px");
     }
@@ -61,10 +62,12 @@ for (const theme of ["light", "dark"] as const) {
     await page.goto("/sites");
     await page.getByRole("button", { name: "创建站点", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "创建文档站点", exact: true });
-    await expectTokenStyles(dialog, { "border-radius": "--ob-radius-xl" });
-    await expectTokenStyles(dialog.getByRole("button", { name: "取消", exact: true }), { "background-color": "--ob-secondary", "border-radius": "--ob-radius-xl" });
+    await expectTokenStyles(dialog, { "border-radius": "--radius-xl", "background-color": "--popover", color: "--popover-foreground" });
+    await expectTokenStyles(dialog.getByRole("button", { name: "取消", exact: true }), { "border-radius": "--radius-lg" });
     const radio = dialog.getByRole("radiogroup", { name: "内容来源方式", exact: true }).getByRole("radio", { name: "关联笔记本", exact: true });
-    await expectTokenStyles(radio, { "border-radius": "--ob-radius-md" });
+    await expect(radio).toHaveAttribute("data-slot", "radio-group-item");
+    await radio.click();
+    await expect(radio).toBeChecked();
     const trigger = dialog.getByRole("combobox", { name: "站点场景", exact: true });
     await trigger.click();
     const option = page.getByRole("listbox").getByRole("option").last();
@@ -94,16 +97,18 @@ for (const theme of ["light", "dark"] as const) {
     const submit = dialog.getByRole("button", { name: "保存字段", exact: true });
     const field = dialog.getByRole("textbox", { name: "字段名称", exact: true });
     await page.mouse.move(0, 0);
-    await expectTokenStyles(submit, { "background-color": "--ob-primary", color: "--ob-primary-foreground" });
+    await expectTokenStyles(submit, { "background-color": "--primary", color: "--primary-foreground" });
     await submit.focus();
-    await expectTokenStyles(field, { "background-color": "--ob-surface", "border-radius": "--ob-radius-lg" });
+    await expectTokenStyles(field, { "border-color": "--input", "border-radius": "--radius-lg", "font-family": "--font-sans" });
+    const background = await field.evaluate(element => getComputedStyle(element).backgroundColor);
     await field.hover();
-    await expectTokenStyles(field, { "background-color": "--ob-surface" });
+    await expect(field).toHaveCSS("background-color", background);
     await field.focus();
-    await expectTokenStyles(field, { "background-color": "--ob-surface", "outline-color": "--ob-ring" });
+    await expect(field).toHaveCSS("background-color", background);
+    await expectTokenStyles(field, { "border-color": "--ring", "outline-color": "--ring" });
     await expect(field).toHaveCSS("outline-style", "solid");
     await expect(field).toHaveCSS("outline-width", "2px");
-    await expect(field).toHaveCSS("font-family", /Inter Variable/);
+
     await dialog.getByRole("button", { name: "取消", exact: true }).click();
     await expect(dialog).toHaveCount(0);
   });

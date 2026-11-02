@@ -57,7 +57,9 @@ async function installMembersFixture(page: Page) {
 }
 
 async function expectRoleOptionFocus(option: Locator) {
-  const focus = await expectVisibleKeyboardFocus(option);
+  await expect(option).toBeFocused();
+  await expect(option).toHaveAttribute("data-highlighted", "");
+  const focus = await option.evaluate(element => ({ background: getComputedStyle(element).backgroundColor, color: getComputedStyle(element).color }));
   const [contrast] = await readContrasts(option, [null]);
   expect(contrast.ratio).toBeGreaterThanOrEqual(4.5);
   return { focus, textContrast: contrast };
@@ -129,14 +131,14 @@ for (const profile of profiles) test.describe(`members settings ${profile.theme}
       await page.keyboard.press("Tab");
       evidence.inviteRoleFocus = await expectVisibleKeyboardFocus(role);
       await page.keyboard.press("ArrowDown");
-      const options = page.getByRole("region", { name: "角色选项", exact: true });
+      const options = page.locator('[data-slot="select-content"]');
       const editorOption = options.getByRole("option", { name: "编辑者", exact: true });
       evidence.editorOptionFocus = await expectRoleOptionFocus(editorOption);
+      expect((await new AxeBuilder({ page }).include('[data-slot="select-content"]').analyze()).violations).toEqual([]);
+      if (profile.media) evidence.optionMotion = await expectNoContinuingMotion(options);
       await page.keyboard.press("End");
       const viewerOption = options.getByRole("option", { name: "只读成员", exact: true });
       evidence.viewerOptionFocus = await expectRoleOptionFocus(viewerOption);
-      expect((await new AxeBuilder({ page }).include('[role="region"][aria-label="角色选项"]').analyze()).violations).toEqual([]);
-      if (profile.media) evidence.optionMotion = await expectNoContinuingMotion(options);
       await page.keyboard.press("Enter");
       await expect(options).toBeHidden();
       await expect(role).toContainText("只读成员");
@@ -147,11 +149,20 @@ for (const profile of profiles) test.describe(`members settings ${profile.theme}
       await send.evaluate(element => Promise.all(element.getAnimations().map(animation => animation.finished)));
       evidence.sendFocus = await expectVisibleKeyboardFocus(send);
       await page.keyboard.press("Enter");
-      await expect(page.getByText("邀请服务暂时不可用", { exact: true })).toBeVisible();
+      await expect(page.getByRole("region", { name: "通知", exact: true }).locator('[data-slot="toast"]').getByText("邀请服务暂时不可用", { exact: true })).toBeVisible();
       await expect(send).toBeEnabled();
       await expect(email).toHaveValue(invitation.email);
       await expect(role).toContainText("只读成员");
       expect(fixture.requests.filter(request => request.method === "POST")).toHaveLength(1);
+      const failureToast = page.getByRole("region", { name: "通知", exact: true }).locator('[data-slot="toast"]');
+      await page.keyboard.press("F6");
+      await expect(page.getByRole("region", { name: "通知", exact: true })).toBeFocused();
+      await page.keyboard.press("Tab");
+      await expect(failureToast).toBeFocused();
+      await page.keyboard.press("Tab");
+      await expect(failureToast.getByRole("button", { name: "关闭通知", exact: true })).toBeFocused();
+      await page.keyboard.press("Enter");
+      await expect(failureToast).toHaveCount(0);
 
       await email.focus();
       await page.keyboard.press("Tab");
@@ -167,7 +178,7 @@ for (const profile of profiles) test.describe(`members settings ${profile.theme}
       const memberRole = content.getByRole("combobox", { name: `调整 ${member.email} 的角色`, exact: true });
       await memberRole.focus();
       await page.keyboard.press("ArrowDown");
-      const memberOptions = page.getByRole("region", { name: `调整 ${member.email} 的角色选项`, exact: true });
+      const memberOptions = page.locator('[data-slot="select-content"]');
       await expect(memberOptions.getByRole("option", { name: "编辑者", exact: true })).toBeFocused();
       await page.keyboard.press("End");
       evidence.memberOptionFocus = await expectRoleOptionFocus(memberOptions.getByRole("option", { name: "只读成员", exact: true }));

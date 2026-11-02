@@ -1,7 +1,7 @@
 /* Canvas rendering, selection, ports and mindmap hit geometry only. Ordinary chrome lives in React owners. */
 .board-shell {
-  --board-canvas: var(--ob-canvas);
-  --board-grid: color-mix(in oklab, var(--ob-foreground) 12%, transparent);
+  --board-canvas: var(--background);
+  --board-grid: color-mix(in oklab, var(--foreground) 12%, transparent);
 }
 .board-shell .board-stage-wrap {
   background-color: var(--board-canvas);
@@ -38,7 +38,7 @@
   min-width: 0;
   border: 1.5px solid var(--ob-board-selection);
   border-radius: 2px;
-  background: var(--ob-surface);
+  background: var(--card);
   cursor: nwse-resize;
   padding: 0;
   z-index: 3;
@@ -50,8 +50,8 @@
   padding: 8px;
   border: 2px solid var(--ob-board-selection);
   border-radius: 5px;
-  background: var(--ob-surface-raised);
-  color: var(--ob-foreground);
+  background: var(--popover);
+  color: var(--foreground);
   outline: none;
   line-height: 1.4;
 }
@@ -118,7 +118,7 @@
   pointer-events: none;
 }
 .board-shell .board-mindmap-node-controls { position: absolute; }
-.board-shell .board-mindmap-controls .orbis-action-button {
+.board-shell .board-mindmap-controls :is(.board-mindmap-add, .board-mindmap-toggle) {
   position: absolute;
   display: inline-flex;
   align-items: center;
@@ -133,10 +133,10 @@
   pointer-events: auto;
 }
 .board-shell .board-mindmap-controls .board-mindmap-toggle[aria-expanded="false"] { width: auto; min-width: 34px; padding: 0 6px 0 3px; }
-.board-shell .board-mindmap-controls .orbis-action-button > svg { display: block; flex: none; }
+.board-shell .board-mindmap-controls :is(.board-mindmap-add, .board-mindmap-toggle) > svg { display: block; flex: none; }
 @media (pointer: coarse) {
   .board-shell .board-mindmap-controls { --board-mindmap-control-spacing: 48px; }
-  .board-shell .board-mindmap-controls .orbis-action-button { width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
+  .board-shell .board-mindmap-controls :is(.board-mindmap-add, .board-mindmap-toggle) { width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
 }
 
 

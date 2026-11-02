@@ -1,3 +1,4 @@
+import { notification } from "../helpers/notifications";
 import { expect, test, type APIRequestContext, type Locator, type Page } from "@playwright/test";
 import { createCollection, openWithSession, ownerSession, responseData, sessionHeaders, workspacePath } from "../helpers/api-fixtures";
 
@@ -71,27 +72,27 @@ for (const kind of ["field", "view"] as const) {
       await popover.getByRole("checkbox", { name: "日期", exact: true }).uncheck();
     }
     const save = popover.getByRole("button", { name: kind === "field" ? "保存字段" : "应用", exact: true });
-    const notification = page.getByRole("alertdialog", { name: "保存设置失败，请重试", exact: true });
+    const notice = notification(page, "保存设置失败，请重试");
     const expectDraft = async () => {
       await expect(popover).toBeVisible();
       if (kind === "field") await expect(popover.getByRole("textbox", { name: "字段名称", exact: true })).toHaveValue("未保存的状态列");
       else await expect(popover.getByRole("checkbox", { name: "日期", exact: true })).not.toBeChecked();
     };
     await save.click();
-    await expect(notification).toContainText("保存设置失败，请重试");
-    await expect(page.getByRole("alertdialog")).toHaveCount(1);
-    await expect(notification.getByRole("button")).toHaveCount(1);
-    await notification.hover();
-    await notification.getByRole("button", { name: "关闭通知", exact: true }).click();
-    await expect(notification).toHaveCount(0);
+    await expect(notice).toContainText("保存设置失败，请重试");
+    await expect(page.locator('[data-slot="toast"]')).toHaveCount(1);
+    await expect(notice.locator("button")).toHaveCount(1);
+    await notice.hover();
+    await notice.locator('[data-slot="toast-close"]').click();
+    await expect(notice).toHaveCount(0);
     await expectDraft();
     await save.click();
-    await expect(notification).toContainText("保存设置失败，请重试");
+    await expect(notice).toContainText("保存设置失败，请重试");
     await page.mouse.move(0, 0);
-    await expect(notification).toHaveCount(0);
+    await expect(notice).toHaveCount(0);
     await expectDraft();
     await save.click();
-    await expect(notification).toContainText("保存设置失败，请重试");
+    await expect(notice).toContainText("保存设置失败，请重试");
     expect(attempts).toBe(3);
     await popover.getByRole("button", { name: "取消", exact: true }).click();
     await expect(popover).toHaveCount(0);

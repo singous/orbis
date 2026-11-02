@@ -1,9 +1,9 @@
-import type { ReactNode } from "react";
-import { Portal, readPortalTheme, type PortalProps, type PortalThemeSnapshot } from "@orbis/ui/portal";
+import type { ReactNode, ComponentProps } from "react";
+import { Portal, readPortalTheme, type PortalThemeSnapshot } from "@orbis/ui/portal";
 
 const host = document.createElement("div");
 const fragment = document.createDocumentFragment();
-const props: PortalProps = { container: host, children: "正文" as ReactNode };
+const props: ComponentProps<typeof Portal> = { container: host, children: "正文" as ReactNode };
 <Portal {...props} />;
 <Portal container={fragment}><button>菜单操作</button></Portal>;
 <Portal container={host}>{null}</Portal>;

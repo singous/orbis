@@ -4,12 +4,14 @@ import { editorFormPaperClassName, formQuestionClassName, formRequiredClassName,
 import { reportError } from "../../shared/api/request-feedback";
 import { ArrowDown, ArrowUp, Copy, Plus, Send, Trash2 } from "@orbis/ui/icons";
 import QRCode from "qrcode";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useBlocker } from "react-router-dom";
-import { ActionButton } from "../../shared/ui/ActionButton";
-import { Dialog, DialogContent } from "../../shared/ui/Dialog";
-import { Tag } from "../../shared/ui/Tag";
-import { TextInput } from "../../shared/ui/TextInput";
+import { Button } from "@orbis/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@orbis/ui/dialog";
+import { Badge } from "@orbis/ui/badge";
+import { Input } from "@orbis/ui/input";
+import { Textarea } from "@orbis/ui/textarea";
+import { Checkbox } from "@orbis/ui/checkbox";
 import { ValueEditor } from "./Cell";
 import { FieldIcon } from "./FieldIcon";
 import {
@@ -49,6 +51,7 @@ export function SheetForms({
   fields: Field[];
   readOnly: boolean;
 }) {
+  const checkboxId = useId();
   const [draft, setDraft] = useState(structuredClone(form)),
     [preview, setPreview] = useState(false),
     [busy, setBusy] = useState(false),
@@ -138,18 +141,18 @@ export function SheetForms({
   }
   return (
     <div className="sheet-form-workspace sheet-data-theme flex min-h-0 flex-1 flex-col">
-      <div className="sheet-form-toolbar flex min-h-14 items-center gap-3 border-b border-ob-border px-5 py-2.5 [@media(max-width:760px)]:flex-wrap [@media(max-width:760px)]:gap-2 [@media(max-width:760px)]:px-3">
-        <div className="sheet-segment flex gap-[3px] rounded-[10px] bg-ob-surface-secondary p-[3px]">
-          <ActionButton
-            className={cn(sheetActionClassName, "rounded-[7px] [&.sheet-action]:text-[12px] aria-pressed:bg-(--ob-segment) aria-pressed:text-ob-foreground aria-pressed:[box-shadow:var(--ob-shadow-panel)]")}
+      <div className="sheet-form-toolbar flex min-h-14 items-center gap-3 border-b border-border px-5 py-2.5 [@media(max-width:760px)]:flex-wrap [@media(max-width:760px)]:gap-2 [@media(max-width:760px)]:px-3">
+        <div className="sheet-segment flex gap-[3px] rounded-[10px] bg-muted p-[3px]">
+          <Button
+            className={cn(sheetActionClassName, "rounded-[7px] [&.sheet-action]:text-[12px] aria-pressed:bg-(--card) aria-pressed:text-foreground aria-pressed:[box-shadow:var(--shadow-xs)]")}
             size="sm"
             aria-pressed={!preview}
-            onClick={() => setPreview(false)}
+            onClick={() => setPreview(false)} variant="ghost"
           >
             编辑表单
-          </ActionButton>
-          <ActionButton
-            className={cn(sheetActionClassName, "rounded-[7px] [&.sheet-action]:text-[12px] aria-pressed:bg-(--ob-segment) aria-pressed:text-ob-foreground aria-pressed:[box-shadow:var(--ob-shadow-panel)]")}
+          </Button>
+          <Button
+            className={cn(sheetActionClassName, "rounded-[7px] [&.sheet-action]:text-[12px] aria-pressed:bg-(--card) aria-pressed:text-foreground aria-pressed:[box-shadow:var(--shadow-xs)]")}
             size="sm"
             aria-pressed={preview}
             onClick={() => {
@@ -158,27 +161,27 @@ export function SheetForms({
                   .then(() => setPreview(true))
                   .catch(() => {});
               else setPreview(true);
-            }}
+            }} variant="ghost"
           >
             预览表单
-          </ActionButton>
+          </Button>
         </div>
-        <span className="ml-auto text-[12px] text-(--ob-page-muted-foreground)">{dirty ? "有未保存修改" : "已保存"}</span>
+        <span className="ml-auto text-[12px] text-(--muted-foreground)">{dirty ? "有未保存修改" : "已保存"}</span>
         {!readOnly && (
           <>
-            <ActionButton
+            <Button
               className={sheetActionClassName}
               size="sm"
               disabled={busy || !dirty}
-              onClick={() => void save().catch(() => {})}
+              onClick={() => void save().catch(() => {})} variant="ghost"
             >
               保存表单
-            </ActionButton>
-            {draft.enabled && <Tag tone="success">收集中</Tag>}
-            <ActionButton
+            </Button>
+            {draft.enabled && <Badge variant="secondary">收集中</Badge>}
+            <Button
               className={sheetActionClassName}
               size="sm"
-              variant={draft.enabled ? "secondary" : "primary"}
+              variant={draft.enabled ? "secondary" : "default"}
               onClick={() => {
                 if (!draft.enabled)
                   void save(true)
@@ -190,18 +193,18 @@ export function SheetForms({
             >
               <Send size={14} />
               {draft.enabled ? "分享表单" : "开始收集"}
-            </ActionButton>
+            </Button>
           </>
         )}
       </div>
 
-      <div className="sheet-form-body flex min-h-0 flex-1 items-start gap-6 overflow-auto bg-ob-canvas p-6 [@media(max-width:1000px)]:gap-4 [@media(max-width:1000px)]:p-4 [@media(max-width:760px)]:flex-col [@media(max-width:760px)]:items-stretch">
+      <div className="sheet-form-body flex min-h-0 flex-1 items-start gap-6 overflow-auto bg-background p-6 [@media(max-width:1000px)]:gap-4 [@media(max-width:1000px)]:p-4 [@media(max-width:760px)]:flex-col [@media(max-width:760px)]:items-stretch">
         {!preview && !readOnly && (
-          <aside className="sheet-form-palette sticky top-0 flex w-60 shrink-0 flex-col gap-2.5 rounded-[12px] border border-ob-surface-edge bg-ob-card p-5 [box-shadow:var(--ob-shadow-card)] [@media(max-width:1000px)]:w-50 [@media(max-width:1000px)]:p-4 [@media(max-width:760px)]:static [@media(max-width:760px)]:w-full">
-            <strong className="text-[12px] font-semibold text-(--ob-page-muted-foreground)">可添加字段</strong>
+          <aside className="sheet-form-palette sticky top-0 flex w-60 shrink-0 flex-col gap-2.5 rounded-[12px] border border-border bg-card p-5 [box-shadow:var(--shadow-sm)] [@media(max-width:1000px)]:w-50 [@media(max-width:1000px)]:p-4 [@media(max-width:760px)]:static [@media(max-width:760px)]:w-full">
+            <strong className="text-[12px] font-semibold text-(--muted-foreground)">可添加字段</strong>
             {available.length ? (
               available.map((f) => (
-                <ActionButton
+                <Button
                   className={cn(sheetActionClassName, "justify-start [&>svg:last-child]:ml-auto")}
                   size="sm"
                   key={f.id}
@@ -216,50 +219,43 @@ export function SheetForms({
                         ],
                       },
                     })
-                  }
+                  } variant="ghost"
                 >
                   <FieldIcon kind={f.kind} />
                   {f.name}
                   <Plus size={13} />
-                </ActionButton>
+                </Button>
               ))
             ) : (
-              <p className="text-[12px] text-(--ob-page-muted-foreground)">所有字段已添加</p>
+              <p className="text-[12px] text-(--muted-foreground)">所有字段已添加</p>
             )}
-            <strong className="mt-3 border-t border-ob-border pt-5 text-[12px] font-semibold text-(--ob-page-muted-foreground)">添加新字段</strong>
+            <strong className="mt-3 border-t border-border pt-5 text-[12px] font-semibold text-(--muted-foreground)">添加新字段</strong>
             <div className="sheet-form-new-fields grid grid-cols-2 gap-1.5 [@media(max-width:1000px)]:grid-cols-1 [@media(max-width:760px)]:grid-cols-3">
               {Object.entries(KINDS)
                 .filter(([, info]) => !info.system)
                 .map(([kind, info]) => (
-                  <ActionButton
+                  <Button
                     className={cn(sheetActionClassName, "justify-start gap-[7px] px-1.5 [&.sheet-action]:text-[12px]")}
                     size="sm"
                     key={kind}
                     disabled={busy}
-                    onClick={() => void addField(kind as Kind)}
+                    onClick={() => void addField(kind as Kind)} variant="ghost"
                   >
                     <FieldIcon kind={kind as Kind} />
                     {info.label}
-                  </ActionButton>
+                  </Button>
                 ))}
             </div>
           </aside>
         )}
         <div className={editorFormPaperClassName}>
-          <TextInput
-            className="sheet-form-title w-full border-transparent bg-transparent px-0 text-2xl font-semibold [&.sheet-form-title]:[box-shadow:none]"
-            aria-label="表单标题"
-            readOnly={preview || readOnly}
-            value={draft.config.title}
-            placeholder="表单"
-            onChange={(e) =>
+          <Input className="sheet-form-title w-full" aria-label="表单标题" readOnly={preview || readOnly} value={draft.config.title} placeholder="表单" onChange={(e) =>
               setDraft({
                 ...draft,
                 config: { ...draft.config, title: e.target.value },
               })
-            }
-          />
-          <textarea
+            } />
+          <Textarea
             className={editorFormDescriptionClassName}
             aria-label="表单描述"
             readOnly={preview || readOnly}
@@ -284,55 +280,55 @@ export function SheetForms({
                   </label>
                   {!preview && !readOnly && (
                     <div className="sheet-question-tools flex flex-wrap items-center gap-1 opacity-0 group-hover/form-question:opacity-100 group-focus-within/form-question:opacity-100 [@media(max-width:760px)]:opacity-100 pointer-coarse:opacity-100">
-                      <ActionButton
-                        className={cn(sheetActionClassName, "h-8 min-w-8 p-1 [&.sheet-action]:text-[12px]")}
+                      <Button
+                        className={sheetActionClassName}
                         size="sm"
                         onClick={() =>
                           setDescribing(
                             describing === ff.field_id ? null : ff.field_id,
                           )
-                        }
+                        } variant="ghost"
                       >
                         说明
-                      </ActionButton>
-                      <label className="flex items-center gap-[5px] text-[12px] text-(--ob-page-muted-foreground) pointer-coarse:min-h-(--ob-control-height-touch)">
-                        <input
-                          type="checkbox"
+                      </Button>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Checkbox
+                          id={`${checkboxId}-${ff.field_id}`}
                           checked={ff.required}
-                          onChange={(e) =>
+                          onCheckedChange={checked =>
                             setDraft({
                               ...draft,
                               config: {
                                 ...draft.config,
                                 fields: draft.config.fields.map((f) =>
                                   f.field_id === ff.field_id
-                                    ? { ...f, required: e.target.checked }
+                                    ? { ...f, required: checked }
                                     : f,
                                 ),
                               },
                             })
                           }
                         />
-                        必填
-                      </label>
-                      <ActionButton
-                        className={cn(sheetActionClassName, "h-8 min-w-8 p-1 [&.sheet-action]:text-[12px]")}
+                        <label htmlFor={`${checkboxId}-${ff.field_id}`}>必填</label>
+                      </div>
+                      <Button
+                        className={sheetActionClassName}
                         size="sm"
                         aria-label="上移问题"
-                        onClick={() => reorder(index, -1)}
+                        onClick={() => reorder(index, -1)} variant="ghost"
                       >
                         <ArrowUp size={13} />
-                      </ActionButton>
-                      <ActionButton
-                        className={cn(sheetActionClassName, "h-8 min-w-8 p-1 [&.sheet-action]:text-[12px]")}
+                      </Button>
+                      <Button
+                        className={sheetActionClassName}
                         size="sm"
                         aria-label="下移问题"
-                        onClick={() => reorder(index, 1)}
+                        onClick={() => reorder(index, 1)} variant="ghost"
                       >
                         <ArrowDown size={13} />
-                      </ActionButton>
-                      <ActionButton
-                        className={cn(sheetActionClassName, "h-8 min-w-8 p-1 [&.sheet-action]:text-[12px]")}
+                      </Button>
+                      <Button
+                        className={sheetActionClassName}
                         size="sm"
                         aria-label="移除问题"
                         onClick={() =>
@@ -345,22 +341,16 @@ export function SheetForms({
                               ),
                             },
                           })
-                        }
+                        } variant="ghost"
                       >
                         <Trash2 size={13} />
-                      </ActionButton>
+                      </Button>
                     </div>
                   )}
                 </div>
                 {(ff.description ||
                   (!preview && describing === ff.field_id)) && (
-                  <TextInput
-                    className="sheet-question-description text-[12px] text-(--ob-page-muted-foreground)"
-                    aria-label={`${field.name}说明`}
-                    placeholder="添加问题说明"
-                    readOnly={preview || readOnly}
-                    value={ff.description}
-                    onChange={(e) =>
+                  <Input className="sheet-question-description text-[12px] text-(--muted-foreground)" aria-label={`${field.name}说明`} placeholder="添加问题说明" readOnly={preview || readOnly} value={ff.description} onChange={(e) =>
                       setDraft({
                         ...draft,
                         config: {
@@ -372,8 +362,7 @@ export function SheetForms({
                           ),
                         },
                       })
-                    }
-                  />
+                    } />
                 )}
                 <ValueEditor
                   field={field}
@@ -388,7 +377,7 @@ export function SheetForms({
             );
           })}
           {preview && (
-            <p className="text-[12px] text-(--ob-page-muted-foreground)">
+            <p className="text-[12px] text-(--muted-foreground)">
               当前为预览；请通过填写链接提交真实记录。
             </p>
           )}
@@ -402,24 +391,24 @@ export function SheetForms({
           }}
         >
           <DialogContent
-            title="收集表单"
-            description="分享填写链接，提交内容将自动保存为新的记录。"
-          >
+
+
+          ><DialogHeader><DialogTitle>{"收集表单"}</DialogTitle><DialogDescription>{"分享填写链接，提交内容将自动保存为新的记录。"}</DialogDescription></DialogHeader>
             <div className="sheet-form-share flex flex-col items-start gap-5 pt-6">
-              <p className="text-sm text-(--ob-page-muted-foreground)">获得链接的人可以填写并提交表单</p>
-              <label className="sheet-check flex items-center gap-2 text-sm pointer-coarse:min-h-(--ob-control-height-touch)">
-                <input
-                  type="checkbox"
+              <p className="text-sm text-(--muted-foreground)">获得链接的人可以填写并提交表单</p>
+              <div className="sheet-check flex items-center gap-2 text-sm">
+                <Checkbox
+                  id={`${checkboxId}-enabled`}
                   checked={draft.enabled}
-                  onChange={(e) => void save(e.target.checked).catch(() => {})}
+                  onCheckedChange={checked => void save(checked).catch(() => {})}
                 />
-                允许收集
-              </label>
+                <label htmlFor={`${checkboxId}-enabled`}>允许收集</label>
+              </div>
               <div className="flex w-full gap-2">
-                <TextInput className="min-w-0 flex-1" readOnly aria-label="填写链接" value={link} />
-                <ActionButton
+                <Input className="min-w-0 flex-1" readOnly aria-label="填写链接" value={link} />
+                <Button
                   size="sm"
-                  variant="primary"
+                  variant="default"
                   className={sheetActionClassName}
                   onClick={() => {
                     void navigator.clipboard
@@ -430,10 +419,10 @@ export function SheetForms({
                 >
                   <Copy size={14} />
                   {copied ? "已复制" : "复制填写链接"}
-                </ActionButton>
+                </Button>
               </div>
               <FormQR value={link} />
-              <a className="self-center text-[12px] text-ob-primary" href={link} target="_blank" rel="noreferrer">
+              <a className="self-center text-[12px] text-primary" href={link} target="_blank" rel="noreferrer">
                 打开填写页面
               </a>
             </div>

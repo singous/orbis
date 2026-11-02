@@ -22,7 +22,7 @@
       "scopeEvidence": "Development/browser accessibility testing only; not imported by production app",
       "remaining": "Maintainer confirmation of combination and distribution obligations"
     },
-    "caniuse-lite@1.0.30001799": {
+    "caniuse-lite@1.0.30001820": {
       "status": "pending",
       "declaredLicense": "CC-BY-4.0",
       "usageEvidence": [

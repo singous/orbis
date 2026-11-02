@@ -1,21 +1,22 @@
 # Toolbar
 
-`Toolbar` groups real controls into a single Tab stop. Horizontal arrow keys move between controls; vertical toolbars use Up/Down. Disabled buttons are skipped. `loopFocus` defaults to the Base UI behavior and can be disabled. Home/End are not part of the current contract; the previous toolbar implementation did not handle them either.
+`Toolbar` 和 `ToolbarButton/Group/Input/Link/Separator` 使用 Base UI 的显式工具栏组合。普通 shadcn Button 不会自动注册；用 `ToolbarButton render={<Button />}` 参与键盘遍历。Select 由业务持有 Root 与值，再将原生 SelectTrigger 组合为 ToolbarButton。
 
 ```tsx
-import { Toolbar } from "@orbis/ui/toolbar";
+import { Toolbar, ToolbarButton } from "@orbis/ui/toolbar";
 import { Button } from "@orbis/ui/button";
-import { Select } from "@orbis/ui/select";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@orbis/ui/select";
 
 <Toolbar aria-label="格式">
-  <Button>撤销</Button>
-  <Select label="段落" defaultValue="text" options={[{ value: "text", label: "正文" }]} />
-  <Button>重做</Button>
+  <ToolbarButton render={<Button />}>撤销</ToolbarButton>
+  <Select items={[{ value: "text", label: "正文" }]} defaultValue="text">
+    <ToolbarButton render={<SelectTrigger aria-label="段落" />}><SelectValue /></ToolbarButton>
+    <SelectContent><SelectItem value="text">正文</SelectItem></SelectContent>
+  </Select>
+  <ToolbarButton render={<Button />}>重做</ToolbarButton>
 </Toolbar>
 ```
 
-Button and Select participate automatically through a package-private scope; application code does not need a separate toolbar-specific button API. Button retains its existing ref, disabled/loading, accessible-name and class/style-state contracts. Select retains ownership of its value and state styles while composing its trigger with Base UI's toolbar button.
+方向键与循环行为采用原生属性。ToolbarButton 默认让 disabled 项保持可聚焦以便发现，使用 aria-disabled 阻止激活；需要跳过的具体控件显式设置 `focusableWhenDisabled={false}`。根 disabled 不应通过普通 HTML disabled 属性断言代替实际的 click/keyboard 不激活验证。
 
-The scope ends at Dialog, Select, DropdownMenu, Popover, Tooltip and Toast portal surfaces. Buttons inside a toolbar-opened popup remain part of that popup and do not register in the underlying toolbar. Do not bypass the public overlay components with a custom portal and assume the toolbar scope ends automatically.
-
-Give every toolbar an accessible label. The Story covers real Chromium keyboard traversal, disabled controls, Select values, Tab exit/reentry and portal isolation. No application state, editor selection or canvas behavior belongs in this component.
+浮层内的普通 Button 没有注册为 ToolbarButton，因此不会参加背后工具栏。需要浮层自身工具栏时显式提供新的 Toolbar Root。组件不扫描或克隆业务 DOM，不增加旧的隐式 scope；编辑器选择、保存与画布状态继续由业务持有。

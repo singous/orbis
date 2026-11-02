@@ -2,7 +2,7 @@ import "./grid.css";
 import { sheetActionClassName, sheetStatusBarClassName, sheetMutedClassName } from "./sheet-chrome";
 import { ConfirmAction } from "../../shared/ui/ConfirmAction";
 import { DraftActions } from "../../shared/ui/DraftActions";
-import { Button } from "../../shared/ui/Button";
+import { Button } from "@orbis/ui/button";
 
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ChevronDown, Expand, GripVertical, Plus } from "@orbis/ui/icons";
@@ -18,7 +18,7 @@ import {
 import type { AuthRequestOptions } from "../../shared/auth/use-auth-request";
 import { newUUID } from "../../shared/ids";
 import { registerPendingNavigation } from "../../shared/navigation/pending-navigation";
-import { ActionButton } from "../../shared/ui/ActionButton";
+
 import { CellValue } from "./Cell";
 import { CellEditor, type CellNavigation } from "./CellEditor";
 import {
@@ -723,16 +723,16 @@ export function SheetGrid({
                 onContextMenu={event => { if (readOnly) return; event.preventDefault(); onFieldMenu(field, { left: event.clientX, top: event.clientY }); }}
                 style={{ left: col.start, width: col.size }}
               >
-                <ActionButton
+                <Button
                   size="sm"
                   disabled={readOnly}
                   aria-label={`${field.name}列菜单`}
-                  onClick={(e) => onFieldMenu(field, anchorAt(e.currentTarget))}
+                  onClick={(e) => onFieldMenu(field, anchorAt(e.currentTarget))} variant="ghost"
                 >
                   <FieldIcon kind={field.kind} />
                   <span>{field.name}</span>
                   <ChevronDown size={12} />
-                </ActionButton>
+                </Button>
                 <div
                   role="separator"
                   aria-label={`调整${field.name}列宽`}
@@ -795,15 +795,15 @@ export function SheetGrid({
           })}
           {!readOnly && (
             <div role="columnheader" aria-colindex={columnCount} aria-label="字段操作" className="contents">
-              <ActionButton
+              <Button
                 size="sm"
                 className="sheet-add-column"
                 style={{ left: width - 44 }}
                 aria-label="添加字段"
-                onClick={(event) => onNewField(anchorAt(event.currentTarget))}
+                onClick={(event) => onNewField(anchorAt(event.currentTarget))} variant="ghost"
               >
                 <Plus size={15} />
-              </ActionButton>
+              </Button>
             </div>
           )}
         </div>
@@ -842,7 +842,7 @@ export function SheetGrid({
                       style={
                         groupOption
                           ? {
-                              background: `var(--sheet-ink-${groupOption.color}, var(--ob-page-muted-foreground))`,
+                              background: `var(--sheet-ink-${groupOption.color}, var(--muted-foreground))`,
                             }
                           : undefined
                       }
@@ -878,7 +878,7 @@ export function SheetGrid({
                     />
                     <span>{rowOffset + virtual.index + 1}</span>
                   </label>
-                  <ActionButton size="sm" className="sheet-row-inspect" aria-label={`查看记录 ${rowOffset + virtual.index + 1}`} onClick={() => onInspect(row)}><Expand size={15} /></ActionButton>
+                  <Button size="sm" className="sheet-row-inspect" aria-label={`查看记录 ${rowOffset + virtual.index + 1}`} onClick={() => onInspect(row)} variant="ghost"><Expand size={15} /></Button>
                 </div>
                 {columns.getVirtualItems().map((col) => {
                   const field = fields[col.index],
@@ -1039,23 +1039,23 @@ export function SheetGrid({
         <div className="sheet-grid-tail" role={hasTailAction ? "row" : undefined} aria-rowindex={hasTailAction ? recordCount + 2 : undefined} style={{ width }}>
           <div className="contents" role={hasTailAction ? "gridcell" : undefined} aria-colindex={hasTailAction ? 1 : undefined} aria-colspan={hasTailAction ? columnCount : undefined}>
             {hasMore ? (
-              <ActionButton
+              <Button
                 size="sm"
                 disabled={loading}
-                onClick={() => void more()}
+                onClick={() => void more()} variant="ghost"
               >
                 {loading ? "正在加载…" : "加载更多记录"}
-              </ActionButton>
+              </Button>
             ) : !readOnly ? (
-              <ActionButton
+              <Button
                 size="sm"
                 aria-label="添加记录"
                 className="sheet-add-row"
                 disabled={busy}
-                onClick={onAdd}
+                onClick={onAdd} variant="ghost"
               >
                 <Plus size={15} />
-              </ActionButton>
+              </Button>
             ) : null}
           </div>
         </div>
@@ -1076,9 +1076,9 @@ export function SheetGrid({
             ? `已选择 ${(bounds.bottom - bounds.top + 1) * (bounds.right - bounds.left + 1)} 个单元格`
             : "双击单元格编辑 · 拖动选择 · 支持复制粘贴"}
         </span>
-        <ActionButton className={sheetActionClassName} size="sm" onClick={() => void onRefresh()}>
+        <Button className={sheetActionClassName} size="sm" onClick={() => void onRefresh()} variant="ghost">
           刷新
-        </ActionButton>
+        </Button>
       </div>
     </div>
   );

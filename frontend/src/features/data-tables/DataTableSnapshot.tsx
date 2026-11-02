@@ -5,7 +5,7 @@ import { z } from "zod";
 import { paginationSchema } from "../../shared/api/schemas";
 import { tableRows,publicRecordSchema } from "./public-contract";
 import { useEffect, useState } from "react";
-import { Button } from "../../shared/ui/Button";
+import { Button } from "@orbis/ui/button";
 import { Table2 } from "../../shared/ui/icons";
 import { apiRequest } from "../../shared/api/api-client";
 import {

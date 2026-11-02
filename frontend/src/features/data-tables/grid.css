@@ -1,7 +1,7 @@
 .data-table {
-  --dt-line: var(--ob-border);
-  --dt-bg: var(--ob-surface);
-  --dt-muted: var(--ob-page-muted-foreground);
+  --dt-line: var(--border);
+  --dt-bg: var(--card);
+  --dt-muted: var(--muted-foreground);
 }
 :where(.data-table) .dt-grid-scroll {
   height: 360px;
@@ -14,7 +14,7 @@
   position: sticky;
   top: 0;
   height: 38px;
-  background: var(--ob-surface-secondary);
+  background: var(--muted);
   z-index: 3;
   border-bottom: 1px solid var(--dt-line);
 }
@@ -72,7 +72,7 @@
   min-width: 0;
 }
 :where(.data-table) .dt-grid-cell:focus-within {
-  outline: 2px solid var(--ob-primary);
+  outline: 2px solid var(--primary);
   outline-offset: -2px;
   z-index: 2;
   background: var(--dt-bg);
@@ -106,7 +106,7 @@
   text-align: left;
 }
 :where(.data-table).dt-snapshot th {
-  background: var(--ob-surface-secondary);
+  background: var(--muted);
 }
 @media (max-width: 720px) {
   :where(.data-table) .dt-grid-scroll {
@@ -121,6 +121,6 @@
   padding: 4px 12px;
   font-size: 11px;
   font-weight: 600;
-  background: var(--ob-surface-secondary);
+  background: var(--muted);
   border-bottom: 1px solid var(--dt-line);
 }

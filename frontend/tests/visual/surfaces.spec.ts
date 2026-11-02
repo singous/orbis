@@ -34,7 +34,7 @@ for (const theme of ["light", "dark"] as const) for (const width of [1280, 390])
       await expect(page.getByRole("region", { name: "快速记录" }).getByRole("textbox", { name: "随手记正文" })).toBeVisible();
       await expect(page.getByRole("img", { name: /^近期内容足迹，本月有/ })).toBeVisible();
       await settleSurface(page);
-      await expect(page).toHaveScreenshot(`home-${theme}-${width}.png`);
+      await expect.soft(page).toHaveScreenshot(`home-${theme}-${width}.png`);
     });
 
     test("document editor", async ({ page }) => {
@@ -47,7 +47,7 @@ for (const theme of ["light", "dark"] as const) for (const width of [1280, 390])
       await expect(page.locator(".document-save-state")).toHaveText("已保存");
       await settleSurface(page);
       expect(mutations).toEqual([]);
-      await expect(page).toHaveScreenshot(`document-editor-${theme}-${width}.png`);
+      await expect.soft(page).toHaveScreenshot(`document-editor-${theme}-${width}.png`);
     });
 
     test("board editor", async ({ page }) => {
@@ -66,7 +66,7 @@ for (const theme of ["light", "dark"] as const) for (const width of [1280, 390])
       })).toEqual([255, 255, 255, 255]);
       await settleSurface(page);
       expect(mutations).toEqual([]);
-      await expect(page).toHaveScreenshot(`board-editor-${theme}-${width}.png`);
+      await expect.soft(page).toHaveScreenshot(`board-editor-${theme}-${width}.png`);
     });
 
     test("sheet workspace and filter", async ({ page }) => {
@@ -78,14 +78,14 @@ for (const theme of ["light", "dark"] as const) for (const width of [1280, 390])
       await expect(workspace.locator(".sheet-grid-heading[role=columnheader]")).toHaveText(["名称", "状态", "数量"]);
       await expect(workspace.getByRole("gridcell").filter({ hasText: "示例记录" })).toHaveCount(2);
       await settleSurface(page);
-      await expect(page).toHaveScreenshot(`sheet-workspace-${theme}-${width}.png`);
+      await expect.soft(page).toHaveScreenshot(`sheet-workspace-${theme}-${width}.png`);
       await workspace.getByRole("button", { name: "筛选", exact: true }).click();
       const filter = page.getByRole("dialog", { name: "筛选", exact: true });
       await expect(filter.getByRole("combobox", { name: "筛选字段 1", exact: true })).toBeVisible();
       await expect(filter.getByRole("textbox", { name: "名称", exact: true })).toHaveValue("示例");
       await settleSurface(page);
       expect(mutations).toEqual([]);
-      await expect(page).toHaveScreenshot(`sheet-filter-${theme}-${width}.png`);
+      await expect.soft(page).toHaveScreenshot(`sheet-filter-${theme}-${width}.png`);
     });
 
     test("public site reader", async ({ page, baseURL }) => {
@@ -97,7 +97,7 @@ for (const theme of ["light", "dark"] as const) for (const width of [1280, 390])
       await expect(page.locator(width === 1280 ? ".site-reader-outline" : ".site-reader-mobile-outline")).toBeVisible();
       await expect(page.locator(".site-reader-page-footer")).toHaveText("最后更新于 1970年1月1日");
       await settleSurface(page);
-      await expect(page).toHaveScreenshot(`public-site-reader-${theme}-${width}.png`);
+      await expect.soft(page).toHaveScreenshot(`public-site-reader-${theme}-${width}.png`);
     });
   });
 }

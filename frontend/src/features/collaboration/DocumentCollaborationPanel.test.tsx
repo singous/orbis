@@ -125,7 +125,7 @@ describe("document collaboration", () => {
     showPanel();
     await user.type(screen.getByLabelText("新评论"), "不能丢失的评论");
     await user.click(screen.getByRole("button", { name: "发表评论" }));
-    expect(await screen.findByText("评论保存失败")).toBeInTheDocument();
+    expect(await screen.findByText("评论保存失败", { selector: '[data-slot="toast-title"]' })).toBeInTheDocument();
     expect(screen.getByLabelText("新评论")).toHaveValue("不能丢失的评论");
     expect(screen.getByRole("button", { name: "发表评论" })).toBeEnabled();
   });
@@ -160,7 +160,7 @@ describe("document collaboration", () => {
     await user.click(await screen.findByRole("button", { name: /查看保存记录 2/ }));
     await screen.findByText("历史正文");
     await user.click(screen.getByRole("button", { name: "恢复此版本" }));
-    await screen.findByRole("alertdialog", { name: "ok" });
+    await screen.findByText("ok", { selector: '[data-slot="toast-title"]' });
     expect(requests.find((request) => request.method === "POST")?.body).toEqual({ expected_version: 8,source_version:2,operation_id:expect.any(String) });
     expect(client.getQueryData(["note-content", NOTE_ID])).toMatchObject({kind:"complete",content_version:9,title:"产品计划"});
   });
@@ -179,7 +179,7 @@ describe("document collaboration", () => {
     await user.click(await screen.findByRole("button", { name: /查看保存记录 2/ }));
     await screen.findByText("历史正文");
     await user.click(screen.getByRole("button", { name: "恢复此版本" }));
-    expect(await screen.findByRole("alertdialog")).toHaveTextContent(/版本|冲突/);
+    expect(await screen.findByText(/./, { selector: '[data-slot="toast-title"]' })).toHaveTextContent(/版本|冲突/);
     expect(screen.getByText("历史正文")).toBeInTheDocument();
     expect(client.getQueryData(["note-content", NOTE_ID])).toEqual(content());
   });
@@ -199,7 +199,7 @@ describe("document collaboration", () => {
     http(() => unavailable ? response(null, 503, "暂时无法加载评论") : response(page([comment()])));
     const user = userEvent.setup();
     showPanel();
-    expect(await screen.findByRole("alertdialog")).toHaveTextContent("暂时无法加载评论");
+    expect(await screen.findByText(/./, { selector: '[data-slot="toast-title"]' })).toHaveTextContent("暂时无法加载评论");
     unavailable = false;
     await user.click(await screen.findByRole("button", { name: "重试加载评论" }));
     await screen.findByText("第一条讨论");

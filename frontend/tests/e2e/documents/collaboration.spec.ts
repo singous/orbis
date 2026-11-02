@@ -1,3 +1,4 @@
+import { notification } from "../helpers/notifications";
 import { releaseFeatures } from "../../../src/shared/release-features";
 import { expect, test, type APIRequestContext, type Browser, type Page } from "@playwright/test";
 import { createCollection, createDocument, openWithSession, ownerSession, responseData, sessionHeaders, workspacePath, type TestSession } from "../helpers/api-fixtures";
@@ -121,7 +122,7 @@ test("named document versions fix content and restore into an editable collabora
   await page.screenshot({ path: testInfo.outputPath("document-versions-mobile.png"), fullPage: true });
   await page.getByRole("button", { name: "查看版本 评审稿", exact: true }).click();
   await page.getByRole("button", { name: "恢复此版本", exact: true }).click();
-  await expect(page.getByRole("alertdialog", { name: "请求成功", exact: true })).toBeVisible();
+  await expect(notification(page, "请求成功")).toBeVisible();
   await page.getByRole("button", { name: "关闭评论与历史", exact: true }).click();
   await expect(page.locator(".ProseMirror")).toHaveText("Version baseline");
   await append(page, blocks[0].id, " after restore");
@@ -275,7 +276,7 @@ test("explicit history restore opens the new epoch and remains editable", async 
   await page.getByRole("button", { name: "查看全部保存记录", exact: true }).click();
   await page.getByRole("button", { name: `查看保存记录 ${source.revision.version}`, exact: true }).click();
   await page.getByRole("button", { name: "恢复此版本", exact: true }).click();
-  await expect(page.getByRole("alertdialog", { name: "请求成功", exact: true })).toBeVisible();
+  await expect(notification(page, "请求成功")).toBeVisible();
   await page.getByRole("button", { name: "关闭评论与历史", exact: true }).click();
   await expect(page.locator(".ProseMirror")).toHaveText("Historical body");
   await append(page, blocks[0].id, " after restore");

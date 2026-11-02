@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "lockfileSha256": "d90263db5bfb1e2cbfb56d425cf0885ecfeba78e5d2b1c248a3900e42eaa4cf6",
+  "lockfileSha256": "5fa6a2b3ccb2bff3d52ee7b1cddf75526fbb7a3998e8058d075bb90366ad9d04",
   "inventoryComplete": false,
   "distributionReady": true,
   "distributionIssues": [],
@@ -8,7 +8,7 @@
     "License assessment pending: @axe-core/playwright@4.14.0 (MPL-2.0; not-in-frontend-runtime)",
     "Missing license text: @tybys/wasm-util@0.10.2",
     "License assessment pending: axe-core@4.14.0 (MPL-2.0; not-in-frontend-runtime)",
-    "License assessment pending: caniuse-lite@1.0.30001799 (CC-BY-4.0; not-in-frontend-runtime)",
+    "License assessment pending: caniuse-lite@1.0.30001820 (CC-BY-4.0; not-in-frontend-runtime)",
     "License assessment pending: lightningcss@1.32.0 (MPL-2.0; not-in-frontend-runtime)",
     "License assessment pending: lightningcss-android-arm64@1.32.0 (MPL-2.0; not-in-frontend-runtime)",
     "License assessment pending: lightningcss-darwin-arm64@1.32.0 (MPL-2.0; not-in-frontend-runtime)",
@@ -118,7 +118,7 @@
     },
     {
       "name": "caniuse-lite",
-      "version": "1.0.30001799",
+      "version": "1.0.30001820",
       "declaredLicense": "CC-BY-4.0",
       "usage": [
         "build-only",

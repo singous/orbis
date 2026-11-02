@@ -1,6 +1,6 @@
-import { Dialog, DialogPopup, DialogTitle, DialogFooter } from "@orbis/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogFooter } from "@orbis/ui/dialog";
 import { useId, useRef } from "react";
-import { Button } from "../../shared/ui/Button";
+import { Button } from "@orbis/ui/button";
 
 export function BoardDiscardDialog({ open, description, cancelLabel, discardLabel, onCancel, onDiscard, disabled = false }: {
   open: boolean;
@@ -13,13 +13,13 @@ export function BoardDiscardDialog({ open, description, cancelLabel, discardLabe
 }) {
   const cancel = useRef<HTMLButtonElement>(null);
   const descriptionId = useId();
-  return <Dialog dismissOnOutsidePress={false} open={open} onOpenChange={value => { if (!value) onCancel(); }}>
-    <DialogPopup role="alertdialog" initialFocus={cancel} aria-describedby={descriptionId} className="max-w-112">
-      <DialogTitle>画板尚未保存</DialogTitle><p id={descriptionId} className="text-sm leading-6 text-ob-muted-foreground">{description}</p>
+  return <Dialog  open={open} onOpenChange={value => { if (!value) onCancel(); }} disablePointerDismissal>
+    <DialogContent role="alertdialog" initialFocus={cancel} aria-describedby={descriptionId} showCloseButton={false}>
+      <DialogTitle>画板尚未保存</DialogTitle><p id={descriptionId} className="text-sm leading-6 text-muted-foreground">{description}</p>
       <DialogFooter>
-        <Button ref={cancel} onPress={onCancel}>{cancelLabel}</Button>
-        <Button variant="danger" disabled={disabled} onPress={onDiscard}>{discardLabel}</Button>
+        <Button ref={cancel} onClick={event => { event.stopPropagation(); onCancel(); }}>{cancelLabel}</Button>
+        <Button variant="destructive" disabled={disabled} onClick={event => { event.stopPropagation(); onDiscard(); }}>{discardLabel}</Button>
       </DialogFooter>
-    </DialogPopup>
+    </DialogContent>
   </Dialog>;
 }

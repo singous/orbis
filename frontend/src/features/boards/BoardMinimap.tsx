@@ -1,6 +1,6 @@
 import { cn } from "@orbis/ui/cn";
-import { boardControlStyles } from "./board-control-styles";
-import { ActionButton } from "../../shared/ui/ActionButton";
+
+import { Button } from "@orbis/ui/button";
 import { hiddenElements } from "./mindmap";
 import { useEffect, useMemo, useRef } from "react";
 import { unionBounds } from "./geometry";
@@ -73,8 +73,8 @@ export function BoardMinimap({
       }
     : null;
   return (
-    <ActionButton
-      className={cn(boardControlStyles(), "board-minimap absolute right-3 bottom-14 z-15 block h-[66px] w-[102px] overflow-hidden border border-(--ob-board-border) bg-ob-popover p-0 [box-shadow:var(--ob-board-minimap-shadow)]", className)}
+    <Button
+      className={cn("board-minimap absolute right-3 bottom-14 z-15 block h-[66px] w-[102px] overflow-hidden border border-(--ob-board-border) bg-popover p-0 [box-shadow:var(--ob-board-minimap-shadow)]", className)}
       aria-label="画板小地图，点击定位"
       onClick={(event) => {
         if (!renderer) return;
@@ -88,12 +88,12 @@ export function BoardMinimap({
           x: renderer.stage.width() / 2 - x * camera.zoom,
           y: renderer.stage.height() / 2 - y * camera.zoom,
         });
-      }}
+      }} variant="ghost"
     >
       <canvas ref={canvas} width={WIDTH} height={HEIGHT} />
       {viewport ? (
         <span className="board-minimap-viewport" style={viewport} />
       ) : null}
-    </ActionButton>
+    </Button>
   );
 }

@@ -85,7 +85,7 @@ afterEach(() => {
   else Reflect.deleteProperty(HTMLElement.prototype, "scrollIntoView");
 });
 
-describe("Mint-style site reader", () => {
+describe("published site reader", () => {
   it("opens search from Cmd/Ctrl+K and supports keyboard selection", async () => {
     const user = userEvent.setup();
     render(
@@ -223,8 +223,10 @@ describe("Mint-style site reader", () => {
       await waitFor(() => expect(screen.queryByRole("dialog", { name: "搜索文档" })).not.toBeInTheDocument());
       await waitFor(() => expect(trigger).toHaveFocus());
     } finally {
-      if (outerTheme === undefined) delete document.documentElement.dataset.theme;
-      else document.documentElement.dataset.theme = outerTheme;
+      await act(async () => {
+        if (outerTheme === undefined) delete document.documentElement.dataset.theme;
+        else document.documentElement.dataset.theme = outerTheme;
+      });
     }
   });
 
@@ -351,12 +353,12 @@ describe("Mint-style site reader", () => {
     const copyLink = screen.getByRole("button", { name: "复制链接" });
     const copyPage = screen.getByRole("button", { name: "复制页面" });
     await user.click(copyLink);
-    expect(screen.getByText("请从地址栏手动复制。")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("请从地址栏手动复制。");
     expect(copyLink).toHaveAccessibleName("复制链接");
 
     Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: vi.fn().mockRejectedValue(new Error("denied")) } });
     await user.click(copyPage);
-    expect(await screen.findByText("请检查浏览器权限后重试。")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByRole("alert").filter(alert => alert.textContent === "请检查浏览器权限后重试。")).toHaveLength(1));
     expect(copyPage).toHaveAccessibleName("复制页面");
   });
 

@@ -1,3 +1,4 @@
+import { Button } from "@orbis/ui/button";
 import { workspaceEditionClassName, workspaceFunctionLinkClassName, workspaceFunctionMenuClassName, workspaceFunctionNavClassName, workspaceNavFooterClassName } from "./workspace-navigation-styles";
 import { releaseFeatures } from "../../shared/release-features";
 import { StickyNote } from "@orbis/ui/icons";
@@ -7,7 +8,6 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 import { useStore } from "zustand";
 
 import { authStore } from "../../shared/auth/auth-store";
-import { ActionButton } from "../../shared/ui/ActionButton";
 import { useSearchPalette } from "../search/search-palette-context";
 import { NotebookIcon } from "../documents/NotebookIcon";
 import { useNotebooks } from "../documents/queries";
@@ -41,17 +41,17 @@ function DocumentNavigation() {
   const items = allNotebooks.filter(notebook => isPinned(notebook.id));
 
   return <MenuFrame label="文档导航" footer={<NavLink to="/documents/archive" className={navClass}><Trash2 size={18} aria-hidden="true" />回收站</NavLink>}>
-    <ActionButton type="button" className={workspaceFunctionLinkClassName({ className: "document-menu-search mb-3 bg-(--ob-item-selected-bg) text-(--ob-page-muted-foreground)" })} aria-haspopup="dialog" aria-expanded={isOpen} onClick={() => openSearch({ type: "document" })}><Search size={18} aria-hidden="true" />搜索文档</ActionButton>
+    <Button type="button" className={workspaceFunctionLinkClassName({ className: "document-menu-search mb-3" })} aria-haspopup="dialog" aria-expanded={isOpen} onClick={() => openSearch({ type: "document" })} variant="ghost"><Search size={18} aria-hidden="true" />搜索文档</Button>
     {documentLinks.map(({ to, label, icon: Icon }) => <NavLink key={to} to={to} end className={navClass}><Icon size={18} aria-hidden="true" />{label}</NavLink>)}
     <div className="document-notebooks-heading mt-6 flex items-center gap-1 [&>button]:flex-1 [&>button[aria-expanded=false]>svg]:-rotate-90">
-      <ActionButton type="button" className={workspaceFunctionLinkClassName()} aria-label={expanded ? "收起常用笔记本" : "展开常用笔记本"} aria-expanded={expanded} aria-controls={notebooksId} onClick={() => setExpanded(value => !value)}><ChevronDown size={16} aria-hidden="true" /><span>常用笔记本</span></ActionButton>
-      <NavLink to="/documents/collections" className="document-notebooks-manage grid size-(--ob-control-height-sm) flex-none place-items-center rounded-ob-xl text-(--ob-page-muted-foreground) hover:bg-(--ob-item-hover-bg) hover:text-ob-foreground" aria-label="管理笔记本" title="管理笔记本"><ChevronRight size={16} aria-hidden="true" /></NavLink>
+      <Button type="button" className={workspaceFunctionLinkClassName()} aria-label={expanded ? "收起常用笔记本" : "展开常用笔记本"} aria-expanded={expanded} aria-controls={notebooksId} onClick={() => setExpanded(value => !value)} variant="ghost"><ChevronDown size={16} aria-hidden="true" /><span>常用笔记本</span></Button>
+      <NavLink to="/documents/collections" className="document-notebooks-manage grid size-(--ob-control-height-sm) flex-none place-items-center rounded-xl text-(--muted-foreground) hover:bg-(--accent) hover:text-foreground" aria-label="管理笔记本" title="管理笔记本"><ChevronRight size={16} aria-hidden="true" /></NavLink>
     </div>
     <div id={notebooksId} className="document-notebooks-list grid gap-1 [&[hidden]]:hidden [&>.workspace-function-link]:pl-6" hidden={!expanded}>
-      {notebooks.isLoading ? <span className="document-notebooks-status flex items-center justify-between px-3 py-2 text-ob-caption text-(--ob-page-muted-foreground)" role="status">正在加载笔记本…</span> : null}
+      {notebooks.isLoading ? <span className="document-notebooks-status flex items-center justify-between px-3 py-2 text-xs text-(--muted-foreground)" role="status">正在加载笔记本…</span> : null}
 
       {!notebooks.isLoading && !notebooks.isError && !items.length ? <Link to={allNotebooks.length ? "/documents" : "/documents/collections"} className={workspaceFunctionLinkClassName()}><BookOpen size={18} aria-hidden="true" />{allNotebooks.length ? "设置常用笔记本" : "创建第一个笔记本"}</Link> : null}
-      {items.map((notebook) => <NavLink key={notebook.id} to={`/collections/${notebook.id}`} className={navClass}><NotebookIcon icon={notebook.icon} size="sm" /><span className="truncate">{notebook.title}</span>{isPinned(notebook.id) ? <Pin className="document-notebook-pin ml-auto text-(--ob-page-muted-foreground)" size={13} aria-hidden="true" /> : null}</NavLink>)}
+      {items.map((notebook) => <NavLink key={notebook.id} to={`/collections/${notebook.id}`} className={navClass}><NotebookIcon icon={notebook.icon} size="sm" /><span className="truncate">{notebook.title}</span>{isPinned(notebook.id) ? <Pin className="document-notebook-pin ml-auto text-(--muted-foreground)" size={13} aria-hidden="true" /> : null}</NavLink>)}
     </div>
   </MenuFrame>;
 }
@@ -59,9 +59,9 @@ function DocumentNavigation() {
 function SettingsNavigation() {
   const workspace = useStore(authStore, (state) => state.workspace);
   return <MenuFrame label="设置导航">
-    <span className="workspace-nav-label mt-[23px] mb-[7px] px-2.5 text-sm text-(--ob-page-muted-foreground)">我的设置</span>
+    <span className="workspace-nav-label mt-[23px] mb-[7px] px-2.5 text-sm text-(--muted-foreground)">我的设置</span>
     <NavLink to="/settings/account" className={navClass}><Settings size={18} />个人资料</NavLink>
-    {canManageWorkspaceMembers(workspace) ? <><span className="workspace-nav-label mt-[23px] mb-[7px] px-2.5 text-sm text-(--ob-page-muted-foreground)">工作空间</span><NavLink to="/settings/members" className={navClass}><Users size={18} />成员管理</NavLink></> : null}
+    {canManageWorkspaceMembers(workspace) ? <><span className="workspace-nav-label mt-[23px] mb-[7px] px-2.5 text-sm text-(--muted-foreground)">工作空间</span><NavLink to="/settings/members" className={navClass}><Users size={18} />成员管理</NavLink></> : null}
   </MenuFrame>;
 }
 

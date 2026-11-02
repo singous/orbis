@@ -7,7 +7,7 @@ import { useParams } from "react-router-dom";
 import { ApiError } from "../../shared/api/api-client";
 import { reportError } from "../../shared/api/request-feedback";
 import { newUUID } from "../../shared/ids";
-import { ActionButton } from "../../shared/ui/ActionButton";
+import { Button } from "@orbis/ui/button";
 import { ValueEditor } from "./Cell";
 import { readPublicForm, submitPublicForm, uploadPublicFormFile } from "./api";
 import type { Value } from "./model";
@@ -59,9 +59,9 @@ function PublicSheetFormSession({ token }: { token: string }) {
         <div className={publicFormPaperClassName}>
           <h1 className={publicFormTitleClassName}>暂时无法填写</h1>
           <p>收集已停止，或填写链接已失效。</p>
-          <ActionButton className={sheetActionClassName} size="sm" onClick={() => void query.refetch()}>
+          <Button className={sheetActionClassName} size="sm" onClick={() => void query.refetch()} variant="ghost">
             重试
-          </ActionButton>
+          </Button>
         </div>
       </main>
     );
@@ -148,15 +148,15 @@ function PublicSheetFormSession({ token }: { token: string }) {
               ) : null;
             })}
 
-            <ActionButton
+            <Button
               size="sm"
               type="submit"
-              variant="primary"
+              variant="default"
               className={cn(sheetActionClassName, "[@media(max-width:760px)]:w-full [@media(max-width:760px)]:min-h-(--ob-control-height-touch)")}
               disabled={busy}
             >
               {busy ? "提交中…" : pending.current ? "重试提交" : "提交"}
-            </ActionButton>
+            </Button>
           </>
         )}
       </form>

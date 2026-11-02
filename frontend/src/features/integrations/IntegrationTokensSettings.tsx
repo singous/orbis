@@ -7,7 +7,9 @@ import { authStore, getAuthSessionKey } from "../../shared/auth/auth-store";
 import { authRequestOptions, useAuthRequest } from "../../shared/auth/use-auth-request";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
-import { Select } from "@orbis/ui/select";
+import { Checkbox } from "@orbis/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@orbis/ui/select";
+import { Spinner } from "@orbis/ui/spinner";
 
 type IntegrationToken = {
   id: string; name: string; permissions: string[]; secret_prefix: string;
@@ -42,6 +44,12 @@ function IntegrationTokensScope() {
   const [secret, setSecret] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const canWrite = ["owner", "admin", "editor"].includes(workspace?.role ?? "");
+  const permissions = [{ value: "read" as const, label: "只读文档" }, ...(canWrite ? [{ value: "write" as const, label: "读取与编辑文档" }] : [])];
+  const scopes = [
+    { value: "workspace" as const, label: `当前工作空间：${workspace?.name ?? "我的空间"}` },
+    { value: "notebook" as const, label: "一个笔记本内的所有文档" },
+    { value: "note" as const, label: "仅一篇文档" },
+  ];
   async function refresh(key = sessionKey,requestedPage=page) {
     const generation=++listGeneration.current;
     const data = await apiRequest<{ items: IntegrationToken[];pagination:{page:number;page_size:number;total:number} }>(workspacePath(auth,`/integration-tokens?page=${requestedPage}&page_size=20`), authRequestOptions(auth));
@@ -87,15 +95,27 @@ function IntegrationTokensScope() {
     <p>通过 Orbis CLI 将当前工作空间接入可以执行命令的智能体。令牌权限同时受你的当前成员角色约束，撤销后立即停止访问。</p>
 
     <form className={profileStyles.form} onSubmit={create}>
-      <label className="grid gap-1.5 text-sm font-medium text-ob-foreground">令牌名称<Input required maxLength={120} value={name} disabled={pending} onChange={event => setName(event.target.value)} placeholder="例如：我的写作助手" /></label>
-      <Select<"read" | "write"> label="权限" value={permission} disabled={pending} onValueChange={value => { if (value !== null) setPermission(value); }} options={[{ value: "read", label: "只读文档" }, ...(canWrite ? [{ value: "write" as const, label: "读取与编辑文档" }] : [])]} />
-      <Select<"workspace" | "notebook" | "note"> label="授权范围" value={scope} disabled={pending} onValueChange={value => { if (value !== null) setScope(value); }} options={[{ value: "workspace", label: `当前工作空间：${workspace?.name ?? "我的空间"}` }, { value: "notebook", label: "一个笔记本内的所有文档" }, { value: "note", label: "仅一篇文档" }]} />
-      {scope !== "workspace" ? <label className="grid gap-1.5 text-sm font-medium text-ob-foreground">{scope === "note" ? "文档 ID" : "笔记本 ID"}<Input required value={scopeId} disabled={pending} onChange={event => setScopeId(event.target.value)} /></label> : null}
+      <label className="grid gap-1.5 text-sm font-medium text-foreground">令牌名称<Input required maxLength={120} value={name} disabled={pending} onChange={event => setName(event.target.value)} placeholder="例如：我的写作助手" /></label>
+      <div className="grid gap-1.5 text-sm font-medium">
+        <label htmlFor="integration-token-permission">权限</label>
+        <Select items={permissions} value={permission} disabled={pending} onValueChange={value => { if (value !== null) setPermission(value); }}>
+          <SelectTrigger id="integration-token-permission"><SelectValue /></SelectTrigger>
+          <SelectContent>{permissions.map(item => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}</SelectContent>
+        </Select>
+      </div>
+      <div className="grid gap-1.5 text-sm font-medium">
+        <label htmlFor="integration-token-scope">授权范围</label>
+        <Select items={scopes} value={scope} disabled={pending} onValueChange={value => { if (value !== null) setScope(value); }}>
+          <SelectTrigger id="integration-token-scope"><SelectValue /></SelectTrigger>
+          <SelectContent>{scopes.map(item => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}</SelectContent>
+        </Select>
+      </div>
+      {scope !== "workspace" ? <label className="grid gap-1.5 text-sm font-medium text-foreground">{scope === "note" ? "文档 ID" : "笔记本 ID"}<Input required value={scopeId} disabled={pending} onChange={event => setScopeId(event.target.value)} /></label> : null}
       {scope !== "workspace" ? <p>{scope === "note" ? "仅授权这篇文档，不包含下级文档。" : "包含此笔记本当前与后续新增文档。"}</p> : null}
-      <label><input type="checkbox" checked={media} disabled={pending} onChange={event => setMedia(event.target.checked)} /> 允许读取附件（编辑权限同时允许上传附件）</label>
-      {canWrite && scope !== "note" ? <label><input type="checkbox" checked={sharing} disabled={pending} onChange={event => setSharing(event.target.checked)} /> 允许创建与撤销实时公开分享，范围包含未来子文档</label> : null}
-      <label className="grid gap-1.5 text-sm font-medium text-ob-foreground">有效期（天）<Input type="number" min={1} max={365} required value={days} disabled={pending} onChange={event => setDays(event.target.value)} /></label>
-      <Button type="submit" variant="primary" disabled={!name.trim()} loading={pending}>生成集成令牌</Button>
+      <label className="flex items-center gap-2 text-sm"><Checkbox checked={media} disabled={pending} onCheckedChange={setMedia} />允许读取附件（编辑权限同时允许上传附件）</label>
+      {canWrite && scope !== "note" ? <label className="flex items-center gap-2 text-sm"><Checkbox checked={sharing} disabled={pending} onCheckedChange={setSharing} />允许创建与撤销实时公开分享，范围包含未来子文档</label> : null}
+      <label className="grid gap-1.5 text-sm font-medium text-foreground">有效期（天）<Input type="number" min={1} max={365} required value={days} disabled={pending} onChange={event => setDays(event.target.value)} /></label>
+      <Button type="submit" disabled={!name.trim() || pending} aria-busy={pending}>{pending ? <Spinner /> : null}生成集成令牌</Button>
     </form>
     {secret ? <div role="status" className={profileStyles.field}>
       <p>请现在保存令牌。关闭后无法再次查看原文。使用环境变量 ORBIS_TOKEN 或通过 orbis auth login --token-stdin 存入系统凭据库。</p>

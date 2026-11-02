@@ -2,7 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { SelectField } from "../../shared/ui/SelectField";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@orbis/ui/select";
 import { SiteSettingsForm } from "./SiteSettingsForm";
 import { EMPTY_SITE_CONFIG } from "./SitesPage";
 
@@ -16,10 +16,10 @@ describe("site settings controls", () => {
     const actor = userEvent.setup();
     const change = vi.fn();
     const submit = vi.fn((event) => event.preventDefault());
-    render(<form onSubmit={submit}><SelectField label="范围" value="child" onChange={change} options={[{ value: "", label: "整个笔记本" }, { value: "child", label: "子文档" }]} /></form>);
+    render(<form onSubmit={submit}><Select defaultValue="child" onValueChange={change} items={[{ value: "", label: "整个笔记本" }, { value: "child", label: "子文档" }]}><SelectTrigger aria-label="范围"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="">整个笔记本</SelectItem><SelectItem value="child">子文档</SelectItem></SelectContent></Select></form>);
     await actor.click(screen.getByRole("combobox", { name: /范围/ }));
     await actor.click(await screen.findByRole("option", { name: "整个笔记本" }));
-    expect(change).toHaveBeenCalledWith("");
+    expect(change).toHaveBeenCalledWith("", expect.objectContaining({ reason: "item-press" }));
     expect(submit).not.toHaveBeenCalled();
   });
   it("opens an accessible custom list and commits the chosen site kind", async () => {

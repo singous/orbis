@@ -492,7 +492,7 @@ describe("DocumentContextPanel", () => {
     const title=within(dialog).getByRole("textbox",{name:"文档标题"});
     await userEvent.clear(title);await userEvent.type(title,"新标题");
     await userEvent.click(within(dialog).getByRole("button",{name:"保存"}));
-    expect(await screen.findByRole("alertdialog")).toHaveTextContent("重命名结果尚未确认");
+    expect(await screen.findByText(/./, { selector: '[data-slot="toast-title"]' })).toHaveTextContent("重命名结果尚未确认");
     const first=mocks.updateNote.mock.calls[0][0];
     expect(first).toEqual({id:rootNote.id,title:"新标题",expected_version:4,operation_id:expect.any(String)});
     await userEvent.click(within(dialog).getByRole("button",{name:"保存"}));

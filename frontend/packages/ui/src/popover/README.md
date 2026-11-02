@@ -1,9 +1,7 @@
 # Popover
 
-Popover/Trigger/Content/Close 组成一个非模态浮层。受控与非受控打开状态互斥；需要焦点约束时由消费者显式选择 modal。
+采用 shadcn base-nova 的原生 `Popover`、`PopoverTrigger`、`PopoverContent`、`PopoverHeader`、`PopoverTitle` 和 `PopoverDescription`。Trigger 使用 `render` 组合按钮；内容按原生 `side/align/sideOffset/alignOffset` 定位。
 
-Content 自己是 dialog，提供 aria-label 命名。side/align/sideOffset 属于外层 Positioner，className/style 属于内层 Popup；现有页面若带绝对 top/left/right 定位，要在迁移该 surface 时移除旧定位，不能把旧偏移叠到新定位上。
+需要显式关闭的业务由自己的受控 `open/onOpenChange` 状态处理，不保留旧的 `PopoverClose` 适配。Popup 的可访问名称、初始焦点和关闭后返回焦点使用 Base UI 原生属性。
 
-初始焦点默认由 Base UI 移入内容；finalFocus 默认返回触发器。仅附加行为的 Close 不重复提供焦点样式，可与 Button 组合。Portal 挂 body 并继承打开位置主题/token，避免被业务滚动容器裁剪。
-
-工作空间切换选择器使用该原语，但加载、保存前检查、取消控制器、会话隔离和路由跳转仍由 workspace 拥有。
+工作区切换器的加载、保存前检查、取消控制器、会话隔离和导航仍由 workspace 负责。局部主题通过 overlay scope 提供，不由组件重建旧样式或推测业务 DOM。

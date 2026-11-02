@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useRef, useState } from "react";
 import { newUUID } from "../../shared/ids";
-import { ActionButton } from "../../shared/ui/ActionButton";
+import { Button } from "@orbis/ui/button";
 import { Eye, Pencil, Plus } from "../../shared/ui/icons";
 import { CellValue } from "./Cell";
 import { CellEditor } from "./CellEditor";
@@ -60,8 +60,8 @@ function BoardCell({
         edit();
       }}
     >
-      {!primary && <small className="text-[12px] text-(--ob-page-muted-foreground)">{field.name}</small>}
-      <div className={cn("sheet-card-cell", editing && "outline-2 outline-ob-primary")}>
+      {!primary && <small className="text-[12px] text-(--muted-foreground)">{field.name}</small>}
+      <div className={cn("sheet-card-cell", editing && "outline-2 outline-primary")}>
         {editing ? (
           <CellEditor
             field={field}
@@ -102,15 +102,15 @@ function BoardCell({
             {primary ? "未命名记录" : "点击填写"}
           </span>
         )}
-        {editable && !editing ? <ActionButton
+        {editable && !editing ? <Button
           ref={trigger}
           size="sm"
           className={cn(sheetActionClassName, "sheet-card-edit-trigger ml-auto flex-none")}
           aria-label={`${field.kind === "checkbox" ? "切换" : "编辑"}${field.name}`}
           aria-pressed={field.kind === "checkbox" ? Boolean(row.values[field.id]) : undefined}
           disabled={c.busy}
-          onClick={event => { event.stopPropagation(); edit(); }}
-        ><Pencil size={14} /></ActionButton> : null}
+          onClick={event => { event.stopPropagation(); edit(); }} variant="ghost"
+        ><Pencil size={14} /></Button> : null}
       </div>
     </div>
   );
@@ -192,7 +192,7 @@ function ColumnRecords({
                 style={{ transform: `translateY(${item.start}px)` }}
               >
                 <article
-                  className="sheet-board-card m-0 flex w-full cursor-pointer flex-col items-stretch gap-3 rounded-[12px] border border-ob-surface-edge bg-ob-card p-4 text-left [box-shadow:var(--ob-shadow-card)] hover:border-ob-border hover:[box-shadow:var(--ob-shadow-card-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ob-ring"
+                  className="sheet-board-card m-0 flex w-full cursor-pointer flex-col items-stretch gap-3 rounded-[12px] border border-border bg-card p-4 text-left [box-shadow:var(--shadow-sm)] hover:border-border hover:[box-shadow:var(--shadow-md)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   draggable={!readOnly && !c.busy}
                   onDragStart={(e) =>
                     e.dataTransfer.setData(
@@ -219,7 +219,7 @@ function ColumnRecords({
                       primary={index === 0}
                     />
                   ))}
-                  <ActionButton size="sm" className={cn(sheetActionClassName, "self-end")} aria-label="查看记录详情" onClick={event => { event.stopPropagation(); onRecord(row); }}><Eye size={14} />查看详情</ActionButton>
+                  <Button size="sm" className={cn(sheetActionClassName, "self-end")} aria-label="查看记录详情" onClick={event => { event.stopPropagation(); onRecord(row); }} variant="ghost"><Eye size={14} />查看详情</Button>
                 </article>
               </div>
             );
@@ -231,26 +231,26 @@ function ColumnRecords({
       </div>
       {(previous.length > 0 || query.data?.next_cursor) && (
         <footer className="flex justify-between pt-2">
-          <ActionButton className={sheetActionClassName}
+          <Button className={sheetActionClassName}
             size="sm"
             disabled={!previous.length || query.isFetching}
             onClick={() => {
               setCursor(previous.at(-1)!);
               setPrevious(previous.slice(0, -1));
-            }}
+            }} variant="ghost"
           >
             上一页
-          </ActionButton>
-          <ActionButton className={sheetActionClassName}
+          </Button>
+          <Button className={sheetActionClassName}
             size="sm"
             disabled={!query.data?.next_cursor || query.isFetching}
             onClick={() => {
               setPrevious([...previous, cursor]);
               setCursor(query.data!.next_cursor);
-            }}
+            }} variant="ghost"
           >
             下一页
-          </ActionButton>
+          </Button>
         </footer>
       )}
     </>
@@ -311,7 +311,7 @@ function Column(props: ColumnProps) {
         }
       }}
     >
-      <header className="mb-4 flex flex-none items-center gap-2.5 text-[12px] text-(--ob-page-muted-foreground)">
+      <header className="mb-4 flex flex-none items-center gap-2.5 text-[12px] text-(--muted-foreground)">
         <span
           className="sheet-tag"
           style={{ background: `var(--sheet-${group.color})` }}
@@ -320,7 +320,7 @@ function Column(props: ColumnProps) {
         </span>
         <span>{count}</span>
         {!readOnly && (
-          <ActionButton className={cn(sheetActionClassName, "ml-auto")}
+          <Button className={cn(sheetActionClassName, "ml-auto")}
             size="sm"
             aria-label={`在${group.label}添加记录`}
             disabled={c.busy}
@@ -334,10 +334,10 @@ function Column(props: ColumnProps) {
                   },
                 ])
                 .catch(reportError)
-            }
+            } variant="ghost"
           >
             <Plus size={15} />
-          </ActionButton>
+          </Button>
         )}
       </header>
       {visible ? (
@@ -363,12 +363,12 @@ export function SheetBoard({
     field = fields.find((f) => f.id === view.group_field_id);
   if (!field)
     return (
-      <div className="px-8 py-16 text-center text-(--ob-page-muted-foreground)">
+      <div className="px-8 py-16 text-center text-(--muted-foreground)">
         选择一个单选字段进行分组，即可开始使用看板。
       </div>
     );
   return (
-    <div className="sheet-board flex flex-1 items-start gap-5 overflow-auto bg-ob-canvas p-6">
+    <div className="sheet-board flex flex-1 items-start gap-5 overflow-auto bg-background p-6">
       {[{ id: "", label: "未分组", color: "gray" }, ...field.options].map(
         (group) => (
           <Column

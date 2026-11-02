@@ -31,7 +31,8 @@ test("ordinary menus and notebook trees share local collapse motion, focus and r
     expect(collapse.intermediateFrames).toBeGreaterThan(2);
     expect(collapse.transitions).toContain("grid-template-columns:420");
     expect(collapse.railIntermediateFrames).toBeGreaterThan(2);
-    expect(collapse.endRailTop - collapse.startRailTop).toBeCloseTo(32, 0);
+    const expandHeight = (await page.getByRole("button", { name: entry.expand, exact: true }).boundingBox())!.height;
+    expect(collapse.endRailTop - collapse.startRailTop).toBeCloseTo(expandHeight, 0);
     expect(collapse.transitions).toContain("height:420");
     if (ordinaryWidth === undefined) ordinaryWidth = collapse.startWidth;
     else expect(collapse.startWidth).toBeCloseTo(ordinaryWidth, 0);
@@ -42,7 +43,7 @@ test("ordinary menus and notebook trees share local collapse motion, focus and r
     const expansion = await sampleToggle(page, entry.expand);
     expect(expansion.intermediateFrames).toBeGreaterThan(2);
     expect(expansion.railIntermediateFrames).toBeGreaterThan(2);
-    expect(expansion.endRailTop - expansion.startRailTop).toBeCloseTo(-32, 0);
+    expect(expansion.endRailTop - expansion.startRailTop).toBeCloseTo(-expandHeight, 0);
     expect(expansion.endWidth).toBeCloseTo(collapse.startWidth, 0);
     await expect(page.getByRole("button", { name: entry.collapse, exact: true })).toBeFocused();
     await page.emulateMedia({ reducedMotion: "reduce" });
@@ -73,7 +74,7 @@ test("slow document overview loading keeps the rail, global search and pinned sh
   const placeholder = page.getByRole("status", { name: "正在加载笔记本…", exact: true });
   try {
     await expect(placeholder).toBeVisible();
-    await expect(placeholder.locator('[data-slot="ob-skeleton"]').first()).toBeVisible();
+    await expect(placeholder.locator('[data-slot="skeleton"]').first()).toBeVisible();
     await expect(page.getByRole("link", { name: "在线文档", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "新建资产", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "搜索", exact: true })).toBeVisible();

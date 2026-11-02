@@ -98,3 +98,25 @@ test("global files reject the retired token bridge rather than silently dependin
   sources.set(globalFile, sources.get(globalFile) + '\nbody { color: var(--text-primary); }');
   assert.ok(inspect(sources).some(item => item.rule === "global-style-token" && item.detail === "var(--text-primary"));
 });
+
+test("global semantic roles use native theme tokens while palette sources stay in their brand owner", () => {
+  const sources = actualSources();
+  sources.set(tokenFile, sources.get(tokenFile) + '\n:root { --status-success: var(--color-green-600); --destructive-soft: color-mix(in oklab, var(--destructive) 10%, transparent); } @theme inline { --color-status-success: var(--status-success); --color-primary: var(--primary); }');
+  assert.deepEqual(inspect(sources), []);
+  sources.set(globalFile, sources.get(globalFile) + '\nbody { color: var(--color-green-600); background: var(--unowned-role, transparent); }');
+  assert.deepEqual(inspect(sources).filter(item => item.rule === "global-style-token").map(item => item.detail), ["var(--color-green-600", "var(--unowned-role"]);
+  sources.set(tokenFile, sources.get(tokenFile) + '\n:root { --arbitrary-control-color: inherit; } @theme inline { --color-arbitrary-control: inherit; }');
+  assert.ok(inspect(sources).some(item => item.rule === "global-style-property" && item.detail === ":root: --arbitrary-control-color"));
+  assert.ok(inspect(sources).some(item => item.rule === "global-style-declaration" && item.detail === "--color-arbitrary-control: inherit"));
+});
+
+test("native package CSS has explicit source imports and cannot borrow unowned styles", () => {
+  const sources = actualSources();
+  for (const file of ["packages/ui/src/styles/styles.css", "packages/ui/src/styles/tokens.css", "packages/ui/src/styles/utilities.css", "packages/ui/src/color-picker/styles.css"]) sources.set(file, readFileSync(new URL(`../../${file}`, import.meta.url), "utf8"));
+  assert.deepEqual(inspect(sources), []);
+  const file = "packages/ui/src/styles/styles.css";
+  sources.set(file, sources.get(file) + '\n@import "./unknown.css"; @import "./tokens.css";');
+  assert.deepEqual(inspect(sources).filter(item => item.rule === "css-import").map(item => item.detail), ["./unknown.css", "./tokens.css"]);
+  sources.set("src/features/home/page.css", '@import "./unowned-controls.css"; @import "@orbis/ui/styles.css";');
+  assert.deepEqual(inspect(sources).filter(item => item.rule === "css-import" && item.file.startsWith("src/features/")).map(item => item.detail), ["./unowned-controls.css", "@orbis/ui/styles.css"]);
+});

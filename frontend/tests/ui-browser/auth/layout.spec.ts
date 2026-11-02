@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 import { expectNoContinuingMotion, expectVisibleKeyboardFocus } from "../fixtures/media";
 
 for (const route of ["login", "setup"]) {
-  test(`auth ${route} keeps capsule controls and layout across existing breakpoints`, async ({ page }) => {
+  test(`auth ${route} keeps native fields, keyboard flow and responsive layout`, async ({ page }) => {
     await page.goto(`/${route}`);
     for (const width of [1280, 1000, 900, 755, 480, 390, 320]) {
       await page.setViewportSize({ width, height: 900 });
@@ -15,11 +15,16 @@ for (const route of ["login", "setup"]) {
         const box = element.getBoundingClientRect();
         return { height: box.height, width: box.width, radius: parseFloat(style.borderRadius), textInset: parseFloat(style.paddingInlineStart) };
       });
-      expect(geometry.height).toBe(52);
-      expect(geometry.radius).toBeGreaterThanOrEqual(geometry.height / 2);
-      expect(geometry.textInset).toBe(50);
-      expect((await password.boundingBox())!.height).toBe(52);
-      expect((await submit.boundingBox())!.height).toBe(52);
+      await expect(email).toHaveAttribute("data-slot", "input");
+      await expect(password).toHaveAttribute("data-slot", "input");
+      await expect(submit).toHaveAttribute("data-slot", "button");
+      for (const control of [email, password, submit]) {
+        const box = (await control.boundingBox())!;
+        expect(box.width).toBeGreaterThanOrEqual(24);
+        expect(box.height).toBeGreaterThanOrEqual(24);
+        expect(box.x).toBeGreaterThanOrEqual(0);
+        expect(box.x + box.width).toBeLessThanOrEqual(width);
+      }
       expect((await submit.boundingBox())!.width).toBeCloseTo(geometry.width, 1);
       if (width > 900) await expect(page.getByRole("complementary", { name: "关于 Orbis" })).toBeVisible();
       else await expect(page.getByRole("complementary", { name: "关于 Orbis" })).toBeHidden();
@@ -27,7 +32,8 @@ for (const route of ["login", "setup"]) {
       const before = await email.boundingBox();
       await email.focus();
       expect(await email.boundingBox()).toEqual(before);
-      expect(await email.evaluate(element => getComputedStyle(element).outlineStyle)).not.toBe("none");
+      await email.evaluate(element => Promise.all(element.getAnimations().map(animation => animation.finished)));
+      await expectVisibleKeyboardFocus(email);
     }
     await page.getByRole("link", { name: "Orbis", exact: true }).focus();
     await page.keyboard.press("Tab");

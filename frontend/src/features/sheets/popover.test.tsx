@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { expect, it } from "vitest";
-import { SelectField } from "../../shared/ui/SelectField";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@orbis/ui/select";
 import { anchorAt, Popover, type Anchor } from "./Popover";
 
 function Example() {
@@ -12,7 +12,10 @@ function Example() {
     <button>Outside</button>
     {anchor && <Popover anchor={anchor} label="Settings" onClose={() => setAnchor(null)}>
       <input aria-label="Name" />
-      <SelectField label="Category" value="a" options={[{ value: "a", label: "Alpha" }, { value: "b", label: "Beta" }]} onChange={() => {}} />
+      <Select value="a" items={[{ value: "a", label: "Alpha" }, { value: "b", label: "Beta" }]}>
+        <SelectTrigger aria-label="Category"><SelectValue /></SelectTrigger>
+        <SelectContent><SelectItem value="a">Alpha</SelectItem><SelectItem value="b">Beta</SelectItem></SelectContent>
+      </Select>
       <button onClick={() => setAnchor(null)}>Close</button>
     </Popover>}
   </>;

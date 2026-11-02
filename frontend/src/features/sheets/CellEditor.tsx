@@ -12,7 +12,7 @@ import {
 } from "@orbis/ui/icons";
 import { useLayoutEffect, useRef, useState } from "react";
 import type { AuthRequestOptions } from "../../shared/auth/use-auth-request";
-import { ActionButton } from "../../shared/ui/ActionButton";
+import { Button } from "@orbis/ui/button";
 import { CellValue, PersonChip, ValueEditor } from "./Cell";
 import { KINDS, type Field, type Value } from "./model";
 import { Popover, anchorAt, type Anchor } from "./Popover";
@@ -117,7 +117,7 @@ export function CellEditor({
             )}
           </div>
           <button
-            className="sheet-cell-picker rounded-[4px] border-0 border-current bg-transparent text-(--ob-page-muted-foreground) hover:bg-(--ob-item-hover-bg) focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ob-ring"
+            className="sheet-cell-picker rounded-[4px] border-0 border-current bg-transparent text-(--muted-foreground) hover:bg-(--accent) focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
             aria-label={`选择${field.name}`}
             onClick={() => setAnchor(anchorAt(host.current!))}
           >
@@ -188,7 +188,7 @@ export function CellEditor({
             <>
               <input
                 autoFocus
-                className="mb-1.5 w-full min-h-(--ob-control-height-lg) border-0 border-b border-current border-b-ob-border bg-transparent p-2 text-ob-foreground outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ob-ring pointer-coarse:min-h-(--ob-control-height-touch)"
+                className="mb-1.5 w-full min-h-(--ob-control-height-lg) border-0 border-b border-current border-b-border bg-transparent p-2 text-foreground outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring pointer-coarse:min-h-(--ob-control-height-touch)"
                 aria-label={`搜索${field.name}选项`}
                 placeholder={onCreateOption ? "可搜索或新建选项" : "搜索选项"}
                 value={search}
@@ -237,7 +237,7 @@ export function CellEditor({
                     : value === option.id;
                   return (
                     <button
-                      className="flex min-h-(--ob-control-height-md) w-full items-center justify-between rounded-md px-[9px] py-1.5 hover:bg-(--ob-item-hover-bg) focus-visible:bg-(--ob-item-hover-bg) focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ob-ring pointer-coarse:min-h-(--ob-control-height-touch)"
+                      className="flex min-h-(--ob-control-height-md) w-full items-center justify-between rounded-md px-[9px] py-1.5 hover:bg-(--accent) focus-visible:bg-(--accent) focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring pointer-coarse:min-h-(--ob-control-height-touch)"
                       role="option"
                       aria-selected={selected}
                       key={option.id}
@@ -250,7 +250,7 @@ export function CellEditor({
                           className="sheet-tag"
                           style={{
                             background: `var(--sheet-${option.color})`,
-                            color: `var(--sheet-ink-${option.color}, var(--ob-foreground))`,
+                            color: `var(--sheet-ink-${option.color}, var(--foreground))`,
                           }}
                         >
                           {option.label}
@@ -267,7 +267,7 @@ export function CellEditor({
               {onCreateOption &&
                 search.trim() &&
                 !field.options.some((o) => o.label === search.trim()) && (
-                  <ActionButton className={sheetActionClassName}
+                  <Button className={sheetActionClassName}
                     size="sm"
                     disabled={creating}
                     onClick={async () => {
@@ -281,16 +281,16 @@ export function CellEditor({
                       } finally {
                         setCreating(false);
                       }
-                    }}
+                    }} variant="ghost"
                   >
                     <Plus size={14} />
                     新建选项「{search.trim()}」
-                  </ActionButton>
+                  </Button>
                 )}
               {value != null && (
-                <ActionButton className={sheetActionClassName} size="sm" onClick={() => void commit(null)}>
+                <Button className={sheetActionClassName} size="sm" onClick={() => void commit(null)} variant="ghost">
                   清空
-                </ActionButton>
+                </Button>
               )}
 
             </>
@@ -333,27 +333,27 @@ function DatePicker({
   return (
     <div className="sheet-date-picker">
       <header className="flex items-center justify-between p-1">
-        <ActionButton className={cn(sheetActionClassName, "min-w-8")}
+        <Button className={cn(sheetActionClassName, "min-w-8")}
           size="sm"
           aria-label="上个月"
-          onClick={() => setMonth(new Date(Date.UTC(year, index - 1, 1)))}
+          onClick={() => setMonth(new Date(Date.UTC(year, index - 1, 1)))} variant="ghost"
         >
           <ChevronLeft size={16} />
-        </ActionButton>
+        </Button>
         <strong>
           {year} 年 {index + 1} 月
         </strong>
-        <ActionButton className={cn(sheetActionClassName, "min-w-8")}
+        <Button className={cn(sheetActionClassName, "min-w-8")}
           size="sm"
           aria-label="下个月"
-          onClick={() => setMonth(new Date(Date.UTC(year, index + 1, 1)))}
+          onClick={() => setMonth(new Date(Date.UTC(year, index + 1, 1)))} variant="ghost"
         >
           <ChevronRight size={16} />
-        </ActionButton>
+        </Button>
       </header>
       <div className="grid grid-cols-7 gap-[3px] text-center">
         {["一", "二", "三", "四", "五", "六", "日"].map((day) => (
-          <span className="py-2.5 text-(--ob-page-muted-foreground)" key={day}>{day}</span>
+          <span className="py-2.5 text-(--muted-foreground)" key={day}>{day}</span>
         ))}
         {days.map((day) => (
           <button
@@ -364,7 +364,7 @@ function DatePicker({
               day.toISOString().slice(0, 10) ===
                 current.toISOString().slice(0, 10)
             }
-            className={cn("h-(--ob-control-height-sm) rounded-md hover:bg-(--ob-item-hover-bg) aria-pressed:bg-ob-primary aria-pressed:text-ob-primary-foreground focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ob-ring pointer-coarse:h-(--ob-control-height-touch)", day.getUTCMonth() !== index && "text-[12px] text-(--ob-page-muted-foreground)")}
+            className={cn("h-(--ob-control-height-sm) rounded-md hover:bg-(--accent) aria-pressed:bg-primary aria-pressed:text-primary-foreground focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring pointer-coarse:h-(--ob-control-height-touch)", day.getUTCMonth() !== index && "text-[12px] text-(--muted-foreground)")}
             onClick={() => pick(day)}
           >
             {day.getUTCDate()}
@@ -379,18 +379,18 @@ function DatePicker({
           onChange={(e) => setTime(e.target.value || "00:00")}
         />
       )}
-      <footer className="mt-2 flex items-center justify-between border-t border-t-ob-border p-1">
-        <ActionButton className={sheetActionClassName}
+      <footer className="mt-2 flex items-center justify-between border-t border-t-border p-1">
+        <Button className={sheetActionClassName}
           size="sm"
           onClick={() =>
             pick(new Date(Date.now() + BUSINESS_TIMEZONE_OFFSET_MS))
-          }
+          } variant="ghost"
         >
           今天
-        </ActionButton>
-        <ActionButton className={sheetActionClassName} size="sm" onClick={() => onChoose(null)}>
+        </Button>
+        <Button className={sheetActionClassName} size="sm" onClick={() => onChoose(null)} variant="ghost">
           清空日期
-        </ActionButton>
+        </Button>
       </footer>
     </div>
   );

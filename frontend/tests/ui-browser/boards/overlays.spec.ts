@@ -69,7 +69,7 @@ for (const coarse of [false, true]) test.describe(coarse ? "coarse overlays" : "
     await page.mouse.move(1100, 850);
     await ports.first().focus(); await page.keyboard.press("ArrowRight");
     await expect(ports.first()).toHaveCSS("outline-style", "solid");
-    await expect(ports.first()).toHaveCSS("outline-offset", "-2px");
+    expect(await ports.first().evaluate(element => parseFloat(getComputedStyle(element).outlineWidth))).toBeGreaterThanOrEqual(2);
     await evidence(page, "port-focus", theme, coarse);
     await page.keyboard.press("Space");
     await expect(ports.first()).toHaveAttribute("aria-pressed", "true");
@@ -92,8 +92,22 @@ for (const coarse of [false, true]) test.describe(coarse ? "coarse overlays" : "
     await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
     await ports.first().focus(); await page.keyboard.press("ArrowRight");
     await expect(ports.first()).toHaveCSS("outline-style", "solid");
-    await expect(ports.first()).toHaveCSS("outline-offset", "-2px");
+    expect(await ports.first().evaluate(element => parseFloat(getComputedStyle(element).outlineWidth))).toBeGreaterThanOrEqual(2);
     await evidence(page, "forced-focus", theme, coarse);
+    await add.focus();
+    await page.evaluate(async () => {
+      const { showToast } = await import("/src/shared/ui/Toast.tsx");
+      showToast({ title: "键盘结果反馈", tone: "danger" });
+    });
+    await page.keyboard.press("F6");
+    await expect(page.locator('[data-slot="toast-viewport"]')).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(page.locator('[data-slot="toast"]')).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(page.locator('[data-slot="toast-close"]')).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(page.locator('[data-slot="toast-title"]').filter({ hasText: "键盘结果反馈" })).toBeHidden();
+    await expect(add).toBeFocused();
     await expect(page.getByRole("status", { name: "已提交命令" })).toHaveText("0");
   });
 });

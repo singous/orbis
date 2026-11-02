@@ -20,14 +20,15 @@ test("loading placeholders retain variant geometry, one status and reduced motio
       measurements.push({ width, variant, ...metrics });
       expect(metrics.columns).toBe(variant === "cards" && width === 1280 ? 2 : 1);
       expect(metrics.lineHeight).toBe(variant === "editor" ? 30 : variant === "editor-body" ? 10 : 12);
-      expect(metrics.lineRadius).toBe("4px");
+      expect(parseFloat(metrics.lineRadius)).toBeGreaterThan(0);
       if (variant === "compact") expect([metrics.itemHeight, metrics.iconSize]).toEqual([48, 22]);
       if (variant === "rows") expect([metrics.itemHeight, metrics.iconSize]).toEqual([74, 32]);
       if (variant === "cards") expect([metrics.itemHeight, metrics.iconSize]).toEqual([96, 32]);
     }
   }
   await page.emulateMedia({ reducedMotion: "reduce" });
-  const animations = await page.locator("[data-loading-preview] [data-slot='ob-skeleton'], [data-loading-preview] [data-slot='ob-spinner']").evaluateAll(elements => elements.map(element => getComputedStyle(element).animationName));
+  const animations = await page.locator("[data-loading-preview] [data-slot='skeleton'], [data-loading-preview] [data-slot='spinner']").evaluateAll(elements => elements.map(element => getComputedStyle(element).animationName));
+  expect(animations.length).toBeGreaterThan(0);
   expect(animations.every(name => name === "none")).toBe(true);
   await info.attach("loading-layout-metrics", { body: JSON.stringify(measurements, null, 2), contentType: "application/json" });
 });

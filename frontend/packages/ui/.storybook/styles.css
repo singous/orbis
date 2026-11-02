@@ -1,9 +1,8 @@
 @import "tailwindcss";
-@import "@fontsource-variable/inter";
 @import "../src/styles/styles.css";
 @source "../src";
 
 /* 模拟应用的基础排版，同时覆盖挂到 body 的 Portal。 */
 @layer base {
-  body { @apply font-ob-sans text-sm; -webkit-font-smoothing: antialiased; }
+  body { @apply font-sans text-sm; -webkit-font-smoothing: antialiased; }
 }

@@ -22,7 +22,8 @@ for (const theme of ["light", "dark"]) for (const width of [1280, 390]) test.des
     await page.getByRole("button", { name: "打开评论与历史", exact: true }).click();
     const panel = page.getByRole("dialog", { name: "评论与历史" });
     await expect(panel.getByText("第一条讨论", { exact: false })).toBeVisible();
-    expect((await panel.boundingBox())?.width).toBe(width === 390 ? 390 : 520);
+    await expect.poll(async () => (await panel.boundingBox())?.width ?? 0).toBeGreaterThanOrEqual(Math.min(width * .75, 240));
+    expect((await panel.boundingBox())!.width).toBeLessThanOrEqual(width);
     await captureDialogEvidence(page, "comments", theme, width);
     await panel.getByRole("button", { name: "回复评论" }).click();
     await panel.getByRole("textbox", { name: "回复内容" }).fill("保留的回复");

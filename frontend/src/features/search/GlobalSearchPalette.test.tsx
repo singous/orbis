@@ -72,18 +72,18 @@ describe("global search palette", () => {
     let finishExit!: () => void;
     const finished = new Promise<void>(resolve => { finishExit = resolve; });
     vi.spyOn(Element.prototype, "getAnimations").mockImplementation(function (this: Element) {
-      return this.matches(".search-palette[data-ending-style]") ? [{ finished } as unknown as Animation] : [];
+      return this.matches('[data-slot="dialog-content"][data-closed]') ? [{ finished } as unknown as Animation] : [];
     });
     const view = renderPalette();
     view.container.scrollTop = 72;
     await openPalette(view);
     await userEvent.click(screen.getByRole("button", { name: "关闭搜索" }));
-    const closing = document.querySelector(".search-palette-backdrop");
+    const closing = document.querySelector('[data-slot="dialog-content"][data-closed]');
     expect(closing).toBeInTheDocument();
-    expect(closing).toHaveAttribute("data-ending-style");
+    expect(closing).toHaveAttribute("data-closed");
     view.container.scrollTop = 0;
     await act(async () => { finishExit(); });
-    await waitFor(() => expect(document.querySelector(".search-palette-backdrop")).not.toBeInTheDocument());
+    await waitFor(() => expect(document.querySelector('[data-slot="dialog-content"][data-closed]')).not.toBeInTheDocument());
     await waitFor(() => expect(view.trigger).toHaveFocus());
     await waitFor(() => expect(view.container.scrollTop).toBe(72));
     await openPalette(view);
@@ -94,12 +94,12 @@ describe("global search palette", () => {
     let finishExit!: () => void;
     const finished = new Promise<void>(resolve => { finishExit = resolve; });
     vi.spyOn(Element.prototype, "getAnimations").mockImplementation(function (this: Element) {
-      return this.matches(".search-palette[data-ending-style]") ? [{ finished } as unknown as Animation] : [];
+      return this.matches('[data-slot="dialog-content"][data-closed]') ? [{ finished } as unknown as Animation] : [];
     });
     const view = renderPalette();
     await openPalette(view);
     await userEvent.click(screen.getByRole("button", { name: "关闭搜索" }));
-    expect(document.querySelector(".search-palette[data-ending-style]")).toBeInTheDocument();
+    expect(document.querySelector('[data-slot="dialog-content"][data-closed]')).toBeInTheDocument();
     fireEvent.click(view.trigger);
     const reopened = screen.getByRole("combobox", { name: "搜索任何内容" });
     await waitFor(() => expect(reopened).toHaveFocus());
@@ -209,7 +209,7 @@ describe("global search palette", () => {
     const view = renderPalette({ prepare });
     const input = await openPalette(view);
     await userEvent.keyboard("{Enter}");
-    expect(await screen.findByRole("alertdialog", { name: "草稿保存失败，请重试" })).toHaveTextContent("草稿保存失败，请重试");
+    expect(await screen.findByRole("alert")).toHaveTextContent(/^草稿保存失败，请重试$/);
     expect(view.route).toHaveTextContent(editingRoute);
     expect(view.draft).toHaveValue("需要保留的未保存草稿");
     await waitFor(() => expect(screen.queryByText("正在准备打开…")).not.toBeInTheDocument());
@@ -232,7 +232,7 @@ describe("global search palette", () => {
     await openPalette(view);
     await act(async () => { if (completion === "resolve") finish(); else fail(new Error("过期保存错误")); });
     expect(screen.getByRole("dialog", { name: "全局搜索" })).toBeVisible();
-    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(view.route).toHaveTextContent(editingRoute);
     expect(view.draft).toHaveValue("需要保留的未保存草稿");
   });

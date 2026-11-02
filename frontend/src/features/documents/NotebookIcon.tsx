@@ -35,7 +35,7 @@ export type NotebookIconProps = {
 function ImageIcon({ src, className, size = "md" }: { src: string; className?: string; size: NotebookIconProps["size"] }) {
   const [failed, setFailed] = useState(false);
   if (failed) return <NotebookIcon size={size} className={className} />;
-  return <span className={cn(iconFrameClassName, "notebook-icon--image bg-(--ob-item-hover-bg) text-(--ob-icon-blue)", iconSizeClasses[size], className)}>
+  return <span className={cn(iconFrameClassName, "notebook-icon--image bg-(--accent) text-(--ob-icon-blue)", iconSizeClasses[size], className)}>
     <img className="size-full object-cover" alt="自定义笔记本图标" src={src} onError={() => setFailed(true)} />
   </span>;
 }
@@ -64,7 +64,7 @@ export function NotebookIcon({ icon, size = "md", className, previewUrl }: Noteb
   const selected = icon ?? DEFAULT_NOTEBOOK_ICON;
   const Icon = NOTEBOOK_ICON_PRESETS.find((preset) => preset.name === selected.name)?.Icon ?? NOTEBOOK_ICON_PRESETS[0].Icon;
   return (
-    <span aria-hidden="true" className={cn(iconFrameClassName, `notebook-icon--${selected.color}`, NOTEBOOK_ICON_COLOR_CLASSES[selected.color], iconSizeClasses[size], "bg-[color-mix(in_oklab,var(--notebook-icon-fg)_13%,var(--ob-surface))] text-[color:var(--notebook-icon-fg)]", className)}>
+    <span aria-hidden="true" className={cn(iconFrameClassName, `notebook-icon--${selected.color}`, NOTEBOOK_ICON_COLOR_CLASSES[selected.color], iconSizeClasses[size], "bg-[color-mix(in_oklab,var(--notebook-icon-fg)_13%,var(--card))] text-[color:var(--notebook-icon-fg)]", className)}>
       <Icon strokeWidth={1.8} />
     </span>
   );

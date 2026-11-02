@@ -7,7 +7,7 @@
 ## 让放弃修改先经过确认
 
 ```tsx
-import { Button } from "@/shared/ui/Button";
+import { Button } from "@orbis/ui/button";
 import { ConfirmAction } from "@/shared/ui/ConfirmAction";
 
 export function DiscardDraftAction({ onDiscard, busy }: {

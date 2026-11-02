@@ -44,6 +44,21 @@ for (const theme of ["light", "dark"] as const) for (const width of [1280, 390])
   const table = page.locator(".data-table");
   await expect(table.getByRole("grid", { name: "产品计划" })).toBeVisible();
   await expect(table).toHaveCSS("font-size", "13px");
+  const notificationOrigin = table.getByRole("button", { name: "产品计划", exact: true });
+  await notificationOrigin.focus();
+  await page.evaluate(async () => {
+    const { showToast } = await import("/src/shared/ui/Toast.tsx");
+    showToast({ title: "键盘结果反馈", tone: "danger" });
+  });
+  await page.keyboard.press("F6");
+  await expect(page.locator('[data-slot="toast-viewport"]')).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(page.locator('[data-slot="toast"]')).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(page.locator('[data-slot="toast-close"]')).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.locator('[data-slot="toast-title"]').filter({ hasText: "键盘结果反馈" })).toBeHidden();
+  await expect(notificationOrigin).toBeFocused();
   for (const { opener, title, initialName } of [
     { opener: table.getByRole("button", { name: "添加字段", exact: true }), title: "添加字段", initialName: "" },
     { opener: table.getByRole("columnheader", { name: "名称", exact: true }), title: "编辑字段", initialName: "名称" },
@@ -86,9 +101,9 @@ for (const theme of ["light", "dark"] as const) for (const width of [1280, 390])
   const more = table.getByLabel("更多表格操作", { exact: true });
   await more.focus();
   await page.keyboard.press("Enter");
-  await expect(table.getByRole("button", { name: "导出 CSV", exact: true })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "导出 CSV", exact: true })).toBeVisible();
   await page.keyboard.press("Enter");
-  await expect(table.getByRole("button", { name: "导出 CSV", exact: true })).toBeHidden();
+  await expect(page.getByRole("menuitem", { name: "导出 CSV", exact: true })).toBeHidden();
   await page.getByTestId("table-chrome-preview").dispatchEvent("show-snapshot");
   await expect(page.getByRole("table")).toBeVisible();
   await expect(page.getByRole("cell", { name: "公开记录 1", exact: true })).toBeVisible();

@@ -1,5 +1,4 @@
-import { cn } from "@orbis/ui/cn";
-import { textActionClassName } from "../../shared/ui/control-styles";
+
 import { SectionHeading } from "../../shared/ui/SectionHeading";
 import { emptyPanelClassName } from "../../shared/ui/surface-styles";
 import { workbenchStyles } from "@/shared/ui/workbench-styles";
@@ -8,7 +7,7 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { getDocumentGroup, getNotebook } from "./catalog-api";
 import { useDocumentAuth } from "./queries";
 import { LoadingState } from "../../shared/ui/LoadingState";
-import { ActionButton } from "../../shared/ui/ActionButton";
+import { Button } from "@orbis/ui/button";
 import {
   ArchiveRestore,
   BookOpen,
@@ -25,7 +24,7 @@ import { PageContainer } from "../../shared/ui/PageContainer";
 import { DocumentShell } from "./DocumentShell";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { useSearchResource } from "../search/use-search-resource";
-import { Button } from "../../shared/ui/Button";
+
 import {
   useArchiveDocumentGroup,
   useArchiveNotebook,
@@ -71,30 +70,30 @@ function ArchiveSection({
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-semibold">{resource.label}</div>
                 {resource.parentLabel ? (
-                  <div className="mt-1 text-xs text-(--ob-page-muted-foreground)">
+                  <div className="mt-1 text-xs text-(--muted-foreground)">
                     {resource.parentLabel}
                   </div>
                 ) : null}
                 {resource.restoreBlockedReason ? (
-                  <div className="mt-1 text-xs text-[var(--ob-page-warning-soft-foreground)]">
+                  <div className="mt-1 text-xs text-[var(--status-warning-foreground)]">
                     {resource.restoreBlockedReason}
                   </div>
                 ) : null}
                 {pendingId === resource.id ? (
-                  <div className="mt-1 text-xs text-(--ob-page-muted-foreground)">正在恢复…</div>
+                  <div className="mt-1 text-xs text-(--muted-foreground)">正在恢复…</div>
                 ) : null}
               </div>
               {canRestore ? (
-                <ActionButton
+                <Button
                   type="button"
-                  className={cn(textActionClassName, "inline-flex items-center gap-1")}
+                  className={"inline-flex items-center gap-1"}
                   aria-label={pendingId === resource.id ? `正在恢复 ${resource.label}` : `恢复 ${resource.label}`}
                   disabled={Boolean(resource.restoreBlockedReason) || pendingId === resource.id}
-                  onClick={() => onRestore(resource.id)}
+                  onClick={() => onRestore(resource.id)} variant="ghost"
                 >
                   <ArchiveRestore aria-hidden="true" size={14} />
                   {pendingId === resource.id ? "正在恢复" : "恢复"}
-                </ActionButton>
+                </Button>
               ) : null}
             </div>
           ))}

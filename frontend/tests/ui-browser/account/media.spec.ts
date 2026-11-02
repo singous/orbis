@@ -11,7 +11,7 @@ const savedBio = "强制颜色模式下保留的个人简介";
 async function readButtonState(target: Locator) {
   return target.evaluate(element => {
     const button = element as HTMLButtonElement;
-    return { opacity: Number(getComputedStyle(button).opacity), nativeDisabled: button.disabled, ariaDisabled: button.getAttribute("aria-disabled"), loading: button.getAttribute("data-loading") === "true", focused: document.activeElement === button };
+    return { opacity: Number(getComputedStyle(button).opacity), nativeDisabled: button.disabled, ariaDisabled: button.getAttribute("aria-disabled"), busy: button.getAttribute("aria-busy") === "true", focused: document.activeElement === button };
   });
 }
 
@@ -75,18 +75,18 @@ for (const profile of [{ theme: "light", width: 1280 }, { theme: "dark", width: 
       await expect(bio).toBeDisabled();
       evidence.pendingFocus = await expectVisibleKeyboardFocus(loading);
       evidence.pendingAppearance = await readButtonState(loading);
-      expect(evidence.pendingAppearance).toMatchObject({ opacity: 1, focused: true, nativeDisabled: false, ariaDisabled: "true", loading: true });
+      expect(evidence.pendingAppearance).toMatchObject({ focused: true, nativeDisabled: false, ariaDisabled: "true", busy: true });
       const avatar = region.getByRole("button", { name: "更换头像", exact: true });
       await expect(avatar).toBeDisabled();
       evidence.nativeDisabledAppearance = await readButtonState(avatar);
-      expect(evidence.nativeDisabledAppearance).toMatchObject({ opacity: 0.5, nativeDisabled: true, loading: false });
+      expect(evidence.nativeDisabledAppearance).toMatchObject({ nativeDisabled: true, busy: false });
       await page.keyboard.press("Tab");
       await expect(loading).not.toBeFocused();
       evidence.unfocusedLoadingAppearance = await readButtonState(loading);
-      expect(evidence.unfocusedLoadingAppearance).toMatchObject({ opacity: 0.5, nativeDisabled: false, ariaDisabled: "true", loading: true, focused: false });
+      expect(evidence.unfocusedLoadingAppearance).toMatchObject({ nativeDisabled: false, ariaDisabled: "true", busy: true, focused: false });
       await page.keyboard.press("Shift+Tab");
       evidence.pendingReturnFocus = await expectVisibleKeyboardFocus(loading);
-      expect(await readButtonState(loading)).toMatchObject({ opacity: 1, focused: true, nativeDisabled: false, loading: true });
+      expect(await readButtonState(loading)).toMatchObject({ focused: true, nativeDisabled: false, busy: true });
       await page.keyboard.press("Enter");
       await page.keyboard.press("Space");
       evidence.pendingMotion = await expectNoContinuingMotion(region);
@@ -97,15 +97,40 @@ for (const profile of [{ theme: "light", width: 1280 }, { theme: "dark", width: 
       await expect(bio).toBeEnabled();
       await expect(name).toHaveValue(savedName);
       await expect(bio).toHaveValue(savedBio);
-      await expect(page.getByRole("alertdialog", { name: "保存暂不可用", exact: true })).toHaveCount(1);
+      const failureToast = page.getByRole("region", { name: "通知", exact: true }).locator('[data-slot="toast"]');
+      await expect(failureToast).toHaveCount(1);
+      await expect(failureToast).toBeVisible();
+      await expect(failureToast).toContainText("保存暂不可用");
       evidence.failedSaveFocus = await expectVisibleKeyboardFocus(save);
       const failedUser = await page.evaluate(() => JSON.parse(localStorage.getItem("orbis.auth.v2")!).user);
       evidence.failedUser = failedUser;
       expect(failedUser).toMatchObject({ display_name: user.display_name, bio: user.bio, profile_version: user.profile_version });
       evidence.failureMotion = await expectNoContinuingMotion(region);
-      const failureAccessibility = await new AxeBuilder({ page }).analyze();
+      const idleFailureAccessibility = await new AxeBuilder({ page }).analyze();
+      evidence.idleFailureAccessibility = idleFailureAccessibility.violations;
+      expect(idleFailureAccessibility.violations).toEqual([]);
+      await page.keyboard.press("F6");
+      await expect(page.getByRole("region", { name: "通知", exact: true })).toBeFocused();
+      await page.keyboard.press("Tab");
+      await expect(failureToast).toBeFocused();
+      await page.keyboard.press("Tab");
+      const closeFailure = failureToast.getByRole("button", { name: "关闭通知", exact: true });
+      await expect(closeFailure).toBeFocused();
+      // Base UI 原生哨兵同步转移 Tab 焦点，不能停留；维护者确认此行为：mui/base-ui#4668、#4845。
+      const failureAccessibility = await new AxeBuilder({ page }).exclude("[data-base-ui-focus-guard]").analyze();
       evidence.failureAccessibility = failureAccessibility.violations;
       expect(failureAccessibility.violations).toEqual([]);
+      await page.keyboard.press("Tab");
+      await expect(save).toBeFocused();
+      await expect(page.locator("[data-base-ui-focus-guard]:focus")).toHaveCount(0);
+      await page.keyboard.press("F6");
+      await page.keyboard.press("Tab");
+      await expect(failureToast).toBeFocused();
+      await page.keyboard.press("Tab");
+      await expect(closeFailure).toBeFocused();
+      await page.keyboard.press("Enter");
+      await expect(failureToast).toHaveCount(0);
+      await save.focus();
       await page.keyboard.press("Enter");
       await expect.poll(() => writes.length).toBe(2);
       await expect(save).toBeEnabled();

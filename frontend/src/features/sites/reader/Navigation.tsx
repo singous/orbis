@@ -1,5 +1,4 @@
 import { OrbisAttribution } from "../../../shared/ui/OrbisAttribution";
-import { Button } from "@orbis/ui/button";
 import { readerFocus } from "./chrome";
 import { ChevronRight } from "../../../shared/ui/icons";
 import { useEffect, useRef, type RefObject } from "react";
@@ -51,7 +50,7 @@ export function Navigation({ sections, currentSlug, basePath, open, close, descr
   }, [modal, open, returnFocusRef]);
 
   return <>
-    {open ? <Button appearance="unstyled" type="button" className="site-reader-navigation-scrim fixed inset-[var(--ob-reader-header-height)_0_0] z-[38] hidden cursor-pointer border-0 bg-(--ob-reader-drawer-scrim) [@media(max-width:800px)]:block" aria-label="收起站点导航" onClick={close} /> : null}
+    {open ? <button type="button" className="site-reader-navigation-scrim fixed inset-[var(--ob-reader-header-height)_0_0] z-[38] hidden cursor-pointer border-0 bg-(--ob-reader-drawer-scrim) [@media(max-width:800px)]:block" aria-label="收起站点导航" onClick={close} /> : null}
     <aside ref={drawerRef} id="site-navigation" className={`site-reader-navigation sticky top-(--ob-reader-header-height) flex h-[calc(100dvh-var(--ob-reader-header-height))] flex-col self-start overflow-auto pt-[30px] pr-2 pb-[22px] [@media(max-width:800px)]:fixed [@media(max-width:800px)]:bottom-0 [@media(max-width:800px)]:left-0 [@media(max-width:800px)]:z-[39] [@media(max-width:800px)]:w-[min(310px,86vw)] [@media(max-width:800px)]:border-r [@media(max-width:800px)]:border-(--ob-reader-border) [@media(max-width:800px)]:bg-(--ob-reader-surface) [@media(max-width:800px)]:px-[18px] [@media(max-width:800px)]:py-6 [@media(max-width:800px)]:[box-shadow:var(--ob-reader-drawer-shadow)] ${open ? "is-open [@media(max-width:800px)]:flex" : "[@media(max-width:800px)]:hidden"}`} role={modal && open ? "dialog" : undefined} aria-modal={modal && open ? "true" : undefined} aria-label={modal && open ? "站点导航抽屉" : "站点目录"} onKeyDown={(event) => {
       if (!modal || !open) return;
       if (event.key === "Escape") {
@@ -70,7 +69,7 @@ export function Navigation({ sections, currentSlug, basePath, open, close, descr
       {description ? <p className="site-reader-navigation-intro mx-2.5 mt-0 mb-7 text-[length:var(--ob-prose-caption-size)] leading-[1.8] text-(--ob-reader-muted)">{description}</p> : null}
       <nav aria-label="站点导航">
         {sections.map((section, index) => <section className="mb-[25px]" key={`${section.label}-${index}`}>
-          <h2 className="mx-2.5 mt-0 mb-[9px] text-[length:var(--ob-text-ui-size)] font-[680] tracking-[.01em] text-(--ob-reader-text)">{section.label}</h2>
+          <h2 className="mx-2.5 mt-0 mb-[9px] text-[length:var(--text-sm)] font-[680] tracking-[.01em] text-(--ob-reader-text)">{section.label}</h2>
           <ul className="m-0 list-none p-0">{section.nodes.map((node) => <NavigationBranch key={node.page.slug} node={node} currentSlug={currentSlug} basePath={basePath} depth={0} close={close} />)}</ul>
         </section>)}
       </nav>

@@ -1,43 +1,73 @@
-import { Tooltip as Primitive } from "@base-ui/react/tooltip";
-import { createContext, useContext, useState, useId, cloneElement, type ComponentProps, type CSSProperties, type ReactElement, type ReactNode } from "react";
-import { resolveClassName } from "../internal/resolve-class-name";
-import { usePortalTheme } from "../internal/use-portal-theme";
-import { ToolbarScopeBoundary } from "../internal/toolbar-scope";
+import { createContext, useContext, useId } from "react"
+import { useOverlayScope } from "../internal/overlay-scope"
+import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip"
+import { cn } from "cn"
 
-type TooltipProps = { children: ReactNode; delayMs?: number; disabled?: boolean } & (
-  | { open: boolean; onOpenChange: (open: boolean) => void; defaultOpen?: never }
-  | { open?: never; defaultOpen?: boolean; onOpenChange?: (open: boolean) => void }
-);
-const ThemeContext = createContext<{ theme: "light" | "dark"; portalStyle: CSSProperties; delayMs: number; contentId: string }>({ theme: "light", portalStyle: {}, delayMs: 300, contentId: "" });
-function Tooltip({ children, delayMs = 300, onOpenChange, ...props }: TooltipProps) {
-  const contentId = useId();
-  const [openingElement, setOpeningElement] = useState<Element | null>(null);
-  const { anchor, theme, portalStyle } = usePortalTheme(openingElement);
-  return <ThemeContext.Provider value={{ theme, portalStyle, delayMs, contentId }}><span hidden ref={anchor} /><Primitive.Root {...props} onOpenChange={(open, details) => {
-    if (open) setOpeningElement(details.event.target instanceof Element ? details.event.target : null);
-    onOpenChange?.(open);
-  }}>{children}</Primitive.Root></ThemeContext.Provider>;
+function TooltipProvider({
+  delay = 0,
+  ...props
+}: TooltipPrimitive.Provider.Props) {
+  return (
+    <TooltipPrimitive.Provider
+      data-slot="tooltip-provider"
+      delay={delay}
+      {...props}
+    />
+  )
 }
-type TooltipTriggerProps = Omit<ComponentProps<"button">, "children" | "className" | "style"> & {
-  className?: string | ((state: { open: boolean }) => string | undefined);
-  style?: CSSProperties | ((state: { open: boolean }) => CSSProperties | undefined);
-} & ({ asChild: true; children: ReactElement } | { asChild?: false; children?: ReactNode });
-function TooltipTrigger({ asChild, children, ...props }: TooltipTriggerProps) {
-  const { delayMs, contentId } = useContext(ThemeContext);
-  const child = asChild ? children as ReactElement<{ "aria-describedby"?: string }> : undefined;
-  const describedBy = [props["aria-describedby"], child?.props["aria-describedby"], contentId].filter(Boolean).join(" ");
-  return <Primitive.Trigger {...props} aria-describedby={describedBy} delay={delayMs} render={child ? cloneElement(child, { "aria-describedby": describedBy }) : undefined}>{asChild ? undefined : children}</Primitive.Trigger>;
+
+const TooltipIdContext = createContext<string | undefined>(undefined)
+
+function Tooltip({ children, ...props }: TooltipPrimitive.Root.Props) {
+  const id = useId()
+  return <TooltipIdContext.Provider value={id}><TooltipPrimitive.Root data-slot="tooltip" {...props}>{children}</TooltipPrimitive.Root></TooltipIdContext.Provider>
 }
-type TooltipContentProps = Omit<ComponentProps<"div">, "className" | "style" | "id" | "role"> & {
-  side?: "top" | "right" | "bottom" | "left";
-  align?: "start" | "center" | "end";
-  sideOffset?: number;
-  className?: string | ((state: { open: boolean }) => string | undefined);
-  style?: CSSProperties | ((state: { open: boolean }) => CSSProperties | undefined);
-};
-function TooltipContent({ side = "top", align = "center", sideOffset = 6, className, ...props }: TooltipContentProps) {
-  const { theme, portalStyle, contentId } = useContext(ThemeContext);
-  return <ToolbarScopeBoundary><Primitive.Portal data-theme={theme} style={portalStyle}><Primitive.Positioner side={side} align={align} sideOffset={sideOffset} collisionPadding={12} className="z-(--ob-z-tooltip) outline-none"><Primitive.Popup {...props} role="tooltip" id={contentId} data-slot="ob-tooltip" className={resolveClassName("max-w-[min(20rem,var(--available-width))] wrap-anywhere rounded-ob-md border border-ob-border bg-ob-popover px-3 py-2 text-ob-caption text-ob-popover-foreground shadow-sm", className)} /></Primitive.Positioner></Primitive.Portal></ToolbarScopeBoundary>;
+
+function TooltipTrigger({ ...props }: TooltipPrimitive.Trigger.Props) {
+  const id = useContext(TooltipIdContext)
+  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" aria-describedby={id} {...props} />
 }
-export { Tooltip, TooltipTrigger, TooltipContent };
-export type { TooltipProps, TooltipTriggerProps, TooltipContentProps };
+
+function TooltipContent({
+  className,
+  side = "top",
+  sideOffset = 4,
+  align = "center",
+  alignOffset = 0,
+  children,
+  ...props
+}: TooltipPrimitive.Popup.Props &
+  Pick<
+    TooltipPrimitive.Positioner.Props,
+    "align" | "alignOffset" | "side" | "sideOffset"
+  >) {
+  const scope = useOverlayScope()
+  const id = useContext(TooltipIdContext)
+  return (
+    <TooltipPrimitive.Portal {...scope}>
+      <TooltipPrimitive.Positioner
+        align={align}
+        alignOffset={alignOffset}
+        side={side}
+        sideOffset={sideOffset}
+        className="isolate z-50"
+      >
+        <TooltipPrimitive.Popup
+          data-slot="tooltip-content"
+          id={id}
+          role="tooltip"
+          className={cn(
+            "z-50 inline-flex w-fit max-w-xs origin-(--transform-origin) items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs text-background has-data-[slot=kbd]:pr-1.5 data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 **:data-[slot=kbd]:relative **:data-[slot=kbd]:isolate **:data-[slot=kbd]:z-50 **:data-[slot=kbd]:rounded-sm data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 data-[state=delayed-open]:zoom-in-95 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+            className
+          )}
+          {...props}
+        >
+          {children}
+          <TooltipPrimitive.Arrow className="z-50 size-2.5 translate-y-[calc(-50%-2px)] rotate-45 rounded-[2px] bg-foreground fill-foreground data-[side=bottom]:top-1 data-[side=inline-end]:top-1/2! data-[side=inline-end]:-left-1 data-[side=inline-end]:-translate-y-1/2 data-[side=inline-start]:top-1/2! data-[side=inline-start]:-right-1 data-[side=inline-start]:-translate-y-1/2 data-[side=left]:top-1/2! data-[side=left]:-right-1 data-[side=left]:-translate-y-1/2 data-[side=right]:top-1/2! data-[side=right]:-left-1 data-[side=right]:-translate-y-1/2 data-[side=top]:-bottom-2.5" />
+        </TooltipPrimitive.Popup>
+      </TooltipPrimitive.Positioner>
+    </TooltipPrimitive.Portal>
+  )
+}
+
+export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }

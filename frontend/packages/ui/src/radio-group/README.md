@@ -1,7 +1,5 @@
 # RadioGroup
 
-RadioGroup 保留泛型 value/onValueChange，受控与非受控值互斥。RadioGroupItem 的 children 是可见标签和可选装饰图标；原语管理隐藏原生 input、单选关系、Tab 和方向键。
+采用 shadcn base-nova 的原生 `RadioGroup` 和 `RadioGroupItem`。Root 通过 `value/defaultValue/onValueChange` 管理选择，Item 的可见说明由显式 label 组合；没有自包标签或旧的值泛型适配层。
 
-整行是可聚焦 radio，并拥有可见焦点环；内部圆形指示器使用 aria-hidden。组由 aria-label 或 aria-labelledby 命名。disabled、readOnly、required 与 name/form 保留表单语义，状态样式使用 data attributes 或 className/style 回调。
-
-外观弹窗用该组件更新现有 appearance store；UI 包不读取或持久化产品偏好。
+方向键、禁用项、单选状态和表单参与由 Base UI 负责。业务在回调入口将选中值转换为自己的领域联合类型，并保留有效的空字符串或数字 0。

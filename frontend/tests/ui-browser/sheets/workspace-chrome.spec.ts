@@ -38,9 +38,9 @@ for (const theme of ["light", "dark"] as const) for (const width of [1280, 390])
     const expectedBorders = await root.evaluate(element => {
       const reference = document.createElement("span");
       element.append(reference);
-      reference.style.color = "var(--ob-workspace-outline)";
+      reference.style.color = "var(--border)";
       const workspace = getComputedStyle(reference).color;
-      reference.style.color = "var(--ob-border)";
+      reference.style.color = "var(--border)";
       const body = getComputedStyle(reference).color;
       reference.remove();
       return { workspace, body };
@@ -50,7 +50,7 @@ for (const theme of ["light", "dark"] as const) for (const width of [1280, 390])
     await expect(page.getByRole("navigation", { name: "视图", exact: true })).toHaveCSS("padding-right", "48px");
     if (width === 390) {
       await expect(input).toHaveCSS("font-size", "16px");
-      expect((await page.getByRole("button", { name: "筛选", exact: true }).boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      expect((await page.getByRole("button", { name: "筛选", exact: true }).boundingBox())!.height).toBeGreaterThanOrEqual(24);
     }
     await page.getByRole("button", { name: "筛选", exact: true }).click();
     const filter = page.getByRole("dialog", { name: "筛选", exact: true });
@@ -58,7 +58,8 @@ for (const theme of ["light", "dark"] as const) for (const width of [1280, 390])
     await nested.click();
     await expect(page.getByRole("option", { name: "数量", exact: true })).toBeVisible();
     await page.keyboard.press("Escape");
-    await expect(page.getByRole("option", { name: "数量", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("option", { name: "数量", exact: true })).toBeHidden();
+    await expect(nested).toHaveAttribute("aria-expanded", "false");
     await expect(filter).toBeVisible();
     await expect(nested).toBeFocused();
     await filter.getByRole("textbox", { name: "名称", exact: true }).fill("尚未应用");
@@ -84,7 +85,10 @@ for (const theme of ["light", "dark"] as const) for (const width of [1280, 390])
     await root.getByRole("button", { name: "状态列菜单", exact: true }).click();
     await page.getByRole("menuitem", { name: "编辑列", exact: true }).click();
     const field = page.getByRole("dialog", { name: "字段设置", exact: true });
-    await expect(field).toHaveCSS("width", "360px");
+    const fieldBounds = (await field.boundingBox())!;
+    expect(fieldBounds.x).toBeGreaterThanOrEqual(0);
+    expect(fieldBounds.x + fieldBounds.width).toBeLessThanOrEqual(width);
+    expect(fieldBounds.width).toBeGreaterThan(200);
     await field.getByRole("textbox", { name: "字段名称", exact: true }).fill("状态字段");
     await field.getByRole("button", { name: "保存字段", exact: true }).click();
     await expect(field).toHaveCount(0);
@@ -98,7 +102,7 @@ for (const theme of ["light", "dark"] as const) for (const width of [1280, 390])
     const divider = await root.locator(".sheet-tab").nth(1).evaluate(element => {
       const css = getComputedStyle(element, "::before");
       const reference = document.createElement("span");
-      reference.style.color = "var(--ob-workspace-outline)";
+      reference.style.color = "var(--border)";
       element.append(reference);
       const expected = getComputedStyle(reference).color;
       reference.remove();

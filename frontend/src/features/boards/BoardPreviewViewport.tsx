@@ -2,10 +2,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenu
 import { Maximize, Minus, Plus } from "@orbis/ui/icons";
 import { useRef, useState, type ReactNode } from "react";
 import { Button } from "@orbis/ui/button";
-import { controlFeedbackClassName } from "../../shared/ui/control-styles";
-import { Tooltip } from "../../shared/ui/Tooltip";
 
-const previewActionClassName = `orbis-action-button board-preview-action block min-h-7 min-w-7 rounded-ob-xl border-0 bg-transparent px-1.5 py-1 text-[12px] font-normal leading-5 text-ob-foreground enabled:hover:bg-ob-secondary pointer-coarse:min-h-(--ob-control-height-touch) pointer-coarse:min-w-(--ob-control-height-touch) ${controlFeedbackClassName}`;
+import { Tooltip, TooltipTrigger, TooltipContent } from "@orbis/ui/tooltip";
+
+const previewActionClassName = "board-preview-action shrink-0";
 
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 4;
@@ -23,7 +23,7 @@ export function BoardPreviewViewport({ children }: { children: ReactNode }) {
   }
   function fit() { setView({ x: 0, y: 0, zoom: 1 }); }
   return <div className="board-preview-viewport relative h-full min-h-0 overflow-hidden">
-    <div className="board-preview-pan absolute inset-0 cursor-grab touch-none outline-none active:cursor-grabbing forced-colors:ob-focus-ring forced-colors:focus-visible:outline-offset-[-2px] focus-visible:[box-shadow:inset_0_0_0_2px_var(--ob-ring)]" tabIndex={0} role="region" aria-label="画板预览，拖动平移，使用缩放工具查看细节"
+    <div className="board-preview-pan absolute inset-0 cursor-grab touch-none outline-none active:cursor-grabbing forced-colors:focus-ring forced-colors:focus-visible:outline-offset-[-2px] focus-visible:[box-shadow:inset_0_0_0_2px_var(--ring)]" tabIndex={0} role="region" aria-label="画板预览，拖动平移，使用缩放工具查看细节"
       onPointerDown={event => {
         if (event.button !== 0) return;
         event.preventDefault();
@@ -51,18 +51,18 @@ export function BoardPreviewViewport({ children }: { children: ReactNode }) {
       }}>
       <div className="board-preview-transform pointer-events-none h-full w-full origin-center p-5 select-none" style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})` }}>{children}</div>
     </div>
-    <div className="board-preview-tools absolute top-2.5 right-3 flex items-center gap-0.5 rounded-lg border border-ob-border bg-ob-card p-[3px] [box-shadow:var(--ob-board-preview-controls-shadow)]" role="group" aria-label="画板预览缩放">
-      <Tooltip label="适应画布"><Button appearance="unstyled" className={previewActionClassName} aria-label="适应画布" onClick={fit}><Maximize size={16} /></Button></Tooltip>
-      <Tooltip label="缩小画板"><Button appearance="unstyled" className={previewActionClassName} aria-label="缩小画板" disabled={view.zoom <= MIN_ZOOM} onClick={() => zoom(view.zoom / ZOOM_STEP)}><Minus size={15} /></Button></Tooltip>
+    <div className="board-preview-tools absolute top-2.5 right-3 flex items-center gap-0.5 rounded-lg border border-border bg-card p-[3px] [box-shadow:var(--ob-board-preview-controls-shadow)]" role="group" aria-label="画板预览缩放">
+      <Tooltip><TooltipTrigger render={<Button  className={previewActionClassName} aria-label="适应画布" onClick={fit} variant="ghost" size="icon"><Maximize size={16} /></Button>} /><TooltipContent>{"适应画布"}</TooltipContent></Tooltip>
+      <Tooltip><TooltipTrigger render={<Button  className={previewActionClassName} aria-label="缩小画板" disabled={view.zoom <= MIN_ZOOM} onClick={() => zoom(view.zoom / ZOOM_STEP)} variant="ghost" size="icon"><Minus size={15} /></Button>} /><TooltipContent>{"缩小画板"}</TooltipContent></Tooltip>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild><Button appearance="unstyled" className={previewActionClassName} aria-label={`缩放比例 ${Math.round(view.zoom * 100)}%`}>{Math.round(view.zoom * 100)}%</Button></DropdownMenuTrigger>
+        <DropdownMenuTrigger render={<Button  className={previewActionClassName} aria-label={`缩放比例 ${Math.round(view.zoom * 100)}%`} variant="ghost">{Math.round(view.zoom * 100)}%</Button>} />
         <DropdownMenuContent align="end" aria-label="缩放比例">
           <DropdownMenuRadioGroup value={view.zoom} onValueChange={zoom}>
-            {PREVIEW_ZOOMS.map(value => <DropdownMenuRadioItem key={value} value={value} closeOnSelect textValue={`${value * 100}%`}>{value * 100}%</DropdownMenuRadioItem>)}
+            {PREVIEW_ZOOMS.map(value => <DropdownMenuRadioItem key={value} value={value} closeOnClick label={`${value * 100}%`}>{value * 100}%</DropdownMenuRadioItem>)}
           </DropdownMenuRadioGroup>
         </DropdownMenuContent>
       </DropdownMenu>
-      <Tooltip label="放大画板"><Button appearance="unstyled" className={previewActionClassName} aria-label="放大画板" disabled={view.zoom >= MAX_ZOOM} onClick={() => zoom(view.zoom * ZOOM_STEP)}><Plus size={15} /></Button></Tooltip>
+      <Tooltip><TooltipTrigger render={<Button  className={previewActionClassName} aria-label="放大画板" disabled={view.zoom >= MAX_ZOOM} onClick={() => zoom(view.zoom * ZOOM_STEP)} variant="ghost" size="icon"><Plus size={15} /></Button>} /><TooltipContent>{"放大画板"}</TooltipContent></Tooltip>
     </div>
   </div>;
 }

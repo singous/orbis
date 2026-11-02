@@ -203,7 +203,7 @@ describe("notebook-backed site management", () => {
     const parentToggle = await screen.findByRole("checkbox", { name: "公开 开始使用" });
     const childToggle = screen.getByRole("checkbox", { name: "公开 安装客户端" });
     await userEvent.click(parentToggle);
-    expect(childToggle).toBeDisabled();
+    expect(childToggle).toHaveAttribute("aria-disabled", "true");
     expect(screen.getByText("受上级排除影响")).toBeVisible();
 
     await userEvent.click(screen.getByRole("button", { name: "设置 开始使用 的公开信息" }));
@@ -232,7 +232,7 @@ describe("notebook-backed site management", () => {
     expect(within(dialog).getByText("新增 1")).toBeVisible();
     await userEvent.click(within(dialog).getByRole("button", { name: "确认发布" }));
 
-    expect(await screen.findByRole("alertdialog")).toHaveTextContent("来源内容已变化");
+    expect(await screen.findByRole("alert")).toHaveTextContent("来源内容已变化");
     const publishRequests = requests.filter((request) => request.path.endsWith("/publish"));
     expect(publishRequests).toHaveLength(1);
     expect(publishRequests[0].body).toEqual({expected_source_fingerprint:FINGERPRINT,expected_version:2,operation_id:expect.any(String)});
@@ -245,7 +245,7 @@ describe("notebook-backed site management", () => {
     renderRoute(`/sites/${SITE_ID}`, <SiteEditorPage />, "/sites/:siteId");
 
     expect(await screen.findByRole("textbox", { name: "站点名称" })).toBeDisabled();
-    expect(await screen.findByRole("checkbox", { name: "公开 开始使用" })).toBeDisabled();
+    expect(await screen.findByRole("checkbox", { name: "公开 开始使用" })).toHaveAttribute("aria-disabled", "true");
     expect(screen.queryByRole("button", { name: "保存设置" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "发布站点" })).not.toBeInTheDocument();
   });
@@ -278,7 +278,7 @@ describe("notebook-backed site management", () => {
     expect(within(dialog).getAllByText("冻结正文")).not.toHaveLength(0);
     await userEvent.click(within(dialog).getByRole("button", { name: "确认发布" }));
 
-    expect(await screen.findByRole("alertdialog")).toHaveTextContent("来源内容已变化");
+    expect(await screen.findByRole("alert")).toHaveTextContent("来源内容已变化");
     expect(requests.find((request) => request.path.endsWith("/publish"))?.body).toEqual({expected_source_fingerprint:FINGERPRINT,expected_version:2,operation_id:expect.any(String)});
     expect(requests.filter((request) => request.path.endsWith("/preview"))).toHaveLength(1);
     expect(within(dialog).getAllByText("冻结正文")).not.toHaveLength(0);
@@ -310,7 +310,7 @@ describe("notebook-backed site management", () => {
 
     const childToggle = await screen.findByRole("checkbox", { name: "公开 安装客户端" });
     expect(childToggle).not.toBeChecked();
-    expect(childToggle).toBeDisabled();
+    expect(childToggle).toHaveAttribute("aria-disabled", "true");
     expect(screen.getByText(/隐藏上级“开始使用”已被全局排除/)).toBeVisible();
     expect(screen.getByText(/会影响所有包含该文档的来源范围/)).toBeVisible();
 
@@ -320,7 +320,7 @@ describe("notebook-backed site management", () => {
     await waitFor(() => expect(requests.filter((request) => request.method === "PUT").at(-1)?.body.source).toMatchObject({ excluded_document_ids: [PARENT_ID] }));
 
     await userEvent.click(screen.getByRole("button", { name: "清除全局排除 开始使用" }));
-    expect(childToggle).toBeEnabled();
+    expect(childToggle).not.toHaveAttribute("aria-disabled", "true");
     expect(childToggle).toBeChecked();
     await userEvent.click(screen.getByRole("button", { name: "保存设置" }));
     await waitFor(() => expect(requests.filter((request) => request.method === "PUT").at(-1)?.body.source).toMatchObject({ excluded_document_ids: [] }));

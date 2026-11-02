@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useContext, useEffect, useRef, useState } from "react";
 import { useOptionalAuthRequest } from "../../shared/auth/use-auth-request";
 import { newUUID } from "../../shared/ids";
-import { ActionButton } from "../../shared/ui/ActionButton";
+import { Button } from "@orbis/ui/button";
 import { TableHostContext } from "../data-tables/context";
 import { getNote } from "../documents/api";
 import { sheetAPI } from "./api";
@@ -74,9 +74,9 @@ export function SheetEmbed({
         {error || owner.error?.message ? (
           <>
 
-            <ActionButton size="sm" onClick={() => void create()}>
+            <Button size="sm" onClick={() => void create()} variant="ghost">
               重试创建数据表
-            </ActionButton>
+            </Button>
           </>
         ) : (
           <p>{readOnly ? "尚未创建数据表" : "正在创建数据表…"}</p>

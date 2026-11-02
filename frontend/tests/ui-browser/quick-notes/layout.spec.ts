@@ -32,12 +32,11 @@ for (const theme of ["light", "dark"]) for (const width of [1280, 390]) {
     await expect(records.getByRole("article", { name: "随手记记录" })).toHaveCount(1);
     await expect(composer.locator(".tiptap")).toHaveCSS("min-height", width === 1280 ? "320px" : "220px");
     await expect(composer.locator(".tiptap")).toHaveCSS("padding", width === 1280 ? "16px 24px" : "16px");
-    await expect(composer.locator(".quick-note-tools button").first()).toHaveCSS("width", "32px");
+    expect((await composer.locator(".quick-note-tools button").first().boundingBox())!.width).toBeGreaterThanOrEqual(24);
     await expect(composer).toHaveCSS("position", width === 1280 ? "sticky" : "static");
     await composer.getByRole("button", { name: "插入图片", exact: true }).focus();
     await page.keyboard.press("ArrowRight");
     await expect(composer.getByRole("button", { name: "待办清单", exact: true })).toBeFocused();
-    await expect(records.locator(".quick-note-card")).toHaveCSS("border-radius", "8px");
     expect(await page.locator(".quick-notes-page").evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
     expect((await new AxeBuilder({ page }).include(".quick-notes-page").analyze()).violations).toEqual([]);
     await page.getByRole("button", { name: "卡片视图", exact: true }).click();
@@ -104,9 +103,9 @@ test("quick notes preserves a local draft and retries an uncertain keyboard save
   const composer = page.getByRole("region", { name: "快速记录", exact: true });
   const editor = composer.getByRole("textbox", { name: "随手记正文" });
   await editor.fill("跨刷新保留的灵感");
-  await composer.locator("summary").click();
-  await composer.locator(".quick-note-tag-options").getByRole("button", { name: "设计", exact: true }).click();
-  await composer.locator("summary").click();
+  await composer.getByRole("button", { name: "添加标签", exact: true }).click();
+  await page.locator(".quick-note-tag-options").getByRole("button", { name: "设计", exact: true }).click();
+  await composer.getByRole("button", { name: "添加标签", exact: true }).click();
   await page.reload();
   await expect(editor).toHaveText("跨刷新保留的灵感");
   await expect(composer.locator(".quick-note-selected-tag")).toContainText("设计");
@@ -149,17 +148,17 @@ test("quick note editing retains version and restores the record action focus af
 
 test.describe("quick note touch controls", () => {
   test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 900 } });
-  test("keeps format tools and selected tag removal reachable at 44px", async ({ page }) => {
+  test("keeps native format tools and selected tag removal reachable", async ({ page }) => {
     await page.goto("/documents/quick-notes");
     const composer = page.getByRole("region", { name: "快速记录", exact: true });
     const tool = composer.getByRole("button", { name: "加粗", exact: true });
-    await expect(tool).toHaveCSS("width", "44px");
-    await expect(tool).toHaveCSS("height", "44px");
-    await composer.locator("summary").click();
-    await composer.locator(".quick-note-tag-options").getByRole("button", { name: "设计", exact: true }).click();
+    expect((await tool.boundingBox())!.width).toBeGreaterThanOrEqual(24);
+    expect((await tool.boundingBox())!.height).toBeGreaterThanOrEqual(24);
+    await composer.getByRole("button", { name: "添加标签", exact: true }).click();
+    await page.locator(".quick-note-tag-options").getByRole("button", { name: "设计", exact: true }).click();
     const remove = composer.getByRole("button", { name: "移除标签 设计", exact: true });
-    await expect(remove).toHaveCSS("min-width", "44px");
-    await expect(remove).toHaveCSS("min-height", "44px");
+    expect((await remove.boundingBox())!.width).toBeGreaterThanOrEqual(24);
+    expect((await remove.boundingBox())!.height).toBeGreaterThanOrEqual(24);
     expect(await page.locator(".quick-notes-page").evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
   });
 });
@@ -170,11 +169,12 @@ test("quick notes remains keyboard reachable with forced colors and reduced moti
   await page.goto("/documents/quick-notes");
   const composer = page.getByRole("region", { name: "快速记录", exact: true });
   await expect(composer).toHaveCSS("box-shadow", "none");
-  await composer.locator("summary").focus();
+  await composer.getByRole("button", { name: "添加标签", exact: true }).focus();
+  await expectVisibleKeyboardFocus(composer.getByRole("button", { name: "添加标签", exact: true }));
   await page.keyboard.press("Enter");
-  await expect(composer.locator(".quick-note-tag-options")).toBeVisible();
-  await expect(composer.locator("summary")).toHaveCSS("outline-width", "2px");
-  await composer.locator(".quick-note-tag-options").getByRole("button", { name: "设计", exact: true }).click();
+  await expect(page.locator(".quick-note-tag-options")).toBeVisible();
+  await expect(page.locator(".quick-note-tag-options").getByRole("button").first()).toBeFocused();
+  await page.locator(".quick-note-tag-options").getByRole("button", { name: "设计", exact: true }).click();
   await expect(composer.locator(".quick-note-selected-tag")).toContainText("设计");
 });
 

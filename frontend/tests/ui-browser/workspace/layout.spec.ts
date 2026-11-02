@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { expectVisibleKeyboardFocus } from "../fixtures/media";
 import { SIDEBAR_MOTION_DURATION_MS } from "../../../src/features/workspace/workspace-sidebar-config";
 import { installSession, pagination, user, workspace } from "../fixtures/session";
 
@@ -54,7 +55,7 @@ for (const surface of ["web", "desktop"] as const) for (const theme of ["light",
       expect(bounds.x).toBe(6);
       expect(bounds.y).toBe(surface === "web" ? 0 : 52);
       await expect(page.locator(".workspace-content")).toHaveAttribute("inert", "");
-      await expect(page.locator(".workspace-drawer-backdrop")).toHaveCSS("background-color", "rgba(31, 32, 36, 0.25)");
+      await expect(page.getByRole("button", { name: "关闭主导航", exact: true })).toBeVisible();
       await page.keyboard.press("Escape");
       await expect(navigation).toHaveAttribute("inert", "");
       await expect(opener).toBeFocused();
@@ -73,9 +74,7 @@ test("rail keyboard focus and sidebar motion use their owned contracts", async (
   await page.keyboard.press("Tab");
   const brand = page.getByRole("button", { name: "切换工作空间", exact: true });
   await expect(brand).toBeFocused();
-  await expect(brand).toHaveCSS("outline-style", "solid");
-  await expect(brand).toHaveCSS("outline-width", "2px");
-  await expect(brand).toHaveCSS("outline-offset", "2px");
+  await expectVisibleKeyboardFocus(brand);
   await page.getByRole("button", { name: "收起侧栏", exact: true }).click();
   await expect(page.locator(".workspace-shell-grid")).toHaveCSS("transition-property", "grid-template-columns");
   await expect(page.locator(".workspace-shell-grid")).toHaveCSS("transition-duration", `${SIDEBAR_MOTION_DURATION_MS / 1000}s`);

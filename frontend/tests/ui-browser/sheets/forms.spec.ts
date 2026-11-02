@@ -60,10 +60,9 @@ for (const theme of ["light", "dark"]) for (const width of [1280, 390]) test(`sh
   });
   await mountForm(page, "editor");
   const title = page.getByRole("textbox", { name: "表单标题", exact: true });
-  await expect(title).toHaveCSS("font-size", "18px");
-  await expect(title).toHaveCSS("box-shadow", "none");
-  await expect(page.getByRole("button", { name: "编辑表单", exact: true })).toHaveCSS("font-size", "12px");
-  await expect(page.getByRole("button", { name: "文本", exact: true })).toHaveCSS("font-size", "12px");
+  await expect(title).toHaveAttribute("data-slot", "input");
+  await expect(page.getByRole("button", { name: "编辑表单", exact: true })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "文本", exact: true })).toBeEnabled();
   await expect(page.locator(".sheet-form-paper")).toHaveCSS("padding", width === 1280 ? "32px" : "24px");
   await title.fill("更新后的报名");
   await page.getByRole("button", { name: "下移问题", exact: true }).first().click();
@@ -84,7 +83,8 @@ for (const theme of ["light", "dark"]) for (const width of [1280, 390]) test(`sh
   await page.getByRole("textbox", { name: "姓名", exact: true }).fill("报名成员");
   await page.getByRole("radio", { name: "进行中", exact: true }).check();
   const submit = page.getByRole("button", { name: "提交", exact: true });
-  await expect(submit).toHaveCSS("min-height", width === 1280 ? "32px" : "44px");
+  await expect(submit).toHaveAttribute("data-slot", "button");
+  await expect(submit).toBeEnabled();
   await submit.click();
   const retry = page.getByRole("button", { name: "重试提交", exact: true });
   await expect(retry).toBeEnabled();

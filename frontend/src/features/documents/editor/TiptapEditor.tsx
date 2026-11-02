@@ -6,9 +6,9 @@ import { blockBoardHistory } from "./blocks/board-removal";
 import { showToast } from "../../../shared/ui/Toast";
 import { reportError, reportRequestError } from "../../../shared/api/request-feedback";
 import { registerRetiredBlockCleanup } from "./tiptap-retired";
-import { ActionButton } from "../../../shared/ui/ActionButton";
-import { SelectField } from "../../../shared/ui/SelectField";
-import { Toolbar } from "@orbis/ui/toolbar";
+import { Button } from "@orbis/ui/button";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@orbis/ui/select";
+import { Toolbar, ToolbarButton } from "@orbis/ui/toolbar";
 import { Toggle } from "@orbis/ui/toggle";
 import { Portal } from "@orbis/ui/portal";
 import { useEditorToolbarHost } from "./EditorToolbarHost";
@@ -109,7 +109,7 @@ const COMMANDS: Command[] = [
 ];
 
 function Tool({ title, active, onClick, children }: { title: string; active?: boolean; onClick: () => void; children: ReactNode }) {
-  return <ActionButton className={cn(editorToolbarControlClassName, ["重做", "链接", "表格", "上传媒体或附件"].includes(title) && "editor-secondary-tool [@media(max-width:700px)]:hidden")} type="button" title={title} aria-label={title} aria-pressed={active} onMouseDown={(event) => event.preventDefault()} onClick={onClick}>{children}</ActionButton>;
+  return <ToolbarButton focusableWhenDisabled={false} className={cn(["重做", "链接", "表格", "上传媒体或附件"].includes(title) && "editor-secondary-tool [@media(max-width:700px)]:hidden")} title={title} aria-label={title} aria-pressed={active} onMouseDown={(event) => event.preventDefault()} onClick={onClick} render={<Button variant="ghost" />}>{children}</ToolbarButton>;
 }
 
 function inlineLink(editor: Editor) {
@@ -479,24 +479,36 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
     editor.view.dispatch(tr); editor.view.focus();
   }
 
+  const paragraphItems = [{value:"paragraph",label:"正文"},{value:"heading:1",label:"标题 1"},{value:"heading:2",label:"标题 2"},{value:"heading:3",label:"标题 3"},{value:"bulletListItem",label:"无序列表"},{value:"numberedListItem",label:"有序列表"},{value:"checkListItem",label:"任务清单"},{value:"quote",label:"引用"},{value:"codeBlock",label:"代码块"}];
   const formatToolbar = !readOnly && editor ? <Toolbar className={editorToolbarClassName} aria-label="文档格式">
-      <SelectField density="compact" triggerClassName={editorToolbarControlClassName} aria-label="段落类型" className="editor-block-type w-[104px] flex-none text-sm leading-5 [@media(max-width:700px)]:w-[85px]" value={active?.h1 ? "heading:1" : active?.h2 ? "heading:2" : active?.h3 ? "heading:3" : active?.bulletList ? "bulletListItem" : active?.orderedList ? "numberedListItem" : active?.taskList ? "checkListItem" : active?.quote ? "quote" : active?.codeBlock ? "codeBlock" : "paragraph"} options={[{value:"paragraph",label:"正文"},{value:"heading:1",label:"标题 1"},{value:"heading:2",label:"标题 2"},{value:"heading:3",label:"标题 3"},{value:"bulletListItem",label:"无序列表"},{value:"numberedListItem",label:"有序列表"},{value:"checkListItem",label:"任务清单"},{value:"quote",label:"引用"},{value:"codeBlock",label:"代码块"}]} onChange={setParagraphType} />
+      <Select
+        value={active?.h1 ? "heading:1" : active?.h2 ? "heading:2" : active?.h3 ? "heading:3" : active?.bulletList ? "bulletListItem" : active?.orderedList ? "numberedListItem" : active?.taskList ? "checkListItem" : active?.quote ? "quote" : active?.codeBlock ? "codeBlock" : "paragraph"}
+        onValueChange={value => { if (value !== null) setParagraphType(value); }}
+        items={paragraphItems}
+      >
+        <ToolbarButton focusableWhenDisabled={false} render={<SelectTrigger aria-label="段落类型" size="sm" className={cn("editor-block-type w-[104px] flex-none text-sm leading-5 [@media(max-width:700px)]:w-[85px]", editorToolbarControlClassName)}><SelectValue /></SelectTrigger>} />
+        <SelectContent>
+          {paragraphItems.map(item => (
+            <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       <span className={editorToolbarDividerClassName} />
       <Tool title="撤销" onClick={() => { if (!blockBoardHistory(editor)) editor.chain().focus().undo().run(); }}><Undo2 size={16} /></Tool>
       <Tool title="重做" onClick={() => { if (!blockBoardHistory(editor)) editor.chain().focus().redo().run(); }}><Redo2 size={16} /></Tool>
       <span className={editorToolbarDividerClassName} />
       <div className="editor-text-style-tools flex-none gap-0.5" role="group" aria-label="文字样式">
-        {TEXT_MARK_TOOLS.map(({ mark, label, Icon }) => <Toggle key={mark} title={label} aria-label={label}
+        {TEXT_MARK_TOOLS.map(({ mark, label, Icon }) => <ToolbarButton key={mark} focusableWhenDisabled={false} render={<Toggle title={label} aria-label={label}
           pressed={Boolean(active?.[mark])} onPressedChange={() => toggleMark(mark)}
           className={cn(editorToolbarControlClassName, mark !== "bold" && "editor-secondary-tool [@media(max-width:700px)]:hidden")}
-          onMouseDown={event => event.preventDefault()}><Icon size={16} /></Toggle>)}
+          onMouseDown={event => event.preventDefault()}><Icon size={16} /></Toggle>} />)}
       </div>
       <Tool title="链接" active={active?.link} onClick={() => inlineLink(editor)}><Link2 size={16} /></Tool>
       <span className={editorToolbarDividerClassName} />
       <Tool title="表格" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}><Table2 size={16} /></Tool>
       <Tool title="上传媒体或附件" onClick={() => inputRef.current?.click()}><Image size={16} /><Paperclip size={13} /></Tool>
-      <ActionButton ref={moreButtonRef} className={cn(editorToolbarControlClassName, "editor-more-tools hidden [@media(max-width:700px)]:inline-flex")} aria-label="更多格式" aria-expanded={moreOpen} onClick={() => { setMenuOpen(false); setSlash(null); setMoreOpen(value => !value); }}><MoreHorizontal size={17}/></ActionButton>
-      <ActionButton ref={insertButtonRef} type="button" className={cn(editorToolbarControlClassName, "orbis-tiptap-insert ml-auto rounded-none border-l border-ob-border [border-left-style:solid] pl-3 [font:600_var(--ob-text-ui-size)/var(--ob-text-ui-leading)_var(--ob-font-sans)] in-[.workspace-shell]:border-ob-workspace-outline [@media(max-width:700px)]:ml-0.5")} aria-label="插入内容" aria-expanded={menuOpen} onClick={() => { setMoreOpen(false); setActiveCommand(0); setMenuOpen((value) => !value); }}><Plus size={15} />插入</ActionButton>
+      <ToolbarButton focusableWhenDisabled={false} render={<Button ref={moreButtonRef} className={cn(editorToolbarControlClassName, "editor-more-tools hidden [@media(max-width:700px)]:inline-flex")} aria-label="更多格式" aria-expanded={moreOpen} onClick={() => { setMenuOpen(false); setSlash(null); setMoreOpen(value => !value); }} variant="ghost" size="icon"><MoreHorizontal size={17}/></Button>} />
+      <ToolbarButton focusableWhenDisabled={false} render={<Button ref={insertButtonRef} type="button" className={cn(editorToolbarControlClassName, "orbis-tiptap-insert ml-auto [@media(max-width:700px)]:ml-0.5")} aria-label="插入内容" aria-expanded={menuOpen} onClick={() => { setMoreOpen(false); setActiveCommand(0); setMenuOpen((value) => !value); }} variant="ghost"><Plus size={15} />插入</Button>} />
       <input ref={inputRef} type="file" aria-label="选择上传文件" hidden onChange={(event) => void upload(event)} />
     </Toolbar> : null;
 
@@ -523,9 +535,9 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
       {label:"重做", run:()=>{if(!blockBoardHistory(editor))editor.chain().focus().redo().run();}},
       {label:"表格", run:()=>editor.chain().focus().insertTable({rows:3,cols:3,withHeaderRow:true}).run()},
       {label:"上传媒体或附件", run:()=>inputRef.current?.click()},
-    ].map(item=><ActionButton className={editorMoreMenuItemClassName} key={item.label} role="menuitem" onMouseDown={event=>event.preventDefault()} onClick={()=>{item.run();setMoreOpen(false);}}>{item.label}</ActionButton>)}</div></Portal> : null}
+    ].map(item=><Button className={editorMoreMenuItemClassName} key={item.label} role="menuitem" onMouseDown={event=>event.preventDefault()} onClick={()=>{item.run();setMoreOpen(false);}} variant="ghost">{item.label}</Button>)}</div></Portal> : null}
 
-    {!readOnly && editor && (slash || menuOpen) ? <Portal container={document.body}><div style={insertPosition} className={editorInsertionMenuClassName} role="listbox" aria-label="插入内容">{visible.length ? visible.map((item, index) => <ActionButton className={editorMenuItemClassName} type="button" role="option" aria-selected={index === activeCommand % visible.length} key={item.label} onMouseDown={(event) => event.preventDefault()} onClick={() => run(item)}>{item.icon}{item.label}</ActionButton>) : <p className="mx-2 my-1 text-xs leading-[18px] text-(--ob-page-muted-foreground)">没有匹配的内容块</p>}</div></Portal> : null}
+    {!readOnly && editor && (slash || menuOpen) ? <Portal container={document.body}><div style={insertPosition} className={editorInsertionMenuClassName} role="listbox" aria-label="插入内容">{visible.length ? visible.map((item, index) => <Button className={editorMenuItemClassName} type="button" role="option" aria-selected={index === activeCommand % visible.length} key={item.label} onMouseDown={(event) => event.preventDefault()} onClick={() => run(item)} variant="ghost">{item.icon}{item.label}</Button>) : <p className="mx-2 my-1 text-xs leading-[18px] text-(--muted-foreground)">没有匹配的内容块</p>}</div></Portal> : null}
     {editor ? <BlockControls editor={editor} readOnly={readOnly} noteId={noteId} /> : null}
     <EditorContent editor={editor} />
   </div></FileContentContext.Provider></EditorReadOnlyContext.Provider>;

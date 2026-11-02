@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ColorPicker } from "@orbis/ui/color-picker";
 import { Input } from "@orbis/ui/input";
+import { Button } from "@orbis/ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui/popover";
 import { cn } from "./cn";
 
@@ -35,17 +36,17 @@ export function ColorField({ value, onChange, onChangeEnd, disabled = false, lab
     onChangeEnd?.(latest.current);
   }
   return <div className={cn("grid min-w-0 content-start gap-2", className)}>
-    <span className="text-sm font-medium text-ob-foreground">{label}</span>
+    <span className="text-sm font-medium text-foreground">{label}</span>
     <Popover open={requestedOpen} onOpenChange={open => {
       if (!open && focused.current) { commitDraft(); focused.current = false; }
       setOpen(open);
     }}>
-      <PopoverTrigger disabled={disabled} aria-label={`选择${label} ${value}`} className="flex min-h-(--ob-control-height-md) items-center gap-2.5 rounded-ob-sm text-sm text-ob-foreground disabled:cursor-not-allowed disabled:opacity-50">
-        <span aria-hidden="true" className="size-7 shrink-0 rounded-ob-sm border border-ob-border" style={{ backgroundColor: value }} /><span>{value}</span>
+      <PopoverTrigger disabled={disabled} aria-label={`选择${label} ${value}`} render={<Button variant="outline" />}>
+        <span aria-hidden="true" className="size-7 shrink-0 rounded-sm border border-border" style={{ backgroundColor: value }} /><span>{value}</span>
       </PopoverTrigger>
       <PopoverContent aria-label={`选择${label}`} side="bottom" align="start" className="grid w-65 max-w-(--available-width) gap-4 p-4">
         <ColorPicker value={hexValue} disabled={disabled} onValueChange={color => { latest.current = color; onChange(color); }} onValueChangeEnd={color => { if (!disabled) onChangeEnd?.(color); }} />
-        <label className="grid gap-1.5 text-sm font-medium text-ob-foreground">颜色值<Input aria-label="十六进制颜色" value={draft} disabled={disabled} onFocus={() => { focused.current = true; }} onChange={event => { if (/^#?[0-9a-f]{0,6}$/i.test(event.target.value)) setDraft(event.target.value); }} onBlur={() => { if (focused.current) commitDraft(); focused.current = false; }} onKeyDown={event => {
+        <label className="grid gap-1.5 text-sm font-medium text-foreground">颜色值<Input aria-label="十六进制颜色" value={draft} disabled={disabled} onFocus={() => { focused.current = true; }} onChange={event => { if (/^#?[0-9a-f]{0,6}$/i.test(event.target.value)) setDraft(event.target.value); }} onBlur={() => { if (focused.current) commitDraft(); focused.current = false; }} onKeyDown={event => {
           if (event.nativeEvent.isComposing) return;
           if (event.key === "Enter") {
             event.preventDefault();

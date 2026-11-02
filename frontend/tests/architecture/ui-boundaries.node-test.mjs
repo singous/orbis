@@ -32,9 +32,56 @@ test("checks public subpaths, target files and stories", () => {
   for (const rule of ["root-barrel", "missing-export", "missing-target", "missing-story", "unused-component"]) assert.ok(findings.some(item => item.rule === rule));
 });
 
-test("permits primitive positioning geometry but rejects foreign theme variables", () => {
-  const findings = inspect("packages/ui/src/popover/index.tsx", 'const style = "var(--available-width) var(--anchor-width) var(--accent)";');
-  assert.deepEqual(findings.filter(item => item.rule === "foreign-token").map(item => item.detail), ["var(--accent)"]);
+test("permits native theme roles, positioning geometry and locally owned values but rejects unrelated theme variables", () => {
+  const findings = inspect("packages/ui/src/popover/index.tsx", 'const style = "var(--available-width) var(--anchor-width) var(--accent) var(--primary) var(--status-success) var(--toast-height) var(--local-width) var(--unowned-accent)"; const measured = "--local-width: 1rem";');
+  assert.deepEqual(findings.filter(item => item.rule === "foreign-token").map(item => item.detail), ["var(--unowned-accent)"]);
+});
+
+test("retired shared UI modules are rejected even with no remaining consumer", () => {
+  for (const name of ["Button", "ActionButton", "IconButton", "TextInput", "SelectField", "Tag", "Dialog", "Tooltip"]) {
+    const file = `src/shared/ui/${name}.tsx`;
+    assert.deepEqual(inspect(file, `export const ${name} = () => null;`).filter(item => item.rule === "legacy-ui-definition"), [{ file, rule: "legacy-ui-definition", detail: `src/shared/ui/${name}` }]);
+  }
+  assert.deepEqual(inspect("src/features/content/codecs/legacy-blocks.ts", "export const legacy = true;"), []);
+});
+
+test("retired UI imports include relative, alias, lazy, type and re-export forms", () => {
+  const findings = inspect("src/features/home/Page.tsx", `
+    import { Button } from '@/shared/ui/Button';
+    export { Dialog } from '../../shared/ui/Dialog.tsx';
+    const load = import('@/shared/ui/Tooltip/index');
+    type Props = import('../../shared/ui/TextInput').Props;
+    const select = require('@/shared/ui/SelectField');
+    // import '@/shared/ui/Tag';
+    const example = "import('@/shared/ui/IconButton')";
+  `);
+  assert.equal(findings.filter(item => item.rule === "legacy-ui-import").length, 5);
+  assert.deepEqual(inspect("src/features/home/Page.tsx", 'import { DraftActions } from "@/shared/ui/DraftActions";'), []);
+});
+
+test("retired native props follow named aliases and namespace imports rather than prop spelling in business code", () => {
+  const findings = inspect("src/features/home/Page.tsx", `
+    import { Button as SaveButton } from '@orbis/ui/button';
+    import * as Choice from '@orbis/ui/select';
+    import { Badge } from '@orbis/ui/badge';
+    const example = <><SaveButton loading variant="primary" size="md" asChild /><Choice.Select label="范围" options={[]} /><Badge tone="success" /></>;
+    const business = <ReadStatus appearance="reader" loading={query.isPending} />;
+    function Local(SaveButton: any) { return <SaveButton loading />; }
+  `);
+  assert.deepEqual(findings.filter(item => item.rule === "retired-native-prop").map(item => item.detail), ["Button.loading", "Button.variant=primary", "Button.size=md", "Button.asChild", "Select.label", "Select.options", "Badge.tone"]);
+});
+
+test("native render, events and upstream prop types remain part of the public API", () => {
+  const findings = inspect("src/features/home/Page.tsx", `
+    import { Button } from '@orbis/ui/button';
+    import { DialogTrigger } from '@orbis/ui/dialog';
+    import { Spinner } from '@orbis/ui/spinner';
+    import type { ComponentProps } from 'react';
+    type Props = ComponentProps<typeof Button>;
+    const example = <><DialogTrigger render={<Button onClick={() => {}} />} /><Button disabled focusableWhenDisabled aria-busy /><Spinner color="currentColor" /></>;
+  `);
+  assert.equal(findings.filter(item => item.rule === "retired-native-prop").length, 0);
+  assert.equal(inspect("packages/ui/src/button/index.tsx", 'import { Button as Primitive } from "@base-ui/react/button"; import { X } from "lucide-react"; type Props = Primitive.Props;').filter(item => ["primitive-boundary", "icon-boundary"].includes(item.rule)).length, 0);
 });
 
 test("color-data exceptions are exact, attributed and occurrence-bounded", () => {

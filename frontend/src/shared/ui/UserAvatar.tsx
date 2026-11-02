@@ -1,4 +1,4 @@
-import { Avatar } from "@orbis/ui/avatar";
+import { Avatar, AvatarImage as NativeAvatarImage, AvatarFallback } from "@orbis/ui/avatar";
 import { useQuery } from "@tanstack/react-query";
 import { useStore } from "zustand";
 import type { ComponentProps, CSSProperties } from "react";
@@ -16,8 +16,10 @@ export function identityColor(identity: string): CSSProperties {
 type UserAvatarProps = { user: User | null; size?: ComponentProps<typeof Avatar>["size"]; className?: string };
 function AvatarImage({ user, size = "sm", className = "", src }: UserAvatarProps & { src?: string }) {
   const name = user?.display_name || user?.email || "Orbis";
-  return <Avatar size={size} className={`identity-avatar bg-[color-mix(in_oklab,var(--identity-color)_14%,var(--ob-surface))] text-[color:var(--identity-color)] ${className}`} style={identityColor(user?.id || "orbis")}
-    src={src} alt={`${name}的头像`} fallback={Array.from(name)[0]?.toUpperCase() || "O"} />;
+  return <Avatar size={size} className={className}>
+    {src ? <NativeAvatarImage src={src} alt={`${name}的头像`} /> : null}
+    <AvatarFallback>{Array.from(name)[0]?.toUpperCase() || "O"}</AvatarFallback>
+  </Avatar>;
 }
 function StoredAvatar(props: UserAvatarProps) {
   const auth = useOptionalAuthRequest();

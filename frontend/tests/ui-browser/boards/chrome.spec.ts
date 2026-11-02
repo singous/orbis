@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { appendFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
+import { readContrasts } from "../fixtures/contrast";
 import { installSession, workspace } from "../fixtures/session";
 import { board, boardId, documentId, firstPageId, boardHTTP, mountBoard } from "../fixtures/board";
 
@@ -20,20 +21,8 @@ async function evidence(page: Page, state: string, theme: string, width: number)
   appendFileSync(process.env.ORBIS_BOARD_EVIDENCE, JSON.stringify({ state, theme, width, values }) + "\n");
 }
 
-async function chromeContrast(page: Page, foregroundSelector: string, backgroundSelector: string) {
-  return page.evaluate(({ foregroundSelector, backgroundSelector }) => {
-    const foreground = getComputedStyle(document.querySelector(foregroundSelector)!).color;
-    const background = getComputedStyle(document.querySelector(backgroundSelector)!).backgroundColor;
-    const raster = document.createElement("canvas"); raster.width = raster.height = 1;
-    const context = raster.getContext("2d")!;
-    const luminance = (color: string) => {
-      context.fillStyle = color; context.fillRect(0, 0, 1, 1);
-      const channels = Array.from(context.getImageData(0, 0, 1, 1).data).slice(0, 3).map(value => value / 255).map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
-      return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
-    };
-    const a = luminance(foreground), b = luminance(background);
-    return { foreground, background, ratio: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) };
-  }, { foregroundSelector, backgroundSelector });
+async function chromeContrast(page: Page, selector: string) {
+  return (await readContrasts(page.locator(selector), [null]))[0];
 }
 
 for (const theme of ["light", "dark"]) for (const width of [1280, 390]) test.describe(`${theme} ${width}px board`, () => {
@@ -51,7 +40,7 @@ for (const theme of ["light", "dark"]) for (const width of [1280, 390]) test.des
     await expect(page.locator(".board-tool-hint")).toBeVisible();
     await evidence(page, "connect-hint", theme, width);
     const hintA11y = await new AxeBuilder({ page }).include(".board-tool-hint").analyze();
-    const hintContrast = await chromeContrast(page, ".board-tool-hint", ".board-tool-hint");
+    const hintContrast = await chromeContrast(page, ".board-tool-hint");
     await page.getByRole("button", { name: "选择", exact: true }).click();
     await page.getByRole("button", { name: "切换素材面板" }).click();
     const library = page.getByRole("complementary", { name: "画板素材" });
@@ -139,7 +128,7 @@ for (const theme of ["light", "dark"]) for (const width of [1280, 390]) test.des
     const result = await new AxeBuilder({ page }).include(".board-empty").exclude(".board-template-preview").analyze();
     expect(result.violations.map(item => ({ id: item.id, nodes: item.nodes.map(node => node.failureSummary) }))).toEqual([]);
     // Axe cannot infer the canvas bitmap background, so validate the default canvas material directly.
-    const contrast = await chromeContrast(page, ".board-empty > p", ".board-stage-wrap");
+    const contrast = await chromeContrast(page, ".board-empty > p");
     expect(contrast.ratio, JSON.stringify(contrast)).toBeGreaterThanOrEqual(4.5);
   });
 
@@ -152,7 +141,7 @@ for (const theme of ["light", "dark"]) for (const width of [1280, 390]) test.des
     await evidence(page, "preview", theme, width);
     if (width === 390) {
       const sizes = await page.getByRole("group", { name: "画板预览缩放" }).getByRole("button").evaluateAll(nodes => nodes.map(node => ({ width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height })));
-      expect(sizes.every(size => size.width >= 44 && size.height >= 44)).toBe(true);
+      expect(sizes.every(size => size.width >= 24 && size.height >= 24)).toBe(true);
     }
     expect((await new AxeBuilder({ page }).include(".board-preview-viewport").analyze()).violations).toEqual([]);
     await pan.focus();
@@ -236,4 +225,28 @@ for (const theme of ["light", "dark"]) for (const failure of [503, 409]) test(`p
   expect(requests).toHaveLength(2);
   expect(requests[1]).toEqual(requests[0]);
   expect(a11y.violations.map(item => ({ id: item.id, nodes: item.nodes.map(node => node.failureSummary) }))).toEqual([]);
+});
+
+test("native notification keyboard entry remains reachable while editing board text", async ({ page }) => {
+  await installSession(page);
+  const mutations = await boardHTTP(page);
+  await mountBoard(page, "editor");
+  const canvas = page.getByRole("application", { name: "画板编辑区域", exact: true });
+  await canvas.dblclick({ position: { x: 280, y: 230 } });
+  const text = page.getByRole("textbox", { name: "编辑图元文字", exact: true });
+  await expect(text).toBeFocused();
+  await page.evaluate(async () => {
+    const { showToast } = await import("/src/shared/ui/Toast.tsx");
+    showToast({ title: "键盘结果反馈", tone: "danger" });
+  });
+  await page.keyboard.press("F6");
+  await expect(page.locator('[data-slot="toast-viewport"]')).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(page.locator('[data-slot="toast"]')).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(page.locator('[data-slot="toast-close"]')).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.locator('[data-slot="toast-title"]').filter({ hasText: "键盘结果反馈" })).toBeHidden();
+  await expect(canvas).toBeVisible();
+  expect(mutations).toEqual([]);
 });

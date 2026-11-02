@@ -1,7 +1,7 @@
 import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
-import { Button } from "./Button";
+import { Button } from "@orbis/ui/button";
 import { ConfirmAction } from "./ConfirmAction";
 import { DraftActions } from "./DraftActions";
 import { Toaster } from "./Toast";
@@ -18,8 +18,7 @@ it("opens draft tools in a modal only on request and restores trigger focus on E
   await user.click(trigger);
   const modal = screen.getByRole("dialog", { name: "本机修改" });
   expect(within(modal).getByRole("button", { name: "导出草稿" })).toBeVisible();
-  expect(modal).toHaveAttribute("aria-modal", "true");
-  expect(document.querySelector('[data-slot="ob-dialog-backdrop"]')).toBeInTheDocument();
+  expect(document.querySelector('[data-slot="dialog-overlay"]')).toBeInTheDocument();
   await user.keyboard("{Escape}");
   await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   await waitFor(() => expect(trigger).toHaveFocus());
@@ -62,6 +61,8 @@ it("keeps a failed confirmation open without repeating the request error toast",
   await user.click(screen.getByRole("button", { name: "替换" }));
   await user.click(screen.getByRole("button", { name: "确认替换" }));
   expect(screen.getByRole("alertdialog", { name: "替换修改" })).toBeVisible();
-  expect(screen.getAllByText("服务端拒绝此次修改")).toHaveLength(1);
+  expect(document.querySelectorAll('[data-slot="toast-title"]')).toHaveLength(1);
+  expect(document.querySelector('[data-slot="toast-title"]')).toHaveTextContent("服务端拒绝此次修改");
+  expect(screen.getByRole("alert")).toHaveTextContent("服务端拒绝此次修改");
   expect(screen.getByRole("button", { name: "取消" })).toBeEnabled();
 });

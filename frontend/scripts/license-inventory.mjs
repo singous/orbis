@@ -54,7 +54,7 @@ for (const item of embedded.components) {
 const manifest = {
   schemaVersion: 3,
   lockfileSha256: sha256(lockText),
-  classification: "Declared dependency closure: runtime dependencies except explicit Vite/Tailwind build roots; Inter and generated Tabler icons are assets. Peers and optional binaries retain every applicable owner. This is a conservative declared-dependency inventory, not a measurement of tree-shaken emitted code. Build/test sources are not part of the frontend static distribution.",
+  classification: "Declared dependency closure: runtime dependencies except explicit Vite/Tailwind/shadcn build roots; fonts, icons, tw-animate-css and shadcn CSS are assets. Peers and optional binaries retain every applicable owner. This is a conservative declared-dependency inventory, not a measurement of tree-shaken emitted code. Build/test sources are not part of the frontend static distribution.",
   packages,
   embeddedComponents: embedded.components,
 };
@@ -133,8 +133,11 @@ function validateCopiedCode() {
     typeof registry.timestampSemantics?.updatedAt !== "string" || !registry.timestampSemantics.updatedAt.trim() ||
     typeof registry.sourceRevisionSemantics !== "string" || !registry.sourceRevisionSemantics.trim()) throw new Error("Copied UI provenance semantics are missing or unsupported");
   for (const [name, item] of Object.entries(registry.components)) {
+    const revisionRecorded = item.sourceRevisionKind === "reproducible-content"
+      ? /^[a-f0-9]{40}$/.test(item.sourceRevision ?? "")
+      : item.sourceRevisionKind === "registry-snapshot" && item.sourceRevision === null && item.servedRevision === null;
     if (typeof item.source !== "string" || !URL.canParse(item.source) || !item.source.startsWith("https://") ||
-      !/^[a-f0-9]{40}$/.test(item.sourceRevision ?? "") || item.sourceRevisionKind !== "reproducible-content" ||
+      !revisionRecorded ||
       (item.servedRevision !== null && !/^[a-f0-9]{40}$/.test(item.servedRevision ?? "")) ||
       !/^sha256:[a-f0-9]{64}$/.test(item.sourceChecksum ?? "") || !item.modifications) throw new Error(`Copied UI source record is incomplete: ${name}`);
     if (!Number.isSafeInteger(item.addedAt) || item.addedAt <= 0 || !Number.isSafeInteger(item.updatedAt) || item.updatedAt < item.addedAt) throw new Error(`Copied UI timestamps must be ordered Unix milliseconds: ${name}`);
@@ -158,6 +161,9 @@ function noticeTable(items) {
 function syncAssetNotices() {
   const assets = [
     ["@fontsource-variable/inter", "inter-OFL-1.1.txt", "Inter Variable font files, unchanged"],
+    ["@fontsource-variable/geist", "geist-OFL-1.1.txt", "Native shadcn application font, unchanged"],
+    ["tw-animate-css", "tw-animate-MIT.txt", "Native shadcn CSS animations"],
+    ["shadcn", "shadcn-styles-MIT.txt", "Native shadcn tailwind.css helpers; CLI dependencies remain build-only"],
     ["lucide-react", "lucide-ISC.txt", "Lucide UI icon paths"],
     ["@gravity-ui/icons", "gravity-ui-MIT.txt", "Gravity UI icon paths"],
     ["@iconify-json/tabler", "tabler-MIT.txt", "Tabler 3.49.0 icons generated from Iconify JSON 1.2.42"],

@@ -10,8 +10,7 @@ import { useStore } from "zustand";
 import { authStore, getAuthSessionKey } from "../../shared/auth/auth-store";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { preparePendingNavigation } from "../../shared/navigation/pending-navigation";
-import { ActionButton } from "../../shared/ui/ActionButton";
-import { Button } from "../../shared/ui/Button";
+import { Button } from "@orbis/ui/button";
 import { LoadingState } from "../../shared/ui/LoadingState";
 
 import { UserAvatar, identityColor } from "../../shared/ui/UserAvatar";
@@ -46,15 +45,15 @@ export function WorkspaceSwitcher({ variant = "topbar" }: { variant?: "topbar" |
 
   return <div className={cn("workspace-switcher relative min-w-0", variant === "rail" && "workspace-switcher--rail flex-none")}>
     <Popover open={open} onOpenChange={next => setOpen(next ? { sessionKey, locationKey: location.key } : null)}>
-      <PopoverTrigger type="button" className={variant === "rail" ? cn(railControlClassName, "rail-brand workspace-switcher-rail-trigger mb-9 text-ob-foreground in-has-[.rail-create-entry]:mb-4") : "workspace-brand flex min-h-(--ob-control-height-sm) min-w-0 max-w-[250px] items-center gap-2 text-sm font-medium text-ob-foreground max-[1200px]:max-w-[220px] max-[768px]:max-w-[145px] max-[768px]:text-ob-caption [&>svg]:flex-none [&>svg]:text-(--ob-page-muted-foreground)"} aria-label="切换工作空间" disabled={!authenticated}>
+      <PopoverTrigger render={<Button variant="ghost" />} className={variant === "rail" ? cn(railControlClassName, "rail-brand workspace-switcher-rail-trigger mb-9 in-has-[.rail-create-entry]:mb-4") : "workspace-brand min-w-0 max-w-[250px] max-[1200px]:max-w-[220px] max-[768px]:max-w-[145px]"} aria-label="切换工作空间" disabled={!authenticated}>
         {variant === "rail" ? <OrbisLogo size={32} /> : <>
-          <span className="workspace-brand-mark identity-mark grid size-6 flex-none place-items-center rounded-[6px] bg-[color-mix(in_oklab,var(--identity-color)_14%,var(--ob-surface))] text-(--identity-color)" style={identityColor(workspace?.id || "orbis")}><Boxes size={16} aria-hidden="true" /></span>
+          <span className="workspace-brand-mark identity-mark grid size-6 flex-none place-items-center rounded-[6px] bg-[color-mix(in_oklab,var(--identity-color)_14%,var(--card))] text-(--identity-color)" style={identityColor(workspace?.id || "orbis")}><Boxes size={16} aria-hidden="true" /></span>
           <span className="workspace-brand-word truncate">{workspace?.name ?? "Orbis"}</span>
           <ChevronDown size={14} aria-hidden="true" />
         </>}
       </PopoverTrigger>
-      <PopoverContent aria-label="切换工作空间" className={cn("workspace-switcher-popover flex max-h-(--workspace-switcher-max-height) w-[268px] max-w-[calc(100vw-24px)] flex-col overflow-hidden p-2 [--workspace-switcher-max-height:min(32rem,calc(100dvh-24px))]", variant === "rail" && "workspace-switcher-popover--rail w-[min(268px,calc(100vw-80px))]")} side={variant === "rail" ? "right" : "bottom"} align="start" sideOffset={12}>
-        <div className="workspace-switcher-dialog flex max-h-[calc(var(--workspace-switcher-max-height)-16px)] min-h-0 min-w-0 flex-auto flex-col overflow-y-auto overscroll-contain p-0 outline-none">
+      <PopoverContent aria-label="切换工作空间" className={cn("workspace-switcher-popover max-h-[min(32rem,var(--available-height))] max-w-[calc(100vw-2rem)] overflow-hidden", variant === "rail" && "workspace-switcher-popover--rail")} side={variant === "rail" ? "right" : "bottom"} align="start" sideOffset={12}>
+        <div className="workspace-switcher-dialog flex min-h-0 min-w-0 flex-auto flex-col overflow-y-auto overscroll-contain">
           {open ? <WorkspaceChoices key={`${sessionKey}:${location.key}`} onClose={close} /> : null}
         </div>
       </PopoverContent>
@@ -128,23 +127,23 @@ function WorkspaceChoices({ onClose }: { onClose: () => void }) {
 
   const items = memberships.data?.items ?? [];
   return <>
-    <div className="workspace-switcher-item workspace-switcher-account mb-2 flex flex-none items-center gap-2.5 border-b border-ob-border px-3 pt-2 pb-3">
+    <div className="workspace-switcher-item workspace-switcher-account mb-2 flex flex-none items-center gap-2.5 border-b border-border px-3 pt-2 pb-3">
       <UserAvatar user={user} className="workspace-switcher-avatar flex-none" />
-      <span className="min-w-0 flex-1"><span className="workspace-switcher-name block truncate text-sm font-medium text-ob-foreground">{user?.display_name || user?.email || "Orbis"}</span><span className="workspace-switcher-sub mt-0.5 block text-ob-caption text-ob-muted-foreground">选择当前工作空间</span></span>
+      <span className="min-w-0 flex-1"><span className="workspace-switcher-name block truncate text-sm font-medium text-foreground">{user?.display_name || user?.email || "Orbis"}</span><span className="workspace-switcher-sub mt-0.5 block text-xs text-muted-foreground">选择当前工作空间</span></span>
     </div>
     {memberships.isPending ? <LoadingState label="正在加载工作空间…" compact /> : null}
 
-    {memberships.isSuccess && workspace && !items.some(item => item.id === workspace.id) ? <p className="workspace-switcher-empty px-2.5 pt-[5px] pb-3 text-ob-caption text-(--ob-page-muted-foreground)">当前工作空间不可用，请选择另一个空间。</p> : null}
+    {memberships.isSuccess && workspace && !items.some(item => item.id === workspace.id) ? <p className="workspace-switcher-empty px-2.5 pt-[5px] pb-3 text-xs text-(--muted-foreground)">当前工作空间不可用，请选择另一个空间。</p> : null}
     <ul className="workspace-switcher-list m-0 min-h-0 min-w-0 list-none overflow-y-auto overscroll-contain p-0 [&>li+li]:mt-1" aria-label="可用工作空间">
       {items.map(item => <li key={item.id}>
-        <ActionButton type="button" className="workspace-switcher-item workspace-switcher-option flex h-auto min-h-(--ob-control-height-md) min-w-0 w-full items-center justify-start gap-2 rounded-ob-lg bg-transparent px-3 py-2 text-left whitespace-normal text-ob-foreground aria-current:bg-(--ob-item-selected-bg) [&:not(:disabled):is(:hover,:focus-visible,[aria-current=true])]:bg-(--ob-item-hover-bg) [&:not(:disabled):is(:hover,:focus-visible,[aria-current=true])]:text-(--ob-item-foreground) [&:not(:disabled):is(:hover,:focus-visible,[aria-current=true])_:is(.workspace-switcher-name,.workspace-switcher-space-icon,.workspace-switcher-check,svg)]:text-inherit focus-visible:outline-offset-[-2px]" aria-label={`切换到 ${item.name}`} aria-current={item.id === workspace?.id ? "true" : undefined} disabled={Boolean(pendingId)} onClick={() => void selectWorkspace(item.id)}>
-          <span className="workspace-switcher-space-icon identity-mark grid size-[33px] flex-none place-items-center rounded-[9px] bg-[color-mix(in_oklab,var(--identity-color)_14%,var(--ob-surface))] text-sm text-(--identity-color)" style={identityColor(item.id)}><Boxes aria-hidden="true" size={16} /></span>
-          <span className="min-w-0 flex-1"><span className="workspace-switcher-name block truncate text-sm font-medium text-ob-foreground">{item.name}</span><span className="workspace-switcher-sub mt-0.5 block text-ob-caption text-ob-muted-foreground">{workspaceRoleLabel(item.role)}</span></span>
-          {item.id === workspace?.id ? <Check aria-hidden="true" size={16} className="workspace-switcher-check flex-none text-(--ob-page-muted-foreground)" /> : null}
-        </ActionButton>
+        <Button type="button" className="workspace-switcher-item workspace-switcher-option h-auto min-w-0 w-full justify-start text-left whitespace-normal" aria-label={`切换到 ${item.name}`} aria-current={item.id === workspace?.id ? "true" : undefined} disabled={Boolean(pendingId)} onClick={() => void selectWorkspace(item.id)} variant={item.id === workspace?.id ? "secondary" : "ghost"}>
+          <span className="workspace-switcher-space-icon identity-mark grid size-[33px] flex-none place-items-center rounded-[9px] bg-[color-mix(in_oklab,var(--identity-color)_14%,var(--card))] text-sm text-(--identity-color)" style={identityColor(item.id)}><Boxes aria-hidden="true" size={16} /></span>
+          <span className="min-w-0 flex-1"><span className="workspace-switcher-name block truncate text-sm font-medium text-foreground">{item.name}</span><span className="workspace-switcher-sub mt-0.5 block text-xs text-muted-foreground">{workspaceRoleLabel(item.role)}</span></span>
+          {item.id === workspace?.id ? <Check aria-hidden="true" size={16} className="workspace-switcher-check flex-none text-(--muted-foreground)" /> : null}
+        </Button>
       </li>)}
     </ul>
-    {memberships.isSuccess && !items.length ? <p className="workspace-switcher-empty px-2.5 pt-[5px] pb-3 text-ob-caption text-(--ob-page-muted-foreground)">暂无可访问的工作空间。</p> : null}
-    {pendingId ? <div className="workspace-switcher-pending mt-2 flex flex-none items-center justify-between gap-2 border-t border-ob-border px-1 pt-2 text-ob-caption [&>span]:min-w-0 [&>span]:flex-1"><span role="status">{phase === "preparing" ? "正在保存当前内容…" : "正在完成工作空间切换…"}</span><Button size="sm" variant="ghost" onClick={cancelSwitch}>{phase === "preparing" ? "取消切换" : "留在当前空间"}</Button></div> : null}
+    {memberships.isSuccess && !items.length ? <p className="workspace-switcher-empty px-2.5 pt-[5px] pb-3 text-xs text-(--muted-foreground)">暂无可访问的工作空间。</p> : null}
+    {pendingId ? <div className="workspace-switcher-pending mt-2 flex flex-none items-center justify-between gap-2 border-t border-border px-1 pt-2 text-xs [&>span]:min-w-0 [&>span]:flex-1"><span role="status">{phase === "preparing" ? "正在保存当前内容…" : "正在完成工作空间切换…"}</span><Button size="sm" variant="ghost" onClick={cancelSwitch}>{phase === "preparing" ? "取消切换" : "留在当前空间"}</Button></div> : null}
   </>;
 }
