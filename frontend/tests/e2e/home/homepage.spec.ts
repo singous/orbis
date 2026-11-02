@@ -36,11 +36,10 @@ test("home captures an idea, resumes writing and adapts to small screens", async
   expect(JSON.stringify(result.items)).toContain(idea);
   await page.screenshot({ path: testInfo.outputPath("home-desktop.png"), fullPage: true, animations: "disabled" });
 
-  await composer.locator("summary").click();
-  await composer.getByRole("button", { name: "管理标签" }).click();
+  await composer.getByRole("button", { name: "添加标签", exact: true }).click();
+  await page.getByRole("dialog", { name: "标签选项", exact: true }).getByRole("button", { name: "管理标签", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "管理标签" })).toBeVisible();
-  await page.getByRole("dialog").getByRole("button", { name: "关闭", exact: true }).click();
-  await composer.locator("summary").click();
+  await page.getByRole("dialog", { name: "管理标签", exact: true }).getByRole("button", { name: "关闭", exact: true }).click();
   const fileChooser = page.waitForEvent("filechooser");
   await composer.getByRole("button", { name: "添加附件", exact: true }).click();
   expect(await fileChooser).toBeTruthy();
@@ -77,7 +76,7 @@ test("home captures an idea, resumes writing and adapts to small screens", async
   expect(errors).toEqual([]);
 });
 
-test("home controls follow the shared touch scale and user font size", async ({ browser, request }, testInfo) => {
+test("home native controls remain usable with touch and a larger root font", async ({ browser, request }, testInfo) => {
   const session = await ownerSession(request);
   const notebook = await createCollection(request, session, "触屏尺寸验证");
   await createDocument(request, session, notebook.id, "触屏验证文档");
@@ -89,7 +88,7 @@ test("home controls follow the shared touch scale and user font size", async ({ 
     await expectHomeControlScale(page);
     await page.evaluate(() => { document.documentElement.style.fontSize = "20px"; });
     await expectHomeControlScale(page);
-    await expect(page.getByRole("button", { name: "写篇文档", exact: true })).toHaveCSS("min-height", "55px");
+    await expect(page.getByRole("button", { name: "写篇文档", exact: true })).toHaveCSS("height", "40px");
     expect(await page.locator(".home-page").evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
     await page.getByRole("region", { name: "快速记录" }).screenshot({ path: testInfo.outputPath("touch-large-type.png"), animations: "disabled" });
     await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });

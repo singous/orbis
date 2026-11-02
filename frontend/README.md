@@ -81,38 +81,21 @@ PNG/ICO 导出使用项目锁定的 Playwright 与 Chromium（首次使用需执
 
 ## UI 尺寸与交互规范
 
-通用控件、UI 排版、材质、颜色与动效以 `packages/ui/src/styles/` 为统一来源，应用品牌和正文角色定义在 `src/styles/brand-tokens.css`，基础入口为 `src/styles/globals.css`。页面优先使用 `@orbis/ui` 原语与有产品契约的 `src/shared/ui` 组合。
-HeroUI 运行时、旧通用变量与别名桥已移除。新增控件使用 `--ob-*` 语义 token 并按用途选档位；正文、画布与网格的专有协议由对应领域入口维护。
+通用控件采用 `packages/ui/` 中的官方 shadcn `base-nova` 源码、默认样式和组合 API。页面直接导入 `@orbis/ui/<component>`；产品文案、保存、草稿和确认策略由 feature 或有明确产品职责的 shared pattern 组合。HeroUI、旧控件包装、press 事件翻译及外观兼容样式已退出。
 
-| 用途 | 默认尺寸 | 变量或组件 |
-| --- | --- | --- |
-| 紧凑工具栏、图标操作 | 32px | `--ob-control-height-sm`，`size="sm"` |
-| 常规按钮、菜单行 | 36px | `--ob-control-height-md` |
-| 表单输入与选择器 | 40px | `--ob-control-height-lg` |
-| 触屏点击区域 | 至少 44×44px | `--ob-control-height-touch`；粗指针时上述档位统一扩大 |
-| 常规图标 | 18px | `--ob-icon-default-size`；其他用途通过图标 `size` 或所属组件控制 |
-| 常用间距 | 4 / 8 / 12 / 16 / 24 / 32 / 48px | Tailwind `gap-*`、`p-*` 等；共享 8px 间距为 `--ob-space-2` |
+主题使用标准语义角色，如 `bg-background`、`text-foreground`、`bg-primary`、`border-border` 和 `ring-ring`，默认字体为 Geist。应用品牌、正文、画布和网格的专有角色由 `src/styles/brand-tokens.css` 与所属领域维护；普通控件不再借 `--ob-*` 变量复刻旧视觉。样式入口为 `src/styles/globals.css`，具体规则见 [UI 样式契约](packages/ui/docs/styling.md)。
 
-这里的 px 是根字号 16px 时的参考值，变量使用 rem，随用户字号缩放。图形尺寸与点击区域分开：
-例如颜色圆点保持 24px，外层可交互区域按控件档位扩大。窄屏控件应换行或减少网格列数，不压缩点击区域。
-多维表格保留视图设置中的行高；行内操作受行高约束，行选择使用整个表头标签作为点击区域。
-工具栏、设置浮层和表单操作遵循共享触屏档位，工具栏内容较多时允许横向滚动。
+| 原生组件 | 根字号 16px 时的默认尺寸 |
+| --- | --- |
+| Button | `sm` 28px，默认 32px，`lg` 36px |
+| Input / SelectTrigger | 默认 32px |
+| 图标按钮 | 按 Button 的 `icon-sm`、`icon`、`icon-lg` 档位 |
 
-| 动效 | 时长 | 变量 |
-| --- | --- | --- |
-| 控件状态反馈、小浮层退出 | 120ms | `--ob-motion-feedback` |
-| 菜单与提示进入、弹窗退出 | 180ms | `--ob-motion-popover` |
-| 弹窗及遮罩进入 | 220ms | `--ob-motion-dialog` |
+这些是原生组件参考值，不是还原旧界面的固定门禁。用 Tailwind 的标准间距、字号和圆角进行实际布局；窄屏允许换行或横向滚动。画布端口、网格行高、触控操作和正文排版由各自领域按真实交互维护，不套用普通表单尺寸。
 
-进入动效共用 `--ob-ease-out`；弹窗与遮罩同步。明确列出 transition 属性，避免 `transition: all` 或省略属性名；
-位移和显隐优先使用 transform/opacity。既有侧栏布局协同动画由 `workspace-sidebar-config.ts` 的常量维护，
-不与通用浮层时长混用。尊重 `prefers-reduced-motion`，减少动态效果时保持内容、状态与键盘操作完整。
+浮层保留原生焦点约束、Escape 关闭、返回焦点和生命周期，通过明确的 `OverlayScopeProvider` 继承局部阅读主题。Toolbar 成员显式组合 ToolbarButton 等原语；普通 Button 不会自动注册为工具栏成员。图标按钮提供可访问名称，加载状态显式组合 `disabled`、`focusableWhenDisabled`、`aria-busy` 和 Spinner。
 
-- 图标按钮必须提供可访问名称；键盘焦点清晰可见，悬停操作也能通过键盘和触屏访问。
-- 工作区首个键盘入口可跳转到主内容；弹窗保留焦点约束、Escape 关闭与关闭后的焦点恢复。
-- 弹窗使用可视视口高度限制、内部滚动和可换行的操作区；标题与说明允许长文本换行。
-- 浮层通过 `--ob-z-dialog`、`--ob-z-popover`、`--ob-z-tooltip` 分层，弹窗中的提示和选择器不能被遮罩覆盖。
-- 验证桌面与窄屏、精细与粗指针、明暗主题、键盘和减少动态效果，不能只用缩窄桌面窗口代替触屏验证。
+动效沿用组件官方实现，应用自己的过渡明确列出属性并由所属布局维护。减少动态效果会取消持续动画和正在进行的过渡；强制颜色模式保留可读内容与可见焦点。验证同时覆盖明暗主题、桌面与窄屏、精细与粗指针、键盘、减少动态效果和强制颜色，不能只用缩窄桌面窗口代替触屏验证。
 
 ## 浏览器验收
 
@@ -139,7 +122,7 @@ npm run test:e2e
 
 通用控件使用私有源码包 `@orbis/ui/<component>`，公共入口由 `packages/ui/package.json#exports` 定义，不使用根 barrel 或内部路径。产品文案、草稿与保存策略留在 feature 或 shared/ui pattern。新代码不直接导入 HeroUI、Base UI、Lucide、Radix、Sonner 或 cmdk。
 
-包级契约、主题、表单、可访问名称和浮层规则见 [UI 包文档](packages/ui/README.md)。应用开发路径 `/__ui` 验证页面样式与组合，`npm run storybook` 预览原语状态。迁移期间保留未迁组件及样式；`check:ui` 冻结已有违规，只拦截新增，`node scripts/check-ui.mjs --prune` 只删除已清理的例外，不扩大基线。
+包级契约、主题、表单、可访问名称和浮层规则见 [UI 包文档](packages/ui/README.md)。应用开发路径 `/__ui` 验证页面样式与组合，`npm run storybook` 预览原语状态。`check:ui` 检查依赖与样式所有权，并阻止旧 shared 控件定义、旧导入和退役原生 Props 回流；历史数据编解码、公开链接和领域控件继续由实际业务维护。`node scripts/check-ui.mjs --prune` 只删除已清理的例外，不扩大基线。
 
 验证使用 `npm run typecheck`、`npm run test:run`、`npm run test:storybook`、`npm run test:ui`、`npm run test:a11y`、`npm run storybook:build` 与 `npm run build`。应用 UI 测试在 HTTP 边界提供响应，完整持久化与协作仍须 `test:e2e`。
 

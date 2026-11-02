@@ -2,6 +2,8 @@ import { notification } from "../helpers/notifications";
 import { expect, test, type APIRequestContext, type Locator, type Page } from "@playwright/test";
 import { createCollection, openWithSession, ownerSession, responseData, sessionHeaders, workspacePath } from "../helpers/api-fixtures";
 
+const MIN_NATIVE_TARGET_PX = 24;
+
 async function openSheet(page: Page, request: APIRequestContext) {
   const session = await ownerSession(request);
   const collection = await createCollection(request, session, `表格控件 ${crypto.randomUUID()}`);
@@ -38,7 +40,8 @@ test("sheet menus restore focus and reposition after resizing and changing field
   await field.getByRole("textbox", { name: "字段名称", exact: true }).fill("保留的草稿");
   await field.getByLabel("字段类型", { exact: true }).click();
   await page.getByRole("option", { name: "文本", exact: true }).click();
-  await expect(page.getByRole("listbox")).toHaveCount(0);
+  await expect(page.getByRole("listbox")).toBeHidden();
+  await expect(field.getByLabel("字段类型", { exact: true })).toHaveAttribute("aria-expanded", "false");
   await expect(field.getByLabel("字段类型", { exact: true })).toBeFocused();
   await expectInsideViewport(field);
   await expect(field.getByRole("textbox", { name: "字段名称", exact: true })).toHaveValue("保留的草稿");
@@ -105,25 +108,47 @@ test.describe("touch sheet controls", () => {
   test("toolbar, row selection and pickers remain usable on touch with deferred forms hidden", async ({ page, request }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await openSheet(page, request);
-    const controls = await page.locator(".sheet-toolbar > .orbis-action-button").evaluateAll(elements => elements.map(element => {
+    const toolbarControls = page.locator(".sheet-toolbar > button");
+    await expect(toolbarControls).toHaveCount(6);
+    const controls = await toolbarControls.evaluateAll(elements => elements.map(element => {
       const bounds = element.getBoundingClientRect();
-      return { left: bounds.left, right: bounds.right, height: bounds.height, overflow: element.scrollWidth - element.clientWidth };
+      return { left: bounds.left, right: bounds.right, top: bounds.top, bottom: bounds.bottom, width: bounds.width, height: bounds.height, overflow: element.scrollWidth - element.clientWidth };
     }));
     expect(controls).toHaveLength(6);
     for (const [index, control] of controls.entries()) {
-      expect(control.height).toBeGreaterThanOrEqual(44);
+      expect(control.width).toBeGreaterThanOrEqual(MIN_NATIVE_TARGET_PX);
+      expect(control.height).toBeGreaterThanOrEqual(MIN_NATIVE_TARGET_PX);
       expect(control.overflow).toBeLessThanOrEqual(1);
-      if (index) expect(control.left).toBeGreaterThanOrEqual(controls[index - 1].right);
+      for (const previous of controls.slice(0, index)) {
+        const overlapWidth = Math.min(control.right, previous.right) - Math.max(control.left, previous.left);
+        const overlapHeight = Math.min(control.bottom, previous.bottom) - Math.max(control.top, previous.top);
+        expect(overlapWidth <= 0 || overlapHeight <= 0).toBe(true);
+      }
     }
     await expect(page.getByRole("textbox", { name: "搜索记录", exact: true })).toHaveCSS("font-size", "16px");
+    for (const name of ["字段管理", "筛选", "分组", "排序", "行高"]) {
+      const control = page.getByRole("button", { name, exact: true });
+      await control.scrollIntoViewIfNeeded();
+      await expect(control).toBeInViewport();
+      await control.tap();
+      const dialog = page.getByRole("dialog", { name, exact: true });
+      await expectInsideViewport(dialog);
+      await dialog.getByRole("button", { name: "取消", exact: true }).tap();
+      await expect(dialog).toHaveCount(0);
+    }
     await page.getByRole("button", { name: "状态列菜单", exact: true }).tap();
     await page.getByRole("menuitem", { name: "编辑列", exact: true }).tap();
     const settings = page.getByRole("dialog", { name: "字段设置", exact: true });
     await expectInsideViewport(settings);
     await expect(settings.getByRole("textbox", { name: "字段名称", exact: true })).toHaveCSS("font-size", "16px");
-    const remove = await settings.getByRole("button", { name: "删除选项 1", exact: true }).boundingBox();
-    expect(remove!.width).toBeGreaterThanOrEqual(44);
-    expect(remove!.height).toBeGreaterThanOrEqual(44);
+    const remove = settings.getByRole("button", { name: "删除选项 1", exact: true });
+    const removeBounds = (await remove.boundingBox())!;
+    expect(removeBounds.width).toBeGreaterThanOrEqual(MIN_NATIVE_TARGET_PX);
+    expect(removeBounds.height).toBeGreaterThanOrEqual(MIN_NATIVE_TARGET_PX);
+    const options = settings.getByRole("textbox", { name: /^选项 \d+$/ });
+    const optionCount = await options.count();
+    await remove.tap();
+    await expect(options).toHaveCount(optionCount - 1);
     await settings.getByRole("button", { name: "取消", exact: true }).tap();
     await expect(settings).toHaveCount(0);
     await page.getByRole("button", { name: "添加记录", exact: true }).first().tap();
@@ -153,7 +178,14 @@ test.describe("touch sheet controls", () => {
     await expect(page.getByRole("menuitem", { name: "表单", exact: true })).toHaveCount(0);
     const item = page.getByRole("menuitem", { name: "看板视图", exact: true });
     const menuBounds = await item.boundingBox();
-    expect(menuBounds!.height).toBeGreaterThanOrEqual(44);
+    expect(menuBounds!.height).toBeGreaterThanOrEqual(MIN_NATIVE_TARGET_PX);
+    expect(menuBounds!.width).toBeGreaterThanOrEqual(MIN_NATIVE_TARGET_PX);
+    await expect(item).toBeInViewport();
+    expect(await item.evaluate(element => {
+      const bounds = element.getBoundingClientRect();
+      const hit = document.elementFromPoint(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+      return hit !== null && element.contains(hit);
+    })).toBe(true);
     await page.keyboard.press("Escape");
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
   });

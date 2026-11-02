@@ -35,11 +35,11 @@ git diff --no-index ../licenses/copied-code/shadcn-button.registry.json \
   "$orbis_ui_candidate_dir/button.registry.json"
 ```
 
-`git diff --no-index` 返回 1 表示存在差异。registry URL 的当前响应不是既有来源版本的证明；把候选内容与可核验的上游 revision 对齐，并保留其精确 checksum。人工合并到本地组件，保留 Orbis Props、token、焦点、Portal、disabled/loading 和领域直接子节点契约，禁止 CLI `--overwrite`。
+`git diff --no-index` 返回 1 表示存在差异。registry URL 的当前响应不是既有来源版本的证明；保留实际获取的快照和精确 checksum；能够复现上游提交时再记录完整 revision，未知时不编造提交。先在隔离目录生成候选，再审阅合并到本地组件，采用官方 API 和默认样式，保留必要的导入、主题范围、本地化和可访问性适配；同步迁移实际消费者，禁止对工作包直接使用 CLI `--overwrite`。
 
 来源登记位于 [ui.registry.json](../ui.registry.json)，原始 JSON 快照位于根 `licenses/copied-code/`。更新来源版本/revision、checksum、style、获取工具版本、更新时间和 modifications，保留初次引入时间。时间字段须说明单位和所记录的事件，不用文件 mtime 推测下载时间。无法确认的来源信息如实保留待决，不能编造 commit 或历史时间。版权或许可变化重新走准入，更新完整文本和 notice。
 
-`sourceRevisionKind: "reproducible-content"` 表示该 Git 提交的源码经实际上游生成函数产出的内容与保留快照逐字节一致；它不证明历史服务部署，`servedRevision: null` 仍表示未知。`addedAt` / `updatedAt` 按 registry 中声明的 Unix 毫秒及 Git 事件语义维护，不能将 metadata-only 更新当作直接实现修改。
+`sourceRevisionKind: "reproducible-content"` 表示该 Git 提交的源码经实际上游生成函数产出的内容与保留快照逐字节一致；它不证明历史服务部署，`servedRevision: null` 仍表示未知。`sourceRevisionKind: "registry-snapshot"` 只固定实际获取的 registry JSON，`sourceRevision` 和 `servedRevision` 都保持 null；精确 checksum 仍须离线核验。`addedAt` / `updatedAt` 按 registry 中声明的 Unix 毫秒和实际事件语义维护，不用 metadata-only 更新冒充实现修改或已知的历史下载。
 
 普通 npm 升级使用现有 npm 锁文件流程，重新生成并审阅 inventory diff。保留普通发行包和对应源码的区别；匹配版本号或成功发布不等于已证明源码对应关系。
 

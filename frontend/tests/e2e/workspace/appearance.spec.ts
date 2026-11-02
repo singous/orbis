@@ -44,7 +44,7 @@ for (const surface of ["web", "desktop"] as const) for (const width of [1440, 39
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     const create = page.locator(".notebook-overview .page-actions").getByRole("button", { name: "新建笔记本", exact: true });
     await expect(create).toBeVisible();
-    await expect.poll(() => create.evaluate(element => getComputedStyle(element).backgroundColor)).toBe("oklch(0.9848 0 0)");
+    await expectTokenStyles(create, { "background-color": "--primary", color: "--primary-foreground" });
     await page.goto("/sites");
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     await chooseAppearance(page, "白天");
@@ -73,7 +73,7 @@ test("the saved night preference is applied before the app JavaScript loads", as
   await page.goto("/login");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   expect(await page.locator("#root").evaluate(element => element.childElementCount)).toBe(0);
-  await expect.poll(() => page.locator("body").evaluate(element => getComputedStyle(element).backgroundColor)).toBe("oklch(0.12 0 0)");
+  await expectTokenStyles(page.locator("body"), { "background-color": "--background", color: "--foreground" });
 });
 
 test("appearance switching keeps the current editor and its content mounted", async ({ page, request }) => {

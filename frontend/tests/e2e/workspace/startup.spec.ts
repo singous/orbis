@@ -24,7 +24,7 @@ test("cold startup reserves workspace geometry and later routes preserve the mou
     await expect(placeholder.locator(".workspace-startup-toolbar")).toBeVisible();
     expect(await placeholder.locator(".home-grid").evaluate(node => getComputedStyle(node).gridTemplateColumns.split(" ").length)).toBe(1);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    await expect(placeholder.locator('[data-slot="skeleton"]').first()).toBeVisible();
+    await expect(placeholder.locator('[data-slot="skeleton"]:visible').first()).toBeVisible();
     await expectNoContinuingMotion(placeholder);
     await page.screenshot({ path: testInfo.outputPath("startup-mobile.png"), animations: "disabled" });
     await page.setViewportSize({ width: 1440, height: 1000 });

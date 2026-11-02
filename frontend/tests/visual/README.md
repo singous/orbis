@@ -15,7 +15,7 @@ Use `npm run test:visual:container -- --update-snapshots` to produce candidates.
 
 The Storybook cases wait for the current Story's `STORY_FINISHED` event, including `play` and `afterEach`, and reject cached framework play/render errors before preparing a visible state. Storybook 9.1.21 can report a successful finish after catching such an exception, so the status alone is insufficient. Popups are opened explicitly when the Story closed them. The application fixtures are shared with existing UI behavior tests. Home, document editor and reader use real frontend routes; Board and Sheet use real component compositions. The 390px application-surface cases enable touch; the other suites test narrow viewports. All suites wait for the relevant content, fonts and visible images before capturing.
 
-All 140 reviewed images below are checked in. A complete ordinary comparison after the final reference update is still required; a local `--ignore-snapshots` replay only checks the actions and readiness conditions.
+The current 140 references use native shadcn components. The following acquisition records retain their historical provenance; the native update below supersedes changed images. A complete ordinary comparison after a reference update is required; a local `--ignore-snapshots` replay only checks the actions and readiness conditions.
 
 ## Initial platform snapshots
 
@@ -47,3 +47,13 @@ All 20 corrected images were inspected before copying. Sheet's close control has
 The Loading Story returns keyboard focus to its loading button after Tab/Shift+Tab. The button now retains full opacity while `focus-visible`, so its label, spinner and focus outline remain readable; losing focus restores the existing loading opacity. This is an intentional accessibility correction. Image review found no layout, size or wrapping change. The nonfocused completion button and remaining Story material retain their existing presentation.
 
 These references describe the current UI; they do not require visual identity with the previous UI implementation. The Story play, focus/duplicate-activation checks, zero-pixel comparison threshold and readiness rules are unchanged. A complete ordinary comparison against these updated references remains required.
+
+## Native shadcn reference update
+
+[CI run 41398205333](https://github.com/singous/orbis/actions/runs/41398205333), artifact `frontend-visual-evidence` (`13120243041`), captured the native UI from PR source `88523cba62572661cf5de6cb5d6c85d0eceb02a8`, tested as merge checkout `33522486d30c1e00c718c2f156e85b647799d184`. The artifact ZIP SHA-256 is `33aeef4d8a4137587f91809be9de83ae142d3563386d938e756f517942a889b8`, matching GitHub's artifact digest.
+
+All 127 scenarios completed: 120 reported expected image differences and seven passed. Every one of the 136 screenshot error blocks had pixel or dimension difference evidence; there were no business assertion failures, Story exceptions, loading failures or timeouts. Multi-image scenarios collect each comparison with soft assertions while preserving the failed test result. The zero-pixel threshold and Story readiness protocol are unchanged.
+
+All 136 changed Linux candidates were inspected for loaded content, text overlap, clipping, themes and overlay order: 88 Story images and 48 application images, covering both themes and widths. They were copied without pixel edits and verified byte for byte against the downloaded actual images. The four Skeleton references already matched and remain unchanged. Narrow Board cameras and Sheet grids retain their intended pannable or horizontally scrollable content viewport.
+
+These references adopt the official native component sizing, Geist typography, standard semantic colors and compound APIs. They do not restore the preceding custom control appearance or replace a later product redesign. The acquisition and review above establish candidates; an ordinary CI comparison against the committed references must pass before final handoff.
