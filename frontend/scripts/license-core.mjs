@@ -97,3 +97,42 @@ export function distributionArtifact(packages, location) {
   }
   throw new Error(`Bundled dependency has no containing artifact: ${location}`);
 }
+
+export function licenseReadiness(packages, reviews, sourcePins) {
+  const distributionIssues = [];
+  const toolingIssues = [];
+  for (const item of packages) {
+    const issues = packageLicenseIssues(item, reviews.packages[`${item.name}@${item.version}`], sourcePins);
+    (item.distribution === "not-in-frontend-runtime" ? toolingIssues : distributionIssues).push(...issues);
+  }
+  return {
+    inventoryComplete: distributionIssues.length === 0 && toolingIssues.length === 0,
+    distributionReady: distributionIssues.length === 0,
+    distributionIssues,
+    toolingIssues,
+  };
+}
+
+function packageLicenseIssues(item, decision, sourcePins) {
+  const issues = [];
+  const policy = licensePolicy(item.license);
+  if (!item.texts.length) issues.push(`Missing license text: ${item.name}@${item.version}`);
+  if (policy === "denied") issues.push(`License not admitted by policy: ${item.name}@${item.version} (${item.license})`);
+  if (policy !== "review-required") return issues;
+  if (!hasAssessment(decision)) {
+    issues.push(`License assessment pending: ${item.name}@${item.version} (${item.license}; ${item.distribution})`);
+    return issues;
+  }
+  const declared = item.license.match(/[A-Za-z0-9][A-Za-z0-9.+-]*/g);
+  const validElection = decision.selectedLicense === item.license || (!declared.includes("AND") && declared.includes("OR") && declared.includes(decision.selectedLicense));
+  if (!validElection) throw new Error(`Selected license is outside declared expression: ${item.name}`);
+  if (decision.correspondingSourceRequired && !sourcePins.some(pin => pin.name === item.name && pin.version === item.version)) issues.push(`Assessed source material pin missing: ${item.name}@${item.version}`);
+  return issues;
+}
+
+function hasAssessment(decision) {
+  if (!decision?.conclusion || !decision.selectedLicense || typeof decision.correspondingSourceRequired !== "boolean") return false;
+  if (decision.status === "approved") return Boolean(decision.approvedBy && decision.approvedAt);
+  return decision.status === "assessed" && decision.assessmentType === "engineering" &&
+    Boolean(decision.assessedBy) && Number.isSafeInteger(decision.assessedAtMs) && decision.assessedAtMs > 0;
+}

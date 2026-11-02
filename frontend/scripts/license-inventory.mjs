@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { dependencyUsage, distributionArtifact, licensePolicy, packageName, parseSourcePins } from "./license-core.mjs";
+import { dependencyUsage, distributionArtifact, licensePolicy, licenseReadiness, packageName, parseSourcePins } from "./license-core.mjs";
 import { distributionSource, writeLicenseBundleIndex, verifyLicenseBundle } from "./license-bundle.mjs";
 
 const root = process.env.ORBIS_LICENSE_ROOT ?? fileURLToPath(new URL("../../", import.meta.url));
@@ -77,37 +77,26 @@ if (check) {
   if (currentNotice.match(noticeRegion)?.[0] !== generatedNotice) throw new Error("Third-party notice inventory is stale; run npm run licenses:generate");
 } else write("THIRD_PARTY_NOTICES.md", noticeRegion.test(currentNotice) ? currentNotice.replace(noticeRegion, generatedNotice) : `${currentNotice.trimEnd()}\n\n${generatedNotice}\n`);
 
-const issues = [];
-for (const item of packages) {
-  if (!item.texts.length) issues.push(`Missing license text: ${item.name}@${item.version}`);
-  if (item.policy === "denied") issues.push(`License not admitted by policy: ${item.name}@${item.version} (${item.license})`);
-  if (item.policy === "review-required") {
-    const decision = reviews.packages[`${item.name}@${item.version}`];
-    if (!decision || decision.status !== "approved" || !decision.approvedBy || !decision.approvedAt || !decision.conclusion || !decision.selectedLicense || typeof decision.correspondingSourceRequired !== "boolean") issues.push(`Maintainer review pending: ${item.name}@${item.version} (${item.license}; ${item.distribution})`);
-    else {
-      const declared = item.license.match(/[A-Za-z0-9][A-Za-z0-9.+-]*/g);
-      const validElection = decision.selectedLicense === item.license || (!declared.includes("AND") && declared.includes("OR") && declared.includes(decision.selectedLicense));
-      if (!validElection) throw new Error(`Selected license is outside declared expression: ${item.name}`);
-      if (decision.correspondingSourceRequired && !sourcePins.some(pin => pin.name === item.name && pin.version === item.version)) issues.push(`Approved source material pin missing: ${item.name}@${item.version}`);
-    }
-  }
-}
+const readiness = licenseReadiness(packages, reviews, sourcePins);
+const issues = [...readiness.distributionIssues, ...readiness.toolingIssues];
 for (const identifier of Object.keys(reviews.packages)) {
   if (!packages.some(item => `${item.name}@${item.version}` === identifier)) throw new Error(`Stale review: ${identifier}`);
 }
 const gapEvidence = JSON.parse(read("licenses/material-gaps.json"));
 const pendingSummary = JSON.stringify({
-  schemaVersion: 1,
+  schemaVersion: 2,
   lockfileSha256: manifest.lockfileSha256,
-  releaseReady: issues.length === 0,
+  ...readiness,
+  releaseReady: readiness.distributionReady,
+  distributionScope: ["browser-js", "static-assets"],
   materialGaps: packages.filter(item => !item.texts.length).map(item => ({ name: item.name, version: item.version, license: item.license, usage: item.usage, distribution: item.distribution, evidence: gapEvidence.packages[`${item.name}@${item.version}`] ?? { requestedAction: "Obtain an attributable complete upstream license/NOTICE text." } })),
-  maintainerReviews: packages.filter(item => issues.some(issue => issue.startsWith(`Maintainer review pending: ${item.name}@${item.version} (`))).map(item => ({ name: item.name, version: item.version, declaredLicense: item.license, usage: item.usage, distribution: item.distribution, status: "pending", requestedDecisions: item.name === "elkjs" ? ["Elect EPL-2.0 or GPL-3.0-or-later", "Confirm applicable source availability obligations", "Confirm exact ELK source and generator/build material mapping before approving source pins"] : ["Confirm the recorded build/test-only distribution scope", "Confirm applicable combination and source availability obligations"], scopeEvidence: reviews.packages[`${item.name}@${item.version}`]?.scopeEvidence })),
+  maintainerReviews: packages.filter(item => issues.some(issue => issue.startsWith(`License assessment pending: ${item.name}@${item.version} (`))).map(item => ({ name: item.name, version: item.version, declaredLicense: item.license, usage: item.usage, distribution: item.distribution, status: "pending", requestedDecisions: item.name === "elkjs" ? ["Elect EPL-2.0 or GPL-3.0-or-later", "Confirm applicable source availability obligations", "Record the official source and build material availability assessment"] : ["Review the recorded tool-only scope before distributing the tool outside the build/test environment"], scopeEvidence: reviews.packages[`${item.name}@${item.version}`]?.scopeEvidence })),
 }, null, 2) + "\n";
 if (check) {
   if (read("licenses/pending-review-summary.json") !== pendingSummary) throw new Error("Pending license review summary is stale; run npm run licenses:generate");
 } else write("licenses/pending-review-summary.json", pendingSummary);
-console.log(JSON.stringify({ packages: packages.length, embeddedComponents: embedded.components.length, classified: Object.fromEntries(["browser-js", "static-assets", "not-in-frontend-runtime"].map(scope => [scope, packages.filter(item => item.distribution === scope).length])), missingTexts: packages.filter(item => !item.texts.length).map(item => `${item.name}@${item.version}`), unresolvedReviews: [...new Set(issues.filter(issue => issue.startsWith("Maintainer review")))], releaseReady: issues.length === 0 }, null, 2));
-if (release && issues.length) throw new Error(`Release license gate failed:\n${[...new Set(issues)].join("\n")}`);
+console.log(JSON.stringify({ packages: packages.length, embeddedComponents: embedded.components.length, classified: Object.fromEntries(["browser-js", "static-assets", "not-in-frontend-runtime"].map(scope => [scope, packages.filter(item => item.distribution === scope).length])), missingTexts: packages.filter(item => !item.texts.length).map(item => `${item.name}@${item.version}`), unresolvedReviews: [...new Set(issues.filter(issue => issue.startsWith("License assessment")))], ...readiness, releaseReady: readiness.distributionReady }, null, 2));
+if (release && readiness.distributionIssues.length) throw new Error(`Release license gate failed:\n${[...new Set(readiness.distributionIssues)].join("\n")}`);
 if (bundleIndex !== -1) {
   const destination = args[bundleIndex + 1];
   if (!destination || destination.startsWith("--")) throw new Error("Usage: licenses:bundle <destination>");

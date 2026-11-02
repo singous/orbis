@@ -1,7 +1,33 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "lockfileSha256": "d90263db5bfb1e2cbfb56d425cf0885ecfeba78e5d2b1c248a3900e42eaa4cf6",
-  "releaseReady": false,
+  "inventoryComplete": false,
+  "distributionReady": true,
+  "distributionIssues": [],
+  "toolingIssues": [
+    "License assessment pending: @axe-core/playwright@4.14.0 (MPL-2.0; not-in-frontend-runtime)",
+    "Missing license text: @tybys/wasm-util@0.10.2",
+    "License assessment pending: axe-core@4.14.0 (MPL-2.0; not-in-frontend-runtime)",
+    "License assessment pending: caniuse-lite@1.0.30001799 (CC-BY-4.0; not-in-frontend-runtime)",
+    "License assessment pending: lightningcss@1.32.0 (MPL-2.0; not-in-frontend-runtime)",
+    "License assessment pending: lightningcss-android-arm64@1.32.0 (MPL-2.0; not-in-frontend-runtime)",
+    "License assessment pending: lightningcss-darwin-arm64@1.32.0 (MPL-2.0; not-in-frontend-runtime)",
+    "License assessment pending: lightningcss-darwin-x64@1.32.0 (MPL-2.0; not-in-frontend-runtime)",
+    "License assessment pending: lightningcss-freebsd-x64@1.32.0 (MPL-2.0; not-in-frontend-runtime)",
+    "License assessment pending: lightningcss-linux-arm-gnueabihf@1.32.0 (MPL-2.0; not-in-frontend-runtime)",
+    "License assessment pending: lightningcss-linux-arm64-gnu@1.32.0 (MPL-2.0; not-in-frontend-runtime)",
+    "License assessment pending: lightningcss-linux-arm64-musl@1.32.0 (MPL-2.0; not-in-frontend-runtime)",
+    "License assessment pending: lightningcss-linux-x64-gnu@1.32.0 (MPL-2.0; not-in-frontend-runtime)",
+    "License assessment pending: lightningcss-linux-x64-musl@1.32.0 (MPL-2.0; not-in-frontend-runtime)",
+    "License assessment pending: lightningcss-win32-arm64-msvc@1.32.0 (MPL-2.0; not-in-frontend-runtime)",
+    "License assessment pending: lightningcss-win32-x64-msvc@1.32.0 (MPL-2.0; not-in-frontend-runtime)",
+    "Missing license text: stackback@0.0.2"
+  ],
+  "releaseReady": true,
+  "distributionScope": [
+    "browser-js",
+    "static-assets"
+  ],
   "materialGaps": [
     {
       "name": "@tybys/wasm-util",
@@ -72,8 +98,7 @@
       "distribution": "not-in-frontend-runtime",
       "status": "pending",
       "requestedDecisions": [
-        "Confirm the recorded build/test-only distribution scope",
-        "Confirm applicable combination and source availability obligations"
+        "Review the recorded tool-only scope before distributing the tool outside the build/test environment"
       ],
       "scopeEvidence": "Development/browser accessibility testing only; not imported by production app"
     },
@@ -87,8 +112,7 @@
       "distribution": "not-in-frontend-runtime",
       "status": "pending",
       "requestedDecisions": [
-        "Confirm the recorded build/test-only distribution scope",
-        "Confirm applicable combination and source availability obligations"
+        "Review the recorded tool-only scope before distributing the tool outside the build/test environment"
       ],
       "scopeEvidence": "Development/browser accessibility testing only; not imported by production app"
     },
@@ -103,26 +127,9 @@
       "distribution": "not-in-frontend-runtime",
       "status": "pending",
       "requestedDecisions": [
-        "Confirm the recorded build/test-only distribution scope",
-        "Confirm applicable combination and source availability obligations"
+        "Review the recorded tool-only scope before distributing the tool outside the build/test environment"
       ],
       "scopeEvidence": "Browsers compatibility data used by CSS build tooling"
-    },
-    {
-      "name": "elkjs",
-      "version": "0.12.0",
-      "declaredLicense": "EPL-2.0 OR GPL-3.0-or-later",
-      "usage": [
-        "runtime"
-      ],
-      "distribution": "browser-js",
-      "status": "pending",
-      "requestedDecisions": [
-        "Elect EPL-2.0 or GPL-3.0-or-later",
-        "Confirm applicable source availability obligations",
-        "Confirm exact ELK source and generator/build material mapping before approving source pins"
-      ],
-      "scopeEvidence": "frontend/src/features/boards/layout imports elkjs; generated JavaScript is delivered to browser"
     },
     {
       "name": "lightningcss",
@@ -135,8 +142,7 @@
       "distribution": "not-in-frontend-runtime",
       "status": "pending",
       "requestedDecisions": [
-        "Confirm the recorded build/test-only distribution scope",
-        "Confirm applicable combination and source availability obligations"
+        "Review the recorded tool-only scope before distributing the tool outside the build/test environment"
       ],
       "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import"
     },
@@ -151,8 +157,7 @@
       "distribution": "not-in-frontend-runtime",
       "status": "pending",
       "requestedDecisions": [
-        "Confirm the recorded build/test-only distribution scope",
-        "Confirm applicable combination and source availability obligations"
+        "Review the recorded tool-only scope before distributing the tool outside the build/test environment"
       ],
       "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import"
     },
@@ -167,8 +172,7 @@
       "distribution": "not-in-frontend-runtime",
       "status": "pending",
       "requestedDecisions": [
-        "Confirm the recorded build/test-only distribution scope",
-        "Confirm applicable combination and source availability obligations"
+        "Review the recorded tool-only scope before distributing the tool outside the build/test environment"
       ],
       "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import"
     },
@@ -183,8 +187,7 @@
       "distribution": "not-in-frontend-runtime",
       "status": "pending",
       "requestedDecisions": [
-        "Confirm the recorded build/test-only distribution scope",
-        "Confirm applicable combination and source availability obligations"
+        "Review the recorded tool-only scope before distributing the tool outside the build/test environment"
       ],
       "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import"
     },
@@ -199,8 +202,7 @@
       "distribution": "not-in-frontend-runtime",
       "status": "pending",
       "requestedDecisions": [
-        "Confirm the recorded build/test-only distribution scope",
-        "Confirm applicable combination and source availability obligations"
+        "Review the recorded tool-only scope before distributing the tool outside the build/test environment"
       ],
       "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import"
     },
@@ -215,8 +217,7 @@
       "distribution": "not-in-frontend-runtime",
       "status": "pending",
       "requestedDecisions": [
-        "Confirm the recorded build/test-only distribution scope",
-        "Confirm applicable combination and source availability obligations"
+        "Review the recorded tool-only scope before distributing the tool outside the build/test environment"
       ],
       "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import"
     },
@@ -231,8 +232,7 @@
       "distribution": "not-in-frontend-runtime",
       "status": "pending",
       "requestedDecisions": [
-        "Confirm the recorded build/test-only distribution scope",
-        "Confirm applicable combination and source availability obligations"
+        "Review the recorded tool-only scope before distributing the tool outside the build/test environment"
       ],
       "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import"
     },
@@ -247,8 +247,7 @@
       "distribution": "not-in-frontend-runtime",
       "status": "pending",
       "requestedDecisions": [
-        "Confirm the recorded build/test-only distribution scope",
-        "Confirm applicable combination and source availability obligations"
+        "Review the recorded tool-only scope before distributing the tool outside the build/test environment"
       ],
       "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import"
     },
@@ -263,8 +262,7 @@
       "distribution": "not-in-frontend-runtime",
       "status": "pending",
       "requestedDecisions": [
-        "Confirm the recorded build/test-only distribution scope",
-        "Confirm applicable combination and source availability obligations"
+        "Review the recorded tool-only scope before distributing the tool outside the build/test environment"
       ],
       "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import"
     },
@@ -279,8 +277,7 @@
       "distribution": "not-in-frontend-runtime",
       "status": "pending",
       "requestedDecisions": [
-        "Confirm the recorded build/test-only distribution scope",
-        "Confirm applicable combination and source availability obligations"
+        "Review the recorded tool-only scope before distributing the tool outside the build/test environment"
       ],
       "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import"
     },
@@ -295,8 +292,7 @@
       "distribution": "not-in-frontend-runtime",
       "status": "pending",
       "requestedDecisions": [
-        "Confirm the recorded build/test-only distribution scope",
-        "Confirm applicable combination and source availability obligations"
+        "Review the recorded tool-only scope before distributing the tool outside the build/test environment"
       ],
       "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import"
     },
@@ -311,8 +307,7 @@
       "distribution": "not-in-frontend-runtime",
       "status": "pending",
       "requestedDecisions": [
-        "Confirm the recorded build/test-only distribution scope",
-        "Confirm applicable combination and source availability obligations"
+        "Review the recorded tool-only scope before distributing the tool outside the build/test environment"
       ],
       "scopeEvidence": "Reachable through @tailwindcss/vite CSS build pipeline; no application runtime import"
     }

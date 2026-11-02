@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "policy": "Only a maintainer may approve review-level licenses. Pending records describe evidence and proposed scope, not an authorization. approvedBy, approvedAt, selectedLicense, conclusion and correspondingSourceRequired must be supplied by an actual approval.",
+  "policy": "Records distinguish engineering assessments from actual maintainer approvals. An engineering record names its actor, Unix-millisecond assessment time, selected declared license, evidence and limitations; it is not a human approval or a legal guarantee. Pending tooling records remain visible. Distribution readiness evaluates the components actually shipped in the frontend; full inventory completeness is reported separately.",
   "packages": {
     "@axe-core/playwright@4.14.0": {
       "status": "pending",
@@ -34,14 +34,32 @@
       "remaining": "Maintainer confirmation of combination and distribution obligations"
     },
     "elkjs@0.12.0": {
-      "status": "pending",
+      "status": "assessed",
       "declaredLicense": "EPL-2.0 OR GPL-3.0-or-later",
       "usageEvidence": [
         "runtime"
       ],
       "distribution": "browser-js",
       "scopeEvidence": "frontend/src/features/boards/layout imports elkjs; generated JavaScript is delivered to browser",
-      "remaining": "Maintainer election plus exact ELK source revision and generated-code build material mapping"
+      "assessmentType": "engineering",
+      "assessedBy": "Codex",
+      "assessedAtMs": 1793548960557,
+      "selectedLicense": "EPL-2.0",
+      "correspondingSourceRequired": true,
+      "conclusion": "Retain the existing unmodified elkjs 0.12.0 browser worker under its declared EPL-2.0 option. The official elkjs release sources, ELK 0.12.0 algorithm sources and metadata-compiler sources are pinned and available with a demonstrated source-build path. This engineering assessment addresses source availability; it does not assert the exact historical upstream checkout, byte-for-byte reproduction, complete observable equivalence or a legal guarantee.",
+      "sourceEvidence": [
+        "https://registry.npmjs.org/elkjs/0.12.0",
+        "https://github.com/kieler/elkjs/tree/ff5771d7165445c42c408bb8a090c8035272218c",
+        "https://github.com/eclipse-elk/elk/tree/323312916048544e4e594eab3303cdb0d01e2929",
+        "https://github.com/eclipse-elk/elk/tree/0c51a28df40d0334b41b94c05b9fa9a07f3752ba",
+        "licenses/sources/elkjs-review.md",
+        "licenses/sources/elkjs-build.md"
+      ],
+      "provenanceLimitations": [
+        "The upstream workflow did not pin the historical ELK checkout used to produce its published worker.",
+        "Source-build experiments differ from the published worker in synthetic class metadata; no byte-level or complete observable-equivalence claim is made."
+      ],
+      "licenseBasis": "https://www.eclipse.org/org/documents/epl-2.0/EPL-2.0.html"
     },
     "lightningcss@1.32.0": {
       "status": "pending",

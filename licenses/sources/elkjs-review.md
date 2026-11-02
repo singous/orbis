@@ -1,6 +1,10 @@
 # elkjs 0.12.0 corresponding-source evidence
 
-Status: pending maintainer license election and source-material confirmation. This file records source evidence; it is not an approval and does not populate `packages.tsv`.
+Status: engineering-assessed source availability for the existing unmodified `elkjs` 0.12.0 distribution, using its declared EPL-2.0 option. The actor, Unix-millisecond assessment time, conclusion and limitations are recorded in [`../reviews.json`](../reviews.json). This is not a human maintainer approval or a legal guarantee.
+
+The official elkjs release tree, official ELK 0.12.0 algorithm tree and metadata-compiler tree below are now pinned in [`packages.tsv`](packages.tsv). Their full archives were downloaded again and their recorded SHA-256 values matched before inclusion. The public license bundle provides the archives and [`elkjs-build.md`](elkjs-build.md), which describes the demonstrated source-build path.
+
+The assessment distinguishes available editable source/build materials from historical build reproduction. EPL-2.0 defines source as the form preferred for modification and requires a source-availability statement and acquisition method on distribution; it does not prescribe byte-for-byte reconstruction of an upstream release. The available official-version sources and successful generation evidence support this engineering source-availability assessment. The exact historical upstream checkout and complete observable equivalence remain unconfirmed; none of the mismatch evidence below is withdrawn. See the [official EPL-2.0 text](https://www.eclipse.org/org/documents/epl-2.0/EPL-2.0.html), sections 1 and 3.
 
 The npm registry metadata for `elkjs@0.12.0` records source revision `ff5771d7165445c42c408bb8a090c8035272218c` and artifact integrity:
 
@@ -16,13 +20,13 @@ Verified upstream material:
 - [build.gradle at that revision](https://github.com/kieler/elkjs/blob/ff5771d7165445c42c408bb8a090c8035272218c/build.gradle) reads source from a sibling ELK repository, including graph/core and the force, layered, mrtree, rectpacking, radial and spore algorithm plugins. It runs Java/EMF/Xtext/GWT code generation. It declares GWT 2.11.0, Xtext 2.36.0, EMF GWT 2.12.4, Guava 31.1-jre and `melk: 0.12.0-SNAPSHOT`, with Java 8–17 support.
 - [the CI workflow at that revision](https://github.com/kieler/elkjs/blob/ff5771d7165445c42c408bb8a090c8035272218c/.github/workflows/ci.yml) checks out `eclipse/elk` at `master`; it does not pin the exact ELK revision used for the npm artifact.
 - [the publish workflow](https://github.com/kieler/elkjs/blob/ff5771d7165445c42c408bb8a090c8035272218c/.github/workflows/publish.yml) runs `npm publish` at the release tag and does not supply the missing ELK source mapping.
-- ELK's `v0.12.0` tag resolves to `323312916048544e4e594eab3303cdb0d01e2929`. Matching version numbers alone do not prove that it generated this elkjs artifact. It is a candidate for review, not an approved source pin.
+- ELK's `v0.12.0` tag resolves to `323312916048544e4e594eab3303cdb0d01e2929`. Matching version numbers alone do not prove that it generated this elkjs artifact. At that stage it was a candidate for review, not an approved source pin; the engineering source-availability assessment at the beginning of this record was made later.
 
-Before this entry can satisfy the release gate, the maintainer must choose the license branch and confirm the applicable source availability obligations. The exact ELK source revision and required generator/build materials must then be mapped to the delivered artifact. Only verified corresponding-source archives, with immutable revisions and SHA-256, belong in `packages.tsv`.
+The selected license remains separate from the original dual-license declaration. The pinned archives identify the official-version sources and generator/build inputs used in the demonstrated build; they are not represented as proof of the unrecorded upstream publication checkout. The distribution gate verifies the recorded assessment, valid license selection, immutable pins and actual archive checksums.
 
 ## Release provenance follow-up
 
-The [successful publish run for this exact elkjs revision](https://github.com/kieler/elkjs/actions/runs/29565358187) started on 2026-07-17. The public Actions API currently reports no artifacts for that run. Its checked-in workflow checks out the release ref and executes `npm publish`; the package has no prepublish build hook. This run therefore does not establish the ELK revision that produced the checked-in generated JavaScript. The source/build mapping above remains unresolved; a successful npm publication is not recorded as approval of a corresponding-source archive.
+The [successful publish run for this exact elkjs revision](https://github.com/kieler/elkjs/actions/runs/29565358187) started on 2026-07-17. The public Actions API currently reports no artifacts for that run. Its checked-in workflow checks out the release ref and executes `npm publish`; the package has no prepublish build hook. This run therefore does not establish the ELK revision that produced the checked-in generated JavaScript. The historical checkout remains unresolved; a successful npm publication alone is not treated as the source-availability assessment recorded above.
 
 
 ## Isolated source-build experiment
@@ -67,7 +71,7 @@ Seven synthetic Java class-name strings really differ across four hunks: two LPo
 
 A bounded history check of the fixed [LPort](https://github.com/eclipse-elk/elk/blob/323312916048544e4e594eab3303cdb0d01e2929/plugins/org.eclipse.elk.alg.layered/src/org/eclipse/elk/alg/layered/graph/LPort.java) and [PortListSorter](https://github.com/eclipse-elk/elk/blob/323312916048544e4e594eab3303cdb0d01e2929/plugins/org.eclipse.elk.alg.layered/src/org/eclipse/elk/alg/layered/intermediate/PortListSorter.java) paths found no declaration-order-only candidate. The API returned 13 and 12 entries with no next page; renamed paths before the earliest returned 2016 entries were not followed. Relevant changes include the [2020 anonymous-class conversion](https://github.com/eclipse-elk/elk/commit/a73c32fb9e8d45dce2673db50a2632b2d2683617) and [2018 sorting refactor](https://github.com/eclipse-elk/elk/commit/3b86f2bff1751ca33e8936a93ace7ecb9a49cc66); both include implementation changes. No JDK/compiler cause is inferred from commit dates.
 
-During the PRETTY experiment and bounded analysis above, no minified-worker or npm-bundle rebuild was performed. No published-worker byte match, source-pin approval, EPL/GPL election or maintainer approval was established. The release gate remains pending.
+During the PRETTY experiment and bounded analysis above, no minified-worker or npm-bundle rebuild was performed. No published-worker byte match, source-pin approval, EPL/GPL election or maintainer approval was established. At that stage the release gate remained pending; the current engineering assessment is stated at the beginning of this record.
 
 ### Follow-up: delivered minified worker
 
@@ -86,4 +90,4 @@ The official and locked npm references were byte-identical, with Git blob `222ac
 
 Minification retained all seven relevant class-name literals, using lowercase `lambda`: `LPort/lambda$0$Type`, `LPort/lambda$1$Type`, and `PortListSorter/lambda$0$Type` through `PortListSorter/lambda$4$Type`. Their registration metadata associates them with different type IDs and method bodies across the two artifacts. Their presence does not establish complete observable equivalence.
 
-This follow-up did not run `npmjs`, replace the delivered worker, alter source pins, elect EPL/GPL or grant maintainer approval. It preserved the previous PRETTY/A-A/AST evidence. Exact reproduction of the delivered worker, the historical toolchain and checkout, and the complete corresponding-source mapping remain unconfirmed; the release gate remains pending.
+This follow-up did not run `npmjs`, replace the delivered worker, alter source pins, elect EPL/GPL or grant maintainer approval. It preserved the previous PRETTY/A-A/AST evidence. Exact reproduction of the delivered worker, the historical toolchain and checkout, and the complete corresponding-source mapping remain unconfirmed; the gate was still pending at the conclusion of that experiment. The current engineering assessment is stated at the beginning of this record.

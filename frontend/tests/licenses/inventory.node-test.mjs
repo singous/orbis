@@ -52,8 +52,8 @@ globalThis.fetch = async url => {
   return { root, write, run, registry, mockFetch };
 }
 
-function sourceFixture(t, approved = true) {
-  const result = fixture(t, "MPL-2.0");
+function sourceFixture(t, approved = true, license = "MPL-2.0") {
+  const result = fixture(t, license);
   const sourceBody = "Fixture source archive\n";
   result.write("licenses/reviews.json", { packages: approved ? { "example@1.0.0": {
     status: "approved", approvedBy: "fixture maintainer", approvedAt: "2026-11-01", selectedLicense: "MPL-2.0", correspondingSourceRequired: true, conclusion: "fixture decision",
@@ -158,7 +158,7 @@ test("pending reviews block bundling before any distribution output is written",
   assert.equal(run("--check").status, 0);
   const result = run("--bundle", "dist/licenses");
   assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /Maintainer review pending: example@1.0.0/);
+  assert.match(result.stderr, /License assessment pending: example@1.0.0/);
   assert.equal(existsSync(path.join(root, "frontend/dist/licenses")), false);
 });
 
@@ -189,7 +189,7 @@ test("pending source reviews reject bundling before the download boundary", t =>
   assert.equal(run().status, 0);
   const result = run("--bundle", "dist/licenses");
   assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /Maintainer review pending: example@1.0.0/);
+  assert.match(result.stderr, /License assessment pending: example@1.0.0/);
   assert.equal(existsSync(path.join(root, "fetch-called.txt")), false);
   assert.equal(existsSync(path.join(root, "frontend/dist/licenses")), false);
 });
@@ -268,7 +268,134 @@ test("review records cannot omit a corresponding-source decision", t => {
   const { write, run } = fixture(t, "MPL-2.0");
   assert.equal(run().status, 0);
   write("licenses/reviews.json", { packages: { "example@1.0.0": { status: "approved", approvedBy: "fixture maintainer", approvedAt: "2026-11-01", selectedLicense: "MPL-2.0", conclusion: "fixture decision" } } });
-  assert.match(run("--check", "--release").stderr, /Maintainer review pending/);
+  assert.match(run("--check", "--release").stderr, /License assessment pending/);
+});
+
+test("tooling review and missing text remain visible without blocking the static frontend bundle", t => {
+  const { root, write, run } = fixture(t);
+  const lock = JSON.parse(readFileSync(path.join(root, "frontend/package-lock.json"), "utf8"));
+  lock.packages[""].devDependencies = { "axe-core": "1.0.0", vite: "1.0.0" };
+  for (const [name, license] of [["axe-core", "MPL-2.0"], ["vite", "MIT"]]) {
+    const entry = { version: "1.0.0", license, resolved: `https://example.com/${name}.tgz`, integrity: "sha512-Zml4dHVyZQ==" };
+    lock.packages[`node_modules/${name}`] = entry;
+    write(`frontend/node_modules/${name}/package.json`, entry);
+  }
+  write("frontend/package-lock.json", lock);
+  write("frontend/node_modules/axe-core/LICENSE", "Fixture tooling MPL notice\n");
+  const reviews = { packages: { "axe-core@1.0.0": { status: "pending", scopeEvidence: "Test-only fixture" } } };
+  write("licenses/reviews.json", reviews);
+  const generated = run();
+  assert.equal(generated.status, 0, generated.stderr);
+  const summary = JSON.parse(readFileSync(path.join(root, "licenses/pending-review-summary.json"), "utf8"));
+  assert.equal(summary.inventoryComplete, false);
+  assert.equal(summary.distributionReady, true);
+  assert.equal(summary.releaseReady, true);
+  assert.deepEqual(summary.distributionIssues, []);
+  assert.equal(summary.toolingIssues.length, 2);
+  assert.equal(summary.maintainerReviews[0].name, "axe-core");
+  assert.equal(summary.materialGaps[0].name, "vite");
+  const bundled = run("--bundle", "dist/licenses");
+  assert.equal(bundled.status, 0, bundled.stderr);
+  const bundle = path.join(root, "frontend/dist/licenses");
+  assert.deepEqual(JSON.parse(readFileSync(path.join(bundle, "licenses/reviews.json"), "utf8")), reviews);
+  assert.equal(JSON.parse(readFileSync(path.join(bundle, "licenses/pending-review-summary.json"), "utf8")).toolingIssues.length, 2);
+  assert.equal(verifyLicenseBundle(bundle).packages, 8);
+});
+
+test("runtime and asset license gaps still block their frontend distribution", async t => {
+  await t.test("runtime text", t => {
+    const { root, run } = fixture(t);
+    rmSync(path.join(root, "frontend/node_modules/example/LICENSE"));
+    assert.equal(run().status, 0);
+    const result = run("--check", "--release");
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Missing license text: example@1.0.0/);
+  });
+  await t.test("runtime denied license", t => {
+    const { run } = fixture(t, "UNKNOWN");
+    assert.equal(run().status, 0);
+    const result = run("--check", "--release");
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /License not admitted by policy: example@1.0.0/);
+  });
+  await t.test("asset assessment", t => {
+    const { root, write, run } = fixture(t);
+    const lock = JSON.parse(readFileSync(path.join(root, "frontend/package-lock.json"), "utf8"));
+    lock.packages["node_modules/@fontsource-variable/inter"].license = "MPL-2.0";
+    write("frontend/package-lock.json", lock);
+    write("frontend/node_modules/@fontsource-variable/inter/package.json", lock.packages["node_modules/@fontsource-variable/inter"]);
+    const generated = run();
+    assert.equal(generated.status, 0, generated.stderr);
+    const result = run("--check", "--release");
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /License assessment pending: @fontsource-variable\/inter@1.0.0/);
+  });
+});
+
+test("an engineering assessment elects a declared license without fabricating human approval", t => {
+  const { root, write, run, mockFetch, sourceBody } = sourceFixture(t, false, "EPL-2.0 OR GPL-3.0-or-later");
+  const decision = { status: "assessed", assessmentType: "engineering", assessedBy: "Codex fixture", assessedAtMs: 1793550000000, selectedLicense: "EPL-2.0", correspondingSourceRequired: true, conclusion: "Fixture official source availability; historical byte reproduction not asserted" };
+  write("licenses/reviews.json", { packages: { "example@1.0.0": decision } });
+  mockFetch(sourceBody, { status: 200 });
+  assert.equal(run().status, 0);
+  const bundled = run("--bundle", "dist/licenses");
+  assert.equal(bundled.status, 0, bundled.stderr);
+  const bundle = path.join(root, "frontend/dist/licenses");
+  const actual = JSON.parse(readFileSync(path.join(bundle, "licenses/reviews.json"), "utf8")).packages["example@1.0.0"];
+  assert.deepEqual(actual, decision);
+  assert.equal(Object.hasOwn(actual, "approvedBy"), false);
+  assert.equal(Object.hasOwn(actual, "approvedAt"), false);
+  assert.ok(readFileSync(path.join(bundle, "index.html"), "utf8").includes('href="licenses/sources/example-source.tgz"'));
+  assert.equal(verifyLicenseBundle(bundle).sourceRevision, "a".repeat(40));
+});
+
+test("incomplete engineering assessments, invalid elections and absent source pins remain blocked", async t => {
+  const valid = { status: "assessed", assessmentType: "engineering", assessedBy: "Codex fixture", assessedAtMs: 1793550000000, selectedLicense: "EPL-2.0", correspondingSourceRequired: true, conclusion: "Fixture source availability" };
+  for (const field of ["assessmentType", "assessedBy", "assessedAtMs", "conclusion", "correspondingSourceRequired"]) {
+    await t.test(field, t => {
+      const { root, write, run, mockFetch, sourceBody } = sourceFixture(t, false, "EPL-2.0 OR GPL-3.0-or-later");
+      const decision = { ...valid };
+      delete decision[field];
+      write("licenses/reviews.json", { packages: { "example@1.0.0": decision } });
+      mockFetch(sourceBody, { status: 200 });
+      assert.equal(run().status, 0);
+      const result = run("--bundle", "dist/licenses");
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /License assessment pending: example@1.0.0/);
+      assert.equal(existsSync(path.join(root, "fetch-called.txt")), false);
+    });
+  }
+  await t.test("invalid election", t => {
+    const { write, run } = sourceFixture(t, false, "EPL-2.0 OR GPL-3.0-or-later");
+    write("licenses/reviews.json", { packages: { "example@1.0.0": { ...valid, selectedLicense: "MIT" } } });
+    const result = run();
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Selected license is outside declared expression/);
+  });
+  await t.test("absent pin", t => {
+    const { write, run } = sourceFixture(t, false, "EPL-2.0 OR GPL-3.0-or-later");
+    write("licenses/reviews.json", { packages: { "example@1.0.0": valid } });
+    write("licenses/sources/packages.tsv", "# no source pin\n");
+    assert.equal(run().status, 0);
+    const result = run("--check", "--release");
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Assessed source material pin missing/);
+  });
+});
+
+test("distribution verification recomputes scope readiness instead of trusting a ready flag", t => {
+  const { root, run } = fixture(t);
+  assert.equal(run().status, 0);
+  assert.equal(run("--bundle", "dist/licenses").status, 0);
+  const bundle = path.join(root, "frontend/dist/licenses");
+  const inventoryFile = path.join(bundle, "licenses/npm-manifest.json");
+  const inventory = JSON.parse(readFileSync(inventoryFile, "utf8"));
+  const example = inventory.packages.find(item => item.name === "example");
+  example.license = "UNKNOWN";
+  assert.equal(example.policy, "permissive");
+  writeFileSync(inventoryFile, JSON.stringify(inventory));
+  writeLicenseBundleIndex(bundle, distributionSource("a".repeat(40)));
+  assert.throws(() => verifyLicenseBundle(bundle), /Distribution license readiness/);
 });
 
 test("retains acknowledgements that document bundled third-party code", t => {
