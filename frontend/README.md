@@ -141,6 +141,10 @@ npm run test:e2e
 
 包级契约、主题、表单、可访问名称和浮层规则见 [UI 包文档](packages/ui/README.md)。应用开发路径 `/__ui` 验证页面样式与组合，`npm run storybook` 预览原语状态。迁移期间保留未迁组件及样式；`check:ui` 冻结已有违规，只拦截新增，`node scripts/check-ui.mjs --prune` 只删除已清理的例外，不扩大基线。
 
-验证使用 `npm run typecheck`、`npm run test:run`、`npm run test:storybook`、`npm run test:ui`、`npm run test:a11y`、`npm run storybook:build` 与 `npm run build`。应用 UI 测试在 HTTP 边界提供响应，完整持久化与协作仍须 `test:e2e`。包体检查 `npm run check:bundle` 读取 Vite manifest，与固定提交的原始 lockfile 构建比较首屏和 feature chunk gzip；交付前还需 `npm run check:bundle -- --complete` 验证总体低于固定基线。
+验证使用 `npm run typecheck`、`npm run test:run`、`npm run test:storybook`、`npm run test:ui`、`npm run test:a11y`、`npm run storybook:build` 与 `npm run build`。应用 UI 测试在 HTTP 边界提供响应，完整持久化与协作仍须 `test:e2e`。
+
+包体检查 `npm run check:bundle` 比较固定原始构建的 gzip 预算：首屏允许最多 5% 增长；每个 feature 的入口加载边界（entry loading boundary）包含首屏、入口及静态依赖，按实际输出文件去重，允许最多 10% 增长。这个模型不包含额外的 `WorkspaceRoute` 外壳、实际 HTTP 传输或 CSS，不能表述成完整页面的下载量。只能从已校验的原始 manifest 和 artifact 记录推导基线，不改写原始构建数据。协作面板分别测量旧文档、画板、协作文档和 Sheet 四个实际宿主与面板的依赖组合；每个 `(entry, host)` 独立对照原宿主预算，两边都验证完整的动态导入关系。面板 feature 摘要是四个宿主边界的最大值，不代替各场景门禁。公开阅读与预览沿用原模块的入口映射。新增未映射入口、缺失入口、缺失宿主或测量仍阻断检查。
+
+单个 feature-own chunk 与 Reader 家族归属继续输出诊断，不单独作为失败条件；组件拆分后的文件大小不等于页面下载负担。报告另列动态可达依赖的上界，排除主入口的全站路由注册表；这不是一次用户操作的实际下载量。`totalGzipBytes` 只统计 manifest JS，额外发射的 worker JS 单列并计入 `totalEmittedJsGzipBytes`。交付前还需 `npm run check:bundle -- --complete` 验证 manifest JS 总量低于固定基线。报告记录 Node/zlib 版本；gzip 估算用于比较依赖负担，不代表 HTTP 实际协商编码、CPU、缓存命中或交互耗时。
 
 新增/升级依赖或复制代码时，同步 `licenses/npm-manifest.json`、原始许可文本、来源与 `THIRD_PARTY_NOTICES.md`。`licenses:generate -- --check` 可离线检查一致性；`check:licenses` 和 `licenses:bundle dist/licenses` 使用严格发行门禁，待审项不能当作已批准。`licenses/pending-review-summary.json` 和 `licenses/material-gaps.json` 记录真实缺口。
