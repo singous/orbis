@@ -46,8 +46,13 @@ export const ComposedLoading: Story = {
 };
 export const ComposedAccessibleName: Story = { render: () => <Button render={<button aria-label="编辑名称" />}><span aria-hidden="true">✎</span></Button>, play: async ({ canvasElement }) => { await expect(within(canvasElement).getByRole("button", { name: "编辑名称" })).not.toHaveAttribute("aria-labelledby"); } };
 export const StateStyles: Story = { render: () => <Button disabled className="data-disabled:text-base" style={{ minWidth: 120 }}>不可用</Button>, play: async ({ canvasElement }) => { const button = within(canvasElement).getByRole("button", { name: "不可用" }); await expect(button).toBeDisabled(); await expect(button).toHaveStyle({ minWidth: "120px", fontSize: "16px" }); } };
-export const CallerOverrides: Story = { render: () => <div className="grid gap-3"><Button className="rounded-full">胶囊按钮</Button><label>胶囊输入<Input className="rounded-full" /></label></div>, play: async ({ canvasElement }) => {
+export const CallerOverrides: Story = { render: () => <div className="grid gap-3"><Button className="rounded-full focus:outline-offset-4">胶囊按钮</Button><label>胶囊输入<Input className="rounded-full" /></label></div>, play: async ({ canvasElement }) => {
   const canvas = within(canvasElement); for (const element of [canvas.getByRole("button", { name: "胶囊按钮" }), canvas.getByRole("textbox", { name: "胶囊输入" })]) await expect(parseFloat(getComputedStyle(element).borderRadius)).toBeGreaterThanOrEqual(element.getBoundingClientRect().height / 2);
+  await userEvent.tab();
+  await expect(canvas.getByRole("button", { name: "胶囊按钮" })).toHaveFocus();
+  await Promise.all(canvas.getByRole("button", { name: "胶囊按钮" }).getAnimations().map(animation => animation.finished));
+  await expect(getComputedStyle(canvas.getByRole("button", { name: "胶囊按钮" })).outlineOffset).toBe("4px");
+  await expect(getComputedStyle(canvas.getByRole("button", { name: "胶囊按钮" })).outlineStyle).toBe("none");
   await expect(cn("rounded-full", "rounded-lg")).toBe("rounded-lg"); await expect(cn("text-sm text-foreground", "text-base")).toBe("text-foreground text-base");
 } };
 export const NativeChildren: Story = { render: args => <Button {...args} aria-label="连接点" size="icon"><svg data-testid="direct-icon" aria-hidden="true" width="10" height="10"><path d="M0 5h10M5 0v10" /></svg></Button>, play: async ({ canvasElement, args }) => { const button = within(canvasElement).getByRole("button", { name: "连接点" }); await expect(button.firstElementChild).toBe(within(button).getByTestId("direct-icon")); button.focus(); await userEvent.keyboard("{Enter}"); await expect(args.onClick).toHaveBeenCalledTimes(1); } };

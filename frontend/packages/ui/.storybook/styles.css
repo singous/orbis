@@ -1,5 +1,5 @@
-@import "tailwindcss";
 @import "../src/styles/styles.css";
+@import "tailwindcss";
 @source "../src";
 
 /* 模拟应用的基础排版，同时覆盖挂到 body 的 Portal。 */

@@ -1,5 +1,5 @@
 import { cn } from "@orbis/ui/cn";
-import { editorNodeSettingsClassName, editorNodeControlsClassName, editorNodeFieldClassName, editorNodeChildActionClassName, editorPaneButtonClassName } from "./editor-control-styles";
+import { editorNodeSettingsClassName, editorNodeControlsClassName, editorNodeFieldClassName, editorPaneButtonClassName } from "./editor-control-styles";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@orbis/ui/select";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -138,7 +138,7 @@ function ComponentView({ node, editor, updateAttributes, getPos }: NodeViewProps
   }
   if (kind === "group") return <NodeViewWrapper as="section" data-orbis-block-id={node.attrs.orbisId} className="doc-editor-group" data-document-component="group"><NodeViewContent as="div" /></NodeViewWrapper>;
   return <NodeViewWrapper as="section" data-orbis-block-id={node.attrs.orbisId} className={`doc-editor-block doc-editor-${kind}`} data-document-component={kind} data-tone={kind === "callout" ? String(props.tone ?? "info") : undefined} data-columns={kind === "cardGroup" ? String(props.columns ?? 2) : undefined}>
-    {!readOnly ? <Button type="button" className={cn(editorNodeSettingsClassName, kind === "cardGroup" || kind === "steps" ? "-top-[25px]" : kind === "tabs" || kind === "codeGroup" ? "top-[5px]" : kind === "tab" ? "top-0" : "")} contentEditable={false} aria-label={`编辑${definition.label}属性`} aria-expanded={editingProps} onClick={() => setEditingProps((value) => !value)} variant="ghost" size="icon"><Settings2 size={14} aria-hidden="true" /></Button> : null}
+    {!readOnly ? <Button type="button" className={cn(editorNodeSettingsClassName, kind === "cardGroup" || kind === "steps" ? "-top-[25px]" : kind === "tabs" || kind === "codeGroup" ? "top-[5px]" : kind === "tab" ? "top-0" : "")} contentEditable={false} aria-label={`编辑${definition.label}属性`} aria-expanded={editingProps} onClick={() => setEditingProps((value) => !value)} variant="ghost" size="icon-sm"><Settings2 size={14} aria-hidden="true" /></Button> : null}
     {kind === "card" || kind === "callout" ? <div className="doc-editor-heading" contentEditable={false}><Icon size={kind === "card" ? 22 : 19} aria-hidden="true" /></div> : null}
     {title && kind !== "tab" ? <strong contentEditable={false} className="doc-editor-title">{title}</strong> : null}
     {!readOnly && editingProps ? <div className={cn(editorNodeControlsClassName, kind === "callout" && "col-span-full")} contentEditable={false} onKeyDown={(event) => { if (event.key !== "F6") event.stopPropagation(); }}>
@@ -151,7 +151,7 @@ function ComponentView({ node, editor, updateAttributes, getPos }: NodeViewProps
             onValueChange={value => { if (value === null) return; updateProps({ [name]: typeof rule.default === "number" ? Number(value) : value }); }}
             items={propertyItems}
           >
-            <SelectTrigger aria-label={label} className={cn("min-w-[125px] flex-1", editorNodeChildActionClassName)}><SelectValue /></SelectTrigger>
+            <SelectTrigger aria-label={label} className={cn("min-w-[125px] flex-1")}><SelectValue /></SelectTrigger>
             <SelectContent>
               {propertyItems.map(item => (
                 <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
@@ -163,7 +163,7 @@ function ComponentView({ node, editor, updateAttributes, getPos }: NodeViewProps
           placeholder={name === "href" ? "https://… 或内部文档链接" : "输入标题"}
           onChange={(event) => updateProps({ [name]: event.target.value })} /></label>;
       })}
-      {GROUP_CHILD[kind] ? <Button className={editorNodeChildActionClassName} type="button" onClick={addChild} variant="ghost"><Plus size={13} aria-hidden="true" />添加{kind === "codeGroup" ? "代码示例" : DOCUMENT_BLOCKS[GROUP_CHILD[kind] as DocumentBlockKind].label}</Button> : null}
+      {GROUP_CHILD[kind] ? <Button type="button" onClick={addChild} variant="outline"><Plus size={13} aria-hidden="true" />添加{kind === "codeGroup" ? "代码示例" : DOCUMENT_BLOCKS[GROUP_CHILD[kind] as DocumentBlockKind].label}</Button> : null}
     </div> : null}
     {switchable ? <div role="tablist" aria-label={kind === "tabs" ? "文档标签" : "代码语言"} className="doc-editor-panes flex gap-6 overflow-x-auto border-b border-(--reading-border) pr-[35px]" contentEditable={false}>{paneLabels.map((label, index) => <Button className={editorPaneButtonClassName} key={paneKeys[index]} role="tab" aria-selected={index === activePane} type="button" onClick={() => setSelectedPaneId(paneKeys[index])} variant="ghost">{label}</Button>)}</div> : null}
     <div ref={paneShell} className="doc-editor-body"><NodeViewContent as="div" className="doc-editor-content" /></div>
@@ -187,7 +187,7 @@ function MediaView({ node, updateAttributes }: NodeViewProps) {
   const [editingCaption, setEditingCaption] = useState(false);
   return <NodeViewWrapper data-orbis-block-id={node.attrs.orbisId} className="orbis-media" contentEditable={false}>
     <ContentMedia kind={kind} reference={reference} fallback={safeContentUrl(reference, true)} name={caption || "附件"} caption={caption || undefined} previewWidth={props.previewWidth} />
-    {!readOnly ? <Button type="button" className={editorNodeSettingsClassName} aria-label="编辑媒体说明" aria-expanded={editingCaption} onClick={() => setEditingCaption((value) => !value)} variant="ghost" size="icon"><Settings2 size={14} /></Button> : null}
+    {!readOnly ? <Button type="button" className={editorNodeSettingsClassName} aria-label="编辑媒体说明" aria-expanded={editingCaption} onClick={() => setEditingCaption((value) => !value)} variant="ghost" size="icon-sm"><Settings2 size={14} /></Button> : null}
     {!readOnly && editingCaption ? <label className="orbis-media-caption -mt-3 mb-5 grid max-w-[420px] gap-[3px] text-xs leading-[18px] text-(--reading-muted)">说明<Input aria-label="媒体说明" value={caption} onChange={(event) => updateAttributes({ orbisProps: { ...props, caption: event.target.value }, caption: event.target.value })} /></label> : null}
   </NodeViewWrapper>;
 }
@@ -239,7 +239,7 @@ function CodeView({ node, updateAttributes }: NodeViewProps) {
       onValueChange={value => { if (value === null) return; updateAttributes({ language: value }); }}
       items={languageItems}
     >
-      <SelectTrigger aria-label="代码语言" size="sm" className={"w-[min(180px,100%)] text-xs leading-[18px]"}><SelectValue /></SelectTrigger>
+      <SelectTrigger aria-label="代码语言" size="sm" className="w-[min(180px,100%)]"><SelectValue /></SelectTrigger>
       <SelectContent>
         {languageItems.map(item => (
           <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
@@ -251,7 +251,7 @@ function CodeView({ node, updateAttributes }: NodeViewProps) {
       onValueChange={() => {}}
       items={readOnlyLanguageItems}
     >
-      <SelectTrigger aria-label="代码语言" size="sm" className={"w-[min(180px,100%)] text-xs leading-[18px]"}><SelectValue /></SelectTrigger>
+      <SelectTrigger aria-label="代码语言" size="sm" className="w-[min(180px,100%)]"><SelectValue /></SelectTrigger>
       <SelectContent>
         {readOnlyLanguageItems.map(item => (
           <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>

@@ -194,7 +194,7 @@ jobs:
         working-directory: frontend
         env:
           ORBIS_UI_PRODUCTION: "1"
-        run: npm run test:ui -- tests/ui-browser/platform/production-network.spec.ts --output=test-results/production-ui
+        run: npm run test:ui -- tests/ui-browser/platform/production-network.spec.ts tests/ui-browser/platform/style-foundation.spec.ts --output=test-results/production-ui
       - name: Build the owned collaboration test engine
         env:
           BUILDX_CONFIG: ${{ runner.temp }}/orbis-buildx

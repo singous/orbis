@@ -148,7 +148,7 @@ export function DocumentVersions({ noteId, canManage, onPrepare, onRestore, onBu
 
     {list.isError ? <Button type="button" variant="secondary" onClick={() => void list.refetch()}>重试加载版本</Button> : null}
     {list.isSuccess && versions.length === 0 ? <p className={collaborationEmptyClassName}>暂无版本。可以保存命名版本，或在停笔后查看自动历史。</p> : null}
-    <div className="grid gap-1.25">{versions.map(version => <Button type="button" className={collaborationRevisionClassName} key={version.id} aria-label={`查看版本 ${documentVersionLabel(version)}`} aria-pressed={selectedId === version.id} disabled={busy || saveUncertain || restoreUncertain} onClick={() => { setSelectedId(version.id); setCompareFrom("");  }} variant="ghost">
+    <div className="grid gap-1.25">{versions.map(version => <Button type="button" className={collaborationRevisionClassName} key={version.id} aria-label={`查看版本 ${documentVersionLabel(version)}`} aria-pressed={selectedId === version.id} disabled={busy || saveUncertain || restoreUncertain} onClick={() => { setSelectedId(version.id); setCompareFrom("");  }} variant={selectedId === version.id ? "secondary" : "outline"}>
       <span>{documentVersionLabel(version)}</span><small className={collaborationRevisionMetaClassName}>{version.author_name || "历史作者"} · {formatTime.format(version.captured_at_ms)}</small>
       {version.description ? <small className={collaborationRevisionMetaClassName}>{version.description}</small> : null}
     </Button>)}</div>

@@ -102,7 +102,7 @@ export function ShareDialog({
         finalFocus={finalFocus}
       ><DialogHeader><DialogTitle>{"分享在线文档"}</DialogTitle><DialogDescription>{`公开范围：${target.title}${target.noteId ? "及其全部下级文档" : "中的全部文档"}`}</DialogDescription></DialogHeader>
         <div data-ui="share-management" className="contents">
-          <div data-theme="light" className="my-4 text-foreground rounded-[10px] border border-border bg-muted p-4 [&_p]:mt-2 [&_p]:mb-0 [&_p]:text-sm [&_p]:leading-[1.65] [&_p]:text-foreground">
+          <div className="my-4 grid gap-3 rounded-lg border bg-muted p-4 text-sm text-foreground">
             <strong>链接持有人无需登录即可阅读</strong>
             <p>
               正文与在线文档实时同步。此范围内未来新增或移入的文档也会公开；移出、归档的文档不再可读。

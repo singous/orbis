@@ -4,7 +4,9 @@ Storybook 只覆盖 UI 原语。Story 的 play 测试在 Vitest browser mode 的
 
 应用级 `test:ui` 使用独立 Vite 端口，不需要后端。个人资料用例只替代 HTTP，验证真实页面、请求、草稿、重试版本和会话回写。它不证明后端持久化；完整 `test:e2e` 仍需要仓库指定的 Go/Docker 环境。
 
-生产资源验证先运行 `npm run build`，再执行 `ORBIS_UI_PRODUCTION=1 npm run test:ui -- tests/ui-browser/platform/production-network.spec.ts`。该模式通过 Vite preview 检查十五个正式前端路由的已编译入口、脚本、样式和字体均实际加载且同源；HTTP 仍由固定 fixture 提供。其他需要导入 Vite 源模块的 UI 场景继续使用默认开发模式。
+生产资源验证先运行 `npm run build`，再执行 `ORBIS_UI_PRODUCTION=1 npm run test:ui -- tests/ui-browser/platform/production-network.spec.ts tests/ui-browser/platform/style-foundation.spec.ts`。该模式通过 Vite preview 检查十五个正式前端路由的已编译入口、脚本、样式和字体均实际加载且同源，以及压缩后 CSS 的嵌套主题、主题根、焦点优先级和系统高对比焦点；HTTP 仍由固定 fixture 提供。其他需要导入 Vite 源模块的 UI 场景继续使用默认开发模式。
+
+焦点回归检查真实绘制结果：普通原生控件使用自己的 ring/border；菜单项与选项使用原生背景高亮并检查文本对比度；系统高对比模式使用共享的系统色轮廓。探针仍拒绝透明/低对比轮廓、低透明度和尚未结束的长动画，不要求所有正常组件叠加同一种旧轮廓。
 
 新增 Base UI 子路径时同步 browser config 的 optimizeDeps.include，避免首次扫描故事时重新预打包导致测试页面重载。包和应用均 dedupe React。
 

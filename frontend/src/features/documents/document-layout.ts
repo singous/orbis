@@ -1,7 +1,6 @@
 import { cn } from "@orbis/ui/cn";
 
 
-export const documentActionsMenuClassName = "document-actions-popover min-w-45 w-45 p-1 [&_[role=menuitem]]:min-h-(--ob-control-height-md) [&_[role=menuitem]]:text-sm [&_[role=menuitem]]:leading-5 [&_svg]:size-4.5 [&_svg]:shrink-0";
 const highlightedTreeFocus = "forced-colors:group-focus-within/document-row:focus-visible:outline-[HighlightText]!";
 
 export const documentTreeStyles = {

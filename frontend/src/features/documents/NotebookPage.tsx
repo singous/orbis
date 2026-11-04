@@ -2,7 +2,6 @@
 import { cn } from "@orbis/ui/cn";
 import { pageActionsClassName } from "@/shared/ui/PageContainer";
 import { workbenchStyles } from "@/shared/ui/workbench-styles";
-import { documentActionsMenuClassName } from "./document-layout";
 import { releaseFeatures } from "../../shared/release-features";
 import { reportError } from "../../shared/api/request-feedback";
 import { DraftActions } from "../../shared/ui/DraftActions";
@@ -144,13 +143,13 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
           <header className="notebook-page-header mb-[120px] flex flex-wrap items-start justify-between gap-x-8 gap-y-6 max-[600px]:relative max-[600px]:mb-12 max-[600px]:gap-6">
             <NotebookIdentity notebook={notebook} variant="cover" metadata={treeSummary.state === "loading" ? "正在读取目录…" : treeSummary.state === "error" ? "目录暂不可用" : <><strong>{treeSummary.noteCount}</strong>{" "}<span>篇文档</span></>} />
             <div className={cn(pageActionsClassName, "gap-2.5 pt-0.5 max-[600px]:gap-2 max-[600px]:pt-0")}>
-              {releaseFeatures.documentFavorites && <Button className="min-h-(--ob-control-height-md) rounded-xl border border-border bg-card enabled:hover:bg-(--accent)" size="sm" aria-label={pinned ? "取消常用笔记本" : "设为常用笔记本"} aria-pressed={pinned} title="常用笔记本会显示在左侧菜单和文档首页顶部"  onClick={() => togglePin(collectionId)} disabled={!workspace || !notebook}><Pin aria-hidden="true" />{pinned ? "已设为常用" : "设为常用"}</Button>}
+              {releaseFeatures.documentFavorites && <Button variant="outline" size="sm" aria-label={pinned ? "取消常用笔记本" : "设为常用笔记本"} aria-pressed={pinned} title="常用笔记本会显示在左侧菜单和文档首页顶部"  onClick={() => togglePin(collectionId)} disabled={!workspace || !notebook}><Pin aria-hidden="true" />{pinned ? "已设为常用" : "设为常用"}</Button>}
               {canEdit && notebook && releaseFeatures.documentSharing ? <ShareButton notebookId={collectionId} title={notebook.title} /> : null}
-              {canEdit ? <Button className="min-h-(--ob-control-height-md) rounded-xl border border-border bg-card enabled:hover:bg-(--accent)" size="sm"  onClick={() => void createDocument().catch(reportError)} disabled={createNote.isPending}><Plus aria-hidden="true" size={14} />新建文档</Button> : null}
+              {canEdit ? <Button variant="outline" size="sm"  onClick={() => void createDocument().catch(reportError)} disabled={createNote.isPending}><Plus aria-hidden="true" size={14} />新建文档</Button> : null}
               <input ref={fileInputRef} hidden type="file" accept=".md,text/markdown,text/plain" onChange={handleImport} />
               <DropdownMenu>
-                <DropdownMenuTrigger render={<Button  ref={actionsTriggerRef} type="button" className={"grid size-(--ob-control-height-md) rounded-xl border border-border bg-card max-[600px]:absolute max-[600px]:top-0 max-[600px]:end-0"} aria-label="笔记本操作" title="更多操作" variant="ghost" size="icon"><MoreHorizontal aria-hidden="true" size={18} /></Button>} />
-                <DropdownMenuContent className={cn(documentActionsMenuClassName, "w-[205px] p-[5px]")} align="end" sideOffset={8} aria-label="笔记本操作">
+                <DropdownMenuTrigger render={<Button  ref={actionsTriggerRef} type="button" className="max-[600px]:absolute max-[600px]:top-0 max-[600px]:end-0" aria-label="笔记本操作" title="更多操作" variant="ghost" size="icon"><MoreHorizontal aria-hidden="true" size={18} /></Button>} />
+                <DropdownMenuContent className="document-actions-popover" align="end" sideOffset={8} aria-label="笔记本操作">
                   {canEdit ? <DropdownMenuItem label="编辑笔记本" onClick={() => setEditing(notebook ?? null)}><Settings2 aria-hidden="true" size={16} />编辑笔记本</DropdownMenuItem> : null}
                   {canEdit ? <DropdownMenuItem label="导入 Markdown" disabled={importBusy} onClick={() => fileInputRef.current?.click()}><Import aria-hidden="true" size={16} />导入 Markdown</DropdownMenuItem> : null}
                   <DropdownMenuItem label="导出全部" disabled={!treeSummary.noteCount || exportMarkdown.isPending} onClick={() => void exportAllDocuments().catch(reportError)}><Download aria-hidden="true" size={16} />导出全部</DropdownMenuItem>

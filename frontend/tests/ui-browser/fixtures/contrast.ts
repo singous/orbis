@@ -1,6 +1,6 @@
 import type { Locator } from "@playwright/test";
 
-export function readContrasts(root: Locator, selectors: Array<string | null>, foregroundProperty: "color" | "outlineColor" = "color") {
+export function readContrasts(root: Locator, selectors: Array<string | null>, foregroundProperty: "color" | "outlineColor" | "borderTopColor" = "color") {
   return root.evaluate((element, { selectors, foregroundProperty }) => {
     const canvas = document.createElement("canvas");
     canvas.width = canvas.height = 1;

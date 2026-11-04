@@ -43,7 +43,7 @@ export function DocumentOverviewPage() {
 
   // 保留三个等宽卡片与 260px 可读宽度下限；窄屏改为单列。
   function card(notebook: Notebook, compact = false) {
-    return <NotebookCard key={notebook.id} notebook={notebook} variant={compact ? "compact" : "overview"} noteCount={!compact && countsReady ? counts.get(notebook.id) ?? 0 : undefined} actions={releaseFeatures.documentFavorites && <Tooltip><TooltipTrigger render={<Button size="icon-sm" className={cn("notebook-overview-pin absolute end-2 top-3 text-(--muted-foreground) enabled:hover:bg-muted enabled:hover:text-foreground", isPinned(notebook.id) && "is-pinned bg-muted text-foreground")} aria-label={`${isPinned(notebook.id) ? "取消常用" : "设为常用"}：${notebook.title}`} aria-pressed={isPinned(notebook.id)} onClick={() => togglePin(notebook.id)} variant="ghost"><Pin aria-hidden="true" /></Button>} /><TooltipContent>{isPinned(notebook.id) ? "取消常用" : "设为常用"}</TooltipContent></Tooltip>} />;
+    return <NotebookCard key={notebook.id} notebook={notebook} variant={compact ? "compact" : "overview"} noteCount={!compact && countsReady ? counts.get(notebook.id) ?? 0 : undefined} actions={releaseFeatures.documentFavorites && <Tooltip><TooltipTrigger render={<Button size="icon-sm" className={cn("notebook-overview-pin absolute end-2 top-3", isPinned(notebook.id) && "is-pinned")} aria-label={`${isPinned(notebook.id) ? "取消常用" : "设为常用"}：${notebook.title}`} aria-pressed={isPinned(notebook.id)} onClick={() => togglePin(notebook.id)} variant={isPinned(notebook.id) ? "secondary" : "ghost"}><Pin aria-hidden="true" /></Button>} /><TooltipContent>{isPinned(notebook.id) ? "取消常用" : "设为常用"}</TooltipContent></Tooltip>} />;
   }
   return <DocumentShell>
     <div className="notebook-overview">

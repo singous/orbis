@@ -2,6 +2,7 @@ import { appendFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import { installSession } from "../fixtures/session";
 import { readContrasts } from "../fixtures/contrast";
+import { expectVisibleKeyboardFocus } from "../fixtures/media";
 
 async function mountEditor(page: Page, placement: "inline" | "document", loader = false, scope?: { theme: string; foreground: string; surface: string }) {
   await page.routeWebSocket(url => url.pathname === "/" && url.searchParams.has("token"), () => {});
@@ -71,8 +72,7 @@ for (const theme of ["light", "dark"]) test(`content loader ${theme} retains its
   await editor.focus();
   await page.keyboard.press("Tab");
   await expect(button).toBeFocused();
-  await expect(button).toHaveCSS("outline-style", "solid");
-  expect(await button.evaluate(element => parseFloat(getComputedStyle(element).outlineWidth))).toBeGreaterThanOrEqual(2);
+  await expectVisibleKeyboardFocus(button);
   await page.keyboard.press("Enter");
   await expect(loader).toHaveCount(0);
   await expect(page.getByTestId("loader-receipt")).toHaveText("editor-paragraph");

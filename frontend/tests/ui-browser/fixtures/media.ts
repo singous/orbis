@@ -4,7 +4,7 @@ import { readContrasts } from "./contrast";
 const MAX_REDUCED_MOTION_MS = 1;
 const MAX_FOCUS_COLOR_TRANSITION_MS = 200;
 
-// 应用主题为键盘焦点提供独立轮廓；原生组件自己的 ring/border 样式继续保留。
+// 普通模式检查实际绘制的原生焦点边框或轮廓；系统高对比模式使用共享轮廓。
 export async function expectVisibleKeyboardFocus(target: Locator, indicator: Locator = target) {
   await expect(target).toBeFocused();
   await expect(indicator).toBeInViewport();
@@ -24,15 +24,32 @@ export async function expectVisibleKeyboardFocus(target: Locator, indicator: Loc
       outlineStyle: style.outlineStyle,
       outlineWidth: Number.parseFloat(style.outlineWidth),
       outlineColor: style.outlineColor,
+      focusVisible: element.matches(":focus-visible"),
+      highlightedItem: element.matches('[role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"], [role="option"]'),
+      background: style.backgroundColor,
+      borderStyle: style.borderTopStyle,
+      borderWidth: Number.parseFloat(style.borderTopWidth),
+      borderColor: style.borderTopColor,
     };
   });
   expect(metrics.unobscured).toBe(true);
-  expect(metrics.outlineStyle).not.toBe("none");
-  expect(metrics.outlineWidth).toBeGreaterThan(0);
-  expect(metrics.outlineColor).not.toMatch(/^transparent$|^rgba\([^)]*,\s*0\)$/);
-  const [contrast] = await readContrasts(indicator, [null], "outlineColor");
+  const transparent = (color: string) => /^transparent$|^rgba\([^)]*,\s*0\)$/.test(color);
+  const outline = metrics.outlineStyle !== "none" && metrics.outlineWidth > 0 && !transparent(metrics.outlineColor);
+  if (!outline && metrics.highlightedItem) {
+    expect(metrics.focusVisible).toBe(true);
+    expect(transparent(metrics.background)).toBe(false);
+    const [contrast] = await readContrasts(indicator, [null]);
+    expect(contrast.ratio).toBeGreaterThanOrEqual(4.5);
+    return { ...metrics, indicator: "background", contrast };
+  }
+  if (!outline) {
+    expect(metrics.focusVisible).toBe(true);
+    expect(metrics.borderStyle).not.toBe("none");
+    expect(metrics.borderWidth).toBeGreaterThan(0);
+  }
+  const [contrast] = await readContrasts(indicator, [null], outline ? "outlineColor" : "borderTopColor");
   expect(contrast.ratio).toBeGreaterThanOrEqual(3);
-  return { ...metrics, contrast };
+  return { ...metrics, indicator: outline ? "outline" : "border", contrast };
 }
 
 export async function expectNoContinuingMotion(target: Locator) {

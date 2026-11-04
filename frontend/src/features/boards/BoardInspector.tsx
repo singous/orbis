@@ -156,7 +156,7 @@ export function BoardInspector({
               : (SHAPES.get(e.shape_type)?.name ?? "连接线")
             : "页面设置"}
         </strong>
-        <Button className={"text-(--ob-board-inspector-close-foreground)"} aria-label="关闭属性面板" onClick={onClose} variant="ghost" size="icon">
+        <Button aria-label="关闭属性面板" onClick={onClose} variant="ghost" size="icon">
           <X size={16} />
         </Button>
       </header>

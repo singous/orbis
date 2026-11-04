@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "lockfileSha256": "5fa6a2b3ccb2bff3d52ee7b1cddf75526fbb7a3998e8058d075bb90366ad9d04",
+  "lockfileSha256": "cd02823f4027e6711fec7a4e501d925d486ad147a08c165a0b1fee650f93eca0",
   "classification": "Declared dependency closure: runtime dependencies except explicit Vite/Tailwind/shadcn build roots; fonts, icons, tw-animate-css and shadcn CSS are assets. Peers and optional binaries retain every applicable owner. This is a conservative declared-dependency inventory, not a measurement of tree-shaken emitted code. Build/test sources are not part of the frontend static distribution.",
   "packages": [
     {

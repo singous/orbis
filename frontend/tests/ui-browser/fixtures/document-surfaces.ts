@@ -9,9 +9,9 @@ export const version = { id: versionId, document_id: noteId, source_revision: 2,
 export const nativeContent = { revision: { document_id: noteId, version: 2, title: "产品计划", title_recorded: true, author_id: userId, author_name: "文档作者", restored_from_version: null, created_at_ms: now }, blocks: [{ id: id(9), type: "paragraph", props: {}, content: [{ text: "固定版本正文", marks: [], href: null }], children: [] }] };
 export const dataPage = (items: unknown[]) => ({ items, pagination: { page: 1, page_size: 20, total: items.length } });
 
-export async function mountDocumentSurface(page: Page, mode: "collaboration" | "sharing") {
+export async function mountDocumentSurface(page: Page, mode: "collaboration" | "sharing", title = "产品计划") {
   await page.goto("/__ui");
-  await page.evaluate(async ({ mode, noteId, userId, notebookId }) => {
+  await page.evaluate(async ({ mode, noteId, userId, notebookId, title }) => {
     const source = await (await fetch("/src/main.tsx")).text();
     const reactURL = source.match(/from\s*["']([^"']*\/react\.js[^"']*)["']/)![1];
     const domURL = source.match(/from\s*["']([^"']*react-dom_client\.js[^"']*)["']/)![1];
@@ -25,12 +25,12 @@ export async function mountDocumentSurface(page: Page, mode: "collaboration" | "
     document.body.append(host);
     function Surface() {
       const [open, setOpen] = React.useState(false);
-      return mode === "sharing" ? React.createElement(components.ShareButton, { notebookId, noteId, title: "产品计划" }) : React.createElement(React.Fragment, null,
+      return mode === "sharing" ? React.createElement(components.ShareButton, { notebookId, noteId, title }) : React.createElement(React.Fragment, null,
         React.createElement("button", { type: "button", onClick: () => setOpen(true) }, "打开评论与历史"),
         React.createElement(components.DocumentCollaborationPanel, { noteId, currentUserId: userId, canManage: true, open, onClose: () => setOpen(false), onRestore: async (restore: (version: number) => Promise<unknown>) => { await restore(4); }, onPrepareVersion: async () => 2 }));
     }
     ReactDOM.createRoot(host).render(React.createElement(query.QueryClientProvider, { client: new query.QueryClient({ defaultOptions: { queries: { retry: false } } }) }, React.createElement(Surface)));
-  }, { mode, noteId, userId, notebookId });
+  }, { mode, noteId, userId, notebookId, title });
 }
 
 export async function captureDialogEvidence(page: Page, state: string, theme: string, width: number) {

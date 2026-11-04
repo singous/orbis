@@ -1,7 +1,7 @@
 
 import { emptyPanelClassName } from "@/shared/ui/surface-styles";
 import { cn } from "@orbis/ui/cn";
-import { documentActionsMenuClassName, documentTreeStyles, notebookDirectoryStyles } from "./document-layout";
+import { documentTreeStyles, notebookDirectoryStyles } from "./document-layout";
 import { reportError } from "../../shared/api/request-feedback";
 import {preparePendingNavigation} from "../../shared/navigation/pending-navigation";
 import {newUUID} from "../../shared/ids";
@@ -142,7 +142,7 @@ function DocumentRowActions({ note, reordering, onCreateChild, onRename, onArchi
   return <div className={documentTreeStyles.actions} data-document-row-action data-menu-open={open}>
     <DropdownMenu onOpenChange={setOpen}>
       <DropdownMenuTrigger disabled={reordering} render={<Button  type="button" className={documentTreeStyles.action} aria-label={`文档操作 ${note.title}`} title="更多操作" variant="ghost" size="icon"><MoreVertical aria-hidden="true" size={16} /></Button>} />
-      <DropdownMenuContent align="end" sideOffset={4} className={documentActionsMenuClassName} aria-label={`文档操作 ${note.title}`}>
+      <DropdownMenuContent align="end" sideOffset={4} className="document-actions-popover" aria-label={`文档操作 ${note.title}`}>
         <DropdownMenuItem label="新建子文档" disabled={reordering} onClick={() => onCreateChild(note.id)}><Plus aria-hidden="true" size={16} /><span>新建子文档</span></DropdownMenuItem>
         <DropdownMenuItem label="重命名" disabled={reordering} onClick={() => onRename(note)}><Pencil aria-hidden="true" size={16} /><span>重命名</span></DropdownMenuItem>
         <DropdownMenuItem label="归档" disabled={reordering} variant="destructive" onClick={() => onArchive(note)}><Archive aria-hidden="true" size={16} /><span>归档</span></DropdownMenuItem>

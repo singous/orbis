@@ -78,8 +78,7 @@ export function analyzeUI(sources, exports) {
     const inPackage = file.startsWith("packages/ui/src/");
     if (/packages\/ui\/src\/index\.tsx?$/.test(file)) add(file, "root-barrel", "Use public component subpaths");
     if (file.endsWith(".css")) {
-      const stylesheet = text.replace(/\/\*[\s\S]*?\*\//g, "");
-      for (const name of globalCSSImports(stylesheet)) {
+      for (const name of globalCSSImports(text)) {
         if (name.startsWith("@heroui/")) add(file, "legacy-heroui", name);
         add(file, "css-import", name);
       }
@@ -184,10 +183,11 @@ const globalStyleFiles = {
   motion: "src/styles/motion.css",
   scrollbars: "src/styles/scrollbars.css",
   tokens: "src/styles/brand-tokens.css",
+  accessibility: "packages/ui/src/styles/accessibility.css",
 };
-const globalStyleImports = ["tailwindcss", "@fontsource-variable/inter", "@orbis/ui/styles.css", "./brand-tokens.css", "./motion.css", "./scrollbars.css"];
+const globalStyleImports = ["@orbis/ui/styles.css", "tailwindcss", "@fontsource-variable/inter", "./brand-tokens.css", "./motion.css", "./scrollbars.css"];
 const packageStyleImports = {
-  "packages/ui/src/styles/styles.css": ["./tokens.css", "./utilities.css", "../color-picker/styles.css"],
+  "packages/ui/src/styles/styles.css": ["./tokens.css", "./accessibility.css", "./utilities.css", "../color-picker/styles.css"],
   "packages/ui/src/styles/tokens.css": ["tw-animate-css", "shadcn/tailwind.css", "@fontsource-variable/geist"],
 };
 const globalStyleSources = ["../../packages/ui/src", "not ../../packages/ui/src/**/*.stories.tsx", "not ../../packages/ui/src/**/__tests__/**"];
@@ -196,16 +196,15 @@ const scrollbarNone = ':where([data-scrollbar="none"], [data-scrollbar="none"] *
 const scrollbarDefault = ':where([data-scrollbar="default"], [data-scrollbar="default"] *, .scrollbar-default)';
 const globalStyleRules = {
   globals: [
-    ["", [":root"], ["font-family", "font-size"]],
-    ["", ["*"], ["box-sizing"]],
-    ["", ["body"], ["margin", "min-width", "background", "color", "font-size", "-webkit-font-smoothing", "line-height"]],
-    ["", ['[data-slot="toast-viewport"]'], ["z-index"]],
-    ["", [":where(button, input, textarea, a[href], [tabindex]):focus-visible"], ["outline", "outline-offset"]],
-    ["@media (forced-colors: active)", [":where(button, input, textarea, a[href], [tabindex]):focus-visible"], ["outline-color"]],
-    ["", ["::selection"], ["background"]],
-    ["@layer base", ["*", "::before", "::after", "::backdrop", "::file-selector-button"], ["border-color"]],
-    ["@media (prefers-reduced-motion: reduce)", ["*", "*::before", "*::after"], ["scroll-behavior", "transition-property", "transition-duration", "animation-name", "animation-duration", "animation-iteration-count"]],
-    ["@media (pointer: coarse)", [":is(input, textarea):not(.editor-title)"], ["font-size"]],
+    ["@layer base", ["body"], ["min-width"]],
+    ["@layer utilities", ['[data-slot="toast-viewport"]'], ["z-index"]],
+  ],
+  accessibility: [
+    ["@layer base", ['[data-slot="dialog-content"]'], ["max-height", "overflow-y"]],
+    ["@layer base / @media (forced-colors: active)", [":root", '[data-theme="light"]', '[data-theme="dark"]', ".light", ".dark"], ["--background", "--foreground", "--card", "--card-foreground", "--popover", "--popover-foreground", "--primary", "--primary-foreground", "--secondary", "--secondary-foreground", "--muted", "--muted-foreground", "--accent", "--accent-foreground", "--destructive", "--border", "--input", "--ring"]],
+    ["@layer utilities", [":where(button, input, textarea, a, [tabindex]):focus-visible"], ["outline", "outline-offset"]],
+    ["@layer utilities / @media (forced-colors: active)", [":is(button, input, textarea, a, [tabindex]):focus-visible"], ["outline-style", "outline-color"]],
+    ["@layer utilities / @media (prefers-reduced-motion: reduce)", ["*", "*::before", "*::after"], ["scroll-behavior", "transition-property", "transition-duration", "animation-name", "animation-duration", "animation-iteration-count"]],
   ],
   scrollbars: [
     ["", [":root"], ["--ob-scrollbar-size"]],
@@ -224,7 +223,7 @@ const globalStyleRules = {
     ["@media (forced-colors: active)", [`${scrollbarRoot}::-webkit-scrollbar-thumb`], ["background-color"]],
     ["", ['html:has(.site-reader[data-theme="light"])', 'html:has(.site-reader[data-theme="dark"])'], ["color-scheme", "background-color"]],
     ["", [':is(html, body):has(.site-reader:is([data-theme="light"], [data-theme="dark"]))'], ["--ob-scrollbar-ink"]],
-  ],
+  ].map(([context, selectors, properties]) => [`@layer base${context ? ` / ${context}` : ""}`, selectors, properties]),
 };
 
 const normalizeCSSRule = value => value.trim().replace(/\s+/g, " ").replace(/\s*([(),])\s*/g, "$1");
@@ -275,7 +274,9 @@ export function applyGlobalStylesPolicy(findings, sources) {
   for (const { file, detail } of edges) {
     const target = detail.startsWith(".") ? path.posix.normalize(path.posix.join(path.posix.dirname(file), detail)) : detail.startsWith("@/") ? `src/${detail.slice(2)}` : detail;
     if (!Object.values(globalStyleFiles).includes(target)) continue;
-    const owned = target === globalStyleFiles.globals ? file === entry.file && detail === entry.detail : file === globalStyleFiles.globals && globalStyleImports.includes(detail);
+    const owned = target === globalStyleFiles.globals ? file === entry.file && detail === entry.detail
+      : target === globalStyleFiles.accessibility ? file === "packages/ui/src/styles/styles.css" && detail === "./accessibility.css"
+        : file === globalStyleFiles.globals && globalStyleImports.includes(detail);
     if (!owned) add(file, "global-style-owner", detail);
   }
   for (const [kind, file] of Object.entries(globalStyleFiles)) {
@@ -288,6 +289,7 @@ export function applyGlobalStylesPolicy(findings, sources) {
     }
     if (kind === "globals") {
       const imports = globalCSSImports(stylesheet);
+      if (imports.filter(name => globalStyleImports.includes(name)).join("|") !== globalStyleImports.join("|")) add(file, "global-style-import-order", "UI defaults must precede generated Tailwind utilities");
       for (const detail of new Set([...globalStyleImports, ...imports])) {
         const count = imports.filter(name => name === detail).length;
         if (!globalStyleImports.includes(detail) || count !== 1) add(file, "global-style-import", `${detail}: expected ${globalStyleImports.includes(detail) ? 1 : 0}, found ${count}`);
@@ -310,16 +312,17 @@ export function applyGlobalStylesPolicy(findings, sources) {
       for (const rule of node.rules) {
         const header = normalizeCSSRule(rule.header);
         if (header.startsWith("@")) {
-          const wrapper = context === "" && ((globalStyleRules[kind]?.some(([allowed]) => normalizeCSSRule(allowed) === header)) || (kind === "motion" && header === "@theme") || (kind === "tokens" && header === "@theme inline"));
+          const nextContext = context ? `${context} / ${header}` : header;
+          const wrapper = globalStyleRules[kind]?.some(([allowed]) => normalizeCSSRule(allowed) === nextContext || normalizeCSSRule(allowed).startsWith(`${nextContext} / `)) || (context === "" && ((kind === "motion" && header === "@theme") || (kind === "tokens" && header === "@theme inline")));
           const keyframes = kind === "motion" && context === "@theme" && /^@keyframes [\w-]+$/.test(header);
           if (!wrapper && !keyframes) { add(file, "global-style-rule", rule.header); continue; }
           for (const declaration of rule.declarations) {
             const property = declaration.slice(0, declaration.indexOf(":")).trim();
             const name = property.replace(/^--color-/, "");
-            const allowed = kind === "motion" && header === "@theme" ? /^--animate-ob-[\w-]+$/.test(property) : kind === "tokens" && header === "@theme inline" && (/^--(?:color|shadow)-ob-[\w-]+$/.test(property) || (property.startsWith("--color-") && (standardThemeTokens.has(name) || applicationRoleTokens.has(name))));
+            const allowed = kind === "motion" && header === "@theme" ? /^--animate-ob-[\w-]+$/.test(property) : kind === "tokens" && header === "@theme inline" && (/^--(?:color|shadow)-ob-[\w-]+$/.test(property) || (property.startsWith("--color-") && applicationRoleTokens.has(name)));
             if (!allowed) add(file, "global-style-declaration", declaration);
           }
-          visit(rule, header);
+          visit(rule, keyframes ? header : nextContext);
           continue;
         }
         for (const selector of splitCSSSelectors(rule.header)) {
@@ -328,7 +331,7 @@ export function applyGlobalStylesPolicy(findings, sources) {
           if (!allowed && !frame && kind !== "tokens") add(file, "global-style-selector", selector);
           for (const declaration of rule.declarations) {
             const property = declaration.slice(0, declaration.indexOf(":")).trim();
-            if (kind === "tokens" ? !(/^--ob-[\w-]+$/.test(property) || standardThemeTokens.has(property.slice(2)) || applicationRoleTokens.has(property.slice(2))) : frame ? !["opacity", "transform"].includes(property) : allowed && !allowed.includes(property)) add(file, "global-style-property", `${selector}: ${property}`);
+            if (kind === "tokens" ? !(/^--ob-[\w-]+$/.test(property) || applicationRoleTokens.has(property.slice(2))) : frame ? !["opacity", "transform"].includes(property) : allowed && !allowed.includes(property)) add(file, "global-style-property", `${selector}: ${property}`);
           }
         }
         if (rule.rules.length) { add(file, "global-style-rule", `${rule.header}: nested rules are not admitted`); }

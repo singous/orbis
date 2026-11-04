@@ -94,7 +94,7 @@ const DocumentComments = lazy(() =>
 );
 const boardToolActionClassName = "board-toolbar-action shrink-0";
 const boardHeaderActionClassName = "board-header-action shrink-0";
-const boardFloatingToolbarClassName = "absolute z-16 flex h-[34px] items-center gap-0.5 rounded-[7px] border border-(--ob-board-border) bg-card px-1 py-0.5 text-(--ob-board-zoom-foreground) [box-shadow:var(--shadow-sm)] pointer-coarse:h-[calc(var(--ob-control-height-touch)+6px)]";
+const boardFloatingToolbarClassName = "absolute z-16 flex h-[34px] items-center gap-0.5 rounded-[7px] border border-(--ob-board-border) bg-card px-1 py-0.5 [box-shadow:var(--shadow-sm)] pointer-coarse:h-[calc(var(--ob-control-height-touch)+6px)]";
 const boardPageBarClassName = "row-start-2 z-16 mb-3 flex h-[34px] items-center gap-0.5 rounded-[7px] border border-(--ob-board-border) bg-card px-1 py-0.5 [box-shadow:var(--shadow-sm)] pointer-coarse:h-[calc(var(--ob-control-height-touch)+6px)]";
 const boardStarterActionClassName = "board-starter-action pointer-events-auto h-auto min-w-0 justify-start gap-3 p-3";
 const boardSeparatorClassName = "board-separator my-1 block h-px w-5 shrink-0 bg-(--ob-board-border)";
@@ -340,7 +340,7 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
   ) : null;
   const saveState = (
     <>
-    <span className={cn("board-save-state inline-flex shrink-0 items-center gap-1 text-[11px] font-normal", `is-${state.status}`, state.status === "conflict" || state.status === "error" ? "text-(--ob-board-save-danger)" : state.status === "save_failed" ? "text-(--ob-board-save-warning)" : "text-(--muted-foreground)", embed ? "rounded-[5px] bg-card px-[7px] py-1" : "[@media(max-width:760px)]:hidden")} role="status">
+    <span className={cn("board-save-state inline-flex shrink-0 items-center gap-1 text-[11px] font-normal", `is-${state.status}`, state.status === "conflict" || state.status === "error" ? "text-destructive" : state.status === "save_failed" ? "text-status-warning-foreground" : "text-(--muted-foreground)", embed ? "rounded-[5px] bg-card px-[7px] py-1" : "[@media(max-width:760px)]:hidden")} role="status">
       {state.status === "saved" ? <Check size={13} /> : null}
       {STATUS[state.status]}
     </span>
@@ -492,7 +492,7 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
       >
           <div className={cn(boardPageBarClassName, "board-page-list-container col-start-1 mr-1 ml-3 min-w-0", inspector || comments ? "max-w-[calc(100cqw-536px)] [@container(640px<width<=900px)]:max-w-[calc(100cqw-468px)]" : "max-w-[calc(100cqw-168px)]", "[@container(max-width:640px)]:max-w-[calc(100cqw-100px)]", embed?.readOnly && "hidden")}>
             <TabsList className="gap-[3px] p-0" aria-label="画板页面" activateOnFocus={false}>
-              {board.pages.filter(p => !embed || p.id === state.pageID).map(p => <TabsTrigger className="h-7 min-h-7 px-2.5 py-0 text-[11px] leading-5 whitespace-nowrap pointer-coarse:min-h-(--ob-control-height-touch) pointer-coarse:min-w-(--ob-control-height-touch)" value={p.id} key={p.id}>{p.name}</TabsTrigger>)}
+              {board.pages.filter(p => !embed || p.id === state.pageID).map(p => <TabsTrigger className="whitespace-nowrap pointer-coarse:min-h-(--ob-control-height-touch) pointer-coarse:min-w-(--ob-control-height-touch)" value={p.id} key={p.id}>{p.name}</TabsTrigger>)}
             </TabsList>
           </div>
         <TabsContent key={state.pageID} value={state.pageID} className="board-main absolute inset-0 min-h-0 min-w-0 p-0">
@@ -648,7 +648,7 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
             />
             <Toolbar className={cn(boardFloatingToolbarClassName, "board-history-controls left-3", embed ? "bottom-[38px]" : "top-3", embed?.readOnly && "hidden")} aria-label="画板历史操作">
               <ToolbarButton focusableWhenDisabled={false} disabled={!canEdit || !state.canUndo} render={<Button
-                className={"text-(--ob-board-history-foreground)"}
+
                 aria-label="撤销画板操作"
 
                 onClick={() => void session.undo().catch(fail)} variant="ghost" size="icon"
@@ -656,14 +656,14 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
                 <Undo2 size={17} />
               </Button>} />
               <ToolbarButton focusableWhenDisabled={false} disabled={!canEdit || !state.canRedo} render={<Button
-                className={"text-(--ob-board-history-foreground)"}
+
                 aria-label="重做画板操作"
 
                 onClick={() => void session.redo().catch(fail)} variant="ghost" size="icon"
               >
                 <Redo2 size={17} />
               </Button>} />
-              {releaseFeatures.documentCollaboration && <ToolbarButton focusableWhenDisabled={false} render={<Button className={"text-(--ob-board-history-foreground)"} aria-label="查看画板历史" onClick={openHistory} variant="ghost" size="icon">
+              {releaseFeatures.documentCollaboration && <ToolbarButton focusableWhenDisabled={false} render={<Button aria-label="查看画板历史" onClick={openHistory} variant="ghost" size="icon">
                 <History size={16} />
               </Button>} />}
             </Toolbar>

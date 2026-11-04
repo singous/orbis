@@ -1,49 +1,52 @@
-/* One scrollbar skin for document, nested and portalled scroll regions. */
-:root { --ob-scrollbar-size: 8px; }
-:where(html, body, body *) {
-  --ob-scrollbar-ink: var(--foreground);
-  --ob-scrollbar-thumb: color-mix(in oklab, var(--ob-scrollbar-ink) 18%, transparent);
-  scrollbar-width: thin;
-  scrollbar-color: var(--ob-scrollbar-thumb) transparent;
-}
-/* Keep inherited tokens stable on focus/hover. The thumb itself provides the
-   hover/drag feedback below without invalidating a document's descendants. */
-
-/* Chromium/WebKit needs auto standard properties to honor pseudo-element styling. */
-@supports selector(::-webkit-scrollbar) {
-  :where(html, body, body *) { scrollbar-width: auto; scrollbar-color: auto; }
-  :where(html, body, body *)::-webkit-scrollbar { width: var(--ob-scrollbar-size); height: var(--ob-scrollbar-size); }
-  :where(html, body, body *)::-webkit-scrollbar-track,
-  :where(html, body, body *)::-webkit-scrollbar-corner { background: transparent; }
-  :where(html, body, body *)::-webkit-scrollbar-thumb {
-    min-height: 32px;
-    min-width: 32px;
-    border: 2px solid transparent;
-    border-radius: 999px;
-    background: var(--ob-scrollbar-thumb);
-    background-clip: padding-box;
+@layer base {
+  /* One scrollbar skin for document, nested and portalled scroll regions. */
+  :root { --ob-scrollbar-size: 8px; }
+  :where(html, body, body *) {
+    --ob-scrollbar-ink: var(--foreground);
+    --ob-scrollbar-thumb: color-mix(in oklab, var(--ob-scrollbar-ink) 18%, transparent);
+    scrollbar-width: thin;
+    scrollbar-color: var(--ob-scrollbar-thumb) transparent;
   }
-  :where(html, body, body *)::-webkit-scrollbar-thumb:hover { background-color: color-mix(in oklab, var(--ob-scrollbar-ink) 40%, transparent); }
-  :where(html, body, body *)::-webkit-scrollbar-thumb:active { background-color: color-mix(in oklab, var(--ob-scrollbar-ink) 55%, transparent); }
-  :where(html, body, body *)::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
-}
+  /* Keep inherited tokens stable on focus/hover. The thumb itself provides the
+     hover/drag feedback below without invalidating a document's descendants. */
 
-/* Honor explicit component opt-outs and operating-system scrollbar modes. */
-:where([data-scrollbar="none"], [data-scrollbar="none"] *, .scrollbar-none) { scrollbar-width: none; }
-:where([data-scrollbar="none"], [data-scrollbar="none"] *, .scrollbar-none)::-webkit-scrollbar { display: none; }
-:where([data-scrollbar="default"], [data-scrollbar="default"] *, .scrollbar-default) { scrollbar-width: auto; scrollbar-color: auto; }
-:where([data-scrollbar="default"], [data-scrollbar="default"] *, .scrollbar-default)::-webkit-scrollbar,
-:where([data-scrollbar="default"], [data-scrollbar="default"] *, .scrollbar-default)::-webkit-scrollbar-thumb,
-:where([data-scrollbar="default"], [data-scrollbar="default"] *, .scrollbar-default)::-webkit-scrollbar-track,
-:where([data-scrollbar="default"], [data-scrollbar="default"] *, .scrollbar-default)::-webkit-scrollbar-button { all: revert; }
-@media (forced-colors: active) {
-  :where(html, body, body *) { scrollbar-width: auto; scrollbar-color: auto; }
-  :where(html, body, body *)::-webkit-scrollbar-thumb { background-color: CanvasText; }
-}
+  /* Chromium/WebKit needs auto standard properties to honor pseudo-element styling. */
+  @supports selector(::-webkit-scrollbar) {
+    :where(html, body, body *) { scrollbar-width: auto; scrollbar-color: auto; }
+    :where(html, body, body *)::-webkit-scrollbar { width: var(--ob-scrollbar-size); height: var(--ob-scrollbar-size); }
+    :where(html, body, body *)::-webkit-scrollbar-track,
+    :where(html, body, body *)::-webkit-scrollbar-corner { background: transparent; }
+    :where(html, body, body *)::-webkit-scrollbar-thumb {
+      min-height: 32px;
+      min-width: 32px;
+      border: 2px solid transparent;
+      border-radius: 999px;
+      background: var(--ob-scrollbar-thumb);
+      background-clip: padding-box;
+    }
+    :where(html, body, body *)::-webkit-scrollbar-thumb:hover { background-color: color-mix(in oklab, var(--ob-scrollbar-ink) 40%, transparent); }
+    :where(html, body, body *)::-webkit-scrollbar-thumb:active { background-color: color-mix(in oklab, var(--ob-scrollbar-ink) 55%, transparent); }
+    :where(html, body, body *)::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+  }
 
-/* Public readers can select a theme independently of the workspace document. */
-html:has(.site-reader[data-theme="light"]) { color-scheme: light; background-color: Canvas; }
-html:has(.site-reader[data-theme="dark"]) { color-scheme: dark; background-color: Canvas; }
-:is(html, body):has(.site-reader:is([data-theme="light"], [data-theme="dark"])) {
-  --ob-scrollbar-ink: CanvasText;
+  /* Honor explicit component opt-outs and operating-system scrollbar modes. */
+  :where([data-scrollbar="none"], [data-scrollbar="none"] *, .scrollbar-none) { scrollbar-width: none; }
+  :where([data-scrollbar="none"], [data-scrollbar="none"] *, .scrollbar-none)::-webkit-scrollbar { display: none; }
+  :where([data-scrollbar="default"], [data-scrollbar="default"] *, .scrollbar-default) { scrollbar-width: auto; scrollbar-color: auto; }
+  :where([data-scrollbar="default"], [data-scrollbar="default"] *, .scrollbar-default)::-webkit-scrollbar,
+  :where([data-scrollbar="default"], [data-scrollbar="default"] *, .scrollbar-default)::-webkit-scrollbar-thumb,
+  :where([data-scrollbar="default"], [data-scrollbar="default"] *, .scrollbar-default)::-webkit-scrollbar-track,
+  :where([data-scrollbar="default"], [data-scrollbar="default"] *, .scrollbar-default)::-webkit-scrollbar-button { all: revert; }
+  @media (forced-colors: active) {
+    :where(html, body, body *) { scrollbar-width: auto; scrollbar-color: auto; }
+    :where(html, body, body *)::-webkit-scrollbar-thumb { background-color: CanvasText; }
+  }
+
+  /* Public readers can select a theme independently of the workspace document. */
+  html:has(.site-reader[data-theme="light"]) { color-scheme: light; background-color: Canvas; }
+  html:has(.site-reader[data-theme="dark"]) { color-scheme: dark; background-color: Canvas; }
+  :is(html, body):has(.site-reader:is([data-theme="light"], [data-theme="dark"])) {
+    --ob-scrollbar-ink: CanvasText;
+  }
+
 }

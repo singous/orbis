@@ -1,6 +1,5 @@
 import { editorLoadMoreClassName } from "./editor-control-styles";
 
-import { documentActionsMenuClassName } from "@/features/documents/document-layout";
 import { pageColumnClassName } from "../../../shared/ui/PageContainer";
 import { documentBreadcrumbClassName, documentHeaderActionsClassName, documentSaveStateClassName, documentHeaderDividerClassName, documentCommentTriggerClassName, documentSaveSpinnerClassName, editorCanvasClassName, editorTitleClassName } from "./document-chrome";
 import { releaseFeatures } from "../../../shared/release-features";
@@ -796,7 +795,7 @@ export function LegacyDocumentEditorPage() {
       {releaseFeatures.documentCollaboration && <Button ref={collaborationTriggerRef} type="button" className={documentCommentTriggerClassName} aria-label="评论与历史" aria-haspopup="dialog" aria-expanded={collaborationOpen} disabled={!draft || archiving} onClick={() => { setCollaborationMounted(true); setCollaborationSession(value => value + 1); setCollaborationOpen(true); }} variant="ghost"><MessageSquare aria-hidden="true" size={16} /><span>评论</span></Button>}
       {canEdit ? <DropdownMenu>
         <DropdownMenuTrigger disabled={!draft || editorBusy} render={<Button  type="button"  aria-label="更多文档操作" variant="ghost" size="icon"><MoreHorizontal aria-hidden="true" size={18} /></Button>} />
-        <DropdownMenuContent align="end" className={documentActionsMenuClassName} sideOffset={6} aria-label="文档操作">
+        <DropdownMenuContent align="end" className="document-actions-popover" sideOffset={6} aria-label="文档操作">
           <DropdownMenuItem label="归档文档" disabled={!draft || editorBusy} onClick={() => { void handleArchive(); }}><Archive aria-hidden="true" size={16} /><span>归档文档</span></DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu> : null}

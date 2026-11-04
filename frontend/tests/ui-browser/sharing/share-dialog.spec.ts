@@ -77,3 +77,32 @@ for (const theme of ["light", "dark"]) for (const width of [1280, 390]) test.des
     await expect(page.getByRole("button", { name: "分享", exact: true })).toBeFocused();
   });
 });
+
+for (const theme of ["light", "dark"]) test(`short viewport keeps the long share dialog scrollable and dismissible in ${theme}`, async ({ page }) => {
+  await installDocumentSurfaceSession(page, theme, 390);
+  await page.setViewportSize({ width: 390, height: 560 });
+  const shares = Array.from({ length: 20 }, (_, index) => ({
+    id: id(100 + index), collection_id: notebookId, root_document_id: noteId, version: 2,
+    created_at_ms: now, revoked_at_ms: null, expires_at_ms: null, path: `/share/test-link-${index}`,
+  }));
+  await page.route("**/api/v1/**", route => route.fulfill({ json: { code: "OK", message: "", request_id: "short-sharing-ui", data: dataPage(shares) } }));
+  await mountDocumentSurface(page, "sharing", "用于验收短屏幕分享管理的较长文档名称".repeat(3));
+  const trigger = page.getByRole("button", { name: "分享", exact: true });
+  await trigger.click();
+  const dialog = page.getByRole("dialog", { name: "分享在线文档" });
+  await expect(dialog.getByRole("button", { name: "复制链接（已有分享）" })).toHaveCount(20);
+  await expect(dialog).toHaveCSS("opacity", "1");
+  const box = (await dialog.boundingBox())!;
+  expect(box.y).toBeGreaterThanOrEqual(15);
+  expect(box.y + box.height).toBeLessThanOrEqual(545);
+  expect(await dialog.evaluate(element => {
+    element.scrollTop = element.scrollHeight;
+    return element.scrollTop;
+  })).toBeGreaterThan(0);
+  await dialog.evaluate(element => { element.scrollTop = 0; });
+  const close = dialog.getByRole("button", { name: "关闭", exact: true });
+  await expect(close).toBeInViewport();
+  await close.click();
+  await expect(dialog).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+});

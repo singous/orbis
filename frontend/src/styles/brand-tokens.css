@@ -6,12 +6,9 @@
   --ob-control-height-touch: calc(var(--spacing) * 11);
   --ob-motion-feedback: 100ms;
   --ob-motion-popover: 100ms;
-  --ob-motion-dialog: 150ms;
   --ob-ease-out: var(--ease-out);
   --ob-z-dialog: 50;
   --ob-z-popover: 50;
-  --ob-z-tooltip: 50;
-  --ob-z-toast: 50;
 }
 
 /* 品牌插画区固定为明亮色板，独立于表单的浅/深主题。 */
@@ -41,10 +38,7 @@
 :root, .light, .default, [data-theme="light"], [data-theme="default"] {
   --ob-icon-cyan: #0891b2;
   --ob-icon-mint: #059669;
-  --ob-icon-orange: #ea580c;
   --ob-icon-blue: #2563eb;
-  --ob-icon-indigo: #4f46e5;
-  --ob-icon-teal: #0d9488;
   --ob-icon-violet: #7c3aed;
   --ob-icon-rose: #db2777;
   --ob-icon-amber: #b97705;
@@ -53,24 +47,18 @@
 .dark, [data-theme="dark"] {
   --ob-icon-cyan: #67e8f9;
   --ob-icon-mint: #6ee7b7;
-  --ob-icon-orange: #fdba74;
   --ob-icon-blue: #93b4ff;
-  --ob-icon-indigo: #b4b4ff;
-  --ob-icon-teal: #5eead4;
   --ob-icon-violet: #c4b5fd;
   --ob-icon-rose: #f9a8d4;
   --ob-icon-amber: #fcd34d;
   --ob-icon-slate: #a8b7cc;
 }
 
-
-
 /* 阅读器的品牌混色锚点与浮层材料由自己的主题边界拥有。 */
 .site-reader {
   --ob-reader-accent-anchor: #0c3523;
   --ob-reader-accent-soft-anchor: #fff;
   --ob-reader-subtle-shadow: 0 1px 2px #00000008;
-  --ob-reader-search-scrim: #07110b99;
   --ob-reader-drawer-shadow: 20px 0 60px #0002;
   --ob-reader-drawer-scrim: #0007;
 }
@@ -86,15 +74,7 @@
 }
 
 .board-preview-tools { --ob-board-preview-controls-shadow: 0 3px 12px #0000000a; }
-.board-inspector-icon {
-  --ob-board-inspector-icon-background: #8754f7;
-  --ob-board-inspector-icon-foreground: #fff;
-  --ob-board-inspector-icon-shadow: 0 2px 4px #7643df24;
-}
 .board-shell {
-  --ob-board-toolbar-foreground: #788398;
-  --ob-board-history-foreground: #8893a7;
-  --ob-board-zoom-foreground: #8a95a8;
   --ob-board-hint-border: #e9edf3;
   --ob-board-loading-foreground: #8b97aa;
   --ob-board-minimap-shadow: 0 2px 6px #24334b08;
@@ -108,28 +88,18 @@
   --ob-board-renderer-selection: #2563eb;
   --ob-board-minimap-shape: #d9dfe7;
 }
-.board-header-actions {
-  --ob-board-header-action-shadow: 0 1px 2px #18263b04;
-  --ob-board-header-primary-shadow: 0 1px 3px #2458ff20;
-}
 .board-shell, .board-header-actions { --ob-board-border: var(--border); }
 .workspace-shell :is(.board-shell, .board-header-actions) { --ob-board-border: var(--border); }
 .board-library {
   --ob-board-library-icon-preview: #475569;
-  --ob-board-library-shape-hover-border: #e8edf5;
   --ob-board-library-footer-border: #edf0f4;
-  --ob-board-library-template-border: #e8edf4;
-  --ob-board-library-template-hover-border: #9fb0f7;
   --ob-board-library-icon-loading-background: #f3f5f8;
-  --ob-board-library-close-foreground: #8a94a6;
 }
-.board-inspector { --ob-board-inspector-close-foreground: #8792a5; }
 .orbis-tiptap { --ob-editor-border: var(--border); }
 .workspace-shell .orbis-tiptap { --ob-editor-border: var(--border); }
 .orbis-tiptap-toolbar { --ob-editor-toolbar-shadow: 0 3px 14px #0000000a; }
 
 :root {
-  --ob-icon-oncolor: #fff;
   --ob-shadow-table-menu: 0 8px 24px #0001;
   --ob-shadow-table-picker: 0 6px 20px #0001;
   --ob-shadow-table-card: 0 1px 2px #00000005;
@@ -137,8 +107,6 @@
 }
 :root, .light, .default, [data-theme="light"], [data-theme="default"] {
   --ob-board-hint-foreground: var(--muted-foreground);
-  --ob-board-save-danger: #c03939;
-  --ob-board-save-warning: var(--status-warning-foreground);
   --ob-sheet-toolbar-bg: #f4f4f4;
   --ob-sheet-chrome-border: #dedede;
   --ob-sheet-workspace-chrome-border: #dedede;
@@ -155,8 +123,6 @@
 }
 .dark, [data-theme="dark"] {
   --ob-board-hint-foreground: #8995a8;
-  --ob-board-save-danger: var(--destructive);
-  --ob-board-save-warning: var(--status-warning-foreground);
   --ob-sheet-toolbar-bg: var(--muted);
   --ob-sheet-chrome-border: var(--border);
   --ob-sheet-workspace-chrome-border: var(--border);

@@ -142,17 +142,17 @@ export function SheetForms({
   return (
     <div className="sheet-form-workspace sheet-data-theme flex min-h-0 flex-1 flex-col">
       <div className="sheet-form-toolbar flex min-h-14 items-center gap-3 border-b border-border px-5 py-2.5 [@media(max-width:760px)]:flex-wrap [@media(max-width:760px)]:gap-2 [@media(max-width:760px)]:px-3">
-        <div className="sheet-segment flex gap-[3px] rounded-[10px] bg-muted p-[3px]">
+        <div className="sheet-segment flex gap-1">
           <Button
-            className={cn(sheetActionClassName, "rounded-[7px] [&.sheet-action]:text-[12px] aria-pressed:bg-(--card) aria-pressed:text-foreground aria-pressed:[box-shadow:var(--shadow-xs)]")}
+            className={sheetActionClassName}
             size="sm"
             aria-pressed={!preview}
-            onClick={() => setPreview(false)} variant="ghost"
+            onClick={() => setPreview(false)} variant={preview ? "ghost" : "secondary"}
           >
             编辑表单
           </Button>
           <Button
-            className={cn(sheetActionClassName, "rounded-[7px] [&.sheet-action]:text-[12px] aria-pressed:bg-(--card) aria-pressed:text-foreground aria-pressed:[box-shadow:var(--shadow-xs)]")}
+            className={sheetActionClassName}
             size="sm"
             aria-pressed={preview}
             onClick={() => {
@@ -161,7 +161,7 @@ export function SheetForms({
                   .then(() => setPreview(true))
                   .catch(() => {});
               else setPreview(true);
-            }} variant="ghost"
+            }} variant={preview ? "secondary" : "ghost"}
           >
             预览表单
           </Button>

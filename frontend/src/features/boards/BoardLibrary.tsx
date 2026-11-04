@@ -87,7 +87,7 @@ export function BoardLibrary(props: Props) {
     <aside ref={library} className={boardPanelStyles.library} aria-label="画板素材">
       <header className={boardPanelStyles.libraryHeader}>
         <strong className="font-semibold">素材库</strong>
-        <Button className={"text-(--ob-board-library-close-foreground)"} aria-label="收起素材库" onClick={props.onClose} variant="ghost" size="icon">
+        <Button aria-label="收起素材库" onClick={props.onClose} variant="ghost" size="icon">
           <X size={16} />
         </Button>
       </header>
@@ -157,7 +157,7 @@ export function BoardLibrary(props: Props) {
                   className={boardPanelStyles.templateChoice}
                   key={template.id}
                   disabled={props.readOnly}
-                  onClick={() => props.onTemplate(template)} variant="ghost"
+                  onClick={() => props.onTemplate(template)} variant="outline"
                 >
                   <div className={cn(boardPanelStyles.templateArt, "is-" + template.category)}>
                     <TemplatePreview template={template} />

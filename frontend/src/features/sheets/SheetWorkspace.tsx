@@ -1,6 +1,5 @@
 import { cn } from "@orbis/ui/cn";
 import { sheetActionClassName, sheetWorkspaceClassName, sheetTabClassName, sheetStatusBarClassName } from "./sheet-chrome";
-import { documentActionsMenuClassName } from "@/features/documents/document-layout";
 import { documentBreadcrumbClassName, documentHeaderActionsClassName, documentHeaderDividerClassName, documentCommentTriggerClassName } from "../documents/editor/document-chrome";
 import { releaseFeatures } from "../../shared/release-features";
 import { reportError } from "../../shared/api/request-feedback";
@@ -399,7 +398,7 @@ export function SheetWorkspace({
         <DropdownMenuTrigger render={<Button className={cn(sheetActionClassName)} aria-label="更多文档操作" variant="ghost" size="icon">
           <MoreHorizontal size={18} />
         </Button>} />
-        <DropdownMenuContent align="end" className={documentActionsMenuClassName} aria-label="文档操作">
+        <DropdownMenuContent align="end" className="document-actions-popover" aria-label="文档操作">
           <DropdownMenuItem label="复制链接" onClick={() => { void navigator.clipboard.writeText(location.href).catch(fail); }}>
             <Copy size={15} /><span>复制链接</span>
           </DropdownMenuItem>

@@ -1,6 +1,6 @@
+@import "@orbis/ui/styles.css";
 @import "tailwindcss";
 @import "@fontsource-variable/inter";
-@import "@orbis/ui/styles.css";
 @import "./brand-tokens.css";
 @import "./motion.css";
 @import "./scrollbars.css";
@@ -9,20 +9,11 @@
 @source not "../../packages/ui/src/**/*.stories.tsx";
 @source not "../../packages/ui/src/**/__tests__/**";
 
-body { min-width: 320px; }
+@layer base {
+  body { min-width: 320px; }
+}
 
 /* 操作失败反馈需出现在仍打开的业务弹窗上方。 */
-[data-slot="toast-viewport"] { z-index: 60; }
-
-:where(button, input, textarea, a[href], [tabindex]):focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-
-@media (forced-colors: active) {
-  :where(button, input, textarea, a[href], [tabindex]):focus-visible { outline-color: Highlight; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { scroll-behavior: auto !important; transition-property: none !important; transition-duration: 0.01ms !important; animation-name: none !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+@layer utilities {
+  [data-slot="toast-viewport"] { z-index: 60; }
 }

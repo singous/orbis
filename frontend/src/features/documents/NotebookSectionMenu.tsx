@@ -136,7 +136,7 @@ function NotebookCreateAction({ notebookId }: { notebookId: string }) {
   const creating = createNote.isPending || creatingTable || creatingBoard;
   return canMutateWorkspaceContent(workspace) ? (
     <DropdownMenu>
-      <DropdownMenuTrigger disabled={creating} render={<Button  type="button" className="notebook-menu-create grid size-(--ob-control-height-sm) shrink-0 place-items-center rounded-xl border border-border bg-card text-foreground" aria-label="创建内容" title="创建内容" variant="ghost" size="icon"><Plus aria-hidden="true" size={18} /></Button>} />
+      <DropdownMenuTrigger disabled={creating} render={<Button  type="button" className="notebook-menu-create shrink-0" aria-label="创建内容" title="创建内容" variant="ghost" size="icon-sm"><Plus aria-hidden="true" size={18} /></Button>} />
       <DropdownMenuContent align="start" sideOffset={6} className="notebook-create-popover w-45 p-1 [&_[role=menuitem]]:min-h-(--ob-control-height-lg) [&_[role=menuitem]]:gap-3 [&_svg]:size-4.5 [&_svg]:shrink-0" aria-label="创建内容">
         <DropdownMenuItem label="随手记" onClick={() => navigate("/documents/quick-notes")}><StickyNote aria-hidden="true" size={16} className="notebook-create-quick-note text-(--ob-icon-mint)" /><span>随手记</span></DropdownMenuItem>
         <DropdownMenuItem label="文档" disabled={!tree.isSuccess} onClick={() => { void createDocument(); }}><FilePlus2 aria-hidden="true" size={16} className="notebook-create-document text-(--ob-icon-blue)" /><span>文档</span></DropdownMenuItem>
