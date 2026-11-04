@@ -8,6 +8,7 @@ import { iconImage } from "./icons";
 import type { KonvaEventObject } from "konva/lib/Node";
 import { DEFAULT_STYLE, SHAPES, type Element, type Point } from "./model";
 import { boardElementStyle } from "./board-appearance";
+import type { BoardCanvasChrome } from "./canvas-appearance";
 import {
   CANVAS_FONT,
   MEMBER_HEADER_HEIGHT,
@@ -45,6 +46,7 @@ function drawNode(
   element: Element,
   elements: ReadonlyMap<string, Element>,
   detailed: boolean,
+  chrome: BoardCanvasChrome,
   resolveImage?: (id: string) => Promise<HTMLCanvasElement>,
   canvasTextColor = DEFAULT_STYLE.text_color,
 ): Konva.Group {
@@ -169,7 +171,7 @@ function drawNode(
       new Konva.Rect({
         width: g.width,
         height: g.height,
-        fill: primitive === "image" ? "#e2e8f0" : "transparent",
+        fill: primitive === "image" ? chrome.imagePlaceholder : "transparent",
         stroke: primitive === "image" ? s.stroke : undefined,
       }),
     );
@@ -200,7 +202,7 @@ function drawNode(
               x: 8,
               y: 8,
               fontSize: 12,
-              fill: "#64748b",
+              fill: chrome.imageError,
               listening: false,
             }),
           );
@@ -336,6 +338,7 @@ export class BoardRenderer {
   constructor(
     container: HTMLDivElement,
     events: CanvasEvents,
+    private chrome: BoardCanvasChrome,
     private resolveImage?: (id: string) => Promise<HTMLCanvasElement>,
   ) {
     this.stage = new Konva.Stage({
@@ -469,6 +472,15 @@ export class BoardRenderer {
     if (color === this.canvasTextColor) return;
     this.canvasTextColor = color;
     for (const id of this.nodes.keys()) this.invalidated.add(id);
+    this.schedule();
+  }
+  setCanvasChrome(chrome: BoardCanvasChrome) {
+    const imageChanged = chrome.imagePlaceholder !== this.chrome.imagePlaceholder || chrome.imageError !== this.chrome.imageError;
+    if (!imageChanged && chrome.selection === this.chrome.selection) return;
+    this.chrome = chrome;
+    if (imageChanged) for (const [id, entry] of this.nodes) {
+      if (SHAPES.get(entry.element.shape_type)?.primitive === "image") this.invalidated.add(id);
+    }
     this.schedule();
   }
   setPreview(elements: Element[]) {
@@ -689,7 +701,7 @@ export class BoardRenderer {
         this.invalidated.has(element.id)
       ) {
         cached?.node.destroy();
-        const node = drawNode(element, scene, detailed, this.resolveImage, this.canvasTextColor);
+        const node = drawNode(element, scene, detailed, this.chrome, this.resolveImage, this.canvasTextColor);
         this.world.add(node);
         cached = { node, element, detailed };
         this.nodes.set(element.id, cached);
@@ -706,7 +718,7 @@ export class BoardRenderer {
       this.adornments.add(
         new Konva.Rect({
           ...bounds,
-          stroke: "#2563eb",
+          stroke: this.chrome.selection,
           strokeWidth: 1 / zoom,
           dash: [4 / zoom, 3 / zoom],
         }),

@@ -1,3 +1,4 @@
+import { tableEmptyClassName } from "./table-chrome";
 import { useMemo, useRef, type KeyboardEvent } from "react";
 import { tableFeatures, useTable } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -133,7 +134,7 @@ export function TableGrid({
   return (
     <div
       ref={scroll}
-      className="dt-grid-scroll"
+      className="dt-grid-scroll [.embed-content>.data-table_&]:min-h-0 [.embed-content>.data-table_&]:max-h-none [.embed-content>.data-table_&]:flex-1"
       role="grid"
       aria-label={definition.title}
       aria-rowcount={records.length + 1}
@@ -225,7 +226,7 @@ export function TableGrid({
           );
         })}
         {!rows.length ? (
-          <div className="dt-empty">暂无记录，添加第一条记录开始整理。</div>
+          <div className={tableEmptyClassName}>暂无记录，添加第一条记录开始整理。</div>
         ) : null}
       </div>
     </div>

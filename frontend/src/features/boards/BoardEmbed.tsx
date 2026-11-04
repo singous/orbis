@@ -3,7 +3,7 @@ import { releaseFeatures } from "../../shared/release-features";
 import { lazy, Suspense, useContext, useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useStore } from "zustand";
-import { ExternalLink, Pencil, Shapes } from "lucide-react";
+import { ExternalLink, Pencil, Shapes } from "@orbis/ui/icons";
 import { Link } from "react-router-dom";
 import { apiBlobRequest, workspacePath } from "../../shared/api/api-client";
 import { authStore } from "../../shared/auth/auth-store";
@@ -11,15 +11,15 @@ import {
   authRequestOptions,
   useOptionalAuthRequest,
 } from "../../shared/auth/use-auth-request";
-import { ActionButton } from "../../shared/ui/ActionButton";
+import { Button } from "@orbis/ui/button";
 import { boardAPI } from "./api";
 import { EmbeddedSurface } from "../../shared/ui/EmbeddedSurface";
+import { BoardPreviewState } from "./BoardPreviewState";
 import { BoardPreviewViewport } from "./BoardPreviewViewport";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { TableHostContext } from "../data-tables/context";
 import { getNote } from "../documents/api";
 import { newUUID } from "../../shared/ids";
-import "./board-preview.css";
 const BoardEditor = lazy(() => import("./BoardEditor").then(module => ({ default: module.BoardEditor })));
 export type BoardBinding = {
   board_id: string | null;
@@ -149,21 +149,21 @@ export function BoardEmbed({
       <EmbeddedSurface kind="board" label={meta.data?.title ?? "画板"}
         surfaceKey={`${credential}:${auth?.workspaceId}:${blockId || id}:${page}:${revision}`}
         actions={<>
-          {props.mode === "snapshot" && <span className="board-reference-mode">快照 · v{revision}</span>}
-          {meta.data && <Link className="board-embed-source" to={"/documents/" + meta.data.document_id + "?page=" + encodeURIComponent(page)} aria-label="打开画板"><ExternalLink size={14} /><span>打开画板</span></Link>}
-          {id && page && canEdit && <ActionButton aria-pressed={editing} onPress={() => { setEditorLoaded(true); setEditing(value => !value); }}><Pencil size={14} />{editing ? "结束编辑" : "编辑画板"}</ActionButton>}
+          {props.mode === "snapshot" && <span className="board-reference-mode text-[11px] whitespace-nowrap text-(--muted-foreground) [@media(max-width:640px)]:hidden">快照 · v{revision}</span>}
+          {meta.data && <Link className="board-embed-source inline-flex items-center gap-1 text-[12px] text-(--muted-foreground)" to={"/documents/" + meta.data.document_id + "?page=" + encodeURIComponent(page)} aria-label="打开画板"><ExternalLink size={14} /><span className="[@media(max-width:640px)]:hidden">打开画板</span></Link>}
+          {id && page && canEdit && <Button aria-pressed={editing} onClick={event => { event.stopPropagation();  setEditorLoaded(true); setEditing(value => !value);  }} variant="ghost"><Pencil size={14} />{editing ? "结束编辑" : "编辑画板"}</Button>}
         </>}
       >
         {editorLoaded && props.mode !== "snapshot" && auth ? (
-          <Suspense fallback={<div className="board-embed-start">正在打开画板…</div>}>
+          <Suspense fallback={<div className="board-embed-start grid h-full place-items-center text-(--muted-foreground)">正在打开画板…</div>}>
             <BoardEditor key={`${credential}:${auth.workspaceId}:${id}:${page}`} id={id} embed={{ pageID: page, blockID: blockId, frameID: typeof props.frame_id === "string" ? props.frame_id : undefined, readOnly: !canEdit || !editing }} />
           </Suspense>
         ) : url ? (
-          <BoardPreviewViewport key={`${id}:${page}:${revision}:${String(props.frame_id ?? "")}`}><img src={url} alt={meta.data?.title ?? "画板预览"} draggable={false} /></BoardPreviewViewport>
+          <BoardPreviewViewport key={`${id}:${page}:${revision}:${String(props.frame_id ?? "")}`}><img className="block h-full w-full object-contain" src={url} alt={meta.data?.title ?? "画板预览"} draggable={false} /></BoardPreviewViewport>
         ) : (
-          <div className="board-preview-empty">
-            {query.error ? <><ActionButton onPress={() => void query.refetch()}>重试读取画板</ActionButton></> : !id ? <><Shapes size={30} />{releaseFeatures.boardCreation && !readOnly && (createFailed || owner.isError) && <ActionButton onPress={() => owner.isError ? void owner.refetch() : void create()}>重试创建画板</ActionButton>}<p>{!releaseFeatures.boardCreation ? "画板创建将在后续版本开放。" : readOnly ? "尚未创建画板" : createFailed || owner.isError ? "画板创建失败，请重试。" : "正在创建画板…"}</p></> : <p>{auth ? "正在读取画板预览…" : "请登录工作空间查看画板。"}</p>}
-          </div>
+          <BoardPreviewState>
+            {query.error ? <><Button onClick={event => { event.stopPropagation(); void query.refetch(); }} variant="ghost">重试读取画板</Button></> : !id ? <><Shapes size={30} />{releaseFeatures.boardCreation && !readOnly && (createFailed || owner.isError) && <Button onClick={event => { event.stopPropagation(); owner.isError ? void owner.refetch() : void create(); }} variant="ghost">重试创建画板</Button>}<p>{!releaseFeatures.boardCreation ? "画板创建将在后续版本开放。" : readOnly ? "尚未创建画板" : createFailed || owner.isError ? "画板创建失败，请重试。" : "正在创建画板…"}</p></> : <p>{auth ? "正在读取画板预览…" : "请登录工作空间查看画板。"}</p>}
+          </BoardPreviewState>
         )}
       </EmbeddedSurface>
     </div>

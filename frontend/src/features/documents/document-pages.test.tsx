@@ -340,13 +340,13 @@ describe("document function pages", () => {
     const groupId = "018ff7c4-a5b6-7000-8000-000000000001";
     localStorage.setItem(`orbis.collapsedDocumentGroups.${workspace.id}`, JSON.stringify([groupId]));
     await renderRoute(`/documents/collections?group=${groupId}`);
-    expect(await screen.findByRole("button", { name: "收起分组 默认分组" })).toHaveAttribute("aria-expanded", "true");
+    expect(await screen.findByRole("button", { name: "收起分组 默认分组 默认 1" })).toHaveAttribute("aria-expanded", "true");
     expect(document.getElementById(`group-${groupId}`)).toHaveFocus();
   });
   it("collapses a notebook group with keyboard and restores its choice after remount", async () => {
     const actor = userEvent.setup();
     const view = await renderRoute("/documents/collections");
-    const toggle = await screen.findByRole("button", { name: "收起分组 默认分组" });
+    const toggle = await screen.findByRole("button", { name: "收起分组 默认分组 默认 1" });
     expect(toggle).toHaveAttribute("aria-expanded", "true");
     expect(within(screen.getByRole("region", { name: "笔记本" })).getByText("产品手册")).toBeVisible();
     toggle.focus();
@@ -355,7 +355,7 @@ describe("document function pages", () => {
     expect(within(screen.getByRole("region", { name: "笔记本" })).queryByText("产品手册")).not.toBeVisible();
     view.unmount();
     await renderRoute("/documents/collections");
-    const restored = await screen.findByRole("button", { name: "展开分组 默认分组" });
+    const restored = await screen.findByRole("button", { name: "展开分组 默认分组 默认 1" });
     expect(restored).toHaveAttribute("aria-expanded", "false");
     await actor.click(restored);
     expect(within(screen.getByRole("region", { name: "笔记本" })).getByText("产品手册")).toBeVisible();
@@ -364,8 +364,8 @@ describe("document function pages", () => {
   it("keeps group creation actions independent of the collapsed content", async () => {
     const actor = userEvent.setup();
     await renderRoute("/documents/collections");
-    await actor.click(await screen.findByRole("button", { name: "收起分组 默认分组" }));
-    const collapsedGroup = screen.getByRole("button", { name: "展开分组 默认分组" });
+    await actor.click(await screen.findByRole("button", { name: "收起分组 默认分组 默认 1" }));
+    const collapsedGroup = screen.getByRole("button", { name: "展开分组 默认分组 默认 1" });
     await actor.click(screen.getByRole("button", { name: "+ 笔记本" }));
     expect(screen.getByRole("dialog", { name: "新建笔记本" })).toBeVisible();
     expect(collapsedGroup).toHaveAttribute("aria-expanded", "false");

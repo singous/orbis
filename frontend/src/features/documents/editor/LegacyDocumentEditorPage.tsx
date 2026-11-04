@@ -1,3 +1,7 @@
+import { editorLoadMoreClassName } from "./editor-control-styles";
+
+import { pageColumnClassName } from "../../../shared/ui/PageContainer";
+import { documentBreadcrumbClassName, documentHeaderActionsClassName, documentSaveStateClassName, documentHeaderDividerClassName, documentCommentTriggerClassName, documentSaveSpinnerClassName, editorCanvasClassName, editorTitleClassName } from "./document-chrome";
 import { releaseFeatures } from "../../../shared/release-features";
 import { ConfirmAction } from "../../../shared/ui/ConfirmAction";
 import { markErrorHandled, reportError, reportRequestError } from "../../../shared/api/request-feedback";
@@ -8,10 +12,10 @@ import {DocumentCopyContext,type DocumentCopyPort} from "./blocks/block-copy-con
 import {indexBlocks} from "./blocks/block-tree";
 import { LoadingState } from "../../../shared/ui/LoadingState";
 import { TableHostContext, replaceTableBlock, type TableHost,type PendingTableWriter } from "../../data-tables/context";
-import { Dropdown } from "@heroui/react/dropdown";
-import { Label } from "@heroui/react/label";
-import { Input as HeroInput } from "@heroui/react/input";
-import { ActionButton } from "../../../shared/ui/ActionButton";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@orbis/ui/dropdown-menu";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
+
 import { AlertTriangle, Archive, BookOpen, ChevronRight, MoreHorizontal, Check, Cloud, Download, MessageSquare, RefreshCw, RotateCcw, Save, WifiOff } from "../../../shared/ui/icons";
 import { Component, lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -22,7 +26,7 @@ import { ApiError } from "../../../shared/api/api-client";
 import { authStore } from "../../../shared/auth/auth-store";
 import { useOptionalAuthRequest } from "../../../shared/auth/use-auth-request";
 import { registerPendingNavigation } from "../../../shared/navigation/pending-navigation";
-import { Button } from "../../../shared/ui/Button";
+
 
 import { v2ToMarkdown, type NoteBlocksV2 } from "../../content/blocks";
 import type { RestoreSavedRevision } from "../../collaboration/DocumentCollaborationPanel";
@@ -767,7 +771,7 @@ export function LegacyDocumentEditorPage() {
   }
 
   const breadcrumb = (
-    <nav className="document-breadcrumb" aria-label="文档位置">
+    <nav className={documentBreadcrumbClassName} aria-label="文档位置">
       <Link to={noteQuery.data ? `/collections/${noteQuery.data.notebook_id}` : "/documents"} title={notebook?.title ?? "笔记本"}>
         <BookOpen aria-hidden="true" size={15} /><span>{notebook?.title ?? "笔记本"}</span>
       </Link>
@@ -776,44 +780,43 @@ export function LegacyDocumentEditorPage() {
     </nav>
   );
   const toolbar = (
-    <div className="document-header-actions">{(retainedDraft) || (checkpoints.candidates.length) || (checkpoints.status.status === "failed" && autosaveState !== "saved") || (draft && saveState === "conflict") || (saveState === "error" && !editorError) ? <DraftActions>{retainedDraft ? <section><h3 className="mb-2 text-sm font-semibold">保留的草稿</h3><div className="mt-3 flex flex-wrap gap-2"><Button onClick={()=>{
+    <div className={documentHeaderActionsClassName}>{(retainedDraft) || (checkpoints.candidates.length) || (checkpoints.status.status === "failed" && autosaveState !== "saved") || (draft && saveState === "conflict") || (saveState === "error" && !editorError) ? <DraftActions>{retainedDraft ? <section><h3 className="mb-2 text-sm font-semibold">保留的草稿</h3><div className="mt-3 flex flex-wrap gap-2"><Button onClick={()=>{
         const url=URL.createObjectURL(new Blob([JSON.stringify(retainedDraft.record)],{type:"application/json"}));const link=document.createElement("a");link.href=url;link.download=`orbis-local-draft-${noteId}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),0);
       }}>下载本机草稿</Button></div></section> : null}
 {checkpoints.candidates.length ? <section><h3 className="mb-2 text-sm font-semibold">其他窗口的草稿</h3><div className="mt-3 flex flex-wrap gap-2">{checkpoints.candidates.map(record => <Button key={record.scopeKey} size="sm" variant="secondary" disabled={autosaveState !== "saved"} onClick={() => void recoverLocalDraft(record)}>恢复“{record.current.title || "未命名文档"}”（基础版本 {record.saved.version}）</Button>)}<Button size="sm" variant="ghost" onClick={checkpoints.dismissCandidates}>稍后处理</Button></div></section> : null}
 {checkpoints.status.status === "failed" && autosaveState !== "saved" ? <section><h3 className="mb-2 text-sm font-semibold">保存副本</h3><Button variant="ghost" onClick={() => void checkpoints.controller.flush().catch(() => {})}>重试保存到本机</Button></section> : null}
-{draft && saveState === "conflict" ? <section><h3 className="mb-2 text-sm font-semibold">当前修改</h3><div className="mt-3 flex flex-wrap gap-2"><Button variant="secondary" icon={<Download aria-hidden="true" size={14} />} onClick={() => void loadCompleteContent().then(() => navigator.clipboard?.writeText(v2ToMarkdown((coordinatorRef.current?.current ?? draft).blocks.blocks))).catch(() => {})}>复制本地 Markdown</Button><ConfirmAction title="载入服务端版本" description="当前未保存的正文和标题将被服务端版本替换。需要保留时，请先复制本地 Markdown。" confirmLabel="替换本地修改" disabled={restoring || archiving} onConfirm={reloadServer}><Button variant="secondary" icon={<RotateCcw aria-hidden="true" size={14} />}>载入服务端版本</Button></ConfirmAction></div></section> : null}
-{saveState === "error" && !editorError ? <section><h3 className="mb-2 text-sm font-semibold">保存修改</h3><div className="mt-3"><Button variant="secondary" icon={<RefreshCw aria-hidden="true" size={14} />} onClick={() => coordinatorRef.current?.retry()}>重试保存</Button></div></section> : null}</DraftActions> : null}
-      <span className={`document-save-state is-${saveState}`} role="status" aria-live="polite" aria-atomic="true">
-        <StateIcon aria-hidden="true" size={14} className={saveState === "saving" ? "document-save-spinner" : ""} /><span>{canEdit ? checkpointCopy ?? stateCopy.label : "只读"}</span>
+{draft && saveState === "conflict" ? <section><h3 className="mb-2 text-sm font-semibold">当前修改</h3><div className="mt-3 flex flex-wrap gap-2"><Button variant="secondary"  onClick={() => void loadCompleteContent().then(() => navigator.clipboard?.writeText(v2ToMarkdown((coordinatorRef.current?.current ?? draft).blocks.blocks))).catch(() => {})}><Download aria-hidden="true" size={14} />复制本地 Markdown</Button><ConfirmAction title="载入服务端版本" description="当前未保存的正文和标题将被服务端版本替换。需要保留时，请先复制本地 Markdown。" confirmLabel="替换本地修改" disabled={restoring || archiving} onConfirm={reloadServer}><Button variant="secondary" ><RotateCcw aria-hidden="true" size={14} />载入服务端版本</Button></ConfirmAction></div></section> : null}
+{saveState === "error" && !editorError ? <section><h3 className="mb-2 text-sm font-semibold">保存修改</h3><div className="mt-3"><Button variant="secondary"  onClick={() => coordinatorRef.current?.retry()}><RefreshCw aria-hidden="true" size={14} />重试保存</Button></div></section> : null}</DraftActions> : null}
+      <span className={`${documentSaveStateClassName} is-${saveState}`} role="status" aria-live="polite" aria-atomic="true">
+        <StateIcon aria-hidden="true" size={14} className={saveState === "saving" ? documentSaveSpinnerClassName : ""} /><span>{canEdit ? checkpointCopy ?? stateCopy.label : "只读"}</span>
       </span>
-      <span className="document-header-divider" aria-hidden="true" />
+      <span className={documentHeaderDividerClassName} aria-hidden="true" />
       {canEdit && noteQuery.data ? (releaseFeatures.documentSharing ? <ShareButton notebookId={noteQuery.data.notebook_id!} noteId={noteId} title={draft?.title || noteQuery.data.title} /> : null) : null}
-      {releaseFeatures.documentCollaboration && <ActionButton ref={collaborationTriggerRef} type="button" className="document-comment-trigger" aria-label="评论与历史" aria-haspopup="dialog" aria-expanded={collaborationOpen} disabled={!draft || archiving} onClick={() => { setCollaborationMounted(true); setCollaborationSession(value => value + 1); setCollaborationOpen(true); }}><MessageSquare aria-hidden="true" size={16} /><span>评论</span></ActionButton>}
-      {canEdit ? <Dropdown>
-        <ActionButton type="button" className="icon-button" aria-label="更多文档操作" disabled={!draft || editorBusy}><MoreHorizontal aria-hidden="true" size={18} /></ActionButton>
-        <Dropdown.Popover placement="bottom end" className="document-actions-popover" offset={6}>
-          <Dropdown.Menu aria-label="文档操作" onAction={(key) => { if (key === "archive") void handleArchive(); }}>
-            <Dropdown.Item id="archive" textValue="归档文档" isDisabled={!draft || editorBusy}><Archive aria-hidden="true" size={16} /><Label>归档文档</Label></Dropdown.Item>
-          </Dropdown.Menu>
-        </Dropdown.Popover>
-      </Dropdown> : null}
+      {releaseFeatures.documentCollaboration && <Button ref={collaborationTriggerRef} type="button" className={documentCommentTriggerClassName} size="sm" aria-label="评论与历史" aria-haspopup="dialog" aria-expanded={collaborationOpen} disabled={!draft || archiving} onClick={() => { setCollaborationMounted(true); setCollaborationSession(value => value + 1); setCollaborationOpen(true); }} variant="ghost"><MessageSquare aria-hidden="true" size={16} /><span>评论</span></Button>}
+      {canEdit ? <DropdownMenu>
+        <DropdownMenuTrigger disabled={!draft || editorBusy} render={<Button  type="button"  aria-label="更多文档操作" variant="ghost" size="icon"><MoreHorizontal aria-hidden="true" size={18} /></Button>} />
+        <DropdownMenuContent align="end" className="document-actions-popover" sideOffset={6} aria-label="文档操作">
+          <DropdownMenuItem label="归档文档" disabled={!draft || editorBusy} onClick={() => { void handleArchive(); }}><Archive aria-hidden="true" size={16} /><span>归档文档</span></DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu> : null}
     </div>
   );
 
   return (
     <DocumentShell editorLayout breadcrumb={breadcrumb} toolbar={toolbar} notebookId={noteQuery.data?.notebook_id} activeNoteId={noteId}>
-      {!draft || !noteQuery.data || hydratedNoteRef.current !== draftKey ? <div className="page-container"><LoadingState label="正在打开文档…" variant="editor" /></div> : (
+      {!draft || !noteQuery.data || hydratedNoteRef.current !== draftKey ? <div className={pageColumnClassName}><LoadingState label="正在打开文档…" variant="editor" /></div> : (
         <EditorLayout outlineStore={outlineStore} loadOutlineContent={loadCompleteContent}>
-          <article className="editor-canvas">
-            <HeroInput
+          <article className={editorCanvasClassName}>
+            <h1 className="sr-only">{draft.title || "无标题"}</h1>
+            <Input
               aria-label="文档标题"
-              className="orbis-embedded-input editor-title"
+              className={editorTitleClassName}
               placeholder="无标题"
               value={draft.title}
               readOnly={!canEdit || editorBusy}
               onChange={(event) => changeDraft({ ...(coordinatorRef.current?.current ?? draft), title: event.target.value })}
             />
-            <div className="mb-7 mt-2 flex items-center gap-2 text-xs text-[var(--muted-light)]"><span>{canEdit ? "停手后自动保存" : "只读访问"}</span></div>
+            <div className="mb-7 mt-2 flex items-center gap-2 text-xs text-[var(--muted-foreground)]"><span>{canEdit ? "停手后自动保存" : "只读访问"}</span></div>
 
             <DocumentCopyContext.Provider value={copyPort}><TableHostContext.Provider value={tableHost}><EditorErrorBoundary key={noteId}>
               <Suspense fallback={<LoadingState label="正在准备编辑…" variant="editor-body" delayMs={180} />}>
@@ -832,7 +835,7 @@ export function LegacyDocumentEditorPage() {
                 />
               </Suspense>
             </EditorErrorBoundary></TableHostContext.Provider></DocumentCopyContext.Provider>
-            {hasMoreContent ? <div ref={loadMoreTarget} className="document-load-more" aria-live="polite">
+            {hasMoreContent ? <div ref={loadMoreTarget} className={editorLoadMoreClassName} aria-live="polite">
               {loadingMore ? <LoadingState label="正在载入后续正文…" compact /> : null}
 
               {!loadingMore ? <Button variant="ghost" onClick={() => void loadMoreContent().catch(() => {})}>继续阅读</Button> : null}

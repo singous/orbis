@@ -63,6 +63,7 @@ CMD ["node", "server.mjs"]
 FROM node:24-slim@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20 AS frontend-source
 WORKDIR /app/frontend
 COPY --chmod=644 frontend/package.json frontend/package-lock.json ./
+COPY --chmod=644 frontend/packages/ui/package.json ./packages/ui/package.json
 RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
 COPY --chown=1000:1000 --chmod=755 frontend/ ./
 RUN mkdir -p /app/api && chmod 755 /app/api
@@ -77,7 +78,10 @@ COPY --chmod=644 internal/publishing/reader/reader.js /app/internal/publishing/r
 CMD ["npm", "run", "test:run"]
 
 FROM frontend-source AS frontend-build
-RUN npm run build
+COPY --chmod=644 LICENSE THIRD_PARTY_NOTICES.md /app/
+COPY --chmod=755 licenses/ /app/licenses/
+ARG ORBIS_SOURCE_REVISION
+RUN ORBIS_SOURCE_REVISION="${ORBIS_SOURCE_REVISION}" npm run build:release
 
 FROM nginx:stable-alpine@sha256:0985e772fb9f729e6fa0980da05fca5d9c468e870eed43071545afa9d2e27d94 AS frontend
 COPY --from=frontend-build --chmod=755 /app/frontend/dist/ /usr/share/nginx/html/

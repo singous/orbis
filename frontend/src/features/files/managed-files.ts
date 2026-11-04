@@ -24,10 +24,34 @@ export async function uploadManagedFile(file: File, auth: AuthRequestOptions, si
   return fileReference(uploaded.id);
 }
 
-/** One editor or preview owns this cache; no private object URLs survive disposal. */
-export function createManagedFiles(getAuth: () => AuthRequestOptions | null, path: ManagedFilePath = "/assets") {
+export function createObjectURLCache() {
   const pending = new Map<string, Promise<string>>();
   const objectUrls = new Set<string>();
+  return {
+    resolve(id: string, readBlob: () => Promise<Blob>, verifyCurrent: () => void): Promise<string> {
+      const existing = pending.get(id);
+      if (existing) return existing;
+      const request = readBlob().then((blob) => {
+        // 校验与创建 URL 之间不跨异步边界，避免销毁后的响应生成新 URL。
+        verifyCurrent();
+        const url = URL.createObjectURL(blob);
+        objectUrls.add(url);
+        return url;
+      }).catch((error: unknown) => { pending.delete(id); throw error; });
+      pending.set(id, request);
+      return request;
+    },
+    dispose() {
+      for (const url of objectUrls) URL.revokeObjectURL(url);
+      objectUrls.clear();
+      pending.clear();
+    },
+  };
+}
+
+/** One editor or preview owns this cache; no private object URLs survive disposal. */
+export function createManagedFiles(getAuth: () => AuthRequestOptions | null, path: ManagedFilePath = "/assets") {
+  const cache = createObjectURLCache();
   const abort = new AbortController();
   let disposed = false;
   const ensureActive = () => {
@@ -52,24 +76,15 @@ export function createManagedFiles(getAuth: () => AuthRequestOptions | null, pat
       }
       const auth = getAuth();
       if (!auth) throw new Error("请先登录后读取文件");
-      const existing = pending.get(id);
-      if (existing) return existing;
-      const result = apiBlobRequest(workspacePath(auth, `${path}/${id}/content`), { signal: abort.signal, ...authRequestOptions(auth) }).then((blob) => {
+      return cache.resolve(id, () => apiBlobRequest(workspacePath(auth, `${path}/${id}/content`), { signal: abort.signal, ...authRequestOptions(auth) }), () => {
         ensureActive();
         if (!getAuth()) throw new DOMException("File session changed", "AbortError");
-        const url = URL.createObjectURL(blob);
-        objectUrls.add(url);
-        return url;
-      }).catch((error: unknown) => { pending.delete(id); throw error; });
-      pending.set(id, result);
-      return result;
+      });
     },
     dispose() {
       disposed = true;
       abort.abort();
-      for (const url of objectUrls) URL.revokeObjectURL(url);
-      objectUrls.clear();
-      pending.clear();
+      cache.dispose();
     },
   };
 }

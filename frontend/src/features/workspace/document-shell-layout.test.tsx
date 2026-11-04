@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { WorkspaceShell, type WorkspaceSidebarConfig } from "./WorkspaceShell";
@@ -28,7 +28,7 @@ function open(sidebar: WorkspaceSidebarConfig | false = notebook, compact = fals
   authStore.setState({ accessToken: "layout-test", workspace: { id: "layout", name: "测试", role: "owner", created_at_ms: 1, updated_at_ms: 1 } });
   return render(<MemoryRouter initialEntries={["/collections/notebook"]}><WorkspaceShell sidebar={sidebar}><p>笔记本首页</p></WorkspaceShell></MemoryRouter>);
 }
-it("uses the public sidebar container and header slots inside the rail frame", () => {
+it("uses the public sidebar container and header slots inside the rail frame", async () => {
   const view = open();
   const sidebar = view.container.querySelector(".workspace-main-navigation > .workspace-sidebar")!;
   expect(sidebar).toHaveAttribute("id", "notebook-directory");
@@ -37,10 +37,10 @@ it("uses the public sidebar container and header slots inside the rail frame", (
   expect(view.container.querySelector(".workspace-shell-grid > .workspace-sidebar")).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "收起笔记本目录" }));
   expect(sidebar).toHaveAttribute("inert", "");
-  expect(screen.getByRole("button", { name: "展开笔记本目录" })).toHaveFocus();
+  await waitFor(() => expect(screen.getByRole("button", { name: "展开笔记本目录" })).toHaveFocus());
   expect(screen.queryByRole("navigation", { name: "笔记本目录" })).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "展开笔记本目录" }));
-  expect(screen.getByRole("button", { name: "收起笔记本目录" })).toHaveFocus();
+  await waitFor(() => expect(screen.getByRole("button", { name: "收起笔记本目录" })).toHaveFocus());
   expect(screen.getByRole("navigation", { name: "笔记本目录" })).toBeInTheDocument();
 });
 it("restores widths but starts expanded across remounts despite legacy collapse values", () => {

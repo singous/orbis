@@ -28,7 +28,7 @@ export function CellEditor({
   }, [field.kind, value]);
   if (readOnly)
     return (
-      <span className="dt-cell-value">{cellText(field, value) || "—"}</span>
+      <span className="dt-cell-value block overflow-hidden text-ellipsis whitespace-nowrap">{cellText(field, value) || "—"}</span>
     );
   if (field.kind === "checkbox")
     return (
@@ -60,13 +60,13 @@ export function CellEditor({
     );
   if (field.kind === "multi_select")
     return (
-      <details className="dt-multi">
-        <summary aria-label={field.name}>
+      <details className="relative w-full">
+        <summary className="cursor-pointer overflow-hidden whitespace-nowrap" aria-label={field.name}>
           {cellText(field, value) || "选择标签"}
         </summary>
-        <div className="dt-multi-options">
+        <div className="absolute top-full left-0 z-10 flex min-w-[170px] flex-col gap-[7px] border-0 border-current bg-transparent p-2.5 [box-shadow:var(--ob-shadow-table-picker)] in-[.data-table]:border in-[.data-table]:border-border in-[.data-table]:bg-card">
           {field.options.map((option) => (
-            <label key={option.id}>
+            <label className="dt-multi-label flex items-center [&.dt-multi-label]:gap-2" key={option.id}>
               <input
                 type="checkbox"
                 checked={Array.isArray(value) && value.includes(option.id)}

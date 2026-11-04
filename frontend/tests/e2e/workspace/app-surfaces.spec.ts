@@ -87,8 +87,8 @@ for (const surface of ["web", "desktop"] as const) {
         expect(await accountTrigger.evaluate(element => Boolean(element.closest(".rail-bottom")))).toBe(true);
       }
       await accountTrigger.click();
-      const menu = page.locator(".workspace-user-popover [role=menu]");
-      await expectInsideViewport(page, page.locator(".workspace-user-popover"));
+      const menu = page.getByRole("menu", { name: "用户操作", exact: true });
+      await expectInsideViewport(page, menu);
       await expect(menu.getByRole("menuitem", { name: "账号", exact: true })).toHaveAttribute("href", "/settings/account");
       await expect(menu.getByRole("menuitem", { name: "工作空间成员", exact: true })).toHaveAttribute("href", "/settings/members");
       await expect(menu.getByRole("menuitem", { name: "退出登录", exact: true })).toBeVisible();

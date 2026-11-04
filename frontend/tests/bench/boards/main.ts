@@ -14,6 +14,7 @@ const renderer = new BoardRenderer(
     doubleClick: noop,
     zoom: (camera) => renderer.setCamera(camera),
   },
+  { imagePlaceholder: "#e2e8f0", imageError: "#64748b", selection: "#2563eb" },
 );
 let scene = new Map<string, Element>();
 const nextFrame = () =>

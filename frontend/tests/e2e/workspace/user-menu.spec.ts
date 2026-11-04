@@ -24,7 +24,7 @@ test("user menu stays in view and preserves account and logout actions", async (
     if (width < 768) await mobileMenu.click();
     const trigger = page.getByRole("button", { name: "打开用户菜单" });
     await trigger.click();
-    const menu = page.getByRole("menu", { name: "打开用户菜单" });
+    const menu = page.getByRole("menu", { name: "用户操作", exact: true });
     await expect(menu).toBeVisible();
     const bounds = await menu.evaluate((element) => element.getBoundingClientRect().toJSON());
     expect(bounds.left).toBeGreaterThanOrEqual(0);

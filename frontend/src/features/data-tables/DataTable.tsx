@@ -1,3 +1,4 @@
+import { tableSurfaceClassName, tableHeadingClassName, tableFooterClassName, tableStartClassName, tableFormClassName, tableFormActionsClassName } from "./table-chrome";
 import { reportError } from "../../shared/api/request-feedback";
 import { DraftActions } from "../../shared/ui/DraftActions";
 
@@ -17,8 +18,11 @@ import {
   type TableField,
   type TableRecord,
 } from "./model";
-import { Button } from "../../shared/ui/Button";
-import { Dialog, DialogContent } from "../../shared/ui/Dialog";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@orbis/ui/tabs";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@orbis/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@orbis/ui/dialog";
 import {
   Layers as Columns3,
   Download,
@@ -29,7 +33,7 @@ import {
   Table2,
   Undo2,
 } from "../../shared/ui/icons";
-import "../../styles/data-tables.css";
+import "./grid.css";
 
 export function DataTableBlock({
   blockId,
@@ -45,15 +49,15 @@ export function DataTableBlock({
   const operation = useRef<string | null>(null);
   if (!host)
     return (
-      <div className="dt-unavailable">
+      <div className="rounded-lg border border-dashed border-border p-[18px] text-(--muted-foreground)">
         {String(props.title || "数据表")} · 请在所属文档中打开
       </div>
     );
   const effective = { ...host, readOnly: readOnly || host.readOnly };
-  if(host.isCopyPending?.(blockId))return <div className="dt-unavailable" role="status">正在保存表格副本…</div>;
+  if(host.isCopyPending?.(blockId))return <div className="rounded-lg border border-dashed border-border p-[18px] text-(--muted-foreground)" role="status">正在保存表格副本…</div>;
   if (!props.table_id)
     return (
-      <div className="data-table dt-start" contentEditable={false}>
+      <div className={tableStartClassName} contentEditable={false}>
         <Table2 size={24} />
         <div>
           <strong>数据表</strong>
@@ -144,7 +148,7 @@ function DataTableEditor({
   const definition = table.definition;
   if (!definition || !table.page || table.recovering)
     return (
-      <section className="data-table dt-start" contentEditable={false}>
+      <section className={tableStartClassName} contentEditable={false}>
         <Table2 size={22} />
         <span>{table.error ?? "正在读取数据表…"}</span>
         {table.error ? (
@@ -156,7 +160,7 @@ function DataTableEditor({
     );
   if (table.page.block_id !== blockId)
     return (
-      <section className="data-table dt-start" contentEditable={false}>
+      <section className={tableStartClassName} contentEditable={false}>
         正在保存独立副本，完成后即可编辑。
       </section>
     );
@@ -200,10 +204,11 @@ function DataTableEditor({
     : null;
   const content = (
     <section
-      className="data-table"
+      className={tableSurfaceClassName}
       contentEditable={false}
       aria-label={definition.title}
       onKeyDown={(event) => {
+        if (event.key === "F6") return;
         event.stopPropagation();
         if (
           (event.ctrlKey || event.metaKey) &&
@@ -218,7 +223,7 @@ function DataTableEditor({
           !(event.target instanceof HTMLElement && event.target.closest("input,textarea"))) expand(false);
       }}
     >
-      <header className="dt-heading">{(table.error || actionError) || (table.candidates.length) || (table.dirty && !table.saving) ? <DraftActions label="表格本机修改">{table.error || actionError ? <section><h3 className="mb-2 text-sm font-semibold">保存修改</h3><Button size="sm" onClick={save}>
+      <header className={tableHeadingClassName}>{(table.error || actionError) || (table.candidates.length) || (table.dirty && !table.saving) ? <DraftActions label="表格本机修改">{table.error || actionError ? <section><h3 className="mb-2 text-sm font-semibold">保存修改</h3><Button size="sm" onClick={save}>
             重试保存
           </Button>
 <Button
@@ -244,10 +249,11 @@ function DataTableEditor({
             保存修改
           </Button></section> : null}</DraftActions> : null}
         <Table2 size={18} />
-        <div className="dt-title-area">
+        <div className="flex min-w-0 flex-1 items-baseline gap-3">
           {titleEditing ? (
-            <input
+            <Input
               autoFocus
+              className="min-w-0"
               aria-label="表格名称"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
@@ -263,7 +269,7 @@ function DataTableEditor({
           ) : (
             <button
               type="button"
-              className="dt-title"
+              className="dt-title cursor-text border-0 border-current bg-transparent text-left text-[16px]! font-semibold!"
               disabled={host.readOnly}
               onClick={() => {
                 setTitle(definition.title);
@@ -273,7 +279,7 @@ function DataTableEditor({
               {definition.title}
             </button>
           )}
-          <span className="dt-save" aria-live="polite">
+          <span className="whitespace-nowrap text-[11px] text-(--muted-foreground) [@media(max-width:720px)]:hidden" aria-live="polite">
             {host.readOnly
               ? "只读"
               : table.saving
@@ -286,29 +292,20 @@ function DataTableEditor({
           </span>
         </div>
       </header>
-      <div className="dt-toolbar">
-        <div className="dt-view-tabs" role="tablist" aria-label="表格视图">
-          {definition.views.map((item) => (
-            <button
-              type="button"
-              role="tab"
-              aria-selected={item.id === view.id}
-              key={item.id}
-              onClick={() => table.setViewId(item.id)}
-            >
-              {item.kind === "grid" ? (
-                <Table2 size={14} />
-              ) : (
-                <LayoutGrid size={14} />
-              )}
+      <div className="flex flex-wrap items-center gap-1.5 border-b border-border px-3 py-2 [@media(max-width:720px)]:p-2">
+        <Tabs className="max-w-[60%] min-w-0 overflow-x-auto [@media(max-width:720px)]:max-w-full [@media(max-width:720px)]:flex-1" value={view.id} onValueChange={value => { if (typeof value === "string") table.setViewId(value); }}>
+          <TabsList aria-label="表格视图">
+            {definition.views.map(item => <TabsTrigger value={item.id} key={item.id}>
+              {item.kind === "grid" ? <Table2 size={14} /> : <LayoutGrid size={14} />}
               {item.name}
-            </button>
-          ))}
-        </div>
+            </TabsTrigger>)}
+          </TabsList>
+        </Tabs>
         {!host.readOnly ? (
-          <button
+          <Button
             type="button"
-            className="dt-add-view"
+            variant="ghost"
+            size="icon-sm"
             aria-label="添加视图"
             onClick={async () => {
               const next = {
@@ -324,47 +321,47 @@ function DataTableEditor({
             }}
           >
             <Plus size={15} />
-          </button>
+          </Button>
         ) : null}
-        <div className="dt-tools">
+        <div className="ml-auto flex items-center gap-0.5 [@media(max-width:720px)]:w-full [@media(max-width:720px)]:justify-end">
           {!host.readOnly ? (
             <>
               <Button
                 size="sm"
                 variant="ghost"
-                icon={<Settings2 size={14} />}
+
                 onClick={() => setSettings(true)}
-              >
+              ><Settings2 size={14} />
                 视图设置
               </Button>
               <Button
                 size="sm"
                 variant="ghost"
-                icon={<Columns3 size={14} />}
+
                 onClick={() => setField(null)}
-              >
+              ><Columns3 size={14} />
                 添加字段
               </Button>
             </>
           ) : null}
-          <details className="dt-actions">
-            <summary aria-label="更多表格操作">•••</summary>
-            <div>
+          <DropdownMenu>
+            <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label="更多表格操作" />}>•••</DropdownMenuTrigger>
+            <DropdownMenuContent align="end" aria-label="表格操作">
               {host.auth ? (
                 <>
-                  <button type="button" onClick={() => exportFile("csv")}>
+                  <DropdownMenuItem onClick={() => exportFile("csv")}>
                     <Download size={14} />
                     导出 CSV
-                  </button>
-                  <button type="button" onClick={() => exportFile("markdown")}>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => exportFile("markdown")}>
                     导出 Markdown
-                  </button>
+                  </DropdownMenuItem>
                 </>
               ) : null}
               {!host.readOnly ? (
                 <>
-                  <button
-                    type="button"
+                  <DropdownMenuItem
+
                     onClick={() =>
                       saveDefinition({
                         ...definition,
@@ -380,9 +377,9 @@ function DataTableEditor({
                     }
                   >
                     复制当前视图
-                  </button>
-                  <button
-                    type="button"
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    variant="destructive"
                     disabled={
                       definition.views.length < 2 ||
                       definition.public_view_id === view.id
@@ -407,11 +404,11 @@ function DataTableEditor({
                     }}
                   >
                     删除当前视图
-                  </button>
+                  </DropdownMenuItem>
                 </>
               ) : null}
-            </div>
-          </details>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -447,14 +444,14 @@ function DataTableEditor({
           }}
         />
       )}
-      <footer className="dt-footer">
+      <footer className={tableFooterClassName}>
         <div>
           {!host.readOnly ? (
             <>
               <Button
                 size="sm"
                 variant="ghost"
-                icon={<Plus size={15} />}
+
                 onClick={() => {
                   table.stage({
                     upserts: [
@@ -471,7 +468,7 @@ function DataTableEditor({
                   });
                   save();
                 }}
-              >
+              ><Plus size={15} />
                 添加记录
               </Button>
               <Button
@@ -480,18 +477,18 @@ function DataTableEditor({
                 title="撤销表格操作"
                 aria-label="撤销表格操作"
                 disabled={!table.canUndo || table.dirty || table.saving}
-                icon={<Undo2 size={14} />}
+
                 onClick={() => void table.travel("undo")}
-              />
+              ><Undo2 size={14} /></Button>
               <Button
                 size="sm"
                 variant="ghost"
                 title="重做表格操作"
                 aria-label="重做表格操作"
                 disabled={!table.canRedo || table.dirty || table.saving}
-                icon={<Redo2 size={14} />}
+
                 onClick={() => void table.travel("redo")}
-              />
+              ><Redo2 size={14} /></Button>
             </>
           ) : null}
           <span>{table.page.total} 条记录</span>
@@ -547,8 +544,8 @@ function DataTableEditor({
             if (!open) setRecord(null);
           }}
         >
-          <DialogContent title="记录详情">
-            <div className="dt-form">
+          <DialogContent ><DialogHeader><DialogTitle>{"记录详情"}</DialogTitle></DialogHeader>
+            <div className={tableFormClassName}>
               {definition.fields.map((field) => (
                 <label key={field.id}>
                   {field.name}
@@ -571,9 +568,9 @@ function DataTableEditor({
                 </label>
               ))}
               {!host.readOnly ? (
-                <div className="dt-form-actions">
+                <div className={tableFormActionsClassName}>
                   <Button
-                    variant="danger"
+                    variant="destructive"
                     onClick={() => {
                       table.stage({ deletes: [selectedRecord.id] });
                       save();
@@ -583,7 +580,7 @@ function DataTableEditor({
                     删除记录
                   </Button>
                   <Button
-                    variant="primary"
+                    variant="default"
                     onClick={() => {
                       save();
                       setRecord(null);

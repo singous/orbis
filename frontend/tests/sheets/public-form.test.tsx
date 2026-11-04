@@ -11,7 +11,6 @@ import { newField } from "../../src/features/sheets/model";
 vi.mock("../../src/features/sheets/api", () => ({
   readPublicForm: vi.fn(), submitPublicForm: vi.fn(), uploadPublicFormFile: vi.fn(),
 }));
-vi.mock("../../src/shared/ui/ActionButton", () => ({ ActionButton: ({ size: _size, variant: _variant, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { size?: string; variant?: string }) => <button {...props} /> }));
 const field = { ...newField("text"), id: "answer", name: "回答" };
 const form = (token: string) => ({ id: token, version: token === "a" ? 1 : 2, config: { title: `表单 ${token}`, description: "", fields: [{ field_id: "answer", required: true, description: "" }] }, fields: [field] });
 function Navigation() { const navigate = useNavigate(); return <button onClick={() => navigate("/forms/b")}>打开 B</button>; }
@@ -30,7 +29,7 @@ describe("public sheet submission sessions", () => {
     await screen.findByText("表单 a");
     fireEvent.change(screen.getByRole("textbox", { name: "回答" }), { target: { value: "A 的私人回答" } });
     fireEvent.click(screen.getByRole("button", { name: "提交" }));
-    await screen.findByText("服务暂时不可用");
+    expect(await screen.findByText("服务暂时不可用", { selector: '[data-slot="toast-title"]' })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "打开 B" }));
     await screen.findByText("表单 b");
     expect(screen.getByRole("textbox", { name: "回答" })).toHaveValue("");
@@ -59,7 +58,7 @@ describe("public sheet submission sessions", () => {
     await screen.findByText("表单 a");
     fireEvent.change(screen.getByRole("textbox", { name: "回答" }), { target: { value: "只保存一次" } });
     fireEvent.click(screen.getByRole("button", { name: "提交" }));
-    await screen.findByText("请稍后重试");
+    expect(await screen.findByText("请稍后重试", { selector: '[data-slot="toast-title"]' })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "重试提交" }));
     await screen.findByText("提交成功");
     expect(vi.mocked(submitPublicForm).mock.calls[1]).toEqual(vi.mocked(submitPublicForm).mock.calls[0]);

@@ -1,0 +1,134 @@
+import { expect, test } from "@playwright/test";
+import { installSession } from "../fixtures/session";
+import { initialView, initialSheet, records, mountWorkspace, sheetReadData } from "../fixtures/sheet-workspace";
+
+for (const theme of ["light", "dark"] as const) for (const width of [1280, 390]) test.describe(`${theme} sheet ${width}px`, () => {
+  test.use({ hasTouch: width === 390 });
+  test("keeps nested menus, metadata versions, record retry and embedded identity", async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await installSession(page);
+    await page.addInitScript(theme => localStorage.setItem("orbis.appearance", theme), theme);
+    let sheet = structuredClone(initialSheet);
+    const updates: Array<{ version: number; definition: typeof initialSheet.definition }> = [];
+    const changes: Array<{ operation_id: string; schema_version: number; records: Array<{ id: string; version: number; values: Record<string, unknown> }> }> = [];
+    await page.route("**/api/v1/**", async route => {
+      const request = route.request(), url = new URL(request.url());
+      let data: unknown = { items: [], pagination: { page: 1, page_size: 20, total: 0 } };
+      if (url.pathname.endsWith("/sheets/sheet-1/changes")) {
+        const body = request.postDataJSON();
+        changes.push(body);
+        if (changes.length === 1) {
+          await route.fulfill({ status: 503, json: { code: "UNAVAILABLE", message: "请重试原记录操作", request_id: "sheet-chrome", data: null } });
+          return;
+        }
+        data = { records: body.records.map((record: { id: string; values: Record<string, unknown> }) => ({ ...records[0], id: record.id, version: 1, values: record.values })), deleted: [] };
+      } else if (url.pathname.endsWith("/sheets/sheet-1") && request.method() === "PUT") {
+        const body = request.postDataJSON();
+        updates.push(body);
+        sheet = { ...sheet, ...body, version: sheet.version + 1, schema_version: updates.length === 3 ? 2 : sheet.schema_version };
+        data = sheet;
+      } else data = sheetReadData(url.pathname, sheet);
+      await route.fulfill({ json: { code: "OK", message: "", request_id: "sheet-chrome", data } });
+    });
+    await mountWorkspace(page);
+    const region = page.getByRole("region", { name: "产品计划", exact: true });
+    const root = page.locator(".sheet-workspace");
+    const input = page.getByRole("textbox", { name: "搜索记录", exact: true });
+    await expect(input).toBeVisible();
+    const expectedBorders = await root.evaluate(element => {
+      const reference = document.createElement("span");
+      element.append(reference);
+      reference.style.color = "var(--border)";
+      const workspace = getComputedStyle(reference).color;
+      reference.style.color = "var(--border)";
+      const body = getComputedStyle(reference).color;
+      reference.remove();
+      return { workspace, body };
+    });
+    await expect(root.locator(".sheet-grid-header")).toHaveCSS("border-bottom-color", expectedBorders.workspace);
+    await expect(root).toHaveCSS("height", `${await region.locator(".embed-content").evaluate(element => element.clientHeight)}px`);
+    await expect(page.getByRole("navigation", { name: "视图", exact: true })).toHaveCSS("padding-right", "48px");
+    if (width === 390) {
+      await expect(input).toHaveCSS("font-size", "16px");
+      expect((await page.getByRole("button", { name: "筛选", exact: true }).boundingBox())!.height).toBeGreaterThanOrEqual(24);
+    }
+    await page.getByRole("button", { name: "筛选", exact: true }).click();
+    const filter = page.getByRole("dialog", { name: "筛选", exact: true });
+    const nested = filter.getByRole("combobox", { name: "筛选字段 1", exact: true });
+    await nested.click();
+    await expect(page.getByRole("option", { name: "数量", exact: true })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("option", { name: "数量", exact: true })).toBeHidden();
+    await expect(nested).toHaveAttribute("aria-expanded", "false");
+    await expect(filter).toBeVisible();
+    await expect(nested).toBeFocused();
+    await filter.getByRole("textbox", { name: "名称", exact: true }).fill("尚未应用");
+    await page.keyboard.press("Escape");
+    await expect(filter).toHaveCount(0);
+    expect(updates).toHaveLength(0);
+    await page.getByRole("button", { name: "排序", exact: true }).click();
+    const sort = page.getByRole("dialog", { name: "排序", exact: true });
+    await sort.getByRole("combobox", { name: "排序方向 1", exact: true }).click();
+    await page.getByRole("option", { name: "降序", exact: true }).click();
+    await sort.getByRole("button", { name: "应用", exact: true }).click();
+    await expect(sort).toHaveCount(0);
+    expect(updates[0]).toMatchObject({ version: 4, definition: { views: [{ ...initialView, sorts: [{ field_id: "number", descending: true }] }] } });
+    await page.getByRole("button", { name: "字段管理", exact: true }).click();
+    const manager = page.getByRole("dialog", { name: "字段管理", exact: true });
+    await manager.getByRole("button", { name: "拖拽排序状态", exact: true }).focus();
+    await page.keyboard.press("ArrowUp");
+    await manager.getByRole("checkbox", { name: "数量", exact: true }).click();
+    await manager.getByRole("button", { name: "应用", exact: true }).click();
+    await expect(manager).toHaveCount(0);
+    expect(updates[1]).toMatchObject({ version: 5, definition: { views: [{ field_ids: ["status", "name"] }] } });
+    await expect(root.locator(".sheet-grid-heading[role=columnheader]")).toHaveText(["状态", "名称"]);
+    await root.getByRole("button", { name: "状态列菜单", exact: true }).click();
+    await page.getByRole("menuitem", { name: "编辑列", exact: true }).click();
+    const field = page.getByRole("dialog", { name: "字段设置", exact: true });
+    const fieldBounds = (await field.boundingBox())!;
+    expect(fieldBounds.x).toBeGreaterThanOrEqual(0);
+    expect(fieldBounds.x + fieldBounds.width).toBeLessThanOrEqual(width);
+    expect(fieldBounds.width).toBeGreaterThan(200);
+    await field.getByRole("textbox", { name: "字段名称", exact: true }).fill("状态字段");
+    await field.getByRole("button", { name: "保存字段", exact: true }).click();
+    await expect(field).toHaveCount(0);
+    expect(updates[2]).toMatchObject({ version: 6, definition: { fields: [{ id: "name", name: "名称" }, { id: "status", name: "状态字段" }, { id: "number", name: "数量" }] } });
+    await expect(root.locator(".sheet-grid-heading[role=columnheader]").first()).toHaveText("状态字段");
+    await root.getByRole("button", { name: "全部记录操作", exact: true }).click();
+    await page.getByRole("menuitem", { name: "复制视图", exact: true }).click();
+    await expect(root.getByRole("tab", { name: "全部记录 副本", exact: true })).toHaveAttribute("aria-selected", "true");
+    expect(updates[3]).toMatchObject({ version: 7 });
+    expect(updates[3].definition.views).toHaveLength(2);
+    const divider = await root.locator(".sheet-tab").nth(1).evaluate(element => {
+      const css = getComputedStyle(element, "::before");
+      const reference = document.createElement("span");
+      reference.style.color = "var(--border)";
+      element.append(reference);
+      const expected = getComputedStyle(reference).color;
+      reference.remove();
+      return { width: css.width, height: css.height, color: css.backgroundColor, expected };
+    });
+    expect(divider).toMatchObject({ width: "1px", height: "18px" });
+    expect(divider.color).toBe(divider.expected);
+    await root.getByRole("button", { name: "添加记录", exact: true }).first().click();
+    await expect.poll(() => changes.length).toBe(1);
+    await expect(page.getByRole("button", { name: "本机修改", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "本机修改", exact: true }).click();
+    await page.getByRole("dialog", { name: "本机修改", exact: true }).getByRole("button", { name: "重试保存", exact: true }).click();
+    await expect.poll(() => changes.length).toBe(2);
+    expect(changes[1]).toEqual(changes[0]);
+    expect(changes[0]).toMatchObject({ schema_version: 2, records: [{ version: 0, values: {} }] });
+    expect(changes[0].operation_id).toMatch(/^[0-9a-f-]{36}$/);
+    await expect(page.getByRole("button", { name: "本机修改", exact: true })).toHaveCount(0);
+    const original = await input.elementHandle();
+    await input.fill("仍在当前输入框");
+    await region.getByRole("button", { name: "全屏展开", exact: true }).click();
+    expect(await input.evaluate((element, original) => element === original, original)).toBe(true);
+    await expect(input).toHaveValue("仍在当前输入框");
+    await expect(page.getByRole("navigation", { name: "视图", exact: true })).toHaveCSS("padding-right", "10px");
+    await expect(root.locator(".sheet-grid-header")).toHaveCSS("border-bottom-color", expectedBorders.body);
+    await region.getByRole("button", { name: "返回文档", exact: true }).click();
+    expect(await input.evaluate((element, original) => element === original, original)).toBe(true);
+    await expect(input).toHaveValue("仍在当前输入框");
+  });
+});

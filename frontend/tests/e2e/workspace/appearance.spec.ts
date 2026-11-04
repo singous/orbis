@@ -1,3 +1,4 @@
+import { expectTokenStyles } from "../helpers/theme-probes";
 import {sessionFromPage,createCollection,createDocument} from "../helpers/api-fixtures";
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 
@@ -43,7 +44,7 @@ for (const surface of ["web", "desktop"] as const) for (const width of [1440, 39
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     const create = page.locator(".notebook-overview .page-actions").getByRole("button", { name: "新建笔记本", exact: true });
     await expect(create).toBeVisible();
-    await expect.poll(() => create.evaluate(element => getComputedStyle(element).backgroundColor)).toBe("oklch(0.9848 0 0)");
+    await expectTokenStyles(create, { "background-color": "--primary", color: "--primary-foreground" });
     await page.goto("/sites");
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     await chooseAppearance(page, "白天");
@@ -60,8 +61,9 @@ for (const surface of ["web", "desktop"] as const) for (const width of [1440, 39
     await page.emulateMedia({ colorScheme: "dark" });
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     await page.mouse.move(0, 0);
-    const emailGroup = page.locator('[data-slot="input-group"]').filter({ has: page.getByLabel("邮箱", { exact: true }) });
-    await expect.poll(() => emailGroup.evaluate(element => getComputedStyle(element).backgroundColor)).toBe("oklch(0.257 0 0)");
+    const email = page.getByLabel("邮箱", { exact: true });
+    await expectTokenStyles(email, { color: "--foreground" });
+    await expect(email).toHaveCSS("font-family", /Geist Variable/);
   });
 }
 
@@ -71,7 +73,7 @@ test("the saved night preference is applied before the app JavaScript loads", as
   await page.goto("/login");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   expect(await page.locator("#root").evaluate(element => element.childElementCount)).toBe(0);
-  await expect.poll(() => page.locator("body").evaluate(element => getComputedStyle(element).backgroundColor)).toBe("oklch(0.12 0 0)");
+  await expectTokenStyles(page.locator("body"), { "background-color": "--background", color: "--foreground" });
 });
 
 test("appearance switching keeps the current editor and its content mounted", async ({ page, request }) => {

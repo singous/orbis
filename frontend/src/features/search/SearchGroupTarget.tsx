@@ -1,6 +1,8 @@
+import { SectionHeading } from "../../shared/ui/SectionHeading";
+import { workbenchStyles } from "@/shared/ui/workbench-styles";
 import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { Button } from "../../shared/ui/Button";
+import { Button } from "@orbis/ui/button";
 import { LoadingState } from "../../shared/ui/LoadingState";
 
 import { NotebookIcon } from "../documents/NotebookIcon";
@@ -21,10 +23,10 @@ export function SearchGroupTarget({ id, canCreate, onCreate }: { id: string; can
   if (group.isError) return null;
   if (!group.data) return null;
   return <section ref={target} tabIndex={-1} className="workbench-collection-group" aria-label={`搜索定位的分组 ${group.data.title}`}>
-    <div className="section-heading"><div><h2>{group.data.title}</h2><p>{group.data.location}</p></div>{canCreate ? <Button onClick={onCreate}>新建笔记本</Button> : null}</div>
+    <SectionHeading title={group.data.title} description={group.data.location} actions={canCreate ? <Button onClick={onCreate} variant="default">新建笔记本</Button> : null} />
     {notebooks.isLoading ? <LoadingState label="正在读取分组笔记本…" /> : null}
 
-    <div className="workbench-document-list">{notebooks.data?.items.map(notebook => <Link key={notebook.id} to={`/collections/${notebook.id}`} className="workbench-document-row"><NotebookIcon icon={notebook.icon} size="sm" /><span>{notebook.title}</span></Link>)}</div>
+    <div className={workbenchStyles.documentList}>{notebooks.data?.items.map(notebook => <Link key={notebook.id} to={`/collections/${notebook.id}`} className={workbenchStyles.documentRow}><NotebookIcon icon={notebook.icon} size="sm" /><span>{notebook.title}</span></Link>)}</div>
     {!notebooks.isLoading && !notebooks.isError && !notebooks.data?.items.length ? <p>这个分组中还没有笔记本。</p> : null}
   </section>;
 }

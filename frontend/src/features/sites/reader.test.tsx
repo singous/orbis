@@ -1,4 +1,4 @@
-import { toast as heroToast } from "@heroui/react/toast";
+import { clearToasts } from "../../shared/ui/Toast";
 import { act, fireEvent, render as renderTestingLibrary, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
@@ -75,7 +75,7 @@ function LocationProbe() {
 }
 
 afterEach(() => {
-  act(() => heroToast.clear());
+  act(() => clearToasts());
   localStorage.clear();
   vi.restoreAllMocks();
   Object.defineProperty(window, "matchMedia", { configurable: true, value: originalMatchMedia });
@@ -85,7 +85,7 @@ afterEach(() => {
   else Reflect.deleteProperty(HTMLElement.prototype, "scrollIntoView");
 });
 
-describe("Mint-style site reader", () => {
+describe("published site reader", () => {
   it("opens search from Cmd/Ctrl+K and supports keyboard selection", async () => {
     const user = userEvent.setup();
     render(
@@ -107,7 +107,7 @@ describe("Mint-style site reader", () => {
     expect(option).toHaveTextContent("文档 / 指南 / 开始使用");
     await user.keyboard("{ArrowDown}{Enter}");
 
-    expect(screen.queryByRole("dialog", { name: "搜索文档" })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "搜索文档" })).not.toBeInTheDocument());
     expect(screen.getByLabelText("当前路径")).toHaveTextContent("/s/developer/deploy");
   });
 
@@ -120,7 +120,7 @@ describe("Mint-style site reader", () => {
         </Routes>
       </MemoryRouter>,
     );
-    await user.click(screen.getByRole("button", { name: "搜索文档" }));
+    await user.click(screen.getByRole("button", { name: "搜索文档 ⌘ K" }));
     const dialog = screen.getByRole("dialog", { name: "搜索文档" });
     const input = within(dialog).getByRole("combobox", { name: "搜索文档" });
     await user.type(input, "使用");
@@ -133,7 +133,7 @@ describe("Mint-style site reader", () => {
 
     options[1].focus();
     await user.keyboard("{Enter}");
-    expect(screen.queryByRole("dialog", { name: "搜索文档" })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "搜索文档" })).not.toBeInTheDocument());
     expect(screen.getByLabelText("当前路径")).toHaveTextContent("/s/developer/security");
   });
 
@@ -148,7 +148,7 @@ describe("Mint-style site reader", () => {
         </Routes>
       </MemoryRouter>,
     );
-    await user.click(screen.getByRole("button", { name: "搜索文档" }));
+    await user.click(screen.getByRole("button", { name: "搜索文档 ⌘ K" }));
     const input = screen.getByRole("combobox", { name: "搜索文档" });
     await user.type(input, "使用");
     await user.keyboard("{ArrowDown}");
@@ -167,12 +167,12 @@ describe("Mint-style site reader", () => {
         </Routes>
       </MemoryRouter>,
     );
-    await user.click(screen.getByRole("button", { name: "搜索文档" }));
+    await user.click(screen.getByRole("button", { name: "搜索文档 ⌘ K" }));
     await user.type(screen.getByRole("combobox", { name: "搜索文档" }), "部署");
     await user.tab();
     expect(screen.getByRole("button", { name: "关闭搜索" })).toHaveFocus();
     await user.keyboard("{Enter}");
-    expect(screen.queryByRole("dialog", { name: "搜索文档" })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "搜索文档" })).not.toBeInTheDocument());
     expect(screen.getByLabelText("当前路径")).toHaveTextContent("/s/developer");
   });
 
@@ -183,7 +183,7 @@ describe("Mint-style site reader", () => {
       pages: snapshot.pages.map((page) => page.slug === "deploy" ? { ...page, section: "指南" } : page),
     };
     render(<MemoryRouter><SiteReader snapshot={repeatedLabelSnapshot} basePath="/s/developer" /></MemoryRouter>);
-    await user.click(screen.getByRole("button", { name: "搜索文档" }));
+    await user.click(screen.getByRole("button", { name: "搜索文档 ⌘ K" }));
     await user.type(screen.getByRole("combobox", { name: "搜索文档" }), "部署");
     const result = screen.getByRole("option", { name: /部署到生产环境/ });
     expect(result).toHaveTextContent("指南 / 开始使用");
@@ -193,11 +193,41 @@ describe("Mint-style site reader", () => {
   it("closes search with Escape and restores focus to its trigger", async () => {
     const user = userEvent.setup();
     render(<MemoryRouter><SiteReader snapshot={snapshot} basePath="/s/developer" /></MemoryRouter>);
-    const trigger = screen.getByRole("button", { name: "搜索文档" });
+    const trigger = screen.getByRole("button", { name: "搜索文档 ⌘ K" });
     await user.click(trigger);
     await user.keyboard("{Escape}");
-    expect(screen.queryByRole("dialog", { name: "搜索文档" })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "搜索文档" })).not.toBeInTheDocument());
     expect(trigger).toHaveFocus();
+  });
+
+  it("keeps reader search in its local light theme and lets IME consume Escape", async () => {
+    const outerTheme = document.documentElement.dataset.theme;
+    document.documentElement.dataset.theme = "dark";
+    localStorage.setItem("orbis-reader-theme", "light");
+    try {
+      const user = userEvent.setup();
+      render(<MemoryRouter initialEntries={["/s/developer"]}><SiteReader snapshot={snapshot} basePath="/s/developer" /><LocationProbe /></MemoryRouter>);
+      const trigger = screen.getByRole("button", { name: "搜索文档 ⌘ K" });
+      await user.click(trigger);
+      const dialog = screen.getByRole("dialog", { name: "搜索文档" });
+      const input = within(dialog).getByRole("combobox", { name: "搜索文档" });
+      expect(dialog.closest("[data-theme]")).toHaveAttribute("data-theme", "light");
+      expect(document.documentElement).toHaveAttribute("data-theme", "dark");
+      fireEvent.compositionStart(input);
+      fireEvent.change(input, { target: { value: "部署" } });
+      await user.keyboard("{Enter}{Escape}");
+      expect(dialog).toBeVisible();
+      expect(screen.getByLabelText("当前路径")).toHaveTextContent("/s/developer");
+      fireEvent.compositionEnd(input);
+      await user.keyboard("{Escape}");
+      await waitFor(() => expect(screen.queryByRole("dialog", { name: "搜索文档" })).not.toBeInTheDocument());
+      await waitFor(() => expect(trigger).toHaveFocus());
+    } finally {
+      await act(async () => {
+        if (outerTheme === undefined) delete document.documentElement.dataset.theme;
+        else document.documentElement.dataset.theme = outerTheme;
+      });
+    }
   });
 
   it("renders nested navigation while keeping parent documents readable", () => {
@@ -283,7 +313,8 @@ describe("Mint-style site reader", () => {
     const summaries = drawer.querySelectorAll<HTMLElement>("summary");
     const firstVisible = summaries[0];
     const finalDetails = summaries[1].closest("details")!;
-    const lastVisible = within(drawer).getByRole("link", { name: "访问控制" });
+    const lastVisible = within(drawer).getByRole("link", { name: "源码与许可" });
+    expect(lastVisible).toHaveAttribute("href", "/licenses/");
     const hiddenNested = within(drawer).getByRole("link", { name: "令牌轮换", hidden: true });
     const hiddenDeepNested = within(drawer).getByRole("link", { name: "紧急令牌", hidden: true });
     expect(finalDetails).not.toHaveAttribute("open");
@@ -322,12 +353,12 @@ describe("Mint-style site reader", () => {
     const copyLink = screen.getByRole("button", { name: "复制链接" });
     const copyPage = screen.getByRole("button", { name: "复制页面" });
     await user.click(copyLink);
-    expect(screen.getByText("请从地址栏手动复制。")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("请从地址栏手动复制。");
     expect(copyLink).toHaveAccessibleName("复制链接");
 
     Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: vi.fn().mockRejectedValue(new Error("denied")) } });
     await user.click(copyPage);
-    expect(await screen.findByText("请检查浏览器权限后重试。")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByRole("alert").filter(alert => alert.textContent === "请检查浏览器权限后重试。")).toHaveLength(1));
     expect(copyPage).toHaveAccessibleName("复制页面");
   });
 

@@ -214,14 +214,14 @@ describe("WorkspaceShell (desktop surface)", () => {
 
     expect(window.localStorage.getItem("orbis.sidebarCollapsed")).toBeNull();
     expect(screen.queryByRole("navigation", { name: "文档导航" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "展开侧栏" })).toHaveFocus();
+    await waitFor(() => expect(screen.getByRole("button", { name: "展开侧栏" })).toHaveFocus());
     const rail = screen.getByRole("navigation", { name: "业务板块" });
     expect(within(rail).getByRole("link", { name: "在线文档" })).toHaveAttribute("href", "/documents");
     expect(within(screen.getByRole("complementary", { name: "应用导航" })).getByRole("button", { name: "搜索" })).toHaveAttribute("aria-haspopup", "dialog");
 
     await actor.click(screen.getByRole("button", { name: "展开侧栏" }));
     expect(screen.getByRole("navigation", { name: "文档导航" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "收起侧栏" })).toHaveFocus();
+    await waitFor(() => expect(screen.getByRole("button", { name: "收起侧栏" })).toHaveFocus());
     expect(window.localStorage.getItem("orbis.sidebarCollapsed")).not.toBe("1");
   });
 
@@ -343,7 +343,7 @@ describe("WorkspaceShell (desktop surface)", () => {
     expect(screen.getByRole("dialog", { name: "新建资产" })).toBeInTheDocument();
 
     await actor.keyboard("{Escape}");
-    expect(screen.queryByRole("dialog", { name: "新建资产" })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "新建资产" })).not.toBeInTheDocument());
     expect(navigationTrigger).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("navigation", { name: "文档导航" })).toBeInTheDocument();
     await waitFor(() => expect(createTrigger).toHaveFocus());
@@ -409,7 +409,7 @@ describe("WorkspaceShell (desktop surface)", () => {
     renderShell();
 
     await actor.click(screen.getByRole("button", { name: "打开用户菜单" }));
-    expect(screen.getByRole("menuitem", { name: "工作空间成员" })).toHaveAttribute("href", "/settings/members");
+    expect(await screen.findByRole("menuitem", { name: "工作空间成员" })).toHaveAttribute("href", "/settings/members");
     expect(screen.getByRole("menuitem", { name: "账号" })).toHaveAttribute("href", "/settings/account");
     expect(screen.getByRole("menuitem", { name: "退出登录" })).toBeInTheDocument();
     await actor.click(screen.getByRole("menuitem", { name: "账号" }));
@@ -435,11 +435,11 @@ describe("WorkspaceShell (desktop surface)", () => {
     const trigger = screen.getByRole("button", { name: "打开用户菜单" });
 
     await actor.click(trigger);
-    screen.getByRole("menuitem", { name: "账号" }).focus();
+    (await screen.findByRole("menuitem", { name: "账号" })).focus();
     await actor.keyboard("{Escape}");
 
     expect(trigger).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByRole("menuitem", { name: "账号" })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("menuitem", { name: "账号" })).not.toBeInTheDocument());
     await waitFor(() => expect(trigger).toHaveFocus());
   });
 
@@ -449,7 +449,7 @@ describe("WorkspaceShell (desktop surface)", () => {
     renderShell();
 
     await actor.click(screen.getByRole("button", { name: "打开用户菜单" }));
-    await actor.click(screen.getByRole("menuitem", { name: "退出登录" }));
+    await actor.click(await screen.findByRole("menuitem", { name: "退出登录" }));
 
     await waitFor(()=>expect(authStore.getState().accessToken).toBeNull());
     expect(screen.getByRole("status", { name: "current path" })).toHaveTextContent("/login");
@@ -474,7 +474,7 @@ describe("WorkspaceShell (desktop surface)", () => {
     expect(screen.getByRole("dialog", { name: "新建资产" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "笔记本" })).toBeInTheDocument();
     await actor.keyboard("{Escape}");
-    expect(screen.queryByRole("dialog", { name: "新建资产" })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "新建资产" })).not.toBeInTheDocument());
     await waitFor(() => expect(trigger).toHaveFocus());
   });
 });

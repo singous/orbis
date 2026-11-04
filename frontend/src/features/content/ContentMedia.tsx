@@ -1,4 +1,4 @@
-import { ActionButton } from "../../shared/ui/ActionButton";
+import { Button } from "@orbis/ui/button";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type MouseEvent, type ReactNode, type RefObject } from "react";
 import { FileContentContext } from "../files/FileContent";
 import { parseFileReference } from "../files/managed-files";
@@ -79,10 +79,10 @@ export function ContentMedia({ kind, reference, fallback, name, caption, preview
       : <a href={resource.url} download={resource.managed ? name : undefined} rel="noopener noreferrer">{caption || name}</a>;
   } else {
     const status = resource.loading ? `${name}（正在加载…）`
-      : resource.canRetry ? <>{name}<ActionButton type="button" onClick={() => void requestResource()}>重新加载附件</ActionButton></>
+      : resource.canRetry ? <>{name}<Button variant="ghost" size="sm" type="button" onClick={() => void requestResource()}>重新加载附件</Button></>
       : !resource.available ? `${name}（资源不可用）`
       : kind === "image" ? `${name}（等待进入可见区域）`
-      : <ActionButton type="button" onClick={() => void requestResource()}>{kind === "file" ? "下载" : "加载"}{caption || name}</ActionButton>;
+      : <Button variant="ghost" size="sm" type="button" onClick={() => void requestResource()}>{kind === "file" ? "下载" : "加载"}{caption || name}</Button>;
     content = <p className="content-unavailable">{status}</p>;
   }
   return <figure ref={visibility.ref as RefObject<HTMLElement>} style={kind === "image" || kind === "video" ? { width, maxWidth: "100%" } : undefined}>
@@ -106,5 +106,5 @@ export function ManagedContentLink({ reference, fallback, children, className }:
   const resource = useContentResource(reference, fallback);
   const links = useContext(ContentLinkContext);
   return resource.url ? <a className={className} href={links?.resolve(resource.url) ?? resource.url} onClick={links?.onClick ? (event) => links.onClick?.(event, resource.url!) : undefined} download={resource.managed || undefined} rel="noopener noreferrer">{children}</a>
-    : resource.managed && resource.available ? <ActionButton type="button" className={className} disabled={resource.loading} onClick={async () => { const url = await resource.request(); if (url) downloadResource(url); }}>{children}{resource.loading ? "（附件加载中…）" : resource.canRetry ? "（重试下载）" : ""}</ActionButton> : <span className={className}>{children}</span>;
+    : resource.managed && resource.available ? <Button variant="ghost" size="sm" type="button" className={className} disabled={resource.loading} onClick={async () => { const url = await resource.request(); if (url) downloadResource(url); }}>{children}{resource.loading ? "（附件加载中…）" : resource.canRetry ? "（重试下载）" : ""}</Button> : <span className={className}>{children}</span>;
 }

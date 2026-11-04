@@ -1,3 +1,4 @@
+import { notification } from "../helpers/notifications";
 import {ownerSession,openWithSession,createCollection,createDocument,workspacePath,sessionHeaders,responseData} from "../helpers/api-fixtures";
 import {expect,test} from "@playwright/test";
 const apiOrigin=`http://127.0.0.1:${process.env.ORBIS_E2E_API_PORT||"9311"}`;
@@ -68,7 +69,7 @@ test("Recent document pages and a lost Markdown import response preserve the ori
   const listPath=workspacePath(session,`/collections/${collection.id}/documents?page=1&page_size=20`),headers=sessionHeaders(session);
   const before=await responseData(await request.get(listPath,{headers}));
   await page.locator('input[type="file"]').setInputFiles({name:"恢复导入.md",mimeType:"text/markdown",buffer:Buffer.from("# Markdown 重试回执\n\n同一文件只应创建一份文档。")});
-  await expect(page.getByRole("alertdialog", { name: "网络异常，请稍后重试", exact: true })).toBeVisible();
+  await expect(notification(page, "网络异常，请稍后重试")).toBeVisible();
   await page.getByRole("button", { name: "导入操作", exact: true }).click();
   await page.getByRole("button",{name:"重试导入",exact:true}).click();
   await expect(page).toHaveURL(/\/documents\/[0-9a-f-]+$/);

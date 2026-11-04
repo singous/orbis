@@ -5,7 +5,7 @@ import { makeElement } from "./model";
 it("uses the application canvas token for existing default backgrounds in either theme", () => {
   expect(boardCanvasBackground("#f2f4f7")).toBe("var(--board-canvas)");
   expect(boardCanvasBackground("#F2F4F7")).toBe("var(--board-canvas)");
-  expect(boardCanvasTextColor("#f2f4f7")).toBe("var(--text-primary)");
+  expect(boardCanvasTextColor("#f2f4f7")).toBe("var(--foreground)");
 });
 
 it("renders legacy neutral mindmap branches on the themed canvas and preserves authored colors", () => {

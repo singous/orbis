@@ -1,0 +1,19 @@
+@import "tailwindcss";
+@import "@orbis/ui/styles.css";
+@import "@fontsource-variable/inter";
+@import "./brand-tokens.css";
+@import "./motion.css";
+@import "./scrollbars.css";
+
+@source "../../packages/ui/src";
+@source not "../../packages/ui/src/**/*.stories.tsx";
+@source not "../../packages/ui/src/**/__tests__/**";
+
+@layer base {
+  body { min-width: 320px; }
+}
+
+/* 操作失败反馈需出现在仍打开的业务弹窗上方。 */
+@layer utilities {
+  [data-slot="toast-viewport"] { z-index: 60; }
+}

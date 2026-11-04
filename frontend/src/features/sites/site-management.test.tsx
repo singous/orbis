@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { toast as heroToast } from "@heroui/react/toast";
+import { clearToasts } from "../../shared/ui/Toast";
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
@@ -30,7 +30,7 @@ beforeEach(() => {
     return response(page([]));
   }));
 });
-afterEach(() => { act(() => heroToast.clear()); cleanup(); vi.unstubAllGlobals(); authStore.getState().clearSession(); });
+afterEach(() => { act(() => clearToasts()); cleanup(); vi.unstubAllGlobals(); authStore.getState().clearSession(); });
 
 function renderEditor() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
@@ -38,6 +38,33 @@ function renderEditor() {
 }
 
 describe("site editing", () => {
+  it.each(["loaded", "error"] as const)("keeps standalone workspace chrome and focus when pending resolves to %s", async (outcome) => {
+    let release!: () => void;
+    const pending = new Promise<void>((resolve) => { release = resolve; });
+    const currentFetch = globalThis.fetch;
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      if (String(url) !== `/api/v1/workspaces/${id}/sites/${id}`) return currentFetch(url, init);
+      await pending;
+      return outcome === "loaded" ? response(baseSite) : new Response(JSON.stringify({ code: "SITE_NOT_FOUND", message: "站点不存在", request_id: id, data: null }), { status: 404, headers: { "Content-Type": "application/json" } });
+    }));
+    renderEditor();
+    expect(screen.getByRole("status", { name: "正在打开站点…" })).toBeInTheDocument();
+    const shell = screen.getByRole("main");
+    const navigation = screen.getByRole("navigation", { name: "业务板块" });
+    const search = screen.getByRole("button", { name: "搜索" });
+    act(() => search.focus());
+    await act(async () => { release(); });
+    if (outcome === "loaded") {
+      const name = await screen.findByRole("textbox", { name: "站点名称" });
+      expect(name).toHaveValue("产品手册");
+    } else expect(await screen.findByRole("heading", { name: "无法打开站点" })).toBeInTheDocument();
+    expect(screen.getByRole("main")).toBe(shell);
+    expect(screen.getByRole("navigation", { name: "业务板块" })).toBe(navigation);
+    expect(screen.getByRole("button", { name: "搜索" })).toBe(search);
+    expect(search).toHaveFocus();
+    expect(screen.queryByRole("status", { name: "正在打开站点…" })).not.toBeInTheDocument();
+  });
+
   it("saves newly selected documents with public default paths independent of their IDs", async () => {
     const noteId = "018ff7c4-a5b6-7000-8000-000000000002";
     const currentFetch = globalThis.fetch;
@@ -89,7 +116,7 @@ describe("site editing", () => {
     await userEvent.clear(input);
     await userEvent.type(input, "我的修改");
     await userEvent.click(screen.getByRole("button", { name: "保存设置" }));
-    expect(await screen.findByRole("alertdialog")).toHaveTextContent("站点设置已被其他人修改");
+    expect(await screen.findByRole("alert")).toHaveTextContent("站点设置已被其他人修改");
     expect(input).toHaveValue("我的修改");
   });
 

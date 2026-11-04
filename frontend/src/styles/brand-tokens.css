@@ -1,0 +1,222 @@
+/* 应用与领域表面的布局层级；通用控件使用 shadcn 自带尺寸与样式。 */
+:root {
+  --ob-control-height-sm: calc(var(--spacing) * 7);
+  --ob-control-height-md: calc(var(--spacing) * 8);
+  --ob-control-height-lg: calc(var(--spacing) * 9);
+  --ob-control-height-touch: calc(var(--spacing) * 11);
+  --ob-motion-feedback: 100ms;
+  --ob-motion-popover: 100ms;
+  --ob-ease-out: var(--ease-out);
+  --ob-z-dialog: 50;
+  --ob-z-popover: 50;
+}
+
+/* 品牌插画区固定为明亮色板，独立于表单的浅/深主题。 */
+[data-ui="auth"] {
+  --ob-auth-showcase-background: #edf3cd;
+  --ob-auth-showcase-foreground: #25351c;
+  --ob-auth-showcase-muted: color-mix(in oklab, var(--ob-auth-showcase-foreground) 70%, var(--ob-auth-showcase-background));
+  --ob-auth-showcase-footer: color-mix(in oklab, var(--ob-auth-showcase-foreground) 66%, var(--ob-auth-showcase-background));
+  --ob-auth-showcase-border: color-mix(in oklab, var(--ob-auth-showcase-foreground) 16%, transparent);
+}
+@theme inline {
+  --color-ob-auth-showcase: var(--ob-auth-showcase-background);
+  --color-ob-auth-showcase-foreground: var(--ob-auth-showcase-foreground);
+  --color-ob-auth-showcase-muted: var(--ob-auth-showcase-muted);
+  --color-ob-auth-showcase-footer: var(--ob-auth-showcase-footer);
+  --color-ob-auth-showcase-border: var(--ob-auth-showcase-border);
+}
+
+/* 正文代码与引用的既有默认底色；阅读器主题仍可通过 --reading-* 覆盖。 */
+.document-prose {
+  --ob-content-plain-background: var(--card);
+  --ob-content-border: var(--border);
+}
+.workspace-shell .document-prose { --ob-content-border: var(--border); }
+
+/* 导航与内容类型图标沿用现有浅/深主题色板。 */
+:root, .light, .default, [data-theme="light"], [data-theme="default"] {
+  --ob-icon-cyan: #0891b2;
+  --ob-icon-mint: #059669;
+  --ob-icon-blue: #2563eb;
+  --ob-icon-violet: #7c3aed;
+  --ob-icon-rose: #db2777;
+  --ob-icon-amber: #b97705;
+  --ob-icon-slate: #64748b;
+}
+.dark, [data-theme="dark"] {
+  --ob-icon-cyan: #67e8f9;
+  --ob-icon-mint: #6ee7b7;
+  --ob-icon-blue: #93b4ff;
+  --ob-icon-violet: #c4b5fd;
+  --ob-icon-rose: #f9a8d4;
+  --ob-icon-amber: #fcd34d;
+  --ob-icon-slate: #a8b7cc;
+}
+
+/* 阅读器的品牌混色锚点与浮层材料由自己的主题边界拥有。 */
+.site-reader {
+  --ob-reader-accent-anchor: #0c3523;
+  --ob-reader-accent-soft-anchor: #fff;
+  --ob-reader-subtle-shadow: 0 1px 2px #00000008;
+  --ob-reader-drawer-shadow: 20px 0 60px #0002;
+  --ob-reader-drawer-scrim: #0007;
+}
+.site-reader[data-theme="dark"] {
+  --ob-reader-accent-anchor: #a7f3c4;
+  --ob-reader-accent-soft-anchor: #111815;
+}
+:root, .light, .default, [data-theme="light"], [data-theme="default"] { --ob-reader-status-muted: #66736c; }
+.dark, [data-theme="dark"] { --ob-reader-status-muted: var(--muted-foreground); }
+.site-preview-back {
+  --ob-reader-preview-background: #eaf8f0;
+  --ob-reader-preview-foreground: #156144;
+}
+
+.board-preview-tools { --ob-board-preview-controls-shadow: 0 3px 12px #0000000a; }
+.board-shell {
+  --ob-board-hint-border: #e9edf3;
+  --ob-board-loading-foreground: #8b97aa;
+  --ob-board-minimap-shadow: 0 2px 6px #24334b08;
+  --ob-board-selection: #2458ff;
+  --ob-board-selection-soft: #2458ff0c;
+  --ob-board-canvas-focus-shadow: inset 0 0 0 1px #2458ff55;
+  --ob-board-minimap-viewport-border: #a3b3d2;
+  --ob-board-minimap-viewport-fill: #5d81cf08;
+  --ob-board-image-placeholder: #e2e8f0;
+  --ob-board-image-error: #475569;
+  --ob-board-renderer-selection: #2563eb;
+  --ob-board-minimap-shape: #d9dfe7;
+}
+.board-shell, .board-header-actions { --ob-board-border: var(--border); }
+.workspace-shell :is(.board-shell, .board-header-actions) { --ob-board-border: var(--border); }
+.board-library {
+  --ob-board-library-icon-preview: #475569;
+  --ob-board-library-footer-border: #edf0f4;
+  --ob-board-library-icon-loading-background: #f3f5f8;
+}
+.orbis-tiptap { --ob-editor-border: var(--border); }
+.workspace-shell .orbis-tiptap { --ob-editor-border: var(--border); }
+.orbis-tiptap-toolbar { --ob-editor-toolbar-shadow: 0 3px 14px #0000000a; }
+
+:root {
+  --ob-shadow-table-menu: 0 8px 24px #0001;
+  --ob-shadow-table-picker: 0 6px 20px #0001;
+  --ob-shadow-table-card: 0 1px 2px #00000005;
+  --ob-sheet-qr-surface: #fff;
+}
+:root, .light, .default, [data-theme="light"], [data-theme="default"] {
+  --ob-board-hint-foreground: var(--muted-foreground);
+  --ob-sheet-toolbar-bg: #f4f4f4;
+  --ob-sheet-chrome-border: #dedede;
+  --ob-sheet-workspace-chrome-border: #dedede;
+  --ob-sheet-record-selected: #def3f3;
+  --ob-sheet-selection-ink: #00b578;
+  --ob-sheet-active-border: #3b8cff;
+  --ob-sheet-blue-base: #4084d5;
+  --ob-sheet-pink-base: #c15d91;
+  --ob-sheet-ink-blue: #226caf;
+  --ob-sheet-ink-green: #117b5d;
+  --ob-sheet-ink-amber: #95620e;
+  --ob-sheet-ink-purple: #70449e;
+  --ob-sheet-ink-pink: #a24973;
+}
+.dark, [data-theme="dark"] {
+  --ob-board-hint-foreground: #8995a8;
+  --ob-sheet-toolbar-bg: var(--muted);
+  --ob-sheet-chrome-border: var(--border);
+  --ob-sheet-workspace-chrome-border: var(--border);
+  --ob-sheet-record-selected: color-mix(in oklab, #00b5ad 20%, var(--card));
+  --ob-sheet-selection-ink: #00b578;
+  --ob-sheet-active-border: #3b8cff;
+  --ob-sheet-blue-base: #4084d5;
+  --ob-sheet-pink-base: #c15d91;
+  --ob-sheet-ink-blue: #79b8ff;
+  --ob-sheet-ink-green: #79d9b6;
+  --ob-sheet-ink-amber: #eac378;
+  --ob-sheet-ink-purple: #c4a6f0;
+  --ob-sheet-ink-pink: #e79bc4;
+}
+@theme inline {
+  --shadow-ob-table-menu: var(--ob-shadow-table-menu);
+}
+
+:root, .light, .default, [data-theme="light"], [data-theme="default"] {
+  --ob-content-inline-code-bg: #f5f8f6;
+  --ob-content-code-block-bg: #f7f9f8;
+  --ob-content-code-keyword: #7951a1;
+  --ob-content-code-string: #247657;
+  --ob-content-code-number: #a45320;
+  --ob-content-code-comment: color-mix(in oklab, var(--muted-foreground) 94%, var(--foreground));
+  --ob-content-callout-info-border: #cae1ee;
+  --ob-content-callout-info-background: #eff8fd;
+  --ob-content-callout-info-icon: #367caa;
+  --ob-content-callout-warning-border: #edd9af;
+  --ob-content-callout-warning-background: #fff9eb;
+  --ob-content-callout-warning-icon: #ab7b19;
+  --ob-content-callout-success-border: #c5e4d0;
+  --ob-content-callout-success-background: #f1faf4;
+  --ob-content-callout-success-icon: #287947;
+  --ob-content-callout-danger-border: #edcbca;
+  --ob-content-callout-danger-background: #fff3f2;
+  --ob-content-callout-danger-icon: #b5433e;
+}
+.dark, [data-theme="dark"] {
+  --ob-content-inline-code-bg: var(--muted);
+  --ob-content-code-block-bg: var(--muted);
+  --ob-content-code-keyword: #c5a5ed;
+  --ob-content-code-string: #88d5a8;
+  --ob-content-code-number: #eeb878;
+  --ob-content-code-comment: #94a49c;
+  --ob-content-callout-info-background: color-mix(in srgb, var(--ob-content-callout-info-icon) 13%, var(--card));
+  --ob-content-callout-info-border: color-mix(in srgb, var(--ob-content-callout-info-icon) 50%, var(--border));
+  --ob-content-callout-warning-background: color-mix(in srgb, var(--ob-content-callout-warning-icon) 13%, var(--card));
+  --ob-content-callout-warning-border: color-mix(in srgb, var(--ob-content-callout-warning-icon) 50%, var(--border));
+  --ob-content-callout-success-background: color-mix(in srgb, var(--ob-content-callout-success-icon) 13%, var(--card));
+  --ob-content-callout-success-border: color-mix(in srgb, var(--ob-content-callout-success-icon) 50%, var(--border));
+  --ob-content-callout-danger-background: color-mix(in srgb, var(--ob-content-callout-danger-icon) 13%, var(--card));
+  --ob-content-callout-danger-border: color-mix(in srgb, var(--ob-content-callout-danger-icon) 50%, var(--border));
+}
+
+:root {
+  --ob-prose-body-size: 14px;
+  --ob-prose-body-leading: 1.9;
+  --ob-prose-h1-size: 26px;
+  --ob-prose-h2-size: 23px;
+  --ob-prose-h3-size: 20px;
+  --ob-prose-h4-size: 18px;
+  --ob-prose-h5-size: 16px;
+  --ob-prose-h6-size: 15px;
+  --ob-prose-table-size: var(--text-sm);
+  --ob-prose-caption-size: var(--text-xs);
+  --ob-prose-title-size: 28px;
+}
+
+:root, [data-theme="light"] {
+  --status-success: var(--color-green-600);
+  --status-success-foreground: var(--color-green-800);
+  --status-warning: var(--color-amber-500);
+  --status-warning-foreground: var(--color-amber-800);
+  --shadow-color: rgb(0 0 0 / 10%);
+}
+[data-theme="dark"] {
+  --status-success: var(--color-green-400);
+  --status-success-foreground: var(--color-green-300);
+  --status-warning: var(--color-amber-400);
+  --status-warning-foreground: var(--color-amber-300);
+  --shadow-color: rgb(0 0 0 / 25%);
+}
+:root, [data-theme="light"], [data-theme="dark"] {
+  --status-success-background: color-mix(in oklab, var(--status-success) 12%, var(--card));
+  --status-warning-background: color-mix(in oklab, var(--status-warning) 12%, var(--card));
+  --destructive-soft: color-mix(in oklab, var(--destructive) 10%, transparent);
+}
+@theme inline {
+  --color-status-success: var(--status-success);
+  --color-status-success-background: var(--status-success-background);
+  --color-status-success-foreground: var(--status-success-foreground);
+  --color-status-warning: var(--status-warning);
+  --color-status-warning-background: var(--status-warning-background);
+  --color-status-warning-foreground: var(--status-warning-foreground);
+  --color-destructive-soft: var(--destructive-soft);
+}

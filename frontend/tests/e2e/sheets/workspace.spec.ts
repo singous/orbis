@@ -1,3 +1,6 @@
+import { expectTokenStyles } from "../helpers/theme-probes";
+import { notification } from "../helpers/notifications";
+import { expectVisibleKeyboardFocus } from "../../ui-browser/fixtures/media";
 import { expect, test } from "@playwright/test";
 import {
   ownerSession,
@@ -38,12 +41,13 @@ test("table, field menus, board and public collection share the same records", a
     .first()
     .click();
   await expect(page.getByText("1 条记录", { exact: true })).toBeVisible();
-  await page.getByRole("gridcell").first().dblclick();
+  const cells = page.locator(".sheet-cell[role=gridcell]");
+  await cells.first().dblclick();
   await page
     .getByRole("textbox", { name: "文本", exact: true })
     .fill("准备产品演示");
   await page.getByRole("textbox", { name: "文本", exact: true }).press("Enter");
-  await expect(page.getByRole("gridcell").first()).toContainText(
+  await expect(cells.first()).toContainText(
     "准备产品演示",
   );
   await page.getByRole("button", { name: "状态列菜单", exact: true }).click();
@@ -275,7 +279,9 @@ test("selection paste, duplicate highlighting, resize and filters operate on sto
   );
   await openWithSession(page, session, `/sheets/${sheet.id}`);
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
-  await page.getByRole("gridcell").first().dblclick();
+  const grid = page.getByRole("grid", { name: "数据表", exact: true });
+  const cells = grid.locator(".sheet-cell[role=gridcell]");
+  await cells.first().dblclick();
   await page
     .getByRole("textbox", { name: "文本", exact: true })
     .fill("将被粘贴替换的草稿");
@@ -285,12 +291,10 @@ test("selection paste, duplicate highlighting, resize and filters operate on sto
   await page.keyboard.press("ControlOrMeta+V");
   await expect(page.getByText("2 条记录", { exact: true })).toBeVisible();
   await page.reload();
-  await expect(page.getByRole("gridcell").first()).toContainText("重复内容");
+  await expect(cells.first()).toContainText("重复内容");
   await page.getByRole("button", { name: "文本列菜单", exact: true }).click();
   await page.getByRole("menuitem", { name: "高亮重复值", exact: true }).click();
   await expect(page.locator(".sheet-cell.duplicate")).toHaveCount(2);
-  const grid = page.getByRole("grid", { name: "数据表", exact: true });
-  const cells = grid.getByRole("gridcell");
   const firstRow = grid.locator(".sheet-grid-row").first();
   const secondRow = grid.locator(".sheet-grid-row").nth(1);
   await firstRow.getByRole("gridcell").last().click();
@@ -313,9 +317,9 @@ test("selection paste, duplicate highlighting, resize and filters operate on sto
   await page.getByRole("button", { name: "文本列菜单", exact: true }).click();
   await page.getByRole("menuitem", { name: "文本颜色", exact: true }).click();
   await page.getByRole("menuitem", { name: "蓝色", exact: true }).click();
-  await expect(page.getByRole("gridcell").first()).toHaveCSS(
+  await expect(cells.first()).toHaveCSS(
     "color",
-    "rgb(38, 117, 190)",
+    "rgb(34, 108, 175)",
   );
   const resize = page.getByRole("separator", { name: "调整文本列宽" });
   const box = (await resize.boundingBox())!;
@@ -332,7 +336,7 @@ test("selection paste, duplicate highlighting, resize and filters operate on sto
   await page.getByRole("button", { name: "筛选", exact: true }).click();
   const filter = page.getByRole("dialog", { name: "筛选", exact: true });
   await filter.getByRole("button", { name: "添加筛选条件" }).click();
-  await filter.getByRole("button", { name: /筛选条件 1$/ }).click();
+  await filter.getByRole("combobox", { name: "筛选条件 1", exact: true }).click();
   await page.getByRole("option", { name: "包含", exact: true }).click();
   await filter
     .getByRole("textbox", { name: "文本", exact: true })
@@ -363,6 +367,7 @@ test("document table blocks are created and edited in place without rewriting do
   await page.getByRole("button", { name: "插入内容", exact: true }).click();
   await page.getByRole("option", { name: "数据表", exact: true }).click();
   const embedded = page.locator(".sheet-embed-editor");
+  const cells = embedded.locator(".sheet-cell[role=gridcell]");
   await expect(
     embedded.getByRole("grid", { name: "数据表", exact: true }),
   ).toBeVisible();
@@ -371,14 +376,14 @@ test("document table blocks are created and edited in place without rewriting do
     .first()
     .click();
   await expect(embedded.getByText("1 条记录", { exact: true })).toBeVisible();
-  await embedded.getByRole("gridcell").first().dblclick();
+  await cells.first().dblclick();
   await embedded
     .getByRole("textbox", { name: "文本", exact: true })
     .fill("块内直接输入");
   await embedded
     .getByRole("textbox", { name: "文本", exact: true })
     .press("Enter");
-  await expect(embedded.getByRole("gridcell").first()).toContainText(
+  await expect(cells.first()).toContainText(
     "块内直接输入",
   );
   const list = await responseData(
@@ -402,18 +407,18 @@ test("document table blocks are created and edited in place without rewriting do
     )
     .toContain(table.id);
   const before = await responseData(await request.get(docPath, { headers }));
-  await embedded.getByRole("gridcell").first().dblclick();
+  await cells.first().dblclick();
   await embedded
     .getByRole("textbox", { name: "文本", exact: true })
     .fill("再次编辑已保存");
   await embedded
     .getByRole("textbox", { name: "文本", exact: true })
     .press("Enter");
-  await expect(embedded.getByRole("gridcell").first()).toContainText(
+  await expect(cells.first()).toContainText(
     "再次编辑已保存",
   );
   await page.reload();
-  await expect(embedded.getByRole("gridcell").first()).toContainText(
+  await expect(cells.first()).toContainText(
     "再次编辑已保存",
   );
   const after = await responseData(await request.get(docPath, { headers }));
@@ -447,6 +452,7 @@ test("sheet controls follow the Orbis theme in light and dark appearances", asyn
       },
     }),
   );
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await openWithSession(page, session, `/sheets/${sheet.id}`);
   for (const mode of ["light", "dark"]) {
     await page.evaluate(
@@ -461,67 +467,19 @@ test("sheet controls follow the Orbis theme in light and dark appearances", asyn
       exact: true,
     });
 
-    // 主操作跟随主题 accent；侧栏新建按钮是独立的中性控件。
-    await expect
-      .poll(async () => {
-        return submit.evaluate((e) => {
-          const probe = document.createElement("span");
-          probe.style.backgroundColor = "var(--accent)";
-          e.appendChild(probe);
-          const matches = getComputedStyle(e).backgroundColor === getComputedStyle(probe).backgroundColor;
-          probe.remove();
-          return matches;
-        });
-      })
-      .toBe(true);
-    const field = dialog.getByRole("textbox", {
-      name: "字段名称",
-      exact: true,
-    });
-    await expect
-      .poll(() =>
-        field.evaluate((e) => {
-          const p = document.createElement("div");
-          p.style.background =
-            e.matches(":focus") || e.getAttribute("data-focused") === "true"
-              ? "var(--field-focus)"
-              : e.matches(":hover") || e.getAttribute("data-hovered") === "true"
-                ? "var(--field-hover)"
-                : "var(--field-background)";
-          document.body.append(p);
-          const match =
-            getComputedStyle(e).backgroundColor ===
-            getComputedStyle(p).backgroundColor;
-          p.remove();
-          return match;
-        }),
-      )
-      .toBe(true);
-    const actual = await field.evaluate((e) => {
-      const probe = document.createElement("div");
-      probe.style.background =
-        e.matches(":focus") || e.getAttribute("data-focused") === "true"
-          ? "var(--field-focus)"
-          : e.matches(":hover") || e.getAttribute("data-hovered") === "true"
-            ? "var(--field-hover)"
-            : "var(--field-background)";
-      probe.style.borderRadius = "var(--field-radius)";
-      document.body.append(probe);
-      const expected = getComputedStyle(probe),
-        computed = getComputedStyle(e);
-      const result = {
-        background: computed.backgroundColor,
-        expectedBackground: expected.backgroundColor,
-        radius: computed.borderRadius,
-        expectedRadius: expected.borderRadius,
-        font: computed.fontFamily,
-      };
-      probe.remove();
-      return result;
-    });
-    expect(actual.background).toBe(actual.expectedBackground);
-    expect(actual.radius).toBe(actual.expectedRadius);
-    expect(actual.font).toContain("Inter Variable");
+    // 主操作使用原生主题色，输入框的边框、圆角、字体与焦点遵循原生 token。
+    await page.mouse.move(0, 0);
+    await expectTokenStyles(submit, { "background-color": "--primary", color: "--primary-foreground" });
+    const field = dialog.getByRole("textbox", { name: "字段名称", exact: true });
+    await submit.focus();
+    await expectTokenStyles(field, { "border-color": "--input", "border-radius": "--radius-lg", "font-family": "--font-sans" });
+    const fieldBackground = await field.evaluate(element => getComputedStyle(element).backgroundColor);
+    await field.hover();
+    await expect(field).toHaveCSS("background-color", fieldBackground);
+    await field.focus();
+    await expect(field).toHaveCSS("background-color", fieldBackground);
+    await expectTokenStyles(field, { "border-color": "--ring" });
+    await expectVisibleKeyboardFocus(field);
     await page.screenshot({
       path: test.info().outputPath(`native-field-${mode}.png`),
       animations: "disabled",
@@ -693,8 +651,7 @@ test("table pages live in the document tree and edit cells with anchored pickers
   page,
   request,
 }) => {
-  const session = await ownerSession(request),
-    headers = sessionHeaders(session);
+  const session = await ownerSession(request);
   const collection = await createCollection(
     request,
     session,
@@ -726,7 +683,7 @@ test("table pages live in the document tree and edit cells with anchored pickers
     .first()
     .click();
   await expect(page.getByText("1 条记录", { exact: true })).toBeVisible();
-  const cells = page.getByRole("gridcell");
+  const cells = page.locator(".sheet-cell[role=gridcell]");
   await cells.first().dblclick();
   const input = page.getByRole("textbox", { name: "文本", exact: true });
   await input.fill("原位编辑");
@@ -840,11 +797,12 @@ test("inline edits preserve newer typing through a lost save response and retry"
       await route.fulfill({ response });
     } else await route.continue();
   });
-  await page.getByRole("gridcell").first().dblclick();
+  const cells = page.locator(".sheet-cell[role=gridcell]");
+  await cells.first().dblclick();
   const input = page.getByRole("textbox", { name: "文本", exact: true });
   await input.fill("第一次保存");
   await input.press("Enter");
-  await expect(page.getByRole("alertdialog", { name: "网络异常，请稍后重试", exact: true })).toBeVisible();
+  await expect(notification(page, "网络异常，请稍后重试")).toBeVisible();
   await input.fill("继续输入的新内容");
   await page.getByRole("button", { name: "本机修改", exact: true }).click();
   const retry = page.getByRole("dialog", { name: "本机修改", exact: true }).getByRole("button", { name: "重试保存", exact: true });
@@ -852,11 +810,11 @@ test("inline edits preserve newer typing through a lost save response and retry"
   await expect(retry).toHaveCount(0);
   await input.press("Enter");
   await expect(input).toHaveCount(0);
-  await expect(page.getByRole("gridcell").first()).toContainText(
+  await expect(cells.first()).toContainText(
     "继续输入的新内容",
   );
   await page.reload();
-  await expect(page.getByRole("gridcell").first()).toContainText(
+  await expect(cells.first()).toContainText(
     "继续输入的新内容",
   );
   const saved = await responseData(
@@ -902,7 +860,7 @@ test("a typed cell draft survives reload before submission", async ({
     }),
   );
   await openWithSession(page, session, `/documents/${sheet.document_id}`);
-  await page.getByRole("gridcell").first().dblclick();
+  await page.locator(".sheet-cell[role=gridcell]").first().dblclick();
   const input = page.getByRole("textbox", { name: "文本", exact: true });
   await input.fill("还未提交的输入");
   await page.reload();

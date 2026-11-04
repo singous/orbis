@@ -34,7 +34,7 @@ test("document navigation retains chrome and does not replay area-icon or page-e
     (window as Window & { navigationMotionTrace?: MotionTrace }).navigationMotionTrace = trace;
     document.addEventListener("animationstart", event => {
       if (event.animationName === "navigation-icon-select" && event.target instanceof Element && event.target.closest(".workspace-business-rail")) trace.icons++;
-      if (event.animationName === "workspace-content-enter") trace.content++;
+      if (event.animationName === "ob-workspace-enter" || event.animationName === "workspace-content-enter") trace.content++;
     });
   });
   const delayed = new Set([sibling.id, child.id, board.document_id, sheet.document_id]);
@@ -60,7 +60,12 @@ test("document navigation retains chrome and does not replay area-icon or page-e
   expect(await page.evaluate(() => (window as Window & { navigationMotionTrace?: MotionTrace }).navigationMotionTrace)).toEqual({ icons: 0, content: 0 });
   await page.locator(".workspace-business-rail").getByRole("link", { name: "首页", exact: true }).click();
   await expect(page.getByRole("heading", { name: "首页", exact: true })).toBeVisible();
-  await expect.poll(() => page.evaluate(() => (window as Window & { navigationMotionTrace?: MotionTrace }).navigationMotionTrace!.icons)).toBe(1);
+  const home = page.locator(".workspace-business-rail").getByRole("link", { name: "首页", exact: true });
+  await expect(home).toHaveAttribute("aria-current", "page");
+  await expect(home.locator("svg")).toBeVisible();
+  await expect(home.locator("svg")).toHaveCSS("animation-name", "none");
+  await nextPaint(page);
+  expect(await page.evaluate(() => (window as Window & { navigationMotionTrace?: MotionTrace }).navigationMotionTrace)).toEqual({ icons: 0, content: 0 });
 });
 
 test("deferred forms expose no creation, publishing or saved-form entry in table documents", async ({ page, request }) => {

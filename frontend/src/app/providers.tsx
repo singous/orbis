@@ -1,6 +1,7 @@
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
 import { useStore } from "zustand";
+import { TooltipProvider } from "@orbis/ui/tooltip";
 
 import { clearToasts, Toaster } from "../shared/ui/Toast";
 import { AUTH_STORAGE_KEY, authStore, getAuthSessionKey } from "../shared/auth/auth-store";
@@ -47,5 +48,5 @@ export function AppProviders({ children }: { children: ReactNode }) {
   }, []);
   const sessionKey = useStore(authStore, getAuthSessionKey);
   // Remount observers too: pending mutations retain the client of their session.
-  return <><SessionProviders key={sessionKey}>{children}</SessionProviders><Toaster /></>;
+  return <TooltipProvider><SessionProviders key={sessionKey}>{children}</SessionProviders><Toaster /></TooltipProvider>;
 }

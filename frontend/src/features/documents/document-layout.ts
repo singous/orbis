@@ -1,0 +1,32 @@
+import { cn } from "@orbis/ui/cn";
+
+
+const highlightedTreeFocus = "forced-colors:group-focus-within/document-row:focus-visible:outline-[HighlightText]!";
+
+export const documentTreeStyles = {
+  container: "document-context @container/document-directory -mx-[5px] [--document-tree-indent:1.5rem] [--document-tree-toggle-column:1.5rem] px-0 pt-3 pb-2 pointer-coarse:[--document-tree-toggle-column:var(--ob-control-height-sm)]",
+  header: "document-context-header flex min-h-(--ob-control-height-md) items-center justify-between gap-2 px-1 pt-0 pb-1",
+  heading: "m-0 flex items-center gap-3 text-base font-medium leading-6 text-foreground [&>svg]:mx-1",
+  tools: "document-tree-tools flex gap-0",
+  tree: "document-context-tree grid grid-cols-[minmax(0,1fr)] gap-0",
+  item: "document-context-item min-w-0 [&+.document-context-item]:mt-1 data-[dragging=true]:relative data-[dragging=true]:z-2 data-[dragging=true]:opacity-65 data-[dragging=true]:[&_.document-context-link]:cursor-grabbing data-[drop-target=true]:[&>.document-context-row]:outline-solid data-[drop-target=true]:[&>.document-context-row]:outline-2 data-[drop-target=true]:[&>.document-context-row]:outline-primary data-[drop-target=true]:[&>.document-context-row]:-outline-offset-2",
+  row: "document-context-row group/document-row flex min-h-(--ob-control-height-md) min-w-0 items-center gap-0 rounded-md py-0 pe-1 ps-[calc(4px+var(--document-depth,0)*var(--document-tree-indent))] [--document-row-actions-width:0px] data-[editable=true]:[--document-row-actions-width:calc(2*var(--ob-control-height-sm))] pointer-coarse:data-[editable=true]:[--document-row-actions-width:var(--ob-control-height-sm)] @max-[190px]/document-directory:data-[editable=true]:[--document-row-actions-width:var(--ob-control-height-sm)] text-foreground [--ob-tree-control-color:var(--muted-foreground)] transition-colors duration-(--ob-motion-feedback) hover:bg-(--accent) hover:text-(--accent-foreground) hover:[--ob-tree-control-color:var(--accent-foreground)] focus-within:bg-(--accent) focus-within:text-(--accent-foreground) focus-within:[--ob-tree-control-color:var(--accent-foreground)] [&:has([data-menu-open=true])]:bg-(--accent) [&:has([data-menu-open=true])]:text-(--accent-foreground) [&:has([data-menu-open=true])]:[--ob-tree-control-color:var(--accent-foreground)] data-[document-drag-row=true]:touch-pan-y data-[document-drag-row=true]:select-none data-[document-drag-row=true]:[&_.document-context-link]:cursor-pointer motion-reduce:transition-none",
+  link: cn("document-context-link flex min-w-0 flex-1 items-center self-stretch px-0.5 py-2 text-sm font-normal leading-5 text-inherit no-underline focus-visible:rounded-sm focus-ring focus-visible:-outline-offset-2 [&>span]:min-w-0 [&>span]:truncate", highlightedTreeFocus),
+  prefix: "document-tree-prefix flex w-[var(--document-tree-toggle-column,var(--ob-control-height-sm))] shrink-0 items-center justify-center",
+  disclosure: cn("document-tree-disclosure grid h-(--ob-control-height-sm) w-(--ob-control-height-sm) min-w-(--ob-control-height-sm) shrink-0 place-items-center p-0 text-[color:var(--ob-tree-control-color,var(--muted-foreground))] [&>svg]:transition-transform [&>svg]:duration-(--ob-motion-feedback) aria-[expanded=false]:[&>svg]:-rotate-90 motion-reduce:[&>svg]:transition-none", highlightedTreeFocus),
+  actions: "document-context-actions flex w-(--document-row-actions-width) shrink-0 items-center gap-0 [@media(hover:hover)_and_(pointer:fine)]:w-0 [@media(hover:hover)_and_(pointer:fine)]:overflow-hidden [@media(hover:hover)_and_(pointer:fine)]:opacity-0 [@media(hover:hover)_and_(pointer:fine)]:pointer-events-none [@media(hover:hover)_and_(pointer:fine)]:group-hover/document-row:w-(--document-row-actions-width) [@media(hover:hover)_and_(pointer:fine)]:group-hover/document-row:overflow-visible [@media(hover:hover)_and_(pointer:fine)]:group-hover/document-row:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:group-hover/document-row:pointer-events-auto [@media(hover:hover)_and_(pointer:fine)]:group-focus-within/document-row:w-(--document-row-actions-width) [@media(hover:hover)_and_(pointer:fine)]:group-focus-within/document-row:overflow-visible [@media(hover:hover)_and_(pointer:fine)]:group-focus-within/document-row:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:group-focus-within/document-row:pointer-events-auto [@media(hover:hover)_and_(pointer:fine)]:data-[menu-open=true]:w-(--document-row-actions-width) [@media(hover:hover)_and_(pointer:fine)]:data-[menu-open=true]:overflow-visible [@media(hover:hover)_and_(pointer:fine)]:data-[menu-open=true]:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:data-[menu-open=true]:pointer-events-auto",
+  action: cn("grid h-(--ob-control-height-sm) w-(--ob-control-height-sm) min-w-(--ob-control-height-sm) bg-transparent p-0 text-inherit enabled:hover:bg-(--accent)", highlightedTreeFocus),
+  children: "document-context-children min-w-0 px-0 pt-1 pb-0",
+  empty: "document-tree-empty grid justify-items-start gap-3 px-3 py-4",
+};
+
+export const notebookDirectoryStyles = {
+  list: "document-main-list grid grid-cols-[minmax(0,1fr)] gap-0",
+  item: "document-main-item min-w-0",
+  row: "document-main-row [--ob-tree-control-color:var(--muted-foreground)] hover:[--ob-tree-control-color:var(--accent-foreground)] flex min-h-11 min-w-0 items-center gap-0 rounded-md p-0 transition-colors duration-(--ob-motion-feedback) hover:bg-(--accent) motion-reduce:transition-none",
+  link: "document-main-link flex min-w-0 flex-1 items-center gap-[18px] px-0 py-2.5 text-foreground focus-visible:rounded-xl focus-ring focus-visible:outline-offset-2 max-[600px]:flex-wrap max-[600px]:gap-2",
+  title: "document-main-title min-w-0 truncate text-base font-normal leading-6 max-[600px]:flex-[1_1_100%]",
+  leader: "document-main-leader min-w-4 flex-1 border-b border-dashed border-border max-[600px]:hidden",
+  time: "min-w-[100px] shrink-0 whitespace-nowrap text-end [font-family:var(--font-mono)] text-sm leading-5 tracking-[-.02em] text-(--muted-foreground) max-[600px]:block max-[600px]:min-w-0 max-[600px]:text-start max-[600px]:text-xs max-[600px]:leading-[18px]",
+  children: "document-main-children min-w-0 ps-7 max-[600px]:ps-4",
+};

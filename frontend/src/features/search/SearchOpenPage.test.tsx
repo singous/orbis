@@ -31,7 +31,7 @@ describe("opening search resources within the application workspace", () => {
   it("does not switch spaces when opening a legacy link that names another workspace", async () => {
     const fetch = vi.fn(); vi.stubGlobal("fetch", fetch);
     renderOpen({ workspaceId: other });
-    expect(await screen.findByText("该内容不在当前工作空间，请通过空间菜单切换后再打开。")).toBeVisible();
+    expect(await screen.findByRole("alert")).toHaveTextContent("该内容不在当前工作空间，请通过空间菜单切换后再打开。");
     expect(fetch).not.toHaveBeenCalled();
     expect(authStore.getState().workspace?.id).toBe(current);
     expect(screen.queryByText("目标站点")).not.toBeInTheDocument();
@@ -56,7 +56,7 @@ describe("opening search resources within the application workspace", () => {
   it("stays on the lookup page after authorization fails", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => envelope(null, 403)));
     renderOpen();
-    expect(await screen.findByText("内容访问权限已失效")).toBeVisible();
+    expect(await screen.findByRole("alert")).toHaveTextContent("内容访问权限已失效");
     expect(authStore.getState().workspace?.id).toBe(current);
     expect(screen.queryByText("目标站点")).not.toBeInTheDocument();
   });

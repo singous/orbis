@@ -36,8 +36,8 @@ export function analyzeArchitecture(sources) {
       }
       if (specifier && ts.isStringLiteral(specifier)) {
         const name = specifier.text;
-        const base = path.posix.normalize(path.posix.join(path.posix.dirname(file), name));
-        const target = name.startsWith(".") ? [base, ...sourceExtensions.map(extension => base + extension)].find(candidate => files.has(candidate)) : undefined;
+        const base = name.startsWith("@/") ? name.slice(2) : path.posix.normalize(path.posix.join(path.posix.dirname(file), name));
+        const target = (name.startsWith(".") || name.startsWith("@/")) ? [base, ...sourceExtensions.map(extension => base + extension)].find(candidate => files.has(candidate)) : undefined;
         if (target) {
           if (file.startsWith("shared/") && !target.startsWith("shared/")) violations.push(`${file}: shared code imports ${target}`);
           if (file.startsWith("features/") && target.startsWith("app/")) violations.push(`${file}: feature code imports application composition ${target}`);

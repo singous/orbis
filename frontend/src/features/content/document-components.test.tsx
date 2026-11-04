@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -34,6 +34,9 @@ describe("documentation content", () => {
     await user.click(screen.getByRole("tab", { name: "macOS" }));
     expect(screen.getByText("Mac 配置说明")).toBeVisible();
     expect(screen.getByRole("tab", { name: "macOS" })).toHaveAttribute("aria-selected", "true");
+    const panel = screen.getByRole("tabpanel", { name: "macOS" });
+    expect(screen.getByRole("tab", { name: "macOS" })).toHaveAttribute("aria-controls", panel.id);
+    expect(document.getElementById(window.location.hash.slice(1))).toContainElement(screen.getByText("Mac 配置说明"));
     await user.keyboard("{ArrowLeft}");
     expect(screen.getByRole("tab", { name: "Linux" })).toHaveFocus();
     expect(screen.getByText("Linux 配置说明")).toBeVisible();
@@ -49,7 +52,7 @@ describe("documentation content", () => {
     )} />);
     expect(screen.getByRole("list", { name: "步骤" })).toHaveTextContent("安装依赖");
     await user.click(screen.getByRole("tab", { name: "JavaScript" }));
-    await user.click(screen.getByRole("button", { name: "复制代码" }));
+    await user.click(within(screen.getByRole("tabpanel", { name: "JavaScript" })).getByRole("button", { name: "复制代码" }));
     expect(copied).toBe('const html = "<script>bad()</script>";');
     await waitFor(() => expect(container.querySelector(".hljs-keyword")).not.toBeNull());
     expect(container.querySelector("script")).toBeNull();

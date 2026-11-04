@@ -1,10 +1,13 @@
 import {QueryClient,QueryClientProvider} from "@tanstack/react-query";
-import { act, cleanup, fireEvent, render as renderTestingLibrary, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render as renderTestingLibrary, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { createNotebookSidebar } from "./NotebookSectionMenu";
 import { WorkspaceShell, type WorkspaceSidebarConfig } from "../workspace/WorkspaceShell";
 import { authStore } from "../../shared/auth/auth-store";
+
+const menuState = vi.hoisted(() => ({ create: vi.fn(), treeReady: true }));
 
 function render(ui:React.ReactElement){return renderTestingLibrary(ui,{wrapper:({children})=><QueryClientProvider client={new QueryClient()}>{children}</QueryClientProvider>});}
 
@@ -14,18 +17,20 @@ vi.mock("./DocumentContextPanel", () => ({ DocumentContextPanel: () => <nav aria
 vi.mock("./queries", () => ({
   useNotebook: () => ({ data: { id: "notebook", title: "当前笔记本" } }),
   useNotebooks: () => ({ data: { items: [{ id: "notebook", title: "当前笔记本" }] } }),
-  useCreateNote: () => ({ mutateAsync: vi.fn(), isPending: false }),
-  useNoteTree: () => ({ data: { items: [] }, isSuccess: true }),
+  useCreateNote: () => ({ mutateAsync: menuState.create, isPending: false }),
+  useNoteTree: () => ({ data: { items: [] }, isSuccess: menuState.treeReady }),
 }));
 
 beforeEach(() => {
+  menuState.create.mockReset().mockResolvedValue({ id: "new-document" });
+  menuState.treeReady = true;
   localStorage.clear();
   authStore.setState({accessToken:"test", workspace: { id: "directory", name: "测试空间", role: "owner", created_at_ms: 1, updated_at_ms: 1 } });
 });
 afterEach(() => { cleanup(); authStore.getState().clearSession(); vi.restoreAllMocks(); });
 const shell = (config: WorkspaceSidebarConfig) => <MemoryRouter initialEntries={["/collections/notebook"]}><WorkspaceShell sidebar={config}>笔记本首页</WorkspaceShell></MemoryRouter>;
 
-it("retains the tree while collapsed and supports public keyboard resizing", () => {
+it("retains the tree while collapsed and supports public keyboard resizing", async () => {
   render(shell(createNotebookSidebar("notebook")));
   const resize = screen.getByRole("separator", { name: "调整笔记本目录宽度" });
   expect(screen.getByRole("link", { name: "当前笔记本" })).toHaveAttribute("href", "/collections/notebook");
@@ -35,7 +40,7 @@ it("retains the tree while collapsed and supports public keyboard resizing", () 
   fireEvent.click(screen.getByRole("button", { name: "收起笔记本目录" }));
   expect(screen.queryByRole("navigation", { name: "测试目录" })).toBeNull();
   expect(screen.getByRole("navigation", { name: "测试目录", hidden: true })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "展开笔记本目录" })).toHaveFocus();
+  await waitFor(() => expect(screen.getByRole("button", { name: "展开笔记本目录" })).toHaveFocus());
   fireEvent.click(screen.getByRole("button", { name: "展开笔记本目录" }));
   expect(resize).not.toBeInTheDocument();
   expect(screen.getByRole("separator", { name: "调整笔记本目录宽度" })).toHaveAttribute("aria-valuenow", "248");
@@ -82,4 +87,23 @@ it("shares the default width and resize limit with ordinary function sidebars", 
   view.rerender(shell(createNotebookSidebar("notebook")));
   expect(screen.getByRole("separator")).toHaveAttribute("aria-valuenow", width);
   expect(screen.getByRole("separator")).toHaveAttribute("aria-valuemax", maximum);
+});
+
+it("creates a root document from the explicit notebook menu once", async () => {
+  const user = userEvent.setup();
+  render(shell(createNotebookSidebar("notebook")));
+  await user.click(screen.getByRole("button", { name: "创建内容" }));
+  await user.click(await screen.findByRole("menuitem", { name: "文档" }));
+  await waitFor(() => expect(menuState.create).toHaveBeenCalledExactlyOnceWith({ notebook_id: "notebook", title: "未命名文档", parent_id: null, sort_order: 0 }));
+});
+
+it("keeps document creation unavailable until the notebook directory is loaded", async () => {
+  menuState.treeReady = false;
+  const user = userEvent.setup();
+  render(shell(createNotebookSidebar("notebook")));
+  await user.click(screen.getByRole("button", { name: "创建内容" }));
+  const item = await screen.findByRole("menuitem", { name: "文档" });
+  expect(item).toHaveAttribute("aria-disabled", "true");
+  await user.click(item);
+  expect(menuState.create).not.toHaveBeenCalled();
 });

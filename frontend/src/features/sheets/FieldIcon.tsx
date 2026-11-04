@@ -17,7 +17,7 @@ import {
   User,
   UserPen,
   UserPlus,
-} from "lucide-react";
+} from "@orbis/ui/icons";
 import type { Kind } from "./model";
 const icons = {
   text: AlignLeft,

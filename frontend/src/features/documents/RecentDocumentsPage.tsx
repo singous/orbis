@@ -1,5 +1,7 @@
+import { emptyPanelClassName } from "../../shared/ui/surface-styles";
+import { workbenchStyles } from "@/shared/ui/workbench-styles";
 import {useState} from "react";
-import {Button} from "../../shared/ui/Button";
+import { Button } from "@orbis/ui/button";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { FilePlus2 } from "../../shared/ui/icons";
 import { Link } from "react-router-dom";
@@ -26,7 +28,7 @@ export function RecentDocumentsPage() {
           <LoadingState label="正在加载文档…" />
         ) : null}
         {!notesQuery.isLoading && !notes.length ? (
-          <div className="empty-panel">
+          <div className={emptyPanelClassName}>
             还没有可继续的文档。
             <Link
               to="/documents/collections"
@@ -37,25 +39,25 @@ export function RecentDocumentsPage() {
           </div>
         ) : null}
         {notes.length ? (
-          <div className="workbench-document-list">
+          <div className={workbenchStyles.documentList}>
             {notes.map((note) => (
               <Link
                 key={note.id}
                 to={`/documents/${note.id}`}
-                className="workbench-document-row"
+                className={`${workbenchStyles.documentRow} hover:bg-(--accent)`}
               >
-                <div className="workbench-list-icon">
+                <div className={workbenchStyles.listIcon}>
                   <FilePlus2 aria-hidden="true" size={16} />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-semibold">
                     {note.title}
                   </div>
-                  <div className="mt-1 truncate text-xs text-[var(--muted)]">
+                  <div className="mt-1 truncate text-xs text-(--muted-foreground)">
                     {note.summary || "打开文档"}
                   </div>
                 </div>
-                <time className="text-xs text-[var(--muted-light)]">
+                <time className={workbenchStyles.listTime}>
                   {formatDate(note.updated_at_ms)}
                 </time>
               </Link>

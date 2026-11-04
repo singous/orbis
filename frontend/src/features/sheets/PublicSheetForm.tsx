@@ -1,14 +1,16 @@
+import { cn } from "@orbis/ui/cn";
+import { sheetActionClassName } from "./sheet-chrome";
+import { publicFormPaperClassName, formQuestionClassName, formRequiredClassName, publicFormDescriptionClassName, publicFormClassName, publicFormTitleClassName } from "./form-chrome";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { ApiError } from "../../shared/api/api-client";
 import { reportError } from "../../shared/api/request-feedback";
 import { newUUID } from "../../shared/ids";
-import { ActionButton } from "../../shared/ui/ActionButton";
+import { Button } from "@orbis/ui/button";
 import { ValueEditor } from "./Cell";
 import { readPublicForm, submitPublicForm, uploadPublicFormFile } from "./api";
 import type { Value } from "./model";
-import "./sheets.css";
 
 export function PublicSheetForm() {
   const { token = "" } = useParams();
@@ -53,17 +55,17 @@ function PublicSheetFormSession({ token }: { token: string }) {
   }, [submissionKey]);
   if (query.error)
     return (
-      <main className="sheet-public">
-        <div className="sheet-form-paper">
-          <h1>暂时无法填写</h1>
+      <main className={publicFormClassName}>
+        <div className={publicFormPaperClassName}>
+          <h1 className={publicFormTitleClassName}>暂时无法填写</h1>
           <p>收集已停止，或填写链接已失效。</p>
-          <ActionButton size="sm" onClick={() => void query.refetch()}>
+          <Button className={sheetActionClassName} size="sm" onClick={() => void query.refetch()} variant="ghost">
             重试
-          </ActionButton>
+          </Button>
         </div>
       </main>
     );
-  if (!query.data) return <main className="sheet-public">正在加载表单…</main>;
+  if (!query.data) return <main className={publicFormClassName}>正在加载表单…</main>;
   const form = query.data;
   async function submit() {
 
@@ -104,9 +106,9 @@ function PublicSheetFormSession({ token }: { token: string }) {
     }
   }
   return (
-    <main className="sheet-public">
+    <main className={publicFormClassName}>
       <form
-        className="sheet-form-paper"
+        className={publicFormPaperClassName}
         onSubmit={(e) => {
           e.preventDefault();
           void submit();
@@ -114,19 +116,19 @@ function PublicSheetFormSession({ token }: { token: string }) {
       >
         {done ? (
           <>
-            <h1>提交成功</h1>
+            <h1 className={publicFormTitleClassName}>提交成功</h1>
             <p>你的信息已保存，感谢填写。</p>
           </>
         ) : (
           <>
-            <h1>{form.config.title}</h1>
-            <p className="sheet-form-description">{form.config.description}</p>
+            <h1 className={publicFormTitleClassName}>{form.config.title}</h1>
+            <p className={publicFormDescriptionClassName}>{form.config.description}</p>
             {form.config.fields.map((ff, i) => {
               const field = form.fields.find((f) => f.id === ff.field_id);
               return field ? (
-                <section className="sheet-form-question" key={field.id}>
+                <section className={formQuestionClassName} key={field.id}>
                   <label>
-                    {ff.required && <em>*</em>}
+                    {ff.required && <em className={formRequiredClassName}>*</em>}
                     {i + 1}. {field.name}
                   </label>
                   {ff.description && <p>{ff.description}</p>}
@@ -146,15 +148,15 @@ function PublicSheetFormSession({ token }: { token: string }) {
               ) : null;
             })}
 
-            <ActionButton
+            <Button
               size="sm"
               type="submit"
-              variant="primary"
-              className="sheet-primary"
+              variant="default"
+              className={cn(sheetActionClassName, "[@media(max-width:760px)]:w-full [@media(max-width:760px)]:min-h-(--ob-control-height-touch)")}
               disabled={busy}
             >
               {busy ? "提交中…" : pending.current ? "重试提交" : "提交"}
-            </ActionButton>
+            </Button>
           </>
         )}
       </form>

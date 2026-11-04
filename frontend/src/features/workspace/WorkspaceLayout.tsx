@@ -1,6 +1,7 @@
+import { Button } from "@orbis/ui/button";
+import { mobileDrawerControlClassName, workspaceContentClassName, workspaceGridClassName, workspaceMainAreaClassName, workspaceMainNavigationClassName, workspaceRouteClassName, workspaceShellClassName, workspaceToolbarClassName } from "./workspace-chrome";
 import { useRef, useState, type CSSProperties } from "react";
 import type { WorkspaceShellProps } from "./workspace-layout";
-import { ActionButton } from "../../shared/ui/ActionButton";
 import { Menu, PanelRightOpen } from "../../shared/ui/icons";
 import { useLocation } from "react-router-dom";
 import { useStore } from "zustand";
@@ -51,12 +52,12 @@ export function WorkspaceLayout({ children, sectionTitle, sidebar, toolbar, cont
 
 
   return (
-    <main data-app-surface={surface} style={shellStyle} className={`workspace-shell${showFunctionSidebar ? " has-section-menu" : " sidebar-unavailable"}${sidebarHidden ? " sidebar-collapsed" : ""}${animating ? " sidebar-animating" : ""}${mainNavigationOpen ? " main-navigation-open" : ""}${documentContextExpanded ? " document-context-drawer-open" : ""}`}>
-      <a className="workspace-skip-link" href="#workspace-main-content" inert={drawerOpen ? true : undefined}>跳转到主内容</a>
+    <main data-app-surface={surface} style={shellStyle} className={`${workspaceShellClassName}${showFunctionSidebar ? " has-section-menu" : " sidebar-unavailable"}${sidebarHidden ? " sidebar-collapsed" : ""}${animating ? " sidebar-animating" : ""}${mainNavigationOpen ? " main-navigation-open" : ""}${documentContextExpanded ? " document-context-drawer-open" : ""}`}>
+      <a className="workspace-skip-link focus-ring fixed top-3 left-3 z-(--ob-z-popover) flex min-h-(--ob-control-height-md) -translate-y-[calc(100%+16px)] items-center rounded-lg bg-primary px-4 py-2 text-primary-foreground focus-visible:translate-y-0" href="#workspace-main-content" inert={drawerOpen ? true : undefined}>跳转到主内容</a>
       {surface === "desktop" ? <WorkspaceTopbar disabled={drawerOpen} /> : null}
-      <div ref={gridRef} className="workspace-shell-grid">
-        {drawerOpen ? <ActionButton type="button" className="workspace-drawer-backdrop" aria-label={mainNavigationOpen ? "关闭主导航" : "关闭文档目录"} onClick={() => { setMainNavigationOpen(false); setDocumentContextOpen(false); }} /> : null}
-        <div ref={navigationRef} className="workspace-main-navigation" aria-hidden={compact && !mainNavigationOpen ? true : undefined} inert={compact && !mainNavigationOpen ? true : undefined} onClick={closeAfterLink}>
+      <div ref={gridRef} className={workspaceGridClassName}>
+        {drawerOpen ? <button type="button" className="workspace-drawer-backdrop hidden bg-black/10 max-[768px]:fixed max-[768px]:inset-x-0 max-[768px]:top-(--topbar-height) max-[768px]:bottom-0 max-[768px]:z-40 max-[768px]:block" aria-label={mainNavigationOpen ? "关闭主导航" : "关闭文档目录"} onClick={() => { setMainNavigationOpen(false); setDocumentContextOpen(false); }} /> : null}
+        <div ref={navigationRef} className={workspaceMainNavigationClassName} aria-hidden={compact && !mainNavigationOpen ? true : undefined} inert={compact && !mainNavigationOpen ? true : undefined} onClick={closeAfterLink}>
           <BusinessRail surface={surface} createMenu={canCreate ? <RailCreateMenu /> : undefined} collapsed={showFunctionSidebar && sidebarHidden} expandLabel={sidebarConfig ? sidebarConfig.expandLabel : undefined} onExpand={() => changeCollapsed(false)} onClose={compact && !showFunctionSidebar ? () => setMainNavigationOpen(false) : undefined} />
           {showFunctionSidebar && sidebarConfig ? <WorkspaceSidebar
             config={sidebarConfig}
@@ -66,20 +67,20 @@ export function WorkspaceLayout({ children, sectionTitle, sidebar, toolbar, cont
             resizeHandle={sidebarResizeEnabled ? <SidebarResizeHandle {...sidebarResize} label={sidebarConfig.resizeLabel} controls={sidebarConfig.id ?? "workspace-sidebar"} /> : undefined}
           /> : null}
         </div>
-        <section className={`workspace-main-area${contentLayout === "document" ? " workspace-main-area-panel" : ""}${contextPanel && contextOpen ? " has-context" : ""}`} aria-label="主工作区">
-          <section ref={contentScrollRef} className={`workspace-content${contentLayout === "document" ? " workspace-document-content" : ""}`} inert={drawerOpen ? true : undefined}>
+        <section className={`${workspaceMainAreaClassName}${contentLayout === "document" ? " workspace-main-area-panel" : ""}${contextPanel && contextOpen ? " has-context" : ""}`} aria-label="主工作区">
+          <section ref={contentScrollRef} className={`${workspaceContentClassName}${contentLayout === "document" ? " workspace-document-content" : ""}`} inert={drawerOpen ? true : undefined}>
             {showToolbar ? (
-              <header className="workspace-toolbar">
-                <ActionButton type="button" aria-label="打开主导航" aria-expanded={mainNavigationOpen} className="workspace-mobile-drawer-control" onClick={() => { setMainNavigationOpen(true); setDocumentContextOpen(false); }}><Menu aria-hidden="true" size={18} /></ActionButton>
-                {sectionTitle ? <span className="workspace-toolbar-title">{sectionTitle}</span> : <span className="workspace-toolbar-spacer" />}
-                <div className="workspace-toolbar-actions">{toolbar}</div>
-                {contextPanel ? <ActionButton type="button" aria-label="打开文档目录" aria-expanded={documentContextExpanded} className="workspace-mobile-drawer-control" onClick={() => { onOpenContext?.(); setDocumentContextOpen(true); setMainNavigationOpen(false); }}><PanelRightOpen aria-hidden="true" size={18} /></ActionButton> : null}
-                {contextPanel && onOpenContext ? <ActionButton type="button" aria-label="打开上下文面板" className="icon-button workspace-context-open-control" onClick={onOpenContext}><PanelRightOpen aria-hidden="true" size={16} /></ActionButton> : null}
+              <header className={workspaceToolbarClassName}>
+                <Button type="button" aria-label="打开主导航" aria-expanded={mainNavigationOpen} size="icon" className={mobileDrawerControlClassName} onClick={() => { setMainNavigationOpen(true); setDocumentContextOpen(false); }} variant="ghost"><Menu aria-hidden="true" size={18} /></Button>
+                {sectionTitle ? <span className="workspace-toolbar-title flex-1 text-xs text-(--muted-foreground) in-[.workspace-document-content]:min-w-0">{sectionTitle}</span> : <span className="workspace-toolbar-spacer flex-1" />}
+                <div className="workspace-toolbar-actions flex min-w-0 flex-wrap items-center gap-2 max-[768px]:gap-[5px] in-[.workspace-document-content]:flex-none in-[.workspace-document-content]:flex-nowrap">{toolbar}</div>
+                {contextPanel ? <Button type="button" aria-label="打开文档目录" aria-expanded={documentContextExpanded} size="icon" className={mobileDrawerControlClassName} onClick={() => { onOpenContext?.(); setDocumentContextOpen(true); setMainNavigationOpen(false); }} variant="ghost"><PanelRightOpen aria-hidden="true" size={18} /></Button> : null}
+                {contextPanel && onOpenContext ? <Button type="button" aria-label="打开上下文面板" size="icon" className="workspace-context-open-control max-[768px]:hidden" onClick={onOpenContext} variant="ghost"><PanelRightOpen aria-hidden="true" size={16} /></Button> : null}
               </header>
             ) : null}
-            <div id="workspace-main-content" tabIndex={-1} className="workspace-route-content">{children}</div>
+            <div id="workspace-main-content" tabIndex={-1} className={workspaceRouteClassName}>{children}</div>
           </section>
-          {contextPanel ? <aside ref={contextRef} className="workspace-context-panel" aria-label="上下文面板" aria-hidden={compact && !documentContextExpanded ? true : undefined} inert={compact && !documentContextExpanded ? true : undefined} hidden={!contextOpen} onClick={closeAfterLink}>{contextPanel}</aside> : null}
+          {contextPanel ? <aside ref={contextRef} className="workspace-context-panel min-h-0 min-w-0 overflow-auto border-l border-border bg-card max-[768px]:hidden max-[768px]:in-[.document-context-drawer-open]:[&:not([hidden])]:fixed max-[768px]:in-[.document-context-drawer-open]:[&:not([hidden])]:top-(--topbar-height) max-[768px]:in-[.document-context-drawer-open]:[&:not([hidden])]:right-1.5 max-[768px]:in-[.document-context-drawer-open]:[&:not([hidden])]:bottom-1.5 max-[768px]:in-[.document-context-drawer-open]:[&:not([hidden])]:z-[45] max-[768px]:in-[.document-context-drawer-open]:[&:not([hidden])]:block max-[768px]:in-[.document-context-drawer-open]:[&:not([hidden])]:w-[min(310px,calc(100vw-35px))] max-[768px]:in-[.document-context-drawer-open]:[&:not([hidden])]:rounded-[10px] max-[768px]:in-[.document-context-drawer-open]:[&:not([hidden])]:border max-[768px]:in-[.document-context-drawer-open]:[&:not([hidden])]:border-ring max-[768px]:in-[.document-context-drawer-open]:[&:not([hidden])]:shadow-[-10px_0_40px_var(--ob-workspace-drawer-shadow-color)]" aria-label="上下文面板" aria-hidden={compact && !documentContextExpanded ? true : undefined} inert={compact && !documentContextExpanded ? true : undefined} hidden={!contextOpen} onClick={closeAfterLink}>{contextPanel}</aside> : null}
         </section>
       </div>
     </main>

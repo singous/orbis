@@ -1,9 +1,11 @@
+import { Spinner } from "@orbis/ui/spinner";
+import { cn } from "@orbis/ui/cn";
+import { railControlClassName } from "./workspace-chrome";
 import { BookOpen, FilePlus2, Plus } from "../../shared/ui/icons";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ActionButton } from "../../shared/ui/ActionButton";
-import { Button } from "../../shared/ui/Button";
-import { Dialog, DialogContent } from "../../shared/ui/Dialog";
+import { Button } from "@orbis/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@orbis/ui/dialog";
 
 import { reportError } from "../../shared/api/request-feedback";
 import { NotebookDialog } from "../documents/NotebookDialog";
@@ -21,7 +23,7 @@ export function RailCreateMenu() {
   const [open, setOpen] = useState(false);
   const [notebookDialogOpen, setNotebookDialogOpen] = useState(false);
   return <>
-    <ActionButton type="button" className="rail-create-trigger" aria-label="新建资产" aria-haspopup="dialog" aria-expanded={open || notebookDialogOpen} onClick={() => setOpen(true)}><Plus size={18} aria-hidden="true" /></ActionButton>
+    <Button type="button" className={cn(railControlClassName, "rail-create-trigger")} aria-label="新建资产" aria-haspopup="dialog" aria-expanded={open || notebookDialogOpen} onClick={() => setOpen(true)} variant="ghost"><Plus size={18} aria-hidden="true" /></Button>
     {open || notebookDialogOpen ? <RailCreateActions open={open} onOpenChange={setOpen} notebookDialogOpen={notebookDialogOpen} onNotebookDialogChange={setNotebookDialogOpen} /> : null}
   </>;
 }
@@ -69,11 +71,11 @@ function RailCreateActions({ open, onOpenChange, notebookDialogOpen, onNotebookD
 
   return (
     <>
-      <Dialog open={open} onOpenChange={(next) => { if (!createNote.isPending) onOpenChange(next); }}>
-        <DialogContent title="新建资产" description="选择要创建的内容。">
+      <Dialog open={open} onOpenChange={(next, details) => { if (!next && createNote.isPending) { details.cancel(); return; } onOpenChange(next); }}>
+        <DialogContent><DialogHeader><DialogTitle>{"新建资产"}</DialogTitle><DialogDescription>{"选择要创建的内容。"}</DialogDescription></DialogHeader>
           <div className="grid gap-3">
-            <Button icon={<FilePlus2 aria-hidden="true" size={18} />} isPending={createNote.isPending} disabled={notebooksQuery.isLoading || notebooksQuery.isError || Boolean(targetNotebook && !treeQuery.isSuccess)} onClick={() => void createDocument().catch(reportError)}>文档</Button>
-            <Button icon={<BookOpen aria-hidden="true" size={18} />} onClick={() => { onNotebookDialogChange(true); onOpenChange(false); }}>笔记本</Button>
+            <Button disabled={(createNote.isPending) || (notebooksQuery.isLoading || notebooksQuery.isError || Boolean(targetNotebook && !treeQuery.isSuccess))} onClick={() => void createDocument().catch(reportError)} variant="outline" focusableWhenDisabled={(createNote.isPending) && !(notebooksQuery.isLoading || notebooksQuery.isError || Boolean(targetNotebook && !treeQuery.isSuccess))} aria-busy={createNote.isPending || undefined}>{createNote.isPending ? <Spinner aria-hidden="true" /> : <FilePlus2 aria-hidden="true" size={18} />}文档</Button>
+            <Button onClick={() => { onNotebookDialogChange(true); onOpenChange(false); }} variant="outline"><BookOpen aria-hidden="true" size={18} />笔记本</Button>
           </div>
         </DialogContent>
       </Dialog>

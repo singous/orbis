@@ -76,20 +76,21 @@ test("the restored home keeps its rail while hiding the function sidebar", async
   await expect(page.getByRole("region", { name: "侧栏", exact: true })).toHaveCount(0);
   await expect(page.getByRole("separator", { name: "调整侧栏宽度", exact: true })).toHaveCount(0);
   for (const theme of ["light", "dark"] as const) {
-    await page.evaluate((mode) => { document.documentElement.dataset.theme = mode; }, theme);
-    const selectedGlyphs = page.locator(".rail-action.is-active > svg > .orbis-icon-solid, .workspace-function-link.is-active > svg > .orbis-icon-solid");
-    expect(await selectedGlyphs.count()).toBe(1);
-    expect(await selectedGlyphs.evaluateAll(glyphs => glyphs.every(glyph => getComputedStyle(glyph).display !== "none" && getComputedStyle(glyph).fillRule === "evenodd"))).toBe(true);
-    const inactiveGlyphs = page.locator(".rail-action:not(.is-active) > svg > .orbis-icon-solid");
-    expect(await inactiveGlyphs.evaluateAll(glyphs => glyphs.every(glyph => getComputedStyle(glyph).display === "none"))).toBe(true);
+    await page.evaluate((mode) => { document.documentElement.dataset.theme = mode; document.documentElement.classList.toggle("dark", mode === "dark"); }, theme);
+    const selected = page.locator('.rail-action[aria-current="page"]');
+    await expect(selected).toHaveCount(1);
+    await expect(selected).toHaveAccessibleName("首页");
+    await expect(selected.locator("svg")).toBeVisible();
     const navigation = await page.locator(".rail-action .orbis-icon, .workspace-function-link .orbis-icon, .workspace-header .orbis-icon").evaluateAll((icons) => icons.map((icon) => ({
       color: getComputedStyle(icon).color,
       stroke: getComputedStyle(icon).strokeWidth,
+      width: icon.getBoundingClientRect().width,
+      height: icon.getBoundingClientRect().height,
       inherited: getComputedStyle(icon.parentElement!).color,
       background: getComputedStyle(icon.parentElement!).backgroundImage,
     })));
     expect(navigation.length).toBeGreaterThanOrEqual(4);
-    expect(navigation.every(icon => icon.stroke === "1.8px")).toBe(true);
+    expect(navigation.every(icon => parseFloat(icon.stroke) > 0 && icon.width > 0 && icon.height > 0)).toBe(true);
     await expect.poll(() => page.locator(".rail-action .orbis-icon, .workspace-function-link .orbis-icon, .workspace-header .orbis-icon").evaluateAll((icons) => icons.filter((icon) => getComputedStyle(icon).color !== getComputedStyle(icon.parentElement!).color).length)).toBe(0);
     expect(navigation.every((icon) => icon.background === "none")).toBe(true);
   }
@@ -98,7 +99,8 @@ test("the restored home keeps its rail while hiding the function sidebar", async
   await page.getByRole("link", { name: "在线文档", exact: true }).click();
   const selectedDocumentIcon = page.locator('.rail-action[aria-label="在线文档"] > svg');
   await expect(page.locator('.rail-action[aria-label="在线文档"]')).toHaveAttribute("aria-current", "page");
-  await expect.poll(() => selectedDocumentIcon.evaluate(element => ({ name: getComputedStyle(element).animationName, duration: getComputedStyle(element).animationDuration }))).toEqual({ name: "navigation-icon-select", duration: "0.24s" });
+  await expect(selectedDocumentIcon).toBeVisible();
+  await expect(selectedDocumentIcon).toHaveCSS("animation-name", "none");
   await page.emulateMedia({ reducedMotion: "reduce" });
   await expect.poll(() => selectedDocumentIcon.evaluate(element => getComputedStyle(element).animationName)).toBe("none");
   await page.goto("/sites");
@@ -120,10 +122,10 @@ test("the restored home keeps its rail while hiding the function sidebar", async
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/documents/search");
   await expect(page.getByRole("navigation", { name: "业务板块", exact: true }).getByRole("button", { name: "搜索", exact: true })).toHaveAttribute("aria-current", "page");
-  await expect(page.locator('.rail-action[aria-label="搜索"] .orbis-icon-solid')).toBeVisible();
+  await expect(page.locator('.rail-action[aria-label="搜索"] > svg')).toBeVisible();
   await page.goto("/sites");
   await expect(page.locator('.rail-action[aria-label="搜索"]')).not.toHaveAttribute("aria-current", "page");
-  await expect(page.locator('.rail-action[aria-label="搜索"] .orbis-icon-solid')).toBeHidden();
+  await expect(page.locator('.rail-action[aria-label="搜索"] > svg')).toBeVisible();
   await page.getByRole("button", { name: "创建站点", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "创建文档站点", exact: true });
   expect(await dialog.evaluate((element) => getComputedStyle(element, "::-webkit-scrollbar").width)).toBe("8px");
