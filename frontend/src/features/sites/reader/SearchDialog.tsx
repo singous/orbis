@@ -74,7 +74,7 @@ export function SearchDialog({ open = true, pages, basePath, close, loadPages, f
           else if (event.key === "ArrowUp") { event.preventDefault(); event.stopPropagation(); setActiveIndex(index => results.length ? (index - 1 + results.length) % results.length : 0); }
           else if (event.key === "Enter") { event.preventDefault(); event.stopPropagation(); choose(activeIndex); }
         }}>
-        <DialogClose render={<Button type="button" className="absolute inset-y-0 end-3 my-auto" size="icon-sm" aria-label="关闭搜索" variant="ghost" />}><X aria-hidden="true" size={18} /></DialogClose>
+        <DialogClose render={<Button type="button" size="icon-sm" aria-label="关闭搜索" variant="ghost" />}><X aria-hidden="true" size={18} /></DialogClose>
       </CommandInput>
       <CommandList id="site-reader-search-results" aria-label="搜索结果">
         {/* Search options retain active-descendant focus on the combobox input. */}

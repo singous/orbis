@@ -55,7 +55,7 @@ export function CommandResult({ element, selected, icon: Icon, title, path, exce
     role: "option",
     "aria-selected": selected,
     className: cn(reader
-      ? `group/search-result grid w-full cursor-pointer grid-cols-[20px_minmax(0,1fr)] gap-2.5 rounded-[9px] border-0 border-current bg-transparent px-3 py-[11px] text-left text-(--ob-reader-muted) aria-selected:bg-(--ob-reader-accent-soft) aria-selected:text-(--ob-reader-accent) ${selected ? "is-active" : ""} ${readerFocus}`
+      ? `group/search-result grid h-auto w-full cursor-pointer grid-cols-[20px_minmax(0,1fr)] items-start gap-2.5 rounded-[9px] border-0 border-current bg-transparent px-3 py-[11px] text-left whitespace-normal text-(--ob-reader-muted) aria-selected:bg-(--ob-reader-accent-soft) aria-selected:text-(--ob-reader-accent) ${selected ? "is-active" : ""} ${readerFocus}`
       : "flex w-full min-w-0 items-start gap-3 rounded-[9px] border border-transparent bg-transparent p-3 text-start text-foreground hover:bg-accent aria-selected:border-border aria-selected:bg-accent max-[560px]:gap-2 max-[560px]:px-2", element.props.className),
     children: <>
       {reader ? <Icon aria-hidden="true" size={18} className="mt-0.5" /> : <span className="grid size-8 flex-none place-items-center text-muted-foreground"><Icon aria-hidden="true" size={18} /></span>}
