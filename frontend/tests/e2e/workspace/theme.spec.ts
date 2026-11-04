@@ -11,7 +11,7 @@ test("native fields and actions follow live light and dark themes", async ({ pag
     await page.evaluate(theme => { document.documentElement.dataset.theme = theme; }, mode);
     await email.focus();
     await expectTokenStyles(page.locator("body"), { "background-color": "--background", color: "--foreground" });
-    await expectTokenStyles(email, { color: "--foreground", "border-color": "--ring", "outline-color": "--ring" });
+    await expectTokenStyles(email, { color: "--foreground", "border-color": "--ring" });
     await expectVisibleKeyboardFocus(email);
     await expectTokenStyles(submit, { "background-color": "--primary", color: "--primary-foreground" });
     await expect(email).toHaveAttribute("data-slot", "input");

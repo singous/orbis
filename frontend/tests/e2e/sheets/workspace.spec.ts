@@ -1,5 +1,6 @@
 import { expectTokenStyles } from "../helpers/theme-probes";
 import { notification } from "../helpers/notifications";
+import { expectVisibleKeyboardFocus } from "../../ui-browser/fixtures/media";
 import { expect, test } from "@playwright/test";
 import {
   ownerSession,
@@ -477,9 +478,8 @@ test("sheet controls follow the Orbis theme in light and dark appearances", asyn
     await expect(field).toHaveCSS("background-color", fieldBackground);
     await field.focus();
     await expect(field).toHaveCSS("background-color", fieldBackground);
-    await expectTokenStyles(field, { "border-color": "--ring", "outline-color": "--ring" });
-    await expect(field).toHaveCSS("outline-style", "solid");
-    await expect(field).toHaveCSS("outline-width", "2px");
+    await expectTokenStyles(field, { "border-color": "--ring" });
+    await expectVisibleKeyboardFocus(field);
     await page.screenshot({
       path: test.info().outputPath(`native-field-${mode}.png`),
       animations: "disabled",

@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { createCollection, openWithSession, ownerSession } from "../helpers/api-fixtures";
+import { expectVisibleKeyboardFocus } from "../../ui-browser/fixtures/media";
 
 const MIN_NATIVE_TARGET_PX = 24;
 
@@ -31,8 +32,7 @@ test("notebook icon and color choices expose a visible keyboard focus ring", asy
     await page.keyboard.press("ArrowRight");
     await expect(group.getByRole("radio").nth(1)).toBeFocused();
     const focused = group.getByRole("radio").nth(1);
-    await expect(focused).toHaveCSS("outline-style", "solid");
-    await expect(focused).toHaveCSS("outline-width", "2px");
+    await expectVisibleKeyboardFocus(focused);
   }
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
