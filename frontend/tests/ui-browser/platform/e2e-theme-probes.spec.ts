@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { expectTokenStyles } from "../../e2e/helpers/theme-probes";
 import { installSession, pagination, user } from "../fixtures/session";
 import { dataPage, id, installDocumentSurfaceSession, mountDocumentSurface, nativeContent, version } from "../fixtures/document-surfaces";
+import { expectVisibleKeyboardFocus } from "../fixtures/media";
 
 test("theme probes reject missing or invalid roles on an actual field", async ({ page }) => {
   await page.goto("/login");
@@ -55,8 +56,7 @@ for (const theme of ["light", "dark"] as const) {
       await page.keyboard.press("ArrowRight");
       await expect(radios.nth(1)).toBeFocused();
       await expect(radios.nth(1)).toBeChecked();
-      await expect(radios.nth(1)).toHaveCSS("outline-style", "solid");
-      await expect(radios.nth(1)).toHaveCSS("outline-width", "2px");
+      await expectVisibleKeyboardFocus(radios.nth(1));
     }
     await page.keyboard.press("Escape");
     await page.goto("/sites");
@@ -105,9 +105,8 @@ for (const theme of ["light", "dark"] as const) {
     await expect(field).toHaveCSS("background-color", background);
     await field.focus();
     await expect(field).toHaveCSS("background-color", background);
-    await expectTokenStyles(field, { "border-color": "--ring", "outline-color": "--ring" });
-    await expect(field).toHaveCSS("outline-style", "solid");
-    await expect(field).toHaveCSS("outline-width", "2px");
+    await expectTokenStyles(field, { "border-color": "--ring" });
+    await expectVisibleKeyboardFocus(field);
 
     await dialog.getByRole("button", { name: "取消", exact: true }).click();
     await expect(dialog).toHaveCount(0);

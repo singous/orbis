@@ -1,5 +1,5 @@
-@import "@orbis/ui/styles.css";
 @import "tailwindcss";
+@import "@orbis/ui/styles.css";
 @import "@fontsource-variable/inter";
 @import "./brand-tokens.css";
 @import "./motion.css";

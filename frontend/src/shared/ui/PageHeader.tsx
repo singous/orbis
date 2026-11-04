@@ -1,7 +1,7 @@
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@orbis/ui/cn";
 
-export const pageActionsClassName = "page-actions flex min-w-0 max-w-full flex-none flex-wrap items-center gap-2 [&>.icon-button]:size-(--ob-control-height-md) [&>.icon-button]:pointer-coarse:size-(--ob-control-height-touch) [&>.icon-button>svg]:size-[1.125rem]";
+export const pageActionsClassName = "page-actions flex min-w-0 max-w-full flex-none flex-wrap items-center gap-2";
 
 type PageHeaderProps = {
   title: ReactNode;

@@ -19,7 +19,7 @@ export function NotebookCard({ notebook, variant, noteCount, actions, footer }: 
         {variant === "overview" && noteCount !== undefined ? <span className="notebook-overview-count mt-auto pt-[18px] text-xs leading-[18px] text-(--muted-foreground)">文档 {noteCount}</span> : null}
       </NotebookIdentity>
     </Link>}
-    {collection ? <div className="workbench-collection-actions flex shrink-0 items-center gap-0 [&>.is-pinned]:bg-(--accent) [&>.is-pinned]:text-foreground [&>.is-pinned_svg]:fill-current max-[1150px]:basis-full max-[1150px]:justify-end max-[850px]:basis-auto max-[560px]:basis-full">{actions}</div> : actions}
+    {collection ? <div className="workbench-collection-actions flex shrink-0 items-center gap-0 max-[1150px]:basis-full max-[1150px]:justify-end max-[850px]:basis-auto max-[560px]:basis-full">{actions}</div> : actions}
     {footer ? <div className="workbench-collection-footer mt-[3px] basis-full">{footer}</div> : null}
   </Wrapper>;
 }

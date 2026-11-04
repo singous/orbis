@@ -1,6 +1,6 @@
 # 样式与主题
 
-应用通过 `src/styles/globals.css` 导入一次 `@orbis/ui/styles.css`，随后导入 Tailwind。Tailwind 扫描 UI 包源码并排除测试与 Story。包的样式入口声明 `theme, base, components, utilities` 层级，依次导入 tokens、accessibility、公共 utility 和 ColorPicker 样式；tokens 文件导入官方的 `tw-animate-css`、`shadcn/tailwind.css` 与本地 Geist 字体。Storybook 使用相同顺序，确保共享回退先于生成的组件 utility，显式类可以覆盖回退。
+应用通过 `src/styles/globals.css` 先导入 Tailwind，随后导入一次 `@orbis/ui/styles.css`。Tailwind 扫描 UI 包源码并排除测试与 Story。包的样式入口声明 `theme, base, components, utilities` 层级，依次导入 tokens、accessibility、公共 utility 和 ColorPicker 样式；tokens 文件导入官方的 `tw-animate-css`、`shadcn/tailwind.css` 与本地 Geist 字体。Storybook 使用相同顺序，确保 UI 的 base 默认边框在 Tailwind preflight 之后生效。普通焦点回退归入 base 层，组件与调用方的 utilities 天然优先。
 
 通用控件直接使用官方 shadcn 默认类和标准语义：`bg-background`、`text-foreground`、`bg-primary`、`text-muted-foreground`、`border-border`、`ring-ring` 等。圆角与尺寸采用官方默认值。`cn` 使用原生实现所需的 `cn` 包并从 `@orbis/ui/cn` 重新导出；不再注册旧的 `ob-*` Tailwind merge 扩展。默认组件类与调用方类的组合保持上游行为。
 
@@ -12,7 +12,7 @@
 
 应用的 `brand-tokens.css` 当前拥有正文、画布、网格、用户身份色等 `--ob-*` 领域角色，以及 `--status-success*`、`--status-warning*`、`--destructive-soft`、`--shadow-color` 状态角色。状态角色可引用该文件准许的 Tailwind 调色板来源。架构检查拒绝该文件重定义 `--primary` 等基础标准角色或其 Tailwind 映射，避免悄悄覆盖 shadcn。普通控件通过原生 variant/size 表达状态，不再借领域角色复刻旧外观；业务不把原始色值散落在 TSX 或无主 CSS 中。需要用户输入颜色、图表数据颜色等真实数据时，遵循现有的有来源、有限次数的数据例外。
 
-`styles/accessibility.css` 在 base 层限制居中 Dialog 的高度为 `100dvh - 2rem` 并允许纵向滚动，防止长内容在短屏幕中遮住关闭按钮；调用方的布局 utility 仍可提供自己的滚动区域。forced-colors 角色映射也在 base 层。低优先级的原生焦点回退和 reduced-motion 在 utilities 层，原生组件的焦点类与调用方显式状态类保持可覆盖。公共 `focus-ring` 使用标准 `--ring`；未使用的 `input-focus` 已移除。
+`styles/accessibility.css` 在 base 层限制居中 Dialog 的高度为 `100dvh - 2rem` 并允许纵向滚动，防止长内容在短屏幕中遮住关闭按钮；调用方的布局 utility 仍可提供自己的滚动区域。forced-colors 角色映射也在 base 层。普通原生焦点回退在 base 层，原生组件的焦点类与调用方显式状态类保持可覆盖。系统高对比焦点轮廓与 reduced-motion 单独位于 utilities 层。公共 `focus-ring` 使用标准 `--ring`；未使用的 `input-focus` 已移除。
 
 应用全局仅保留根最小宽度与通知层级；滚动条规则也归入 base 层。组件布局写在拥有组件中。正文、编辑器、画布和网格的保留 CSS 通过领域样式清单限定实际导入者和根作用域。这些领域内容仍需样式与数据色，不应描述成整个应用没有任何 CSS。Orbis 品牌组件库应作为后续明确的品牌工作实施。
 

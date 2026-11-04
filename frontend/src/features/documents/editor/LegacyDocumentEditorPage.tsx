@@ -792,7 +792,7 @@ export function LegacyDocumentEditorPage() {
       </span>
       <span className={documentHeaderDividerClassName} aria-hidden="true" />
       {canEdit && noteQuery.data ? (releaseFeatures.documentSharing ? <ShareButton notebookId={noteQuery.data.notebook_id!} noteId={noteId} title={draft?.title || noteQuery.data.title} /> : null) : null}
-      {releaseFeatures.documentCollaboration && <Button ref={collaborationTriggerRef} type="button" className={documentCommentTriggerClassName} aria-label="评论与历史" aria-haspopup="dialog" aria-expanded={collaborationOpen} disabled={!draft || archiving} onClick={() => { setCollaborationMounted(true); setCollaborationSession(value => value + 1); setCollaborationOpen(true); }} variant="ghost"><MessageSquare aria-hidden="true" size={16} /><span>评论</span></Button>}
+      {releaseFeatures.documentCollaboration && <Button ref={collaborationTriggerRef} type="button" className={documentCommentTriggerClassName} size="sm" aria-label="评论与历史" aria-haspopup="dialog" aria-expanded={collaborationOpen} disabled={!draft || archiving} onClick={() => { setCollaborationMounted(true); setCollaborationSession(value => value + 1); setCollaborationOpen(true); }} variant="ghost"><MessageSquare aria-hidden="true" size={16} /><span>评论</span></Button>}
       {canEdit ? <DropdownMenu>
         <DropdownMenuTrigger disabled={!draft || editorBusy} render={<Button  type="button"  aria-label="更多文档操作" variant="ghost" size="icon"><MoreHorizontal aria-hidden="true" size={18} /></Button>} />
         <DropdownMenuContent align="end" className="document-actions-popover" sideOffset={6} aria-label="文档操作">

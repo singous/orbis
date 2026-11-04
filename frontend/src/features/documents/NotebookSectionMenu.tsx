@@ -137,7 +137,7 @@ function NotebookCreateAction({ notebookId }: { notebookId: string }) {
   return canMutateWorkspaceContent(workspace) ? (
     <DropdownMenu>
       <DropdownMenuTrigger disabled={creating} render={<Button  type="button" className="notebook-menu-create shrink-0" aria-label="创建内容" title="创建内容" variant="ghost" size="icon-sm"><Plus aria-hidden="true" size={18} /></Button>} />
-      <DropdownMenuContent align="start" sideOffset={6} className="notebook-create-popover w-45 p-1 [&_[role=menuitem]]:min-h-(--ob-control-height-lg) [&_[role=menuitem]]:gap-3 [&_svg]:size-4.5 [&_svg]:shrink-0" aria-label="创建内容">
+      <DropdownMenuContent align="start" sideOffset={6} className="notebook-create-popover" aria-label="创建内容">
         <DropdownMenuItem label="随手记" onClick={() => navigate("/documents/quick-notes")}><StickyNote aria-hidden="true" size={16} className="notebook-create-quick-note text-(--ob-icon-mint)" /><span>随手记</span></DropdownMenuItem>
         <DropdownMenuItem label="文档" disabled={!tree.isSuccess} onClick={() => { void createDocument(); }}><FilePlus2 aria-hidden="true" size={16} className="notebook-create-document text-(--ob-icon-blue)" /><span>文档</span></DropdownMenuItem>
         {releaseFeatures.boardCreation && <DropdownMenuItem label="画板" disabled={!tree.isSuccess} onClick={() => { void createBoard(); }}><Shapes aria-hidden="true" size={16} className="notebook-create-board text-(--ob-icon-violet)" /><span>画板</span></DropdownMenuItem>}
@@ -169,7 +169,7 @@ export function NotebookSectionMenu({
           <span>首页</span>
         </NavLink>
         {releaseFeatures.documentFavorites && <DropdownMenu>
-          <DropdownMenuTrigger render={<Button  type="button" className="notebook-home-more grid size-(--ob-control-height-sm) shrink-0 place-items-center text-(--muted-foreground)" aria-label="笔记本快捷操作" title="笔记本快捷操作" variant="ghost" size="icon"><MoreHorizontal aria-hidden="true" size={18} /></Button>} />
+          <DropdownMenuTrigger render={<Button  type="button" className="notebook-home-more shrink-0" aria-label="笔记本快捷操作" title="笔记本快捷操作" variant="ghost" size="icon-sm"><MoreHorizontal aria-hidden="true" size={18} /></Button>} />
           <DropdownMenuContent align="end" sideOffset={4} aria-label="笔记本快捷操作">
             <DropdownMenuItem label={isPinned(notebookId) ? "取消常用" : "设为常用"} onClick={() => togglePin(notebookId)}><Pin aria-hidden="true" size={16} /><span>{isPinned(notebookId) ? "取消常用" : "设为常用"}</span></DropdownMenuItem>
           </DropdownMenuContent>

@@ -49,6 +49,23 @@ test("hovering a child does not apply dark utility styles to an unstyled theme c
   expect(await host.evaluate(element => ({ background: getComputedStyle(element).backgroundColor, color: getComputedStyle(element).color }))).toEqual(before);
 });
 
+test("native default borders retain their theme role after Tailwind preflight", async ({ page }) => {
+  const borders = await page.evaluate(() => ["light", "dark"].map(theme => {
+    const host = document.createElement("div");
+    host.dataset.theme = theme;
+    const actual = document.createElement("div"); actual.className = "border";
+    const expected = document.createElement("div"); expected.style.borderColor = "var(--border)";
+    host.append(actual, expected); document.body.append(host);
+    const result = { theme, actual: getComputedStyle(actual).borderTopColor, expected: getComputedStyle(expected).borderTopColor, width: getComputedStyle(actual).borderTopWidth };
+    host.remove();
+    return result;
+  }));
+  for (const border of borders) {
+    expect(border.actual, border.theme).toBe(border.expected);
+    expect(border.width).toBe("1px");
+  }
+});
+
 test("explicit component focus utilities override the shared accessible fallback", async ({ page }) => {
   const logo = page.getByRole("link", { name: "Orbis", exact: true });
   await logo.focus();

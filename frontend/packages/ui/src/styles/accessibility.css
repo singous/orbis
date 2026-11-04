@@ -1,6 +1,11 @@
 @layer base {
   /* 居中的 modal 需要可用视口边界；调用方仍可用布局 utility 提供独立滚动区域。 */
   [data-slot="dialog-content"] { max-height: calc(100dvh - 2rem); overflow-y: auto; }
+  /* 放在 base 层，使原生组件和调用方的 utility 始终可以覆盖普通焦点回退。 */
+  :where(button, input, textarea, a, [tabindex]):focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
   @media (forced-colors: active) {
     :root, [data-theme="light"], [data-theme="dark"], .light, .dark {
       --background: Canvas;
@@ -26,11 +31,6 @@
 }
 
 @layer utilities {
-  /* 先于 Tailwind 生成的状态 utilities 导入，使显式 focus-visible 变体仍可覆盖此回退。 */
-  :where(button, input, textarea, a, [tabindex]):focus-visible {
-    outline: 2px solid var(--ring);
-    outline-offset: 2px;
-  }
   @media (forced-colors: active) {
     /* 系统高对比模式不绘制 box-shadow ring，保留独立的键盘焦点轮廓。 */
     :is(button, input, textarea, a, [tabindex]):focus-visible { outline-style: solid; outline-color: Highlight; }

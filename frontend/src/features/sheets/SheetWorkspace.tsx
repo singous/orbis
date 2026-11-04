@@ -387,6 +387,7 @@ export function SheetWorkspace({
       )}
       {releaseFeatures.documentCollaboration && <Button
         className={cn(sheetActionClassName, documentCommentTriggerClassName)}
+        size="sm"
         aria-label="评论"
         aria-expanded={commentsOpen}
         onClick={() => setCommentsOpen(!commentsOpen)} variant="ghost"

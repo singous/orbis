@@ -3,7 +3,7 @@ export const documentBreadcrumbClassName = "document-breadcrumb flex min-w-0 ite
 export const documentHeaderActionsClassName = "document-header-actions flex items-center gap-1.5 max-[768px]:gap-0.5";
 export const documentSaveStateClassName = "document-save-state inline-flex w-[84px] flex-none items-center gap-1.5 text-xs whitespace-nowrap text-(--muted-foreground) [&.is-error]:text-(--destructive) [&.is-conflict]:text-(--status-warning) [&_svg]:flex-none max-[768px]:w-[18px] max-[768px]:gap-0 max-[768px]:[&>span]:sr-only";
 export const documentHeaderDividerClassName = "document-header-divider mr-[3px] h-4 w-px bg-border max-[768px]:hidden";
-export const documentCommentTriggerClassName = "document-comment-trigger [font:var(--text-xs)/var(--text-xs--line-height)_var(--font-sans)] inline-flex h-(--ob-control-height-sm) items-center gap-1.5 px-2 text-xs text-(--muted-foreground) hover:bg-(--accent) hover:text-foreground max-[768px]:w-(--ob-control-height-sm) max-[768px]:justify-center max-[768px]:p-0 max-[768px]:[&>span]:hidden";
+export const documentCommentTriggerClassName = "document-comment-trigger max-[768px]:w-7 max-[768px]:px-0 max-[768px]:[&>span]:hidden";
 export const documentSaveSpinnerClassName = "document-save-spinner animate-spin motion-reduce:animate-none";
 
 /** 两种文档编辑器共用正文宽度及块手柄留白；就绪后的块手柄留白由当前画布统一维护。 */

@@ -132,8 +132,8 @@ test("prevents unlayered focus fallbacks and preserves explicit utility override
   sources.set(globalFile, sources.get(globalFile) + '\n:where(button,input):focus-visible { outline: 2px solid var(--ring); }');
   assert.ok(inspect(sources).some(item => item.rule === "global-style-selector"));
   const actual = actualSources();
-  actual.set(globalFile, actual.get(globalFile).replace('@import "@orbis/ui/styles.css";\n@import "tailwindcss";', '@import "tailwindcss";\n@import "@orbis/ui/styles.css";'));
+  actual.set(globalFile, actual.get(globalFile).replace('@import "tailwindcss";\n@import "@orbis/ui/styles.css";', '@import "@orbis/ui/styles.css";\n@import "tailwindcss";'));
   assert.ok(inspect(actual).some(item => item.rule === "global-style-import-order"));
   const story = readFileSync(new URL("../../packages/ui/.storybook/styles.css", import.meta.url), "utf8");
-  assert.ok(story.indexOf('@import "../src/styles/styles.css"') < story.indexOf('@import "tailwindcss"'));
+  assert.ok(story.indexOf('@import "tailwindcss"') < story.indexOf('@import "../src/styles/styles.css"'));
 });

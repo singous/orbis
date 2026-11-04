@@ -39,6 +39,28 @@ test("focus contrast probe composites translucent paint and rejects an invisible
   await info.attach("contrast-probe-results", { body: JSON.stringify({ faint, opaque, layered }), contentType: "application/json" });
 });
 
+test("focus background probe rejects a readable menu item with no visible focus highlight", async ({ page }) => {
+  await page.goto("/__ui");
+  await page.evaluate(() => {
+    const host = document.createElement("div");
+    host.style.cssText = "position:fixed;left:10px;top:10px;z-index:2147483647;background:white;padding:20px";
+    const item = document.createElement("div");
+    item.dataset.testid = "missing-highlight-probe";
+    item.role = "menuitem";
+    item.tabIndex = 0;
+    item.textContent = "没有高亮的菜单项";
+    item.style.cssText = "background:white;color:black;outline:none;border:0";
+    host.append(item);
+    document.body.append(host);
+  });
+  const item = page.getByTestId("missing-highlight-probe");
+  await item.focus();
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Shift+Tab");
+  await expect(item).toBeFocused();
+  await expect(expectVisibleKeyboardFocus(item)).rejects.toThrow();
+});
+
 test("reduced-motion probe accepts the lifecycle transition and rejects continuing web animations", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/__ui");

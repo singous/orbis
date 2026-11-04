@@ -185,7 +185,7 @@ const globalStyleFiles = {
   tokens: "src/styles/brand-tokens.css",
   accessibility: "packages/ui/src/styles/accessibility.css",
 };
-const globalStyleImports = ["@orbis/ui/styles.css", "tailwindcss", "@fontsource-variable/inter", "./brand-tokens.css", "./motion.css", "./scrollbars.css"];
+const globalStyleImports = ["tailwindcss", "@orbis/ui/styles.css", "@fontsource-variable/inter", "./brand-tokens.css", "./motion.css", "./scrollbars.css"];
 const packageStyleImports = {
   "packages/ui/src/styles/styles.css": ["./tokens.css", "./accessibility.css", "./utilities.css", "../color-picker/styles.css"],
   "packages/ui/src/styles/tokens.css": ["tw-animate-css", "shadcn/tailwind.css", "@fontsource-variable/geist"],
@@ -202,7 +202,7 @@ const globalStyleRules = {
   accessibility: [
     ["@layer base", ['[data-slot="dialog-content"]'], ["max-height", "overflow-y"]],
     ["@layer base / @media (forced-colors: active)", [":root", '[data-theme="light"]', '[data-theme="dark"]', ".light", ".dark"], ["--background", "--foreground", "--card", "--card-foreground", "--popover", "--popover-foreground", "--primary", "--primary-foreground", "--secondary", "--secondary-foreground", "--muted", "--muted-foreground", "--accent", "--accent-foreground", "--destructive", "--border", "--input", "--ring"]],
-    ["@layer utilities", [":where(button, input, textarea, a, [tabindex]):focus-visible"], ["outline", "outline-offset"]],
+    ["@layer base", [":where(button, input, textarea, a, [tabindex]):focus-visible"], ["outline", "outline-offset"]],
     ["@layer utilities / @media (forced-colors: active)", [":is(button, input, textarea, a, [tabindex]):focus-visible"], ["outline-style", "outline-color"]],
     ["@layer utilities / @media (prefers-reduced-motion: reduce)", ["*", "*::before", "*::after"], ["scroll-behavior", "transition-property", "transition-duration", "animation-name", "animation-duration", "animation-iteration-count"]],
   ],
@@ -289,7 +289,7 @@ export function applyGlobalStylesPolicy(findings, sources) {
     }
     if (kind === "globals") {
       const imports = globalCSSImports(stylesheet);
-      if (imports.filter(name => globalStyleImports.includes(name)).join("|") !== globalStyleImports.join("|")) add(file, "global-style-import-order", "UI defaults must precede generated Tailwind utilities");
+      if (imports.filter(name => globalStyleImports.includes(name)).join("|") !== globalStyleImports.join("|")) add(file, "global-style-import-order", "Tailwind preflight must precede UI base defaults");
       for (const detail of new Set([...globalStyleImports, ...imports])) {
         const count = imports.filter(name => name === detail).length;
         if (!globalStyleImports.includes(detail) || count !== 1) add(file, "global-style-import", `${detail}: expected ${globalStyleImports.includes(detail) ? 1 : 0}, found ${count}`);

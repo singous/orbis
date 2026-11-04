@@ -39,8 +39,10 @@ export async function expectVisibleKeyboardFocus(target: Locator, indicator: Loc
     expect(metrics.focusVisible).toBe(true);
     expect(transparent(metrics.background)).toBe(false);
     const [contrast] = await readContrasts(indicator, [null]);
+    const [surrounding] = await readContrasts(indicator.locator(".."), [null]);
+    expect(contrast.renderedBackground).not.toEqual(surrounding.renderedBackground);
     expect(contrast.ratio).toBeGreaterThanOrEqual(4.5);
-    return { ...metrics, indicator: "background", contrast };
+    return { ...metrics, indicator: "background", contrast, surrounding };
   }
   if (!outline) {
     expect(metrics.focusVisible).toBe(true);
