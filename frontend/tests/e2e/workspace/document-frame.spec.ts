@@ -37,14 +37,14 @@ test('document overview shares the shell and exposes its function menu alongside
     const documents = await frame('/documents');
     expect({ radius: documents.radius, border: documents.border }).toEqual({ radius: '0px', border: '0px' });
     expect(documents).toMatchObject({ gap: '0px', padding: '0px', railX: 0, railWidth: 272 });
-    expect(documents.railWidth).toBeGreaterThan(home.railWidth);
+    expect(documents.railWidth).toBe(home.railWidth);
     await expect(page.getByRole('navigation', { name: '文档导航', exact: true })).toBeVisible();
     const navigation = page.getByRole('navigation', { name: '文档导航', exact: true });
     await expect(navigation.getByRole('link', { name: '开始', exact: true })).toHaveAttribute('href', '/documents');
     await expect(navigation.getByRole('link', { name: '数据表', exact: true })).toHaveCount(0);
     await expect(navigation.getByRole('link', { name: '回收站', exact: true })).toBeVisible();
     await expect(navigation.getByRole('link', { name: 'Frame notebook one', exact: true })).toHaveCount(0);
-    await expect(navigation.getByRole('link', { name: '设置常用笔记本', exact: true })).toBeVisible();
+    await expect(navigation.getByRole('button', { name: '收起常用笔记本', exact: true })).toBeVisible();
     const section = page.getByRole('region', { name: 'Frame notebooks', exact: true });
     await expect(section).toBeVisible();
     await expect(page.getByRole('region', { name: 'Empty frame group', exact: true })).toHaveCount(0);
@@ -59,25 +59,17 @@ test('document overview shares the shell and exposes its function menu alongside
   }
   for (const path of ['/home', '/documents', '/documents/collections', '/sites', '/settings/account', '/settings/members']) {
     await page.goto(path);
-    await expect(page.locator('.workspace-business-rail').getByRole('button', { name: '新建资产', exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: '新建资产', exact: true })).toHaveCount(1);
+    await expect(page.locator('.workspace-business-rail').getByRole('button', { name: '切换工作空间', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: '新建资产', exact: true })).toHaveCount(0);
   }
-  await page.goto('/sites');
-  await page.locator('.workspace-business-rail').getByRole('button', { name: '新建资产', exact: true }).click();
-  await page.getByRole('button', { name: '笔记本', exact: true }).click();
-  const notebookDialog = page.getByRole('dialog', { name: '新建笔记本', exact: true });
-  await expect(notebookDialog).toBeVisible();
-  await notebookDialog.getByLabel('笔记本名称', { exact: true }).fill('Global creation notebook');
-  await notebookDialog.getByRole('button', { name: '创建笔记本', exact: true }).click();
-  await expect(page).toHaveURL(/\/collections\/[^/]+$/);
-  await expect(page.locator('.notebook-home .page-title')).toHaveText('Global creation notebook');
   await page.goto('/documents');
-  const create = page.locator('.workspace-business-rail').getByRole('button', { name: '新建资产', exact: true });
-  await expect(create).toBeVisible();
-  await create.click();
-  await expect(page.getByRole('button', { name: '文档', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: '笔记本', exact: true })).toBeVisible();
-  await page.keyboard.press('Escape');
+  await page.locator('.notebook-overview .page-actions').getByRole('button', { name: '新建笔记本', exact: true }).click();
+  const notebookDialog = page.getByRole('dialog', { name: '新建笔记本', exact: true });
+  await notebookDialog.getByLabel('笔记本名称', { exact: true }).fill('Shelf creation notebook');
+  await notebookDialog.getByRole('button', { name: '创建', exact: true }).click();
+  await expect(page).toHaveURL(/\/collections\/[^/]+$/);
+  await expect(page.locator('.notebook-home .page-title')).toHaveText('Shelf creation notebook');
+  await page.goto('/documents');
   await page.locator('.notebook-overview-card-link').first().click();
   const notebookHeader = page.locator('#notebook-directory .workspace-sidebar-header');
   await expect(notebookHeader.getByRole('button', { name: '创建内容', exact: true })).toBeEnabled();
@@ -108,7 +100,7 @@ test('document overview shares the shell and exposes its function menu alongside
   await page.locator('#notebook-directory').getByRole('button', { name: '创建内容', exact: true }).click();
   await page.getByRole('menuitem', { name: '随手记', exact: true }).click();
   await expect(page).toHaveURL(/\/documents\/quick-notes$/);
-  await expect(create).toBeVisible();
+  await expect(page.getByRole("button", { name: "切换工作空间", exact: true })).toBeVisible();
   await page.goto('/documents');
   await page.screenshot({ path: testInfo.outputPath('document-navigation.png') });
   await page.setViewportSize({ width: 390, height: 740 });

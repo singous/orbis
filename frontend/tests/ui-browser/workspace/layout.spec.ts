@@ -25,26 +25,37 @@ for (const surface of ["web", "desktop"] as const) for (const theme of ["light",
     const rail = page.getByRole("complementary", { name: "应用导航", exact: true });
     const main = page.getByRole("region", { name: "主工作区", exact: true });
     if (width === 1280) {
-      await expect(navigation).toHaveCSS("width", "284px");
-      await expect(rail).toHaveCSS("width", "52px");
+      await expect(navigation).toHaveCSS("width", "272px");
+      await expect(rail).toHaveCSS("width", "72px");
       const navBounds = (await navigation.boundingBox())!;
-      expect(navBounds.x).toBe(6);
-      expect(navBounds.y).toBe(surface === "web" ? 6 : 46);
-      expect((await main.boundingBox())!.x).toBe(296);
-      await expect(page.locator(".workspace-sidebar-inner")).toHaveCSS("width", "230px");
+      expect(navBounds.x).toBe(0);
+      expect(navBounds.y).toBe(0);
+      expect((await main.boundingBox())!.x).toBe(272);
+      await expect(navigation).toHaveCSS("border-radius", "0px");
+      await expect(navigation).toHaveCSS("box-shadow", "none");
+      await expect(navigation).toHaveCSS("border-width", "0px");
+      await expect(page.locator(".workspace-topbar")).toHaveCount(0);
+      await expect(page.locator(".workspace-sidebar-inner")).toHaveCSS("width", "200px");
       const resize = page.getByRole("separator", { name: "调整侧栏宽度" });
       await resize.focus();
       await page.keyboard.press("ArrowRight");
-      await expect(resize).toHaveAttribute("aria-valuenow", "248");
+      await expect(resize).toHaveAttribute("aria-valuenow", "216");
       await expect(resize.locator(".workspace-resize-line")).toHaveCSS("opacity", "1");
-      await expect(navigation).toHaveCSS("width", "300px");
+      await expect(navigation).toHaveCSS("width", "288px");
       await resize.dblclick();
-      await expect(navigation).toHaveCSS("width", "284px");
-      await page.getByRole("button", { name: "收起侧栏", exact: true }).click();
-      await expect(navigation).toHaveCSS("width", "52px");
+      await expect(navigation).toHaveCSS("width", "272px");
+      const collapse = page.getByRole("button", { name: "收起侧栏", exact: true });
+      expect(await collapse.boundingBox()).toEqual({ x: 88, y: 16, width: 24, height: 24 });
+      await collapse.click();
+      await expect(navigation).toHaveCSS("width", "72px");
+      await expect(page.locator(".workspace-sidebar")).toHaveCSS("width", "0px");
       await expect(page.locator(".workspace-sidebar")).toHaveAttribute("aria-hidden", "true");
-      await page.getByRole("button", { name: "展开侧栏", exact: true }).click();
-      await expect(navigation).toHaveCSS("width", "284px");
+      expect((await main.boundingBox())!.x).toBe(72);
+      const expand = page.getByRole("button", { name: "展开侧栏", exact: true });
+      expect(await expand.boundingBox()).toEqual({ x: 88, y: 16, width: 24, height: 24 });
+      await expect(expand).toBeFocused();
+      await expand.click();
+      await expect(navigation).toHaveCSS("width", "272px");
     } else {
       await expect(navigation).toHaveAttribute("inert", "");
       const opener = page.getByRole("button", { name: "打开主导航", exact: true });
@@ -52,8 +63,9 @@ for (const surface of ["web", "desktop"] as const) for (const theme of ["light",
       await expect(navigation).toBeVisible();
       await expect(navigation).toHaveCSS("width", "310px");
       const bounds = (await navigation.boundingBox())!;
-      expect(bounds.x).toBe(6);
-      expect(bounds.y).toBe(surface === "web" ? 0 : 52);
+      expect(bounds.x).toBe(0);
+      expect(bounds.y).toBe(0);
+      await expect(navigation).toHaveCSS("box-shadow", "none");
       await expect(page.locator(".workspace-content")).toHaveAttribute("inert", "");
       await expect(page.getByRole("button", { name: "关闭主导航", exact: true })).toBeVisible();
       await page.keyboard.press("Escape");
@@ -83,7 +95,7 @@ test("rail keyboard focus and sidebar motion use their owned contracts", async (
   await expect(page.locator(".workspace-shell-grid")).toHaveCSS("transition-property", "none");
   await expect(page.locator(".workspace-route-content")).toHaveCSS("animation-name", "none");
   await expect(page.locator(".workspace-sidebar")).toHaveCSS("transition-property", "none");
-  await expect(page.locator(".rail-expand-slot")).toHaveCSS("transition-property", "none");
+  await expect(page.locator(".workspace-menu-toggle")).toHaveCSS("transition-property", "none");
 });
 
 test("workspace navigation follows live media changes at its compact boundary", async ({ page }) => {

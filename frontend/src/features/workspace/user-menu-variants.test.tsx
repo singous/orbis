@@ -17,10 +17,10 @@ const workspace = {
 function CurrentPath() { return <output aria-label="current path">{useLocation().pathname}</output>; }
 afterEach(() => { cleanup(); setAppearanceMode("system"); });
 
-describe.each(["topbar", "rail"] as const)("UserMenu %s anchor", (variant) => {
+describe("UserMenu rail", () => {
   it("keeps the same accessible actions, activation and focus restoration", async () => {
     const actor = userEvent.setup();
-    render(<MemoryRouter><UserMenu variant={variant} user={user} workspace={workspace} onLogout={vi.fn()} /><CurrentPath /></MemoryRouter>);
+    render(<MemoryRouter><UserMenu user={user} workspace={workspace} onLogout={vi.fn()} /><CurrentPath /></MemoryRouter>);
     const trigger = screen.getByRole("button", { name: "打开用户菜单" });
     await actor.hover(trigger);
     expect(screen.queryByRole("menu", { name: "用户操作" })).not.toBeInTheDocument();
@@ -43,7 +43,7 @@ describe.each(["topbar", "rail"] as const)("UserMenu %s anchor", (variant) => {
 
   it("opens appearance from the menu, persists selection and restores the account trigger", async () => {
     const actor = userEvent.setup();
-    render(<MemoryRouter><UserMenu variant={variant} user={user} workspace={workspace} onLogout={vi.fn()} /></MemoryRouter>);
+    render(<MemoryRouter><UserMenu user={user} workspace={workspace} onLogout={vi.fn()} /></MemoryRouter>);
     const trigger = screen.getByRole("button", { name: "打开用户菜单" });
     await actor.click(trigger);
     await actor.click(await screen.findByRole("menuitem", { name: "外观" }));
@@ -59,14 +59,10 @@ describe.each(["topbar", "rail"] as const)("UserMenu %s anchor", (variant) => {
 
   it("hides member management for normal members and invokes logout once", async () => {
     const logout = vi.fn();
-    render(<MemoryRouter><UserMenu variant={variant} user={user} workspace={{ ...workspace, role: "viewer" }} onLogout={logout} /></MemoryRouter>);
+    render(<MemoryRouter><UserMenu user={user} workspace={{ ...workspace, role: "viewer" }} onLogout={logout} /></MemoryRouter>);
     const trigger = screen.getByRole("button", { name: "打开用户菜单" });
-    if (variant === "rail") {
-      expect(trigger).toHaveClass("workspace-user-trigger--rail");
-      expect(trigger.querySelector(".workspace-user-trigger-copy")).not.toBeInTheDocument();
-    } else {
-      expect(trigger.querySelector(".workspace-user-trigger-copy")).toHaveTextContent("测试用户");
-    }
+    expect(trigger).toHaveClass("workspace-user-trigger--rail");
+    expect(trigger.querySelector(".workspace-user-trigger-copy")).not.toBeInTheDocument();
     expect(trigger.querySelector(".workspace-user-avatar")).toBeInTheDocument();
     await userEvent.click(trigger);
     await screen.findByRole("menu", { name: "用户操作" });

@@ -6,7 +6,7 @@ import { WorkspaceStartup } from "./WorkspaceStartup";
 afterEach(cleanup);
 
 it.each([
-  ["/home", "首页", false],
+  ["/home", "首页", true],
   ["/documents", "在线文档", true],
   ["/settings/account", "全部设置", true],
 ] as const)("reserves destination chrome at %s without mounting live navigation", (path, title, sidebar) => {

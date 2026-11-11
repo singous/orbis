@@ -42,7 +42,7 @@ describe("notebook layout", () => {
     const navigation = screen.getByRole("navigation", { name: "文档导航" });
     expect(within(navigation).queryByRole("link", { name: "笔记本 0" })).not.toBeInTheDocument();
     expect(within(navigation).queryByRole("link", { name: "笔记本 7" })).not.toBeInTheDocument();
-    expect(within(navigation).getByRole("link", { name: "设置常用笔记本" })).toHaveAttribute("href", "/documents");
+    expect(within(navigation).queryByRole("link", { name: "设置常用笔记本" })).not.toBeInTheDocument();
     expect(within(navigation).getByRole("link", { name: "开始" })).toHaveAttribute("href", "/documents");
     expect(within(navigation).queryByRole("link", { name: "数据表" })).toBeNull();
     expect(within(navigation).getByRole("link", { name: "回收站" })).toHaveAttribute("href", "/documents/archive");

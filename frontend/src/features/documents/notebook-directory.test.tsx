@@ -11,8 +11,6 @@ const menuState = vi.hoisted(() => ({ create: vi.fn(), treeReady: true }));
 
 function render(ui:React.ReactElement){return renderTestingLibrary(ui,{wrapper:({children})=><QueryClientProvider client={new QueryClient()}>{children}</QueryClientProvider>});}
 
-vi.mock("../workspace/WorkspaceTopbar", () => ({ WorkspaceTopbar: () => null }));
-vi.mock("../workspace/RailCreateMenu", () => ({ RailCreateMenu: () => null }));
 vi.mock("./DocumentContextPanel", () => ({ DocumentContextPanel: () => <nav aria-label="测试目录">当前文档</nav> }));
 vi.mock("./queries", () => ({
   useNotebook: () => ({ data: { id: "notebook", title: "当前笔记本" } }),
@@ -36,20 +34,20 @@ it("retains the tree while collapsed and supports public keyboard resizing", asy
   expect(screen.getByRole("link", { name: "当前笔记本" })).toHaveAttribute("href", "/collections/notebook");
   expect(screen.getByRole("button", { name: "创建内容" })).toBeEnabled();
   fireEvent.keyDown(resize, { key: "ArrowRight" });
-  expect(localStorage.getItem("orbis.notebookDirectoryWidth")).toBe("248");
+  expect(localStorage.getItem("orbis.notebookDirectoryWidth")).toBe("216");
   fireEvent.click(screen.getByRole("button", { name: "收起笔记本目录" }));
   expect(screen.queryByRole("navigation", { name: "测试目录" })).toBeNull();
   expect(screen.getByRole("navigation", { name: "测试目录", hidden: true })).toBeInTheDocument();
   await waitFor(() => expect(screen.getByRole("button", { name: "展开笔记本目录" })).toHaveFocus());
   fireEvent.click(screen.getByRole("button", { name: "展开笔记本目录" }));
   expect(resize).not.toBeInTheDocument();
-  expect(screen.getByRole("separator", { name: "调整笔记本目录宽度" })).toHaveAttribute("aria-valuenow", "248");
+  expect(screen.getByRole("separator", { name: "调整笔记本目录宽度" })).toHaveAttribute("aria-valuenow", "216");
 });
 
 it.each(["159", "481", "NaN", "Infinity", "broken"])("ignores invalid legacy width %s without overwriting the stored setting", stored => {
   localStorage.setItem("orbis.notebookDirectoryWidth", stored);
   render(shell(createNotebookSidebar("notebook")));
-  expect(screen.getByRole("separator")).toHaveAttribute("aria-valuenow", "232");
+  expect(screen.getByRole("separator")).toHaveAttribute("aria-valuenow", "200");
   expect(localStorage.getItem("orbis.notebookDirectoryWidth")).toBe(stored);
 });
 
@@ -72,20 +70,18 @@ it("keeps resizing and collapse usable when browser preference storage is unavai
   vi.spyOn(localStorage, "setItem").mockImplementation(() => { throw new Error("Storage blocked"); });
   render(shell(createNotebookSidebar("notebook")));
   fireEvent.keyDown(screen.getByRole("separator"), { key: "ArrowRight" });
-  expect(screen.getByRole("separator")).toHaveAttribute("aria-valuenow", "248");
+  expect(screen.getByRole("separator")).toHaveAttribute("aria-valuenow", "216");
   fireEvent.click(screen.getByRole("button", { name: "收起笔记本目录" }));
   expect(screen.getByRole("button", { name: "展开笔记本目录" })).toBeInTheDocument();
   act(() => { fireEvent.click(screen.getByRole("button", { name: "展开笔记本目录" })); });
   expect(screen.getByRole("navigation", { name: "测试目录" })).toBeInTheDocument();
 });
 
-it("shares the default width and resize limit with ordinary function sidebars", () => {
+it("shares resize limits with ordinary function sidebars", () => {
   const view = render(shell({ title: "普通菜单", content: <nav>功能菜单</nav> }));
   const ordinary = screen.getByRole("separator");
-  const width = ordinary.getAttribute("aria-valuenow");
   const maximum = ordinary.getAttribute("aria-valuemax");
   view.rerender(shell(createNotebookSidebar("notebook")));
-  expect(screen.getByRole("separator")).toHaveAttribute("aria-valuenow", width);
   expect(screen.getByRole("separator")).toHaveAttribute("aria-valuemax", maximum);
 });
 

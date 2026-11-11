@@ -1,5 +1,4 @@
 import { cn } from "@orbis/ui/cn";
-import { railControlClassName } from "./workspace-chrome";
 import { reportError } from "../../shared/api/request-feedback";
 import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui/popover";
 import { useQuery } from "@tanstack/react-query";
@@ -15,14 +14,13 @@ import { LoadingState } from "../../shared/ui/LoadingState";
 
 import { identityColor } from "../../shared/ui/UserAvatar";
 import { OrbisLogo } from "../../shared/ui/OrbisLogo";
-import { Boxes, Check, ChevronDown, Users } from "../../shared/ui/icons";
+import { Boxes, Check, Users } from "../../shared/ui/icons";
 import { listWorkspaces, switchWorkspace } from "./api";
 import { canManageWorkspaceMembers, workspaceRoleLabel } from "./capabilities";
 import { workspaceMenuPanelClassName, workspaceMenuRowClassName } from "./workspace-navigation-styles";
 
 /** The shell supplies the anchor; discovery mounts only after explicit opening. */
-export function WorkspaceSwitcher({ variant = "topbar" }: { variant?: "topbar" | "rail" }) {
-  const workspace = useStore(authStore, state => state.workspace);
+export function WorkspaceSwitcher() {
   const authenticated = useStore(authStore, state => Boolean(state.accessToken));
   const sessionKey = useStore(authStore, getAuthSessionKey);
   const location = useLocation();
@@ -44,16 +42,12 @@ export function WorkspaceSwitcher({ variant = "topbar" }: { variant?: "topbar" |
     return () => document.removeEventListener("keydown", dismiss, true);
   }, [open, close]);
 
-  return <div className={cn("workspace-switcher relative min-w-0", variant === "rail" && "workspace-switcher--rail flex-none")}>
+  return <div className="workspace-switcher workspace-switcher--rail relative mb-7 flex-none">
     <Popover open={open} onOpenChange={next => setOpen(next ? { sessionKey, locationKey: location.key } : null)}>
-      <PopoverTrigger render={<Button variant="ghost" />} className={variant === "rail" ? cn(railControlClassName, "rail-brand workspace-switcher-rail-trigger mb-9 in-has-[.rail-create-entry]:mb-4 in-data-[document-navigation=true]:mb-7 in-data-[document-navigation=true]:h-10 in-data-[document-navigation=true]:w-11") : "workspace-brand min-w-0 max-w-[250px] max-[1200px]:max-w-[220px] max-[768px]:max-w-[145px]"} aria-label="切换工作空间" disabled={!authenticated}>
-        {variant === "rail" ? <OrbisLogo size={32} className="size-8" /> : <>
-          <span className="workspace-brand-mark identity-mark grid size-6 flex-none place-items-center rounded-[6px] bg-[color-mix(in_oklab,var(--identity-color)_14%,var(--card))] text-(--identity-color)" style={identityColor(workspace?.id || "orbis")}><Boxes size={16} aria-hidden="true" /></span>
-          <span className="workspace-brand-word truncate">{workspace?.name ?? "Orbis"}</span>
-          <ChevronDown size={14} aria-hidden="true" />
-        </>}
+      <PopoverTrigger render={<Button variant="ghost" />} className="rail-brand workspace-switcher-rail-trigger h-10 w-11 p-0" aria-label="切换工作空间" disabled={!authenticated}>
+        <OrbisLogo size={32} className="size-8" />
       </PopoverTrigger>
-      <PopoverContent aria-label="切换工作空间" className={cn("workspace-switcher-popover max-h-[min(32rem,var(--available-height))] overflow-hidden", workspaceMenuPanelClassName, variant === "rail" && "workspace-switcher-popover--rail")} side={variant === "rail" ? "right" : "bottom"} align="start" sideOffset={6}>
+      <PopoverContent aria-label="切换工作空间" className={cn("workspace-switcher-popover workspace-switcher-popover--rail max-h-[min(32rem,var(--available-height))] overflow-hidden", workspaceMenuPanelClassName)} side="right" align="start" sideOffset={6}>
         <div className="workspace-switcher-dialog flex min-h-0 min-w-0 flex-auto flex-col overflow-y-auto overscroll-contain">
           {open ? <WorkspaceChoices key={`${sessionKey}:${location.key}`} onClose={close} /> : null}
         </div>

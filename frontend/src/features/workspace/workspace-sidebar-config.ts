@@ -24,6 +24,5 @@ export type WorkspaceSidebarConfig = {
   collapseLabel?: string;
   expandLabel?: string;
   resizeLabel?: string;
-  desktopVisible?: boolean;
   preferences?: SidebarPreferences;
 };

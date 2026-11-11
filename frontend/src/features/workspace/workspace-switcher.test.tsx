@@ -27,10 +27,10 @@ function SessionProbe({ capture, prepare }: { capture: (client: QueryClient) => 
   useEffect(() => prepare ? registerPendingNavigation(prepare) : undefined, [prepare]);
   return <textarea aria-label="当前草稿" defaultValue="未保存的当前内容" />;
 }
-function renderSwitcher(variant: "topbar" | "rail" = "rail", prepare?: () => Promise<void>) {
+function renderSwitcher(prepare?: () => Promise<void>) {
   const clients: QueryClient[] = [];
   const capture = (client: QueryClient) => { clients.push(client); };
-  const view = render(<MemoryRouter initialEntries={[initialRoute]}><CurrentPath /><AppProviders><WorkspaceSwitcher variant={variant} /><SessionProbe capture={capture} prepare={prepare} /></AppProviders></MemoryRouter>);
+  const view = render(<MemoryRouter initialEntries={[initialRoute]}><CurrentPath /><AppProviders><WorkspaceSwitcher /><SessionProbe capture={capture} prepare={prepare} /></AppProviders></MemoryRouter>);
   return { ...view, clients, trigger: screen.getByRole("button", { name: "切换工作空间" }), draft: screen.getByRole("textbox", { name: "当前草稿" }), path: screen.getByRole("status", { name: "当前路径" }) };
 }
 function installApi(post: () => Promise<Response> = async () => response(switched.user), items = [{ ...workspace, is_current: false }, { ...target, is_current: true }]) {
@@ -53,11 +53,11 @@ async function chooseTarget(view: ReturnType<typeof renderSwitcher>) {
 beforeEach(() => { act(() => authStore.getState().setSession(session)); });
 afterEach(() => { cleanup(); act(() => authStore.getState().clearSession()); vi.unstubAllGlobals(); });
 
-describe.each(["topbar", "rail"] as const)("WorkspaceSwitcher %s anchor", variant => {
+describe("WorkspaceSwitcher rail", () => {
   it("loads memberships only on activation, marks the client-selected workspace and closes with focus intact", async () => {
     const fetch = installApi();
     const actor = userEvent.setup();
-    const view = renderSwitcher(variant);
+    const view = renderSwitcher();
     expect(fetch).not.toHaveBeenCalled();
     await actor.hover(view.trigger);
     expect(fetch).not.toHaveBeenCalled();
@@ -78,11 +78,9 @@ describe.each(["topbar", "rail"] as const)("WorkspaceSwitcher %s anchor", varian
   it("uses the intended trigger and does not save or post when selecting the current workspace", async () => {
     const fetch = installApi();
     const prepare = vi.fn(async () => undefined);
-    const view = renderSwitcher(variant, prepare);
-    if (variant === "rail") {
-      expect(view.trigger).toHaveClass("rail-brand", "workspace-switcher-rail-trigger");
-      expect(view.trigger.querySelector('.orbis-logo use')).toHaveAttribute("href", "/brand/orbis-mark.svg#orbis-mark");
-    } else expect(view.trigger).toHaveTextContent(workspace.name);
+    const view = renderSwitcher(prepare);
+    expect(view.trigger).toHaveClass("rail-brand", "workspace-switcher-rail-trigger");
+    expect(view.trigger.querySelector('.orbis-logo use')).toHaveAttribute("href", "/brand/orbis-mark.svg#orbis-mark");
     await userEvent.click(view.trigger);
     await userEvent.click(await screen.findByRole("button", { name: `切换到 ${workspace.name}` }));
     expect(prepare).not.toHaveBeenCalled();
@@ -95,7 +93,7 @@ it("saves before switching, persists the new context, replaces the query cache a
   let finishSave!: () => void;
   const prepare = vi.fn<() => Promise<void>>().mockImplementationOnce(() => new Promise<void>(resolve => { finishSave = resolve; })).mockResolvedValue(undefined);
   const fetch = installApi();
-  const view = renderSwitcher("rail", prepare);
+  const view = renderSwitcher(prepare);
   const oldClient = view.clients[0];
   oldClient.setQueryData(["source-workspace-private-data"], "source only");
   await chooseTarget(view);
@@ -117,7 +115,7 @@ it("saves before switching, persists the new context, replaces the query cache a
 it("keeps the source context after a failed save and allows a guarded retry", async () => {
   const prepare = vi.fn<() => Promise<void>>().mockRejectedValueOnce(new Error("当前草稿保存失败")).mockResolvedValueOnce(undefined);
   const fetch = installApi();
-  const view = renderSwitcher("rail", prepare);
+  const view = renderSwitcher(prepare);
   await chooseTarget(view);
   expect(await screen.findByRole("alert")).toHaveTextContent("当前草稿保存失败");
   expect(fetch.mock.calls.filter(([, init]) => init.method === "PUT")).toHaveLength(0);
@@ -138,7 +136,7 @@ it.each([false, true])("checks drafts again after a delayed switch response (lat
     if (lateSaveFails && savedDrafts.length === 2) throw new Error("切换期间的新草稿未能保存");
   });
   installApi(() => new Promise<Response>(resolve => { finishSwitch = resolve; }));
-  const view = renderSwitcher("rail", prepare);
+  const view = renderSwitcher(prepare);
   await chooseTarget(view);
   await waitFor(() => expect(finishSwitch).toBeDefined());
   expect(savedDrafts).toEqual(["初始草稿"]);
@@ -161,7 +159,7 @@ it("cancels during save without sending a workspace mutation when the save later
   let finishSave!: () => void;
   const prepare = () => new Promise<void>(resolve => { finishSave = resolve; });
   const fetch = installApi();
-  const view = renderSwitcher("rail", prepare);
+  const view = renderSwitcher(prepare);
   await chooseTarget(view);
   await userEvent.click(screen.getByRole("button", { name: "取消切换" }));
   await act(async () => { finishSave(); });

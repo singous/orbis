@@ -51,8 +51,8 @@ describe("site editing", () => {
     expect(screen.getByRole("status", { name: "正在打开站点…" })).toBeInTheDocument();
     const shell = screen.getByRole("main");
     const navigation = screen.getByRole("navigation", { name: "业务板块" });
-    const search = screen.getByRole("button", { name: "搜索" });
-    act(() => search.focus());
+    const switcher = screen.getByRole("button", { name: "切换工作空间" });
+    act(() => switcher.focus());
     await act(async () => { release(); });
     if (outcome === "loaded") {
       const name = await screen.findByRole("textbox", { name: "站点名称" });
@@ -60,8 +60,8 @@ describe("site editing", () => {
     } else expect(await screen.findByRole("heading", { name: "无法打开站点" })).toBeInTheDocument();
     expect(screen.getByRole("main")).toBe(shell);
     expect(screen.getByRole("navigation", { name: "业务板块" })).toBe(navigation);
-    expect(screen.getByRole("button", { name: "搜索" })).toBe(search);
-    expect(search).toHaveFocus();
+    expect(screen.getByRole("button", { name: "切换工作空间" })).toBe(switcher);
+    expect(switcher).toHaveFocus();
     expect(screen.queryByRole("status", { name: "正在打开站点…" })).not.toBeInTheDocument();
   });
 

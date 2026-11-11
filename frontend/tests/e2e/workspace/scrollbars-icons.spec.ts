@@ -67,19 +67,19 @@ test("the global scrollbar skin preserves wheel and keyboard scrolling", async (
   await expect.poll(() => scroller.evaluate((element) => element.scrollTop)).toBeGreaterThan(100);
 });
 
-test("the restored home keeps its rail while hiding the function sidebar", async ({ page, request }) => {
+test("the restored home uses the document rail and menu", async ({ page, request }) => {
   await signIn(page, request);
   await expect(page).toHaveURL(/\/home$/);
   await expect(page.getByRole("heading", { name: "首页", exact: true })).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "首页导航", exact: true })).toHaveCount(0);
-  await expect(page.getByRole("navigation", { name: "业务板块" }).getByRole("link", { name: "首页", exact: true })).toHaveAttribute("aria-current", "page");
-  await expect(page.getByRole("region", { name: "侧栏", exact: true })).toHaveCount(0);
-  await expect(page.getByRole("separator", { name: "调整侧栏宽度", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "文档导航", exact: true })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "文档导航" }).getByRole("link", { name: "首页", exact: true })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByRole("region", { name: "侧栏", exact: true })).toBeVisible();
+  await expect(page.getByRole("separator", { name: "调整侧栏宽度", exact: true })).toBeVisible();
   for (const theme of ["light", "dark"] as const) {
     await page.evaluate((mode) => { document.documentElement.dataset.theme = mode; document.documentElement.classList.toggle("dark", mode === "dark"); }, theme);
     const selected = page.locator('.rail-action[aria-current="page"]');
     await expect(selected).toHaveCount(1);
-    await expect(selected).toHaveAccessibleName("首页");
+    await expect(selected).toHaveAccessibleName("在线文档");
     await expect(selected.locator("svg")).toBeVisible();
     const navigation = await page.locator(".rail-action .orbis-icon, .workspace-function-link .orbis-icon, .workspace-header .orbis-icon").evaluateAll((icons) => icons.map((icon) => ({
       color: getComputedStyle(icon).color,
@@ -94,7 +94,7 @@ test("the restored home keeps its rail while hiding the function sidebar", async
     await expect.poll(() => page.locator(".rail-action .orbis-icon, .workspace-function-link .orbis-icon, .workspace-header .orbis-icon").evaluateAll((icons) => icons.filter((icon) => getComputedStyle(icon).color !== getComputedStyle(icon.parentElement!).color).length)).toBe(0);
     expect(navigation.every((icon) => icon.background === "none")).toBe(true);
   }
-  expect(await page.locator('.rail-action.is-active > svg').evaluate(element => getComputedStyle(element).animationName)).toBe("none");
+  expect(await page.locator('.rail-action[aria-current="page"] > svg').evaluate(element => getComputedStyle(element).animationName)).toBe("none");
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.getByRole("link", { name: "在线文档", exact: true }).click();
   const selectedDocumentIcon = page.locator('.rail-action[aria-label="在线文档"] > svg');
@@ -106,6 +106,7 @@ test("the restored home keeps its rail while hiding the function sidebar", async
   const preferredWidth = await page.locator(".workspace-main-navigation").evaluate(element => element.getBoundingClientRect().width);
   await page.goto("/sites");
   await page.getByRole("button", { name: "收起侧栏", exact: true }).click();
+  await page.getByRole("link", { name: "在线文档", exact: true }).click();
   await page.getByRole("link", { name: "首页", exact: true }).click();
   await expect(page.getByRole("button", { name: "展开侧栏", exact: true })).toHaveCount(0);
   await page.getByRole("link", { name: "在线文档", exact: true }).click();
@@ -116,16 +117,15 @@ test("the restored home keeps its rail while hiding the function sidebar", async
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("button", { name: "打开主导航", exact: true }).click();
   await expect(page.getByRole("navigation", { name: "业务板块", exact: true })).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "首页导航", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "文档导航", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "关闭侧栏", exact: true }).click();
   await expect(page.getByRole("button", { name: "打开主导航", exact: true })).toBeFocused();
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/documents/search");
-  await expect(page.getByRole("navigation", { name: "业务板块", exact: true }).getByRole("button", { name: "搜索", exact: true })).toHaveAttribute("aria-current", "page");
-  await expect(page.locator('.rail-action[aria-label="搜索"] > svg')).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "业务板块", exact: true }).getByRole("link", { name: "在线文档", exact: true })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByRole("button", { name: "搜索文档", exact: true })).toBeVisible();
   await page.goto("/sites");
-  await expect(page.locator('.rail-action[aria-label="搜索"]')).not.toHaveAttribute("aria-current", "page");
-  await expect(page.locator('.rail-action[aria-label="搜索"] > svg')).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "业务板块", exact: true }).getByRole("link", { name: "在线文档", exact: true })).not.toHaveAttribute("aria-current", "page");
   await page.getByRole("button", { name: "创建站点", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "创建文档站点", exact: true });
   expect(await dialog.evaluate((element) => getComputedStyle(element, "::-webkit-scrollbar").width)).toBe("8px");

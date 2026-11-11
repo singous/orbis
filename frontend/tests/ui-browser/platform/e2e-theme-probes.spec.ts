@@ -47,7 +47,7 @@ for (const theme of ["light", "dark"] as const) {
     await page.locator("html").evaluate(element => element.style.setProperty("--radius", ".5rem"));
     await expectTokenStyles(create, { "border-radius": "--radius-lg" });
     await page.locator("html").evaluate(element => element.style.removeProperty("--radius"));
-    await expect(page.getByRole("button", { name: "全局搜索", exact: true })).toBeEnabled();
+    await expect(page.getByRole("button", { name: "搜索文档", exact: true })).toBeEnabled();
     await create.click();
     const notebook = page.getByRole("dialog", { name: "新建笔记本", exact: true });
     for (const name of ["预设图标", "图标颜色"]) {

@@ -133,7 +133,7 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
           <Link to="/documents" className="inline-flex items-center gap-2 rounded-sm hover:text-foreground"><ArrowLeft aria-hidden="true" size={14} />我的文档</Link>
           {groupName ? <><ChevronRight aria-hidden="true" size={12} /><span>{groupName}</span></> : null}
         </nav>
-        <article className="min-h-[calc(100dvh-97px-var(--topbar-height))] rounded-xl bg-card p-8 max-[600px]:p-5" aria-label="笔记本首页">
+        <article className="min-h-[calc(100dvh-97px)] rounded-xl bg-card p-8 max-[600px]:p-5" aria-label="笔记本首页">
           <header className="notebook-page-header mb-7 flex flex-wrap items-start justify-between gap-4">
             <NotebookIdentity notebook={notebook} variant="cover" metadata={treeSummary.state === "loading" ? "正在读取目录…" : treeSummary.state === "error" ? "目录暂不可用" : <>
               <span>{treeSummary.noteCount} 项内容</span><span aria-hidden="true">·</span>

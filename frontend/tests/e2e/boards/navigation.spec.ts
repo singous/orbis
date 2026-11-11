@@ -72,11 +72,11 @@ test("same-tab sidebar navigation requires an explicit discard before leaving a 
   await openWithSession(page, session, `/documents/${board.document_id}`);
   await page.getByRole("button", { name: "审批流程", exact: true }).click();
   await expect(page.locator(".board-save-state")).toHaveText("保存失败");
-  await page.getByRole("link", { name: "首页", exact: true }).click();
+  await page.getByRole("link", { name: "在线文档", exact: true }).click();
   await expect(page.getByRole("alertdialog", { name: "画板尚未保存" })).toBeVisible();
   await expect(page).toHaveURL(new RegExp(`/documents/${board.document_id}$`));
   await page.getByRole("button", { name: "放弃并离开", exact: true }).click();
-  await expect(page).toHaveURL(/\/home$/);
+  await expect(page).toHaveURL(/\/documents$/);
   await page.goBack();
   await expect(page.locator(".board-save-state")).toHaveText("已保存");
   await expect(page.locator(".board-page-actions")).toContainText("0 个对象");

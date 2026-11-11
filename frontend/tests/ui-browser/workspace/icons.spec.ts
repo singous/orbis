@@ -11,17 +11,21 @@ for (const theme of ["light", "dark"]) test(`navigation icons keep native contro
     const data = path === "/api/v1/me" ? user : path === "/api/v1/workspaces" ? { items: [workspace], pagination } : { items: [], pagination };
     return route.fulfill({ json: { code: "OK", message: "", request_id: "navigation-icons", data } });
   });
-  await page.goto("/settings/account");
-  await expect(page.getByRole("heading", { name: "个人资料", exact: true })).toBeVisible();
+  await page.goto("/documents");
+  await expect(page.getByRole("heading", { name: "我的文档", exact: true })).toBeVisible();
   const rail = page.getByRole("navigation", { name: "业务板块", exact: true });
-  const home = rail.getByRole("link", { name: "首页", exact: true });
+  const menu = page.getByRole("navigation", { name: "文档导航", exact: true });
+  const home = menu.getByRole("link", { name: "首页", exact: true });
   await home.focus();
   await home.evaluate(element => Promise.all(element.getAnimations().map(animation => animation.finished)));
   await expectVisibleKeyboardFocus(home);
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "首页", exact: true })).toBeVisible();
   await expect(home).toHaveAttribute("aria-current", "page");
-  const values = await rail.locator("a").evaluateAll(links => links.map(link => {
+  await expect(rail.getByRole("link")).toHaveCount(1);
+  await expect(rail.getByRole("link", { name: "在线文档" })).toHaveAttribute("aria-current", "page");
+  expect(await rail.getByRole("link", { name: "首页" }).count()).toBe(0);
+  const values = await rail.locator("a").or(home).evaluateAll(links => links.map(link => {
     const box = link.getBoundingClientRect();
     const icon = link.querySelector("svg");
     return { href: link.getAttribute("href"), width: box.width, height: box.height, icon: icon ? { width: icon.getBoundingClientRect().width, height: icon.getBoundingClientRect().height, pointerEvents: getComputedStyle(icon).pointerEvents } : null };

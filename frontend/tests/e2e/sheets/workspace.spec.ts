@@ -467,12 +467,12 @@ test("sheet controls follow the Orbis theme in light and dark appearances", asyn
       exact: true,
     });
 
-    // 主操作使用原生主题色，输入框的边框、圆角、字体与焦点遵循原生 token。
+    // 主操作使用原生主题色，输入框的底色、圆角、字体与焦点遵循主题 token。
     await page.mouse.move(0, 0);
     await expectTokenStyles(submit, { "background-color": "--primary", color: "--primary-foreground" });
     const field = dialog.getByRole("textbox", { name: "字段名称", exact: true });
     await submit.focus();
-    await expectTokenStyles(field, { "border-color": "--input", "border-radius": "--radius-lg", "font-family": "--font-sans" });
+    await expectTokenStyles(field, { "background-color": "--muted", "border-radius": "--radius-sm", "font-family": "--font-sans" });
     const fieldBackground = await field.evaluate(element => getComputedStyle(element).backgroundColor);
     await field.hover();
     await expect(field).toHaveCSS("background-color", fieldBackground);

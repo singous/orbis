@@ -51,17 +51,17 @@ describe("shared workspace chrome", () => {
     expect(within(rail).getByRole("button", { name: "切换工作空间" })).toBeInTheDocument();
     expect(within(rail).getByRole("button", { name: "打开用户菜单" })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "打开用户菜单" })).toHaveLength(1);
-    expect(within(rail).getByRole("link", { name: "首页" })).toHaveAttribute("href", "/home");
-    expect(within(rail).getByRole("button", { name: "搜索" })).toHaveAttribute("aria-haspopup", "dialog");
+    expect(within(rail).queryByRole("link", { name: "首页" })).not.toBeInTheDocument();
+    expect(within(screen.getByRole("navigation", { name: "文档导航" })).getByRole("link", { name: "首页" })).toHaveAttribute("href", "/home");
   });
 
-  it("keeps the desktop topbar with the shared menu content and search shortcut", async () => {
+  it("uses the same navigation and search shortcut in the desktop host", async () => {
     window.__ORBIS_HOST__ = { surface: "desktop" };
     const view = mount();
-    expect(view.container.querySelector(".workspace-topbar")).toBeInTheDocument();
+    expect(view.container.querySelector(".workspace-topbar")).toBeNull();
     const rail = screen.getByRole("complementary", { name: "应用导航" });
-    expect(within(rail).queryByRole("button", { name: "切换工作空间" })).not.toBeInTheDocument();
-    expect(within(rail).queryByRole("button", { name: "打开用户菜单" })).not.toBeInTheDocument();
+    expect(within(rail).getByRole("button", { name: "切换工作空间" })).toBeInTheDocument();
+    expect(within(rail).getByRole("button", { name: "打开用户菜单" })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "打开用户菜单" })).toHaveLength(1);
     await userEvent.setup().keyboard("{Control>}k{/Control}");
     await waitFor(() => expect(screen.getByRole("combobox", { name: "搜索任何内容" })).toHaveFocus());

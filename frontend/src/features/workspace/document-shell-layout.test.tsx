@@ -4,10 +4,8 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { WorkspaceShell, type WorkspaceSidebarConfig } from "./WorkspaceShell";
 import { authStore } from "../../shared/auth/auth-store";
 
-vi.mock("./WorkspaceTopbar", () => ({ WorkspaceTopbar: () => null }));
 vi.mock("./WorkspaceNavigation", () => ({ WorkspaceNavigation: () => <nav aria-label="功能菜单">功能导航</nav> }));
-vi.mock("./BusinessRail", () => ({ BusinessRail: ({ collapsed, onExpand, expandLabel, createMenu }: { collapsed: boolean; onExpand: () => void; expandLabel: string; createMenu: React.ReactNode }) => <nav aria-label="业务导航">{createMenu}{collapsed ? <button data-sidebar-toggle="expand" aria-label={expandLabel} onClick={onExpand}>展开</button> : null}</nav> }));
-vi.mock("./RailCreateMenu", () => ({ RailCreateMenu: () => <button>新建资产</button> }));
+vi.mock("./BusinessRail", () => ({ BusinessRail: () => <nav aria-label="业务导航"><button>切换工作空间</button></nav> }));
 
 const notebook: WorkspaceSidebarConfig = {
   id: "notebook-directory",
@@ -70,19 +68,19 @@ it("uses the same animation state and clears it after rapid toggles", () => {
   act(() => { vi.advanceTimersByTime(200); });
   expect(view.container.querySelector(".workspace-shell")).not.toHaveClass("sidebar-animating");
 });
-it("keeps global creation in the rail and traps then restores focus in the mobile drawer", () => {
+it("traps focus in the drawer and restores it on close in the mobile drawer", () => {
   open(notebook, true);
   const trigger = screen.getByRole("button", { name: "打开主导航" });
   act(() => { trigger.focus(); });
   fireEvent.click(trigger);
   expect(screen.getByRole("navigation", { name: "业务导航" })).toBeInTheDocument();
   expect(screen.getByRole("navigation", { name: "笔记本目录" })).toBeInTheDocument();
-  expect(screen.getAllByRole("button", { name: "新建资产" })).toHaveLength(1);
+  expect(screen.getAllByRole("button", { name: "切换工作空间" })).toHaveLength(1);
   expect(screen.queryByRole("separator")).toBeNull();
   const last = screen.getByRole("link", { name: "文档树" });
   act(() => { last.focus(); });
   fireEvent.keyDown(last, { key: "Tab" });
-  expect(screen.getByRole("button", { name: "新建资产" })).toHaveFocus();
+  expect(screen.getByRole("button", { name: "切换工作空间" })).toHaveFocus();
   fireEvent.keyDown(document, { key: "Escape" });
   expect(trigger).toHaveAttribute("aria-expanded", "false");
   expect(trigger).toHaveFocus();
@@ -92,5 +90,5 @@ it("supports a rail-only overview without a phantom expand control", () => {
   open(false);
   expect(screen.queryByRole("button", { name: "展开侧栏" })).toBeNull();
   expect(screen.queryByRole("region", { name: "侧栏" })).toBeNull();
-  expect(screen.getByRole("button", { name: "新建资产" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "切换工作空间" })).toBeInTheDocument();
 });

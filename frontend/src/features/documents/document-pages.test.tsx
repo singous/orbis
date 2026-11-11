@@ -430,7 +430,7 @@ describe("document function pages", () => {
       recent.textContent?.indexOf("最新文档") ?? -1,
     );
     expect(screen.queryByRole("navigation", { name: "在线文档功能" })).not.toBeInTheDocument();
-    expect(document.querySelector(".workspace-shell")).not.toHaveClass("has-section-menu");
+    expect(screen.getByRole("navigation", { name: "文档导航" })).toBeInTheDocument();
   });
 
   it.each(["/", "/home"])("opens the restored home from %s", async (path) => {
@@ -438,8 +438,8 @@ describe("document function pages", () => {
     expect(await screen.findByRole("heading", { name: "首页", level: 1 })).toBeVisible();
     expect(window.location.pathname).toBe("/home");
     const rail = await screen.findByRole("navigation", { name: "业务板块" });
-    expect(within(rail).getByRole("link", { name: "首页" })).toHaveAttribute("aria-current", "page");
-    expect(within(rail).getByRole("link", { name: "首页" })).toHaveAttribute("href", "/home");
+    expect(within(screen.getByRole("navigation", { name: "文档导航" })).getByRole("link", { name: "首页" })).toHaveAttribute("aria-current", "page");
+    expect(within(rail).queryByRole("link", { name: "首页" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "切换工作空间" })).toBeInTheDocument();
   });
 

@@ -19,7 +19,7 @@ for (const surface of ["web", "desktop"] as const) test(`${surface} E2E account 
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/documents");
     const drawer = page.getByRole("button", { name: "打开主导航", exact: true });
-    if (surface === "web" && width === 390) await drawer.click();
+    if (width === 390) await drawer.click();
     const trigger = page.getByRole("button", { name: "打开用户菜单", exact: true });
     await trigger.click();
     const menu = page.getByRole("menu", { name: "用户操作", exact: true });
@@ -33,13 +33,13 @@ for (const surface of ["web", "desktop"] as const) test(`${surface} E2E account 
     await page.keyboard.press("Escape");
     await expect(menu).toHaveCount(0);
     await expect(trigger).toBeFocused();
-    if (surface === "web" && width === 390) await expect(drawer).toHaveAttribute("aria-expanded", "true");
+    if (width === 390) await expect(drawer).toHaveAttribute("aria-expanded", "true");
     await trigger.click();
     await page.getByRole("menuitem", { name: "账号", exact: true }).click();
     await expect(page).toHaveURL(/\/settings\/account$/);
     await expect(page.getByRole("heading", { name: "个人资料", exact: true })).toBeVisible();
   }
-  if (surface === "web") await page.getByRole("button", { name: "打开主导航", exact: true }).click();
+  await page.getByRole("button", { name: "打开主导航", exact: true }).click();
   await page.getByRole("button", { name: "打开用户菜单", exact: true }).click();
   const logout = page.waitForRequest(request => request.method() === "POST" && new URL(request.url()).pathname.endsWith("/auth/logout"));
   await page.getByRole("menuitem", { name: "退出登录", exact: true }).click();
@@ -53,8 +53,8 @@ test("E2E frames keep unpainted shadows across home, documents and notebook navi
   for (const path of ["/home", "/documents", `/collections/${notebooks[0].id}`]) {
     await page.goto(path);
     await expect(page.locator(".workspace-main-navigation")).toBeVisible();
-    const target = page.locator(path.startsWith("/collections/") ? "#notebook-directory" : ".workspace-main-area");
-    await expectUnpaintedBoxShadow(target);
+    await expectUnpaintedBoxShadow(page.locator(".workspace-main-navigation"));
+    await expectUnpaintedBoxShadow(page.locator(".workspace-main-area"));
   }
 });
 
@@ -75,14 +75,12 @@ test("E2E sidebar motion samples the completed transition while retaining interm
     await page.emulateMedia({ reducedMotion: "no-preference" });
     await page.goto(entry.path);
     await expect(page.getByRole("button", { name: entry.collapse, exact: true })).toBeVisible();
-    // 让实际高度过渡越过旧的 540ms 采样窗口，校验终点跟随 transition.finished。
-    await page.locator(".rail-expand-slot").evaluate(element => { (element as HTMLElement).style.transitionDelay = "240ms"; });
     const collapse = await sampleSidebarToggle(page, entry.collapse);
     expect(collapse.intermediateFrames).toBeGreaterThan(2);
     expect(collapse.railTravel).toBeLessThanOrEqual(1);
     expect(collapse.startWidth).toBeCloseTo(entry.width, 0);
-    expect(collapse.endWidth).toBeCloseTo(collapse.railWidth + 40, 0);
-    expect(collapse.transitions).toEqual(expect.arrayContaining(["grid-template-columns:420", "height:420"]));
+    expect(collapse.endWidth).toBeCloseTo(collapse.railWidth, 0);
+    expect(collapse.transitions).toEqual(expect.arrayContaining(["grid-template-columns:420"]));
     await expect(page.getByRole("button", { name: entry.expand, exact: true })).toBeFocused();
     const expanded = await sampleSidebarToggle(page, entry.expand);
     expect(expanded.railTravel).toBeLessThanOrEqual(1);
@@ -107,8 +105,7 @@ test("E2E delayed notebook loading keeps visible skeletons and live navigation",
     await expect(placeholder).toBeVisible();
     await expect(placeholder.locator('[data-slot="skeleton"]').first()).toBeVisible();
     await expect(page.getByRole("link", { name: "在线文档", exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: "新建资产", exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: "搜索", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "搜索文档", exact: true })).toBeVisible();
   } finally { release(); }
   await expect(placeholder).toHaveCount(0);
 });

@@ -28,7 +28,7 @@ for (const surface of ["web", "desktop"] as const) {
       await page.goto("/settings/account");
       await expect(page.getByRole("heading", { name: "个人资料", exact: true })).toBeVisible();
       const drawer = page.getByRole("button", { name: "打开主导航", exact: true });
-      if (surface === "web" && width < 768) await drawer.click();
+      if (width < 768) await drawer.click();
       const workspaceTrigger = page.getByRole("button", { name: "切换工作空间", exact: true });
       await workspaceTrigger.click();
       const choices = page.getByRole("dialog", { name: "切换工作空间", exact: true });
@@ -53,7 +53,7 @@ for (const surface of ["web", "desktop"] as const) {
       await page.keyboard.press("Escape");
       await expect(appearance).toHaveCount(0);
       await expect(accountTrigger).toBeFocused();
-      if (surface === "web" && width < 768) await expect(drawer).toHaveAttribute("aria-expanded", "true");
+      if (width < 768) await expect(drawer).toHaveAttribute("aria-expanded", "true");
     }
   });
 }
