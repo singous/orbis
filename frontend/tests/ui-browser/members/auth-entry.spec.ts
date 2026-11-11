@@ -142,7 +142,7 @@ test("a signed-in account accepts with its token and enters the returned workspa
   await expect(accept).toBeEnabled();
   await accept.click();
   await expect(page).toHaveURL(/\/documents$/);
-  await expect(page.getByRole("heading", { name: "在线文档", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "我的文档", exact: true })).toBeVisible();
   expect(accepted).toEqual([{ body: { token: "signed-in-token" }, authorization: "Bearer test-token" }]);
 });
 

@@ -53,10 +53,9 @@ export async function sampleSidebarToggle(page: Page, label: string) {
     ]);
     const endWidth = navigation.getBoundingClientRect().width;
     const endRailTop = rail.getBoundingClientRect().top;
-    const railLow = Math.min(startRailTop, endRailTop) + 1;
-    const railHigh = Math.max(startRailTop, endRailTop) - 1;
+    const railTravel = Math.max(0, ...railTops.map(top => Math.abs(top - startRailTop)));
     const low = Math.min(startWidth, endWidth) + 1;
     const high = Math.max(startWidth, endWidth) - 1;
-    return { startWidth, endWidth, railWidth, startRailTop, endRailTop, railIntermediateFrames: railTops.filter(top => top > railLow && top < railHigh).length, intermediateFrames: widths.filter(width => width > low && width < high).length, transitions };
+    return { startWidth, endWidth, railWidth, startRailTop, endRailTop, railTravel, intermediateFrames: widths.filter(width => width > low && width < high).length, transitions };
   }, label);
 }

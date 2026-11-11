@@ -8,7 +8,7 @@ test.beforeEach(async ({ page }) => {
   await expect(page.getByRole("textbox", { name: "邮箱", exact: true })).toBeVisible();
 });
 
-test("native dark styles follow the nearest data/class theme, including the theme root itself", async ({ page }) => {
+test("input surfaces follow the nearest data/class theme, including the theme root itself", async ({ page }) => {
   const results = await page.evaluate(() => {
     const template = document.querySelector<HTMLInputElement>('[data-slot="input"]')!;
     const host = document.createElement("div");
@@ -23,7 +23,7 @@ test("native dark styles follow the nearest data/class theme, including the them
     const values = inputs.map(({ name, input }) => {
       const actual = getComputedStyle(input).backgroundColor;
       const expected = document.createElement("span");
-      expected.style.backgroundColor = name === "light" ? "transparent" : "color-mix(in oklab, var(--input) 30%, transparent)";
+      expected.style.backgroundColor = "var(--muted)";
       input.parentElement!.append(expected);
       if (name === "self") expected.dataset.theme = "dark";
       const color = getComputedStyle(expected).backgroundColor;
@@ -34,6 +34,7 @@ test("native dark styles follow the nearest data/class theme, including the them
     return values;
   });
   for (const item of results) expect(item.actual, item.name).toBe(item.expected);
+  expect(results.find(item => item.name === "dark")?.actual).not.toBe(results.find(item => item.name === "light")?.actual);
 });
 
 test("hovering a child does not apply dark utility styles to an unstyled theme container", async ({ page }) => {

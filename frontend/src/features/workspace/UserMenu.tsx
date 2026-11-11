@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@orbis/ui/dial
 import type { User, Workspace } from "../../shared/api/schemas";
 import { appearanceStore, setAppearanceMode } from "../../shared/theme/appearance";
 import { canManageWorkspaceMembers, workspaceRoleLabel } from "./capabilities";
+import { workspaceMenuPanelClassName, workspaceMenuRowClassName } from "./workspace-navigation-styles";
 
 const appearanceOptions = [{ value: "light", label: "白天", Icon: Sun }, { value: "dark", label: "夜间", Icon: Moon }, { value: "system", label: "跟随系统", Icon: Monitor }] as const;
 
@@ -33,30 +34,30 @@ export function UserMenu({ user, workspace, onLogout, variant = "topbar" }: User
   return (
     <div className={cn("workspace-user-menu relative ml-auto", variant === "rail" && "workspace-user-menu--rail m-0")}>
       <DropdownMenu>
-        <DropdownMenuTrigger ref={triggerRef} render={<Button variant="ghost" size="icon" />} className={cn("workspace-user-trigger", variant === "rail" && "workspace-user-trigger--rail")} aria-label="打开用户菜单">
-          <UserAvatar user={user} className="workspace-user-avatar" />
+        <DropdownMenuTrigger ref={triggerRef} render={<Button variant="ghost" size="icon" />} className={cn("workspace-user-trigger", variant === "rail" && "workspace-user-trigger--rail size-9 p-0")} aria-label="打开用户菜单">
+          <UserAvatar user={user} className={cn("workspace-user-avatar", variant === "rail" && "size-9")} />
           {variant === "topbar" ? <span className="workspace-user-trigger-copy hidden">
             <span className="truncate">{userName}</span>
             <span className="workspace-user-trigger-role">{workspaceRoleLabel(workspace?.role)}</span>
           </span> : null}
         </DropdownMenuTrigger>
-        <DropdownMenuContent aria-label="用户操作" finalFocus={!appearanceOpen} className={cn("workspace-user-popover w-64 max-w-[calc(100vw-2rem)]", variant === "rail" && "workspace-user-popover--rail")} side={variant === "rail" ? "right" : "bottom"} align="end" sideOffset={12}>
-          <div className="workspace-user-profile mb-2 flex items-center gap-3 p-3">
-            <UserAvatar user={user} className="workspace-user-avatar flex-none" />
-            <div className={variant === "rail" ? "min-w-0 wrap-anywhere" : undefined}>
-              <div className="workspace-user-name text-sm font-medium">{userName}</div>
+        <DropdownMenuContent aria-label="用户操作" finalFocus={!appearanceOpen} className={cn("workspace-user-popover", workspaceMenuPanelClassName, variant === "rail" && "workspace-user-popover--rail")} side={variant === "rail" ? "right" : "bottom"} align="end" sideOffset={8}>
+          <div className="workspace-user-profile mb-1 flex min-h-20 items-center gap-3 rounded-xl bg-sidebar px-3.5 py-3">
+            <div className="min-w-0 flex-1 wrap-anywhere">
+              <div className="workspace-user-name text-sm font-semibold">{userName}</div>
               <div className="workspace-user-space mt-0.5 text-xs text-muted-foreground">{user?.email}</div>
             </div>
+            <UserAvatar user={user} className="workspace-user-avatar size-[42px] flex-none" />
           </div>
           <DropdownMenuGroup>
-            <DropdownMenuLabel className="workspace-user-actions-label">设置</DropdownMenuLabel>
+            <DropdownMenuLabel className="workspace-user-actions-label sr-only">设置</DropdownMenuLabel>
+            <DropdownMenuItem className={workspaceMenuRowClassName} label="账号" render={<Link to="/settings/account" />}><Settings aria-hidden="true" /><span>账号</span></DropdownMenuItem>
             {canManageWorkspaceMembers(workspace) ? (
-              <DropdownMenuItem label="工作空间成员" render={<Link to="/settings/members" />}><Users aria-hidden="true" /><span>工作空间成员</span></DropdownMenuItem>
+              <DropdownMenuItem className={workspaceMenuRowClassName} label="工作空间成员" render={<Link to="/settings/members" />}><Users aria-hidden="true" /><span>工作空间成员</span></DropdownMenuItem>
             ) : null}
-            <DropdownMenuItem label="账号" render={<Link to="/settings/account" />}><Settings aria-hidden="true" /><span>账号</span></DropdownMenuItem>
-            <DropdownMenuItem label="外观" onClick={() => setAppearanceOpen(true)}><ThemeIcon aria-hidden="true" /><span>外观</span><ChevronRight aria-hidden="true" className="ms-auto" /></DropdownMenuItem>
-            <DropdownMenuItem label="开源许可" render={<a href="/licenses/" />}><BookOpen aria-hidden="true" /><span>开源许可</span></DropdownMenuItem>
-            <DropdownMenuItem label="退出登录" onClick={onLogout}><LogOut aria-hidden="true" /><span>退出登录</span></DropdownMenuItem>
+            <DropdownMenuItem className={workspaceMenuRowClassName} label="外观" onClick={() => setAppearanceOpen(true)}><ThemeIcon aria-hidden="true" /><span>外观</span><ChevronRight aria-hidden="true" className="ms-auto" /></DropdownMenuItem>
+            <DropdownMenuItem className={workspaceMenuRowClassName} label="开源许可" render={<a href="/licenses/" />}><BookOpen aria-hidden="true" /><span>开源许可</span></DropdownMenuItem>
+            <DropdownMenuItem className={workspaceMenuRowClassName} label="退出登录" onClick={onLogout}><LogOut aria-hidden="true" /><span>退出登录</span></DropdownMenuItem>
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>

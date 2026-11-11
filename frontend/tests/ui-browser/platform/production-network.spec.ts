@@ -68,7 +68,7 @@ const surfaces: RuntimeSurface[] = [
     await expect(page.getByRole("region", { name: "历史记录", exact: true }).getByRole("heading", { name: "记下第一个想法", exact: true })).toBeVisible();
   } },
   { name: "overview", path: "/documents", entry: "src/features/documents/DocumentOverviewPage.tsx", setup: installBoardFixture, verify: async page => {
-    await expect(page.getByRole("heading", { name: "在线文档", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "我的文档", exact: true })).toBeVisible();
     await expect(page.locator(".notebook-overview").getByRole("link", { name: /设计手册/ })).toBeVisible();
   } },
   { name: "notebook", path: `/collections/${collectionId}`, entry: "src/features/documents/NotebookPage.tsx", setup: installBoardFixture, verify: async page => {

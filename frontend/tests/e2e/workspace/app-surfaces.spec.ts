@@ -124,10 +124,10 @@ for (const surface of ["web", "desktop"] as const) {
         const search = element.querySelector('[aria-label="搜索"]')!.getBoundingClientRect();
         const home = element.querySelector('[aria-label="首页"]')!.getBoundingClientRect();
         const documents = element.querySelector('[aria-label="在线文档"]')!.getBoundingClientRect();
-        return { searchHome: home.top - search.bottom, homeDocuments: documents.top - home.bottom };
+        return { documentsHome: home.top - documents.bottom, homeSearch: search.top - home.bottom };
       });
-      expect(gaps.searchHome).toBeGreaterThan(0);
-      expect(gaps.searchHome).toBeCloseTo(gaps.homeDocuments, 1);
+      expect(gaps.documentsHome).toBeGreaterThan(0);
+      expect(gaps.documentsHome).toBeCloseTo(gaps.homeSearch, 1);
       await railSearch.click();
       await expect(palette).toBeVisible();
       await expect(page).toHaveURL(/\/documents$/);

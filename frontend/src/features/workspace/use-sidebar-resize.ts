@@ -20,7 +20,7 @@ function readPreferredWidth(key: string, maximum: number): number | null {
   } catch { return null; }
 }
 
-export function useSidebarResize(gridRef: RefObject<HTMLDivElement | null>, enabled: boolean, hasContext: boolean, preferences: SidebarPreferences = DEFAULT_SIDEBAR_PREFERENCES) {
+export function useSidebarResize(gridRef: RefObject<HTMLDivElement | null>, enabled: boolean, hasContext: boolean, preferences: SidebarPreferences = DEFAULT_SIDEBAR_PREFERENCES, layoutScope?: string) {
   const key = preferences.widthKey;
   const [stored, setStored] = useState(() => ({ key, width: readPreferredWidth(key, SIDEBAR_MAX_WIDTH) }));
   const preferredWidth = stored.key === key ? stored.width : readPreferredWidth(key, SIDEBAR_MAX_WIDTH);
@@ -52,7 +52,7 @@ export function useSidebarResize(gridRef: RefObject<HTMLDivElement | null>, enab
     if (context) observer.observe(context);
     window.addEventListener("resize", measure);
     return () => { observer.disconnect(); window.removeEventListener("resize", measure); };
-  }, [gridRef, enabled, hasContext]);
+  }, [gridRef, enabled, hasContext, key, layoutScope]);
 
   const maximum = bounds.maximum;
   const width = clampWidth(preferredWidth ?? bounds.defaultWidth, maximum);

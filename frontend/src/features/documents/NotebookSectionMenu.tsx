@@ -15,10 +15,12 @@ import type { WorkspaceSidebarConfig } from "../workspace/workspace-sidebar-conf
 import { useStore } from "zustand";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { authStore } from "../../shared/auth/auth-store";
-import { ArrowLeft, FilePlus2, Home, MoreHorizontal, Pin, Plus } from "../../shared/ui/icons";
+import { ArrowLeft, ChevronDown, FilePlus2, Home, MoreHorizontal, Pin, Plus, Settings2 } from "../../shared/ui/icons";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { usePinnedNotebooks } from "./pinned-notebooks";
 import { NotebookIdentity } from "./NotebookIdentity";
+import { NotebookShortcuts } from "./NotebookShortcuts";
+import { EditNotebookDialog } from "./NotebookDialog";
 import { DocumentContextPanel } from "./DocumentContextPanel";
 import { useCreateNote, useNotebook, useNoteTree } from "./queries";
 
@@ -40,14 +42,16 @@ export function createNotebookSidebar(
     id: "notebook-directory",
     title: <NotebookSidebarTitle notebookId={notebookId} />,
     titlePlacement: "below-header",
+    railActions: releaseFeatures.documentFavorites ? <NotebookShortcuts key={notebookId} notebookId={notebookId} /> : null,
     leadingActions: (
-      <Link to="/documents" className="notebook-menu-back focus-ring m-0 grid size-(--ob-control-height-sm) shrink-0 place-items-center gap-[5px] rounded-xl px-1 py-0.5 text-sm font-medium leading-5 transition-colors duration-(--ob-motion-feedback) ease-[ease] motion-reduce:transition-none text-(--muted-foreground) hover:bg-(--accent) hover:text-foreground" aria-label="返回文档中心" title="返回文档中心">
-        <ArrowLeft aria-hidden="true" size={18} />
+      <Link to="/documents" className="notebook-menu-back focus-ring m-0 flex min-h-7 min-w-0 items-center gap-2 rounded-md px-1 text-xs text-muted-foreground hover:text-foreground" aria-label="返回我的文档" title="返回我的文档">
+        <ArrowLeft aria-hidden="true" size={14} className="shrink-0" /><span className="truncate">我的文档</span>
       </Link>
     ),
     actions: <NotebookCreateAction notebookId={notebookId} />,
     content: (
       <NotebookSectionMenu
+        key={notebookId}
         notebookId={notebookId}
         activeNoteId={activeNoteId}
       />
@@ -69,7 +73,7 @@ function NotebookSidebarTitle({ notebookId }: { notebookId: string }) {
   );
 }
 
-function NotebookCreateAction({ notebookId }: { notebookId: string }) {
+export function NotebookCreateAction({ notebookId, placement = "sidebar" }: { notebookId: string; placement?: "sidebar" | "header" }) {
   const workspace = useStore(authStore, (state) => state.workspace);
   const createNote = useCreateNote();
   const tree = useNoteTree(notebookId);
@@ -134,10 +138,11 @@ function NotebookCreateAction({ notebookId }: { notebookId: string }) {
   }
 
   const creating = createNote.isPending || creatingTable || creatingBoard;
+  const header = placement === "header";
   return canMutateWorkspaceContent(workspace) ? (
     <DropdownMenu>
-      <DropdownMenuTrigger disabled={creating} render={<Button  type="button" className="notebook-menu-create shrink-0" aria-label="创建内容" title="创建内容" variant="ghost" size="icon-sm"><Plus aria-hidden="true" size={18} /></Button>} />
-      <DropdownMenuContent align="start" sideOffset={6} className="notebook-create-popover" aria-label="创建内容">
+      <DropdownMenuTrigger disabled={creating} render={header ? <Button type="button" size="sm" className="h-[34px] gap-2 px-3" aria-label="新建内容"><Plus aria-hidden="true" />新建<ChevronDown aria-hidden="true" /></Button> : <Button type="button" className="notebook-menu-create shrink-0" aria-label="创建内容" title="创建内容" variant="ghost" size="icon-sm"><Plus aria-hidden="true" size={18} /></Button>} />
+      <DropdownMenuContent align={header ? "end" : "start"} sideOffset={6} className="notebook-create-popover" aria-label="创建内容">
         <DropdownMenuItem label="随手记" onClick={() => navigate("/documents/quick-notes")}><StickyNote aria-hidden="true" size={16} className="notebook-create-quick-note text-(--ob-icon-mint)" /><span>随手记</span></DropdownMenuItem>
         <DropdownMenuItem label="文档" disabled={!tree.isSuccess} onClick={() => { void createDocument(); }}><FilePlus2 aria-hidden="true" size={16} className="notebook-create-document text-(--ob-icon-blue)" /><span>文档</span></DropdownMenuItem>
         {releaseFeatures.boardCreation && <DropdownMenuItem label="画板" disabled={!tree.isSuccess} onClick={() => { void createBoard(); }}><Shapes aria-hidden="true" size={16} className="notebook-create-board text-(--ob-icon-violet)" /><span>画板</span></DropdownMenuItem>}
@@ -154,9 +159,12 @@ export function NotebookSectionMenu({
 }: NotebookSectionMenuProps) {
   const workspace = useStore(authStore, (state) => state.workspace);
   const { isPinned, togglePin } = usePinnedNotebooks(workspace?.id);
+  const notebook = useNotebook(notebookId).data;
+  const [editing, setEditing] = useState(false);
+  const settingsButton = useRef<HTMLButtonElement>(null);
   return (
     <nav className={workspaceFunctionMenuClassName} aria-label="笔记本目录">
-      <div className="notebook-home-row flex items-center gap-1">
+      <div className="notebook-home-row mb-3 flex items-center gap-1 rounded-md has-[[aria-current=page]]:bg-sidebar-accent">
         <NavLink
           end
           to={`/collections/${notebookId}`}
@@ -175,10 +183,11 @@ export function NotebookSectionMenu({
           </DropdownMenuContent>
         </DropdownMenu>}
       </div>
-      <DocumentContextPanel
-        notebookId={notebookId}
-        activeNoteId={activeNoteId}
-      />
+      <DocumentContextPanel notebookId={notebookId} activeNoteId={activeNoteId} />
+      {canMutateWorkspaceContent(workspace) && notebook ? <div className="mt-auto pt-4">
+        <Button ref={settingsButton} type="button" variant="ghost" className={workspaceFunctionLinkClassName()} onClick={() => setEditing(true)}><Settings2 aria-hidden="true" />笔记本设置</Button>
+        {editing ? <EditNotebookDialog notebook={notebook} finalFocus={settingsButton} onClose={() => setEditing(false)} /> : null}
+      </div> : null}
     </nav>
   );
 }

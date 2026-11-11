@@ -44,10 +44,12 @@ export function useDocumentGroups(status: ResourceStatus = "active") {
 export function useNotebooks(
   groupId?: string,
   status: ResourceStatus = "active",
+  options: { enabled?: boolean } = {},
 ) {
   const auth = useDocumentAuth();
   return useQuery({
     queryKey: ["notebooks", status, groupId ?? "all", false],
+    enabled: options.enabled ?? true,
     queryFn: ({ signal }) => listNotebooks(auth, groupId, status, { signal }),
   });
 }

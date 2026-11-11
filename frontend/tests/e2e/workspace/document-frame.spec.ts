@@ -36,7 +36,7 @@ test('document overview shares the shell and exposes its function menu alongside
     const home = await frame('/home');
     const documents = await frame('/documents');
     expect({ radius: documents.radius, border: documents.border }).toEqual({ radius: '0px', border: '0px' });
-    expect({ ...documents, railWidth: home.railWidth }).toEqual(home);
+    expect(documents).toMatchObject({ gap: '0px', padding: '0px', railX: 0, railWidth: 272 });
     expect(documents.railWidth).toBeGreaterThan(home.railWidth);
     await expect(page.getByRole('navigation', { name: '文档导航', exact: true })).toBeVisible();
     const navigation = page.getByRole('navigation', { name: '文档导航', exact: true });
@@ -48,14 +48,14 @@ test('document overview shares the shell and exposes its function menu alongside
     const section = page.getByRole('region', { name: 'Frame notebooks', exact: true });
     await expect(section).toBeVisible();
     await expect(page.getByRole('region', { name: 'Empty frame group', exact: true })).toHaveCount(0);
-    const common = await page.getByRole('region', { name: '常用', exact: true }).boundingBox();
+    const common = await page.getByRole('region', { name: '置顶笔记本', exact: true }).boundingBox();
     const header = await page.locator('.notebook-overview .page-header').boundingBox();
     expect(common!.y - (header!.y + header!.height)).toBeLessThan(40);
     const cards = await section.locator('.notebook-overview-card').evaluateAll(elements => elements.map(element => { const box = element.getBoundingClientRect(); return { y: box.y, right: box.right }; }));
     const row = await section.locator('.notebook-overview-grid').boundingBox();
     expect(cards).toHaveLength(2);
     expect(cards[0].y).toBe(cards[1].y);
-    expect(Math.abs(cards[1].right - (row!.x + row!.width))).toBeLessThan(2);
+    expect(cards[1].right).toBeLessThan(row!.x + row!.width);
   }
   for (const path of ['/home', '/documents', '/documents/collections', '/sites', '/settings/account', '/settings/members']) {
     await page.goto(path);

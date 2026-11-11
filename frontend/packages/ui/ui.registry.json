@@ -43,8 +43,8 @@
       "sourceChecksum": "sha256:bbad1bba130ac9750a61844eeb8f043e8a710846e07689fa85398b80a46c2741",
       "addedAt": 1793595043043,
       "status": "experimental",
-      "updatedAt": 1793597672507,
-      "modifications": "Native base-nova component API and default classes retained. Official CLI resolves Lucide placeholders; local public-subpath imports, explicit React type imports and Chinese screen-reader labels where applicable. Native portals receive only optional application overlay-scope HTML props, without restoring legacy APIs or styles."
+      "updatedAt": 1794381493192,
+      "modifications": "Native base-nova API, focus, invalid and disabled semantics retained. Orbis graphite styling uses a muted surface, 6 px radius and 12 px horizontal padding. Local cn and explicit React type imports remain."
     },
     "textarea": {
       "source": "https://ui.shadcn.com/r/styles/base-nova/textarea.json",

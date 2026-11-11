@@ -1,7 +1,6 @@
 
 import { cn } from "@orbis/ui/cn";
 import { pageActionsClassName } from "@/shared/ui/PageContainer";
-import { workbenchStyles } from "@/shared/ui/workbench-styles";
 import { releaseFeatures } from "../../shared/release-features";
 import { reportError } from "../../shared/api/request-feedback";
 import { DraftActions } from "../../shared/ui/DraftActions";
@@ -11,8 +10,9 @@ import type { Notebook } from "../../shared/api/schemas";
 import { newUUID } from "../../shared/ids";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@orbis/ui/dropdown-menu";
 import { Button } from "@orbis/ui/button";
-import { Hand, Pin } from "@orbis/ui/icons";
-import { ArrowLeft, Download, Globe2, Import, MoreHorizontal, Plus, Settings2 } from "../../shared/ui/icons";
+import { ListTree, Network, Pin } from "@orbis/ui/icons";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@orbis/ui/tabs";
+import { ArrowLeft, ChevronRight, Download, Globe2, Import, MoreHorizontal, Settings2 } from "../../shared/ui/icons";
 import { type ChangeEvent, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useStore } from "zustand";
@@ -23,16 +23,17 @@ import { authStore,getAuthSessionKey } from "../../shared/auth/auth-store";
 import { DocumentContextPanel, DocumentContextSummaryProvider, useDocumentContextSummary } from "./DocumentContextPanel";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { DocumentShell } from "./DocumentShell";
-import { NotebookDialog } from "./NotebookDialog";
+import { EditNotebookDialog } from "./NotebookDialog";
+import { NotebookCreateAction } from "./NotebookSectionMenu";
+import { NotebookMindMap } from "./NotebookMindMap";
 import { NotebookIdentity } from "./NotebookIdentity";
 import { usePinnedNotebooks } from "./pinned-notebooks";
 import { isUnavailableResourceError } from "./resource-errors";
 import {
-  useCreateNote,
+  useDocumentGroups,
   useExportMarkdown,
   useImportMarkdown,
   useNotebook,
-  useUpdateNotebook,
 } from "./queries";
 
 const MAX_MARKDOWN_IMPORT_BYTES=2*1024*1024;
@@ -48,8 +49,7 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
   const notebookQuery = useNotebook(collectionId);
   const importMarkdown = useImportMarkdown();
   const exportMarkdown = useExportMarkdown();
-  const createNote = useCreateNote();
-  const updateNotebook = useUpdateNotebook();
+  const groups = useDocumentGroups().data?.items ?? [];
   const [editing, setEditing] = useState<Notebook | null>(null);
   function closeNotebookEditor() {
     setEditing(null);
@@ -62,6 +62,7 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
   useEffect(()=>{importOwner.current=true;return()=>{importOwner.current=false;};},[]);
   const treeSummary = useDocumentContextSummary();
   const notebook = notebookQuery.data;
+  const groupName = groups.find(group => group.id === notebook?.group_id)?.name;
   const collectionUnavailable =
     isUnavailableResourceError(notebookQuery.error) || (!notebookQuery.isLoading && !notebookQuery.isError && !notebook);
 
@@ -111,16 +112,6 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
     finally{importing.current=false;if(importOwner.current&&getAuthSessionKey(authStore.getState())===scopeKey)setImportBusy(false);}
   }
 
-  async function createDocument() {
-    const note = await createNote.mutateAsync({
-      notebook_id: collectionId,
-      title: "未命名文档",
-      parent_id: null,
-      sort_order: treeSummary.rootCount,
-    });
-    navigate(`/documents/${note.id}`);
-  }
-
   async function exportAllDocuments() {
     for (const noteId of treeSummary.noteIds) {
       const result = await exportMarkdown.mutateAsync(noteId);
@@ -137,19 +128,25 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
 
   return (
     <DocumentShell notebookId={collectionId}>
-      <div className="notebook-home mx-auto w-full max-w-[1200px] px-[clamp(20px,3vw,48px)] pt-6 pb-12 max-[600px]:px-3 max-[600px]:pt-4 max-[600px]:pb-7">
-        <Link to="/documents" className={workbenchStyles.back}><ArrowLeft aria-hidden="true" size={14} />文档中心</Link>
-        <article className="min-h-[calc(100dvh-160px)] rounded-[16px] bg-card px-[clamp(28px,4vw,64px)] pt-12 pb-16 max-[600px]:min-h-[calc(100dvh-140px)] max-[600px]:rounded-xl max-[600px]:px-5 max-[600px]:pt-7 max-[600px]:pb-10" aria-label="笔记本首页">
-          <header className="notebook-page-header mb-[120px] flex flex-wrap items-start justify-between gap-x-8 gap-y-6 max-[600px]:relative max-[600px]:mb-12 max-[600px]:gap-6">
-            <NotebookIdentity notebook={notebook} variant="cover" metadata={treeSummary.state === "loading" ? "正在读取目录…" : treeSummary.state === "error" ? "目录暂不可用" : <><strong>{treeSummary.noteCount}</strong>{" "}<span>篇文档</span></>} />
-            <div className={cn(pageActionsClassName, "gap-2.5 pt-0.5 max-[600px]:gap-2 max-[600px]:pt-0")}>
-              {releaseFeatures.documentFavorites && <Button variant="outline" size="sm" aria-label={pinned ? "取消常用笔记本" : "设为常用笔记本"} aria-pressed={pinned} title="常用笔记本会显示在左侧菜单和文档首页顶部"  onClick={() => togglePin(collectionId)} disabled={!workspace || !notebook}><Pin aria-hidden="true" />{pinned ? "已设为常用" : "设为常用"}</Button>}
+      <div className="notebook-home min-h-full w-full bg-(--ob-document-surface) p-7 max-[600px]:p-3">
+        <nav className="mb-6 flex items-center gap-2 text-xs text-muted-foreground" aria-label="笔记本位置">
+          <Link to="/documents" className="inline-flex items-center gap-2 rounded-sm hover:text-foreground"><ArrowLeft aria-hidden="true" size={14} />我的文档</Link>
+          {groupName ? <><ChevronRight aria-hidden="true" size={12} /><span>{groupName}</span></> : null}
+        </nav>
+        <article className="min-h-[calc(100dvh-97px-var(--topbar-height))] rounded-xl bg-card p-8 max-[600px]:p-5" aria-label="笔记本首页">
+          <header className="notebook-page-header mb-7 flex flex-wrap items-start justify-between gap-4">
+            <NotebookIdentity notebook={notebook} variant="cover" metadata={treeSummary.state === "loading" ? "正在读取目录…" : treeSummary.state === "error" ? "目录暂不可用" : <>
+              <span>{treeSummary.noteCount} 项内容</span><span aria-hidden="true">·</span>
+              <span>{treeSummary.kinds.document} 篇文档、{treeSummary.kinds.sheet} 个数据表、{treeSummary.kinds.board} 块画板</span>
+            </>} />
+            <div className={cn(pageActionsClassName, "gap-2 pt-1")}>
               {canEdit && notebook && releaseFeatures.documentSharing ? <ShareButton notebookId={collectionId} title={notebook.title} /> : null}
-              {canEdit ? <Button variant="outline" size="sm"  onClick={() => void createDocument().catch(reportError)} disabled={createNote.isPending}><Plus aria-hidden="true" size={14} />新建文档</Button> : null}
+              {canEdit ? <NotebookCreateAction notebookId={collectionId} placement="header" /> : null}
               <input ref={fileInputRef} hidden type="file" accept=".md,text/markdown,text/plain" onChange={handleImport} />
               <DropdownMenu>
-                <DropdownMenuTrigger render={<Button  ref={actionsTriggerRef} type="button" className="max-[600px]:absolute max-[600px]:top-0 max-[600px]:end-0" aria-label="笔记本操作" title="更多操作" variant="ghost" size="icon"><MoreHorizontal aria-hidden="true" size={18} /></Button>} />
+                <DropdownMenuTrigger render={<Button  ref={actionsTriggerRef} type="button" className="size-[34px]" aria-label="笔记本操作" title="更多操作" variant="secondary" size="icon"><MoreHorizontal aria-hidden="true" size={18} /></Button>} />
                 <DropdownMenuContent className="document-actions-popover" align="end" sideOffset={8} aria-label="笔记本操作">
+                  {releaseFeatures.documentFavorites ? <DropdownMenuItem label={pinned ? "取消常用笔记本" : "设为常用笔记本"} disabled={!workspace || !notebook} onClick={() => togglePin(collectionId)}><Pin aria-hidden="true" />{pinned ? "取消常用笔记本" : "设为常用笔记本"}</DropdownMenuItem> : null}
                   {canEdit ? <DropdownMenuItem label="编辑笔记本" onClick={() => setEditing(notebook ?? null)}><Settings2 aria-hidden="true" size={16} />编辑笔记本</DropdownMenuItem> : null}
                   {canEdit ? <DropdownMenuItem label="导入 Markdown" disabled={importBusy} onClick={() => fileInputRef.current?.click()}><Import aria-hidden="true" size={16} />导入 Markdown</DropdownMenuItem> : null}
                   <DropdownMenuItem label="导出全部" disabled={!treeSummary.noteCount || exportMarkdown.isPending} onClick={() => void exportAllDocuments().catch(reportError)}><Download aria-hidden="true" size={16} />导出全部</DropdownMenuItem>
@@ -159,20 +156,21 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
             </div>
           </header>
           {pendingImportTitle?<DraftActions label="导入操作"><Button disabled={importBusy} onClick={()=>void retryImport()}>重试导入</Button></DraftActions>:null}
-          <section className="notebook-home-intro mb-[104px] flex items-start gap-3 max-[600px]:mb-12" aria-labelledby="notebook-welcome-heading">
-            <Hand aria-hidden="true" size={20} className="mt-0.5 shrink-0 text-(--ob-icon-amber)" />
-            <div>
-              <h2 id="notebook-welcome-heading" className="m-0 text-base font-semibold leading-6">欢迎来到笔记本</h2>
-              <p className="mt-3.5 text-base leading-[1.9] text-(--muted-foreground) max-[600px]:mt-2.5 max-[600px]:text-sm max-[600px]:leading-[1.9]">笔记本就像一本书，让多篇文档结构化，方便知识的创作与沉淀。</p>
-            </div>
+          <section className="notebook-home-intro mb-7 space-y-3 py-5" aria-labelledby="notebook-welcome-heading">
+            <h2 id="notebook-welcome-heading" className="text-[15px] font-medium">关于这个笔记本</h2>
+            <p className="max-w-[46rem] text-[13px] leading-6 text-muted-foreground">笔记本就像一本书，让多篇文档结构化，方便知识的创作与沉淀。</p>
           </section>
-          <section aria-labelledby="notebook-directory-heading">
-            <h2 id="notebook-directory-heading" className="sr-only">目录</h2>
-            <DocumentContextPanel notebookId={collectionId} variant="main" />
-          </section>
+          <Tabs defaultValue="directory" className="gap-3.5 px-6 max-[600px]:px-0">
+            <TabsList aria-label="笔记本视图" className="group-data-horizontal/tabs:h-[34px]">
+              <TabsTrigger value="directory" className="h-7 px-2.5 text-xs data-active:bg-card"><ListTree aria-hidden="true" className="size-[14px]" />目录</TabsTrigger>
+              <TabsTrigger value="mind-map" className="h-7 px-2.5 text-xs data-active:bg-card"><Network aria-hidden="true" className="size-[14px]" />脑图</TabsTrigger>
+            </TabsList>
+            <TabsContent value="directory"><DocumentContextPanel notebookId={collectionId} variant="main" /></TabsContent>
+            <TabsContent value="mind-map"><NotebookMindMap notebookId={collectionId} title={notebook?.title ?? "笔记本"} /></TabsContent>
+          </Tabs>
         </article>
       </div>
-      {editing ? <NotebookDialog open title="编辑笔记本" initialValue={editing.title} initialIcon={editing.icon} submitLabel="保存" pending={updateNotebook.isPending} finalFocus={actionsTriggerRef} onClose={closeNotebookEditor} onSubmit={async ({ title, icon }) => { await updateNotebook.mutateAsync({ id: editing.id,expected_version:editing.metadata_version, title, icon }); closeNotebookEditor(); }} /> : null}
+      {editing ? <EditNotebookDialog notebook={editing} finalFocus={actionsTriggerRef} onClose={closeNotebookEditor} /> : null}
     </DocumentShell>
   );
 }

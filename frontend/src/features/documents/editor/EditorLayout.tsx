@@ -1,8 +1,10 @@
 import { editorOutlineLinkClassName } from "./editor-control-styles";
 import { reportError } from "../../../shared/api/request-feedback";
 import { NAVIGATE_OUTLINE_EVENT } from "./outline-navigation";
-import { useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { Eye, EyeOff } from "../../../shared/ui/icons";
+import { useId, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { ChevronDown } from "@orbis/ui/icons";
+import { Portal } from "@orbis/ui/portal";
+import { useEditorOutlineHost } from "./EditorToolbarHost";
 import { Button } from "@orbis/ui/button";
 import { extractPlainTextV2, type NoteBlocksV2, type OrbisBlock } from "../../content/blocks";
 
@@ -102,15 +104,15 @@ export function EditorLayout({ outlineStore, children, loadOutlineContent }: { o
     finally { setLoading(false); }
   }
   const outline = useSyncExternalStore(outlineStore.subscribe, outlineStore.snapshot, outlineStore.snapshot);
-  const [pinned, setPinned] = useState(false);
-  const [hovered, setHovered] = useState(false);
-  return <div ref={layoutRef} className={`editor-layout grid min-h-[calc(100vh-80px)] grid-cols-[minmax(0,1fr)_44px] gap-6 bg-transparent px-8 pt-6 pb-24 transition-[grid-template-columns] duration-200 ease-[ease] [&.outline-open]:grid-cols-[minmax(0,1fr)_232px] max-[1024px]:grid-cols-[minmax(0,1fr)] max-[1024px]:px-4 max-[1024px]:pb-[60px] max-[1024px]:[&.outline-open]:grid-cols-[minmax(0,1fr)] max-[641px]:px-0 in-[.document-scroll-region]:min-h-full in-[.document-scroll-region]:pt-8 max-[768px]:in-[.document-scroll-region]:pt-3 motion-reduce:transition-none${pinned || hovered ? " outline-open" : ""}`}>
+  const host = useEditorOutlineHost();
+  const [outlineOpen, setOutlineOpen] = useState(true);
+  const outlineId = useId();
+  const toggle = <Button type="button" size="sm" variant="ghost" className="editor-outline-toggle h-8 gap-2 text-[13px] aria-expanded:bg-transparent max-[1024px]:hidden" aria-expanded={outlineOpen} aria-controls={outlineId} onClick={() => setOutlineOpen(value => !value)}>文档大纲<ChevronDown aria-hidden="true" className={outlineOpen ? undefined : "-rotate-90"} /></Button>;
+  return <div ref={layoutRef} className={`editor-layout grid min-h-full grid-cols-[minmax(0,1fr)] gap-6 px-4 pt-8 pb-24 min-[1025px]:[&.outline-open]:grid-cols-[minmax(0,1fr)_minmax(140px,176px)] min-[1025px]:[&.outline-open]:pe-7 max-[1024px]:pt-3 max-[1024px]:pb-[60px] max-[641px]:px-0${outlineOpen ? " outline-open" : ""}`}>
+    {host ? <Portal container={host}>{toggle}</Portal> : <div className="col-span-full justify-self-end max-[1024px]:hidden">{toggle}</div>}
     {children}
-    <aside className="editor-outline sticky top-24 flex max-h-[calc(100vh-120px)] flex-col gap-2.5 self-start overflow-hidden border-l border-border in-[.workspace-shell]:border-ring py-2 pl-2.5 in-[.document-scroll-region]:top-6 in-[.document-scroll-region]:max-h-[calc(100dvh-190px)] max-[1024px]:hidden" aria-label="文档大纲" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
-      <Button type="button" className="editor-outline-pin flex-none" aria-label={pinned ? "取消大纲常驻" : "大纲常驻"} aria-pressed={pinned} title={pinned ? "取消常驻" : "常驻大纲"} onClick={() => setPinned(value => !value)} size="icon-sm" variant={pinned ? "secondary" : "ghost"}>{pinned ? <Eye aria-hidden="true" size={14} /> : <EyeOff aria-hidden="true" size={14} />}</Button>
-      <div className="editor-outline-body hidden min-w-0 overflow-auto in-[.outline-open]:block"><div className="mb-4 text-xs font-semibold text-[var(--muted-foreground)]">大纲</div>
-        {outline.length ? <nav className="space-y-1">{outline.map(item => <Button key={item.id} className={editorOutlineLinkClassName} disabled={loading} title={item.text} style={{ paddingLeft: `${(item.level - 1) * 10}px` }} onClick={event => { event.stopPropagation();  void navigateHeading(item.id);  }} variant="ghost">{item.text}</Button>)}</nav> : <p className="text-xs leading-5 text-[var(--muted-foreground)]">添加标题后，这里会自动生成大纲。</p>}
-      </div>
+    <aside id={outlineId} hidden={!outlineOpen} className="editor-outline sticky top-6 max-h-[calc(100dvh-190px)] self-start overflow-auto pt-2 max-[1024px]:hidden" aria-label="文档大纲">
+      {outline.length ? <nav aria-label="文档标题" className="space-y-1">{outline.map(item => <Button key={item.id} className={editorOutlineLinkClassName} disabled={loading} title={item.text} style={{ paddingLeft: `${8 + (item.level - 1) * 10}px` }} onClick={event => { event.stopPropagation(); void navigateHeading(item.id); }} variant="ghost">{item.text}</Button>)}</nav> : <p className="px-2 text-xs leading-5 text-muted-foreground">添加标题后，这里会自动生成大纲。</p>}
     </aside>
   </div>;
 }

@@ -18,7 +18,8 @@ test("Document writing and renaming work while deferred comment and share entrie
   await dialog.getByLabel("笔记本名称").fill(`Go 验收 ${Date.now()}`);
   await dialog.getByRole("button",{name:/^创建/}).click();
   await expect(page).toHaveURL(/\/collections\/[0-9a-f-]+$/);
-  await page.getByRole("region",{name:"主工作区",exact:true}).getByRole("button",{name:"新建文档",exact:true}).click();
+  await page.getByRole("region",{name:"主工作区",exact:true}).getByRole("button",{name:"新建内容",exact:true}).click();
+  await page.getByRole("menuitem",{name:"文档",exact:true}).click();
   await expect(page).toHaveURL(/\/documents\/[0-9a-f-]+$/);
   const documentId=page.url().split("/").at(-1)!;
   await page.getByRole("textbox",{name:"文档标题"}).fill("Go 原生文档验收");

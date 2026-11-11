@@ -1,4 +1,4 @@
-/* 应用与领域表面的布局层级；通用控件使用 shadcn 自带尺寸与样式。 */
+/* 应用与领域表面的布局层级；控件交互由 shadcn 原语维护。 */
 :root {
   --ob-control-height-sm: calc(var(--spacing) * 7);
   --ob-control-height-md: calc(var(--spacing) * 8);
@@ -9,6 +9,38 @@
   --ob-ease-out: var(--ease-out);
   --ob-z-dialog: 50;
   --ob-z-popover: 50;
+  --ob-menu-width: 280px;
+  --ob-menu-row-height: 40px;
+  --ob-book-cover-font: 'Noto Serif SC', 'Songti SC', SimSun, serif;
+  --ob-book-cover-sand: #d8ccb8;
+  --ob-book-cover-sage: #dde7db;
+  --ob-book-cover-stone: #ede9e1;
+  --ob-book-cover-moss: #e5e9df;
+  --ob-book-cover-sky: #dbe4eb;
+  --ob-book-cover-ink: #3f493d;
+  --ob-book-spine: #00000012;
+}
+:root, [data-theme="light"] {
+  --ob-document-surface: #f4f5f2;
+  --ob-notebook-card: #fafbf3;
+  --ob-workspace-rail: var(--sidebar-accent);
+  --ob-save-progress-bg: #cddeff;
+  --ob-save-progress-ink: #194eaf;
+  --ob-save-success-bg: #cbebd7;
+  --ob-save-success-ink: #176436;
+  --ob-save-offline-bg: #ffe0a5;
+  --ob-save-offline-ink: #805007;
+}
+[data-theme="dark"] {
+  --ob-document-surface: var(--background);
+  --ob-notebook-card: var(--muted);
+  --ob-workspace-rail: var(--sidebar-accent);
+  --ob-save-progress-bg: #203451;
+  --ob-save-progress-ink: #c1d8ff;
+  --ob-save-success-bg: #1e3c2a;
+  --ob-save-success-ink: #b3e8c6;
+  --ob-save-offline-bg: #443319;
+  --ob-save-offline-ink: #ffe0a5;
 }
 
 /* 品牌插画区固定为明亮色板，独立于表单的浅/深主题。 */

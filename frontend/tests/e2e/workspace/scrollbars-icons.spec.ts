@@ -103,8 +103,8 @@ test("the restored home keeps its rail while hiding the function sidebar", async
   await expect(selectedDocumentIcon).toHaveCSS("animation-name", "none");
   await page.emulateMedia({ reducedMotion: "reduce" });
   await expect.poll(() => selectedDocumentIcon.evaluate(element => getComputedStyle(element).animationName)).toBe("none");
-  await page.goto("/sites");
   const preferredWidth = await page.locator(".workspace-main-navigation").evaluate(element => element.getBoundingClientRect().width);
+  await page.goto("/sites");
   await page.getByRole("button", { name: "收起侧栏", exact: true }).click();
   await page.getByRole("link", { name: "首页", exact: true }).click();
   await expect(page.getByRole("button", { name: "展开侧栏", exact: true })).toHaveCount(0);

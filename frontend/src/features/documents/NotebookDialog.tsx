@@ -9,6 +9,8 @@ import { Input } from "@orbis/ui/input";
 import { NotebookIconPicker } from "./NotebookIconPicker";
 import { uploadNotebookIcon } from "./notebook-icon-api";
 import type { NotebookIconValue } from "./notebook-icons";
+import type { Notebook } from "../../shared/api/schemas";
+import { useUpdateNotebook } from "./queries";
 
 export type NotebookDialogValue = { title: string; icon: NotebookIconValue | null };
 export type NotebookDialogProps = {
@@ -68,4 +70,12 @@ export function NotebookDialog({ open, title = "新建笔记本", initialValue =
       </form>
     </DialogContent>
   </Dialog>;
+}
+
+export function EditNotebookDialog({ notebook, onClose, finalFocus }: { notebook: Notebook; onClose: () => void; finalFocus?: NotebookDialogProps["finalFocus"] }) {
+  const update = useUpdateNotebook();
+  return <NotebookDialog open title="编辑笔记本" initialValue={notebook.title} initialIcon={notebook.icon} submitLabel="保存" pending={update.isPending} finalFocus={finalFocus} onClose={onClose} onSubmit={async ({ title, icon }) => {
+    await update.mutateAsync({ id: notebook.id, expected_version: notebook.metadata_version, title, icon });
+    onClose();
+  }} />;
 }

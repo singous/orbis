@@ -32,6 +32,86 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
+test("recent edits filter by title and notebook without losing content types", async ({ page }) => {
+  const sheet = { ...notes[1], collection_id: notebooks[1].id, title: "安装计划表", sheet_id: "00000000-0000-4000-8000-000000000010", updated_at_ms: now - 86_400_000 };
+  await page.route(url => url.pathname.endsWith("/documents") && !url.pathname.includes("/collections/"), route =>
+    route.fulfill({ json: { code: "OK", message: "", request_id: "recent-layout", data: pageData([notes[0], sheet]) } }),
+  );
+  await page.goto("/documents/recent");
+  await expect(page.getByRole("region", { name: "今天", exact: true }).getByRole("link", { name: notes[0].title, exact: true })).toBeVisible();
+  const yesterday = page.getByRole("region", { name: "昨天", exact: true });
+  await expect(yesterday.getByRole("link", { name: sheet.title, exact: true })).toHaveAttribute("href", `/documents/${sheet.id}`);
+  await expect(yesterday.getByTitle("数据表", { exact: true })).toBeVisible();
+
+  await page.getByRole("searchbox", { name: "搜索文档标题" }).fill("安装");
+  await expect(page.getByRole("link", { name: notes[0].title, exact: true })).toHaveCount(0);
+  const selector = page.getByRole("combobox", { name: "按笔记本筛选" });
+  await selector.click();
+  await page.getByRole("option", { name: notebooks[0].title, exact: true }).click();
+  await expect(page.getByText("没有符合条件的文档。")).toBeVisible();
+  await selector.click();
+  await page.getByRole("option", { name: notebooks[1].title, exact: true }).click();
+  await expect(yesterday.getByRole("link", { name: sheet.title, exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("searchbox", { name: "搜索文档标题" })).toHaveValue("安装");
+  await expect(selector).toContainText(notebooks[1].title);
+  await expect(yesterday.getByRole("link", { name: sheet.title, exact: true })).toBeVisible();
+});
+
+test("the shelf can create a group and open it for management", async ({ page }) => {
+  const createdGroup = { ...group, id: "00000000-0000-4000-8000-000000000042", name: "新项目", is_default: false, sort_order: 1 };
+  let created = false;
+  await page.route(url => url.pathname.endsWith("/collection-groups"), async route => {
+    if (route.request().method() === "POST") {
+      expect(route.request().postDataJSON()).toEqual({ name: createdGroup.name, sort_order: 1 });
+      created = true;
+      await route.fulfill({ status: 201, json: { code: "OK", message: "", request_id: "new-group", data: createdGroup } });
+    } else {
+      await route.fulfill({ json: { code: "OK", message: "", request_id: "list-groups", data: pageData(created ? [group, createdGroup] : [group]) } });
+    }
+  });
+  await page.goto("/documents");
+  await page.getByRole("button", { name: "新建分组", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "新建分组", exact: true });
+  await dialog.getByRole("textbox", { name: "分组名称" }).fill(createdGroup.name);
+  await dialog.getByRole("button", { name: "创建分组", exact: true }).click();
+  await expect(page).toHaveURL(`/documents/collections?group=${createdGroup.id}`);
+  const target = page.locator(`#group-${createdGroup.id}`);
+  await expect(target.getByRole("button", { name: /收起分组 新项目/ })).toBeVisible();
+  await expect(target).toBeFocused();
+});
+
+test("notebook map and sidebar search follow the real directory hierarchy", async ({ page }) => {
+  await page.goto(`/collections/${notebooks[0].id}`);
+  const shortcuts = page.getByRole("button", { name: "常用笔记本", exact: true });
+  await shortcuts.hover();
+  const popup = page.getByRole("dialog", { name: "常用笔记本", exact: true });
+  await expect(popup.getByRole("link", { name: notebooks[0].title, exact: true })).toHaveAttribute("aria-current", "page");
+  await page.keyboard.press("Escape");
+  await expect(popup).toBeHidden();
+
+  await page.getByRole("tab", { name: "脑图", exact: true }).click();
+  const map = page.getByRole("region", { name: "笔记本目录脑图", exact: true });
+  const child = map.getByRole("link", { name: notes[1].title, exact: true });
+  await expect(child).toHaveAttribute("href", `/documents/${notes[1].id}`);
+  await map.getByRole("button", { name: `收起脑图分支：${notes[0].title}` }).click();
+  await expect(child).toHaveCount(0);
+  await map.getByRole("button", { name: `展开脑图分支：${notes[0].title}` }).click();
+  await expect(child).toBeVisible();
+  await page.getByRole("button", { name: "放大脑图" }).click();
+  await expect(page.getByRole("status", { name: "脑图缩放比例" })).toHaveText("125%");
+  await page.getByRole("button", { name: "重置脑图视图" }).click();
+  await expect(page.getByRole("status", { name: "脑图缩放比例" })).toHaveText("100%");
+
+  const sidebar = page.getByRole("navigation", { name: "笔记本目录", exact: true });
+  await sidebar.getByRole("searchbox", { name: "搜索笔记本" }).fill(notes[1].title);
+  await expect(sidebar.getByRole("link", { name: notes[1].title, exact: true })).toBeVisible();
+  await expect(sidebar.getByRole("link", { name: notes[0].title, exact: true })).toBeVisible();
+  await expect(sidebar.getByRole("link", { name: notes[2].title, exact: true })).toHaveCount(0);
+  await sidebar.getByRole("searchbox", { name: "搜索笔记本" }).clear();
+  await expect(sidebar.getByRole("link", { name: notes[2].title, exact: true })).toBeVisible();
+});
+
 for (const theme of ["light", "dark"]) for (const width of [1280, 390]) {
   test(`document workbench ${theme} at ${width}px keeps layout and navigation`, async ({ page }, info) => {
     await page.addInitScript(theme => localStorage.setItem("orbis.appearance", theme), theme);
@@ -45,16 +125,16 @@ for (const theme of ["light", "dark"]) for (const width of [1280, 390]) {
       const styles = getComputedStyle(grid);
       return { gap: styles.gap, columns: styles.gridTemplateColumns.split(" ").length, cards: [...element.querySelectorAll(".notebook-overview-card")].map(item => ({ width: item.getBoundingClientRect().width, height: item.getBoundingClientRect().height, radius: getComputedStyle(item).borderRadius })) };
     });
-    expect(overview.gap).toBe("16px");
+    expect(overview.gap).toBe("18px");
     expect(overview.cards.every(card => card.width > 0 && card.height > 0)).toBe(true);
-    expect(overview.columns).toBe(width === 390 ? 1 : 3);
+    expect(overview.columns).toBe(width === 390 ? 1 : 4);
     expect((await new AxeBuilder({ page }).include(".notebook-overview").analyze()).violations).toEqual([]);
-    const pinned = page.getByRole("region", { name: "常用", exact: true });
+    const pinned = page.getByRole("region", { name: "置顶笔记本", exact: true });
     await expect(pinned.locator(".notebook-overview-card")).toHaveCount(1);
-    await pinned.getByRole("button", { name: "收起常用区域" }).click();
+    await pinned.getByRole("button", { name: /^置顶笔记本/, expanded: true }).click();
     await expect(pinned.locator(".notebook-overview-card")).toHaveCount(0);
-    await pinned.getByRole("button", { name: "展开常用区域" }).click();
-    await pinned.getByRole("link", { name: notebooks[0].title, exact: false }).click();
+    await pinned.getByRole("button", { name: /^置顶笔记本/, expanded: false }).click();
+    await pinned.getByRole("link", { name: notebooks[0].title, exact: true }).click();
     const cover = page.getByRole("article", { name: "笔记本首页" });
     await expect(cover).toBeVisible();
     await expect(cover.getByRole("link", { name: "开始使用", exact: true })).toBeVisible();
@@ -67,8 +147,8 @@ for (const theme of ["light", "dark"]) for (const width of [1280, 390]) {
     });
     expect(parseFloat(notebook.radius)).toBeGreaterThan(0);
     expect(notebook.titleSize).toBe(width === 390 ? "24px" : "28px");
-    expect(notebook.headerMargin).toBe(width === 390 ? "48px" : "120px");
-    expect(notebook.introMargin).toBe(width === 390 ? "48px" : "104px");
+    expect(notebook.headerMargin).toBe("28px");
+    expect(notebook.introMargin).toBe("28px");
     expect(notebook.rowHeight).toBeGreaterThanOrEqual(24);
     const disclosure = cover.getByRole("button", { name: /子目录 开始使用/ });
     const expanded = await disclosure.getAttribute("aria-expanded");
@@ -122,7 +202,7 @@ for (const theme of ["light", "dark"]) test(`document workbench ${theme} empty s
   await page.goto("/documents");
   await expect(page.getByRole("heading", { name: "还没有笔记本" })).toBeVisible();
   expect((await new AxeBuilder({ page }).include(".notebook-overview").analyze()).violations).toEqual([]);
-  await expect(page.getByRole("region", { name: "常用", exact: true })).toContainText("将笔记本设为常用");
+  await expect(page.getByRole("region", { name: "置顶笔记本", exact: true })).toContainText("将笔记本设为常用");
 });
 
 
@@ -309,7 +389,7 @@ for (const { theme, width } of [{ theme: "light", width: 1280 }, { theme: "dark"
   await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
   try {
     await page.goto("/documents");
-    await expect(page.getByRole("heading", { name: "在线文档", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "我的文档", exact: true })).toBeVisible();
     const opener = page.getByRole("button", { name: "新建笔记本", exact: true });
     await opener.focus();
     evidence.overviewFocus = await expectVisibleKeyboardFocus(opener);
@@ -327,7 +407,7 @@ for (const { theme, width } of [{ theme: "light", width: 1280 }, { theme: "dark"
     evidence.restoredOverviewFocus = await expectVisibleKeyboardFocus(opener);
     await expect(page.locator(".notebook-overview-card")).toHaveCount(4);
 
-    const notebookLink = page.getByRole("region", { name: "常用", exact: true }).getByRole("link", { name: notebooks[0].title, exact: false });
+    const notebookLink = page.getByRole("region", { name: "置顶笔记本", exact: true }).getByRole("link", { name: notebooks[0].title, exact: true });
     await notebookLink.focus();
     evidence.notebookLinkFocus = await expectVisibleKeyboardFocus(notebookLink);
     await page.keyboard.press("Enter");

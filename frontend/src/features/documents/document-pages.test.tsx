@@ -238,6 +238,7 @@ vi.mock("./queries", () => {
     data: { items,pagination:{page:1,page_size:20,total:items.length,has_next:false} },
     isLoading: false,
     isError: false,
+    isSuccess: true,
   });
 
   mocks.metadata=Object.fromEntries([...notebooks,...archivedNotebooks].map(item=>[item.id,item]));
@@ -410,8 +411,8 @@ describe("document function pages", () => {
   });
 
   it.each([
-    ["/documents", "在线文档", "heading"],
-    ["/documents/recent", "最近文档", "heading"],
+    ["/documents", "我的文档", "heading"],
+    ["/documents/recent", "最近编辑", "heading"],
     ["/documents/collections", "我的笔记本", "heading"],
     ["/documents/archive", "回收站", "heading"],
   ] as const)("renders %s as the %s page", async (path, name, role) => {

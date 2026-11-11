@@ -58,7 +58,7 @@ it("navigates the portaled toolbar with arrow keys without editing content", asy
   act(() => { bold.focus(); });
   await user.keyboard("{ArrowRight}");
   expect(screen.getByRole("button", { name: "斜体" })).toHaveFocus();
-  await user.keyboard("{ArrowLeft}{ArrowLeft}");
+  await user.keyboard("{ArrowLeft}{ArrowLeft}{ArrowLeft}");
   expect(screen.getByRole("button", { name: "重做" })).toHaveFocus();
   expect(changed).not.toHaveBeenCalled();
 });

@@ -16,7 +16,7 @@ import { usePinnedNotebooks } from "../documents/pinned-notebooks";
 import { resolveWorkspaceArea } from "./workspace-areas";
 
 const documentLinks = [
-  { to: "/documents", label: "开始", icon: Clock3 },
+  { to: "/documents", label: "开始", icon: Home },
   { to: "/documents/quick-notes", label: "随手记", icon: StickyNote },
   { to: "/documents/recent", label: "最近编辑", icon: Clock3 },
 ];
@@ -41,9 +41,9 @@ function DocumentNavigation() {
   const items = allNotebooks.filter(notebook => isPinned(notebook.id));
 
   return <MenuFrame label="文档导航" footer={<NavLink to="/documents/archive" className={navClass}><Trash2 size={18} aria-hidden="true" />回收站</NavLink>}>
-    <Button type="button" className={workspaceFunctionLinkClassName({ className: "document-menu-search mb-3" })} aria-haspopup="dialog" aria-expanded={isOpen} onClick={() => openSearch({ type: "document" })} variant="ghost"><Search size={18} aria-hidden="true" />搜索文档</Button>
+    <Button type="button" className={workspaceFunctionLinkClassName({ className: "document-menu-search mb-3 bg-card in-data-[document-navigation=true]:min-h-8" })} aria-haspopup="dialog" aria-expanded={isOpen} onClick={() => openSearch({ type: "document" })} variant="ghost"><Search size={18} aria-hidden="true" />搜索文档</Button>
     {documentLinks.map(({ to, label, icon: Icon }) => <NavLink key={to} to={to} end className={navClass}><Icon size={18} aria-hidden="true" />{label}</NavLink>)}
-    <div className="document-notebooks-heading mt-6 flex items-center gap-1 [&>button]:flex-1 [&>button[aria-expanded=false]>svg]:-rotate-90">
+    <div className="document-notebooks-heading mt-4 flex items-center gap-1 [&>button]:flex-1 [&>button[aria-expanded=false]>svg]:-rotate-90">
       <Button type="button" className={workspaceFunctionLinkClassName()} aria-label={expanded ? "收起常用笔记本" : "展开常用笔记本"} aria-expanded={expanded} aria-controls={notebooksId} onClick={() => setExpanded(value => !value)} variant="ghost"><ChevronDown size={16} aria-hidden="true" /><span>常用笔记本</span></Button>
       <NavLink to="/documents/collections" className="document-notebooks-manage grid size-(--ob-control-height-sm) flex-none place-items-center rounded-xl text-(--muted-foreground) hover:bg-(--accent) hover:text-foreground" aria-label="管理笔记本" title="管理笔记本"><ChevronRight size={16} aria-hidden="true" /></NavLink>
     </div>

@@ -18,6 +18,7 @@ export type WorkspaceSidebarConfig = {
   titlePlacement?: "header" | "below-header";
   leadingActions?: ReactNode;
   actions?: ReactNode;
+  railActions?: ReactNode;
   content: ReactNode;
   label?: string;
   collapseLabel?: string;

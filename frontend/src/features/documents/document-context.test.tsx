@@ -467,9 +467,9 @@ describe("DocumentContextPanel", () => {
 
     await waitFor(() => expect(screen.getByRole("status", { name: "文档统计" })).toHaveTextContent("2 篇文档"));
     const main = screen.getByRole("region", { name: "主工作区" });
-    expect(within(main).getByRole("heading", { name: "欢迎来到笔记本" })).toBeInTheDocument();
+    expect(within(main).getByRole("heading", { name: "关于这个笔记本" })).toBeInTheDocument();
     expect(within(main).queryByRole("button", { name: /收藏|分享/ })).not.toBeInTheDocument();
-    expect(within(main).getByRole("button", { name: "新建文档" })).toBeEnabled();
+    expect(within(main).getByRole("button", { name: "新建内容" })).toBeEnabled();
     expect(within(main).queryByRole("button", { name: "导出全部" })).not.toBeInTheDocument();
     await actor.click(within(main).getByRole("button", { name: "笔记本操作" }));
     expect(await screen.findByRole("menuitem", { name: "导出全部" })).toBeEnabled();

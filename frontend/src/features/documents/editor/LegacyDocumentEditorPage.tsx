@@ -1,7 +1,7 @@
 import { editorLoadMoreClassName } from "./editor-control-styles";
 
 import { pageColumnClassName } from "../../../shared/ui/PageContainer";
-import { documentBreadcrumbClassName, documentHeaderActionsClassName, documentSaveStateClassName, documentHeaderDividerClassName, documentCommentTriggerClassName, documentSaveSpinnerClassName, editorCanvasClassName, editorTitleClassName } from "./document-chrome";
+import { documentBreadcrumbClassName, documentHeaderActionsClassName, editorCanvasClassName, editorTitleClassName } from "./document-chrome";
 import { releaseFeatures } from "../../../shared/release-features";
 import { ConfirmAction } from "../../../shared/ui/ConfirmAction";
 import { markErrorHandled, reportError, reportRequestError } from "../../../shared/api/request-feedback";
@@ -16,7 +16,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 
-import { AlertTriangle, Archive, BookOpen, ChevronRight, MoreHorizontal, Check, Cloud, Download, MessageSquare, RefreshCw, RotateCcw, Save, WifiOff } from "../../../shared/ui/icons";
+import { Archive, BookOpen, ChevronRight, MoreHorizontal, Download, MessageSquare, RefreshCw, RotateCcw } from "../../../shared/ui/icons";
 import { Component, lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useStore } from "zustand";
@@ -42,6 +42,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createBlockChanges } from "./block-changes";
 import { createEditorDraftFingerprint, type EditorDraft } from "./editor-draft";
 import { EditorLayout, EditorOutlineStore } from "./EditorLayout";
+import { DocumentSaveStatus } from "./DocumentSaveStatus";
+import { formatNotebookUpdateTime } from "../notebook-update-time";
 import { loadDocumentEditor } from "./editor-module";
 import { DocumentShell } from "../DocumentShell";
 import { getNoteContentOutline, getNoteChildrenPage, getNoteBlock, isBoundedContentPage } from "../api";
@@ -86,14 +88,6 @@ import { isUnavailableResourceError } from "../resource-errors";
 const DocumentCollaborationPanel = lazy(() =>
   import("../../collaboration/DocumentCollaborationPanel").then((module) => ({ default: module.DocumentCollaborationPanel })),
 );
-
-const saveStateCopy: Record<AutosaveState, { label: string; icon: typeof Save }> = {
-  saved: { label: "已保存", icon: Check },
-  dirty: { label: "等待保存", icon: Cloud },
-  saving: { label: "保存中…", icon: RefreshCw },
-  error: { label: "保存失败", icon: WifiOff },
-  conflict: { label: "版本冲突", icon: AlertTriangle },
-};
 
 class EditorErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   componentDidCatch() { reportError("页面内容无法显示，请刷新重试。"); }
@@ -567,8 +561,6 @@ export function LegacyDocumentEditorPage() {
 
   const showLocalCheckpoint = saveState === "dirty" || saveState === "saving" || (saveState === "error" && !editorError);
   const checkpointCopy = !showLocalCheckpoint ? null : checkpoints.status.status === "saved" ? "已保存到本机，等待同步" : checkpoints.status.status === "pending" ? "正在保存到本机…" : null;
-  const stateCopy = saveStateCopy[saveState];
-  const StateIcon = stateCopy.icon;
 
   function checkpointDraft(coordinator: AutosaveCoordinator<EditorDraft>) {
     if (!coordinator.saved || !coordinator.current) return;
@@ -787,14 +779,11 @@ export function LegacyDocumentEditorPage() {
 {checkpoints.status.status === "failed" && autosaveState !== "saved" ? <section><h3 className="mb-2 text-sm font-semibold">保存副本</h3><Button variant="ghost" onClick={() => void checkpoints.controller.flush().catch(() => {})}>重试保存到本机</Button></section> : null}
 {draft && saveState === "conflict" ? <section><h3 className="mb-2 text-sm font-semibold">当前修改</h3><div className="mt-3 flex flex-wrap gap-2"><Button variant="secondary"  onClick={() => void loadCompleteContent().then(() => navigator.clipboard?.writeText(v2ToMarkdown((coordinatorRef.current?.current ?? draft).blocks.blocks))).catch(() => {})}><Download aria-hidden="true" size={14} />复制本地 Markdown</Button><ConfirmAction title="载入服务端版本" description="当前未保存的正文和标题将被服务端版本替换。需要保留时，请先复制本地 Markdown。" confirmLabel="替换本地修改" disabled={restoring || archiving} onConfirm={reloadServer}><Button variant="secondary" ><RotateCcw aria-hidden="true" size={14} />载入服务端版本</Button></ConfirmAction></div></section> : null}
 {saveState === "error" && !editorError ? <section><h3 className="mb-2 text-sm font-semibold">保存修改</h3><div className="mt-3"><Button variant="secondary"  onClick={() => coordinatorRef.current?.retry()}><RefreshCw aria-hidden="true" size={14} />重试保存</Button></div></section> : null}</DraftActions> : null}
-      <span className={`${documentSaveStateClassName} is-${saveState}`} role="status" aria-live="polite" aria-atomic="true">
-        <StateIcon aria-hidden="true" size={14} className={saveState === "saving" ? documentSaveSpinnerClassName : ""} /><span>{canEdit ? checkpointCopy ?? stateCopy.label : "只读"}</span>
-      </span>
-      <span className={documentHeaderDividerClassName} aria-hidden="true" />
+      <DocumentSaveStatus state={canEdit ? saveState : "readonly"} label={canEdit ? checkpointCopy ?? undefined : undefined} />
       {canEdit && noteQuery.data ? (releaseFeatures.documentSharing ? <ShareButton notebookId={noteQuery.data.notebook_id!} noteId={noteId} title={draft?.title || noteQuery.data.title} /> : null) : null}
-      {releaseFeatures.documentCollaboration && <Button ref={collaborationTriggerRef} type="button" className={documentCommentTriggerClassName} size="sm" aria-label="评论与历史" aria-haspopup="dialog" aria-expanded={collaborationOpen} disabled={!draft || archiving} onClick={() => { setCollaborationMounted(true); setCollaborationSession(value => value + 1); setCollaborationOpen(true); }} variant="ghost"><MessageSquare aria-hidden="true" size={16} /><span>评论</span></Button>}
+      {releaseFeatures.documentCollaboration && <Button ref={collaborationTriggerRef} type="button" size="icon" aria-label="评论与历史" aria-haspopup="dialog" aria-expanded={collaborationOpen} disabled={!draft || archiving} onClick={() => { setCollaborationMounted(true); setCollaborationSession(value => value + 1); setCollaborationOpen(true); }} variant="secondary"><MessageSquare aria-hidden="true" size={16} /></Button>}
       {canEdit ? <DropdownMenu>
-        <DropdownMenuTrigger disabled={!draft || editorBusy} render={<Button  type="button"  aria-label="更多文档操作" variant="ghost" size="icon"><MoreHorizontal aria-hidden="true" size={18} /></Button>} />
+        <DropdownMenuTrigger disabled={!draft || editorBusy} render={<Button  type="button"  aria-label="更多文档操作" variant="secondary" size="icon"><MoreHorizontal aria-hidden="true" size={18} /></Button>} />
         <DropdownMenuContent align="end" className="document-actions-popover" sideOffset={6} aria-label="文档操作">
           <DropdownMenuItem label="归档文档" disabled={!draft || editorBusy} onClick={() => { void handleArchive(); }}><Archive aria-hidden="true" size={16} /><span>归档文档</span></DropdownMenuItem>
         </DropdownMenuContent>
@@ -808,6 +797,7 @@ export function LegacyDocumentEditorPage() {
         <EditorLayout outlineStore={outlineStore} loadOutlineContent={loadCompleteContent}>
           <article className={editorCanvasClassName}>
             <h1 className="sr-only">{draft.title || "无标题"}</h1>
+            <p className="mb-1 text-xs text-muted-foreground">块文档</p>
             <Input
               aria-label="文档标题"
               className={editorTitleClassName}
@@ -816,7 +806,7 @@ export function LegacyDocumentEditorPage() {
               readOnly={!canEdit || editorBusy}
               onChange={(event) => changeDraft({ ...(coordinatorRef.current?.current ?? draft), title: event.target.value })}
             />
-            <div className="mb-7 mt-2 flex items-center gap-2 text-xs text-[var(--muted-foreground)]"><span>{canEdit ? "停手后自动保存" : "只读访问"}</span></div>
+            <div className="mb-7 mt-2 flex items-center gap-2 text-xs text-muted-foreground"><time dateTime={new Date(noteQuery.data.updated_at_ms).toISOString()}>{formatNotebookUpdateTime(noteQuery.data.updated_at_ms)} 更新</time><span aria-hidden="true">·</span><span>{canEdit ? "停手后自动保存" : "只读访问"}</span></div>
 
             <DocumentCopyContext.Provider value={copyPort}><TableHostContext.Provider value={tableHost}><EditorErrorBoundary key={noteId}>
               <Suspense fallback={<LoadingState label="正在准备编辑…" variant="editor-body" delayMs={180} />}>

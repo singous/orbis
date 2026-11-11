@@ -1,3 +1,4 @@
+import { matchPath } from "react-router-dom";
 import { releaseFeatures } from "../../shared/release-features";
 // Home is an overview; only task-oriented areas need a function sidebar.
 export const DEFAULT_WORKSPACE_PATH = "/home";
@@ -20,4 +21,8 @@ export function resolveWorkspaceArea(pathname: string): WorkspaceArea {
   return WORKSPACE_AREAS.find((area) =>
     area.roots.some((root) => pathname === root || pathname.startsWith(`${root}/`)),
   ) ?? defaultWorkspaceArea;
+}
+
+export function usesDocumentPageLayout(pathname: string) {
+  return Boolean(matchPath("/documents", pathname) || matchPath("/documents/recent", pathname) || matchPath("/collections/:collectionId", pathname));
 }

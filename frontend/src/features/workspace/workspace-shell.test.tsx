@@ -105,16 +105,18 @@ describe("WorkspaceShell (desktop surface)", () => {
     expect(localStorage.getItem("orbis.sidebarCollapsed")).toBeNull();
   });
 
-  it("places search between create and home without opening a document hover menu", async () => {
+  it("leads with documents and keeps global actions reachable without a document hover menu", async () => {
     const actor = userEvent.setup();
     renderShell();
     const rail = screen.getByRole("complementary", { name: "应用导航" });
     const create = within(rail).getByRole("button", { name: "新建资产" });
     const search = within(rail).getByRole("button", { name: "搜索" });
     const home = within(rail).getByRole("link", { name: "首页" });
-    expect(create.compareDocumentPosition(search) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(search.compareDocumentPosition(home) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    await actor.hover(within(rail).getByRole("link", { name: "在线文档" }));
+    const documents = within(rail).getByRole("link", { name: "在线文档" });
+    expect(documents.compareDocumentPosition(home) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(home.compareDocumentPosition(search) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(search.compareDocumentPosition(create) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    await actor.hover(documents);
     expect(screen.queryByRole("navigation", { name: "笔记本快捷访问" })).not.toBeInTheDocument();
   });
 
@@ -459,7 +461,7 @@ describe("WorkspaceShell (desktop surface)", () => {
     renderShell();
     const rail = screen.getByRole("navigation", { name: "业务板块" });
 
-    expect(within(rail).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/home", "/documents"]);
+    expect(within(rail).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/documents", "/home"]);
     expect(screen.queryByRole("link", { name: "知识库" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "记忆" })).not.toBeInTheDocument();
   });

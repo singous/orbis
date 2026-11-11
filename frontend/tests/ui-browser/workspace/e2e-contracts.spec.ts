@@ -69,8 +69,8 @@ test("the unpainted-shadow probe rejects a visible layer mixed with transparent 
 test("E2E sidebar motion samples the completed transition while retaining intermediate frames and reduced motion", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   for (const entry of [
-    { path: "/documents", collapse: "收起侧栏", expand: "展开侧栏" },
-    { path: `/collections/${notebooks[0].id}`, collapse: "收起笔记本目录", expand: "展开笔记本目录" },
+    { path: "/documents", collapse: "收起侧栏", expand: "展开侧栏", width: 272 },
+    { path: `/collections/${notebooks[0].id}`, collapse: "收起笔记本目录", expand: "展开笔记本目录", width: 332 },
   ]) {
     await page.emulateMedia({ reducedMotion: "no-preference" });
     await page.goto(entry.path);
@@ -79,20 +79,19 @@ test("E2E sidebar motion samples the completed transition while retaining interm
     await page.locator(".rail-expand-slot").evaluate(element => { (element as HTMLElement).style.transitionDelay = "240ms"; });
     const collapse = await sampleSidebarToggle(page, entry.collapse);
     expect(collapse.intermediateFrames).toBeGreaterThan(2);
-    expect(collapse.railIntermediateFrames).toBeGreaterThan(2);
-    const expandHeight = (await page.getByRole("button", { name: entry.expand, exact: true }).boundingBox())!.height;
-    expect(collapse.endRailTop - collapse.startRailTop).toBeCloseTo(expandHeight, 0);
-    expect(collapse.endWidth).toBeCloseTo(collapse.railWidth, 0);
+    expect(collapse.railTravel).toBeLessThanOrEqual(1);
+    expect(collapse.startWidth).toBeCloseTo(entry.width, 0);
+    expect(collapse.endWidth).toBeCloseTo(collapse.railWidth + 40, 0);
     expect(collapse.transitions).toEqual(expect.arrayContaining(["grid-template-columns:420", "height:420"]));
     await expect(page.getByRole("button", { name: entry.expand, exact: true })).toBeFocused();
     const expanded = await sampleSidebarToggle(page, entry.expand);
-    expect(expanded.endRailTop - expanded.startRailTop).toBeCloseTo(-expandHeight, 0);
+    expect(expanded.railTravel).toBeLessThanOrEqual(1);
     expect(expanded.endWidth).toBeCloseTo(collapse.startWidth, 0);
     await expect(page.getByRole("button", { name: entry.collapse, exact: true })).toBeFocused();
     await page.emulateMedia({ reducedMotion: "reduce" });
     const reduced = await sampleSidebarToggle(page, entry.collapse);
     expect(reduced.intermediateFrames).toBe(0);
-    expect(reduced.railIntermediateFrames).toBe(0);
+    expect(reduced.railTravel).toBeLessThanOrEqual(1);
     expect(reduced.transitions).not.toContain("grid-template-columns:420");
     expect(reduced.transitions).not.toContain("height:420");
   }

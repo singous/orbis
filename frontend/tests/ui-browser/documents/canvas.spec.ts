@@ -1,4 +1,34 @@
 import { expect, test } from "@playwright/test";
+import { documentEditorHTTP, documentId } from "../fixtures/document-editor";
+import { installSession } from "../fixtures/session";
+
+test("document header shows the real offline state and toggles the outline", async ({ page, context }) => {
+  await installSession(page);
+  const writes = await documentEditorHTTP(page);
+  await page.goto(`/documents/${documentId}`);
+  await expect(page.getByRole("textbox", { name: "文档标题" })).toHaveValue("界面平台化设计");
+  await expect(page.getByRole("toolbar", { name: "文档格式" })).toBeVisible();
+
+  const outline = page.getByRole("complementary", { name: "文档大纲", exact: true });
+  const toggle = page.getByRole("button", { name: "文档大纲", exact: true });
+  await expect(outline.getByRole("button", { name: "协作与知识组织", exact: true })).toBeVisible();
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(outline).toBeHidden();
+  await toggle.press("Space");
+  await expect(outline).toBeVisible();
+
+  const save = page.locator(".document-save-state");
+  await expect(save).toHaveText("已保存");
+  try {
+    await context.setOffline(true);
+    await expect(save).toHaveText("已离线");
+  } finally {
+    await context.setOffline(false);
+  }
+  await expect(save).toHaveText("已保存");
+  expect(writes).toEqual([]);
+});
 
 for (const touch of [false, true]) test.describe(touch ? "touch document canvas" : "desktop document canvas", () => {
   test.use({ hasTouch: touch });

@@ -99,7 +99,7 @@ for (const theme of ["light", "dark"] as const) {
     await page.mouse.move(0, 0);
     await expectTokenStyles(submit, { "background-color": "--primary", color: "--primary-foreground" });
     await submit.focus();
-    await expectTokenStyles(field, { "border-color": "--input", "border-radius": "--radius-lg", "font-family": "--font-sans" });
+    await expectTokenStyles(field, { "background-color": "--muted", "border-radius": "--radius-sm", "font-family": "--font-sans" });
     const background = await field.evaluate(element => getComputedStyle(element).backgroundColor);
     await field.hover();
     await expect(field).toHaveCSS("background-color", background);

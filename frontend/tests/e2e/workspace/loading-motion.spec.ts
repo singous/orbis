@@ -20,36 +20,31 @@ test("ordinary menus and notebook trees share local collapse motion, focus and r
   expect(created.status()).toBe(201);
   const notebookId = (await created.json()).data.id as string;
 
-  let ordinaryWidth: number | undefined;
   for (const entry of [
-    { path: "/documents", collapse: "收起侧栏", expand: "展开侧栏", key: "orbis.sidebarCollapsed" },
-    { path: `/collections/${notebookId}`, collapse: "收起笔记本目录", expand: "展开笔记本目录", key: "orbis.notebookDirectoryCollapsed" },
+    { path: "/documents", collapse: "收起侧栏", expand: "展开侧栏", key: "orbis.sidebarCollapsed", width: 272 },
+    { path: `/collections/${notebookId}`, collapse: "收起笔记本目录", expand: "展开笔记本目录", key: "orbis.notebookDirectoryCollapsed", width: 332 },
   ]) {
     await page.goto(entry.path);
     await expect(page.getByRole("button", { name: entry.collapse, exact: true })).toBeVisible();
     const collapse = await sampleToggle(page, entry.collapse);
     expect(collapse.intermediateFrames).toBeGreaterThan(2);
     expect(collapse.transitions).toContain("grid-template-columns:420");
-    expect(collapse.railIntermediateFrames).toBeGreaterThan(2);
-    const expandHeight = (await page.getByRole("button", { name: entry.expand, exact: true }).boundingBox())!.height;
-    expect(collapse.endRailTop - collapse.startRailTop).toBeCloseTo(expandHeight, 0);
+    expect(collapse.railTravel).toBeLessThanOrEqual(1);
     expect(collapse.transitions).toContain("height:420");
-    if (ordinaryWidth === undefined) ordinaryWidth = collapse.startWidth;
-    else expect(collapse.startWidth).toBeCloseTo(ordinaryWidth, 0);
-    expect(collapse.endWidth).toBeCloseTo(collapse.railWidth, 0);
+    expect(collapse.startWidth).toBeCloseTo(entry.width, 0);
+    expect(collapse.endWidth).toBeCloseTo(collapse.railWidth + 40, 0);
     await expect(page.getByRole("button", { name: entry.expand, exact: true })).toBeFocused();
     await expect(page.locator(".workspace-main-navigation .workspace-sidebar")).toHaveAttribute("inert", "");
     expect(await page.evaluate(key => localStorage.getItem(key), entry.key)).toBeNull();
     const expansion = await sampleToggle(page, entry.expand);
     expect(expansion.intermediateFrames).toBeGreaterThan(2);
-    expect(expansion.railIntermediateFrames).toBeGreaterThan(2);
-    expect(expansion.endRailTop - expansion.startRailTop).toBeCloseTo(-expandHeight, 0);
+    expect(expansion.railTravel).toBeLessThanOrEqual(1);
     expect(expansion.endWidth).toBeCloseTo(collapse.startWidth, 0);
     await expect(page.getByRole("button", { name: entry.collapse, exact: true })).toBeFocused();
     await page.emulateMedia({ reducedMotion: "reduce" });
     const reduced = await sampleToggle(page, entry.collapse);
     expect(reduced.intermediateFrames).toBe(0);
-    expect(reduced.railIntermediateFrames).toBe(0);
+    expect(reduced.railTravel).toBeLessThanOrEqual(1);
     expect(reduced.transitions).not.toContain("grid-template-columns:420");
     expect(reduced.transitions).not.toContain("height:420");
     await page.reload();
