@@ -33,7 +33,7 @@ function writeBuild(directory, manifest, contents) {
 function frozen(directory, groups = [], loadContexts = []) {
   const manifestText = readFileSync(path.join(directory, ".vite/manifest.json"), "utf8");
   const manifest = JSON.parse(manifestText);
-  const files = Object.fromEntries([...new Set(Object.values(manifest).map(chunk => chunk.file))].map(file => {
+  const files = Object.fromEntries([...new Set(Object.values(manifest).map(chunk => chunk.file).filter(file => file.endsWith(".js")))].map(file => {
     const contents = readFileSync(path.join(directory, file));
     return [file, { gzipBytes: gzipSync(contents).length, sha256: sha256(contents) }];
   }));
@@ -82,20 +82,26 @@ test("entry loading boundaries include initial and shared imports once, with opt
   const page = "src/features/page.tsx";
   const optional = "src/features/optional.tsx";
   const unrelated = "src/features/another-route.tsx";
-  const content = { "main.js": "main;", "shared.js": "shared;", "other.js": "other;", "page.js": "page;", "optional.js": "optional;", "unrelated.js": "unrelated;", "assets/worker.js": "worker;" };
+  const cover = "src/features/assets/cover.svg";
+  const content = { "main.js": "main;", "shared.js": "shared;", "other.js": "other;", "page.js": "page;", "optional.js": "optional;", "unrelated.js": "unrelated;", "assets/worker.js": "worker;", "assets/cover.svg": "<svg/>" };
   const directory = build(t, {
     "index.html": { file: "main.js", imports: ["shared", "other"], dynamicImports: [page, unrelated] },
     shared: { file: "shared.js" }, other: { file: "other.js", imports: ["shared"] },
-    [page]: { file: "page.js", imports: ["shared"], dynamicImports: [optional] },
+    [page]: { file: "page.js", imports: ["shared"], dynamicImports: [optional], assets: ["assets/cover.svg"] },
     [optional]: { file: "optional.js", imports: ["shared"] }, [unrelated]: { file: "unrelated.js" },
+    [cover]: { file: "assets/cover.svg", src: cover },
   }, content);
-  const report = bundleReport(directory);
+  const { config, baseline, original } = frozen(directory);
+  const policy = bundleBudgetPolicy(config, baseline, original);
+  const report = bundleReport(directory, policy);
   const bytes = file => gzipSync(content[file]).length;
   assert.equal(report.initialGzipBytes, bytes("main.js") + bytes("shared.js") + bytes("other.js"));
   assert.equal(report.featureStaticGzipBytes[page], bytes("page.js") + bytes("shared.js"));
   assert.equal(report.featureLoadGzipBytes[page], report.initialGzipBytes + bytes("page.js"));
   assert.equal(report.featureDynamicUpperBoundGzipBytes[page], report.featureLoadGzipBytes[page] + bytes("optional.js"));
-  assert.equal(report.totalGzipBytes, Object.entries(content).filter(([file]) => file !== "assets/worker.js").reduce((sum, [, source]) => sum + gzipSync(source).length, 0));
+  assert.equal(report.totalGzipBytes, Object.keys(content).filter(file => file.endsWith(".js") && file !== "assets/worker.js").reduce((sum, file) => sum + bytes(file), 0));
+  assert.equal(Object.hasOwn(report.featureGzipBytes, cover), false);
+  assert.deepEqual(budgetViolations(report, baseline.report, { policy }), []);
   assert.deepEqual(report.additionalJsAssets, [{ file: "assets/worker.js", gzipBytes: bytes("assets/worker.js") }]);
   assert.equal(report.totalEmittedJsGzipBytes, report.totalGzipBytes + bytes("assets/worker.js"));
   assert.equal(report.fileGzipBytes["shared.js"], bytes("shared.js"));

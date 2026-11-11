@@ -22,6 +22,13 @@ function sizeOf(manifest, sizes, keys) {
   return [...new Set([...keys].map(key => manifest[key].file))].reduce((sum, file) => sum + (sizes.get(file) ?? 0), 0);
 }
 
+function featureByteSizes(manifest, sizes) {
+  return Object.fromEntries(Object.entries(manifest)
+    .filter(([key, chunk]) => key.startsWith("src/features/") && sizes.has(chunk.file))
+    .map(([key, chunk]) => [key, sizes.get(chunk.file)])
+    .sort(([a], [b]) => a.localeCompare(b)));
+}
+
 function lineageChunks(manifest, members) {
   const owned = chunkClosure(manifest, members);
   for (const [key, chunk] of Object.entries(manifest)) {
@@ -65,7 +72,7 @@ function originalGraph(config, baseline, original) {
   }));
   const originals = new Set(Object.values(manifest).map(chunk => chunk.file).filter(file => file.endsWith(".js")));
   if (sizes.size !== originals.size || [...originals].some(file => !sizes.has(file))) throw new Error("Original artifact records do not match the manifest files");
-  const features = Object.fromEntries(Object.entries(manifest).filter(([key]) => key.startsWith("src/features/")).map(([key, chunk]) => [key, sizes.get(chunk.file)]).sort(([a], [b]) => a.localeCompare(b)));
+  const features = featureByteSizes(manifest, sizes);
   if (sizeOf(manifest, sizes, chunkClosure(manifest, ["index.html"])) !== baseline.report.initialGzipBytes || [...sizes.values()].reduce((sum, size) => sum + size, 0) !== baseline.report.totalGzipBytes || JSON.stringify(features) !== JSON.stringify(baseline.report.featureGzipBytes)) throw new Error("Original artifact graph does not reproduce the frozen byte report");
   return { manifest, sizes };
 }
@@ -126,7 +133,7 @@ export function bundleReport(directory, policy = { entryGroups: [], loadContexts
   const contexts = resolvedLoadContexts(policy.loadContexts, manifest);
   const contextLoadGzipBytes = contextLoads(manifest, files, contexts);
   const contextDynamicUpperBoundGzipBytes = contextLoads(manifest, files, contexts, true);
-  const features = Object.fromEntries(Object.entries(manifest).filter(([key]) => key.startsWith("src/features/")).map(([key, chunk]) => [key, files.get(chunk.file)]).sort(([a], [b]) => a.localeCompare(b)));
+  const features = featureByteSizes(manifest, files);
   const closures = new Map(Object.keys(features).map(key => [key, chunkClosure(manifest, [key])]));
   const totalGzipBytes = [...files.values()].reduce((sum, size) => sum + size, 0);
   const additionalJsAssets = extraJavaScript(directory, files);
