@@ -58,27 +58,63 @@ test("recent edits filter by title and notebook without losing content types", a
   await expect(yesterday.getByRole("link", { name: sheet.title, exact: true })).toBeVisible();
 });
 
-test("the shelf can create a group and open it for management", async ({ page }) => {
+test("the shelf can create, rename and archive a group without leaving the shelf", async ({ page }) => {
   const createdGroup = { ...group, id: "00000000-0000-4000-8000-000000000042", name: "新项目", is_default: false, sort_order: 1 };
-  let created = false;
+  let current: typeof createdGroup | undefined;
   await page.route(url => url.pathname.endsWith("/collection-groups"), async route => {
     if (route.request().method() === "POST") {
       expect(route.request().postDataJSON()).toEqual({ name: createdGroup.name, sort_order: 1 });
-      created = true;
+      current = createdGroup;
       await route.fulfill({ status: 201, json: { code: "OK", message: "", request_id: "new-group", data: createdGroup } });
     } else {
-      await route.fulfill({ json: { code: "OK", message: "", request_id: "list-groups", data: pageData(created ? [group, createdGroup] : [group]) } });
+      await route.fulfill({ json: { code: "OK", message: "", request_id: "list-groups", data: pageData(current ? [group, current] : [group]) } });
     }
+  });
+  await page.route(`**/collection-groups/${createdGroup.id}`, async route => {
+    if (route.request().method() === "PATCH") {
+      expect(route.request().postDataJSON()).toEqual({ name: "团队项目", expected_version: 1 });
+      current = { ...createdGroup, name: "团队项目", version: 2 };
+    }
+    await route.fulfill({ json: { code: "OK", message: "", request_id: "group-detail", data: current ?? { ...createdGroup, is_archived: true } } });
+  });
+  await page.route(`**/collection-groups/${createdGroup.id}/archive`, async route => {
+    expect(route.request().postDataJSON()).toEqual({ archived: true, expected_version: 2 });
+    current = undefined;
+    await route.fulfill({ json: { code: "OK", message: "", request_id: "archive-group", data: { ...createdGroup, is_archived: true, version: 3 } } });
   });
   await page.goto("/documents");
   await page.getByRole("button", { name: "新建分组", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "新建分组", exact: true });
   await dialog.getByRole("textbox", { name: "分组名称" }).fill(createdGroup.name);
   await dialog.getByRole("button", { name: "创建分组", exact: true }).click();
-  await expect(page).toHaveURL(`/documents/collections?group=${createdGroup.id}`);
+  await expect(page).toHaveURL(`/documents?group=${createdGroup.id}`);
   const target = page.locator(`#group-${createdGroup.id}`);
-  await expect(target.getByRole("button", { name: /收起分组 新项目/ })).toBeVisible();
+  await expect(target.getByRole("button", { name: /^新项目/ })).toBeVisible();
   await expect(target).toBeFocused();
+  await target.getByRole("button", { name: "分组操作：新项目" }).click();
+  await page.getByRole("menuitem", { name: "重命名分组" }).click();
+  const rename = page.getByRole("dialog", { name: "重命名分组", exact: true });
+  await rename.getByRole("textbox", { name: "分组名称" }).fill("团队项目");
+  await rename.getByRole("button", { name: "保存", exact: true }).click();
+  await target.getByRole("button", { name: "分组操作：团队项目" }).click();
+  await page.getByRole("menuitem", { name: "归档分组" }).click();
+  await expect(target).toHaveCount(0);
+  await expect(page).toHaveURL("/documents");
+});
+
+test("the old address opens an exact group on the same shelf with the new notebook cards", async ({ page }) => {
+  const outside = { ...group, id: "00000000-0000-4000-8000-000000000043", name: "定位的分组", is_default: false };
+  const book = { ...notebooks[1], id: "00000000-0000-4000-8000-000000000044", title: "定位的笔记本", group_id: outside.id };
+  await page.route(`**/collection-groups/${outside.id}`, route => route.fulfill({ json: { code: "OK", message: "", request_id: "exact-group", data: outside } }));
+  await page.route(url => url.pathname.endsWith("/collections") && url.searchParams.get("group_id") === outside.id, route =>
+    route.fulfill({ json: { code: "OK", message: "", request_id: "group-books", data: pageData([book]) } }),
+  );
+  await page.goto(`/documents/collections?group=${outside.id}`);
+  await expect(page).toHaveURL(`/documents?group=${outside.id}`);
+  const target = page.getByRole("region", { name: outside.name, exact: true });
+  await expect(target.locator(".notebook-overview-card").getByRole("link", { name: book.title, exact: true })).toHaveAttribute("href", `/collections/${book.id}`);
+  await expect(target).toBeFocused();
+  await expect(page.getByRole("heading", { name: "我的笔记本", exact: true })).toHaveCount(0);
 });
 
 test("notebook map and sidebar search follow the real directory hierarchy", async ({ page }) => {
@@ -93,6 +129,8 @@ test("notebook map and sidebar search follow the real directory hierarchy", asyn
   await page.getByRole("tab", { name: "脑图", exact: true }).click();
   const map = page.getByRole("region", { name: "笔记本目录脑图", exact: true });
   const child = map.getByRole("link", { name: notes[1].title, exact: true });
+  await expect(child).toHaveCount(0);
+  await map.getByRole("button", { name: `展开脑图分支：${notes[0].title}` }).click();
   await expect(child).toHaveAttribute("href", `/documents/${notes[1].id}`);
   await map.getByRole("button", { name: `收起脑图分支：${notes[0].title}` }).click();
   await expect(child).toHaveCount(0);
@@ -334,7 +372,7 @@ test("empty notebook overview restores the actual creation opener through every 
 
 test("notebook group creation restores its focused opener after Escape", async ({ page }, info) => {
   await page.setViewportSize({ width: 735, height: 423 });
-  await page.goto("/documents/collections");
+  await page.goto("/documents");
   const opener = page.getByRole("button", { name: "新建分组", exact: true });
   await opener.focus();
   await expect(opener).toBeFocused();
@@ -351,20 +389,11 @@ test("notebook group creation restores its focused opener after Escape", async (
   await expect(opener).toBeFocused();
 });
 
-for (const theme of ["light", "dark"]) test(`collection and profile ${theme} keep responsive content and readable metadata`, async ({ page }, info) => {
+for (const theme of ["light", "dark"]) test(`profile ${theme} keeps responsive content and readable metadata`, async ({ page }, info) => {
   await page.addInitScript(theme => localStorage.setItem("orbis.appearance", theme), theme);
   const metrics = [];
   for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 900 });
-    await page.goto("/documents/collections");
-    const collections = page.locator(".workspace-route-content");
-    await expect(collections.getByRole("heading", { name: "我的笔记本", exact: true })).toBeVisible();
-    await expect(collections.locator(".workbench-collection-card")).toHaveCount(3);
-    await collections.evaluate(element => Promise.all(element.getAnimations().map(animation => animation.finished)));
-    expect((await new AxeBuilder({ page }).include(".workspace-route-content").analyze()).violations).toEqual([]);
-    const cards = await collections.locator(".workbench-collection-card").evaluateAll(elements => elements.map(element => ({ width: element.getBoundingClientRect().width, height: element.getBoundingClientRect().height, radius: getComputedStyle(element).borderRadius })));
-    expect(cards.every(card => card.width > 0 && card.height > 0)).toBe(true);
-    expect(await collections.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
     await page.goto("/settings/account");
     const profile = page.getByRole("region", { name: "个人资料", exact: true });
     await expect(profile.getByRole("textbox", { name: "名称", exact: true })).toHaveValue(user.display_name);
@@ -375,9 +404,9 @@ for (const theme of ["light", "dark"]) test(`collection and profile ${theme} kee
     expect(form.gap).toBe("24px");
     expect(form.width).toBeLessThanOrEqual(520);
     expect(await page.locator(".workspace-main-area").evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
-    metrics.push({ theme, width, cards, form });
+    metrics.push({ theme, width, form });
   }
-  await info.attach("collection-profile-metrics", { body: JSON.stringify(metrics, null, 2), contentType: "application/json" });
+  await info.attach("profile-metrics", { body: JSON.stringify(metrics, null, 2), contentType: "application/json" });
 });
 
 for (const { theme, width } of [{ theme: "light", width: 1280 }, { theme: "dark", width: 390 }] as const) test(`media acceptance: documents ${theme} ${width} keeps cancelled creation and directory keyboard sessions`, async ({ page }, info) => {

@@ -11,10 +11,10 @@ export function documentTreeStorageKey(workspaceId: string | undefined, notebook
   return view === "main" ? `${base}.main` : base;
 }
 
-function readSnapshot(key: string): string {
+function readSnapshot(key: string, defaultSnapshot: string): string {
   if (fallbackSnapshots.has(key)) return fallbackSnapshots.get(key)!;
-  try { return localStorage.getItem(key) ?? EMPTY_SNAPSHOT; }
-  catch { return EMPTY_SNAPSHOT; }
+  try { return localStorage.getItem(key) ?? defaultSnapshot; }
+  catch { return defaultSnapshot; }
 }
 
 function parseSnapshot(snapshot: string): string[] {
@@ -65,28 +65,28 @@ function collectBranchIds(items: NoteTreeItem[]): string[] {
 /** Each notebook view keeps independent device preferences; legacy sidebar keys remain valid. */
 export function useDocumentTreeExpansion(workspaceId: string | undefined, notebookId: string, items: NoteTreeItem[], activeNoteId?: string, view: "side" | "main" = "side") {
   const key = documentTreeStorageKey(workspaceId, notebookId, view);
+  const branchIds = useMemo(() => collectBranchIds(items), [items]);
+  const defaultSnapshot = view === "main" ? JSON.stringify(branchIds) : EMPTY_SNAPSHOT;
   const snapshot = useSyncExternalStore(
     useCallback((notify) => subscribe(key, notify), [key]),
-    useCallback(() => readSnapshot(key), [key]),
-    () => EMPTY_SNAPSHOT,
+    useCallback(() => readSnapshot(key, defaultSnapshot), [key, defaultSnapshot]),
+    () => defaultSnapshot,
   );
-  const collapsed = useMemo(() => parseSnapshot(snapshot), [snapshot]);
-  const collapsedIds = useMemo(() => new Set(collapsed), [collapsed]);
-  const branchIds = useMemo(() => collectBranchIds(items), [items]);
+  const collapsedIds = useMemo(() => new Set(parseSnapshot(snapshot)), [snapshot]);
   const ancestorPath = activeNoteId ? findAncestors(items, activeNoteId)?.join(",") ?? "" : "";
 
   useEffect(() => {
     if (!ancestorPath) return;
     const ancestors = new Set(ancestorPath.split(","));
-    const current = parseSnapshot(readSnapshot(key));
+    const current = parseSnapshot(readSnapshot(key, defaultSnapshot));
     const next = current.filter((id) => !ancestors.has(id));
     if (next.length !== current.length) writeCollapsed(key, next);
-  }, [activeNoteId, ancestorPath, key]);
+  }, [activeNoteId, ancestorPath, key, defaultSnapshot]);
 
   const toggle = useCallback((noteId: string) => {
-    const current = parseSnapshot(readSnapshot(key));
+    const current = parseSnapshot(readSnapshot(key, defaultSnapshot));
     writeCollapsed(key, current.includes(noteId) ? current.filter((id) => id !== noteId) : [...current, noteId]);
-  }, [key]);
+  }, [key, defaultSnapshot]);
 
   const expandAll = useCallback(() => writeCollapsed(key, []), [key]);
   const collapseAll = useCallback(() => writeCollapsed(key, branchIds), [key, branchIds]);
@@ -94,11 +94,11 @@ export function useDocumentTreeExpansion(workspaceId: string | undefined, notebo
     const path = findAncestors(items, noteId);
     if (!path) return false;
     const ancestors = new Set(path);
-    const current = parseSnapshot(readSnapshot(key));
+    const current = parseSnapshot(readSnapshot(key, defaultSnapshot));
     const next = current.filter(id => !ancestors.has(id));
     if (next.length !== current.length) writeCollapsed(key, next);
     return true;
-  }, [items, key]);
+  }, [items, key, defaultSnapshot]);
 
   return {
     isExpanded: (noteId: string) => !collapsedIds.has(noteId), toggle,

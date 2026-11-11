@@ -16,6 +16,11 @@ vi.mock("./queries", () => ({
   useNotebooks: () => ({ data: { items: fixtures.notebooks }, isSuccess: true }),
   useDocumentGroups: () => ({ data: { items: [{ id: "work", name: "工作" }, { id: "personal", name: "个人" }, { id: "empty", name: "空的默认分组" }] }, isSuccess: true }),
   useDocumentIndex: () => ({ data: { items: ["路线图", "会议纪要"].map((title, index) => ({ id: `00000000-0000-4000-8000-00000000001${index}`, notebook_id: fixtures.notebooks[0].id, title, updated_at_ms: index + 1 })) }, isSuccess: true }),
+  useDocumentGroup: () => ({ data: undefined, isLoading: false }),
+  useUpdateDocumentGroup: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useArchiveDocumentGroup: () => ({ mutate: vi.fn(), isPending: false }),
+  useArchiveNotebook: () => ({ mutate: vi.fn(), isPending: false }),
+  useCreateNote: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useCreateDocumentGroup: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useCreateNotebook: () => ({ mutateAsync: fixtures.create, isPending: false }),
 }));
@@ -59,8 +64,8 @@ describe("notebook layout", () => {
     render(<MemoryRouter initialEntries={["/documents"]}><SearchPaletteProvider><WorkspaceNavigation /><DocumentOverviewPage /></SearchPaletteProvider></MemoryRouter>);
     expect(within(screen.getByRole("region", { name: "工作" })).getAllByRole("link", { name: /^笔记本 \d+$/ })).toHaveLength(4);
     expect(within(screen.getByRole("region", { name: "个人" })).getAllByRole("link", { name: /^笔记本 \d+$/ })).toHaveLength(4);
-    expect(screen.getByText("最近更新 · 2 项")).toBeInTheDocument();
-    expect(screen.queryByRole("region", { name: "空的默认分组" })).toBeNull();
+    expect(screen.getByRole("link", { name: /^路线图/ })).toBeVisible();
+    expect(within(screen.getByRole("region", { name: "空的默认分组" })).getByText("此分组暂无笔记本。")).toBeVisible();
     const common = screen.getByRole("region", { name: "置顶笔记本" });
     const navigation = screen.getByRole("navigation", { name: "文档导航" });
     expect(within(common).getByText(/将笔记本设为常用/)).toBeVisible();

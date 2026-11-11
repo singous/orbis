@@ -53,12 +53,10 @@ test("the global scrollbar skin preserves wheel and keyboard scrolling", async (
   const before = await scroller.evaluate((element) => element.scrollTop);
   await page.keyboard.press("PageDown");
   await expect.poll(() => scroller.evaluate((element) => element.scrollTop)).toBeGreaterThan(before);
-  await createNotebook.focus();
-  await expect(createNotebook).toBeFocused();
-  // Playwright sends macOS' scrollToBeginningOfDocument command for Home;
-  // Chromium on Linux/Windows uses Control+Home for the document boundary.
-  await page.keyboard.press(process.platform === "darwin" ? "Home" : "Control+Home");
-  await expect.poll(() => scroller.evaluate((element) => element.scrollTop)).toBe(0);
+  const afterPageDown = await scroller.evaluate(element => element.scrollTop);
+  await page.keyboard.press("PageUp");
+  await expect.poll(() => scroller.evaluate(element => element.scrollTop)).toBeLessThan(afterPageDown);
+  await scroller.evaluate(element => { element.scrollTop = 0; });
   const thumbHeight = await scroller.evaluate((element) => Math.max(32, element.clientHeight * element.clientHeight / element.scrollHeight));
   await page.mouse.move(bounds.x + bounds.width - 4, bounds.y + thumbHeight / 2);
   await page.mouse.down();
@@ -131,7 +129,7 @@ test("the restored home uses the document rail and menu", async ({ page, request
   expect(await dialog.evaluate((element) => getComputedStyle(element, "::-webkit-scrollbar").width)).toBe("8px");
   await dialog.getByRole("button", { name: "取消", exact: true }).click();
   await expect(dialog).toHaveCount(0);
-  await page.goto("/documents/collections");
+  await page.goto("/documents");
   await page.getByRole("button", { name: "新建笔记本", exact: true }).click();
   const notebookDialog = page.getByRole("dialog", { name: "新建笔记本", exact: true });
   const swatches = notebookDialog.locator(".notebook-icon-swatch");

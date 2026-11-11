@@ -16,12 +16,14 @@ import TaskList from "@tiptap/extension-task-list";
 import Underline from "@tiptap/extension-underline";
 import { NodeViewContent, NodeViewWrapper, ReactNodeViewRenderer, type NodeViewProps } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { BookOpen, Code2, Info, Layers, ListOrdered, Plus, Settings2, CircleCheck, TriangleAlert, OctagonAlert } from "../../../shared/ui/icons";
+import { BookOpen, Code2, Copy, Image, Info, Layers, ListOrdered, Plus, Settings2, CircleCheck, TriangleAlert, OctagonAlert } from "../../../shared/ui/icons";
 import { lazy, Suspense, useContext, useEffect, useRef, useState } from "react";
 
 import { ContentMedia } from "../../content/ContentMedia";
 import { contentCellStyle, contentInlineStyle, contentTextAlignment } from "../../content/content-format";
-import { CODE_LANGUAGES } from "../../content/CodeBlock";
+import { CODE_LANGUAGES, codeLanguageLabel, copyCode } from "../../content/CodeBlock";
+import { reportError } from "../../../shared/api/request-feedback";
+import { useManagedFiles } from "../../files/use-managed-files";
 import { DOCUMENT_BLOCKS, documentBlockTitle, documentBlockDefinition, type DocumentBlockKind } from "../../content/model/document-components";
 import { safeContentUrl } from "../../content/ContentRenderer";
 import { EditorReadOnlyContext } from "./tiptap-editor-context";
@@ -178,13 +180,71 @@ const OrbisComponent = Node.create({
   addNodeView() { return ReactNodeViewRenderer(ComponentNodeView); },
 });
 
-function MediaView({ node, updateAttributes }: NodeViewProps) {
+const imagePlaceholderClassName = "flex min-h-[122px] w-full flex-col items-center justify-center gap-2 rounded-sm border border-(--ob-document-media-border) bg-(--ob-document-media-surface) py-3 text-(--ob-document-block-ink)";
+
+function ImageUploadBlock({ onImage }: { onImage: (url: string, name?: string) => void }) {
+  const input = useRef<HTMLInputElement>(null);
+  const { upload } = useManagedFiles();
+  const [uploading, setUploading] = useState(false);
+
+  function setImageLink(value: string) {
+    const url = safeContentUrl(value.trim(), true);
+    if (!url || !/^https?:\/\//i.test(url)) {
+      reportError("请输入 HTTP 或 HTTPS 图片链接。");
+      return;
+    }
+    const parsed = new URL(url);
+    if (parsed.username || parsed.password) {
+      reportError("图片链接不能包含账号密码。");
+      return;
+    }
+    onImage(url);
+  }
+
+  return <div data-image-placeholder className={imagePlaceholderClassName}>
+    <Image aria-hidden="true" size={24} className="text-muted-foreground" />
+    <div className="flex max-w-full flex-wrap items-center justify-center text-[13px]">
+      <Button type="button" variant="ghost" size="xs" className="border-0 px-0 text-[13px] font-normal"
+        disabled={uploading} onClick={() => input.current?.click()}>{uploading ? "正在上传图片…" : "点击上传图片"}</Button>
+      <span>，或</span>
+      <Input type="url" aria-label="图片链接" placeholder="粘贴图片链接" disabled={uploading}
+        className="h-6 w-[6.2em] bg-transparent px-0 py-0 text-[13px] placeholder:text-inherit md:text-[13px]"
+        onPaste={event => {
+          event.preventDefault();
+          event.stopPropagation();
+          setImageLink(event.clipboardData.getData("text/plain"));
+        }} onKeyDown={event => {
+          if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+          event.preventDefault();
+          event.stopPropagation();
+          setImageLink(event.currentTarget.value);
+        }} />
+    </div>
+    <span className="text-xs text-muted-foreground">支持 PNG、JPG、GIF、WebP</span>
+    <input ref={input} type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden aria-label="选择图片" onChange={async event => {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      if (!file) return;
+      setUploading(true);
+      try { onImage(await upload(file), file.name); }
+      catch (error) { reportError(error); }
+      finally { setUploading(false); }
+    }} />
+  </div>;
+}
+
+function MediaView({ node, editor, updateAttributes }: NodeViewProps) {
   const readOnly = useContext(EditorReadOnlyContext);
   const kind = node.attrs.kind as "image" | "video" | "audio" | "file";
   const props = (node.attrs.orbisProps ?? {}) as Record<string, unknown>;
   const caption = String(props.caption ?? props.name ?? "");
   const reference = String(node.attrs.url ?? "");
   const [editingCaption, setEditingCaption] = useState(false);
+  if (kind === "image" && !reference) return <NodeViewWrapper data-orbis-block-id={node.attrs.orbisId} className="orbis-media" contentEditable={false}>
+    {readOnly ? <div data-image-placeholder className={imagePlaceholderClassName}><Image aria-hidden="true" size={24} /><span className="text-[13px]">图片尚未上传</span></div> : <ImageUploadBlock onImage={(url, name) => {
+      if (editor.isEditable) updateAttributes({ url, caption: String(props.caption ?? name ?? ""), orbisProps: { ...props, ...(name ? { name } : {}) } });
+    }} />}
+  </NodeViewWrapper>;
   return <NodeViewWrapper data-orbis-block-id={node.attrs.orbisId} className="orbis-media" contentEditable={false}>
     <ContentMedia kind={kind} reference={reference} fallback={safeContentUrl(reference, true)} name={caption || "附件"} caption={caption || undefined} previewWidth={props.previewWidth} />
     {!readOnly ? <Button type="button" className={editorNodeSettingsClassName} aria-label="编辑媒体说明" aria-expanded={editingCaption} onClick={() => setEditingCaption((value) => !value)} variant="ghost" size="icon-sm"><Settings2 size={14} /></Button> : null}
@@ -231,33 +291,16 @@ const OrbisContainer = Node.create({
 function CodeView({ node, updateAttributes }: NodeViewProps) {
   const readOnly = useContext(EditorReadOnlyContext);
   const language = String(node.attrs.language ?? "text");
-  const languageItems = Object.entries({ ...CODE_LANGUAGES, ...(Object.hasOwn(CODE_LANGUAGES, language) ? {} : { [language]: language }) }).map(([value, label]) => ({ value, label }));
-  const readOnlyLanguageItems = [{ value: language, label: CODE_LANGUAGES[language] || language }];
+  const languageItems = readOnly ? [{ value: language, label: codeLanguageLabel(language) }]
+    : Object.entries({ ...CODE_LANGUAGES, [language]: codeLanguageLabel(language) }).map(([value, label]) => ({ value, label }));
   return <NodeViewWrapper as="div" data-orbis-block-id={node.attrs.orbisOwn ? undefined : node.attrs.orbisId} className="orbis-code">
-    <div className="orbis-code-toolbar flex min-h-[38px] items-center border-b border-(--reading-border) px-3.5 py-[7px]" contentEditable={false}>{!readOnly ? <Select
-      value={language}
-      onValueChange={value => { if (value === null) return; updateAttributes({ language: value }); }}
-      items={languageItems}
-    >
-      <SelectTrigger aria-label="代码语言" size="sm" className="w-[min(180px,100%)]"><SelectValue /></SelectTrigger>
-      <SelectContent>
-        {languageItems.map(item => (
-          <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
-        ))}
-      </SelectContent>
-    </Select> : <Select
-      value={language}
-      disabled
-      onValueChange={() => {}}
-      items={readOnlyLanguageItems}
-    >
-      <SelectTrigger aria-label="代码语言" size="sm" className="w-[min(180px,100%)]"><SelectValue /></SelectTrigger>
-      <SelectContent>
-        {readOnlyLanguageItems.map(item => (
-          <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
-        ))}
-      </SelectContent>
-    </Select>}</div>
+    <div className="orbis-code-toolbar flex min-h-[38px] items-center justify-between gap-2 border-b border-(--reading-border) px-3.5 py-[7px]" contentEditable={false}>
+      <Select value={language} disabled={readOnly} onValueChange={value => { if (value !== null) updateAttributes({ language: value }); }} items={languageItems}>
+        <SelectTrigger aria-label="代码语言" size="sm" className="w-fit max-w-full border-transparent px-0 text-xs text-muted-foreground dark:bg-transparent"><SelectValue /></SelectTrigger>
+        <SelectContent>{languageItems.map(item => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}</SelectContent>
+      </Select>
+      <Button type="button" variant="ghost" size="icon-sm" aria-label="复制代码" title="复制代码" onClick={() => void copyCode(node.textContent)}><Copy aria-hidden="true" size={14} /></Button>
+    </div>
     <pre><NodeViewContent as="code" style={{ whiteSpace: "pre" }} /></pre>
   </NodeViewWrapper>;
 }
@@ -273,7 +316,7 @@ const ScrollableTable = Table.extend({
 export const tiptapExtensions = [
   StarterKit.configure({ codeBlock: false }), EditableCodeBlock, Underline,
   Link.configure({ openOnClick: false, autolink: true }),
-  Placeholder.configure({ placeholder: "输入正文，或输入 / 插入内容…" }),
+  Placeholder.configure({ placeholder: "输入文字，或按「/」插入块…" }),
   TaskList, TaskItem.configure({ nested: true }),
   ScrollableTable.configure({ resizable: false }), TableRow, TableHeader, TableCell,
   OrbisMetadata, OrbisStyle, OrbisComponent, OrbisMedia, RetiredDrawing, OrbisBoard, OrbisToggle, OrbisToggleSummary, OrbisContainer, OrbisBlockIds, OrbisGroupEditing, OrbisCodeHighlight, OrbisMarkdownPaste,

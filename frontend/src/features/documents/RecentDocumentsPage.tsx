@@ -82,7 +82,7 @@ export function RecentDocumentsPage() {
           {notesQuery.isLoading ? <LoadingState label="正在加载文档…" /> : null}
           {notesQuery.isError ? <div role="alert" className="flex items-center gap-3 text-sm text-muted-foreground">无法加载最近编辑。<Button variant="secondary" size="sm" onClick={() => void notesQuery.refetch()}>重试</Button></div> : null}
           {notesQuery.isSuccess && !visible.length ? <div className="grid justify-items-start gap-3 rounded-xl bg-sidebar p-6 text-sm text-muted-foreground">
-            {filtered ? <>没有符合条件的文档。<Button variant="secondary" size="sm" onClick={() => setParams({}, { replace: true })}>清除筛选</Button></> : <>还没有可继续的文档。<Link to="/documents/collections" className="font-semibold text-foreground">前往我的笔记本</Link></>}
+            {filtered ? <>没有符合条件的文档。<Button variant="secondary" size="sm" onClick={() => setParams({}, { replace: true })}>清除筛选</Button></> : <>还没有可继续的文档。<Link to="/documents" className="font-semibold text-foreground">前往我的笔记本</Link></>}
           </div> : null}
           {visible.length ? <>
             <div className={`${recentColumns} mb-4 px-3 text-[11px] text-muted-foreground max-[640px]:hidden`} aria-hidden="true"><span>文档</span><span>所属笔记本</span><span>最后编辑</span><span className="w-6" /></div>

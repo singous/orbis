@@ -10,6 +10,13 @@
       "reason": "The frozen module exported both existing public delivery and authenticated preview routes. Both successors inherit the original entry loading boundary budget derived from its retained build graph. Complete own-lineage attribution remains diagnostic, including SiteReader and further family-local extraction. SiteReader stays synchronous, preserving bootstrap handoff."
     }
   ],
+  "redirects": [
+    {
+      "originalEntry": "src/features/documents/CollectionsPage.tsx",
+      "replacement": "src/features/documents/DocumentOverviewPage.tsx",
+      "reason": "The legacy notebook list redirects to the shared document shelf, which retains its own original loading budget."
+    }
+  ],
   "loadContexts": [
     {
       "entry": "src/features/collaboration/DocumentCollaborationPanel.tsx",

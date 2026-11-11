@@ -37,7 +37,7 @@ export function resultDestination(result: Pick<SearchResult, "type" | "id" | "st
   switch (result.type) {
     case "document": return `/documents/${result.id}${releaseFeatures.documentCollaboration && result.matched_comment_id ? `?comment=${result.matched_comment_id}` : ""}`;
     case "notebook": return `/collections/${result.id}`;
-    case "group": return `/documents/collections?group=${result.id}`;
+    case "group": return `/documents?group=${result.id}`;
     case "site": return `/sites/${result.id}`;
     case "file": return `/search/open?type=file&id=${result.id}`;
   }

@@ -68,7 +68,7 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
 
   useEffect(() => {
     if (!collectionUnavailable) return;
-    navigate("/documents/collections", {
+    navigate("/documents", {
       replace: true,
       state: {
         resourceError: "无法打开笔记本：它不存在、已归档，或你没有访问权限。",

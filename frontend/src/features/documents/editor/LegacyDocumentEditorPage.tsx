@@ -551,7 +551,7 @@ export function LegacyDocumentEditorPage() {
 
   useEffect(() => {
     if (!resourceUnavailable) return;
-    navigate("/documents/collections", {
+    navigate("/documents", {
       replace: true,
       state: {
         resourceError: "无法打开文档：它不存在、已归档，或你没有访问权限。",

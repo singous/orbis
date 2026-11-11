@@ -40,6 +40,129 @@
 
 
 
+/* 笔记本正文沿用块文档画板；随手记和其他内嵌编辑器保留各自排版。 */
+.orbis-tiptap:is(.editor-canvas *) {
+  --reading-text: var(--ob-document-block-ink);
+  --reading-accent: var(--ob-document-link);
+  --ob-prose-body-leading: 1.8;
+}
+
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror > * { margin-block: 0; }
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror > * + * { margin-block-start: 20px; }
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror :is(h1, h2, h3) {
+  color: var(--ob-document-heading-ink);
+  font-weight: 600;
+  letter-spacing: normal;
+  line-height: 1.4;
+}
+
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror blockquote {
+  padding: 8px 18px;
+  border-inline-start: 3px solid var(--ob-document-quote-rule);
+  background: transparent;
+  color: var(--ob-document-quote-ink);
+}
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror blockquote > p { margin: 0; }
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror hr { border-color: var(--ob-document-block-rule); }
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror a { text-underline-offset: 3px; }
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror :is(ul, ol) > li { margin-block: 0; }
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror :is(ul, ol) > li + li { margin-block-start: 10px; }
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror ul[data-type="taskList"] > li { gap: 8px; padding-inline-start: 0; }
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror ul[data-type="taskList"] > li + li { margin-block-start: 12px; }
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror ul[data-type="taskList"] li > label { height: 27px; }
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror ul[data-type="taskList"] input {
+  appearance: none;
+  display: grid;
+  place-items: center;
+  inline-size: 14px;
+  block-size: 14px;
+  border-radius: 5px;
+  background: var(--ob-document-task-surface);
+}
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror ul[data-type="taskList"] input:checked {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror ul[data-type="taskList"] input:checked::before {
+  content: "";
+  width: 4px;
+  height: 7px;
+  border: solid currentColor;
+  border-width: 0 1.5px 1.5px 0;
+  transform: translateY(-1px) rotate(45deg);
+}
+@media (forced-colors: active) {
+  .orbis-tiptap:is(.editor-canvas *) .ProseMirror ul[data-type="taskList"] input { appearance: auto; }
+  .orbis-tiptap:is(.editor-canvas *) .ProseMirror ul[data-type="taskList"] input:checked::before { content: none; }
+}
+
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror .content-table-scroll {
+  padding: 0 4px 4px;
+  border-radius: 18px;
+  background: var(--ob-document-table-surface);
+}
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror table {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 15px;
+}
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror :is(th, td) {
+  height: 48px;
+  padding: 6px 16px;
+  border: 0;
+  vertical-align: middle;
+}
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror th {
+  position: relative;
+  height: 40px;
+  background: transparent;
+  color: var(--reading-muted);
+  font-weight: 500;
+}
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror th + th::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: 0;
+  width: 1px;
+  height: 16px;
+  transform: translateY(-50%);
+  background: var(--ob-document-table-rule);
+  pointer-events: none;
+}
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror td { background: var(--card); }
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror tr:not(:last-child) > td { border-block-end: 1px solid var(--ob-document-table-rule); }
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror tr:has(> th) + tr > td:first-child,
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror tr:first-child > td:first-child { border-start-start-radius: 14px; }
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror tr:has(> th) + tr > td:last-child,
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror tr:first-child > td:last-child { border-start-end-radius: 14px; }
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror tr:last-child > td:first-child { border-end-start-radius: 14px; }
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror tr:last-child > td:last-child { border-end-end-radius: 14px; }
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror .selectedCell { background: color-mix(in srgb, var(--primary) 15%, var(--card)); }
+
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror .orbis-code {
+  border: 0;
+  border-radius: 12px;
+  margin-block: 0;
+  background: var(--ob-document-code-surface);
+  color: var(--ob-document-code-ink);
+}
+.orbis-tiptap:is(.editor-canvas *) .orbis-code-toolbar {
+  min-height: 42px;
+  padding: 8px 16px;
+  border: 0;
+}
+.orbis-tiptap:is(.editor-canvas *) .orbis-code pre { padding: 0 16px 16px; line-height: 24px; }
+.orbis-tiptap:is(.editor-canvas *) .orbis-code code { font-size: 13px; line-height: inherit; }
+.orbis-tiptap:is(.editor-canvas *) .orbis-media figure { margin-block: 0; }
+.orbis-tiptap:is(.editor-canvas *) .ProseMirror > p.is-empty:last-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: var(--reading-muted);
+  pointer-events: none;
+}
+
 /* Keep the complete editing DOM for selection and undo while skipping layout
    and paint for offscreen blocks. The browser retains measured block sizes. */
 @supports (content-visibility: auto) {

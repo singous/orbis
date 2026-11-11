@@ -360,7 +360,7 @@ describe("notebook entry points", () => {
   });
 
   it("hides the deferred site creation entry in notebook management", async () => {
-    renderRoute(`/documents/collections/${NOTEBOOK_ID}`, <NotebookPage />, "/documents/collections/:collectionId");
+    renderRoute(`/collections/${NOTEBOOK_ID}`, <NotebookPage />, "/collections/:collectionId");
 
     await userEvent.click(await screen.findByRole("button", { name: "笔记本操作" }));
     expect(screen.queryByRole("menuitem", { name: "创建文档站点" })).not.toBeInTheDocument();

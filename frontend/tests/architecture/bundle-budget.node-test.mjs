@@ -62,6 +62,22 @@ function readerBuilds(t) {
   return { ...original, currentDirectory, currentManifest, contents, policy };
 }
 
+test("a redirected page must disappear while the replacement keeps its original loading budget", t => {
+  const old = "src/features/documents/Collections.tsx";
+  const shelf = "src/features/documents/Shelf.tsx";
+  const directory = build(t, {
+    "index.html": { file: "main.js", isEntry: true },
+    [old]: { file: "old.js", isDynamicEntry: true },
+    [shelf]: { file: "shelf.js", isDynamicEntry: true },
+  }, { "main.js": "main;", "old.js": payload("old", 600), "shelf.js": "shelf;" });
+  const { config, baseline, original } = frozen(directory);
+  config.redirects = [{ originalEntry: old, replacement: shelf, reason: "The same shelf handles the old address." }];
+  const policy = bundleBudgetPolicy(config, baseline, original);
+  const report = bundleReport(directory);
+  assert.ok(budgetViolations(report, baseline.report, { policy }).includes(`Retired feature entry is still emitted: ${old}`));
+  assert.ok(budgetViolations({ ...report, featureLoadGzipBytes: { [shelf]: policy.baselineLoadGzipBytes[shelf] * 2 } }, baseline.report, { policy }).some(failure => failure.startsWith(`${shelf} entry loading boundary:`)));
+});
+
 test("entry loading boundaries include initial and shared imports once, with optional code and workers reported separately", t => {
   const page = "src/features/page.tsx";
   const optional = "src/features/optional.tsx";

@@ -28,7 +28,8 @@ test('document overview shares the shell and exposes its function menu alongside
       const panel = getComputedStyle(document.querySelector('.workspace-main-area')!);
       const grid = getComputedStyle(document.querySelector('.workspace-shell-grid')!);
       const rail = document.querySelector('.workspace-main-navigation')!.getBoundingClientRect();
-      return { radius: panel.borderRadius, border: panel.borderTopWidth, gap: grid.columnGap, padding: grid.paddingLeft, railX: rail.x, railWidth: rail.width };
+      const content = document.querySelector(".workspace-main-area")!.getBoundingClientRect();
+      return { radius: panel.borderRadius, border: panel.borderTopWidth, gap: content.left - rail.right, padding: grid.paddingLeft, railX: rail.x, railWidth: rail.width };
     });
   }
   for (const width of [1440, 1920]) {
@@ -36,7 +37,7 @@ test('document overview shares the shell and exposes its function menu alongside
     const home = await frame('/home');
     const documents = await frame('/documents');
     expect({ radius: documents.radius, border: documents.border }).toEqual({ radius: '0px', border: '0px' });
-    expect(documents).toMatchObject({ gap: '0px', padding: '0px', railX: 0, railWidth: 272 });
+    expect(documents).toMatchObject({ gap: 0, padding: '0px', railX: 0, railWidth: 272 });
     expect(documents.railWidth).toBe(home.railWidth);
     await expect(page.getByRole('navigation', { name: '文档导航', exact: true })).toBeVisible();
     const navigation = page.getByRole('navigation', { name: '文档导航', exact: true });
@@ -47,7 +48,7 @@ test('document overview shares the shell and exposes its function menu alongside
     await expect(navigation.getByRole('button', { name: '收起常用笔记本', exact: true })).toBeVisible();
     const section = page.getByRole('region', { name: 'Frame notebooks', exact: true });
     await expect(section).toBeVisible();
-    await expect(page.getByRole('region', { name: 'Empty frame group', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('region', { name: 'Empty frame group', exact: true })).toContainText('此分组暂无笔记本');
     const common = await page.getByRole('region', { name: '置顶笔记本', exact: true }).boundingBox();
     const header = await page.locator('.notebook-overview .page-header').boundingBox();
     expect(common!.y - (header!.y + header!.height)).toBeLessThan(40);
@@ -57,7 +58,7 @@ test('document overview shares the shell and exposes its function menu alongside
     expect(cards[0].y).toBe(cards[1].y);
     expect(cards[1].right).toBeLessThan(row!.x + row!.width);
   }
-  for (const path of ['/home', '/documents', '/documents/collections', '/sites', '/settings/account', '/settings/members']) {
+  for (const path of ['/home', '/documents', '/sites', '/settings/account', '/settings/members']) {
     await page.goto(path);
     await expect(page.locator('.workspace-business-rail').getByRole('button', { name: '切换工作空间', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: '新建资产', exact: true })).toHaveCount(0);

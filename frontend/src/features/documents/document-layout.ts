@@ -23,10 +23,10 @@ export const documentTreeStyles = {
 export const notebookDirectoryStyles = {
   list: "document-main-list grid grid-cols-[minmax(0,1fr)] gap-0",
   item: "document-main-item min-w-0",
-  row: "document-main-row [--ob-tree-control-color:var(--muted-foreground)] hover:[--ob-tree-control-color:var(--accent-foreground)] flex min-h-9 min-w-0 items-center gap-0 rounded-md p-0 transition-colors duration-(--ob-motion-feedback) hover:bg-(--accent) motion-reduce:transition-none",
-  link: "document-main-link flex min-w-0 flex-1 items-center gap-3 px-0 py-1.5 text-foreground focus-visible:rounded-xl focus-ring focus-visible:outline-offset-2 max-[600px]:flex-wrap max-[600px]:gap-2",
-  title: "document-main-title min-w-0 truncate text-sm font-normal leading-5 max-[600px]:flex-[1_1_100%]",
-  leader: "document-main-leader min-w-4 flex-1 border-b border-dotted border-muted-foreground/60 max-[600px]:hidden",
+  row: "document-main-row [--ob-tree-control-color:var(--muted-foreground)] hover:[--ob-tree-control-color:var(--accent-foreground)] flex min-h-[30px] min-w-0 items-center gap-0 rounded-md p-0 transition-colors duration-(--ob-motion-feedback) hover:bg-(--accent) motion-reduce:transition-none",
+  link: "document-main-link flex min-w-0 flex-1 items-center gap-3.5 px-0 py-1 text-foreground focus-visible:rounded-xl focus-ring focus-visible:outline-offset-2 max-[600px]:flex-wrap max-[600px]:gap-2",
+  title: "document-main-title min-w-0 truncate text-[13px] font-normal leading-5 max-[600px]:flex-[1_1_100%]",
+  leader: "document-main-leader h-0.5 min-w-4 flex-1 bg-[radial-gradient(circle,currentColor_0.7px,transparent_1px)] text-foreground [background-size:10px_2px] max-[600px]:hidden",
   time: "min-w-[100px] shrink-0 whitespace-nowrap text-end text-xs leading-5 tracking-[-.02em] text-(--muted-foreground) max-[600px]:block max-[600px]:min-w-0 max-[600px]:text-start max-[600px]:text-xs max-[600px]:leading-[18px]",
   children: "document-main-children min-w-0 ps-7 max-[600px]:ps-4",
 };

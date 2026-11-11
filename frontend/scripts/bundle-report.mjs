@@ -37,13 +37,22 @@ export function bundleBudgetPolicy(config, baseline, original) {
   const entryGroups = resolvedEntryGroups(config.groups, baseline, manifest, sizes);
   const baselineEntries = new Map(Object.keys(baseline.report.featureGzipBytes).map(key => [key, key]));
   for (const group of entryGroups) for (const successor of group.successors) baselineEntries.set(successor, group.baselineEntry);
+  const redirects = config.redirects ?? [];
+  const retiredEntries = new Set(redirects.map(redirect => redirect.originalEntry));
+  if (retiredEntries.size !== redirects.length) throw new Error("Duplicate retired feature entry");
+  for (const { originalEntry, replacement, reason } of redirects) {
+    if (!reason || baseline.report.featureGzipBytes[originalEntry] === undefined || !baselineEntries.has(replacement) || retiredEntries.has(replacement) || entryGroups.some(group => group.successors.includes(originalEntry))) {
+      throw new Error(`Invalid feature redirect: ${originalEntry}`);
+    }
+    baselineEntries.delete(originalEntry);
+  }
   const loadContexts = config.loadContexts ?? [];
   const baselineContextLoadGzipBytes = contextLoads(manifest, sizes, resolvedLoadContexts(loadContexts, manifest, baselineEntries));
   const baselineLoadGzipBytes = Object.fromEntries([...baselineEntries].map(([entry, originalEntry]) => {
     const contexts = baselineContextLoadGzipBytes[entry];
     return [entry, contexts ? Math.max(...Object.values(contexts)) : sizeOf(manifest, sizes, chunkClosure(manifest, ["index.html", originalEntry]))];
   }));
-  return { entryGroups, loadContexts, baselineLoadGzipBytes, baselineContextLoadGzipBytes };
+  return { entryGroups, loadContexts, retiredEntries, baselineLoadGzipBytes, baselineContextLoadGzipBytes };
 }
 
 function originalGraph(config, baseline, original) {
@@ -178,7 +187,10 @@ export function budgetViolations(report, baseline, { policy, initialGrowth = 0.0
     if (!Number.isFinite(size)) failures.push(`Missing entry loading boundary metric: ${entry}`);
     else if (size > originalSize * (1 + featureGrowth)) failures.push(`${entry} entry loading boundary: ${size} > ${Math.floor(originalSize * (1 + featureGrowth))} gzip bytes`);
   }
-  for (const [entry, size] of Object.entries(report.featureGzipBytes)) if (policy.baselineLoadGzipBytes[entry] === undefined) failures.push(`New feature entry requires an explicit budget: ${entry} (${size} gzip bytes)`);
+  for (const [entry, size] of Object.entries(report.featureGzipBytes)) {
+    if (policy.retiredEntries?.has(entry)) failures.push(`Retired feature entry is still emitted: ${entry}`);
+    else if (policy.baselineLoadGzipBytes[entry] === undefined) failures.push(`New feature entry requires an explicit budget: ${entry} (${size} gzip bytes)`);
+  }
   return [...failures, ...lineageMetricViolations(report, policy.entryGroups)];
 }
 

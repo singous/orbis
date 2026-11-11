@@ -20,7 +20,7 @@ const unavailableDocumentState = { resourceError: "无法打开文档：它不�
 export function DocumentRoute() {
   const { noteId = "" } = useParams();
   const note = useNote(noteId);
-  if (isUnavailableResourceError(note.error)) return <Navigate to="/documents/collections" replace state={unavailableDocumentState} />;
+  if (isUnavailableResourceError(note.error)) return <Navigate to="/documents" replace state={unavailableDocumentState} />;
   if (note.isPending) return <DocumentLoading />;
   if (note.data?.board_id) return <Suspense fallback={<DocumentLoading label="正在打开画板…" />}><BoardDocument key={note.data.id} id={note.data.board_id}/></Suspense>;
   if (note.data?.sheet_id) return <Suspense fallback={<DocumentLoading label="正在打开数据表…" />}><SheetDocument key={note.data.id} id={note.data.sheet_id} /></Suspense>;

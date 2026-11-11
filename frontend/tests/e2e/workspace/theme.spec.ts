@@ -50,7 +50,7 @@ test("workbench native actions and dialogs follow shared theme tokens", async ({
   await expectTokenStyles(createNotebook, { "border-radius": "--radius" });
   expect(await createNotebook.evaluate(element => getComputedStyle(element).borderRadius)).not.toBe(originalRadius);
   await page.evaluate(() => document.documentElement.style.removeProperty("--radius"));
-  await expect(page.getByRole("button", { name: "全局搜索", exact: true })).toHaveAttribute("data-slot", "button");
+  await expect(page.getByRole("button", { name: "搜索文档", exact: true })).toHaveAttribute("data-slot", "button");
   await page.goto("/sites");
   await page.getByRole("button", { name: "创建站点", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "创建文档站点", exact: true });

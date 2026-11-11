@@ -16,7 +16,7 @@ async function signIn(page: Page, request: APIRequestContext) {
 }
 async function chooseAppearance(page: Page, label: string) {
   const drawer = page.getByRole("button", { name: "打开主导航", exact: true });
-  if (page.viewportSize()!.width < 768 && await page.locator('.workspace-shell').getAttribute('data-app-surface') === 'web' && await drawer.getAttribute("aria-expanded") !== "true") await drawer.click();
+  if (page.viewportSize()!.width < 768 && await drawer.getAttribute("aria-expanded") !== "true") await drawer.click();
   await page.getByRole("button", { name: "打开用户菜单", exact: true }).click();
   await page.getByRole("menuitem", { name: "外观", exact: true }).click();
   const menu = page.getByRole("dialog", { name: "外观", exact: true });

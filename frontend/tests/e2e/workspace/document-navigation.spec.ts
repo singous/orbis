@@ -61,7 +61,7 @@ test("document navigation retains chrome and does not replay area-icon or page-e
   await page.getByRole("link", { name: "在线文档", exact: true }).click();
   await page.getByRole("navigation", { name: "文档导航", exact: true }).getByRole("link", { name: "首页", exact: true }).click();
   await expect(page.getByRole("heading", { name: "首页", exact: true })).toBeVisible();
-  const home = page.locator(".workspace-business-rail").getByRole("link", { name: "首页", exact: true });
+  const home = page.getByRole("navigation", { name: "文档导航", exact: true }).getByRole("link", { name: "首页", exact: true });
   await expect(home).toHaveAttribute("aria-current", "page");
   await expect(home.locator("svg")).toBeVisible();
   await expect(home.locator("svg")).toHaveCSS("animation-name", "none");

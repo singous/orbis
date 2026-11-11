@@ -286,7 +286,7 @@ describe("DocumentContextPanel", () => {
     const view = render(panels);
     const main = screen.getByRole("navigation", { name: "文档列表" });
     const side = screen.getByRole("navigation", { name: "笔记本文档" });
-    await actor.click(within(main).getByRole("button", { name: "收起子目录 产品计划" }));
+    expect(within(main).getByRole("button", { name: "展开子目录 产品计划" })).toHaveAttribute("aria-expanded", "false");
     expect(within(main).queryByRole("link", { name: "发布范围" })).not.toBeInTheDocument();
     expect(within(side).getByRole("link", { name: "发布范围" })).toBeInTheDocument();
     await actor.click(within(side).getByRole("button", { name: "收起子目录 产品计划" }));
@@ -434,7 +434,7 @@ describe("DocumentContextPanel", () => {
       </MemoryRouter>,
     );
 
-    await waitFor(() => expect(screen.getByRole("status", { name: "current path" })).toHaveTextContent("/documents/collections"));
+    await waitFor(() => expect(screen.getByRole("status", { name: "current path" })).toHaveTextContent("/documents"));
   });
 
   it("persists the shell open state and hides the open control while visible", async () => {
@@ -480,7 +480,9 @@ describe("DocumentContextPanel", () => {
     expect(screen.queryByRole("complementary", { name: "上下文面板" })).not.toBeInTheDocument();
     const tree = screen.getByRole("navigation", { name: "文档列表" });
     expect(tree).toHaveTextContent("产品计划");
-    expect(tree).toHaveTextContent("发布范围");
+    expect(within(tree).queryByRole("link", { name: "发布范围" })).not.toBeInTheDocument();
+    await actor.click(within(tree).getByRole("button", { name: "展开子目录 产品计划" }));
+    expect(within(tree).getByRole("link", { name: "发布范围" })).toBeVisible();
     expect(within(tree).getByRole("link", { name: "产品计划" }).querySelector("time")).toHaveAttribute("datetime", new Date(rootNote.updated_at_ms).toISOString());
   });
   it("retries the original rename UUID and observed version after an uncertain response",async()=>{

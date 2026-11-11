@@ -138,26 +138,18 @@ test("workspace actions retain usable native sizing and notebook headings retain
 
   for (const width of [900, 390]) {
     await page.setViewportSize({ width, height: 897 });
-    await page.goto("/documents/collections");
-    const card = page.getByRole("article").filter({ has: page.getByRole("link", { name: new RegExp(notebookTitle) }) });
-    const create = card.getByRole("button", { name: "新建文档", exact: true });
+    await page.goto("/documents");
+    const card = page.locator(".notebook-overview-card").filter({ has: page.getByRole("link", { name: notebookTitle, exact: true }) });
+    const menu = card.getByRole("button", { name: `笔记本操作：${notebookTitle}`, exact: true });
+    await expect(menu).toBeVisible();
+    await menu.click();
+    const create = page.getByRole("menuitem", { name: "新建文档", exact: true });
     const metrics = await actionMetrics(create);
-    const geometry = await create.evaluate((element) => {
-      const card = element.closest("article")!;
-      const actions = card.querySelector(".workbench-collection-actions")!;
-      const createBox = element.getBoundingClientRect();
-      const actionBox = actions.getBoundingClientRect();
-      return {
-        overlaps: createBox.left < actionBox.right && createBox.right > actionBox.left && createBox.top < actionBox.bottom && createBox.bottom > actionBox.top,
-        overflow: card.scrollWidth - card.clientWidth,
-      };
-    });
-    measurements[`emptyNotebook-${width}`] = { ...geometry, action: metrics };
+    measurements[`emptyNotebook-${width}`] = metrics;
     expectUsableAction(metrics, `${width}px: empty notebook create`);
-    expect.soft(metrics.height, `${width}px: empty notebook uses the default action height`).toBe(saveAction.height);
-    expect.soft(metrics.fontSize, `${width}px: empty notebook uses the default action typography`).toBe(saveAction.fontSize);
-    expect.soft(geometry.overlaps, `${width}px: create action does not overlap notebook card actions`).toBe(false);
-    expect.soft(geometry.overflow, `${width}px: notebook card does not overflow horizontally`).toBeLessThanOrEqual(1);
+    await page.keyboard.press("Escape");
+    await expect(menu).toBeFocused();
+    expect.soft(await card.evaluate(element => element.scrollWidth - element.clientWidth), `${width}px: shelf card does not overflow`).toBeLessThanOrEqual(1);
   }
 
   await page.setViewportSize({ width: 1440, height: 897 });

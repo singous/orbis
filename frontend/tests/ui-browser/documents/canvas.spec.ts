@@ -1,6 +1,49 @@
 import { expect, test } from "@playwright/test";
-import { documentEditorHTTP, documentId } from "../fixtures/document-editor";
+import { designCode, designedBlocks, documentEditorHTTP, documentId } from "../fixtures/document-editor";
 import { installSession } from "../fixtures/session";
+
+for (const theme of ["light", "dark"]) test(`the notebook editor renders the designed blocks in ${theme}`, async ({ page, context }) => {
+  await installSession(page);
+  await page.addInitScript(theme => localStorage.setItem("orbis.appearance", theme), theme);
+  await documentEditorHTTP(page, designedBlocks);
+  await page.setViewportSize({ width: 1616, height: 1600 });
+  await page.goto(`/documents/${documentId}`);
+  const editor = page.locator(".editor-canvas .ProseMirror");
+  const quote = editor.locator("blockquote");
+  await expect(quote).toHaveCSS("padding", "8px 18px");
+  await expect(quote).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(quote).toHaveCSS("border-left-width", "3px");
+  await expect(editor.locator("h2").first()).toHaveCSS("font-weight", "600");
+  await expect(editor.locator("h2").first()).toHaveCSS("font-size", "24px");
+  await expect(editor.getByRole("checkbox").first()).toHaveCSS("border-radius", "5px");
+  await expect(editor.locator(".content-table-scroll")).toHaveCSS("border-radius", "18px");
+  await expect(editor.locator("th").first()).toHaveCSS("height", "40px");
+  await expect(editor.locator("td").first()).toHaveCSS("border-top-left-radius", "14px");
+  await expect(editor.locator("td").first()).toHaveCSS("border-right-width", "0px");
+  await expect(editor.locator(".orbis-code")).toHaveCSS("border-radius", "12px");
+  await expect(editor.locator(".orbis-code pre")).toHaveCSS("line-height", "24px");
+  await expect(editor.locator(".orbis-code code")).toHaveText(designCode, { useInnerText: true });
+  const image = editor.locator("[data-image-placeholder]");
+  await expect(image).toHaveCSS("min-height", "122px");
+  await expect(image).toHaveCSS("border-radius", "6px");
+  await expect(editor.getByRole("link", { name: "Orbis · 编辑器交互规范" })).toHaveCSS("color", theme === "light" ? "rgb(48, 95, 157)" : "rgb(159, 195, 246)");
+  if (theme === "light") {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await editor.getByRole("button", { name: "复制代码", exact: true }).click();
+    await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(designCode);
+    const chooser = page.waitForEvent("filechooser");
+    await image.getByRole("button", { name: "点击上传图片" }).click();
+    const picker = await chooser;
+    expect(await picker.element().getAttribute("accept")).toMatch(/image\/png/);
+    await picker.setFiles([]);
+    const url = "https://example.test/design-image.png";
+    await page.route(url, route => route.fulfill({ status: 200, contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"/>' }));
+    await page.evaluate(value => navigator.clipboard.writeText(value), url);
+    await image.getByRole("textbox", { name: "图片链接" }).focus();
+    await page.keyboard.press("ControlOrMeta+v");
+    await expect(editor.locator(".orbis-media img")).toHaveAttribute("src", url);
+  }
+});
 
 test("document header shows the real offline state and toggles the outline", async ({ page, context }) => {
   await installSession(page);

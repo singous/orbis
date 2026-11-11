@@ -9,6 +9,7 @@ import {
   reorderNotebookNotes,
   createNotebook,
   exportMarkdown,
+  getDocumentGroup,
   getNote,
   getNotebook,
   getNoteContent,
@@ -39,6 +40,16 @@ export function useDocumentAuth(): AuthRequestOptions {
 export function useDocumentGroups(status: ResourceStatus = "active") {
   const auth = useDocumentAuth();
   return useQuery({ queryKey: ["document-groups", status], queryFn: ({ signal }) => listDocumentGroups(auth, status,signal) });
+}
+
+export function useDocumentGroup(groupId?: string) {
+  const auth = useDocumentAuth();
+  return useQuery({
+    queryKey: ["document-groups", "detail", groupId],
+    enabled: Boolean(groupId),
+    queryFn: ({ signal }) => getDocumentGroup(groupId!, auth, signal),
+    retry: false,
+  });
 }
 
 export function useNotebooks(

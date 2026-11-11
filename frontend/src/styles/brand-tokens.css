@@ -22,6 +22,20 @@
 }
 :root, [data-theme="light"] {
   --ob-document-surface: #f4f5f2;
+  --ob-document-block-ink: #3d3d3d;
+  --ob-document-heading-ink: #202020;
+  --ob-document-quote-ink: #666666;
+  --ob-document-quote-rule: #c9c9c9;
+  --ob-document-block-rule: #e5e5e5;
+  --ob-document-table-surface: #efeff0;
+  --ob-document-table-rule: #dddde1;
+  --ob-document-code-surface: #f3f3f4;
+  --ob-document-code-ink: #555b65;
+  --ob-document-media-surface: #fafafa;
+  --ob-document-media-border: #dddddd;
+  --ob-document-task-surface: #ececee;
+  --ob-document-link: #305f9d;
+  --ob-notebook-map-line: #b8c0af;
   --ob-notebook-card: #fafbf3;
   --ob-workspace-rail: var(--sidebar-accent);
   --ob-save-progress-bg: #cddeff;
@@ -33,6 +47,20 @@
 }
 [data-theme="dark"] {
   --ob-document-surface: var(--background);
+  --ob-document-block-ink: var(--foreground);
+  --ob-document-heading-ink: var(--foreground);
+  --ob-document-quote-ink: var(--muted-foreground);
+  --ob-document-quote-rule: var(--ring);
+  --ob-document-block-rule: var(--border);
+  --ob-document-table-surface: var(--muted);
+  --ob-document-table-rule: var(--border);
+  --ob-document-code-surface: var(--muted);
+  --ob-document-code-ink: var(--foreground);
+  --ob-document-media-surface: var(--muted);
+  --ob-document-media-border: var(--border);
+  --ob-document-task-surface: var(--muted);
+  --ob-document-link: #9fc3f6;
+  --ob-notebook-map-line: #6d796b;
   --ob-notebook-card: var(--muted);
   --ob-workspace-rail: var(--sidebar-accent);
   --ob-save-progress-bg: #203451;

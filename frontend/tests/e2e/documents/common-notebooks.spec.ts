@@ -38,9 +38,7 @@ test("common notebooks stay synchronized across the sidebar, overview and notebo
   await expect(groups.getByRole("link", { name: new RegExp(title) })).toBeVisible();
   await otherTab.close();
 
-  await page.goto("/documents/collections");
-  await page.getByRole("button", { name: `设为常用 ${title}`, exact: true }).click();
-  await page.goto("/documents");
+  await groups.getByRole("button", { name: `设为常用：${title}`, exact: true }).click();
   await expect(common.getByRole("link", { name: new RegExp(title) })).toBeVisible();
   await page.goto(`/collections/${notebook.id}`);
   await page.getByRole("button", { name: "笔记本操作", exact: true }).click();

@@ -26,7 +26,7 @@ import { formatNotebookUpdateTime } from "./notebook-update-time";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { ResourceDialog } from "./ResourceDialog";
 import { DocumentLink } from "./DocumentLink";
-import { DocumentKindIcon, documentKind } from "./DocumentKindIcon";
+import { documentKind } from "./DocumentKindIcon";
 import { documentRowSensors, documentTreePlugins } from "./document-row-drag";
 import { useDocumentTreeExpansion } from "./document-tree-expansion";
 import { useArchiveNote, useCreateNote, useNoteTree, useReorderNotes, useUpdateNote } from "./queries";
@@ -195,11 +195,10 @@ function DocumentItem({ note, depth, parentId, activeNoteId, canEdit, reordering
   const children = note.children.length && expanded ? <DocumentTree items={note.children} depth={depth + 1} parentId={note.id} activeNoteId={activeNoteId} canEdit={canEdit} reordering={reordering} main={main} onNavigate={onNavigate} onCreateChild={onCreateChild} onRename={onRename} onArchive={onArchive} onKeyboardMove={onKeyboardMove} dragInstructionsId={dragInstructionsId} isExpanded={isExpanded} onToggle={onToggle} /> : null;
 
   if (main) return <div ref={sortable?.ref} className={notebookDirectoryStyles.item} data-note-id={note.id} data-parent-id={group} data-dragging={sortable?.isDragSource} data-drop-target={sortable?.isDropTarget}>
-    <div className={notebookDirectoryStyles.row}>
-      {prefix}
+    <div className={cn(notebookDirectoryStyles.row, note.children.length > 0 && "min-h-[38px]")}>
+      {note.children.length ? prefix : null}
       <DocumentLink noteId={note.id} to={`/documents/${note.id}`} draggable={false} aria-label={note.title} aria-current={note.id === activeNoteId ? "page" : undefined} className={notebookDirectoryStyles.link} onClick={onNavigate}>
-        <DocumentKindIcon note={note} size={15} />
-        <span className={cn(notebookDirectoryStyles.title, note.id === activeNoteId && "font-semibold")} title={note.title}>{note.title}</span>
+        <span className={cn(notebookDirectoryStyles.title, note.children.length > 0 && "text-sm", note.id === activeNoteId && "font-semibold")} title={note.title}>{note.title}</span>
         <span className={notebookDirectoryStyles.leader} aria-hidden="true" />
         <time className={notebookDirectoryStyles.time} dateTime={new Date(note.updated_at_ms).toISOString()} title={new Date(note.updated_at_ms).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })}>{formatNotebookUpdateTime(note.updated_at_ms)}</time>
       </DocumentLink>

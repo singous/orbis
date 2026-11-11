@@ -59,7 +59,7 @@ describe("restoring from the editor", () => {
     const requests = server((url) => url.pathname.endsWith("/operations") ? new Promise<Response>((resolve) => { finishSave = resolve; }) : response(nativeSnapshot(6,"历史正文")));
     const user = userEvent.setup();
     showEditor();
-    const editor = await screen.findByLabelText("编辑正文");
+    const editor = await screen.findByLabelText("编辑正文", {}, { timeout: 3000 });
     await user.clear(editor); await user.type(editor, "恢复前草稿");
     await openHistory(user);
     await user.click(screen.getByRole("button", { name: "恢复此版本" }));

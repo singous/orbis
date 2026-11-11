@@ -10,6 +10,12 @@ export function documentEditPeriod(value: number, now: number): "今天" | "昨�
   return day >= businessDay.format(now - 6 * MILLISECONDS_PER_DAY) ? "过去 7 天" : "更早";
 }
 
+/** 书架卡片只显示相对日期，完整日期由 time 元素提供。 */
+export function formatNotebookEditDay(value: number, now: number): string {
+  const period = documentEditPeriod(value, now);
+  return period === "今天" || period === "昨天" ? period : businessDay.format(value).slice(5).replace("-", "/");
+}
+
 /** 目录展示使用北京时间；跨年保留年份，完整时间由 time 元素提供。 */
 export function formatNotebookUpdateTime(value: number, now = Date.now()): string {
   const date = new Date(value);

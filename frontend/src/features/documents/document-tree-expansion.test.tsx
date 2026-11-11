@@ -16,6 +16,8 @@ describe("directory expansion commands", () => {
     const side = renderHook(() => useDocumentTreeExpansion("workspace", "notebook", items, "current", "side"));
     const main = renderHook(() => useDocumentTreeExpansion("workspace", "notebook", items, undefined, "main"));
     expect(side.result.current.allExpanded).toBe(true);
+    expect(main.result.current.isExpanded("root")).toBe(false);
+    act(() => main.result.current.expandAll());
     act(() => side.result.current.collapseAll());
     expect(side.result.current.isExpanded("root")).toBe(false);
     expect(side.result.current.isExpanded("branch")).toBe(false);

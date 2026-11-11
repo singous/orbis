@@ -12,10 +12,10 @@ test("cold startup reserves workspace geometry and later routes preserve the mou
     const placeholder = page.locator(".workspace-startup");
     await expect(placeholder.getByRole("status", { name: "正在打开首页…" })).toBeVisible();
     await expect(placeholder.locator(".workspace-main-navigation")).toBeVisible();
-    await expect(placeholder.locator(".workspace-sidebar")).toHaveCount(0);
+    await expect(placeholder.locator(".workspace-sidebar")).toBeVisible();
     await expect(placeholder.locator(".workspace-startup-toolbar")).not.toBeVisible();
     const content = await placeholder.locator(".home-page").boundingBox();
-    expect(content!.x).toBeGreaterThan(50);
+    expect(content!.x).toBe(272);
     await expect(placeholder.locator(".home-grid > .home-card")).toHaveCount(4);
     expect(await placeholder.locator(".home-grid").evaluate(node => getComputedStyle(node).gridTemplateColumns.split(" ").length)).toBe(2);
     await page.screenshot({ path: testInfo.outputPath("startup-desktop.png"), animations: "disabled" });
