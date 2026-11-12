@@ -25,25 +25,25 @@ for (const surface of ["web", "desktop"] as const) for (const theme of ["light",
     const rail = page.getByRole("complementary", { name: "应用导航", exact: true });
     const main = page.getByRole("region", { name: "主工作区", exact: true });
     if (width === 1280) {
-      await expect(navigation).toHaveCSS("width", "272px");
+      await expect(navigation).toHaveCSS("width", "252px");
       await expect(rail).toHaveCSS("width", "72px");
       const navBounds = (await navigation.boundingBox())!;
       expect(navBounds.x).toBe(0);
       expect(navBounds.y).toBe(0);
-      expect((await main.boundingBox())!.x).toBe(272);
+      expect((await main.boundingBox())!.x).toBe(252);
       await expect(navigation).toHaveCSS("border-radius", "0px");
       await expect(navigation).toHaveCSS("box-shadow", "none");
       await expect(navigation).toHaveCSS("border-width", "0px");
       await expect(page.locator(".workspace-topbar")).toHaveCount(0);
-      await expect(page.locator(".workspace-sidebar-inner")).toHaveCSS("width", "200px");
+      await expect(page.locator(".workspace-sidebar-inner")).toHaveCSS("width", "180px");
       const resize = page.getByRole("separator", { name: "调整侧栏宽度" });
       await resize.focus();
       await page.keyboard.press("ArrowRight");
-      await expect(resize).toHaveAttribute("aria-valuenow", "216");
+      await expect(resize).toHaveAttribute("aria-valuenow", "196");
       await expect(resize.locator(".workspace-resize-line")).toHaveCSS("opacity", "1");
-      await expect(navigation).toHaveCSS("width", "288px");
+      await expect(navigation).toHaveCSS("width", "268px");
       await resize.dblclick();
-      await expect(navigation).toHaveCSS("width", "272px");
+      await expect(navigation).toHaveCSS("width", "252px");
       const collapse = page.getByRole("button", { name: "收起侧栏", exact: true });
       expect(await collapse.boundingBox()).toEqual({ x: 88, y: 16, width: 24, height: 24 });
       await collapse.click();
@@ -55,7 +55,7 @@ for (const surface of ["web", "desktop"] as const) for (const theme of ["light",
       expect(await expand.boundingBox()).toEqual({ x: 88, y: 16, width: 24, height: 24 });
       await expect(expand).toBeFocused();
       await expand.click();
-      await expect(navigation).toHaveCSS("width", "272px");
+      await expect(navigation).toHaveCSS("width", "252px");
     } else {
       await expect(navigation).toHaveAttribute("inert", "");
       const opener = page.getByRole("button", { name: "打开主导航", exact: true });

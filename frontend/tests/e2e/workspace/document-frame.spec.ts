@@ -37,7 +37,7 @@ test('document overview shares the shell and exposes its function menu alongside
     const home = await frame('/home');
     const documents = await frame('/documents');
     expect({ radius: documents.radius, border: documents.border }).toEqual({ radius: '0px', border: '0px' });
-    expect(documents).toMatchObject({ gap: 0, padding: '0px', railX: 0, railWidth: 272 });
+    expect(documents).toMatchObject({ gap: 0, padding: '0px', railX: 0, railWidth: 252 });
     expect(documents.railWidth).toBe(home.railWidth);
     await expect(page.getByRole('navigation', { name: '文档导航', exact: true })).toBeVisible();
     const navigation = page.getByRole('navigation', { name: '文档导航', exact: true });

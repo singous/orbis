@@ -15,7 +15,7 @@ test("cold startup reserves workspace geometry and later routes preserve the mou
     await expect(placeholder.locator(".workspace-sidebar")).toBeVisible();
     await expect(placeholder.locator(".workspace-startup-toolbar")).not.toBeVisible();
     const content = await placeholder.locator(".home-page").boundingBox();
-    expect(content!.x).toBe(272);
+    expect(content!.x).toBe(252);
     await expect(placeholder.locator(".home-grid > .home-card")).toHaveCount(4);
     expect(await placeholder.locator(".home-grid").evaluate(node => getComputedStyle(node).gridTemplateColumns.split(" ").length)).toBe(2);
     await page.screenshot({ path: testInfo.outputPath("startup-desktop.png"), animations: "disabled" });

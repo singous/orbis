@@ -34,20 +34,20 @@ it("retains the tree while collapsed and supports public keyboard resizing", asy
   expect(screen.getByRole("link", { name: "当前笔记本" })).toHaveAttribute("href", "/collections/notebook");
   expect(screen.getByRole("button", { name: "创建内容" })).toBeEnabled();
   fireEvent.keyDown(resize, { key: "ArrowRight" });
-  expect(localStorage.getItem("orbis.notebookDirectoryWidth")).toBe("216");
+  expect(localStorage.getItem("orbis.notebookDirectoryWidth")).toBe("196");
   fireEvent.click(screen.getByRole("button", { name: "收起笔记本目录" }));
   expect(screen.queryByRole("navigation", { name: "测试目录" })).toBeNull();
   expect(screen.getByRole("navigation", { name: "测试目录", hidden: true })).toBeInTheDocument();
   await waitFor(() => expect(screen.getByRole("button", { name: "展开笔记本目录" })).toHaveFocus());
   fireEvent.click(screen.getByRole("button", { name: "展开笔记本目录" }));
   expect(resize).not.toBeInTheDocument();
-  expect(screen.getByRole("separator", { name: "调整笔记本目录宽度" })).toHaveAttribute("aria-valuenow", "216");
+  expect(screen.getByRole("separator", { name: "调整笔记本目录宽度" })).toHaveAttribute("aria-valuenow", "196");
 });
 
 it.each(["159", "481", "NaN", "Infinity", "broken"])("ignores invalid legacy width %s without overwriting the stored setting", stored => {
   localStorage.setItem("orbis.notebookDirectoryWidth", stored);
   render(shell(createNotebookSidebar("notebook")));
-  expect(screen.getByRole("separator")).toHaveAttribute("aria-valuenow", "200");
+  expect(screen.getByRole("separator")).toHaveAttribute("aria-valuenow", "180");
   expect(localStorage.getItem("orbis.notebookDirectoryWidth")).toBe(stored);
 });
 
@@ -70,7 +70,7 @@ it("keeps resizing and collapse usable when browser preference storage is unavai
   vi.spyOn(localStorage, "setItem").mockImplementation(() => { throw new Error("Storage blocked"); });
   render(shell(createNotebookSidebar("notebook")));
   fireEvent.keyDown(screen.getByRole("separator"), { key: "ArrowRight" });
-  expect(screen.getByRole("separator")).toHaveAttribute("aria-valuenow", "216");
+  expect(screen.getByRole("separator")).toHaveAttribute("aria-valuenow", "196");
   fireEvent.click(screen.getByRole("button", { name: "收起笔记本目录" }));
   expect(screen.getByRole("button", { name: "展开笔记本目录" })).toBeInTheDocument();
   act(() => { fireEvent.click(screen.getByRole("button", { name: "展开笔记本目录" })); });

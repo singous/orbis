@@ -21,8 +21,8 @@ test("ordinary menus and notebook trees share local collapse motion, focus and r
   const notebookId = (await created.json()).data.id as string;
 
   for (const entry of [
-    { path: "/documents", collapse: "收起侧栏", expand: "展开侧栏", key: "orbis.sidebarCollapsed", width: 272 },
-    { path: `/collections/${notebookId}`, collapse: "收起笔记本目录", expand: "展开笔记本目录", key: "orbis.notebookDirectoryCollapsed", width: 332 },
+    { path: "/documents", collapse: "收起侧栏", expand: "展开侧栏", key: "orbis.sidebarCollapsed", width: 252 },
+    { path: `/collections/${notebookId}`, collapse: "收起笔记本目录", expand: "展开笔记本目录", key: "orbis.notebookDirectoryCollapsed", width: 312 },
   ]) {
     await page.goto(entry.path);
     await expect(page.getByRole("button", { name: entry.collapse, exact: true })).toBeVisible();

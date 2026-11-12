@@ -4,7 +4,7 @@ import { useLayoutEffect, useState, type CSSProperties, type RefObject } from "r
 export const SIDEBAR_MIN_WIDTH = 160;
 const SIDEBAR_MAX_WIDTH = 480;
 const MAIN_MIN_WIDTH = 360;
-const DEFAULT_SIDEBAR_WIDTH = 200;
+const DEFAULT_SIDEBAR_WIDTH = 180;
 const DEFAULT_RAIL_WIDTH = 72;
 
 function clampWidth(width: number, maximum: number) {

@@ -69,8 +69,8 @@ test("the unpainted-shadow probe rejects a visible layer mixed with transparent 
 test("E2E sidebar motion samples the completed transition while retaining intermediate frames and reduced motion", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   for (const entry of [
-    { path: "/documents", collapse: "收起侧栏", expand: "展开侧栏", width: 272 },
-    { path: `/collections/${notebooks[0].id}`, collapse: "收起笔记本目录", expand: "展开笔记本目录", width: 332 },
+    { path: "/documents", collapse: "收起侧栏", expand: "展开侧栏", width: 252 },
+    { path: `/collections/${notebooks[0].id}`, collapse: "收起笔记本目录", expand: "展开笔记本目录", width: 312 },
   ]) {
     await page.emulateMedia({ reducedMotion: "no-preference" });
     await page.goto(entry.path);
