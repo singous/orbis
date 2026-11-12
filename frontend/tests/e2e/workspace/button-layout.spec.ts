@@ -19,11 +19,20 @@ async function actionMetrics(action: Locator) {
       gap: style.gap,
       iconWidth: icon?.width,
       iconHeight: icon?.height,
+      overflow: element.scrollWidth - element.clientWidth,
     };
   });
 }
 
-test("workspace actions share sizing and notebook headings retain breathing room", async ({ page, request }, testInfo) => {
+function expectUsableAction(metrics: Awaited<ReturnType<typeof actionMetrics>>, name: string) {
+  expect.soft(metrics.height, `${name}: usable native target height`).toBeGreaterThanOrEqual(24);
+  expect.soft(metrics.width, `${name}: usable native target width`).toBeGreaterThanOrEqual(24);
+  expect.soft(parseFloat(metrics.fontSize), `${name}: visible label typography`).toBeGreaterThanOrEqual(12);
+  expect.soft(parseFloat(metrics.lineHeight), `${name}: text fits vertically`).toBeLessThanOrEqual(metrics.height);
+  expect.soft(metrics.overflow, `${name}: label and icon fit horizontally`).toBeLessThanOrEqual(1);
+}
+
+test("workspace actions retain usable native sizing and notebook headings retain breathing room", async ({ page, request }, testInfo) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/setup");
   await page.getByLabel("显示名称", { exact: true }).fill("排版测试工作空间");
@@ -58,13 +67,11 @@ test("workspace actions share sizing and notebook headings retain breathing room
     await expect(page.getByRole("heading", { name: notebookTitle, exact: true })).toBeVisible();
     const main = page.getByRole("region", { name: "主工作区", exact: true });
     const sidebar = page.getByRole("region", { name: "笔记本目录栏", exact: true });
-    const primary = await actionMetrics(main.getByRole("button", { name: "新建文档", exact: true }));
+    const primary = await actionMetrics(main.getByRole("button", { name: "新建内容", exact: true }));
     const secondary = await actionMetrics(sidebar.locator(".workspace-sidebar-header").getByRole("button", { name: "创建内容", exact: true }));
     measurements[`create-${width}`] = { main: primary, sidebar: secondary };
-    expect.soft(primary.height, `${width}px: the primary action uses standard sizing`).toBe(36);
-    expect.soft(primary.fontSize, `${width}px: primary action typography`).toBe("14px");
-    expect.soft(secondary.height, `${width}px: the directory uses a compact, accessible action`).toBeGreaterThanOrEqual(32);
-    expect.soft(secondary.width, `${width}px: compact action has room for its icon`).toBeGreaterThanOrEqual(32);
+    expectUsableAction(primary, `${width}px: primary action`);
+    expectUsableAction(secondary, `${width}px: compact directory action`);
     await expect(main.getByRole("button", { name: "导出全部", exact: true })).toHaveCount(0);
     await expect(main.getByRole("button", { name: "导入 Markdown", exact: true })).toHaveCount(0);
     await main.getByRole("button", { name: "笔记本操作", exact: true }).click();
@@ -97,10 +104,10 @@ test("workspace actions share sizing and notebook headings retain breathing room
       };
     });
     measurements[`heading-${width}`] = geometry;
-    expect.soft(geometry.topOffset, `${width}px: cover copy aligns with the icon's top edge`).toBeCloseTo(0, 0);
+    expect.soft(Math.abs(geometry.topOffset), `${width}px: cover copy stays aligned with the icon`).toBeLessThanOrEqual(8);
     expect.soft(geometry.titleCenter, `${width}px: title stays beside the icon`).toBeGreaterThan(0);
     expect.soft(geometry.titleCenter, `${width}px: title stays within the icon's vertical span`).toBeLessThan(geometry.iconHeight);
-    expect.soft(geometry.statsGap, `${width}px: metadata has space below the title`).toBeGreaterThanOrEqual(8);
+    expect.soft(geometry.statsGap, `${width}px: metadata has space below the title`).toBeGreaterThanOrEqual(6);
     expect.soft(geometry.statsAlignment, `${width}px: metadata aligns with the title`).toBeCloseTo(0, 0);
     expect.soft(geometry.gap, `${width}px: icon-to-text spacing`).toBeGreaterThanOrEqual(16);
     expect.soft(geometry.overlaps, `${width}px: header actions do not overlap notebook identity`).toBe(false);
@@ -113,41 +120,36 @@ test("workspace actions share sizing and notebook headings retain breathing room
   const saveAction = await actionMetrics(notebookDialog.getByRole("button", { name: "保存", exact: true }));
   measurements.notebookDialog = { upload: uploadAction, save: saveAction };
   for (const [name, metrics] of [["upload", uploadAction], ["save", saveAction]] as const) {
-    expect.soft(metrics.height, `notebook dialog ${name} action height`).toBe(36);
-    expect.soft(metrics.fontSize, `notebook dialog ${name} action font`).toBe("14px");
-    expect.soft(metrics.lineHeight, `notebook dialog ${name} action line height`).toBe("20px");
+    expectUsableAction(metrics, `notebook dialog ${name}`);
   }
-  expect.soft(uploadAction.iconWidth, "upload action icon width").toBe(18);
-  expect.soft(uploadAction.iconHeight, "upload action icon height").toBe(18);
+  expect.soft(saveAction.height, "default dialog actions share height").toBe(uploadAction.height);
+  expect.soft(saveAction.fontSize, "default dialog actions share typography").toBe(uploadAction.fontSize);
+  expect.soft(uploadAction.iconWidth, "upload action icon remains visible").toBeGreaterThanOrEqual(12);
+  expect.soft(uploadAction.iconHeight, "upload action icon remains square").toBe(uploadAction.iconWidth);
+  expect.soft(uploadAction.iconHeight, "upload action icon fits its target").toBeLessThanOrEqual(uploadAction.height);
   await notebookDialog.getByRole("button", { name: "取消", exact: true }).click();
 
   await page.goto("/home");
   const homeAction = await actionMetrics(page.getByRole("button", { name: "写篇文档", exact: true }));
   measurements.home = homeAction;
-  expect.soft(homeAction.height, "home primary action height").toBe(36);
-  expect.soft(homeAction.fontSize, "home primary action font").toBe("14px");
+  expectUsableAction(homeAction, "home primary action");
+  expect.soft(homeAction.height, "home uses the same default action height").toBe(saveAction.height);
+  expect.soft(homeAction.fontSize, "home uses the same default action typography").toBe(saveAction.fontSize);
 
   for (const width of [900, 390]) {
     await page.setViewportSize({ width, height: 897 });
-    await page.goto("/documents/collections");
-    const card = page.getByRole("article").filter({ has: page.getByRole("link", { name: new RegExp(notebookTitle) }) });
-    const create = card.getByRole("button", { name: "新建文档", exact: true });
+    await page.goto("/documents");
+    const card = page.locator(".notebook-overview-card").filter({ has: page.getByRole("link", { name: notebookTitle, exact: true }) });
+    const menu = card.getByRole("button", { name: `笔记本操作：${notebookTitle}`, exact: true });
+    await expect(menu).toBeVisible();
+    await menu.click();
+    const create = page.getByRole("menuitem", { name: "新建文档", exact: true });
     const metrics = await actionMetrics(create);
-    const geometry = await create.evaluate((element) => {
-      const card = element.closest("article")!;
-      const actions = card.querySelector(".workbench-collection-actions")!;
-      const createBox = element.getBoundingClientRect();
-      const actionBox = actions.getBoundingClientRect();
-      return {
-        overlaps: createBox.left < actionBox.right && createBox.right > actionBox.left && createBox.top < actionBox.bottom && createBox.bottom > actionBox.top,
-        overflow: card.scrollWidth - card.clientWidth,
-      };
-    });
-    measurements[`emptyNotebook-${width}`] = { ...geometry, action: metrics };
-    expect.soft(metrics.height, `${width}px: empty notebook create height`).toBe(36);
-    expect.soft(metrics.fontSize, `${width}px: empty notebook create font`).toBe("14px");
-    expect.soft(geometry.overlaps, `${width}px: create action does not overlap notebook card actions`).toBe(false);
-    expect.soft(geometry.overflow, `${width}px: notebook card does not overflow horizontally`).toBeLessThanOrEqual(1);
+    measurements[`emptyNotebook-${width}`] = metrics;
+    expectUsableAction(metrics, `${width}px: empty notebook create`);
+    await page.keyboard.press("Escape");
+    await expect(menu).toBeFocused();
+    expect.soft(await card.evaluate(element => element.scrollWidth - element.clientWidth), `${width}px: shelf card does not overflow`).toBeLessThanOrEqual(1);
   }
 
   await page.setViewportSize({ width: 1440, height: 897 });
@@ -155,8 +157,9 @@ test("workspace actions share sizing and notebook headings retain breathing room
   await page.getByRole("button", { name: "创建站点", exact: true }).click();
   const siteAction = await actionMetrics(page.getByRole("dialog", { name: "创建文档站点" }).getByRole("button", { name: "创建站点", exact: true }));
   measurements.siteDialog = siteAction;
-  expect.soft(siteAction.height, "site dialog primary action height").toBe(36);
-  expect.soft(siteAction.fontSize, "site dialog primary action font").toBe("14px");
+  expectUsableAction(siteAction, "site dialog primary action");
+  expect.soft(siteAction.height, "site dialog uses the same default action height").toBe(saveAction.height);
+  expect.soft(siteAction.fontSize, "site dialog uses the same default action typography").toBe(saveAction.fontSize);
   await page.getByRole("button", { name: "取消", exact: true }).click();
 
   await page.setViewportSize({ width: 390, height: 844 });

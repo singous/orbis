@@ -3,11 +3,12 @@ import { searchTypeSchema, type SearchFilters, type SearchResult } from "./api";
 
 export const SEARCH_DEBOUNCE_MS = 250;
 export const SEARCH_MAX_LENGTH = 240;
-export const SEARCH_TYPE_OPTIONS = [
+export const SEARCH_TYPE_OPTIONS = ([
   { value: "all", label: "全部内容" }, { value: "document", label: "文档与评论" },
   { value: "notebook", label: "笔记本" }, { value: "group", label: "文档分组" },
   { value: "site", label: "站点" }, { value: "file", label: "文件与附件" },
-].filter(option => releaseFeatures.sites || option.value !== "site");
+] satisfies Array<{ value: SearchFilters["type"]; label: string }>).filter(option => releaseFeatures.sites || option.value !== "site");
+export const SEARCH_STATUS_OPTIONS: Array<{ value: SearchFilters["status"]; label: string }> = [{ value: "active", label: "当前内容" }, { value: "archived", label: "已归档" }, { value: "all", label: "包含归档" }];
 export const SEARCH_TYPE_LABELS = { document: "文档", notebook: "笔记本", group: "文档分组", site: "站点", file: "文件" };
 
 export function readSearchFilters(params: URLSearchParams): SearchFilters {
@@ -36,7 +37,7 @@ export function resultDestination(result: Pick<SearchResult, "type" | "id" | "st
   switch (result.type) {
     case "document": return `/documents/${result.id}${releaseFeatures.documentCollaboration && result.matched_comment_id ? `?comment=${result.matched_comment_id}` : ""}`;
     case "notebook": return `/collections/${result.id}`;
-    case "group": return `/documents/collections?group=${result.id}`;
+    case "group": return `/documents?group=${result.id}`;
     case "site": return `/sites/${result.id}`;
     case "file": return `/search/open?type=file&id=${result.id}`;
   }

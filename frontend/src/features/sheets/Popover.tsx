@@ -1,3 +1,5 @@
+import { cn } from "@orbis/ui/cn";
+import { sheetPopoverClassName } from "./sheet-chrome";
 import {
   useEffect,
   useLayoutEffect,
@@ -5,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { createPortal } from "react-dom";
+import { Portal } from "@orbis/ui/portal";
 
 const ANCHOR_GAP = 6;
 const VIEWPORT_MARGIN = 8;
@@ -18,7 +20,7 @@ const FOCUSABLE = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(", ");
 // Toast 位于独立门户中，其交互不应关闭当前设置或丢失草稿。
-const NESTED_OVERLAY = '.orbis-select-popover, .orbis-color-popover, [data-slot="toast-region"]';
+const NESTED_OVERLAY = '[data-slot="select-content"], [data-slot="popover-content"], [data-slot="toast-viewport"]';
 
 export type Anchor = { left: number; top: number; element?: HTMLElement };
 export function anchorAt(element: Element): Anchor {
@@ -148,7 +150,7 @@ export function Popover({
       if (
         e.key === "Escape" &&
         !e.isComposing && !e.defaultPrevented &&
-        !(e.target instanceof Element && e.target.closest(NESTED_OVERLAY))
+        !(e.target instanceof Element && (e.target.closest(NESTED_OVERLAY) || e.target.closest('[role="combobox"][aria-expanded="true"]')))
       ) {
         e.preventDefault();
         e.stopPropagation();
@@ -163,15 +165,16 @@ export function Popover({
       document.removeEventListener("keydown", key, true);
     };
   }, []);
-  return createPortal(
-    <div
+  return <Portal container={document.body}><div
       ref={ref}
       role="dialog"
       tabIndex={-1}
       aria-label={label}
-      className={`sheet-popover${wide ? " wide" : ""} ${className}`}
+      className={cn(sheetPopoverClassName, className, wide && "wide w-90 [@media(max-width:760px)]:w-[min(360px,calc(100vw-16px))]")}
       style={position}
       onKeyDown={(e) => {
+        // 原生 Toast 的 F6 入口监听在 window。
+        if (e.key === "F6") return;
         e.stopPropagation();
         if (e.key === "Tab" && onTab) {
           e.preventDefault();
@@ -200,7 +203,5 @@ export function Popover({
       }}
     >
       {children}
-    </div>,
-    document.body,
-  );
+    </div></Portal>;
 }

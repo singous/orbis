@@ -1,39 +1,8 @@
 import {sessionFromPage,workspacePath} from "../helpers/api-fixtures";
-import { expect, test, type Page } from "@playwright/test";
+import { sampleSidebarToggle as sampleToggle } from "../helpers/workspace-rendering";
+import { expect, test } from "@playwright/test";
 
 test.use({ screenshot: "off", trace: "off" });
-
-async function sampleToggle(page: Page, label: string) {
-  return page.evaluate(async name => {
-    const grid = document.querySelector(".workspace-shell-grid")!;
-    const navigation = document.querySelector(".workspace-main-navigation")!;
-    const button = Array.from(navigation.querySelectorAll("button")).find(item => item.getAttribute("aria-label") === name)!;
-    const rail = navigation.querySelector(".workspace-business-nav")!;
-    const railWidth = navigation.querySelector(".workspace-business-rail")!.getBoundingClientRect().width;
-    const startRailTop = rail.getBoundingClientRect().top;
-    const startWidth = navigation.getBoundingClientRect().width;
-    const widths: number[] = [];
-    const railTops: number[] = [];
-    const transitions = new Set<string>();
-    button.click();
-    const start = performance.now();
-    while (performance.now() - start < 540) {
-      await new Promise(requestAnimationFrame);
-      widths.push(navigation.getBoundingClientRect().width);
-      railTops.push(rail.getBoundingClientRect().top);
-      for (const animation of grid.getAnimations({ subtree: true })) {
-        if ("transitionProperty" in animation) transitions.add(`${(animation as CSSTransition).transitionProperty}:${animation.effect?.getTiming().duration}`);
-      }
-    }
-    const endWidth = navigation.getBoundingClientRect().width;
-    const endRailTop = rail.getBoundingClientRect().top;
-    const railLow = Math.min(startRailTop, endRailTop) + 1;
-    const railHigh = Math.max(startRailTop, endRailTop) - 1;
-    const low = Math.min(startWidth, endWidth) + 1;
-    const high = Math.max(startWidth, endWidth) - 1;
-    return { startWidth, endWidth, railWidth, startRailTop, endRailTop, railIntermediateFrames: railTops.filter(top => top > railLow && top < railHigh).length, intermediateFrames: widths.filter(width => width > low && width < high).length, transitions: Array.from(transitions) };
-  }, label);
-}
 
 test("ordinary menus and notebook trees share local collapse motion, focus and reduced motion", async ({ page, request }) => {
   const owner = { email: "owner@example.com", password: "Orbis-browser-test-2026!" };
@@ -51,35 +20,30 @@ test("ordinary menus and notebook trees share local collapse motion, focus and r
   expect(created.status()).toBe(201);
   const notebookId = (await created.json()).data.id as string;
 
-  let ordinaryWidth: number | undefined;
   for (const entry of [
-    { path: "/documents", collapse: "收起侧栏", expand: "展开侧栏", key: "orbis.sidebarCollapsed" },
-    { path: `/collections/${notebookId}`, collapse: "收起笔记本目录", expand: "展开笔记本目录", key: "orbis.notebookDirectoryCollapsed" },
+    { path: "/documents", collapse: "收起侧栏", expand: "展开侧栏", key: "orbis.sidebarCollapsed", width: 252 },
+    { path: `/collections/${notebookId}`, collapse: "收起笔记本目录", expand: "展开笔记本目录", key: "orbis.notebookDirectoryCollapsed", width: 312 },
   ]) {
     await page.goto(entry.path);
     await expect(page.getByRole("button", { name: entry.collapse, exact: true })).toBeVisible();
     const collapse = await sampleToggle(page, entry.collapse);
     expect(collapse.intermediateFrames).toBeGreaterThan(2);
     expect(collapse.transitions).toContain("grid-template-columns:420");
-    expect(collapse.railIntermediateFrames).toBeGreaterThan(2);
-    expect(collapse.endRailTop - collapse.startRailTop).toBeCloseTo(32, 0);
-    expect(collapse.transitions).toContain("height:420");
-    if (ordinaryWidth === undefined) ordinaryWidth = collapse.startWidth;
-    else expect(collapse.startWidth).toBeCloseTo(ordinaryWidth, 0);
+    expect(collapse.railTravel).toBeLessThanOrEqual(1);
+    expect(collapse.startWidth).toBeCloseTo(entry.width, 0);
     expect(collapse.endWidth).toBeCloseTo(collapse.railWidth, 0);
     await expect(page.getByRole("button", { name: entry.expand, exact: true })).toBeFocused();
     await expect(page.locator(".workspace-main-navigation .workspace-sidebar")).toHaveAttribute("inert", "");
     expect(await page.evaluate(key => localStorage.getItem(key), entry.key)).toBeNull();
     const expansion = await sampleToggle(page, entry.expand);
     expect(expansion.intermediateFrames).toBeGreaterThan(2);
-    expect(expansion.railIntermediateFrames).toBeGreaterThan(2);
-    expect(expansion.endRailTop - expansion.startRailTop).toBeCloseTo(-32, 0);
+    expect(expansion.railTravel).toBeLessThanOrEqual(1);
     expect(expansion.endWidth).toBeCloseTo(collapse.startWidth, 0);
     await expect(page.getByRole("button", { name: entry.collapse, exact: true })).toBeFocused();
     await page.emulateMedia({ reducedMotion: "reduce" });
     const reduced = await sampleToggle(page, entry.collapse);
     expect(reduced.intermediateFrames).toBe(0);
-    expect(reduced.railIntermediateFrames).toBe(0);
+    expect(reduced.railTravel).toBeLessThanOrEqual(1);
     expect(reduced.transitions).not.toContain("grid-template-columns:420");
     expect(reduced.transitions).not.toContain("height:420");
     await page.reload();
@@ -104,15 +68,14 @@ test("slow document overview loading keeps the rail, global search and pinned sh
   const placeholder = page.getByRole("status", { name: "正在加载笔记本…", exact: true });
   try {
     await expect(placeholder).toBeVisible();
-    await expect(placeholder.locator(".skeleton").first()).toBeVisible();
+    await expect(placeholder.locator('[data-slot="skeleton"]').first()).toBeVisible();
     await expect(page.getByRole("link", { name: "在线文档", exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: "新建资产", exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: "搜索", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "搜索文档", exact: true })).toBeVisible();
   } finally { release(); }
   await expect(placeholder).toHaveCount(0);
 });
 
-test("ordinary and notebook mobile drawers share navigation, creation dialogs and focus restoration without changing desktop preferences", async ({ page, request }) => {
+test("ordinary and notebook mobile drawers share navigation, account actions and focus restoration without changing desktop preferences", async ({ page, request }) => {
   const owner = { email: "owner@example.com", password: "Orbis-browser-test-2026!" };
   expect([201, 409]).toContain((await request.post("/api/v1/setup", { data: { ...owner,workspace_name:"浏览器测试空间", display_name: "抽屉一致性验收" } })).status());
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -139,16 +102,16 @@ test("ordinary and notebook mobile drawers share navigation, creation dialogs an
     await trigger.click();
     await expect(page.getByRole("navigation", { name: entry.navigation, exact: true })).toBeVisible();
     await expect(page.getByRole("complementary", { name: "应用导航", exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: "新建资产", exact: true })).toHaveCount(1);
     await expect(page.getByRole("separator")).toHaveCount(0);
-    const create = page.getByRole("button", { name: "新建资产", exact: true });
-    await create.focus();
+    const account = frame.getByRole("button", { name: "打开用户菜单", exact: true });
+    await account.focus();
     await page.keyboard.press("Enter");
-    await expect(page.getByRole("dialog", { name: "新建资产", exact: true })).toBeVisible();
+    const menu = page.getByRole("menu", { name: "用户操作", exact: true });
+    await expect(menu).toBeVisible();
     await page.keyboard.press("Escape");
-    await expect(page.getByRole("dialog", { name: "新建资产", exact: true })).toHaveCount(0);
+    await expect(menu).toHaveCount(0);
     await expect(trigger).toHaveAttribute("aria-expanded", "true");
-    await expect(create).toBeFocused();
+    await expect(account).toBeFocused();
     const shortcuts = frame.getByRole("link", { name: "在线文档", exact: true });
     await shortcuts.focus();
     await shortcuts.press("ArrowRight");

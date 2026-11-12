@@ -81,40 +81,33 @@ PNG/ICO 导出使用项目锁定的 Playwright 与 Chromium（首次使用需执
 
 ## UI 尺寸与交互规范
 
-尺寸和动效以 `src/styles/design-tokens.css` 为统一来源，页面优先复用 `src/shared/ui/` 组件。
-保留现有 HeroUI 主题及业务布局，新增控件按语义选档位，不在页面中另设一套尺寸。
+通用控件采用 `packages/ui/` 中的官方 shadcn `base-nova` 源码、默认样式和组合 API。页面直接导入 `@orbis/ui/<component>`；产品文案、保存、草稿和确认策略由 feature 或有明确产品职责的 shared pattern 组合。HeroUI、旧控件包装、press 事件翻译及外观兼容样式已退出。
 
-| 用途 | 默认尺寸 | 变量或组件 |
-| --- | --- | --- |
-| 紧凑工具栏、图标操作 | 32px | `--orbis-control-compact-height`，`size="sm"` |
-| 常规按钮、菜单行 | 36px | `--orbis-control-default-height` |
-| 表单输入与选择器 | 40px | `--orbis-control-form-height` |
-| 触屏点击区域 | 至少 44×44px | `--orbis-control-touch-height`；粗指针时上述档位统一扩大 |
-| 紧凑、常规、导航图标 | 16 / 18 / 20px | `--orbis-icon-*-size` |
-| 通用间距 | 4 / 8 / 12 / 16 / 24 / 32 / 48px | `--orbis-space-*` |
+主题使用标准语义角色，如 `bg-background`、`text-foreground`、`bg-primary`、`border-border` 和 `ring-ring`，默认字体为 Geist。应用品牌、正文、画布和网格的专有角色由 `src/styles/brand-tokens.css` 与所属领域维护；普通控件不再借 `--ob-*` 变量复刻旧视觉。样式入口为 `src/styles/globals.css`，具体规则见 [UI 样式契约](packages/ui/docs/styling.md)。
 
-这里的 px 是根字号 16px 时的参考值，变量使用 rem，随用户字号缩放。图形尺寸与点击区域分开：
-例如颜色圆点保持 24px，外层可交互区域按控件档位扩大。窄屏控件应换行或减少网格列数，不压缩点击区域。
-多维表格保留视图设置中的行高；行内操作受行高约束，行选择使用整个表头标签作为点击区域。
-工具栏、设置浮层和表单操作遵循共享触屏档位，工具栏内容较多时允许横向滚动。
+| 原生组件 | 根字号 16px 时的默认尺寸 |
+| --- | --- |
+| Button | `sm` 28px，默认 32px，`lg` 36px |
+| Input / SelectTrigger | 默认 32px |
+| 图标按钮 | 按 Button 的 `icon-sm`、`icon`、`icon-lg` 档位 |
 
-| 动效 | 时长 | 变量 |
-| --- | --- | --- |
-| 控件状态反馈、小浮层退出 | 120ms | `--orbis-motion-feedback` |
-| 菜单与提示进入、弹窗退出 | 180ms | `--orbis-motion-popover` |
-| 弹窗及遮罩进入 | 220ms | `--orbis-motion-dialog` |
+这些是原生组件参考值，不是还原旧界面的固定门禁。用 Tailwind 的标准间距、字号和圆角进行实际布局；窄屏允许换行或横向滚动。画布端口、网格行高、触控操作和正文排版由各自领域按真实交互维护，不套用普通表单尺寸。
 
-进入动效共用 `--orbis-ease-out`；弹窗与遮罩同步。明确列出 transition 属性，避免 `transition: all` 或省略属性名；
-位移和显隐优先使用 transform/opacity。既有侧栏布局协同动画由 `workspace-sidebar-config.ts` 的常量维护，
-不与通用浮层时长混用。尊重 `prefers-reduced-motion`，减少动态效果时保持内容、状态与键盘操作完整。
+浮层保留原生焦点约束、Escape 关闭、返回焦点和生命周期，通过明确的 `OverlayScopeProvider` 继承局部阅读主题。Toolbar 成员显式组合 ToolbarButton 等原语；普通 Button 不会自动注册为工具栏成员。图标按钮提供可访问名称，加载状态显式组合 `disabled`、`focusableWhenDisabled`、`aria-busy` 和 Spinner。
 
-- 图标按钮必须提供可访问名称；键盘焦点清晰可见，悬停操作也能通过键盘和触屏访问。
-- 工作区首个键盘入口可跳转到主内容；弹窗保留焦点约束、Escape 关闭与关闭后的焦点恢复。
-- 弹窗使用可视视口高度限制、内部滚动和可换行的操作区；标题与说明允许长文本换行。
-- 浮层通过 `--layer-dialog`、`--layer-popover`、`--layer-tooltip` 分层，弹窗中的提示和选择器不能被遮罩覆盖。
-- 验证桌面与窄屏、精细与粗指针、明暗主题、键盘和减少动态效果，不能只用缩窄桌面窗口代替触屏验证。
+动效沿用组件官方实现，应用自己的过渡明确列出属性并由所属布局维护。减少动态效果会取消持续动画和正在进行的过渡；强制颜色模式保留可读内容与可见焦点。验证同时覆盖明暗主题、桌面与窄屏、精细与粗指针、键盘、减少动态效果和强制颜色，不能只用缩窄桌面窗口代替触屏验证。
 
 ## 浏览器验收
+
+UI 与生产资源可在无后端的固定 HTTP fixture 下验证：
+
+```sh
+npm run test:ui
+npm run build
+ORBIS_UI_PRODUCTION=1 npm run test:ui -- tests/ui-browser/platform/production-network.spec.ts
+```
+
+生产资源检查使用 preview 和实际哈希入口，检查登录、首页、资料、文档和公开阅读器的脚本、样式、字体及图片请求。它不替代后端持久化验收。
 
 ```sh
 npx playwright install chromium
@@ -123,3 +116,18 @@ npm run test:e2e
 
 浏览器测试需要 Go 工具链与 Docker。Playwright 调用根目录的 Go 测试启动器，创建独占的 PostgreSQL、Redis 和临时文件目录，显式安装数据库并启动后端；不读取部署 `.env`，不复用日常账号或数据库。
 可通过 `ORBIS_E2E_WEB_PORT` 与 `ORBIS_E2E_API_PORT` 调整测试监听端口。
+
+
+## UI 平台
+
+通用控件使用私有源码包 `@orbis/ui/<component>`，公共入口由 `packages/ui/package.json#exports` 定义，不使用根 barrel 或内部路径。产品文案、草稿与保存策略留在 feature 或 shared/ui pattern。新代码不直接导入 HeroUI、Base UI、Lucide、Radix、Sonner 或 cmdk。
+
+包级契约、主题、表单、可访问名称和浮层规则见 [UI 包文档](packages/ui/README.md)。应用开发路径 `/__ui` 验证页面样式与组合，`npm run storybook` 预览原语状态。`check:ui` 检查依赖与样式所有权，并阻止旧 shared 控件定义、旧导入和退役原生 Props 回流；历史数据编解码、公开链接和领域控件继续由实际业务维护。`node scripts/check-ui.mjs --prune` 只删除已清理的例外，不扩大基线。
+
+验证使用 `npm run typecheck`、`npm run test:run`、`npm run test:storybook`、`npm run test:ui`、`npm run test:a11y`、`npm run storybook:build` 与 `npm run build`。应用 UI 测试在 HTTP 边界提供响应，完整持久化与协作仍须 `test:e2e`。
+
+包体检查 `npm run check:bundle` 比较固定原始构建的 gzip 预算：首屏允许最多 5% 增长；每个 feature 的入口加载边界（entry loading boundary）包含首屏、入口及静态依赖，按实际输出文件去重，允许最多 10% 增长。这个模型不包含额外的 `WorkspaceRoute` 外壳、实际 HTTP 传输或 CSS，不能表述成完整页面的下载量。只能从已校验的原始 manifest 和 artifact 记录推导基线，不改写原始构建数据。协作面板分别测量旧文档、画板、协作文档和 Sheet 四个实际宿主与面板的依赖组合；每个 `(entry, host)` 独立对照原宿主预算，两边都验证完整的动态导入关系。面板 feature 摘要是四个宿主边界的最大值，不代替各场景门禁。公开阅读与预览沿用原模块的入口映射。新增未映射入口、缺失入口、缺失宿主或测量仍阻断检查。
+
+单个 feature-own chunk 与 Reader 家族归属继续输出诊断，不单独作为失败条件；组件拆分后的文件大小不等于页面下载负担。报告另列动态可达依赖的上界，排除主入口的全站路由注册表；这不是一次用户操作的实际下载量。`totalGzipBytes` 只统计 manifest JS，额外发射的 worker JS 单列并计入 `totalEmittedJsGzipBytes`。交付前还需 `npm run check:bundle -- --complete` 验证 manifest JS 总量低于固定基线。报告记录 Node/zlib 版本；gzip 估算用于比较依赖负担，不代表 HTTP 实际协商编码、CPU、缓存命中或交互耗时。
+
+新增/升级依赖或复制代码时，同步 `licenses/npm-manifest.json`、原始许可文本、来源与 `THIRD_PARTY_NOTICES.md`。`licenses:generate -- --check` 可离线检查一致性；`check:licenses` 和 `licenses:bundle dist/licenses` 使用严格发行门禁，待审项不能当作已批准。`licenses/pending-review-summary.json` 和 `licenses/material-gaps.json` 记录真实缺口。

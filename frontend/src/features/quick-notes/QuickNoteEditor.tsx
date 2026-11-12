@@ -1,11 +1,12 @@
+import { Input } from "@orbis/ui/input";
+import { cn } from "@orbis/ui/cn";
+import { Toolbar, ToolbarButton } from "@orbis/ui/toolbar";
 import { reportError } from "../../shared/api/request-feedback";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { EditorContent, useEditor, useEditorState, type Editor } from "@tiptap/react";
 import { Bold, Code, Image, Italic, Link2, List, ListChecks, Paperclip } from "../../shared/ui/icons";
-import { ActionButton } from "../../shared/ui/ActionButton";
-import { Button } from "../../shared/ui/Button";
-import { Dialog, DialogContent, DialogFooter } from "../../shared/ui/Dialog";
-import { TextInput } from "../../shared/ui/TextInput";
+import { Button } from "@orbis/ui/button";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@orbis/ui/dialog";
 import { nativeBlock, editorBlock, type NativeBlock } from "../content/codecs/api-content";
 import { createEmptyV2, newBlockId, type NoteBlocksV2 } from "../content/blocks";
 import { safeContentUrl } from "../content/ContentRenderer";
@@ -14,6 +15,7 @@ import { fromTiptapDocument, toTiptapDocumentForSchema, toTiptapDocument } from 
 import { FileContentContext } from "../files/FileContent";
 import { useManagedFiles } from "../files/use-managed-files";
 import "../../styles/tiptap-editor.css";
+import "./quick-note-content.css";
 
 const EXTENSIONS = new Set(["starterKit", "codeBlock", "underline", "link", "placeholder", "taskList", "taskItem", "orbisMetadata", "orbisStyle", "orbisMedia", "orbisBlockIds", "orbisCodeHighlight", "orbisMarkdownPaste"]);
 const extensions = tiptapExtensions.filter(extension => EXTENSIONS.has(extension.name)).map(extension => extension.name === "placeholder" ? extension.configure({ placeholder: "想到什么，随手记下…" }) : extension);
@@ -22,9 +24,9 @@ export function editorBlocks(blocks: NativeBlock[]): NoteBlocksV2 {
   return blocks.length ? { schema_version: 2, editor: "blocknote", blocks: blocks.map(editorBlock) } : createEmptyV2();
 }
 
-export function QuickNoteEditor({ initialValue, onChange, onSubmit, onError, onBusy, disabled = false, homeActions }: {
+export function QuickNoteEditor({ initialValue, onChange, onSubmit, onError, onBusy, disabled = false, homeActions, expanded = false }: {
   initialValue: NativeBlock[]; onChange: (blocks: NativeBlock[]) => void; onSubmit: () => void;
-  onError: (error: unknown) => void; onBusy: (busy: boolean) => void; disabled?: boolean; homeActions?: ReactNode;
+  onError: (error: unknown) => void; onBusy: (busy: boolean) => void; disabled?: boolean; homeActions?: ReactNode; expanded?: boolean;
 }) {
   const files = useManagedFiles("/quick-note-assets");
   const callbacks = useRef({ onChange, onSubmit, onError, onBusy });
@@ -36,6 +38,7 @@ export function QuickNoteEditor({ initialValue, onChange, onSubmit, onError, onB
 
   const uploadInput = useRef<HTMLInputElement>(null);
   const imageInput = useRef<HTMLInputElement>(null);
+  const linkInput = useRef<HTMLInputElement>(null);
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const editor = useEditor({
@@ -78,35 +81,40 @@ export function QuickNoteEditor({ initialValue, onChange, onSubmit, onError, onB
     finally { uploadLock.current = false; if (mounted.current) { setUploading(false); callbacks.current.onBusy(false); } }
   }
   function tool(label: string, icon: ReactNode, run: (editor: Editor) => void, pressed?: boolean) {
-    return <ActionButton type="button" title={label} aria-label={label} aria-pressed={pressed} disabled={disabled || uploading || !editor} onMouseDown={event => event.preventDefault()} onClick={() => editor && run(editor)}>{icon}</ActionButton>;
+    return <ToolbarButton render={<Button variant={pressed ? "secondary" : "ghost"} size="icon-sm" />} type="button" hidden={Boolean(homeActions) && label === "添加附件"} title={label} aria-label={label} aria-pressed={pressed} disabled={disabled || uploading || !editor} onMouseDown={event => event.preventDefault()} onClick={() => editor && run(editor)}>{icon}</ToolbarButton>;
   }
   return <FileContentContext.Provider value={files}>
-    <div className="quick-note-editor orbis-tiptap">
-      <div className="quick-note-tools" role="toolbar" aria-label="随手记格式">
+    <div className={cn(
+      "quick-note-editor quick-note-content orbis-tiptap group min-w-0",
+      homeActions ? "flex min-h-0 flex-1 flex-col [--ob-quick-note-editor-min-height:calc(4*var(--ob-control-height-lg))] [--ob-quick-note-editor-max-height:20rem] [--ob-quick-note-editor-padding:12px_12px_32px]" : "[--ob-quick-note-editor-padding:16px_24px] [@media(max-width:650px)]:[--ob-quick-note-editor-padding:16px]",
+      !homeActions && (expanded ? "[--ob-quick-note-editor-min-height:calc(100dvh-380px)] [--ob-quick-note-editor-max-height:none]" : "[--ob-quick-note-editor-min-height:320px] [--ob-quick-note-editor-max-height:calc(100dvh-380px)] [@media(max-width:1100px)]:[--ob-quick-note-editor-min-height:220px] [@media(max-width:1100px)]:[--ob-quick-note-editor-max-height:420px]"),
+    )} data-home-editor={Boolean(homeActions) || undefined}>
+      <Toolbar className={cn("quick-note-tools flex flex-wrap items-center gap-1 border-b border-border group-has-[.tiptap:focus-visible]:border-primary", homeActions ? "order-1 px-0 py-2 [&_svg]:size-4" : "p-3")} aria-label="随手记格式">
         {tool("插入图片", <Image size={17} />, () => imageInput.current?.click())}
         {tool("待办清单", <ListChecks size={17} />, editor => editor.chain().focus().toggleTaskList().run(), active?.task)}
         {tool("插入链接", <Link2 size={17} />, editor => { setLink(String(editor.getAttributes("link").href ?? ""));  setLinkOpen(true); })}
         {tool("添加附件", <Paperclip size={17} />, () => uploadInput.current?.click())}
-        <span className="quick-note-tool-divider" />
+        <span className="quick-note-tool-divider mx-1 h-4.5 w-px bg-(--border)" aria-hidden="true" />
         {tool("加粗", <Bold size={17} />, editor => editor.chain().focus().toggleBold().run(), active?.bold)}
         {tool("斜体", <Italic size={17} />, editor => editor.chain().focus().toggleItalic().run(), active?.italic)}
         {tool("无序列表", <List size={17} />, editor => editor.chain().focus().toggleBulletList().run(), active?.list)}
         {tool("代码块", <Code size={17} />, editor => editor.chain().focus().toggleCodeBlock().run(), active?.code)}
-      </div>
-      {homeActions ? <div className="home-note-field"><EditorContent editor={editor} /><span className="home-note-count">{active?.characters ?? 0} 字</span></div> : <EditorContent editor={editor} />}
-      {homeActions ? <div className="home-note-actions">
+      </Toolbar>
+      {/* 编辑区盒子由当前使用场景提供，正文排版留在作用域内的内容样式。 */}
+      {homeActions ? <div className="home-note-field relative flex-1"><EditorContent className="h-full [&_.tiptap]:h-full" editor={editor} /><span className="home-note-count pointer-events-none absolute end-3 bottom-2 text-xs text-muted-foreground">{active?.characters ?? 0} 字</span></div> : <EditorContent editor={editor} />}
+      {homeActions ? <div className="home-note-actions order-2 flex flex-wrap items-center gap-2 pt-3">
         <Button variant="ghost" disabled={disabled || uploading || !editor} onClick={() => uploadInput.current?.click()}><Paperclip aria-hidden="true" />添加附件</Button>
         {homeActions}
       </div> : null}
       <input ref={imageInput} className="sr-only" type="file" accept="image/*" aria-label="选择随手记图片" tabIndex={-1} onChange={event => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void upload(file); }} />
       <input ref={uploadInput} className="sr-only" type="file" aria-label="选择随手记附件" tabIndex={-1} onChange={event => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void upload(file); }} />
-      {uploading ? <p role="status" className="quick-note-hint">正在上传附件…</p> : null}
+      {uploading ? <p role="status" className={cn("quick-note-hint mx-4 text-xs leading-5 text-(--muted-foreground)", !homeActions && "mb-3")}>正在上传附件…</p> : null}
     </div>
-    <Dialog open={linkOpen} onOpenChange={setLinkOpen}><DialogContent title="插入链接">
+    <Dialog open={linkOpen} onOpenChange={setLinkOpen}><DialogContent initialFocus={linkInput}><DialogHeader><DialogTitle>{"插入链接"}</DialogTitle></DialogHeader>
       <form onSubmit={event => { event.preventDefault(); const url = link.trim(); if (url && !safeContentUrl(url)) { reportError("请输入有效的 HTTP(S)、邮件或锚点链接"); return; } if (url) editor?.chain().focus().extendMarkRange("link").setLink({ href: url }).run(); else editor?.chain().focus().unsetLink().run(); setLinkOpen(false); }}>
-        <TextInput label="链接地址" value={link} onChange={event => setLink(event.target.value)} autoFocus placeholder="https://" />
+        <label className="grid gap-2 text-sm font-medium"><span>{"链接地址"}</span><Input ref={linkInput} value={link} onChange={event => setLink(event.target.value)} placeholder="https://" /></label>
 
-        <DialogFooter><Button type="submit" variant="primary">确定</Button></DialogFooter>
+        <DialogFooter><Button type="submit" variant="default">确定</Button></DialogFooter>
       </form>
     </DialogContent></Dialog>
   </FileContentContext.Provider>;

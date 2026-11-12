@@ -1,0 +1,11 @@
+export const collaborationHintClassName = "m-0 text-xs text-(--muted-foreground)";
+export const collaborationFormClassName = "grid gap-2.5";
+export const collaborationLabelClassName = "grid gap-2 text-sm font-medium";
+export const collaborationTextareaClassName = "min-h-21.5 text-sm font-normal pointer-coarse:text-base pointer-coarse:leading-5";
+export const collaborationActionsClassName = "flex flex-wrap items-center gap-2.5";
+export const collaborationEmptyClassName = "py-7 text-center text-sm text-(--muted-foreground)";
+export const collaborationRevisionClassName = "grid h-auto w-full gap-1.25 py-2 text-start whitespace-normal [&>span]:wrap-anywhere [&>small]:wrap-anywhere";
+export const collaborationRevisionMetaClassName = "text-xs text-(--muted-foreground)";
+export const collaborationPreviewClassName = "min-w-0 border-t border-border pt-5";
+export const collaborationPreviewTitleClassName = "mt-0 mb-4.5 text-sm font-semibold";
+export const collaborationRestoreClassName = "mt-5.5 grid gap-3 border-t border-border pt-5.5 [&>button]:justify-self-start";

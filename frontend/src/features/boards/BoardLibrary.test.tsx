@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { afterEach, expect, it, vi } from "vitest";
@@ -29,14 +29,14 @@ it("preserves tab focus and matching panels during keyboard navigation", async (
   expect(layers).toHaveAttribute("aria-selected", "true");
   expect(screen.getByRole("tabpanel", { name: "图层" })).toHaveAttribute("aria-labelledby", layers.id);
   expect(screen.getByRole("button", { name: "审批步骤" })).toBeVisible();
-  expect(screen.queryByRole("tabpanel", { name: "图形" })).toBeNull();
+  await waitFor(() => expect(screen.queryByRole("tabpanel", { name: "图形" })).toBeNull());
 });
 
 it("uses the shared category picker and preserves shape drag payloads", async () => {
   const { onShape } = mount();
   const user = userEvent.setup();
-  await user.click(screen.getByRole("button", { name: /图类型/ }));
-  await user.click(screen.getByRole("option", { name: "ER 图" }));
+  await user.click(screen.getByRole("combobox", { name: /图类型/ }));
+  await user.click(await screen.findByRole("option", { name: "ER 图" }));
   const entity = screen.getByRole("button", { name: "实体" });
   const setData = vi.fn();
   const source = entity.closest('[draggable="true"]');
@@ -59,12 +59,13 @@ it("keeps shapes disabled and non-draggable for readers", async () => {
 it("keeps mind maps out of the shape picker while preserving their templates", async () => {
   mount();
   const user = userEvent.setup();
-  await user.click(screen.getByRole("button", { name: /图类型/ }));
+  await user.click(screen.getByRole("combobox", { name: /图类型/ }));
+  await screen.findByRole("listbox");
   expect(screen.queryByRole("option", { name: "思维导图" })).toBeNull();
-  await user.click(screen.getByRole("option", { name: "全部类别" }));
+  await user.click(await screen.findByRole("option", { name: "全部类别" }));
   expect(screen.queryByRole("button", { name: "中心主题" })).toBeNull();
   expect(screen.queryByRole("button", { name: "子主题" })).toBeNull();
   await user.click(screen.getByRole("tab", { name: "模板" }));
-  await user.click(screen.getByRole("button", { name: /图类型/ }));
-  expect(screen.getByRole("option", { name: "思维导图" })).toBeVisible();
+  await user.click(screen.getByRole("combobox", { name: /图类型/ }));
+  expect(await screen.findByRole("option", { name: "思维导图" })).toBeVisible();
 });

@@ -92,30 +92,19 @@ describe("WorkspaceShell (desktop surface)", () => {
     expect(screen.queryByRole("navigation", { name: "站点导航" })).not.toBeInTheDocument();
   });
 
-  it("keeps the home rail without a function sidebar or width control", async () => {
+  it("shows home in the document menu with one rail and no legacy controls", async () => {
     const actor = userEvent.setup();
     renderShell("/home");
-    expect(screen.getByRole("navigation", { name: "业务板块" })).toBeVisible();
-    expect(screen.queryByRole("region", { name: "侧栏" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "展开侧栏" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("separator", { name: "调整侧栏宽度" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "全局搜索" })).toBeVisible();
-    await actor.click(screen.getByRole("link", { name: "在线文档" }));
-    expect(screen.getByRole("navigation", { name: "文档导航" })).toBeVisible();
-    expect(localStorage.getItem("orbis.sidebarCollapsed")).toBeNull();
-  });
-
-  it("places search between create and home without opening a document hover menu", async () => {
-    const actor = userEvent.setup();
-    renderShell();
     const rail = screen.getByRole("complementary", { name: "应用导航" });
-    const create = within(rail).getByRole("button", { name: "新建资产" });
-    const search = within(rail).getByRole("button", { name: "搜索" });
-    const home = within(rail).getByRole("link", { name: "首页" });
-    expect(create.compareDocumentPosition(search) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(search.compareDocumentPosition(home) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    await actor.hover(within(rail).getByRole("link", { name: "在线文档" }));
-    expect(screen.queryByRole("navigation", { name: "笔记本快捷访问" })).not.toBeInTheDocument();
+    const menu = screen.getByRole("navigation", { name: "文档导航" });
+    expect(within(menu).getByRole("link", { name: "首页" })).toHaveAttribute("aria-current", "page");
+    expect(within(rail).queryByRole("link", { name: "首页" })).not.toBeInTheDocument();
+    expect(within(rail).queryByRole("button", { name: /新建资产|搜索/ })).not.toBeInTheDocument();
+    const documents = within(rail).getByRole("link", { name: "在线文档" });
+    await actor.hover(documents);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    await actor.click(within(menu).getByRole("link", { name: "开始" }));
+    expect(screen.getByRole("status", { name: "current path" })).toHaveTextContent("/documents");
   });
 
   it("expands the active area's collapsed menu without navigating away from its current page", async () => {
@@ -135,7 +124,7 @@ describe("WorkspaceShell (desktop surface)", () => {
 
     const menu = screen.getByRole("navigation", { name: label });
     expect(within(menu).getAllByRole("link").map((link) => link.textContent)).toEqual(links);
-    expect(screen.getByRole("button", { name: "新建资产" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "新建资产" })).not.toBeInTheDocument();
     expect(client.getQueryCache().getAll()).toHaveLength(0);
   });
 
@@ -148,13 +137,12 @@ describe("WorkspaceShell (desktop surface)", () => {
     expect(within(rail).getByRole("link", { name: "在线文档" })).toHaveAttribute("aria-current", "page");
     expect(within(screen.getByRole("navigation", { name: "文档导航" })).getByRole("link", { name: "最近编辑" })).toHaveAttribute("aria-current", "page");
     expect(within(screen.getByRole("navigation", { name: "文档导航" })).getByRole("link", { name: "开始" })).not.toHaveAttribute("aria-current");
-    await actor.click(within(rail).getByRole("link", { name: "首页" }));
+    const home = within(screen.getByRole("navigation", { name: "文档导航" })).getByRole("link", { name: "首页" });
+    await actor.click(home);
 
-    expect(within(rail).getByRole("link", { name: "首页" })).toHaveAttribute("aria-current", "page");
-    expect(within(rail).getByRole("link", { name: "在线文档" })).not.toHaveAttribute("aria-current");
-    expect(screen.queryByRole("navigation", { name: "文档导航" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("navigation", { name: "站点导航" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "回收站" })).not.toBeInTheDocument();
+    expect(home).toHaveAttribute("aria-current", "page");
+    expect(within(rail).getByRole("link", { name: "在线文档" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "回收站" })).toBeInTheDocument();
   });
 
   it("resets collapse when switching areas and returning to a previous tab", async () => {
@@ -168,7 +156,8 @@ describe("WorkspaceShell (desktop surface)", () => {
     expect(screen.getByRole("button", { name: "收起侧栏" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "展开侧栏" })).toBeNull();
     await actor.click(screen.getByRole("button", { name: "收起侧栏" }));
-    await actor.click(screen.getByRole("link", { name: "账号设置" }));
+    await actor.click(screen.getByRole("button", { name: "打开用户菜单" }));
+    await actor.click(await screen.findByRole("menuitem", { name: "账号" }));
     expect(screen.getByRole("navigation", { name: "设置导航" })).toBeVisible();
     expect(window.localStorage.getItem("orbis.sidebarCollapsed")).toBeNull();
   });
@@ -177,7 +166,8 @@ describe("WorkspaceShell (desktop surface)", () => {
     const actor = userEvent.setup();
     renderShell("/settings/members");
     await actor.click(screen.getByRole("button", { name: "收起侧栏" }));
-    await actor.click(within(screen.getByRole("complementary", { name: "应用导航" })).getByRole("link", { name: "账号设置" }));
+    await actor.click(screen.getByRole("button", { name: "打开用户菜单" }));
+    await actor.click(await screen.findByRole("menuitem", { name: "账号" }));
     expect(screen.getByRole("status", { name: "current path" })).toHaveTextContent("/settings/account");
     expect(screen.getByRole("navigation", { name: "设置导航" })).toBeVisible();
     expect(screen.getByRole("button", { name: "收起侧栏" })).toBeInTheDocument();
@@ -187,7 +177,7 @@ describe("WorkspaceShell (desktop surface)", () => {
     renderShell(path);
     expect(within(screen.getByRole("navigation", { name: "业务板块" })).getByRole("link", { name: "在线文档" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("navigation", { name: "文档导航" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "新建资产" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "新建资产" })).not.toBeInTheDocument();
   });
 
   it("provides settings navigation on account settings", () => {
@@ -214,14 +204,14 @@ describe("WorkspaceShell (desktop surface)", () => {
 
     expect(window.localStorage.getItem("orbis.sidebarCollapsed")).toBeNull();
     expect(screen.queryByRole("navigation", { name: "文档导航" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "展开侧栏" })).toHaveFocus();
+    await waitFor(() => expect(screen.getByRole("button", { name: "展开侧栏" })).toHaveFocus());
     const rail = screen.getByRole("navigation", { name: "业务板块" });
     expect(within(rail).getByRole("link", { name: "在线文档" })).toHaveAttribute("href", "/documents");
-    expect(within(screen.getByRole("complementary", { name: "应用导航" })).getByRole("button", { name: "搜索" })).toHaveAttribute("aria-haspopup", "dialog");
+    expect(screen.queryByRole("button", { name: "搜索文档" })).not.toBeInTheDocument();
 
     await actor.click(screen.getByRole("button", { name: "展开侧栏" }));
     expect(screen.getByRole("navigation", { name: "文档导航" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "收起侧栏" })).toHaveFocus();
+    await waitFor(() => expect(screen.getByRole("button", { name: "收起侧栏" })).toHaveFocus());
     expect(window.localStorage.getItem("orbis.sidebarCollapsed")).not.toBe("1");
   });
 
@@ -238,7 +228,7 @@ describe("WorkspaceShell (desktop surface)", () => {
     const actor = userEvent.setup();
     renderShell("/home");
 
-    const trigger = screen.getByRole("button", { name: "全局搜索" });
+    const trigger = screen.getByRole("button", { name: "搜索文档" });
     await actor.click(trigger);
     const input = await screen.findByRole("combobox", { name: "搜索任何内容" });
     await actor.type(input, "设计 规范");
@@ -260,14 +250,14 @@ describe("WorkspaceShell (desktop surface)", () => {
     expect(contextPanel).toHaveTextContent("上下文内容");
   });
 
-  it("keeps search and user access available while mobile navigation is closed", () => {
+  it("keeps account and document controls inside the mobile drawer", () => {
     setViewport(390);
     renderShell();
 
     expect(screen.queryByRole("navigation", { name: "业务板块" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "打开主导航" })).toHaveAttribute("aria-expanded", "false");
-    expect(screen.getByRole("button", { name: "打开用户菜单" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "全局搜索" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "打开用户菜单" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "搜索文档" })).not.toBeInTheDocument();
     expect(screen.queryByRole("navigation", { name: "文档导航" })).not.toBeInTheDocument();
   });
 
@@ -312,11 +302,10 @@ describe("WorkspaceShell (desktop surface)", () => {
     const actor = userEvent.setup();
     renderShell();
     const navigationTrigger = screen.getByRole("button", { name: "打开主导航" });
-    const search = screen.getByRole("button", { name: "全局搜索" });
 
     await actor.click(navigationTrigger);
     const drawerFocus = document.activeElement;
-    expect(search.closest("header")).toHaveAttribute("inert");
+    expect(document.querySelector(".workspace-content")).toHaveAttribute("inert");
 
     await actor.keyboard("{Meta>}k{/Meta}");
     expect(document.activeElement).toBe(drawerFocus);
@@ -325,28 +314,28 @@ describe("WorkspaceShell (desktop surface)", () => {
     expect(navigationTrigger).toHaveAttribute("aria-expanded", "true");
 
     await actor.keyboard("{Escape}");
-    expect(search.closest("header")).not.toHaveAttribute("inert");
+    expect(document.querySelector(".workspace-content")).not.toHaveAttribute("inert");
     await actor.keyboard("{Control>}k{/Control}");
     await waitFor(() => expect(screen.getByRole("combobox", { name: "搜索任何内容" })).toHaveFocus());
   });
 
-  it("dismisses the global create dialog before closing its mobile drawer", async () => {
+  it("dismisses document search before closing its mobile drawer", async () => {
     setViewport(390);
     const actor = userEvent.setup();
     renderShell();
     const navigationTrigger = screen.getByRole("button", { name: "打开主导航" });
 
     await actor.click(navigationTrigger);
-    const createTrigger = screen.getByRole("button", { name: "新建资产" });
-    createTrigger.focus();
+    const searchTrigger = screen.getByRole("button", { name: "搜索文档" });
+    searchTrigger.focus();
     await actor.keyboard("{Enter}");
-    expect(screen.getByRole("dialog", { name: "新建资产" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "全局搜索" })).toBeInTheDocument();
 
     await actor.keyboard("{Escape}");
-    expect(screen.queryByRole("dialog", { name: "新建资产" })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "全局搜索" })).not.toBeInTheDocument());
     expect(navigationTrigger).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("navigation", { name: "文档导航" })).toBeInTheDocument();
-    await waitFor(() => expect(createTrigger).toHaveFocus());
+    await waitFor(() => expect(searchTrigger).toHaveFocus());
 
     await actor.keyboard("{Escape}");
     expect(navigationTrigger).toHaveAttribute("aria-expanded", "false");
@@ -409,7 +398,7 @@ describe("WorkspaceShell (desktop surface)", () => {
     renderShell();
 
     await actor.click(screen.getByRole("button", { name: "打开用户菜单" }));
-    expect(screen.getByRole("menuitem", { name: "工作空间成员" })).toHaveAttribute("href", "/settings/members");
+    expect(await screen.findByRole("menuitem", { name: "工作空间成员" })).toHaveAttribute("href", "/settings/members");
     expect(screen.getByRole("menuitem", { name: "账号" })).toHaveAttribute("href", "/settings/account");
     expect(screen.getByRole("menuitem", { name: "退出登录" })).toBeInTheDocument();
     await actor.click(screen.getByRole("menuitem", { name: "账号" }));
@@ -418,7 +407,10 @@ describe("WorkspaceShell (desktop surface)", () => {
 
   it("opens the workspace chooser and restores focus after Escape", async () => {
     const actor = userEvent.setup();
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response(JSON.stringify({ code: "OK", message: "成功", request_id: "workspace-list", data: { items: [workspace],pagination:{page:1,page_size:100,total:1} } }), { headers: { "Content-Type": "application/json" } }));
+    vi.spyOn(globalThis, "fetch").mockImplementation(async input => {
+      const items = String(input).includes("/api/v1/workspaces?") ? [workspace] : [];
+      return new Response(JSON.stringify({ code: "OK", message: "成功", request_id: "workspace-list", data: { items, pagination: { page: 1, page_size: 100, total: items.length } } }), { headers: { "Content-Type": "application/json" } });
+    });
     renderShell("/home");
     const trigger = screen.getByRole("button", { name: "切换工作空间" });
     await actor.click(trigger);
@@ -435,11 +427,11 @@ describe("WorkspaceShell (desktop surface)", () => {
     const trigger = screen.getByRole("button", { name: "打开用户菜单" });
 
     await actor.click(trigger);
-    screen.getByRole("menuitem", { name: "账号" }).focus();
+    (await screen.findByRole("menuitem", { name: "账号" })).focus();
     await actor.keyboard("{Escape}");
 
     expect(trigger).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByRole("menuitem", { name: "账号" })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("menuitem", { name: "账号" })).not.toBeInTheDocument());
     await waitFor(() => expect(trigger).toHaveFocus());
   });
 
@@ -449,7 +441,7 @@ describe("WorkspaceShell (desktop surface)", () => {
     renderShell();
 
     await actor.click(screen.getByRole("button", { name: "打开用户菜单" }));
-    await actor.click(screen.getByRole("menuitem", { name: "退出登录" }));
+    await actor.click(await screen.findByRole("menuitem", { name: "退出登录" }));
 
     await waitFor(()=>expect(authStore.getState().accessToken).toBeNull());
     expect(screen.getByRole("status", { name: "current path" })).toHaveTextContent("/login");
@@ -459,22 +451,9 @@ describe("WorkspaceShell (desktop surface)", () => {
     renderShell();
     const rail = screen.getByRole("navigation", { name: "业务板块" });
 
-    expect(within(rail).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/home", "/documents"]);
+    expect(within(rail).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/documents"]);
     expect(screen.queryByRole("link", { name: "知识库" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "记忆" })).not.toBeInTheDocument();
   });
 
-  it("opens quick create by keyboard and returns focus after Escape", async () => {
-    const actor = userEvent.setup();
-    renderShell();
-    const trigger = screen.getByRole("button", { name: "新建资产" });
-
-    trigger.focus();
-    await actor.keyboard("{Enter}");
-    expect(screen.getByRole("dialog", { name: "新建资产" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "笔记本" })).toBeInTheDocument();
-    await actor.keyboard("{Escape}");
-    expect(screen.queryByRole("dialog", { name: "新建资产" })).not.toBeInTheDocument();
-    await waitFor(() => expect(trigger).toHaveFocus());
-  });
 });

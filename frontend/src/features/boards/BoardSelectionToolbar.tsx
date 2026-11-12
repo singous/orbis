@@ -1,4 +1,4 @@
-import { Toolbar } from "@heroui/react/toolbar";
+import { Toolbar } from "@orbis/ui/toolbar";
 import { useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import type { Bounds } from "./geometry";
 import type { Camera } from "./renderer";
@@ -30,7 +30,7 @@ export function BoardSelectionToolbar({ bounds, camera, viewport, children }: {
   return <Toolbar
     ref={toolbar}
     aria-label="选中对象操作"
-    className="board-selection-actions"
+    className="board-selection-actions absolute z-18 flex max-w-[calc(100%-16px)] gap-[3px] rounded-[7px] border border-(--ob-board-border) bg-card p-[3px] [box-shadow:var(--shadow-sm)]"
     style={{ left: position?.left ?? 0, top: position?.top ?? 0, visibility: position && size.width ? "visible" : "hidden" }}
   >{children}</Toolbar>;
 }

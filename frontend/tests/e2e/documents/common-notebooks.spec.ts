@@ -9,7 +9,7 @@ test("common notebooks stay synchronized across the sidebar, overview and notebo
   await createCollection(request, session, otherTitle);
   await openWithSession(page, session, "/documents");
   const navigation = page.getByRole("navigation", { name: "文档导航", exact: true });
-  const common = page.getByRole("region", { name: "常用", exact: true });
+  const common = page.getByRole("region", { name: "置顶笔记本", exact: true });
   const groups = page.locator(".notebook-overview-group");
   await expect(common.getByText(/将笔记本设为常用/)).toBeVisible();
   await expect(navigation.getByRole("link", { name: title, exact: true })).toHaveCount(0);
@@ -34,16 +34,15 @@ test("common notebooks stay synchronized across the sidebar, overview and notebo
   await common.getByRole("button", { name: `取消常用：${title}`, exact: true }).click();
   await expect(navigation.getByRole("link", { name: title, exact: true })).toHaveCount(0);
   await expect(otherNavigation.getByRole("link", { name: title, exact: true })).toHaveCount(0);
-  await expect(otherTab.getByRole("region", { name: "常用", exact: true }).getByRole("link")).toHaveCount(0);
+  await expect(otherTab.getByRole("region", { name: "置顶笔记本", exact: true }).getByRole("link")).toHaveCount(0);
   await expect(groups.getByRole("link", { name: new RegExp(title) })).toBeVisible();
   await otherTab.close();
 
-  await page.goto("/documents/collections");
-  await page.getByRole("button", { name: `设为常用 ${title}`, exact: true }).click();
-  await page.goto("/documents");
+  await groups.getByRole("button", { name: `设为常用：${title}`, exact: true }).click();
   await expect(common.getByRole("link", { name: new RegExp(title) })).toBeVisible();
   await page.goto(`/collections/${notebook.id}`);
-  await page.getByRole("button", { name: "取消常用笔记本", exact: true }).click();
+  await page.getByRole("button", { name: "笔记本操作", exact: true }).click();
+  await page.getByRole("menuitem", { name: "取消常用笔记本", exact: true }).click();
   await page.getByRole("button", { name: "笔记本快捷操作", exact: true }).click();
   await page.getByRole("menuitem", { name: "设为常用", exact: true }).click();
   await page.goto("/documents");

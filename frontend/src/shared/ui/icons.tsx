@@ -1,3 +1,5 @@
+export { RiCursorLine, RiHand, RiAddCircleFill, RiNodeTree, RiText, RiPencilLine, RiFunctionAddLine } from "@remixicon/react";
+export { Envelope, Lock, Person, Pause, Play } from "@gravity-ui/icons";
 import {
   AlertTriangle as LucideAlertTriangle,
   Archive as LucideArchive,
@@ -110,19 +112,20 @@ import {
   Underline as LucideUnderline,
   Undo2 as LucideUndo2,
   type LucideIcon, type LucideProps,
-} from "lucide-react";
+} from "@orbis/ui/icons";
 import { forwardRef } from "react";
+import { cn } from "@orbis/ui/cn";
 import { navigationIconPaths } from "./navigation-icon-paths";
 
-export type { LucideIcon, LucideProps } from "lucide-react";
+export type { LucideIcon, LucideProps } from "@orbis/ui/icons";
 export type IconTone = "orange" | "cyan" | "blue" | "indigo" | "teal" | "violet" | "rose" | "amber" | "slate" | "success" | "danger" | "warning";
 const DEFAULT_ICON_SIZE = 16;
 const DEFAULT_STROKE_WIDTH = 1.8;
 
 function appIcon(Icon: LucideIcon, name: string, tone?: IconTone): LucideIcon {
   const ThemedIcon = forwardRef<SVGSVGElement, LucideProps>(({ className, size = DEFAULT_ICON_SIZE, strokeWidth = DEFAULT_STROKE_WIDTH, ...props }, ref) =>
-    <Icon {...props} ref={ref} size={size} strokeWidth={strokeWidth} className={["orbis-icon", className].filter(Boolean).join(" ")} data-orbis-icon={name} data-icon-tone={tone} aria-hidden={props["aria-hidden"] ?? ((props["aria-label"] || props["aria-labelledby"] || props.role === "img") ? undefined : true)} focusable={props.focusable ?? false} >
-      {navigationIconPaths[name] ? <path className="orbis-icon-solid" d={navigationIconPaths[name]} fill="currentColor" fillRule="evenodd" stroke="none" /> : null}
+    <Icon {...props} ref={ref} size={size} strokeWidth={strokeWidth} className={cn("orbis-icon pointer-events-none inline-block shrink-0 align-middle text-current", className)} data-orbis-icon={name} data-icon-tone={tone} aria-hidden={props["aria-hidden"] ?? ((props["aria-label"] || props["aria-labelledby"] || props.role === "img") ? undefined : true)} focusable={props.focusable ?? false} >
+      {navigationIconPaths[name] ? <path className="orbis-icon-solid hidden" d={navigationIconPaths[name]} fill="currentColor" fillRule="evenodd" stroke="none" /> : null}
       {props.children}
     </Icon>);
   ThemedIcon.displayName = `Orbis${name}`;

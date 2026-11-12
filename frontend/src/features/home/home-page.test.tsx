@@ -40,7 +40,7 @@ it("uses server totals and keeps navigation available in the new home layout", (
   renderHome();
   const stats = screen.getByRole("navigation", { name: "内容统计" });
   expect(within(stats).getByRole("link", { name: "128 篇文档" })).toHaveAttribute("href", "/documents");
-  expect(within(stats).getByRole("link", { name: "12 本笔记本" })).toHaveAttribute("href", "/documents/collections");
+  expect(within(stats).getByRole("link", { name: "12 本笔记本" })).toHaveAttribute("href", "/documents");
   expect(within(stats).getByRole("link", { name: "36 条随手记" })).toHaveAttribute("href", "/documents/quick-notes");
   expect(screen.getByRole("link", { name: "查看全部" })).toHaveAttribute("href", "/documents/recent");
   expect(screen.getByText("还没有可继续的文档")).toBeVisible();

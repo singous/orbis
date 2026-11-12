@@ -1,0 +1,35 @@
+/* The published reader owns a theme independently of the surrounding workspace. */
+.site-reader {
+  --ob-reader-background: var(--card);
+  --ob-reader-surface: var(--card);
+  --ob-reader-surface-soft: var(--muted);
+  --ob-reader-text: var(--foreground);
+  --ob-reader-muted: var(--muted-foreground);
+  --ob-reader-muted-on-soft: color-mix(in oklab, var(--ob-reader-muted) 94%, var(--ob-reader-text));
+  --ob-reader-border: var(--border);
+  --ob-reader-accent: color-mix(in srgb, var(--site-accent) 90%, var(--ob-reader-accent-anchor));
+  --ob-reader-accent-soft: color-mix(in srgb, var(--site-accent) 9%, var(--ob-reader-accent-soft-anchor));
+  --ob-reader-accent-hover-border: color-mix(in srgb, var(--ob-reader-accent) 42%, var(--ob-reader-border));
+  --ob-reader-brand-shadow: 0 5px 14px color-mix(in srgb, var(--site-accent) 24%, transparent);
+  --ob-reader-cta-shadow: 0 4px 12px color-mix(in srgb, var(--site-accent) 18%, transparent);
+  --ob-reader-highlight: color-mix(in srgb, var(--ob-reader-accent) 18%, transparent);
+  --ob-reader-header-height: 70px;
+}
+.site-reader.has-site-sections { --ob-reader-header-height: 113px; }
+.site-reader[data-theme="dark"] {
+  --ob-reader-accent: color-mix(in srgb, var(--site-accent) 42%, var(--ob-reader-accent-anchor));
+  --ob-reader-accent-soft: color-mix(in srgb, var(--site-accent) 14%, var(--ob-reader-accent-soft-anchor));
+}
+@media (max-width: 800px) {
+  .site-reader { --ob-reader-header-height: 62px; }
+  .site-reader.has-site-sections { --ob-reader-header-height: 102px; }
+}
+/* ContentRenderer retains the existing published-prose theme contract. */
+.site-reader .document-prose {
+  --reading-bg: var(--ob-reader-background);
+  --reading-text: var(--ob-reader-text);
+  --reading-muted: var(--ob-reader-muted);
+  --reading-border: var(--ob-reader-border);
+  --reading-accent: var(--ob-reader-accent);
+  --reading-muted-bg: var(--ob-reader-surface-soft);
+}

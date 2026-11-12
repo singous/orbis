@@ -10,9 +10,7 @@ import { SearchPaletteProvider } from "../search/search-palette-context";
 
 const query = vi.hoisted(() => vi.fn(() => ({ data: { items: [{ id: "quick", title: "快捷笔记本" }, { id: "other", title: "普通笔记本" }] } })));
 vi.mock("../documents/queries", () => ({ useNotebooks: query }));
-vi.mock("./WorkspaceTopbar", () => ({ WorkspaceTopbar: () => null }));
-vi.mock("./RailCreateMenu", () => ({ RailCreateMenu: () => null }));
-vi.mock("../documents/pinned-notebooks", () => ({ usePinnedNotebooks: () => ({ isPinned: (id: string) => id === "quick" }) }));
+vi.mock("../documents/pinned-notebooks", () => ({ usePinnedNotebooks: () => ({ pinned: ["quick"], isPinned: (id: string) => id === "quick" }) }));
 beforeEach(()=>authStore.setState({accessToken:"test"}));
 afterEach(() => { cleanup(); query.mockClear(); authStore.getState().clearSession(); });
 

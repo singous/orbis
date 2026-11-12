@@ -1,29 +1,39 @@
-import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render as renderTestingLibrary, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { authStore } from "../../shared/auth/auth-store";
 import { usePinnedNotebooks } from "./pinned-notebooks";
 import { WorkspaceNavigation } from "../workspace/WorkspaceNavigation";
 import { DocumentOverviewPage } from "./DocumentOverviewPage";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SearchPaletteProvider } from "../search/search-palette-context";
 
 const fixtures = vi.hoisted(() => ({
-  notebooks: Array.from({ length: 8 }, (_, index) => ({ id: `notebook-${index}`, group_id: index < 4 ? "work" : "personal", title: `笔记本 ${index}`, sort_order: index, created_at_ms: 1, updated_at_ms: index + 1 })),
+  notebooks: Array.from({ length: 8 }, (_, index) => ({ id: `00000000-0000-4000-8000-00000000000${index}`, group_id: index < 4 ? "work" : "personal", title: `笔记本 ${index}`, sort_order: index, created_at_ms: 1, updated_at_ms: index + 1 })),
   create: vi.fn(),
 }));
 vi.mock("./queries", () => ({
   useNotebooks: () => ({ data: { items: fixtures.notebooks }, isSuccess: true }),
   useDocumentGroups: () => ({ data: { items: [{ id: "work", name: "工作" }, { id: "personal", name: "个人" }, { id: "empty", name: "空的默认分组" }] }, isSuccess: true }),
-  useDocumentIndex: () => ({ data: { items: [{ id: "note-1", notebook_id: "notebook-0" }, { id: "note-2", notebook_id: "notebook-0" }] }, isSuccess: true }),
+  useDocumentIndex: () => ({ data: { items: ["路线图", "会议纪要"].map((title, index) => ({ id: `00000000-0000-4000-8000-00000000001${index}`, notebook_id: fixtures.notebooks[0].id, title, updated_at_ms: index + 1 })) }, isSuccess: true }),
+  useDocumentGroup: () => ({ data: undefined, isLoading: false }),
+  useUpdateDocumentGroup: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useArchiveDocumentGroup: () => ({ mutate: vi.fn(), isPending: false }),
+  useArchiveNotebook: () => ({ mutate: vi.fn(), isPending: false }),
+  useCreateNote: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCreateDocumentGroup: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useCreateNotebook: () => ({ mutateAsync: fixtures.create, isPending: false }),
 }));
 vi.mock("./DocumentShell", () => ({ DocumentShell: ({ children }: { children: React.ReactNode }) => <>{children}</> }));
 vi.mock("./NotebookDialog", () => ({ NotebookDialog: ({ open, onSubmit }: { open: boolean; onSubmit: (value: unknown) => void }) => open ? <button onClick={() => onSubmit({ title: "新本", icon: null })}>提交新本</button> : null }));
+function render(ui: React.ReactElement) {
+  return renderTestingLibrary(<QueryClientProvider client={new QueryClient()}>{ui}</QueryClientProvider>);
+}
 let sequence = 0;
 function PinControl() {
   const workspace = authStore.getState().workspace;
   const { togglePin } = usePinnedNotebooks(workspace?.id);
-  return <button onClick={() => togglePin("notebook-0")}>切换测试常用</button>;
+  return <button onClick={() => togglePin(fixtures.notebooks[0].id)}>切换测试常用</button>;
 }
 beforeEach(() => {
   fixtures.create.mockReset().mockResolvedValue(fixtures.notebooks[0]);
@@ -37,37 +47,37 @@ describe("notebook layout", () => {
     const navigation = screen.getByRole("navigation", { name: "文档导航" });
     expect(within(navigation).queryByRole("link", { name: "笔记本 0" })).not.toBeInTheDocument();
     expect(within(navigation).queryByRole("link", { name: "笔记本 7" })).not.toBeInTheDocument();
-    expect(within(navigation).getByRole("link", { name: "设置常用笔记本" })).toHaveAttribute("href", "/documents");
+    expect(within(navigation).queryByRole("link", { name: "设置常用笔记本" })).not.toBeInTheDocument();
     expect(within(navigation).getByRole("link", { name: "开始" })).toHaveAttribute("href", "/documents");
     expect(within(navigation).queryByRole("link", { name: "数据表" })).toBeNull();
     expect(within(navigation).getByRole("link", { name: "回收站" })).toHaveAttribute("href", "/documents/archive");
     fireEvent.click(screen.getByText("切换测试常用"));
-    expect(within(navigation).getByRole("link", { name: "笔记本 0" })).toHaveAttribute("href", "/collections/notebook-0");
+    expect(within(navigation).getByRole("link", { name: "笔记本 0" })).toHaveAttribute("href", `/collections/${fixtures.notebooks[0].id}`);
     fireEvent.click(screen.getByRole("button", { name: "收起常用笔记本" }));
     expect(within(navigation).queryByRole("link", { name: "笔记本 0" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "展开常用笔记本" }));
-    expect(within(navigation).getByRole("link", { name: "笔记本 0" })).toHaveAttribute("href", "/collections/notebook-0");
+    expect(within(navigation).getByRole("link", { name: "笔记本 0" })).toHaveAttribute("href", `/collections/${fixtures.notebooks[0].id}`);
     fireEvent.click(screen.getByText("切换测试常用"));
     expect(within(navigation).queryByRole("link", { name: "笔记本 0" })).not.toBeInTheDocument();
   });
   it("shows all notebooks in their groups and shares common settings with navigation", () => {
     render(<MemoryRouter initialEntries={["/documents"]}><SearchPaletteProvider><WorkspaceNavigation /><DocumentOverviewPage /></SearchPaletteProvider></MemoryRouter>);
-    expect(within(screen.getByRole("region", { name: "工作" })).getAllByRole("link")).toHaveLength(4);
-    expect(within(screen.getByRole("region", { name: "个人" })).getAllByRole("link")).toHaveLength(4);
-    expect(screen.getByText("文档 2")).toBeInTheDocument();
-    expect(screen.queryByRole("region", { name: "空的默认分组" })).toBeNull();
-    const common = screen.getByRole("region", { name: "常用" });
+    expect(within(screen.getByRole("region", { name: "工作" })).getAllByRole("link", { name: /^笔记本 \d+$/ })).toHaveLength(4);
+    expect(within(screen.getByRole("region", { name: "个人" })).getAllByRole("link", { name: /^笔记本 \d+$/ })).toHaveLength(4);
+    expect(screen.getByRole("link", { name: /^路线图/ })).toBeVisible();
+    expect(within(screen.getByRole("region", { name: "空的默认分组" })).getByText("此分组暂无笔记本。")).toBeVisible();
+    const common = screen.getByRole("region", { name: "置顶笔记本" });
     const navigation = screen.getByRole("navigation", { name: "文档导航" });
     expect(within(common).getByText(/将笔记本设为常用/)).toBeVisible();
     expect(within(navigation).queryByRole("link", { name: "笔记本 0" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "设为常用：笔记本 0" }));
-    expect(within(common).getByRole("link", { name: /笔记本 0/ })).toHaveAttribute("href", "/collections/notebook-0");
+    expect(within(common).getByRole("link", { name: /笔记本 0/ })).toHaveAttribute("href", `/collections/${fixtures.notebooks[0].id}`);
     expect(within(navigation).getByRole("link", { name: "笔记本 0" })).toBeVisible();
-    expect(within(screen.getByRole("region", { name: "工作" })).getAllByRole("link")).toHaveLength(4);
-    fireEvent.click(within(common).getByRole("button", { name: "收起常用区域" }));
+    expect(within(screen.getByRole("region", { name: "工作" })).getAllByRole("link", { name: /^笔记本 \d+$/ })).toHaveLength(4);
+    fireEvent.click(within(common).getByRole("button", { name: /^置顶笔记本/, expanded: true }));
     expect(within(common).queryByRole("link")).not.toBeInTheDocument();
     expect(within(navigation).getByRole("link", { name: "笔记本 0" })).toBeVisible();
-    fireEvent.click(within(common).getByRole("button", { name: "展开常用区域" }));
+    fireEvent.click(within(common).getByRole("button", { name: /^置顶笔记本/, expanded: false }));
     fireEvent.click(within(common).getByRole("button", { name: "取消常用：笔记本 0" }));
     expect(within(common).queryByRole("link")).not.toBeInTheDocument();
     expect(within(navigation).queryByRole("link", { name: "笔记本 0" })).not.toBeInTheDocument();
@@ -83,11 +93,11 @@ describe("notebook layout", () => {
     render(<MemoryRouter initialEntries={["/documents"]}><SearchPaletteProvider><WorkspaceNavigation /><DocumentOverviewPage /></SearchPaletteProvider></MemoryRouter>);
     const key = `orbis.pinnedNotebooks.${authStore.getState().workspace!.id}`;
     act(() => {
-      localStorage.setItem(key, JSON.stringify(["notebook-1"]));
+      localStorage.setItem(key, JSON.stringify([fixtures.notebooks[1].id]));
       window.dispatchEvent(new StorageEvent("storage", { key }));
     });
     expect(within(screen.getByRole("navigation", { name: "文档导航" })).getByRole("link", { name: "笔记本 1" })).toBeInTheDocument();
-    expect(within(screen.getByRole("region", { name: "常用" })).getByRole("link", { name: /笔记本 1/ })).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "置顶笔记本" })).getByRole("link", { name: /笔记本 1/ })).toBeInTheDocument();
     expect(document.querySelector(".document-notebooks-list > a")).toHaveTextContent("笔记本 1");
   });
   it("lets viewers set personal common notebooks without workspace write permissions", () => {
@@ -96,7 +106,7 @@ describe("notebook layout", () => {
     render(<MemoryRouter><DocumentOverviewPage /></MemoryRouter>);
     expect(screen.queryByRole("button", { name: "新建笔记本" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "设为常用：笔记本 0" }));
-    expect(within(screen.getByRole("region", { name: "常用" })).getByRole("link", { name: /笔记本 0/ })).toBeVisible();
+    expect(within(screen.getByRole("region", { name: "置顶笔记本" })).getByRole("link", { name: /笔记本 0/ })).toBeVisible();
     expect(fixtures.create).not.toHaveBeenCalled();
   });
 });

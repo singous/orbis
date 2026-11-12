@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } fr
 import { SIDEBAR_MIN_WIDTH } from "./use-sidebar-resize";
 
 const KEYBOARD_RESIZE_STEP = 16;
+const DOCUMENT_RESIZE_CLASSES = ["workspace-resizing", "cursor-col-resize!", "select-none!", "[&_*]:cursor-col-resize!", "[&_*]:select-none!"];
 
 type Props = {
   label?: string;
@@ -24,7 +25,7 @@ export function SidebarResizeHandle({ width, maximum, preview, commit, reset, be
     const current = session.current;
     if (!current) return;
     session.current = null;
-    document.documentElement.classList.remove("workspace-resizing");
+    document.documentElement.classList.remove(...DOCUMENT_RESIZE_CLASSES);
     setDragging(false);
     if (accept) commit(current.latestWidth); else current.restore();
     if (current.target.hasPointerCapture(current.pointerId)) current.target.releasePointerCapture(current.pointerId);
@@ -36,7 +37,7 @@ export function SidebarResizeHandle({ width, maximum, preview, commit, reset, be
       if (!current) return;
       session.current = null;
       current.restore();
-      document.documentElement.classList.remove("workspace-resizing");
+      document.documentElement.classList.remove(...DOCUMENT_RESIZE_CLASSES);
       setDragging(false);
       if (current.target.hasPointerCapture(current.pointerId)) current.target.releasePointerCapture(current.pointerId);
     };
@@ -51,7 +52,7 @@ export function SidebarResizeHandle({ width, maximum, preview, commit, reset, be
     event.currentTarget.focus({ preventScroll: true });
     event.currentTarget.setPointerCapture(event.pointerId);
     session.current = { pointerId: event.pointerId, startX: event.clientX, startWidth: width, latestWidth: width, target: event.currentTarget, restore: begin() };
-    document.documentElement.classList.add("workspace-resizing");
+    document.documentElement.classList.add(...DOCUMENT_RESIZE_CLASSES);
     setDragging(true);
   }
   function move(event: PointerEvent<HTMLDivElement>) {
@@ -72,8 +73,8 @@ export function SidebarResizeHandle({ width, maximum, preview, commit, reset, be
     if (next !== null) { event.preventDefault(); commit(next); }
   }
 
-  return <div role="separator" aria-label={label} aria-orientation="vertical" aria-controls={controls} aria-valuemin={SIDEBAR_MIN_WIDTH} aria-valuemax={maximum} aria-valuenow={width} aria-valuetext={`${width} 像素`} tabIndex={0} className="workspace-sidebar-resizer" data-resizing={dragging || undefined} data-pointer-focus={pointerFocused || undefined}
+  return <div role="separator" aria-label={label} aria-orientation="vertical" aria-controls={controls} aria-valuemin={SIDEBAR_MIN_WIDTH} aria-valuemax={maximum} aria-valuenow={width} aria-valuetext={`${width} 像素`} tabIndex={0} className="workspace-sidebar-resizer group absolute inset-y-3 right-0 z-[36] w-2 cursor-col-resize touch-none outline-none max-[768px]:hidden" data-resizing={dragging || undefined} data-pointer-focus={pointerFocused || undefined}
     title="拖动调整宽度；双击恢复默认" onPointerDown={start} onPointerMove={move} onPointerUp={(event) => end(event, true)} onPointerCancel={(event) => end(event, false)} onLostPointerCapture={(event) => end(event, false)} onDoubleClick={reset} onKeyDown={keyDown} onBlur={() => setPointerFocused(false)}>
-    <span className="workspace-resize-line" aria-hidden="true" />
+    <span className="workspace-resize-line pointer-events-none absolute inset-y-0 right-0 w-0.5 rounded-full bg-(--muted-foreground) opacity-0 transition-opacity duration-100 ease-[ease] group-hover:opacity-100 group-data-[resizing=true]:bg-foreground group-data-[resizing=true]:opacity-100 group-focus-visible:not-group-data-[pointer-focus=true]:opacity-100 motion-reduce:transition-none" aria-hidden="true" />
   </div>;
 }

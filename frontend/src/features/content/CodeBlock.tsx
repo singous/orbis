@@ -1,5 +1,5 @@
 import { reportError } from "../../shared/api/request-feedback";
-import { ActionButton } from "../../shared/ui/ActionButton";
+import { Button } from "@orbis/ui/button";
 import { Check, Copy } from "../../shared/ui/icons";
 import { useEffect, useState } from "react";
 import { showToast } from "../../shared/ui/Toast";
@@ -11,6 +11,17 @@ export const CODE_LANGUAGES: Record<string, string> = {
 
 export function codeLanguageLabel(language: string): string {
   return CODE_LANGUAGES[language] || language || "纯文本";
+}
+
+export async function copyCode(source: string) {
+  try {
+    await navigator.clipboard.writeText(source);
+    showToast({ title: "代码已复制", tone: "success" });
+    return true;
+  } catch {
+    reportError("请选择代码后手动复制。");
+    return false;
+  }
 }
 
 export function CodeBlock({ source, language = "text" }: { source: string; language?: string }) {
@@ -26,18 +37,11 @@ export function CodeBlock({ source, language = "text" }: { source: string; langu
   }, [source, language]);
   useEffect(() => { setCopyState("idle"); }, [source, language]);
   async function copy() {
-    try {
-      if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
-      await navigator.clipboard.writeText(source);
-      setCopyState("copied");
-      showToast({ title: "代码已复制", tone: "success" });
-    } catch {
-      reportError("请选择代码后手动复制。");
-    }
+    if (await copyCode(source)) setCopyState("copied");
   }
   const html = highlighted?.source === source && highlighted.language === language ? highlighted.html : null;
   return <div className="content-code">
-    <div className="content-code-toolbar"><span>{codeLanguageLabel(language)}</span><ActionButton type="button" aria-label="复制代码" onClick={() => void copy()}>{copyState === "copied" ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}<span>{copyState === "copied" ? "已复制" : "复制"}</span></ActionButton></div>
+    <div className="content-code-toolbar flex items-center justify-between border-b border-border p-3 text-xs text-muted-foreground"><span>{codeLanguageLabel(language)}</span><Button variant="ghost" size="sm" type="button" aria-label="复制代码" onClick={() => void copy()}>{copyState === "copied" ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}<span>{copyState === "copied" ? "已复制" : "复制"}</span></Button></div>
     <pre tabIndex={0} aria-label={codeLanguageLabel(language) + " 代码"}>{html === null ? <code>{source}</code> : <code dangerouslySetInnerHTML={{ __html: html }} />}</pre>
   </div>;
 }

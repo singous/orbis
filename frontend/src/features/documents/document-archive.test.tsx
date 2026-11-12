@@ -90,7 +90,7 @@ describe("archiving from the editor", () => {
     expect(screen.queryByRole("button", { name: "评论与历史" })).not.toBeInTheDocument();
     fireEvent.change(editor, { target: { value: "归档时不应接受的编辑" } });
     fireEvent.click(archive);
-    expect(screen.queryByRole("menuitem", { name: "归档文档" })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("menuitem", { name: "归档文档" })).not.toBeInTheDocument());
     await act(async () => { save.resolve(); });
     await screen.findByRole("heading", { name: "笔记本" });
     expect(stored.content.plain_text).toBe("保存中正文");
@@ -103,7 +103,7 @@ describe("archiving from the editor", () => {
     const editor = await screen.findByLabelText("编辑正文");
     fireEvent.change(editor, { target: { value: "需要保留的草稿" } });
     await archiveFromMenu();
-    await screen.findByRole("alertdialog", { name: "保存失败" });
+    await screen.findByText("保存失败", { selector: '[data-slot="toast-title"]' });
     expect(stored.note.is_archived).toBe(false);
     expect(screen.getByLabelText("编辑正文")).toHaveValue("需要保留的草稿");
     expect(screen.getByLabelText("编辑正文")).not.toHaveAttribute("readonly");
@@ -135,7 +135,7 @@ describe("archiving from the editor", () => {
     const editor = await screen.findByLabelText("编辑正文");
     fireEvent.change(editor, { target: { value: "已保存但未归档" } });
     await archiveFromMenu();
-    expect(await screen.findByRole("alertdialog", { name: "归档请求失败" })).toBeInTheDocument();
+    expect(await screen.findByText("归档请求失败", { selector: '[data-slot="toast-title"]' })).toBeInTheDocument();
     expect(stored.note.is_archived).toBe(false);
     expect(stored.content.plain_text).toBe("已保存但未归档");
     expect(editor).not.toHaveAttribute("readonly");

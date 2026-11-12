@@ -1,30 +1,33 @@
-import { Skeleton } from "@heroui/react/skeleton";
+import { cn } from "@orbis/ui/cn";
+import { Skeleton } from "@orbis/ui/skeleton";
 import { useLocation } from "react-router-dom";
-import { LoadingState } from "../../shared/ui/LoadingState";
+import { LoadingState, loadingLineClassName } from "../../shared/ui/LoadingState";
 import { PageContainer } from "../../shared/ui/PageContainer";
 import { resolveWorkspaceArea } from "./workspace-areas";
-import "../home/home.css";
+import { HomeSurface, HomeHeader, HomeGrid, HomeCard } from "../home/HomeLayout";
+import { HomeActivityCard } from "../home/HomeActivityCard";
 
 /** Startup and route loading reserve the destination's content geometry. */
 export function WorkspaceLoadingContent() {
   const { pathname } = useLocation();
   const area = resolveWorkspaceArea(pathname);
-  if (area.id === "home") return <div className="home-page workspace-loading-home">
-    <header className="home-header"><h1>首页</h1><div className="home-search" aria-hidden="true"><Skeleton animationType="pulse" className="workspace-loading-search" /></div></header>
+  if (area.id === "home") return <HomeSurface className="workspace-loading-home motion-reduce:[&_.skeleton]:animate-none">
+    <HomeHeader><div className="home-search w-full min-[541px]:w-[min(28rem,45%)]" aria-hidden="true"><Skeleton className="workspace-loading-search h-[46px] rounded-xl" /></div></HomeHeader>
     <div role="status" aria-label="正在打开首页…" aria-busy="true" className="sr-only">正在打开首页…</div>
-    <div className="home-grid" aria-hidden="true">
-      {[0, 1].map(panel => <div className="home-card home-welcome workspace-loading-welcome" key={panel}>
-        <Skeleton animationType="pulse" className="loading-line loading-line--short" />
-        <Skeleton animationType="pulse" className="workspace-loading-title" />
-        <Skeleton animationType="pulse" className="loading-line" />
-        <Skeleton animationType="pulse" className="loading-line loading-line--short" />
-        <div className="workspace-loading-stats">{[0, 1, 2].map(item => <Skeleton animationType="pulse" className="workspace-loading-stat" key={item} />)}</div>
-      </div>)}
-      {[0, 1].map(panel => <div className="home-card workspace-loading-panel" key={panel}>
-          <Skeleton animationType="pulse" className="loading-line loading-line--short" />
-          {[0, 1, 2].map(row => <Skeleton animationType="pulse" className="loading-line" key={row} />)}
-      </div>)}
-    </div>
-  </div>;
+    <HomeGrid aria-hidden="true">
+      {[0, 1].map(panel => <HomeCard className="home-welcome workspace-loading-welcome flex flex-col gap-6" key={panel}>
+        <Skeleton className={cn(loadingLineClassName, "loading-line--short w-[64%]")} />
+        <Skeleton className="workspace-loading-title h-11 w-[70%] rounded-sm" />
+        <Skeleton className={loadingLineClassName} />
+        <Skeleton className={cn(loadingLineClassName, "loading-line--short w-[64%]")} />
+        <div className="workspace-loading-stats mt-auto grid grid-cols-3 gap-6">{[0, 1, 2].map(item => <Skeleton className="workspace-loading-stat h-14 rounded-sm" key={item} />)}</div>
+      </HomeCard>)}
+      <HomeCard className="workspace-loading-panel grid min-h-60 gap-6">
+        <Skeleton className={cn(loadingLineClassName, "loading-line--short w-[64%]")} />
+        {[0, 1, 2].map(row => <Skeleton className={loadingLineClassName} key={row} />)}
+      </HomeCard>
+      <HomeActivityCard state="skeleton" />
+    </HomeGrid>
+  </HomeSurface>;
   return <PageContainer title={area.title}><LoadingState label={`正在打开${area.title}…`} variant="cards" /></PageContainer>;
 }

@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "components": [
+    {
+      "name": "V8 stack formatting fallback",
+      "parentPackage": "stackback@0.0.2",
+      "license": "BSD-3-Clause",
+      "sourceURL": "https://github.com/defunctzombie/node-stackback/blob/2963095372abf7b75ba55f01cef08ab1e62c2ff4/formatstack.js",
+      "sourceRevision": "2963095372abf7b75ba55f01cef08ab1e62c2ff4",
+      "modifications": "none by Orbis; original source header retained verbatim",
+      "text": {
+        "file": "licenses/texts/stackback-V8-BSD-3-Clause.txt",
+        "sha256": "b154c4cabeeb587f5cc63a41d0551ae69504460762d189a72ae141558ec5d184",
+        "source": "node_modules/stackback/formatstack.js header"
+      }
+    }
+  ]
+}

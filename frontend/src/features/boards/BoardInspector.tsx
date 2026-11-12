@@ -1,14 +1,15 @@
+import { boardPanelStyles } from "./panel-styles";
 import { newUUID } from "../../shared/ids";
 import { isMindmapTopic, reparentElement, toggleTopicCollapsed } from "./mindmap";
 import { removeMember, reorderLane, transformBranch } from "./transforms";
-import { useEffect, useRef, useState } from "react";
-import { Plus, Trash2, Shapes, X, ArrowUp, ArrowDown } from "lucide-react";
-import { Tabs } from "@heroui/react/tabs";
-import { Checkbox } from "@heroui/react/checkbox";
-import { TextInput } from "../../shared/ui/TextInput";
-import { SelectField } from "../../shared/ui/SelectField";
+import { useEffect, useId, useRef, useState } from "react";
+import { Plus, Trash2, Shapes, X, ArrowUp, ArrowDown } from "@orbis/ui/icons";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
+import { Checkbox } from "@orbis/ui/checkbox";
+import { Input } from "@orbis/ui/input";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@orbis/ui/select";
 import { ColorField } from "../../shared/ui/ColorField";
-import { ActionButton } from "../../shared/ui/ActionButton";
+import { Button } from "@orbis/ui/button";
 import {
   elementPatch,
   SHAPES,
@@ -54,7 +55,7 @@ function Field({
   if (type === "color") {
     return <ColorField
       label={label}
-      className="board-field"
+      className={boardPanelStyles.field}
       value={draft}
       disabled={disabled}
       onChange={color => {
@@ -72,27 +73,18 @@ function Field({
     />;
   }
   return (
-    <label className="board-field">
+    <label className={boardPanelStyles.field}>
       <span>{label}</span>
-      <TextInput
-        aria-label={label}
-        type={type}
-        value={draft}
-        disabled={disabled}
-        onFocus={() => {
+      <Input aria-label={label} type={type} value={draft} disabled={disabled} onFocus={() => {
           focused.current = true;
           commit.current = onCommit;
-        }}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={() => {
+        }} onChange={(e) => setDraft(e.target.value)} onBlur={() => {
           focused.current = false;
           if (draft !== value) commit.current(draft);
-        }}
-        onKeyDown={(e) => {
+        }} onKeyDown={(e) => {
           if (!e.nativeEvent.isComposing && e.key === "Enter")
             e.currentTarget.blur();
-        }}
-      />
+        }} />
     </label>
   );
 }
@@ -106,6 +98,7 @@ export function BoardInspector({
   onError,
   onClose,
 }: Props) {
+  const checkboxId = useId();
   const [tab, setTab] = useState<"properties" | "style">("properties");
   const selected = [...selection]
       .map((id) => elements.get(id))
@@ -141,37 +134,42 @@ export function BoardInspector({
         ),
       },
     ]);
+  const routeItems = [{ value: "straight", label: "直线" }, { value: "orthogonal", label: "折线" }, { value: "curve", label: "曲线" }];
+  const markerItems = Object.entries({ none: "无", arrow: "箭头", triangle: "空心三角", diamond: "菱形", circle: "圆点", one: "一", many: "多" }).map(([value, label]) => ({ value, label }));
+  const memberKindItems = [{ value: "", label: "普通字段" }, { value: "primary", label: "主键" }, { value: "foreign", label: "外键" }];
+  const parentItems = e ? [{ value: "", label: "无" }, ...[...elements.values()].filter(item => item.id !== e.id && (SHAPES.get(item.shape_type)?.container || item.shape_type.startsWith("mindmap."))).map(item => ({ value: item.id, label: item.text || "未命名容器" }))] : [];
+  const alignItems = [{ value: "left", label: "左对齐" }, { value: "center", label: "居中" }, { value: "right", label: "右对齐" }];
   return (
     <aside
       id={id}
-      className="board-inspector"
+      className={boardPanelStyles.inspector}
       aria-label="画板属性"
     >
-      <header>
-        <span className="board-inspector-icon">
+      <header className={boardPanelStyles.inspectorHeader}>
+        <span className={boardPanelStyles.inspectorIcon}>
           <Shapes size={17} />
         </span>
-        <strong>
+        <strong className="flex-1 text-sm leading-[1.5] font-semibold">
           {e
             ? selected.length > 1
               ? `已选择 ${selected.length} 个对象`
               : (SHAPES.get(e.shape_type)?.name ?? "连接线")
             : "页面设置"}
         </strong>
-        <ActionButton aria-label="关闭属性面板" onClick={onClose}>
+        <Button aria-label="关闭属性面板" onClick={onClose} variant="ghost" size="icon">
           <X size={16} />
-        </ActionButton>
+        </Button>
       </header>
-      <Tabs selectedKey={tab} onSelectionChange={key => setTab(key === "style" ? "style" : "properties")} className="board-inspector-content">
-        <Tabs.ListContainer>
-          <Tabs.List className="board-inspector-tabs" aria-label="对象设置">
-            <Tabs.Tab id="properties">属性<Tabs.Indicator /></Tabs.Tab>
-            <Tabs.Tab id="style">样式<Tabs.Indicator /></Tabs.Tab>
-          </Tabs.List>
-        </Tabs.ListContainer>
+      <Tabs value={tab} onValueChange={key => setTab(key === "style" ? "style" : "properties")} className={boardPanelStyles.inspectorContent}>
+        <div className="shrink-0">
+          <TabsList activateOnFocus className={boardPanelStyles.inspectorTabs} aria-label="对象设置">
+            <TabsTrigger className="flex-1" value="properties">属性</TabsTrigger>
+            <TabsTrigger className="flex-1" value="style">样式</TabsTrigger>
+          </TabsList>
+        </div>
         {!e ? (
           <>
-            <Tabs.Panel id="properties" className="board-property-panel">
+            <TabsContent value="properties" className={boardPanelStyles.propertyPanel}>
               <Field
                 label="页面名称"
                 value={page.name}
@@ -181,14 +179,14 @@ export function BoardInspector({
                 }
               />
 
-              <p className="board-inspector-note">
+              <p className={boardPanelStyles.note}>
                 选择对象以修改样式。按住空格拖动画布，Ctrl / ⌘ 加滚轮缩放。
               </p>
-              <p className="board-inspector-note">
+              <p className={boardPanelStyles.note}>
                 {elements.size.toLocaleString()} 个对象
               </p>
-            </Tabs.Panel>
-            <Tabs.Panel id="style" className="board-property-panel">
+            </TabsContent>
+            <TabsContent value="style" className={boardPanelStyles.propertyPanel}>
               <Field
                 label="页面背景"
                 type="color"
@@ -200,11 +198,11 @@ export function BoardInspector({
                   send([{ type: "pages.update", page: { ...page, background } }])
                 }
               />
-            </Tabs.Panel>
+            </TabsContent>
           </>
         ) : (
           <>
-            <Tabs.Panel id="properties" className="board-property-panel">
+            <TabsContent value="properties" className={boardPanelStyles.propertyPanel}>
               <fieldset disabled={readOnly}>
                 <legend>内容</legend>
                 <Field
@@ -214,7 +212,7 @@ export function BoardInspector({
                   onCommit={(text) => patch({ text })}
                 />
                 {selected.length === 1 && e.shape_type !== "connector" ? (
-                  <div className="board-property-grid">
+                  <div className={boardPanelStyles.propertyGrid}>
                     {(["x", "y", "width", "height"] as const).map((key, i) => (
                       <Field
                         disabled={readOnly}
@@ -252,26 +250,44 @@ export function BoardInspector({
               {e.shape_type === "connector" ? (
                 <fieldset disabled={readOnly}>
                   <legend>连接线</legend>
-                  <SelectField label="线型" density="compact" className="board-field" value={e.structure.route} disabled={readOnly}
-                    options={[{ value: "straight", label: "直线" }, { value: "orthogonal", label: "折线" }, { value: "curve", label: "曲线" }]}
-                    onChange={value => patch({ structure: { ...e.structure, route: value as Element["structure"]["route"] } })} />
+                  <label className="board-field mb-3 grid gap-2 text-sm font-medium"><span>{"线型"}</span><Select
+                    value={e.structure.route}
+                    disabled={readOnly}
+                    onValueChange={value => { if (value === null) return; patch({ structure: { ...e.structure, route: value as Element["structure"]["route"] } }); }}
+                    items={routeItems}
+                  >
+                    <SelectTrigger aria-label={"线型"} size="sm" className="w-full"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {routeItems.map(item => (
+                        <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select></label>
                   {(["start_marker", "end_marker"] as const).map((field, i) => (
-                    <SelectField key={field} label={i ? "终点" : "起点"} density="compact" className="board-field" value={e.structure[field]} disabled={readOnly}
-                      options={Object.entries({ none: "无", arrow: "箭头", triangle: "空心三角", diamond: "菱形", circle: "圆点", one: "一", many: "多" }).map(([value, label]) => ({ value, label }))}
-                      onChange={value => patch({ structure: { ...e.structure, [field]: value } })} />
+                    <label key={field} className="grid gap-2 text-sm font-medium"><span>{i ? "终点" : "起点"}</span><Select
+                      value={e.structure[field]}
+                      disabled={readOnly}
+                      onValueChange={value => { if (value === null) return; patch({ structure: { ...e.structure, [field]: value } }); }}
+                      items={markerItems}
+                    >
+                      <SelectTrigger aria-label={i ? "终点" : "起点"} size="sm" className="w-full"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {markerItems.map(item => (
+                          <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select></label>
                   ))}
                 </fieldset>
               ) : null}
               {e.shape_type.startsWith("mindmap.") ? (
                 <fieldset disabled={readOnly}>
                   <legend>主题分支</legend>
-                  <Checkbox className="board-check" isDisabled={readOnly} isSelected={e.structure.collapsed} onChange={value => {
+                  <div className={boardPanelStyles.check}><Checkbox id={`${checkboxId}-collapsed`} disabled={readOnly} checked={e.structure.collapsed} onCheckedChange={value => {
                     if (value === e.structure.collapsed) return;
                     if (isMindmapTopic(e)) run(() => toggleTopicCollapsed(e, elements));
                     else patch({ structure: { ...e.structure, collapsed: value } });
-                  }}>
-                    <Checkbox.Content><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control>折叠子主题</Checkbox.Content>
-                  </Checkbox>
+                  }} /><label htmlFor={`${checkboxId}-collapsed`}>折叠子主题</label></div>
                   <small>在画布中按 Tab 添加子主题，Enter 添加同级主题。</small>
                 </fieldset>
               ) : null}
@@ -283,7 +299,7 @@ export function BoardInspector({
                     {e.shape_type.startsWith("er.") ? "实体字段" : "成员"}
                   </legend>
                   {e.structure.members.map((member, index) => (
-                    <div className="board-member" key={member.id}>
+                    <div className={boardPanelStyles.member} key={member.id}>
                       <Field
                         disabled={readOnly}
                         label={"字段名称 " + (index + 1)}
@@ -314,10 +330,21 @@ export function BoardInspector({
                           })
                         }
                       />
-                      <SelectField aria-label={"字段键 " + (index + 1)} density="compact" className="board-field" value={member.key} disabled={readOnly}
-                        options={[{ value: "", label: "普通字段" }, { value: "primary", label: "主键" }, { value: "foreign", label: "外键" }]}
-                        onChange={value => patch({ structure: { ...e.structure, members: e.structure.members.map(m => m.id === member.id ? { ...m, key: value as typeof member.key } : m) } })} />
-                      <ActionButton
+                      <Select
+                        value={member.key}
+                        disabled={readOnly}
+                        onValueChange={value => { if (value === null) return; patch({ structure: { ...e.structure, members: e.structure.members.map(m => m.id === member.id ? { ...m, key: value as typeof member.key } : m) } }); }}
+                        items={memberKindItems}
+                      >
+                        <SelectTrigger aria-label={"字段键 " + (index + 1)} size="sm" className="w-full"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {memberKindItems.map(item => (
+                            <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+
                         aria-label={"上移字段 " + member.name}
                         disabled={index === 0}
                         onClick={() => {
@@ -327,11 +354,12 @@ export function BoardInspector({
                             members[index - 1],
                           ];
                           patch({ structure: { ...e.structure, members } });
-                        }}
+                        }} variant="ghost" size="icon"
                       >
                         <ArrowUp size={14} aria-hidden="true" />
-                      </ActionButton>
-                      <ActionButton
+                      </Button>
+                      <Button
+
                         aria-label={"下移字段 " + member.name}
                         disabled={index === e.structure.members.length - 1}
                         onClick={() => {
@@ -341,11 +369,12 @@ export function BoardInspector({
                             members[index + 1],
                           ];
                           patch({ structure: { ...e.structure, members } });
-                        }}
+                        }} variant="ghost" size="icon"
                       >
                         <ArrowDown size={14} aria-hidden="true" />
-                      </ActionButton>
-                      <ActionButton
+                      </Button>
+                      <Button
+
                         aria-label={"删除字段 " + member.name}
                         onClick={() =>
                           run(() => [
@@ -354,13 +383,14 @@ export function BoardInspector({
                               patches: removeMember(elements, e, member.id),
                             },
                           ])
-                        }
+                        } variant="ghost" size="icon"
                       >
                         <Trash2 size={14} />
-                      </ActionButton>
+                      </Button>
                     </div>
                   ))}
-                  <ActionButton
+                  <Button
+
                     onClick={() =>
                       patch({
                         structure: {
@@ -383,11 +413,11 @@ export function BoardInspector({
                           ),
                         },
                       })
-                    }
+                    } variant="ghost"
                   >
                     <Plus size={15} />
                     添加字段
-                  </ActionButton>
+                  </Button>
                 </fieldset>
               ) : null}
               <fieldset disabled={readOnly}>
@@ -396,7 +426,8 @@ export function BoardInspector({
                   e.shape_type,
                 ) ? (
                   <div>
-                    <ActionButton
+                    <Button
+
                       onClick={() =>
                         run(() => {
                           const patches = reorderLane(elements, e, -1);
@@ -404,11 +435,12 @@ export function BoardInspector({
                             ? [{ type: "elements.update", patches }]
                             : [];
                         })
-                      }
+                      } variant="ghost"
                     >
                       前移泳道
-                    </ActionButton>
-                    <ActionButton
+                    </Button>
+                    <Button
+
                       onClick={() =>
                         run(() => {
                           const patches = reorderLane(elements, e, 1);
@@ -416,16 +448,27 @@ export function BoardInspector({
                             ? [{ type: "elements.update", patches }]
                             : [];
                         })
-                      }
+                      } variant="ghost"
                     >
                       后移泳道
-                    </ActionButton>
+                    </Button>
                   </div>
                 ) : null}
-                <SelectField label="父容器" density="compact" className="board-field" value={e.structure.parent_id ?? ""} disabled={readOnly}
-                  options={[{ value: "", label: "无" }, ...[...elements.values()].filter(item => item.id !== e.id && (SHAPES.get(item.shape_type)?.container || item.shape_type.startsWith("mindmap."))).map(item => ({ value: item.id, label: item.text || "未命名容器" }))]}
-                  onChange={value => run(() => reparentElement(elements, e, value || null))} />
-                <ActionButton
+                <label className="board-field mb-3 grid gap-2 text-sm font-medium"><span>{"父容器"}</span><Select
+                  value={e.structure.parent_id ?? ""}
+                  disabled={readOnly}
+                  onValueChange={value => { if (value === null) return; run(() => reparentElement(elements, e, value || null)); }}
+                  items={parentItems}
+                >
+                  <SelectTrigger aria-label={"父容器"} size="sm" className="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {parentItems.map(item => (
+                      <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select></label>
+                <Button
+
                   onClick={() =>
                     patch({
                       structure: {
@@ -437,11 +480,12 @@ export function BoardInspector({
                           ) + 1,
                       },
                     })
-                  }
+                  } variant="ghost"
                 >
                   置于顶层
-                </ActionButton>
-                <ActionButton
+                </Button>
+                <Button
+
                   onClick={() =>
                     patch({
                       structure: {
@@ -453,16 +497,16 @@ export function BoardInspector({
                           ) - 1,
                       },
                     })
-                  }
+                  } variant="ghost"
                 >
                   置于底层
-                </ActionButton>
+                </Button>
               </fieldset>
-            </Tabs.Panel>
-            <Tabs.Panel id="style" className="board-property-panel">
+            </TabsContent>
+            <TabsContent value="style" className={boardPanelStyles.propertyPanel}>
               <fieldset disabled={readOnly}>
                 <legend>样式</legend>
-                <div className="board-property-grid">
+                <div className={boardPanelStyles.propertyGrid}>
                   <Field
                     disabled={readOnly}
                     label="填充颜色"
@@ -501,17 +545,23 @@ export function BoardInspector({
                     onCommit={(value) => style("stroke_width", Number(value))}
                   />
                 </div>
-                <Checkbox className="board-check" isDisabled={readOnly} isSelected={e.style.bold} onChange={value => style("bold", value)}>
-                  <Checkbox.Content><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control>粗体</Checkbox.Content>
-                </Checkbox>
-                <Checkbox className="board-check" isDisabled={readOnly} isSelected={e.style.dashed} onChange={value => style("dashed", value)}>
-                  <Checkbox.Content><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control>虚线</Checkbox.Content>
-                </Checkbox>
-                <SelectField label="文字对齐" density="compact" className="board-field" value={e.style.align} disabled={readOnly}
-                  options={[{ value: "left", label: "左对齐" }, { value: "center", label: "居中" }, { value: "right", label: "右对齐" }]}
-                  onChange={value => style("align", value)} />
+                <div className={boardPanelStyles.check}><Checkbox id={`${checkboxId}-bold`} disabled={readOnly} checked={e.style.bold} onCheckedChange={value => style("bold", value)} /><label htmlFor={`${checkboxId}-bold`}>粗体</label></div>
+                <div className={boardPanelStyles.check}><Checkbox id={`${checkboxId}-dashed`} disabled={readOnly} checked={e.style.dashed} onCheckedChange={value => style("dashed", value)} /><label htmlFor={`${checkboxId}-dashed`}>虚线</label></div>
+                <label className="board-field mb-3 grid gap-2 text-sm font-medium"><span>{"文字对齐"}</span><Select
+                  value={e.style.align}
+                  disabled={readOnly}
+                  onValueChange={value => { if (value === null) return; style("align", value); }}
+                  items={alignItems}
+                >
+                  <SelectTrigger aria-label={"文字对齐"} size="sm" className="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {alignItems.map(item => (
+                      <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select></label>
               </fieldset>
-            </Tabs.Panel>
+            </TabsContent>
           </>
         )}
       </Tabs>

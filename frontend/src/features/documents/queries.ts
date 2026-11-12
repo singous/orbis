@@ -9,6 +9,7 @@ import {
   reorderNotebookNotes,
   createNotebook,
   exportMarkdown,
+  getDocumentGroup,
   getNote,
   getNotebook,
   getNoteContent,
@@ -41,13 +42,25 @@ export function useDocumentGroups(status: ResourceStatus = "active") {
   return useQuery({ queryKey: ["document-groups", status], queryFn: ({ signal }) => listDocumentGroups(auth, status,signal) });
 }
 
+export function useDocumentGroup(groupId?: string) {
+  const auth = useDocumentAuth();
+  return useQuery({
+    queryKey: ["document-groups", "detail", groupId],
+    enabled: Boolean(groupId),
+    queryFn: ({ signal }) => getDocumentGroup(groupId!, auth, signal),
+    retry: false,
+  });
+}
+
 export function useNotebooks(
   groupId?: string,
   status: ResourceStatus = "active",
+  options: { enabled?: boolean } = {},
 ) {
   const auth = useDocumentAuth();
   return useQuery({
     queryKey: ["notebooks", status, groupId ?? "all", false],
+    enabled: options.enabled ?? true,
     queryFn: ({ signal }) => listNotebooks(auth, groupId, status, { signal }),
   });
 }
