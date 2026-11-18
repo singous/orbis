@@ -20,11 +20,12 @@ type DocumentShellProps = {
   contextPanel?: ReactNode;
   contextOpen?: boolean;
   onOpenContext?: () => void;
+  createAction?: ReactNode;
   notebookId?: string;
   activeNoteId?: string;
 };
 
-export function DocumentShell({ children, loading = false, toolbar, breadcrumb, editorLayout = false, contextPanel, contextOpen, onOpenContext, notebookId, activeNoteId }: DocumentShellProps) {
+export function DocumentShell({ children, loading = false, toolbar, breadcrumb, editorLayout = false, contextPanel, contextOpen, onOpenContext, notebookId, activeNoteId, createAction }: DocumentShellProps) {
   const workspaceId = useStore(authStore, (state) => state.workspace?.id);
   const [storedContextOpen, setStoredContextOpen] = useState(() => workspaceId ? readDocumentContextOpen(workspaceId) : true);
   const isContextOpen = contextOpen ?? storedContextOpen;
@@ -41,7 +42,7 @@ export function DocumentShell({ children, loading = false, toolbar, breadcrumb, 
   return (
     <WorkspaceShell
       loading={loading}
-      sidebar={notebookId ? createNotebookSidebar(notebookId, activeNoteId) : { title: <h2>文档</h2>, content: <WorkspaceNavigation /> }}
+      sidebar={notebookId ? createNotebookSidebar(notebookId, activeNoteId, createAction) : { title: <h2>文档</h2>, content: <WorkspaceNavigation /> }}
       toolbar={toolbar}
       sectionTitle={breadcrumb}
       contentLayout={editorLayout ? "document" : "page"}

@@ -15,7 +15,8 @@ type NotebookCardProps = {
   notebook: Notebook;
   noteCount?: number;
   actions?: ReactNode;
-  recent?: readonly Note[];
+  recent?: readonly Pick<Note, "id" | "title" | "sheet_id" | "board_id" | "updated_at_ms">[];
+  onRetry?: () => void;
   indexLoading: boolean;
 };
 
@@ -27,7 +28,7 @@ const covers = [
   { artwork: sky, surface: "bg-(--ob-book-cover-sky)" },
 ];
 
-export function NotebookCard({ notebook, noteCount, actions, recent, indexLoading }: NotebookCardProps) {
+export function NotebookCard({ notebook, noteCount, actions, recent, indexLoading, onRetry }: NotebookCardProps) {
   const href = `/collections/${notebook.id}`;
   const now = Date.now();
 
@@ -50,7 +51,7 @@ export function NotebookCard({ notebook, noteCount, actions, recent, indexLoadin
             <DocumentKindIcon note={note} size={13} /><span className="min-w-0 flex-1 truncate">{note.title}</span>
             <time className="shrink-0 text-[10px] text-muted-foreground" dateTime={new Date(note.updated_at_ms).toISOString()}>{formatNotebookEditDay(note.updated_at_ms, now)}</time>
           </DocumentLink></li>,
-        )}</ul> : <p className="px-0.5 py-2 text-xs text-muted-foreground">{indexLoading ? "正在读取最近更新…" : noteCount === 0 ? "还没有文档" : "暂无最近更新"}</p>}
+        )}</ul> : <p className="px-0.5 py-2 text-xs text-muted-foreground">{onRetry ? <>无法读取最近更新。<button type="button" className="focus-ring underline" onClick={onRetry}>重试</button></> : indexLoading ? "正在读取最近更新…" : noteCount === 0 ? "还没有文档" : "暂无最近更新"}</p>}
       </div>
     </article>
   );

@@ -492,3 +492,62 @@ for (const { theme, width } of [{ theme: "light", width: 1280 }, { theme: "dark"
     await info.attach("documents-media-acceptance", { body: JSON.stringify(evidence, null, 2), contentType: "application/json" });
   }
 });
+
+test("opening a filtered second page reads the complete index before slicing", async ({ page }) => {
+  const documents = Array.from({ length: 60 }, (_, index) => ({
+    ...notes[0], id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`, title: `分页文档 ${index + 1}`,
+  }));
+  await page.route(url => url.pathname.startsWith("/api/") && url.pathname.endsWith("/documents"), route => {
+    const params = new URL(route.request().url()).searchParams;
+    const number = Number(params.get("page"));
+    const size = Number(params.get("page_size"));
+    return route.fulfill({ json: { code: "OK", message: "", request_id: "filtered-page", data: {
+      items: documents.slice((number - 1) * size, number * size),
+      pagination: { page: number, page_size: size, total: documents.length },
+    } } });
+  });
+  await page.goto("/documents/recent?title=分页文档&page=2");
+  await expect(page.getByRole("link", { name: /^分页文档 / }).first()).toHaveText("分页文档 21");
+});
+
+test("the shelf uses bounded notebook previews even for large workspaces", async ({ page }) => {
+  const indexRequests: string[] = [];
+  page.on("request", request => {
+    if (new URL(request.url()).pathname.endsWith(`/workspaces/${workspace.id}/documents`)) indexRequests.push(request.url());
+  });
+  await page.route(url => url.pathname.endsWith("/collections") && url.searchParams.get("include_preview") === "true", route =>
+    route.fulfill({ json: { code: "OK", message: "", request_id: "shelf-preview", data: pageData(notebooks.map(book => ({
+      ...book, preview: book.id === notebooks[0].id
+        ? { count: 2001, recent: notes.map(note => ({ ...note, sheet_id: null, board_id: null })) }
+        : { count: 0, recent: [] },
+    }))) } }));
+  await page.goto("/documents");
+  const card = page.getByRole("article").filter({ has: page.getByRole("heading", { name: notebooks[0].title }) }).first();
+  await expect(card.getByText(/2001 项/)).toBeAttached();
+  await expect(card.getByRole("link", { name: notes[0].title, exact: false })).toBeVisible();
+  expect(indexRequests).toEqual([]);
+});
+
+test("header creation disables the sidebar entry for the same notebook", async ({ page }) => {
+  let release!: () => void;
+  const pending = new Promise<void>(resolve => { release = resolve; });
+  const collectionPath = `/collections/${notebooks[0].id}/documents`;
+  await page.route(url => url.pathname.endsWith(collectionPath), async route => {
+    if (route.request().method() !== "POST") return route.fallback();
+    await pending;
+    await route.fulfill({ status: 503, json: { code: "SERVICE_UNAVAILABLE", message: "稍后重试", request_id: "create", data: null } });
+  });
+  await page.goto(`/collections/${notebooks[0].id}`);
+  const sidebar = page.getByRole("button", { name: "创建内容", exact: true });
+  const header = page.getByRole("button", { name: "新建内容", exact: true });
+  await header.click();
+  try {
+    await page.getByRole("menuitem", { name: "文档", exact: true }).click();
+    await expect(header).toBeDisabled();
+    await expect(sidebar).toBeDisabled();
+  } finally {
+    release();
+  }
+  await expect(sidebar).toBeEnabled();
+  await expect(header).toBeEnabled();
+});

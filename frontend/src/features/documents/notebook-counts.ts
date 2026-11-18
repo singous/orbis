@@ -4,8 +4,8 @@ import { useDocumentIndex } from "./queries";
 
 const NOTEBOOK_PREVIEW_LIMIT = 3;
 
-export function useNotebookDocumentCounts() {
-  const query = useDocumentIndex("active", { allPages: true });
+export function useNotebookDocumentCounts(enabled = true) {
+  const query = useDocumentIndex("active", { allPages: true, enabled });
   const { counts, recent } = useMemo(() => {
     const counts = new Map<string, number>();
     const recent = new Map<string, Note[]>();
@@ -20,5 +20,5 @@ export function useNotebookDocumentCounts() {
     }
     return { counts, recent };
   }, [query.data]);
-  return { counts, recent, isSuccess: query.isSuccess, isLoading: query.isLoading };
+  return { counts, recent, isSuccess: query.isSuccess, isLoading: query.isLoading, isError: query.isError, retry: query.refetch };
 }

@@ -2,7 +2,7 @@ import { cn } from "@orbis/ui/cn";
 import { workspaceFunctionMenuClassName, workspaceFunctionLinkClassName } from "../workspace/workspace-navigation-styles";
 import { releaseFeatures } from "../../shared/release-features";
 import { reportError } from "../../shared/api/request-feedback";
-import { useState, useRef } from "react";
+import { useState, useRef, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { newUUID } from "../../shared/ids";
@@ -37,6 +37,7 @@ const NOTEBOOK_SIDEBAR_PREFERENCES = {
 export function createNotebookSidebar(
   notebookId: string,
   activeNoteId?: string,
+  createAction?: ReactNode,
 ): WorkspaceSidebarConfig {
   return {
     id: "notebook-directory",
@@ -48,7 +49,7 @@ export function createNotebookSidebar(
         <ArrowLeft aria-hidden="true" size={14} className="shrink-0" /><span className="truncate">我的文档</span>
       </Link>
     ),
-    actions: <NotebookCreateAction notebookId={notebookId} />,
+    actions: createAction ?? <StandaloneNotebookCreateAction key={notebookId} notebookId={notebookId} />,
     content: (
       <NotebookSectionMenu
         key={notebookId}
@@ -73,21 +74,20 @@ function NotebookSidebarTitle({ notebookId }: { notebookId: string }) {
   );
 }
 
-export function NotebookCreateAction({ notebookId, placement = "sidebar" }: { notebookId: string; placement?: "sidebar" | "header" }) {
+export function useNotebookCreation(notebookId: string) {
   const workspace = useStore(authStore, (state) => state.workspace);
   const createNote = useCreateNote();
   const tree = useNoteTree(notebookId);
   const navigate = useNavigate();
   const auth = useAuthRequest();
   const client = useQueryClient();
-  const [creatingTable, setCreatingTable] = useState(false);
-  const [creatingBoard, setCreatingBoard] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const busy = useRef(false);
   const boardIntent = useRef<{ id: string; operation_id: string; page_id: string } | null>(null);
   const tableIntent = useRef<string | null>(null);
 
   async function createBoard() {
-    if (!releaseFeatures.boardCreation || creatingBoard) return;
-    setCreatingBoard(true);
+    if (!releaseFeatures.boardCreation) return;
     boardIntent.current ??= { id: newUUID(), operation_id: newUUID(), page_id: newUUID() };
     try {
       const board = await boardAPI(auth).create({ ...boardIntent.current, collection_id: notebookId, parent_id: null, title: "未命名画板", elements: [] });
@@ -97,13 +97,9 @@ export function NotebookCreateAction({ notebookId, placement = "sidebar" }: { no
       navigate(`/documents/${board.document_id}`);
     } catch (error) {
       reportError(error);
-    } finally {
-      setCreatingBoard(false);
     }
   }
   async function createTable() {
-    if (creatingTable) return;
-    setCreatingTable(true);
     tableIntent.current ??= newUUID();
     try {
       const table = await sheetAPI(auth).create({
@@ -118,8 +114,6 @@ export function NotebookCreateAction({ notebookId, placement = "sidebar" }: { no
       navigate(`/documents/${table.document_id}`);
     } catch (error) {
       reportError(error);
-    } finally {
-      setCreatingTable(false);
     }
   }
 
@@ -137,16 +131,35 @@ export function NotebookCreateAction({ notebookId, placement = "sidebar" }: { no
     }
   }
 
-  const creating = createNote.isPending || creatingTable || creatingBoard;
+  async function run(action: () => Promise<void>) {
+    if (busy.current) return;
+    busy.current = true;
+    setCreating(true);
+    try { await action(); } finally {
+      busy.current = false;
+      setCreating(false);
+    }
+  }
+  return { creating, canEdit: canMutateWorkspaceContent(workspace), ready: tree.isSuccess,
+    document: () => run(createDocument), table: () => run(createTable), board: () => run(createBoard) };
+}
+
+function StandaloneNotebookCreateAction({ notebookId }: { notebookId: string }) {
+  const creation = useNotebookCreation(notebookId);
+  return <NotebookCreateAction creation={creation} />;
+}
+
+export function NotebookCreateAction({ creation, placement = "sidebar" }: { creation: ReturnType<typeof useNotebookCreation>; placement?: "sidebar" | "header" }) {
+  const navigate = useNavigate();
   const header = placement === "header";
-  return canMutateWorkspaceContent(workspace) ? (
+  return creation.canEdit ? (
     <DropdownMenu>
-      <DropdownMenuTrigger disabled={creating} render={header ? <Button type="button" size="sm" className="h-[34px] gap-2 px-3" aria-label="新建内容"><Plus aria-hidden="true" />新建<ChevronDown aria-hidden="true" /></Button> : <Button type="button" className="notebook-menu-create shrink-0" aria-label="创建内容" title="创建内容" variant="ghost" size="icon-sm"><Plus aria-hidden="true" size={18} /></Button>} />
+      <DropdownMenuTrigger disabled={creation.creating} render={header ? <Button type="button" size="sm" className="h-[34px] gap-2 px-3" aria-label="新建内容"><Plus aria-hidden="true" />新建<ChevronDown aria-hidden="true" /></Button> : <Button type="button" className="notebook-menu-create shrink-0" aria-label="创建内容" title="创建内容" variant="ghost" size="icon-sm"><Plus aria-hidden="true" size={18} /></Button>} />
       <DropdownMenuContent align={header ? "end" : "start"} sideOffset={6} className="notebook-create-popover" aria-label="创建内容">
         <DropdownMenuItem label="随手记" onClick={() => navigate("/documents/quick-notes")}><StickyNote aria-hidden="true" size={16} className="notebook-create-quick-note text-(--ob-icon-mint)" /><span>随手记</span></DropdownMenuItem>
-        <DropdownMenuItem label="文档" disabled={!tree.isSuccess} onClick={() => { void createDocument(); }}><FilePlus2 aria-hidden="true" size={16} className="notebook-create-document text-(--ob-icon-blue)" /><span>文档</span></DropdownMenuItem>
-        {releaseFeatures.boardCreation && <DropdownMenuItem label="画板" disabled={!tree.isSuccess} onClick={() => { void createBoard(); }}><Shapes aria-hidden="true" size={16} className="notebook-create-board text-(--ob-icon-violet)" /><span>画板</span></DropdownMenuItem>}
-        <DropdownMenuItem label="数据表" disabled={!tree.isSuccess} onClick={() => { void createTable(); }}><Table2 aria-hidden="true" size={16} className="notebook-create-table text-(--ob-icon-cyan)" /><span>数据表</span></DropdownMenuItem>
+        <DropdownMenuItem label="文档" disabled={!creation.ready || creation.creating} onClick={() => { void creation.document(); }}><FilePlus2 aria-hidden="true" size={16} className="notebook-create-document text-(--ob-icon-blue)" /><span>文档</span></DropdownMenuItem>
+        {releaseFeatures.boardCreation && <DropdownMenuItem label="画板" disabled={!creation.ready || creation.creating} onClick={() => { void creation.board(); }}><Shapes aria-hidden="true" size={16} className="notebook-create-board text-(--ob-icon-violet)" /><span>画板</span></DropdownMenuItem>}
+        <DropdownMenuItem label="数据表" disabled={!creation.ready || creation.creating} onClick={() => { void creation.table(); }}><Table2 aria-hidden="true" size={16} className="notebook-create-table text-(--ob-icon-cyan)" /><span>数据表</span></DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   ) : null;

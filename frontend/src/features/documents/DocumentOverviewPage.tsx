@@ -44,12 +44,12 @@ export function DocumentOverviewPage() {
   const workspace = useStore(authStore, (state) => state.workspace);
   const canEdit = canMutateWorkspaceContent(workspace);
   const groupsQuery = useDocumentGroups();
-  const notebooksQuery = useNotebooks();
+  const notebooksQuery = useNotebooks(undefined, "active", { includePreview: true });
   const groups = groupsQuery.data?.items ?? [];
   const targetOutsideList = !groupsQuery.isLoading && !groups.some(group => group.id === targetId) ? targetId : undefined;
   const targetGroupQuery = useDocumentGroup(targetOutsideList);
   const targetGroup = targetOutsideList && targetGroupQuery.data?.is_archived === false ? targetGroupQuery.data : undefined;
-  const targetNotebooks = useNotebooks(targetGroup?.id, "active", { enabled: Boolean(targetGroup) });
+  const targetNotebooks = useNotebooks(targetGroup?.id, "active", { enabled: Boolean(targetGroup), includePreview: true });
   const visibleGroups = targetGroup ? [...groups, targetGroup] : groups;
   const listedNotebooks = notebooksQuery.data?.items ?? [];
   const notebooks = targetGroup && targetNotebooks.data ? [
@@ -57,7 +57,8 @@ export function DocumentOverviewPage() {
     ...targetNotebooks.data.items,
   ] : listedNotebooks;
 
-  const { counts, recent, isSuccess: countsReady, isLoading: indexLoading } = useNotebookDocumentCounts();
+  // Older servers omit previews. Read their index only when a listed notebook needs it.
+  const legacyIndex = useNotebookDocumentCounts(notebooks.some(notebook => !notebook.preview));
   const createNotebook = useCreateNotebook();
   const createGroup = useCreateDocumentGroup();
   const renameGroup = useUpdateDocumentGroup();
@@ -107,8 +108,9 @@ export function DocumentOverviewPage() {
   function card(notebook: Notebook) {
     const pinned = isPinned(notebook.id);
     const pinLabel = `${pinned ? "取消常用" : "设为常用"}：${notebook.title}`;
-    const noteCount = countsReady ? counts.get(notebook.id) ?? 0 : undefined;
-    return <NotebookCard key={notebook.id} notebook={notebook} noteCount={noteCount} recent={recent.get(notebook.id)} indexLoading={indexLoading} actions={<>
+    const noteCount = notebook.preview?.count ?? (legacyIndex.isSuccess ? legacyIndex.counts.get(notebook.id) ?? 0 : undefined);
+    return <NotebookCard key={notebook.id} notebook={notebook} noteCount={noteCount} recent={notebook.preview?.recent ?? legacyIndex.recent.get(notebook.id)} indexLoading={!notebook.preview && legacyIndex.isLoading}
+      onRetry={!notebook.preview && legacyIndex.isError ? () => void legacyIndex.retry() : undefined} actions={<>
       {releaseFeatures.documentFavorites ? <Tooltip><TooltipTrigger render={<Button size="icon-xs" className={cn("notebook-overview-pin", pinned && "is-pinned text-primary [&_svg]:fill-current")} aria-label={pinLabel} aria-pressed={pinned} onClick={() => togglePin(notebook.id)} variant="ghost"><Pin aria-hidden="true" /></Button>} /><TooltipContent>{pinLabel}</TooltipContent></Tooltip> : null}
       {canEdit ? <DropdownMenu>
         <DropdownMenuTrigger render={<Button variant="ghost" size="icon-xs" aria-label={`笔记本操作：${notebook.title}`}><MoreHorizontal aria-hidden="true" /></Button>} />

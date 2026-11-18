@@ -15,7 +15,8 @@ it("collects all pages for notebook counts while keeping normal search paginated
   const fetchMock = vi.fn().mockResolvedValueOnce(response(1)).mockResolvedValueOnce(response(2)).mockResolvedValueOnce(response(1));
   vi.stubGlobal("fetch", fetchMock);
   const auth = { workspaceId:id,refreshToken:null,accessToken: "counts-test", onTokenRefresh: vi.fn(), onUnauthorized: vi.fn() };
-  const all = await browseNotes(auth, "active", { allPages: true });
+  const all = await browseNotes(auth, "active", { allPages: true, page: 2 });
+  expect(fetchMock.mock.calls[0][0]).toContain("page=1&");
   expect(all.items.map((item) => item.title)).toEqual(["第 1 页", "第 2 页"]);
   expect(fetchMock.mock.calls[1][0]).toContain("page=2");
   const search = await browseNotes(auth);

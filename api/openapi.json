@@ -4789,6 +4789,15 @@
               "format": "uuid"
             },
             "description": "可选分组过滤；不传表示全部。"
+          },
+          {
+            "name": "include_preview",
+            "in": "query",
+            "description": "为未归档的文集附加可见文档总数及最近三条文档，按更新时间和 ID 降序。",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
           }
         ],
         "description": "按 sort_order、id 升序。默认排除已归档分组的文集；archived=true 仅列显式归档文集，包含其分组已归档的情况。"
@@ -43684,6 +43693,58 @@
           "is_archived": {
             "type": "boolean",
             "description": "资源自身的归档状态，与时间是否已知独立；祖先可见性另行验证。"
+          },
+          "preview": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              },
+              "recent": {
+                "type": "array",
+                "maxItems": 3,
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "updated_at_ms": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": "Unix 毫秒时间戳；展示时区默认 Asia/Shanghai。"
+                    },
+                    "sheet_id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "board_id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "updated_at_ms",
+                    "sheet_id",
+                    "board_id"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "count",
+              "recent"
+            ]
           }
         },
         "required": [

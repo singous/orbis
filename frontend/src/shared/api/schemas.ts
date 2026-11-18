@@ -70,7 +70,15 @@ export type NotebookIconName = z.infer<typeof notebookIconNameSchema>;
 export type NotebookIconColor = z.infer<typeof notebookIconColorSchema>;
 
 
+const notebookPreviewSchema = z.object({
+  count: z.number().int().nonnegative(),
+  recent: z.array(z.object({
+    id: z.string().uuid(), title: z.string(), updated_at_ms: z.number().int(),
+    sheet_id: z.string().uuid().nullable(), board_id: z.string().uuid().nullable(),
+  })).max(3),
+});
 export const notebookSchema = resourceIdentitySchema.extend({
+  preview: notebookPreviewSchema.optional(),
   group_id: z.string().uuid(), title: z.string(), sort_order: z.number().int(),
   icon: notebookIconSchema.nullable(), metadata_version: z.number().int().positive(), directory_version: z.number().int().positive(),
 });

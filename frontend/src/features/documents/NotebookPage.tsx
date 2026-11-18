@@ -24,7 +24,7 @@ import { DocumentContextPanel, DocumentContextSummaryProvider, useDocumentContex
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { DocumentShell } from "./DocumentShell";
 import { EditNotebookDialog } from "./NotebookDialog";
-import { NotebookCreateAction } from "./NotebookSectionMenu";
+import { NotebookCreateAction, useNotebookCreation } from "./NotebookSectionMenu";
 import { NotebookMindMap } from "./NotebookMindMap";
 import { NotebookIdentity } from "./NotebookIdentity";
 import { usePinnedNotebooks } from "./pinned-notebooks";
@@ -40,6 +40,7 @@ const MAX_MARKDOWN_IMPORT_BYTES=2*1024*1024;
 
 function NotebookPageContent({ collectionId }: { collectionId: string }) {
   const navigate = useNavigate();
+  const creation = useNotebookCreation(collectionId);
   const workspace = useStore(authStore, (state) => state.workspace);
   const { isPinned, togglePin } = usePinnedNotebooks(workspace?.id);
   const pinned = isPinned(collectionId);
@@ -127,7 +128,7 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
   if (collectionUnavailable) return null;
 
   return (
-    <DocumentShell notebookId={collectionId}>
+    <DocumentShell notebookId={collectionId} createAction={<NotebookCreateAction creation={creation} />}>
       <div className="notebook-home min-h-full w-full bg-(--ob-document-surface) p-7 max-[600px]:p-3">
         <nav className="mb-6 flex items-center gap-2 text-xs text-muted-foreground" aria-label="笔记本位置">
           <Link to="/documents" className="inline-flex items-center gap-2 rounded-sm hover:text-foreground"><ArrowLeft aria-hidden="true" size={14} />我的文档</Link>
@@ -141,7 +142,7 @@ function NotebookPageContent({ collectionId }: { collectionId: string }) {
             </>} />
             <div className={cn(pageActionsClassName, "gap-2 pt-1")}>
               {canEdit && notebook && releaseFeatures.documentSharing ? <ShareButton notebookId={collectionId} title={notebook.title} /> : null}
-              {canEdit ? <NotebookCreateAction notebookId={collectionId} placement="header" /> : null}
+              {canEdit ? <NotebookCreateAction creation={creation} placement="header" /> : null}
               <input ref={fileInputRef} hidden type="file" accept=".md,text/markdown,text/plain" onChange={handleImport} />
               <DropdownMenu>
                 <DropdownMenuTrigger render={<Button  ref={actionsTriggerRef} type="button" className="size-[34px]" aria-label="笔记本操作" title="更多操作" variant="secondary" size="icon"><MoreHorizontal aria-hidden="true" size={18} /></Button>} />
