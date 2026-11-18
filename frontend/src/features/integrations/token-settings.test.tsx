@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import userEvent from "@testing-library/user-event";
 import { IntegrationTokensSettings } from "./IntegrationTokensSettings";
 
 const fixture = vi.hoisted(() => ({
@@ -56,4 +57,40 @@ it("retains the one-time secret when creation returns from a later list page",as
   expect(await screen.findByLabelText("新集成令牌")).toHaveValue("orbis_it_new_page_secret");
   await waitFor(()=>expect(fixture.request).toHaveBeenLastCalledWith(expect.stringContaining("page=1"),expect.anything()));
   expect(screen.getByLabelText("新集成令牌")).toHaveValue("orbis_it_new_page_secret");
+});
+
+it("submits selected permissions and a note scope without broadening sharing", async () => {
+  const user = userEvent.setup();
+  render(<IntegrationTokensSettings />);
+  await user.type(screen.getByLabelText("令牌名称"), "Note agent");
+  await user.click(screen.getByRole("combobox", { name: "权限" }));
+  await user.click(await screen.findByRole("option", { name: "读取与编辑文档" }));
+  await user.click(screen.getByRole("checkbox", { name: "允许读取附件（编辑权限同时允许上传附件）" }));
+  await user.click(screen.getByRole("checkbox", { name: "允许创建与撤销实时公开分享，范围包含未来子文档" }));
+  await user.click(screen.getByRole("combobox", { name: "授权范围" }));
+  await user.click(await screen.findByRole("option", { name: "仅一篇文档" }));
+  await user.type(screen.getByLabelText("文档 ID"), "note-id");
+  await user.clear(screen.getByLabelText("有效期（天）"));
+  await user.type(screen.getByLabelText("有效期（天）"), "365");
+  await user.click(screen.getByRole("button", { name: "生成集成令牌" }));
+  await waitFor(() => expect(fixture.request).toHaveBeenCalledWith(
+    "/v1/workspaces/workspace-one/integration-tokens",
+    expect.objectContaining({ method: "POST", body: {
+      name: "Note agent",
+      permissions: ["documents:read", "documents:write", "assets:read", "assets:write"],
+      collection_id: null,
+      document_id: "note-id",
+      expires_in_days: 365,
+    } }),
+  ));
+});
+
+it("does not offer write or sharing permissions to a read-only member", async () => {
+  fixture.state.workspace.role = "viewer";
+  const user = userEvent.setup();
+  render(<IntegrationTokensSettings />);
+  await user.click(screen.getByRole("combobox", { name: "权限" }));
+  expect(await screen.findByRole("option", { name: "只读文档" })).toBeVisible();
+  expect(screen.queryByRole("option", { name: "读取与编辑文档" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("checkbox", { name: "允许创建与撤销实时公开分享，范围包含未来子文档" })).not.toBeInTheDocument();
 });

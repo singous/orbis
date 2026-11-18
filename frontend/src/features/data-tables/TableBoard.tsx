@@ -1,6 +1,7 @@
+import { tableEmptyClassName } from "./table-chrome";
 import { reportError } from "../../shared/api/request-feedback";
 import { useEffect, useRef, useState } from "react";
-import { Button } from "../../shared/ui/Button";
+import { Button } from "@orbis/ui/button";
 import { readTable } from "./api";
 import type { TableHost } from "./context";
 import {
@@ -92,7 +93,7 @@ function BoardColumn({
   return (
     <section
       ref={element}
-      className="dt-board-column"
+      className="min-h-[260px] flex-[0_0_250px]"
       aria-label={group.name}
       onDragOver={(event) => {
         if (!host.readOnly) event.preventDefault();
@@ -106,17 +107,17 @@ function BoardColumn({
           onMove(recordId, group.id);
       }}
     >
-      <header>
-        <span className="dt-board-dot" />
+      <header className="flex items-center gap-2 px-0.5 pt-1 pb-3 text-[12px]">
+        <span className="size-[7px] rounded-[50%] bg-primary" />
         <strong>{group.name}</strong>
-        <span>{group.count}</span>
+        <span className="ml-auto text-(--muted-foreground) tabular-nums">{group.count}</span>
       </header>
 
-      <div className="dt-board-cards" aria-busy={loading}>
+      <div className="flex max-h-[390px] flex-col gap-[9px] overflow-auto" aria-busy={loading}>
         {page?.records.map((record) => (
           <button
             type="button"
-            className="dt-board-card"
+            className="flex flex-col gap-[9px] rounded-[7px] border border-border bg-card p-3 text-left text-inherit [box-shadow:var(--ob-shadow-table-card)] focus-visible:outline-2 focus-visible:outline-primary"
             draggable={!host.readOnly}
             onDragStart={(event) =>
               event.dataTransfer.setData(
@@ -134,7 +135,7 @@ function BoardColumn({
                 : "记录"}
             </strong>
             {fields.slice(1, 4).map((field) => (
-              <span className="dt-card-field" key={field.id}>
+              <span className="flex justify-between gap-2.5 text-[11px] text-(--muted-foreground)" key={field.id}>
                 <span>{field.name}</span>
                 {cellText(field, record.values[field.id]) || "—"}
               </span>
@@ -161,7 +162,7 @@ function BoardColumn({
         </footer>
       ) : null}
       {!loading && !page?.records.length ? (
-        <p className="dt-board-empty">拖入记录或更改状态</p>
+        <p className="px-[3px] py-[15px] text-xs text-(--muted-foreground)">拖入记录或更改状态</p>
       ) : null}
     </section>
   );
@@ -177,12 +178,12 @@ export function TableBoard(props: {
 }) {
   if (!props.view.group_field_id)
     return (
-      <div className="dt-empty">
+      <div className={tableEmptyClassName}>
         在视图设置中选择一个单选字段，开始使用看板。
       </div>
     );
   return (
-    <div className="dt-board">
+    <div className="dt-board flex max-h-[540px] gap-3.5 overflow-auto bg-muted p-4 [.embed-content>.data-table_&]:min-h-0 [.embed-content>.data-table_&]:flex-1 [.embed-content>.data-table_&]:overflow-auto">
       {props.page.groups.map((group) => (
         <BoardColumn
           key={`${props.view.id}:${group.id ?? "empty"}`}

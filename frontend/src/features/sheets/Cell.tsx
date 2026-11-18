@@ -1,5 +1,9 @@
+import { Spinner } from "@orbis/ui/spinner";
+import "./values.css";
+import { cn } from "@orbis/ui/cn";
+import { sheetActionClassName, sheetMutedClassName } from "./sheet-chrome";
 import { reportError } from "../../shared/api/request-feedback";
-import { Paperclip, Star, X } from "lucide-react";
+import { Paperclip, Star, X } from "@orbis/ui/icons";
 import { useEffect, useRef, useState } from "react";
 import {
   apiBlobRequest,
@@ -11,10 +15,10 @@ import {
   useOptionalAuthRequest,
   type AuthRequestOptions,
 } from "../../shared/auth/use-auth-request";
-import { ActionButton } from "../../shared/ui/ActionButton";
-import { Button } from "../../shared/ui/Button";
-import { SelectField } from "../../shared/ui/SelectField";
-import { TextInput } from "../../shared/ui/TextInput";
+import { Button } from "@orbis/ui/button";
+
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@orbis/ui/select";
+import { Input } from "@orbis/ui/input";
 import { parseFileReference, uploadManagedFile } from "../files/managed-files";
 import { KINDS, cellText, type Field, type Value } from "./model";
 
@@ -22,6 +26,11 @@ const MAX_CELL_ATTACHMENTS = 3;
 const MAX_AUTOMATIC_IMAGE_BYTES = 1 << 20;
 const ATTACHMENT_EDITOR_PAGE_SIZE = 8;
 const MAX_FIELD_ATTACHMENTS = 100;
+
+const nativeChoiceClassName = "size-4 shrink-0 accent-primary";
+const attachmentsClassName = "sheet-attachments flex items-center gap-1.5 overflow-hidden";
+const ratingClassName = "inline-flex items-center gap-1 text-(--status-warning)";
+const choiceListClassName = "flex max-h-60 flex-col gap-3 overflow-auto py-2 [&_label]:flex [&_label]:items-center [&_label]:gap-2.5 [&_label]:font-normal";
 
 const PERSON_COLORS = ["blue", "green", "amber", "purple", "pink"] as const;
 function personColor(id: string) {
@@ -104,25 +113,25 @@ export function Attachment({
     setTimeout(() => URL.revokeObjectURL(u), 1000);
   }
   return (
-    <ActionButton
+    <Button
       size="sm"
-      className="sheet-file"
+      className={cn(sheetActionClassName, "max-w-[150px] overflow-hidden whitespace-nowrap pointer-coarse:min-h-(--ob-control-height-touch)")}
       onClick={() =>
         void download().catch((e) =>
           reportError(e),
         )
       }
-      title={file?.filename ?? "附件"}
+      title={file?.filename ?? "附件"} variant="ghost"
     >
       {image && url ? (
-        <img src={url} alt={file?.filename ?? "图片"} />
+        <img className="h-7 w-9 rounded-[4px] object-cover" src={url} alt={file?.filename ?? "图片"} />
       ) : (
         <>
           <Paperclip size={13} />
           {file?.filename ?? "附件"}
         </>
       )}
-    </ActionButton>
+    </Button>
   );
 }
 export function CellValue({
@@ -137,6 +146,7 @@ export function CellValue({
   if (field.kind === "checkbox")
     return (
       <input
+        className={nativeChoiceClassName}
         type="checkbox"
         tabIndex={-1}
         checked={Boolean(value)}
@@ -157,7 +167,7 @@ export function CellValue({
               className="sheet-tag"
               style={{
                 background: `var(--sheet-${option.color}, var(--sheet-gray))`,
-                color: `var(--sheet-ink-${option.color}, var(--text-primary))`,
+                color: `var(--sheet-ink-${option.color}, var(--foreground))`,
               }}
               key={id}
             >
@@ -170,7 +180,7 @@ export function CellValue({
   }
   if (field.kind === "rating")
     return (
-      <span className="sheet-rating" aria-label={`${value} 星`}>
+      <span className={ratingClassName} aria-label={`${value} 星`}>
         {Array.from({ length: 5 }, (_, i) => (
           <Star
             key={i}
@@ -196,12 +206,12 @@ export function CellValue({
   }
   if (field.kind === "attachment" || field.kind === "image")
     return (
-      <span className="sheet-attachments">
+      <span className={attachmentsClassName}>
         {(value as string[]).slice(0, MAX_CELL_ATTACHMENTS).map((id) => (
           <Attachment id={id} image={field.kind === "image"} key={id} />
         ))}
         {(value as string[]).length > MAX_CELL_ATTACHMENTS && (
-          <small className="sheet-muted">
+          <small className={sheetMutedClassName}>
             +{(value as string[]).length - MAX_CELL_ATTACHMENTS}
           </small>
         )}
@@ -271,10 +281,11 @@ export function ValueEditor({
     return <CellValue field={field} value={value} />;
   if (field.kind === "select" && publicMode)
     return (
-      <div className="sheet-radio-options">
+      <div className={cn("sheet-radio-options", choiceListClassName)}>
         {field.options.map((o) => (
           <label key={o.id}>
             <input
+              className={nativeChoiceClassName}
               type="radio"
               name={field.id}
               checked={value === o.id}
@@ -285,25 +296,32 @@ export function ValueEditor({
         ))}
       </div>
     );
-  if (field.kind === "select")
-    return (
-      <SelectField
-        aria-label={field.name}
-        density="compact"
-        value={String(value ?? "")}
-        options={[
+  const checkboxItems = [
           { value: "", label: "请选择" },
           ...field.options.map((o) => ({ value: o.id, label: o.label })),
-        ]}
-        onChange={(v) => onChange(v || null)}
-      />
+        ];
+  if (field.kind === "select")
+    return (
+      <Select
+        value={String(value ?? "")}
+        onValueChange={v => { if (v === null) return; onChange(v || null); }}
+        items={checkboxItems}
+      >
+        <SelectTrigger aria-label={field.name} size="sm"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          {checkboxItems.map(item => (
+            <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     );
   if (field.kind === "multi_select" || field.kind === "person")
     return (
-      <div className="sheet-multi-options">
+      <div className={cn("sheet-multi-options", choiceListClassName)}>
         {field.options.map((o) => (
           <label key={o.id}>
             <input
+              className={nativeChoiceClassName}
               type="checkbox"
               checked={Array.isArray(value) && value.includes(o.id)}
               onChange={(e) => {
@@ -322,7 +340,7 @@ export function ValueEditor({
   if (field.kind === "attachment" || field.kind === "image")
     return (
       <div>
-        <div className="sheet-attachments">
+        <div className={attachmentsClassName}>
           {(Array.isArray(value) ? value : [])
             .slice(0, attachmentLimit)
             .map((id) => (
@@ -332,15 +350,15 @@ export function ValueEditor({
                 ) : (
                   <Attachment id={id} image={field.kind === "image"} />
                 )}
-                <ActionButton
+                <Button className={sheetActionClassName}
                   size="sm"
                   aria-label="移除附件"
                   onClick={() =>
                     onChange((value as string[]).filter((v) => v !== id))
-                  }
+                  } variant="ghost"
                 >
                   <X size={12} />
-                </ActionButton>
+                </Button>
               </span>
             ))}
         </div>
@@ -358,11 +376,11 @@ export function ValueEditor({
         <Button
           size="sm"
           variant="secondary"
-          icon={<Paperclip size={15} />}
-          isPending={uploading}
-          disabled={!auth && !publicUpload}
-          onClick={() => fileInput.current?.click()}
-        >
+
+
+          disabled={uploading || (!auth && !publicUpload)}
+          onClick={() => fileInput.current?.click()} aria-busy={uploading || undefined}
+        >{uploading ? <Spinner aria-hidden="true" /> : null}<Paperclip size={15} />
           {field.kind === "image" ? "上传图片" : "添加附件"}
         </Button>
         <input
@@ -418,6 +436,7 @@ export function ValueEditor({
       <input
         autoFocus={autoFocus}
         aria-label={field.name}
+        className={nativeChoiceClassName}
         type="checkbox"
         checked={Boolean(value)}
         onChange={(e) => onChange(e.target.checked)}
@@ -425,21 +444,21 @@ export function ValueEditor({
     );
   if (field.kind === "rating")
     return (
-      <div className="sheet-rating">
+      <div className={ratingClassName}>
         {[1, 2, 3, 4, 5].map((n) => (
-          <ActionButton
+          <Button className={cn(sheetActionClassName, "[&.sheet-action]:min-w-6")}
             size="sm"
             type="button"
             key={n}
             aria-label={`${n} 星`}
             aria-pressed={Number(value) >= n}
-            onClick={() => onChange(n === value ? null : n)}
+            onClick={() => onChange(n === value ? null : n)} variant="ghost"
           >
             <Star
               size={22}
               fill={Number(value) >= n ? "currentColor" : "none"}
             />
-          </ActionButton>
+          </Button>
         ))}
       </div>
     );
@@ -451,11 +470,7 @@ export function ValueEditor({
           .slice(0, field.include_time ? 16 : 10)
       : String(value ?? "");
   return (
-    <TextInput
-      autoFocus={autoFocus}
-      aria-label={field.name}
-      placeholder="请输入"
-      type={
+    <Input autoFocus={autoFocus} aria-label={field.name} placeholder="请输入" type={
         date
           ? field.include_time
             ? "datetime-local"
@@ -467,12 +482,7 @@ export function ValueEditor({
               : KINDS[field.kind].numeric
                 ? "number"
                 : "text"
-      }
-      value={formatted}
-      maxLength={8192}
-      min={field.kind === "progress" ? 0 : undefined}
-      max={field.kind === "progress" ? 100 : undefined}
-      onChange={(e) => {
+      } value={formatted} maxLength={8192} min={field.kind === "progress" ? 0 : undefined} max={field.kind === "progress" ? 100 : undefined} onChange={(e) => {
         const raw = e.target.value;
         onChange(
           !raw
@@ -485,8 +495,6 @@ export function ValueEditor({
                 ? Number(raw)
                 : raw,
         );
-      }}
-      onBlur={onCommit}
-    />
+      }} onBlur={onCommit} />
   );
 }

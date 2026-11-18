@@ -6,8 +6,6 @@ import { authStore } from "../../shared/auth/auth-store";
 import { BoardShell } from "./BoardShell";
 import type { Board } from "./model";
 
-vi.mock("../workspace/WorkspaceTopbar", () => ({ WorkspaceTopbar: () => null }));
-vi.mock("../workspace/RailCreateMenu", () => ({ RailCreateMenu: () => null }));
 vi.mock("../documents/DocumentContextPanel", () => ({
   DocumentContextPanel: ({ notebookId, activeNoteId }: { notebookId: string; activeNoteId?: string }) => (
     <nav aria-label="测试笔记本目录" data-notebook={notebookId} data-active-note={activeNoteId}>文档与画板</nav>

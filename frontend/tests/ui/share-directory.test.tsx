@@ -63,7 +63,10 @@ describe("Public share directory controls", () => {
 
     const more = screen.getByRole("button", { name: "加载更多目录" });
     await user.click(more);
-    expect(more).toBeDisabled();
+    expect(more).toHaveAttribute("aria-disabled", "true");
+    expect(more).toHaveAttribute("aria-busy", "true");
+    expect(more).not.toHaveAttribute("disabled");
+    expect(more).toHaveFocus();
     await user.click(more);
     expect(readPublicShare).toHaveBeenCalledTimes(1);
 

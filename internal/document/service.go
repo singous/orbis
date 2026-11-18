@@ -16,7 +16,13 @@ import (
 	"orbis.local/orbis/internal/workspace"
 )
 
+type NotebookPreview struct {
+	Count  int64
+	Recent []Document
+}
+
 type Collection struct {
+	Preview                  *NotebookPreview
 	IsArchived               bool
 	Icon                     *CollectionIcon
 	ID, WorkspaceID, Title   string

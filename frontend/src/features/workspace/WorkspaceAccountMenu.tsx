@@ -6,13 +6,12 @@ import { logout } from "../../shared/auth/auth-api";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { UserMenu } from "./UserMenu";
 
-/** Both hosts share identity, permission checks and sign-out behavior. */
-export function WorkspaceAccountMenu({ variant = "topbar" }: { variant?: "topbar" | "rail" }) {
+export function WorkspaceAccountMenu() {
   const navigate = useNavigate();
   const auth = useAuthRequest();
   const user = useStore(authStore, state => state.user);
   const workspace = useStore(authStore, state => state.workspace);
-  return <UserMenu user={user} workspace={workspace} variant={variant} onLogout={() => {
+  return <UserMenu user={user} workspace={workspace} onLogout={() => {
     void (async () => {
       const credentialID = authStore.getState().credentialID;
       let signedOut = false;

@@ -1,4 +1,4 @@
-import { Avatar } from "@heroui/react/avatar";
+import { Avatar, AvatarImage as NativeAvatarImage, AvatarFallback } from "@orbis/ui/avatar";
 import { useQuery } from "@tanstack/react-query";
 import { useStore } from "zustand";
 import type { ComponentProps, CSSProperties } from "react";
@@ -11,14 +11,14 @@ const IDENTITY_COLORS = ["blue", "mint", "violet", "rose", "amber", "cyan"] as c
 export function identityColor(identity: string): CSSProperties {
   let hash = 0;
   for (const character of identity) hash = (hash * 31 + character.codePointAt(0)!) >>> 0;
-  return { "--identity-color": `var(--orbis-icon-${IDENTITY_COLORS[hash % IDENTITY_COLORS.length]})` } as CSSProperties;
+  return { "--identity-color": `var(--ob-icon-${IDENTITY_COLORS[hash % IDENTITY_COLORS.length]})` } as CSSProperties;
 }
 type UserAvatarProps = { user: User | null; size?: ComponentProps<typeof Avatar>["size"]; className?: string };
 function AvatarImage({ user, size = "sm", className = "", src }: UserAvatarProps & { src?: string }) {
   const name = user?.display_name || user?.email || "Orbis";
-  return <Avatar size={size} className={`identity-avatar ${className}`} style={identityColor(user?.id || "orbis")}>
-    {src ? <Avatar.Image src={src} alt={`${name}的头像`} /> : null}
-    <Avatar.Fallback>{Array.from(name)[0]?.toUpperCase() || "O"}</Avatar.Fallback>
+  return <Avatar size={size} className={className}>
+    {src ? <NativeAvatarImage src={src} alt={`${name}的头像`} /> : null}
+    <AvatarFallback>{Array.from(name)[0]?.toUpperCase() || "O"}</AvatarFallback>
   </Avatar>;
 }
 function StoredAvatar(props: UserAvatarProps) {

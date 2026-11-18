@@ -1,11 +1,12 @@
+import { Input } from "@orbis/ui/input";
+import { memberEntryStyles } from "./member-entry-styles";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Check, UserPlus } from "../../shared/ui/icons";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { useOptionalAuthRequest } from "../../shared/auth/use-auth-request";
-import { Button, buttonVariants } from "../../shared/ui/Button";
-import { TextInput } from "../../shared/ui/TextInput";
+import { Button, buttonVariants } from "@orbis/ui/button";
 import { authStore } from "../../shared/auth/auth-store";
 import { listWorkspaces } from "../workspace/api";
 
@@ -58,30 +59,30 @@ function InvitationSession({ invitationToken }: { invitationToken: string }) {
   }
 
   return (
-    <main className="orbis-auth-layout grid min-h-screen place-items-center bg-[var(--surface-app)] p-5">
-      <section className="orbis-auth-card w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--surface-content)] p-7 shadow-[var(--shadow-pop)]">
-        <div className="mb-6 grid h-12 w-12 place-items-center rounded-2xl bg-[var(--surface-inverse)] text-[var(--text-oninverse)]">
+    <main className={memberEntryStyles.layout}>
+      <section className={memberEntryStyles.card}>
+        <div className={memberEntryStyles.icon}>
           {accept.isSuccess ? <Check aria-hidden="true" size={20} /> : <UserPlus aria-hidden="true" size={20} />}
         </div>
         {accept.isSuccess ? (
           <>
-            <h1 className="text-2xl font-semibold tracking-[-0.035em]">已加入工作空间</h1>
-            <p className="mt-3 text-sm leading-6 text-[var(--muted)]">成员身份已激活。请登录后进入 Orbis 云文档。</p>
-            <Link to={auth ? "/documents" : "/login"} className={`${buttonVariants({ variant: "primary" })} mt-6 w-full`}>{auth ? "进入文档中心" : "前往登录"}</Link>
+            <h1 className={memberEntryStyles.heading}>已加入工作空间</h1>
+            <p className={memberEntryStyles.description}>成员身份已激活。请登录后进入 Orbis 云文档。</p>
+            <Link to={auth ? "/documents" : "/login"} className={`${buttonVariants({ variant: "default" })} mt-6 w-full`}>{auth ? "进入文档中心" : "前往登录"}</Link>
           </>
         ) : (
           <>
-            <h1 className="text-2xl font-semibold tracking-[-0.035em]">接受成员邀请</h1>
-            <p className="mt-3 text-sm leading-6 text-[var(--muted)]">{auth ? "使用当前登录账号确认加入受邀工作空间。" : "首次加入需要设置显示名称和密码。已有账号请先登录，再重新打开邀请链接。"}</p>
+            <h1 className={memberEntryStyles.heading}>接受成员邀请</h1>
+            <p className={memberEntryStyles.description}>{auth ? "使用当前登录账号确认加入受邀工作空间。" : "首次加入需要设置显示名称和密码。已有账号请先登录，再重新打开邀请链接。"}</p>
             <form className="mt-6 grid gap-4" onSubmit={submit}>
               {inspection.data ? <p>工作空间：{inspection.data.workspace_name} · {inspection.data.email}</p> : null}
 
-              {!auth && !inspection.data?.account_exists ? <><TextInput label="显示名称" value={displayName} required onChange={(event) => setDisplayName(event.target.value)} /><TextInput label="设置密码" type="password" minLength={1} value={password} required onChange={(event) => setPassword(event.target.value)} /></> : null}
+              {!auth && !inspection.data?.account_exists ? <><label className="grid gap-2 text-sm font-medium"><span>{"显示名称"}</span><Input value={displayName} required onChange={(event) => setDisplayName(event.target.value)} /></label><label className="grid gap-2 text-sm font-medium"><span>{"设置密码"}</span><Input type="password" minLength={1} value={password} required onChange={(event) => setPassword(event.target.value)} /></label></> : null}
               {!auth && inspection.data?.account_exists ? <Link to="/login" state={{ from: location.pathname + location.search + location.hash }}>登录受邀账号后继续</Link> : null}
 
-              <Button type="submit" variant="primary" className="mt-2 w-full" disabled={!invitationToken || inspection.isPending || inspection.isError || (!auth && Boolean(inspection.data?.account_exists)) || accept.isPending}>确认加入</Button>
+              <Button type="submit" variant="default" className="mt-2 w-full" disabled={!invitationToken || inspection.isPending || inspection.isError || (!auth && Boolean(inspection.data?.account_exists)) || accept.isPending}>确认加入</Button>
             </form>
-            <div className="mt-5 text-center text-xs text-[var(--muted)]"><Link className="font-semibold text-[var(--text-primary)]" to="/login">返回登录</Link></div>
+            <div className="mt-5 text-center text-xs text-(--muted-foreground)"><Link className="font-semibold text-foreground" to="/login">返回登录</Link></div>
           </>
         )}
       </section>

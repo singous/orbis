@@ -30,6 +30,7 @@ export function initializeAppearance(): () => void {
     const mode = appearanceStore.getState().mode;
     document.documentElement.dataset.themeMode = mode;
     document.documentElement.dataset.theme = mode === "system" ? media?.matches ? "dark" : "light" : mode;
+    document.documentElement.classList.toggle("dark", document.documentElement.dataset.theme === "dark");
   };
   const syncStorage = (event: StorageEvent) => {
     if (event.key !== APPEARANCE_STORAGE_KEY && event.key !== null) return;

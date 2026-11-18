@@ -7,7 +7,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, RouterProvider, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { CollectionsPage } from "./CollectionsPage";
+import { DocumentOverviewPage } from "./DocumentOverviewPage";
 import { DocumentRoute } from "../../app/DocumentRoute";
 import { NotebookPage } from "./NotebookPage";
 import { ApiError } from "../../shared/api/api-client";
@@ -238,12 +238,14 @@ vi.mock("./queries", () => {
     data: { items,pagination:{page:1,page_size:20,total:items.length,has_next:false} },
     isLoading: false,
     isError: false,
+    isSuccess: true,
   });
 
   mocks.metadata=Object.fromEntries([...notebooks,...archivedNotebooks].map(item=>[item.id,item]));
   return {
     useDocumentAuth:()=>({accessToken:"access-token",refreshToken:null,workspaceId:"018ff7c4-a5b6-7000-8000-000000000008",onTokenRefresh:vi.fn(),onUnauthorized:vi.fn()}),
     useNotebook: (id?: string) => ({ data: ((mocks.activeNotebooks ?? notebooks) as typeof notebooks).find(item => item.id === id), isLoading: false, isError: false }),
+    useDocumentGroup: () => ({ data: undefined, isLoading: false }),
     useDocumentGroups: (status?: string) =>
       result(status === "archived" ? archivedGroups : groups),
     useNotebooks: (
@@ -336,39 +338,48 @@ async function renderRoute(path: string, role: "owner" | "viewer" = "owner", wor
 }
 
 describe("document function pages", () => {
-  it("reveals and focuses a collapsed group opened from global search", async () => {
+  it("opens an old bookmark on the shelf and expands the targeted group", async () => {
     const groupId = "018ff7c4-a5b6-7000-8000-000000000001";
     localStorage.setItem(`orbis.collapsedDocumentGroups.${workspace.id}`, JSON.stringify([groupId]));
-    await renderRoute(`/documents/collections?group=${groupId}`);
-    expect(await screen.findByRole("button", { name: "收起分组 默认分组" })).toHaveAttribute("aria-expanded", "true");
-    expect(document.getElementById(`group-${groupId}`)).toHaveFocus();
+    await renderRoute(`/documents/collections?group=${groupId}#group-${groupId}`);
+    const group = await screen.findByRole("region", { name: "默认分组" });
+    expect(window.location.pathname).toBe("/documents");
+    expect(window.location.search).toBe(`?group=${groupId}`);
+    expect(window.location.hash).toBe(`#group-${groupId}`);
+    expect(screen.getByRole("heading", { name: "我的文档", level: 1 })).toBeVisible();
+    expect(within(group).getByRole("button", { name: /^默认分组/ })).toHaveAttribute("aria-expanded", "true");
+    expect(group).toHaveFocus();
   });
+
   it("collapses a notebook group with keyboard and restores its choice after remount", async () => {
     const actor = userEvent.setup();
-    const view = await renderRoute("/documents/collections");
-    const toggle = await screen.findByRole("button", { name: "收起分组 默认分组" });
+    const view = await renderRoute("/documents");
+    const group = await screen.findByRole("region", { name: "默认分组" });
+    const toggle = within(group).getByRole("button", { name: /^默认分组/ });
     expect(toggle).toHaveAttribute("aria-expanded", "true");
-    expect(within(screen.getByRole("region", { name: "笔记本" })).getByText("产品手册")).toBeVisible();
+    expect(within(group).getByRole("link", { name: /^产品手册$/ })).toBeVisible();
     toggle.focus();
     await actor.keyboard("{Enter}");
     expect(toggle).toHaveAttribute("aria-expanded", "false");
-    expect(within(screen.getByRole("region", { name: "笔记本" })).queryByText("产品手册")).not.toBeVisible();
+    expect(within(group).queryByRole("link", { name: /^产品手册$/ })).not.toBeInTheDocument();
     view.unmount();
-    await renderRoute("/documents/collections");
-    const restored = await screen.findByRole("button", { name: "展开分组 默认分组" });
+    await renderRoute("/documents");
+    const restoredGroup = await screen.findByRole("region", { name: "默认分组" });
+    const restored = within(restoredGroup).getByRole("button", { name: /^默认分组/ });
     expect(restored).toHaveAttribute("aria-expanded", "false");
     await actor.click(restored);
-    expect(within(screen.getByRole("region", { name: "笔记本" })).getByText("产品手册")).toBeVisible();
+    expect(within(restoredGroup).getByRole("link", { name: /^产品手册$/ })).toBeVisible();
   });
 
   it("keeps group creation actions independent of the collapsed content", async () => {
     const actor = userEvent.setup();
-    await renderRoute("/documents/collections");
-    await actor.click(await screen.findByRole("button", { name: "收起分组 默认分组" }));
-    const collapsedGroup = screen.getByRole("button", { name: "展开分组 默认分组" });
-    await actor.click(screen.getByRole("button", { name: "+ 笔记本" }));
+    await renderRoute("/documents");
+    const group = await screen.findByRole("region", { name: "默认分组" });
+    const toggle = within(group).getByRole("button", { name: /^默认分组/ });
+    await actor.click(toggle);
+    await actor.click(within(group).getByRole("button", { name: "在 默认分组 新建笔记本" }));
     expect(screen.getByRole("dialog", { name: "新建笔记本" })).toBeVisible();
-    expect(collapsedGroup).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
   });
 
   beforeEach(() => {
@@ -410,9 +421,8 @@ describe("document function pages", () => {
   });
 
   it.each([
-    ["/documents", "在线文档", "heading"],
-    ["/documents/recent", "最近文档", "heading"],
-    ["/documents/collections", "我的笔记本", "heading"],
+    ["/documents", "我的文档", "heading"],
+    ["/documents/recent", "最近编辑", "heading"],
     ["/documents/archive", "回收站", "heading"],
   ] as const)("renders %s as the %s page", async (path, name, role) => {
     await renderRoute(path);
@@ -429,7 +439,7 @@ describe("document function pages", () => {
       recent.textContent?.indexOf("最新文档") ?? -1,
     );
     expect(screen.queryByRole("navigation", { name: "在线文档功能" })).not.toBeInTheDocument();
-    expect(document.querySelector(".workspace-shell")).not.toHaveClass("has-section-menu");
+    expect(screen.getByRole("navigation", { name: "文档导航" })).toBeInTheDocument();
   });
 
   it.each(["/", "/home"])("opens the restored home from %s", async (path) => {
@@ -437,8 +447,8 @@ describe("document function pages", () => {
     expect(await screen.findByRole("heading", { name: "首页", level: 1 })).toBeVisible();
     expect(window.location.pathname).toBe("/home");
     const rail = await screen.findByRole("navigation", { name: "业务板块" });
-    expect(within(rail).getByRole("link", { name: "首页" })).toHaveAttribute("aria-current", "page");
-    expect(within(rail).getByRole("link", { name: "首页" })).toHaveAttribute("href", "/home");
+    expect(within(screen.getByRole("navigation", { name: "文档导航" })).getByRole("link", { name: "首页" })).toHaveAttribute("aria-current", "page");
+    expect(within(rail).queryByRole("link", { name: "首页" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "切换工作空间" })).toBeInTheDocument();
   });
 
@@ -463,7 +473,7 @@ describe("document function pages", () => {
 
     expect(await screen.findByRole("link", { name: "前往我的笔记本" })).toHaveAttribute(
       "href",
-      "/documents/collections",
+      "/documents",
     );
   });
 
@@ -473,12 +483,12 @@ describe("document function pages", () => {
       <MemoryRouter initialEntries={["/collections/018ff7c4-a5b6-7000-8000-000000000099"]}>
         <Routes>
           <Route path="/collections/:collectionId" element={<NotebookPage />} />
-          <Route path="/documents/collections" element={<CollectionsPage />} />
+          <Route path="/documents" element={<DocumentOverviewPage />} />
         </Routes>
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("heading", { name: "我的笔记本" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "我的文档" })).toBeVisible();
     await waitFor(() => expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({
       title: expect.stringContaining("无法打开笔记本"),
       tone: "danger",
@@ -498,12 +508,12 @@ describe("document function pages", () => {
       <MemoryRouter initialEntries={["/documents/018ff7c4-a5b6-7000-8000-000000000099"]}>
         <Routes>
           <Route path="/documents/:noteId" element={<DocumentRoute />} />
-          <Route path="/documents/collections" element={<CollectionsPage />} />
+          <Route path="/documents" element={<DocumentOverviewPage />} />
         </Routes>
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("heading", { name: "我的笔记本" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "我的文档" })).toBeVisible();
     await waitFor(() => expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({
       title: expect.stringContaining("无法打开文档"),
       tone: "danger",
@@ -521,7 +531,7 @@ describe("document function pages", () => {
     await renderRoute("/documents/018ff7c4-a5b6-7000-8000-000000000099");
 
     expect(await screen.findByRole("link", { name: "返回文档中心" })).toBeVisible();
-    expect(screen.queryByRole("heading", { name: "我的笔记本" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "我的文档" })).not.toBeInTheDocument();
   });
 
   it("requires parents to be restored before their archived descendants", async () => {

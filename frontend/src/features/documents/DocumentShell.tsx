@@ -1,4 +1,4 @@
-import { ActionButton } from "../../shared/ui/ActionButton";
+import { Button } from "@orbis/ui/button";
 import type { ReactNode } from "react";
 import { PanelRightClose } from "../../shared/ui/icons";
 import { useEffect, useState } from "react";
@@ -20,11 +20,12 @@ type DocumentShellProps = {
   contextPanel?: ReactNode;
   contextOpen?: boolean;
   onOpenContext?: () => void;
+  createAction?: ReactNode;
   notebookId?: string;
   activeNoteId?: string;
 };
 
-export function DocumentShell({ children, loading = false, toolbar, breadcrumb, editorLayout = false, contextPanel, contextOpen, onOpenContext, notebookId, activeNoteId }: DocumentShellProps) {
+export function DocumentShell({ children, loading = false, toolbar, breadcrumb, editorLayout = false, contextPanel, contextOpen, onOpenContext, notebookId, activeNoteId, createAction }: DocumentShellProps) {
   const workspaceId = useStore(authStore, (state) => state.workspace?.id);
   const [storedContextOpen, setStoredContextOpen] = useState(() => workspaceId ? readDocumentContextOpen(workspaceId) : true);
   const isContextOpen = contextOpen ?? storedContextOpen;
@@ -41,11 +42,11 @@ export function DocumentShell({ children, loading = false, toolbar, breadcrumb, 
   return (
     <WorkspaceShell
       loading={loading}
-      sidebar={notebookId ? createNotebookSidebar(notebookId, activeNoteId) : { title: <h2>在线文档</h2>, content: <WorkspaceNavigation /> }}
+      sidebar={notebookId ? createNotebookSidebar(notebookId, activeNoteId, createAction) : { title: <h2>文档</h2>, content: <WorkspaceNavigation /> }}
       toolbar={toolbar}
       sectionTitle={breadcrumb}
       contentLayout={editorLayout ? "document" : "page"}
-      contextPanel={contextPanel ? <div className="document-context-shell">{contextPanel}{isContextOpen ? <ActionButton type="button" className="document-context-close" aria-label="收起上下文面板" onClick={() => setContextOpen(false)}><PanelRightClose aria-hidden="true" size={16} /></ActionButton> : null}</div> : undefined}
+      contextPanel={contextPanel ? <div className="document-context-shell relative h-full">{contextPanel}{isContextOpen ? <Button type="button" className="document-context-close absolute top-3.5 end-3" aria-label="收起上下文面板" onClick={() => setContextOpen(false)} variant="ghost" size="icon"><PanelRightClose aria-hidden="true" size={16} /></Button> : null}</div> : undefined}
       contextOpen={isContextOpen}
       onOpenContext={isContextOpen ? undefined : () => { setContextOpen(true); onOpenContext?.(); }}
     >

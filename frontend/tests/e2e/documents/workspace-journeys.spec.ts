@@ -1,3 +1,4 @@
+import { notification } from "../helpers/notifications";
 import {ownerSession,openWithSession,createCollection,createDocument,workspacePath,sessionHeaders,responseData} from "../helpers/api-fixtures";
 import {expect,test} from "@playwright/test";
 const apiOrigin=`http://127.0.0.1:${process.env.ORBIS_E2E_API_PORT||"9311"}`;
@@ -17,7 +18,8 @@ test("Document writing and renaming work while deferred comment and share entrie
   await dialog.getByLabel("笔记本名称").fill(`Go 验收 ${Date.now()}`);
   await dialog.getByRole("button",{name:/^创建/}).click();
   await expect(page).toHaveURL(/\/collections\/[0-9a-f-]+$/);
-  await page.getByRole("region",{name:"主工作区",exact:true}).getByRole("button",{name:"新建文档",exact:true}).click();
+  await page.getByRole("region",{name:"主工作区",exact:true}).getByRole("button",{name:"新建内容",exact:true}).click();
+  await page.getByRole("menuitem",{name:"文档",exact:true}).click();
   await expect(page).toHaveURL(/\/documents\/[0-9a-f-]+$/);
   const documentId=page.url().split("/").at(-1)!;
   await page.getByRole("textbox",{name:"文档标题"}).fill("Go 原生文档验收");
@@ -68,7 +70,7 @@ test("Recent document pages and a lost Markdown import response preserve the ori
   const listPath=workspacePath(session,`/collections/${collection.id}/documents?page=1&page_size=20`),headers=sessionHeaders(session);
   const before=await responseData(await request.get(listPath,{headers}));
   await page.locator('input[type="file"]').setInputFiles({name:"恢复导入.md",mimeType:"text/markdown",buffer:Buffer.from("# Markdown 重试回执\n\n同一文件只应创建一份文档。")});
-  await expect(page.getByRole("alertdialog", { name: "网络异常，请稍后重试", exact: true })).toBeVisible();
+  await expect(notification(page, "网络异常，请稍后重试")).toBeVisible();
   await page.getByRole("button", { name: "导入操作", exact: true }).click();
   await page.getByRole("button",{name:"重试导入",exact:true}).click();
   await expect(page).toHaveURL(/\/documents\/[0-9a-f-]+$/);

@@ -28,10 +28,11 @@ type CreateInput struct {
 }
 
 type CollectionQuery struct {
-	GroupID  *string
-	Scope    DirectoryScope
-	Page     pagination.Page
-	Archived bool
+	IncludePreview bool
+	GroupID        *string
+	Scope          DirectoryScope
+	Page           pagination.Page
+	Archived       bool
 }
 
 type ChildrenQuery struct {

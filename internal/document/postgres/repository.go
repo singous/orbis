@@ -84,9 +84,55 @@ func (r *Repository) ListCollections(ctx context.Context, input document.Collect
 		for _, row := range rows {
 			items = append(items, row.domain())
 		}
+		if input.IncludePreview && !input.Archived && len(items) > 0 {
+			return loadNotebookPreviews(ctx, tx, input.Scope, items)
+		}
 		return nil
 	}, &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: true})
 	return items, total, err
+}
+
+const notebookPreviewLimit = 3
+
+// Restrict recursion to this collection page and traverse only visible ancestors.
+func loadNotebookPreviews(ctx context.Context, tx *gorm.DB, scope document.DirectoryScope, items []document.Collection) error {
+	role, err := wsstore.New(tx).Role(ctx, scope.WorkspaceID, scope.ActorID)
+	if err != nil {
+		return err
+	}
+	if !workspace.Allowed(role, workspace.Read) {
+		return fault.Denied()
+	}
+	ids := make([]string, 0, len(items))
+	previews := make(map[string]*document.NotebookPreview, len(items))
+	for i := range items {
+		items[i].Preview = &document.NotebookPreview{Recent: []document.Document{}}
+		ids = append(ids, items[i].ID)
+		previews[items[i].ID] = items[i].Preview
+	}
+	var rows []struct {
+		Document documentRow `gorm:"embedded"`
+		Total    int64
+	}
+	err = tx.Raw(`WITH RECURSIVE visible AS (
+   SELECT d.*, 1 AS depth FROM documents d WHERE workspace_id=? AND collection_id IN ? AND parent_id IS NULL AND NOT is_archived
+   UNION ALL
+   SELECT d.*, p.depth+1 FROM documents d JOIN visible p ON d.parent_id=p.id AND d.workspace_id=p.workspace_id AND d.collection_id=p.collection_id
+   WHERE NOT d.is_archived AND p.depth<?
+ ), ranked AS (
+   SELECT visible.*, count(*) OVER (PARTITION BY collection_id) AS total,
+          row_number() OVER (PARTITION BY collection_id ORDER BY updated_at_ms DESC, id DESC) AS rank
+   FROM visible
+ ) SELECT * FROM ranked WHERE rank<=? ORDER BY collection_id, rank`, scope.WorkspaceID, ids, document.MaxDirectoryDepth, notebookPreviewLimit).Scan(&rows).Error
+	if err != nil {
+		return err
+	}
+	for _, row := range rows {
+		preview := previews[row.Document.CollectionID]
+		preview.Count = row.Total
+		preview.Recent = append(preview.Recent, row.Document.domain())
+	}
+	return nil
 }
 
 // Create holds the collection structural lock while appending a document and its first revision.

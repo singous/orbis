@@ -1,0 +1,1541 @@
+{
+  "schemaVersion": 1,
+  "packages": {
+    "@esbuild/aix-ppc64@0.25.12": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+          "sourceURL": "https://raw.githubusercontent.com/evanw/esbuild/208f539945b145e7c9d6d844290f81c3fe5af320/LICENSE.md",
+          "sourceRevision": "208f539945b145e7c9d6d844290f81c3fe5af320"
+        }
+      ],
+      "evidence": "npm registry release esbuild@0.25.12 gitHead; same upstream project and release family"
+    },
+    "@esbuild/android-arm@0.25.12": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+          "sourceURL": "https://raw.githubusercontent.com/evanw/esbuild/208f539945b145e7c9d6d844290f81c3fe5af320/LICENSE.md",
+          "sourceRevision": "208f539945b145e7c9d6d844290f81c3fe5af320"
+        }
+      ],
+      "evidence": "npm registry release esbuild@0.25.12 gitHead; same upstream project and release family"
+    },
+    "@esbuild/android-arm64@0.25.12": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+          "sourceURL": "https://raw.githubusercontent.com/evanw/esbuild/208f539945b145e7c9d6d844290f81c3fe5af320/LICENSE.md",
+          "sourceRevision": "208f539945b145e7c9d6d844290f81c3fe5af320"
+        }
+      ],
+      "evidence": "npm registry release esbuild@0.25.12 gitHead; same upstream project and release family"
+    },
+    "@esbuild/android-x64@0.25.12": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+          "sourceURL": "https://raw.githubusercontent.com/evanw/esbuild/208f539945b145e7c9d6d844290f81c3fe5af320/LICENSE.md",
+          "sourceRevision": "208f539945b145e7c9d6d844290f81c3fe5af320"
+        }
+      ],
+      "evidence": "npm registry release esbuild@0.25.12 gitHead; same upstream project and release family"
+    },
+    "@esbuild/darwin-arm64@0.25.12": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+          "sourceURL": "https://raw.githubusercontent.com/evanw/esbuild/208f539945b145e7c9d6d844290f81c3fe5af320/LICENSE.md",
+          "sourceRevision": "208f539945b145e7c9d6d844290f81c3fe5af320"
+        }
+      ],
+      "evidence": "npm registry release esbuild@0.25.12 gitHead; same upstream project and release family"
+    },
+    "@esbuild/darwin-x64@0.25.12": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+          "sourceURL": "https://raw.githubusercontent.com/evanw/esbuild/208f539945b145e7c9d6d844290f81c3fe5af320/LICENSE.md",
+          "sourceRevision": "208f539945b145e7c9d6d844290f81c3fe5af320"
+        }
+      ],
+      "evidence": "npm registry release esbuild@0.25.12 gitHead; same upstream project and release family"
+    },
+    "@esbuild/freebsd-arm64@0.25.12": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+          "sourceURL": "https://raw.githubusercontent.com/evanw/esbuild/208f539945b145e7c9d6d844290f81c3fe5af320/LICENSE.md",
+          "sourceRevision": "208f539945b145e7c9d6d844290f81c3fe5af320"
+        }
+      ],
+      "evidence": "npm registry release esbuild@0.25.12 gitHead; same upstream project and release family"
+    },
+    "@esbuild/freebsd-x64@0.25.12": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+          "sourceURL": "https://raw.githubusercontent.com/evanw/esbuild/208f539945b145e7c9d6d844290f81c3fe5af320/LICENSE.md",
+          "sourceRevision": "208f539945b145e7c9d6d844290f81c3fe5af320"
+        }
+      ],
+      "evidence": "npm registry release esbuild@0.25.12 gitHead; same upstream project and release family"
+    },
+    "@esbuild/linux-arm@0.25.12": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+          "sourceURL": "https://raw.githubusercontent.com/evanw/esbuild/208f539945b145e7c9d6d844290f81c3fe5af320/LICENSE.md",
+          "sourceRevision": "208f539945b145e7c9d6d844290f81c3fe5af320"
+        }
+      ],
+      "evidence": "npm registry release esbuild@0.25.12 gitHead; same upstream project and release family"
+    },
+    "@esbuild/linux-arm64@0.25.12": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+          "sourceURL": "https://raw.githubusercontent.com/evanw/esbuild/208f539945b145e7c9d6d844290f81c3fe5af320/LICENSE.md",
+          "sourceRevision": "208f539945b145e7c9d6d844290f81c3fe5af320"
+        }
+      ],
+      "evidence": "npm registry release esbuild@0.25.12 gitHead; same upstream project and release family"
+    },
+    "@esbuild/linux-ia32@0.25.12": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+          "sourceURL": "https://raw.githubusercontent.com/evanw/esbuild/208f539945b145e7c9d6d844290f81c3fe5af320/LICENSE.md",
+          "sourceRevision": "208f539945b145e7c9d6d844290f81c3fe5af320"
+        }
+      ],
+      "evidence": "npm registry release esbuild@0.25.12 gitHead; same upstream project and release family"
+    },
+    "@esbuild/linux-loong64@0.25.12": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+          "sourceURL": "https://raw.githubusercontent.com/evanw/esbuild/208f539945b145e7c9d6d844290f81c3fe5af320/LICENSE.md",
+          "sourceRevision": "208f539945b145e7c9d6d844290f81c3fe5af320"
+        }
+      ],
+      "evidence": "npm registry release esbuild@0.25.12 gitHead; same upstream project and release family"
+    },
+    "@esbuild/linux-mips64el@0.25.12": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+          "sourceURL": "https://raw.githubusercontent.com/evanw/esbuild/208f539945b145e7c9d6d844290f81c3fe5af320/LICENSE.md",
+          "sourceRevision": "208f539945b145e7c9d6d844290f81c3fe5af320"
+        }
+      ],
+      "evidence": "npm registry release esbuild@0.25.12 gitHead; same upstream project and release family"
+    },
+    "@esbuild/linux-ppc64@0.25.12": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+          "sourceURL": "https://raw.githubusercontent.com/evanw/esbuild/208f539945b145e7c9d6d844290f81c3fe5af320/LICENSE.md",
+          "sourceRevision": "208f539945b145e7c9d6d844290f81c3fe5af320"
+        }
+      ],
+      "evidence": "npm registry release esbuild@0.25.12 gitHead; same upstream project and release family"
+    },
+    "@esbuild/linux-riscv64@0.25.12": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+          "sourceURL": "https://raw.githubusercontent.com/evanw/esbuild/208f539945b145e7c9d6d844290f81c3fe5af320/LICENSE.md",
+          "sourceRevision": "208f539945b145e7c9d6d844290f81c3fe5af320"
+        }
+      ],
+      "evidence": "npm registry release esbuild@0.25.12 gitHead; same upstream project and release family"
+    },
+    "@esbuild/linux-s390x@0.25.12": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+          "sourceURL": "https://raw.githubusercontent.com/evanw/esbuild/208f539945b145e7c9d6d844290f81c3fe5af320/LICENSE.md",
+          "sourceRevision": "208f539945b145e7c9d6d844290f81c3fe5af320"
+        }
+      ],
+      "evidence": "npm registry release esbuild@0.25.12 gitHead; same upstream project and release family"
+    },
+    "@esbuild/linux-x64@0.25.12": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+          "sourceURL": "https://raw.githubusercontent.com/evanw/esbuild/208f539945b145e7c9d6d844290f81c3fe5af320/LICENSE.md",
+          "sourceRevision": "208f539945b145e7c9d6d844290f81c3fe5af320"
+        }
+      ],
+      "evidence": "npm registry release esbuild@0.25.12 gitHead; same upstream project and release family"
+    },
+    "@esbuild/netbsd-arm64@0.25.12": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+          "sourceURL": "https://raw.githubusercontent.com/evanw/esbuild/208f539945b145e7c9d6d844290f81c3fe5af320/LICENSE.md",
+          "sourceRevision": "208f539945b145e7c9d6d844290f81c3fe5af320"
+        }
+      ],
+      "evidence": "npm registry release esbuild@0.25.12 gitHead; same upstream project and release family"
+    },
+    "@esbuild/netbsd-x64@0.25.12": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+          "sourceURL": "https://raw.githubusercontent.com/evanw/esbuild/208f539945b145e7c9d6d844290f81c3fe5af320/LICENSE.md",
+          "sourceRevision": "208f539945b145e7c9d6d844290f81c3fe5af320"
+        }
+      ],
+      "evidence": "npm registry release esbuild@0.25.12 gitHead; same upstream project and release family"
+    },
+    "@esbuild/openbsd-arm64@0.25.12": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+          "sourceURL": "https://raw.githubusercontent.com/evanw/esbuild/208f539945b145e7c9d6d844290f81c3fe5af320/LICENSE.md",
+          "sourceRevision": "208f539945b145e7c9d6d844290f81c3fe5af320"
+        }
+      ],
+      "evidence": "npm registry release esbuild@0.25.12 gitHead; same upstream project and release family"
+    },
+    "@esbuild/openbsd-x64@0.25.12": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+          "sourceURL": "https://raw.githubusercontent.com/evanw/esbuild/208f539945b145e7c9d6d844290f81c3fe5af320/LICENSE.md",
+          "sourceRevision": "208f539945b145e7c9d6d844290f81c3fe5af320"
+        }
+      ],
+      "evidence": "npm registry release esbuild@0.25.12 gitHead; same upstream project and release family"
+    },
+    "@esbuild/openharmony-arm64@0.25.12": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+          "sourceURL": "https://raw.githubusercontent.com/evanw/esbuild/208f539945b145e7c9d6d844290f81c3fe5af320/LICENSE.md",
+          "sourceRevision": "208f539945b145e7c9d6d844290f81c3fe5af320"
+        }
+      ],
+      "evidence": "npm registry release esbuild@0.25.12 gitHead; same upstream project and release family"
+    },
+    "@esbuild/sunos-x64@0.25.12": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+          "sourceURL": "https://raw.githubusercontent.com/evanw/esbuild/208f539945b145e7c9d6d844290f81c3fe5af320/LICENSE.md",
+          "sourceRevision": "208f539945b145e7c9d6d844290f81c3fe5af320"
+        }
+      ],
+      "evidence": "npm registry release esbuild@0.25.12 gitHead; same upstream project and release family"
+    },
+    "@esbuild/win32-arm64@0.25.12": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+          "sourceURL": "https://raw.githubusercontent.com/evanw/esbuild/208f539945b145e7c9d6d844290f81c3fe5af320/LICENSE.md",
+          "sourceRevision": "208f539945b145e7c9d6d844290f81c3fe5af320"
+        }
+      ],
+      "evidence": "npm registry release esbuild@0.25.12 gitHead; same upstream project and release family"
+    },
+    "@esbuild/win32-ia32@0.25.12": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+          "sourceURL": "https://raw.githubusercontent.com/evanw/esbuild/208f539945b145e7c9d6d844290f81c3fe5af320/LICENSE.md",
+          "sourceRevision": "208f539945b145e7c9d6d844290f81c3fe5af320"
+        }
+      ],
+      "evidence": "npm registry release esbuild@0.25.12 gitHead; same upstream project and release family"
+    },
+    "@esbuild/win32-x64@0.25.12": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+          "sourceURL": "https://raw.githubusercontent.com/evanw/esbuild/208f539945b145e7c9d6d844290f81c3fe5af320/LICENSE.md",
+          "sourceRevision": "208f539945b145e7c9d6d844290f81c3fe5af320"
+        }
+      ],
+      "evidence": "npm registry release esbuild@0.25.12 gitHead; same upstream project and release family"
+    },
+    "@iconify-json/tabler@1.2.42": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/b740a1d46122672da62833e97f7e7c8a13fa85cbc7445b584b297cc00dde93db.txt",
+          "sha256": "b740a1d46122672da62833e97f7e7c8a13fa85cbc7445b584b297cc00dde93db",
+          "sourceURL": "https://raw.githubusercontent.com/tabler/tabler-icons/bbed884d15354b5cebf2493371f20dc2d5e83eaf/LICENSE",
+          "sourceRevision": "bbed884d15354b5cebf2493371f20dc2d5e83eaf"
+        }
+      ],
+      "evidence": "Iconify package info.json pins Tabler icons 3.49.0"
+    },
+    "@joshwooding/vite-plugin-react-docgen-typescript@0.6.1": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/36c0a6c416faedf94efe2011d9618442049e3ccd414c40068e3fe16c8f70f3a2.txt",
+          "sha256": "36c0a6c416faedf94efe2011d9618442049e3ccd414c40068e3fe16c8f70f3a2",
+          "sourceURL": "https://raw.githubusercontent.com/joshwooding/vite-plugin-react-docgen-typescript/fed317e26c3f93901f1fdb01c322319c630038e0/LICENSE",
+          "sourceRevision": "fed317e26c3f93901f1fdb01c322319c630038e0"
+        }
+      ],
+      "evidence": "npm registry release @joshwooding/vite-plugin-react-docgen-typescript@0.6.1 gitHead; same upstream project and release family"
+    },
+    "@polka/url@1.0.0-next.29": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/ba573393f24555ac0528612ad39665fab5bdcc80330a61096024bbf5f736526d.txt",
+          "sha256": "ba573393f24555ac0528612ad39665fab5bdcc80330a61096024bbf5f736526d",
+          "sourceURL": "https://raw.githubusercontent.com/lukeed/polka/02cbdb529ddca0a9f3d225e2abb2931924219cc3/license",
+          "sourceRevision": "02cbdb529ddca0a9f3d225e2abb2931924219cc3"
+        }
+      ],
+      "evidence": "npm registry release @polka/url@1.0.0-next.29 gitHead; same upstream project and release family"
+    },
+    "@rollup/rollup-android-arm-eabi@4.62.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt",
+          "sha256": "fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8",
+          "sourceURL": "https://raw.githubusercontent.com/rollup/rollup/8faa18777374582bb813d54ce3623f4acf1f9e0b/LICENSE.md",
+          "sourceRevision": "8faa18777374582bb813d54ce3623f4acf1f9e0b"
+        }
+      ],
+      "evidence": "npm registry release rollup@4.62.2 gitHead; same upstream project and release family"
+    },
+    "@rollup/rollup-android-arm64@4.62.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt",
+          "sha256": "fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8",
+          "sourceURL": "https://raw.githubusercontent.com/rollup/rollup/8faa18777374582bb813d54ce3623f4acf1f9e0b/LICENSE.md",
+          "sourceRevision": "8faa18777374582bb813d54ce3623f4acf1f9e0b"
+        }
+      ],
+      "evidence": "npm registry release rollup@4.62.2 gitHead; same upstream project and release family"
+    },
+    "@rollup/rollup-darwin-arm64@4.62.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt",
+          "sha256": "fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8",
+          "sourceURL": "https://raw.githubusercontent.com/rollup/rollup/8faa18777374582bb813d54ce3623f4acf1f9e0b/LICENSE.md",
+          "sourceRevision": "8faa18777374582bb813d54ce3623f4acf1f9e0b"
+        }
+      ],
+      "evidence": "npm registry release rollup@4.62.2 gitHead; same upstream project and release family"
+    },
+    "@rollup/rollup-darwin-x64@4.62.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt",
+          "sha256": "fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8",
+          "sourceURL": "https://raw.githubusercontent.com/rollup/rollup/8faa18777374582bb813d54ce3623f4acf1f9e0b/LICENSE.md",
+          "sourceRevision": "8faa18777374582bb813d54ce3623f4acf1f9e0b"
+        }
+      ],
+      "evidence": "npm registry release rollup@4.62.2 gitHead; same upstream project and release family"
+    },
+    "@rollup/rollup-freebsd-arm64@4.62.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt",
+          "sha256": "fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8",
+          "sourceURL": "https://raw.githubusercontent.com/rollup/rollup/8faa18777374582bb813d54ce3623f4acf1f9e0b/LICENSE.md",
+          "sourceRevision": "8faa18777374582bb813d54ce3623f4acf1f9e0b"
+        }
+      ],
+      "evidence": "npm registry release rollup@4.62.2 gitHead; same upstream project and release family"
+    },
+    "@rollup/rollup-freebsd-x64@4.62.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt",
+          "sha256": "fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8",
+          "sourceURL": "https://raw.githubusercontent.com/rollup/rollup/8faa18777374582bb813d54ce3623f4acf1f9e0b/LICENSE.md",
+          "sourceRevision": "8faa18777374582bb813d54ce3623f4acf1f9e0b"
+        }
+      ],
+      "evidence": "npm registry release rollup@4.62.2 gitHead; same upstream project and release family"
+    },
+    "@rollup/rollup-linux-arm-gnueabihf@4.62.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt",
+          "sha256": "fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8",
+          "sourceURL": "https://raw.githubusercontent.com/rollup/rollup/8faa18777374582bb813d54ce3623f4acf1f9e0b/LICENSE.md",
+          "sourceRevision": "8faa18777374582bb813d54ce3623f4acf1f9e0b"
+        }
+      ],
+      "evidence": "npm registry release rollup@4.62.2 gitHead; same upstream project and release family"
+    },
+    "@rollup/rollup-linux-arm-musleabihf@4.62.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt",
+          "sha256": "fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8",
+          "sourceURL": "https://raw.githubusercontent.com/rollup/rollup/8faa18777374582bb813d54ce3623f4acf1f9e0b/LICENSE.md",
+          "sourceRevision": "8faa18777374582bb813d54ce3623f4acf1f9e0b"
+        }
+      ],
+      "evidence": "npm registry release rollup@4.62.2 gitHead; same upstream project and release family"
+    },
+    "@rollup/rollup-linux-arm64-gnu@4.62.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt",
+          "sha256": "fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8",
+          "sourceURL": "https://raw.githubusercontent.com/rollup/rollup/8faa18777374582bb813d54ce3623f4acf1f9e0b/LICENSE.md",
+          "sourceRevision": "8faa18777374582bb813d54ce3623f4acf1f9e0b"
+        }
+      ],
+      "evidence": "npm registry release rollup@4.62.2 gitHead; same upstream project and release family"
+    },
+    "@rollup/rollup-linux-arm64-musl@4.62.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt",
+          "sha256": "fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8",
+          "sourceURL": "https://raw.githubusercontent.com/rollup/rollup/8faa18777374582bb813d54ce3623f4acf1f9e0b/LICENSE.md",
+          "sourceRevision": "8faa18777374582bb813d54ce3623f4acf1f9e0b"
+        }
+      ],
+      "evidence": "npm registry release rollup@4.62.2 gitHead; same upstream project and release family"
+    },
+    "@rollup/rollup-linux-loong64-gnu@4.62.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt",
+          "sha256": "fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8",
+          "sourceURL": "https://raw.githubusercontent.com/rollup/rollup/8faa18777374582bb813d54ce3623f4acf1f9e0b/LICENSE.md",
+          "sourceRevision": "8faa18777374582bb813d54ce3623f4acf1f9e0b"
+        }
+      ],
+      "evidence": "npm registry release rollup@4.62.2 gitHead; same upstream project and release family"
+    },
+    "@rollup/rollup-linux-loong64-musl@4.62.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt",
+          "sha256": "fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8",
+          "sourceURL": "https://raw.githubusercontent.com/rollup/rollup/8faa18777374582bb813d54ce3623f4acf1f9e0b/LICENSE.md",
+          "sourceRevision": "8faa18777374582bb813d54ce3623f4acf1f9e0b"
+        }
+      ],
+      "evidence": "npm registry release rollup@4.62.2 gitHead; same upstream project and release family"
+    },
+    "@rollup/rollup-linux-ppc64-gnu@4.62.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt",
+          "sha256": "fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8",
+          "sourceURL": "https://raw.githubusercontent.com/rollup/rollup/8faa18777374582bb813d54ce3623f4acf1f9e0b/LICENSE.md",
+          "sourceRevision": "8faa18777374582bb813d54ce3623f4acf1f9e0b"
+        }
+      ],
+      "evidence": "npm registry release rollup@4.62.2 gitHead; same upstream project and release family"
+    },
+    "@rollup/rollup-linux-ppc64-musl@4.62.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt",
+          "sha256": "fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8",
+          "sourceURL": "https://raw.githubusercontent.com/rollup/rollup/8faa18777374582bb813d54ce3623f4acf1f9e0b/LICENSE.md",
+          "sourceRevision": "8faa18777374582bb813d54ce3623f4acf1f9e0b"
+        }
+      ],
+      "evidence": "npm registry release rollup@4.62.2 gitHead; same upstream project and release family"
+    },
+    "@rollup/rollup-linux-riscv64-gnu@4.62.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt",
+          "sha256": "fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8",
+          "sourceURL": "https://raw.githubusercontent.com/rollup/rollup/8faa18777374582bb813d54ce3623f4acf1f9e0b/LICENSE.md",
+          "sourceRevision": "8faa18777374582bb813d54ce3623f4acf1f9e0b"
+        }
+      ],
+      "evidence": "npm registry release rollup@4.62.2 gitHead; same upstream project and release family"
+    },
+    "@rollup/rollup-linux-riscv64-musl@4.62.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt",
+          "sha256": "fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8",
+          "sourceURL": "https://raw.githubusercontent.com/rollup/rollup/8faa18777374582bb813d54ce3623f4acf1f9e0b/LICENSE.md",
+          "sourceRevision": "8faa18777374582bb813d54ce3623f4acf1f9e0b"
+        }
+      ],
+      "evidence": "npm registry release rollup@4.62.2 gitHead; same upstream project and release family"
+    },
+    "@rollup/rollup-linux-s390x-gnu@4.62.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt",
+          "sha256": "fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8",
+          "sourceURL": "https://raw.githubusercontent.com/rollup/rollup/8faa18777374582bb813d54ce3623f4acf1f9e0b/LICENSE.md",
+          "sourceRevision": "8faa18777374582bb813d54ce3623f4acf1f9e0b"
+        }
+      ],
+      "evidence": "npm registry release rollup@4.62.2 gitHead; same upstream project and release family"
+    },
+    "@rollup/rollup-linux-x64-gnu@4.62.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt",
+          "sha256": "fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8",
+          "sourceURL": "https://raw.githubusercontent.com/rollup/rollup/8faa18777374582bb813d54ce3623f4acf1f9e0b/LICENSE.md",
+          "sourceRevision": "8faa18777374582bb813d54ce3623f4acf1f9e0b"
+        }
+      ],
+      "evidence": "npm registry release rollup@4.62.2 gitHead; same upstream project and release family"
+    },
+    "@rollup/rollup-linux-x64-musl@4.62.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt",
+          "sha256": "fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8",
+          "sourceURL": "https://raw.githubusercontent.com/rollup/rollup/8faa18777374582bb813d54ce3623f4acf1f9e0b/LICENSE.md",
+          "sourceRevision": "8faa18777374582bb813d54ce3623f4acf1f9e0b"
+        }
+      ],
+      "evidence": "npm registry release rollup@4.62.2 gitHead; same upstream project and release family"
+    },
+    "@rollup/rollup-openbsd-x64@4.62.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt",
+          "sha256": "fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8",
+          "sourceURL": "https://raw.githubusercontent.com/rollup/rollup/8faa18777374582bb813d54ce3623f4acf1f9e0b/LICENSE.md",
+          "sourceRevision": "8faa18777374582bb813d54ce3623f4acf1f9e0b"
+        }
+      ],
+      "evidence": "npm registry release rollup@4.62.2 gitHead; same upstream project and release family"
+    },
+    "@rollup/rollup-openharmony-arm64@4.62.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt",
+          "sha256": "fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8",
+          "sourceURL": "https://raw.githubusercontent.com/rollup/rollup/8faa18777374582bb813d54ce3623f4acf1f9e0b/LICENSE.md",
+          "sourceRevision": "8faa18777374582bb813d54ce3623f4acf1f9e0b"
+        }
+      ],
+      "evidence": "npm registry release rollup@4.62.2 gitHead; same upstream project and release family"
+    },
+    "@rollup/rollup-win32-arm64-msvc@4.62.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt",
+          "sha256": "fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8",
+          "sourceURL": "https://raw.githubusercontent.com/rollup/rollup/8faa18777374582bb813d54ce3623f4acf1f9e0b/LICENSE.md",
+          "sourceRevision": "8faa18777374582bb813d54ce3623f4acf1f9e0b"
+        }
+      ],
+      "evidence": "npm registry release rollup@4.62.2 gitHead; same upstream project and release family"
+    },
+    "@rollup/rollup-win32-ia32-msvc@4.62.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt",
+          "sha256": "fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8",
+          "sourceURL": "https://raw.githubusercontent.com/rollup/rollup/8faa18777374582bb813d54ce3623f4acf1f9e0b/LICENSE.md",
+          "sourceRevision": "8faa18777374582bb813d54ce3623f4acf1f9e0b"
+        }
+      ],
+      "evidence": "npm registry release rollup@4.62.2 gitHead; same upstream project and release family"
+    },
+    "@rollup/rollup-win32-x64-gnu@4.62.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt",
+          "sha256": "fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8",
+          "sourceURL": "https://raw.githubusercontent.com/rollup/rollup/8faa18777374582bb813d54ce3623f4acf1f9e0b/LICENSE.md",
+          "sourceRevision": "8faa18777374582bb813d54ce3623f4acf1f9e0b"
+        }
+      ],
+      "evidence": "npm registry release rollup@4.62.2 gitHead; same upstream project and release family"
+    },
+    "@rollup/rollup-win32-x64-msvc@4.62.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8.txt",
+          "sha256": "fa1bd040c5bdeefe65b3821cebf474f2733ce65df13089bd151dda1778e62fe8",
+          "sourceURL": "https://raw.githubusercontent.com/rollup/rollup/8faa18777374582bb813d54ce3623f4acf1f9e0b/LICENSE.md",
+          "sourceRevision": "8faa18777374582bb813d54ce3623f4acf1f9e0b"
+        }
+      ],
+      "evidence": "npm registry release rollup@4.62.2 gitHead; same upstream project and release family"
+    },
+    "@storybook/addon-a11y@9.1.21": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/bc90586179d44dcb313a9a289d687a2f26226303b2066bd21dbefd2378e894e5.txt",
+          "sha256": "bc90586179d44dcb313a9a289d687a2f26226303b2066bd21dbefd2378e894e5",
+          "sourceURL": "https://raw.githubusercontent.com/storybookjs/storybook/9abaf68f9a8dd45f0c861e9e1500ba1f6a850e0a/LICENSE",
+          "sourceRevision": "9abaf68f9a8dd45f0c861e9e1500ba1f6a850e0a"
+        }
+      ],
+      "evidence": "npm registry release storybook@9.1.21 gitHead; same upstream project and release family"
+    },
+    "@storybook/addon-docs@9.1.21": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/bc90586179d44dcb313a9a289d687a2f26226303b2066bd21dbefd2378e894e5.txt",
+          "sha256": "bc90586179d44dcb313a9a289d687a2f26226303b2066bd21dbefd2378e894e5",
+          "sourceURL": "https://raw.githubusercontent.com/storybookjs/storybook/9abaf68f9a8dd45f0c861e9e1500ba1f6a850e0a/LICENSE",
+          "sourceRevision": "9abaf68f9a8dd45f0c861e9e1500ba1f6a850e0a"
+        }
+      ],
+      "evidence": "npm registry release storybook@9.1.21 gitHead; same upstream project and release family"
+    },
+    "@storybook/addon-vitest@9.1.21": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/bc90586179d44dcb313a9a289d687a2f26226303b2066bd21dbefd2378e894e5.txt",
+          "sha256": "bc90586179d44dcb313a9a289d687a2f26226303b2066bd21dbefd2378e894e5",
+          "sourceURL": "https://raw.githubusercontent.com/storybookjs/storybook/9abaf68f9a8dd45f0c861e9e1500ba1f6a850e0a/LICENSE",
+          "sourceRevision": "9abaf68f9a8dd45f0c861e9e1500ba1f6a850e0a"
+        }
+      ],
+      "evidence": "npm registry release storybook@9.1.21 gitHead; same upstream project and release family"
+    },
+    "@storybook/builder-vite@9.1.21": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/bc90586179d44dcb313a9a289d687a2f26226303b2066bd21dbefd2378e894e5.txt",
+          "sha256": "bc90586179d44dcb313a9a289d687a2f26226303b2066bd21dbefd2378e894e5",
+          "sourceURL": "https://raw.githubusercontent.com/storybookjs/storybook/9abaf68f9a8dd45f0c861e9e1500ba1f6a850e0a/LICENSE",
+          "sourceRevision": "9abaf68f9a8dd45f0c861e9e1500ba1f6a850e0a"
+        }
+      ],
+      "evidence": "npm registry release storybook@9.1.21 gitHead; same upstream project and release family"
+    },
+    "@storybook/csf-plugin@9.1.21": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/bc90586179d44dcb313a9a289d687a2f26226303b2066bd21dbefd2378e894e5.txt",
+          "sha256": "bc90586179d44dcb313a9a289d687a2f26226303b2066bd21dbefd2378e894e5",
+          "sourceURL": "https://raw.githubusercontent.com/storybookjs/storybook/9abaf68f9a8dd45f0c861e9e1500ba1f6a850e0a/LICENSE",
+          "sourceRevision": "9abaf68f9a8dd45f0c861e9e1500ba1f6a850e0a"
+        }
+      ],
+      "evidence": "npm registry release storybook@9.1.21 gitHead; same upstream project and release family"
+    },
+    "@storybook/react@9.1.21": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/bc90586179d44dcb313a9a289d687a2f26226303b2066bd21dbefd2378e894e5.txt",
+          "sha256": "bc90586179d44dcb313a9a289d687a2f26226303b2066bd21dbefd2378e894e5",
+          "sourceURL": "https://raw.githubusercontent.com/storybookjs/storybook/9abaf68f9a8dd45f0c861e9e1500ba1f6a850e0a/LICENSE",
+          "sourceRevision": "9abaf68f9a8dd45f0c861e9e1500ba1f6a850e0a"
+        }
+      ],
+      "evidence": "npm registry release storybook@9.1.21 gitHead; same upstream project and release family"
+    },
+    "@storybook/react-dom-shim@9.1.21": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/bc90586179d44dcb313a9a289d687a2f26226303b2066bd21dbefd2378e894e5.txt",
+          "sha256": "bc90586179d44dcb313a9a289d687a2f26226303b2066bd21dbefd2378e894e5",
+          "sourceURL": "https://raw.githubusercontent.com/storybookjs/storybook/9abaf68f9a8dd45f0c861e9e1500ba1f6a850e0a/LICENSE",
+          "sourceRevision": "9abaf68f9a8dd45f0c861e9e1500ba1f6a850e0a"
+        }
+      ],
+      "evidence": "npm registry release storybook@9.1.21 gitHead; same upstream project and release family"
+    },
+    "@storybook/react-vite@9.1.21": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/bc90586179d44dcb313a9a289d687a2f26226303b2066bd21dbefd2378e894e5.txt",
+          "sha256": "bc90586179d44dcb313a9a289d687a2f26226303b2066bd21dbefd2378e894e5",
+          "sourceURL": "https://raw.githubusercontent.com/storybookjs/storybook/9abaf68f9a8dd45f0c861e9e1500ba1f6a850e0a/LICENSE",
+          "sourceRevision": "9abaf68f9a8dd45f0c861e9e1500ba1f6a850e0a"
+        }
+      ],
+      "evidence": "npm registry release storybook@9.1.21 gitHead; same upstream project and release family"
+    },
+    "@tailwindcss/oxide-android-arm64@4.3.1": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985.txt",
+          "sha256": "60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985",
+          "sourceURL": "https://raw.githubusercontent.com/tailwindlabs/tailwindcss/8a14a710102cae195f6811e8578bef9477bc6be9/LICENSE",
+          "sourceRevision": "8a14a710102cae195f6811e8578bef9477bc6be9"
+        }
+      ],
+      "evidence": "npm registry release @tailwindcss/oxide@4.3.1 gitHead; same upstream project and release family"
+    },
+    "@tailwindcss/oxide-darwin-x64@4.3.1": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985.txt",
+          "sha256": "60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985",
+          "sourceURL": "https://raw.githubusercontent.com/tailwindlabs/tailwindcss/8a14a710102cae195f6811e8578bef9477bc6be9/LICENSE",
+          "sourceRevision": "8a14a710102cae195f6811e8578bef9477bc6be9"
+        }
+      ],
+      "evidence": "npm registry release @tailwindcss/oxide@4.3.1 gitHead; same upstream project and release family"
+    },
+    "@tailwindcss/oxide-freebsd-x64@4.3.1": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985.txt",
+          "sha256": "60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985",
+          "sourceURL": "https://raw.githubusercontent.com/tailwindlabs/tailwindcss/8a14a710102cae195f6811e8578bef9477bc6be9/LICENSE",
+          "sourceRevision": "8a14a710102cae195f6811e8578bef9477bc6be9"
+        }
+      ],
+      "evidence": "npm registry release @tailwindcss/oxide@4.3.1 gitHead; same upstream project and release family"
+    },
+    "@tailwindcss/oxide-linux-arm-gnueabihf@4.3.1": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985.txt",
+          "sha256": "60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985",
+          "sourceURL": "https://raw.githubusercontent.com/tailwindlabs/tailwindcss/8a14a710102cae195f6811e8578bef9477bc6be9/LICENSE",
+          "sourceRevision": "8a14a710102cae195f6811e8578bef9477bc6be9"
+        }
+      ],
+      "evidence": "npm registry release @tailwindcss/oxide@4.3.1 gitHead; same upstream project and release family"
+    },
+    "@tailwindcss/oxide-linux-arm64-gnu@4.3.1": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985.txt",
+          "sha256": "60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985",
+          "sourceURL": "https://raw.githubusercontent.com/tailwindlabs/tailwindcss/8a14a710102cae195f6811e8578bef9477bc6be9/LICENSE",
+          "sourceRevision": "8a14a710102cae195f6811e8578bef9477bc6be9"
+        }
+      ],
+      "evidence": "npm registry release @tailwindcss/oxide@4.3.1 gitHead; same upstream project and release family"
+    },
+    "@tailwindcss/oxide-linux-arm64-musl@4.3.1": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985.txt",
+          "sha256": "60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985",
+          "sourceURL": "https://raw.githubusercontent.com/tailwindlabs/tailwindcss/8a14a710102cae195f6811e8578bef9477bc6be9/LICENSE",
+          "sourceRevision": "8a14a710102cae195f6811e8578bef9477bc6be9"
+        }
+      ],
+      "evidence": "npm registry release @tailwindcss/oxide@4.3.1 gitHead; same upstream project and release family"
+    },
+    "@tailwindcss/oxide-linux-x64-gnu@4.3.1": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985.txt",
+          "sha256": "60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985",
+          "sourceURL": "https://raw.githubusercontent.com/tailwindlabs/tailwindcss/8a14a710102cae195f6811e8578bef9477bc6be9/LICENSE",
+          "sourceRevision": "8a14a710102cae195f6811e8578bef9477bc6be9"
+        }
+      ],
+      "evidence": "npm registry release @tailwindcss/oxide@4.3.1 gitHead; same upstream project and release family"
+    },
+    "@tailwindcss/oxide-linux-x64-musl@4.3.1": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985.txt",
+          "sha256": "60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985",
+          "sourceURL": "https://raw.githubusercontent.com/tailwindlabs/tailwindcss/8a14a710102cae195f6811e8578bef9477bc6be9/LICENSE",
+          "sourceRevision": "8a14a710102cae195f6811e8578bef9477bc6be9"
+        }
+      ],
+      "evidence": "npm registry release @tailwindcss/oxide@4.3.1 gitHead; same upstream project and release family"
+    },
+    "@tailwindcss/oxide-wasm32-wasi@4.3.1": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985.txt",
+          "sha256": "60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985",
+          "sourceURL": "https://raw.githubusercontent.com/tailwindlabs/tailwindcss/8a14a710102cae195f6811e8578bef9477bc6be9/LICENSE",
+          "sourceRevision": "8a14a710102cae195f6811e8578bef9477bc6be9"
+        }
+      ],
+      "evidence": "npm registry release @tailwindcss/oxide@4.3.1 gitHead; same upstream project and release family"
+    },
+    "@emnapi/core@1.10.0": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/2088f55c6731498410b20c95ebd345ed4a4a800bf74c0fba4d282fd2a021daaa.txt",
+          "sha256": "2088f55c6731498410b20c95ebd345ed4a4a800bf74c0fba4d282fd2a021daaa",
+          "sourceURL": "https://raw.githubusercontent.com/toyobayashi/emnapi/ba84999164c8d9ee10e57f72bb6fa5fa0b192b54/LICENSE",
+          "sourceRevision": "ba84999164c8d9ee10e57f72bb6fa5fa0b192b54"
+        }
+      ],
+      "evidence": "npm registry release @emnapi/core@1.10.0 gitHead; same upstream project and release family"
+    },
+    "@emnapi/runtime@1.10.0": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/2088f55c6731498410b20c95ebd345ed4a4a800bf74c0fba4d282fd2a021daaa.txt",
+          "sha256": "2088f55c6731498410b20c95ebd345ed4a4a800bf74c0fba4d282fd2a021daaa",
+          "sourceURL": "https://raw.githubusercontent.com/toyobayashi/emnapi/ba84999164c8d9ee10e57f72bb6fa5fa0b192b54/LICENSE",
+          "sourceRevision": "ba84999164c8d9ee10e57f72bb6fa5fa0b192b54"
+        }
+      ],
+      "evidence": "npm registry release @emnapi/runtime@1.10.0 gitHead; same upstream project and release family"
+    },
+    "@emnapi/wasi-threads@1.2.1": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/2088f55c6731498410b20c95ebd345ed4a4a800bf74c0fba4d282fd2a021daaa.txt",
+          "sha256": "2088f55c6731498410b20c95ebd345ed4a4a800bf74c0fba4d282fd2a021daaa",
+          "sourceURL": "https://raw.githubusercontent.com/toyobayashi/emnapi/8037eb8107ae0c74f99c3fe0b045d5cf3f438ff9/LICENSE",
+          "sourceRevision": "8037eb8107ae0c74f99c3fe0b045d5cf3f438ff9"
+        }
+      ],
+      "evidence": "npm registry release @emnapi/wasi-threads@1.2.1 gitHead; same upstream project and release family"
+    },
+    "@napi-rs/wasm-runtime@1.1.4": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/3f1ce66533302df3a32edbfdfc0b78f0dd34659e4c1f5817162e5ea3c2297215.txt",
+          "sha256": "3f1ce66533302df3a32edbfdfc0b78f0dd34659e4c1f5817162e5ea3c2297215",
+          "sourceURL": "https://raw.githubusercontent.com/napi-rs/napi-rs/d5c3c43b45393f99ba151770f97bd472de533671/LICENSE",
+          "sourceRevision": "d5c3c43b45393f99ba151770f97bd472de533671"
+        }
+      ],
+      "evidence": "npm registry release @napi-rs/wasm-runtime@1.1.4 gitHead; same upstream project and release family"
+    },
+    "tslib@2.8.1": {
+      "license": "0BSD",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/210b19e543130388c68654b7497e967119ce17145f66ab7d85688fbd70f08751.txt",
+          "sha256": "210b19e543130388c68654b7497e967119ce17145f66ab7d85688fbd70f08751",
+          "sourceURL": "https://raw.githubusercontent.com/microsoft/tslib/d72d6f70b36286bc3f94a3dda1e64dcb568b1370/LICENSE.txt",
+          "sourceRevision": "d72d6f70b36286bc3f94a3dda1e64dcb568b1370"
+        }
+      ],
+      "evidence": "npm registry release tslib@2.8.1 gitHead; same upstream project and release family"
+    },
+    "@tailwindcss/oxide-win32-arm64-msvc@4.3.1": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985.txt",
+          "sha256": "60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985",
+          "sourceURL": "https://raw.githubusercontent.com/tailwindlabs/tailwindcss/8a14a710102cae195f6811e8578bef9477bc6be9/LICENSE",
+          "sourceRevision": "8a14a710102cae195f6811e8578bef9477bc6be9"
+        }
+      ],
+      "evidence": "npm registry release @tailwindcss/oxide@4.3.1 gitHead; same upstream project and release family"
+    },
+    "@tailwindcss/oxide-win32-x64-msvc@4.3.1": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985.txt",
+          "sha256": "60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985",
+          "sourceURL": "https://raw.githubusercontent.com/tailwindlabs/tailwindcss/8a14a710102cae195f6811e8578bef9477bc6be9/LICENSE",
+          "sourceRevision": "8a14a710102cae195f6811e8578bef9477bc6be9"
+        }
+      ],
+      "evidence": "npm registry release @tailwindcss/oxide@4.3.1 gitHead; same upstream project and release family"
+    },
+    "@tiptap/core@2.27.3": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/0ed4a30a6cda23799a01881f67d01ad218a2ac6d/LICENSE.md",
+          "sourceRevision": "0ed4a30a6cda23799a01881f67d01ad218a2ac6d"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/core@2.27.3 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-blockquote@2.27.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1/LICENSE.md",
+          "sourceRevision": "4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/core@2.27.2 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-bold@2.27.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1/LICENSE.md",
+          "sourceRevision": "4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/core@2.27.2 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-bubble-menu@2.27.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1/LICENSE.md",
+          "sourceRevision": "4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/core@2.27.2 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-bullet-list@2.27.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1/LICENSE.md",
+          "sourceRevision": "4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/core@2.27.2 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-code@2.27.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1/LICENSE.md",
+          "sourceRevision": "4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/core@2.27.2 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-code-block@2.27.3": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/0ed4a30a6cda23799a01881f67d01ad218a2ac6d/LICENSE.md",
+          "sourceRevision": "0ed4a30a6cda23799a01881f67d01ad218a2ac6d"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/core@2.27.3 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-collaboration@2.27.3": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/0ed4a30a6cda23799a01881f67d01ad218a2ac6d/LICENSE.md",
+          "sourceRevision": "0ed4a30a6cda23799a01881f67d01ad218a2ac6d"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/core@2.27.3 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-document@2.27.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1/LICENSE.md",
+          "sourceRevision": "4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/core@2.27.2 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-dropcursor@2.27.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1/LICENSE.md",
+          "sourceRevision": "4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/core@2.27.2 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-floating-menu@2.27.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1/LICENSE.md",
+          "sourceRevision": "4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/core@2.27.2 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-gapcursor@2.27.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1/LICENSE.md",
+          "sourceRevision": "4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/core@2.27.2 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-hard-break@2.27.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1/LICENSE.md",
+          "sourceRevision": "4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/core@2.27.2 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-heading@2.27.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1/LICENSE.md",
+          "sourceRevision": "4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/core@2.27.2 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-history@2.27.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1/LICENSE.md",
+          "sourceRevision": "4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/core@2.27.2 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-horizontal-rule@2.27.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1/LICENSE.md",
+          "sourceRevision": "4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/core@2.27.2 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-italic@2.27.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1/LICENSE.md",
+          "sourceRevision": "4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/core@2.27.2 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-link@2.26.1": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/d07e2df3b967106c46ec59d05d33506c5504ff1e/LICENSE.md",
+          "sourceRevision": "d07e2df3b967106c46ec59d05d33506c5504ff1e"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/extension-link@2.26.1 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-list-item@2.27.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1/LICENSE.md",
+          "sourceRevision": "4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/core@2.27.2 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-ordered-list@2.27.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1/LICENSE.md",
+          "sourceRevision": "4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/core@2.27.2 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-paragraph@2.27.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1/LICENSE.md",
+          "sourceRevision": "4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/core@2.27.2 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-placeholder@2.27.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1/LICENSE.md",
+          "sourceRevision": "4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/core@2.27.2 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-strike@2.27.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1/LICENSE.md",
+          "sourceRevision": "4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/core@2.27.2 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-table@2.26.1": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/d07e2df3b967106c46ec59d05d33506c5504ff1e/LICENSE.md",
+          "sourceRevision": "d07e2df3b967106c46ec59d05d33506c5504ff1e"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/extension-link@2.26.1 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-table-cell@2.26.1": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/d07e2df3b967106c46ec59d05d33506c5504ff1e/LICENSE.md",
+          "sourceRevision": "d07e2df3b967106c46ec59d05d33506c5504ff1e"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/extension-link@2.26.1 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-table-header@2.26.1": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/d07e2df3b967106c46ec59d05d33506c5504ff1e/LICENSE.md",
+          "sourceRevision": "d07e2df3b967106c46ec59d05d33506c5504ff1e"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/extension-link@2.26.1 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-table-row@2.26.1": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/d07e2df3b967106c46ec59d05d33506c5504ff1e/LICENSE.md",
+          "sourceRevision": "d07e2df3b967106c46ec59d05d33506c5504ff1e"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/extension-link@2.26.1 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-task-item@2.26.1": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/d07e2df3b967106c46ec59d05d33506c5504ff1e/LICENSE.md",
+          "sourceRevision": "d07e2df3b967106c46ec59d05d33506c5504ff1e"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/extension-link@2.26.1 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-task-list@2.26.1": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/d07e2df3b967106c46ec59d05d33506c5504ff1e/LICENSE.md",
+          "sourceRevision": "d07e2df3b967106c46ec59d05d33506c5504ff1e"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/extension-link@2.26.1 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-text@2.27.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1/LICENSE.md",
+          "sourceRevision": "4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/core@2.27.2 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-text-style@2.27.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1/LICENSE.md",
+          "sourceRevision": "4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/core@2.27.2 gitHead; same upstream project and release family"
+    },
+    "@tiptap/extension-underline@2.27.3": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/0ed4a30a6cda23799a01881f67d01ad218a2ac6d/LICENSE.md",
+          "sourceRevision": "0ed4a30a6cda23799a01881f67d01ad218a2ac6d"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/core@2.27.3 gitHead; same upstream project and release family"
+    },
+    "@tiptap/pm@2.27.3": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/0ed4a30a6cda23799a01881f67d01ad218a2ac6d/LICENSE.md",
+          "sourceRevision": "0ed4a30a6cda23799a01881f67d01ad218a2ac6d"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/core@2.27.3 gitHead; same upstream project and release family"
+    },
+    "@tiptap/react@2.27.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1/LICENSE.md",
+          "sourceRevision": "4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/core@2.27.2 gitHead; same upstream project and release family"
+    },
+    "@tiptap/starter-kit@2.27.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9.txt",
+          "sha256": "c96e5ecb55ac593157ad1d21d1f44a611187f494a0f04c235a1ae692c88d6ba9",
+          "sourceURL": "https://raw.githubusercontent.com/ueberdosis/tiptap/4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1/LICENSE.md",
+          "sourceRevision": "4b8d4e9434cdaf624d1c982f3b99f95d1359b4e1"
+        }
+      ],
+      "evidence": "npm registry release @tiptap/core@2.27.2 gitHead; same upstream project and release family"
+    },
+    "lightningcss-android-arm64@1.32.0": {
+      "license": "MPL-2.0",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e.txt",
+          "sha256": "5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e",
+          "sourceURL": "https://raw.githubusercontent.com/parcel-bundler/lightningcss/7f8a861bdee476fe90c89a8badeb3fd33a99c51a/LICENSE",
+          "sourceRevision": "7f8a861bdee476fe90c89a8badeb3fd33a99c51a"
+        }
+      ],
+      "evidence": "npm registry release lightningcss@1.32.0 gitHead; same upstream project and release family"
+    },
+    "lightningcss-darwin-x64@1.32.0": {
+      "license": "MPL-2.0",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e.txt",
+          "sha256": "5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e",
+          "sourceURL": "https://raw.githubusercontent.com/parcel-bundler/lightningcss/7f8a861bdee476fe90c89a8badeb3fd33a99c51a/LICENSE",
+          "sourceRevision": "7f8a861bdee476fe90c89a8badeb3fd33a99c51a"
+        }
+      ],
+      "evidence": "npm registry release lightningcss@1.32.0 gitHead; same upstream project and release family"
+    },
+    "lightningcss-freebsd-x64@1.32.0": {
+      "license": "MPL-2.0",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e.txt",
+          "sha256": "5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e",
+          "sourceURL": "https://raw.githubusercontent.com/parcel-bundler/lightningcss/7f8a861bdee476fe90c89a8badeb3fd33a99c51a/LICENSE",
+          "sourceRevision": "7f8a861bdee476fe90c89a8badeb3fd33a99c51a"
+        }
+      ],
+      "evidence": "npm registry release lightningcss@1.32.0 gitHead; same upstream project and release family"
+    },
+    "lightningcss-linux-arm-gnueabihf@1.32.0": {
+      "license": "MPL-2.0",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e.txt",
+          "sha256": "5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e",
+          "sourceURL": "https://raw.githubusercontent.com/parcel-bundler/lightningcss/7f8a861bdee476fe90c89a8badeb3fd33a99c51a/LICENSE",
+          "sourceRevision": "7f8a861bdee476fe90c89a8badeb3fd33a99c51a"
+        }
+      ],
+      "evidence": "npm registry release lightningcss@1.32.0 gitHead; same upstream project and release family"
+    },
+    "lightningcss-linux-arm64-gnu@1.32.0": {
+      "license": "MPL-2.0",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e.txt",
+          "sha256": "5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e",
+          "sourceURL": "https://raw.githubusercontent.com/parcel-bundler/lightningcss/7f8a861bdee476fe90c89a8badeb3fd33a99c51a/LICENSE",
+          "sourceRevision": "7f8a861bdee476fe90c89a8badeb3fd33a99c51a"
+        }
+      ],
+      "evidence": "npm registry release lightningcss@1.32.0 gitHead; same upstream project and release family"
+    },
+    "lightningcss-linux-arm64-musl@1.32.0": {
+      "license": "MPL-2.0",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e.txt",
+          "sha256": "5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e",
+          "sourceURL": "https://raw.githubusercontent.com/parcel-bundler/lightningcss/7f8a861bdee476fe90c89a8badeb3fd33a99c51a/LICENSE",
+          "sourceRevision": "7f8a861bdee476fe90c89a8badeb3fd33a99c51a"
+        }
+      ],
+      "evidence": "npm registry release lightningcss@1.32.0 gitHead; same upstream project and release family"
+    },
+    "lightningcss-linux-x64-gnu@1.32.0": {
+      "license": "MPL-2.0",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e.txt",
+          "sha256": "5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e",
+          "sourceURL": "https://raw.githubusercontent.com/parcel-bundler/lightningcss/7f8a861bdee476fe90c89a8badeb3fd33a99c51a/LICENSE",
+          "sourceRevision": "7f8a861bdee476fe90c89a8badeb3fd33a99c51a"
+        }
+      ],
+      "evidence": "npm registry release lightningcss@1.32.0 gitHead; same upstream project and release family"
+    },
+    "lightningcss-linux-x64-musl@1.32.0": {
+      "license": "MPL-2.0",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e.txt",
+          "sha256": "5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e",
+          "sourceURL": "https://raw.githubusercontent.com/parcel-bundler/lightningcss/7f8a861bdee476fe90c89a8badeb3fd33a99c51a/LICENSE",
+          "sourceRevision": "7f8a861bdee476fe90c89a8badeb3fd33a99c51a"
+        }
+      ],
+      "evidence": "npm registry release lightningcss@1.32.0 gitHead; same upstream project and release family"
+    },
+    "lightningcss-win32-arm64-msvc@1.32.0": {
+      "license": "MPL-2.0",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e.txt",
+          "sha256": "5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e",
+          "sourceURL": "https://raw.githubusercontent.com/parcel-bundler/lightningcss/7f8a861bdee476fe90c89a8badeb3fd33a99c51a/LICENSE",
+          "sourceRevision": "7f8a861bdee476fe90c89a8badeb3fd33a99c51a"
+        }
+      ],
+      "evidence": "npm registry release lightningcss@1.32.0 gitHead; same upstream project and release family"
+    },
+    "lightningcss-win32-x64-msvc@1.32.0": {
+      "license": "MPL-2.0",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e.txt",
+          "sha256": "5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e",
+          "sourceURL": "https://raw.githubusercontent.com/parcel-bundler/lightningcss/7f8a861bdee476fe90c89a8badeb3fd33a99c51a/LICENSE",
+          "sourceRevision": "7f8a861bdee476fe90c89a8badeb3fd33a99c51a"
+        }
+      ],
+      "evidence": "npm registry release lightningcss@1.32.0 gitHead; same upstream project and release family"
+    },
+    "saxes@6.0.0": {
+      "license": "ISC",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/0fac2374380621b22e6b50451057721a9c52935b02d16d106a9f04897f061d0e.txt",
+          "sha256": "0fac2374380621b22e6b50451057721a9c52935b02d16d106a9f04897f061d0e",
+          "sourceURL": "https://raw.githubusercontent.com/lddubeau/saxes/211fa0ebec9b628affc09219199639887174bfc3/LICENSE",
+          "sourceRevision": "211fa0ebec9b628affc09219199639887174bfc3"
+        }
+      ],
+      "evidence": "npm registry release saxes@6.0.0 gitHead; same upstream project and release family"
+    },
+    "sirv@3.0.2": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/ba573393f24555ac0528612ad39665fab5bdcc80330a61096024bbf5f736526d.txt",
+          "sha256": "ba573393f24555ac0528612ad39665fab5bdcc80330a61096024bbf5f736526d",
+          "sourceURL": "https://raw.githubusercontent.com/lukeed/sirv/1135207e92c40354543cbd15c763c7a61d79d432/license",
+          "sourceRevision": "1135207e92c40354543cbd15c763c7a61d79d432"
+        }
+      ],
+      "evidence": "npm registry release sirv@3.0.2 gitHead; same upstream project and release family"
+    },
+    "storybook@9.1.21": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/bc90586179d44dcb313a9a289d687a2f26226303b2066bd21dbefd2378e894e5.txt",
+          "sha256": "bc90586179d44dcb313a9a289d687a2f26226303b2066bd21dbefd2378e894e5",
+          "sourceURL": "https://raw.githubusercontent.com/storybookjs/storybook/9abaf68f9a8dd45f0c861e9e1500ba1f6a850e0a/LICENSE",
+          "sourceRevision": "9abaf68f9a8dd45f0c861e9e1500ba1f6a850e0a"
+        }
+      ],
+      "evidence": "npm registry release storybook@9.1.21 gitHead; same upstream project and release family"
+    },
+    "@remixicon/react@4.6.0": {
+      "license": "Apache-2.0",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4.txt",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "sourceURL": "https://raw.githubusercontent.com/Remix-Design/remixicon/8bc436bdd329cf342958d8effdd078bfa74354c6/License",
+          "sourceRevision": "8bc436bdd329cf342958d8effdd078bfa74354c6"
+        }
+      ],
+      "evidence": "Remix Icon v4.6.0 tag and package.json at the fixed revision; npm gitHead is not reachable in upstream public repository"
+    },
+    "eastasianwidth@0.2.0": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/94aa6016fb9d436508366433e9caba061443ca58f4c7eb515caec7badf90ae5a.txt",
+          "sha256": "94aa6016fb9d436508366433e9caba061443ca58f4c7eb515caec7badf90ae5a",
+          "sourceURL": "https://raw.githubusercontent.com/komagata/eastasianwidth/1d41951a59d63fb2d77cda021050fc070cae424a/MIT-LICENSE.txt",
+          "sourceRevision": "1d41951a59d63fb2d77cda021050fc070cae424a"
+        }
+      ],
+      "evidence": "The maintainer explicitly identifies this as the complete 0.2.0 notice in LICENSE-NOTES.md at f42b1e7b2a403d2050dda1141211b4e198e50e70; copyright line remains exactly \"Copyright komagata\" without adding a year."
+    }
+  }
+}

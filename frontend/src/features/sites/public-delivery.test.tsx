@@ -3,7 +3,7 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
-import { PublicSiteDelivery as PublicSitePage } from "./PublicSiteDelivery";
+import { PublicSitePage } from "./PublicSitePage";
 
 const notify = vi.hoisted(() => vi.fn());
 vi.mock("../../shared/ui/Toast", () => ({ showToast: notify }));
@@ -54,7 +54,7 @@ it("loads navigation and only the current body, fetching the separate search ind
   await screen.findByText("当前页面正文");
   expect(urls.some((url) => /\/search|\/guides/.test(url))).toBe(false);
   expect(urls).not.toContain("/api/public/sites/guide");
-  await userEvent.click(screen.getByRole("button", { name: "搜索文档" }));
+  await userEvent.click(screen.getByRole("button", { name: "搜索文档 ⌘ K" }));
   await userEvent.type(screen.getByRole("combobox", { name: "搜索文档" }), "安装专用正文");
   await userEvent.click(await screen.findByRole("option", { name: /安装指南/ }));
   await screen.findByText("安装专用正文");

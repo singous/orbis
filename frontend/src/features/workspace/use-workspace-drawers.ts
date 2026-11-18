@@ -28,7 +28,8 @@ export function useWorkspaceDrawers(compact: boolean, contextOpen: boolean) {
     focusable()[0]?.focus();
     // A nested overlay may unmount earlier in the same keyboard dispatch.
     // The composed path retains its ownership even after the target detaches.
-    const inNestedOverlay = (event: KeyboardEvent) => event.composedPath().some(node => node instanceof Element && node.matches('[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]'));
+    const inNestedOverlay = (event: KeyboardEvent) => event.composedPath().some(node => node instanceof Element && node.matches('[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]')) || Boolean(region?.querySelector('[aria-expanded="true"][aria-haspopup="dialog"], [aria-expanded="true"][aria-haspopup="menu"], [aria-expanded="true"][aria-haspopup="listbox"]'));
+    // 打开浮层到焦点迁移之间，触发器的展开状态同样代表嵌套浮层已拥有键盘。
     // Tooltip/focusable controls stop React keyboard propagation. Capture only
     // drawer dismissal, yielding to functional overlays and input composition.
     function handleEscape(event: KeyboardEvent) {

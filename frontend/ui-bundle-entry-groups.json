@@ -1,0 +1,42 @@
+{
+  "baselineRef": "0f0bbdc69445bd4f764482d7510d4220581ed83a",
+  "lockfileSha256": "aa381e4d516b0e1acafd145e83251c68ae774631b16e64e1b4c4316e6b653f49",
+  "baselineManifestSha256": "c521b2b1b0ec2e1955d3b5592857d5069e621bbbd9f134e0f35543cc795c46cb",
+  "groups": [
+    {
+      "baselineEntry": "src/features/sites/PublicSitePage.tsx",
+      "successors": ["src/features/sites/PublicSitePage.tsx", "src/features/sites/SitePreviewPage.tsx"],
+      "expectedSharedChunks": ["SiteReader"],
+      "reason": "The frozen module exported both existing public delivery and authenticated preview routes. Both successors inherit the original entry loading boundary budget derived from its retained build graph. Complete own-lineage attribution remains diagnostic, including SiteReader and further family-local extraction. SiteReader stays synchronous, preserving bootstrap handoff."
+    }
+  ],
+  "redirects": [
+    {
+      "originalEntry": "src/features/documents/CollectionsPage.tsx",
+      "replacement": "src/features/documents/DocumentOverviewPage.tsx",
+      "reason": "The legacy notebook list redirects to the shared document shelf, which retains its own original loading budget."
+    }
+  ],
+  "loadContexts": [
+    {
+      "entry": "src/features/collaboration/DocumentCollaborationPanel.tsx",
+      "hostChunkName": "LegacyDocumentEditorPage",
+      "reason": "The legacy document editor opens this panel. Resolve its unique emitted chunk name in each build and measure this host boundary separately."
+    },
+    {
+      "entry": "src/features/collaboration/DocumentCollaborationPanel.tsx",
+      "hostEntry": "src/features/boards/BoardEditor.tsx",
+      "reason": "The board editor opens this panel. Measure its initial, host and panel static dependency set independently of the other hosts."
+    },
+    {
+      "entry": "src/features/collaboration/DocumentCollaborationPanel.tsx",
+      "hostEntry": "src/features/documents/editor/CollaborativeDocumentEditorPage.tsx",
+      "reason": "The collaborative document editor opens this panel. Measure its initial, host and panel static dependency set independently of the other hosts."
+    },
+    {
+      "entry": "src/features/collaboration/DocumentCollaborationPanel.tsx",
+      "hostEntry": "src/features/sheets/SheetWorkspace.tsx",
+      "reason": "The sheet workspace opens this panel. Measure its initial, host and panel static dependency set independently of the other hosts."
+    }
+  ]
+}

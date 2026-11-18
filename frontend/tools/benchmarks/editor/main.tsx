@@ -5,7 +5,7 @@ import { AutosaveCoordinator } from "../../../src/features/documents/editor/auto
 import type { NoteBlocksV2, OrbisBlock } from "../../../src/features/content/blocks";
 import { createEditorDraftFingerprint } from "benchmark:draft";
 import { authStore } from "../../../src/shared/auth/auth-store";
-import "../../../src/styles/index.css";
+import "../../../src/styles/globals.css";
 
 const params = new URLSearchParams(location.search);
 const count = Number(params.get("blocks") || 100);

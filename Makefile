@@ -3,7 +3,7 @@ export BUILDX_CONFIG := $(CURDIR)/.dev/buildx
 NPM ?= npm
 GO := sh scripts/go.sh
 
-.PHONY: help build check test format backend-build backend-check backend-test backend-run backend-migrate cli-build cli-check cli-test frontend-install frontend-check frontend-test frontend-build frontend-e2e collaboration-install collaboration-build collaboration-check collaboration-test integration smoke compose-check go-build go-check go-test go-run go-migrate go-integration web-check web-test web-build web-e2e
+.PHONY: help build check test format backend-build backend-check backend-test backend-run backend-migrate cli-build cli-check cli-test frontend-install frontend-check frontend-test frontend-build frontend-release frontend-e2e collaboration-install collaboration-build collaboration-check collaboration-test integration smoke compose-check go-build go-check go-test go-run go-migrate go-integration web-check web-test web-build web-e2e
 
 help:
 	@printf '%s\n' \
@@ -16,6 +16,7 @@ help:
 	  'make cli-build        Build the independent Go CLI to bin/orbis' \
 	  'make frontend-install Install locked frontend dependencies' \
 	  'make frontend-build   Build the frontend' \
+	  'make frontend-release Build with approved licenses and ORBIS_SOURCE_REVISION' \
 	  'make frontend-e2e     Run browser acceptance in an owned Go test environment' \
 	  'make collaboration-install Install locked collaboration engine dependencies' \
 	  'make collaboration-check   Check engine types, CRDT persistence and HTTP lifecycle' \
@@ -60,6 +61,8 @@ frontend-check: frontend-test
 	$(NPM) --prefix frontend run typecheck
 frontend-build:
 	$(NPM) --prefix frontend run build
+frontend-release:
+	$(NPM) --prefix frontend run build:release
 frontend-e2e:
 	$(NPM) --prefix frontend run test:e2e
 

@@ -230,8 +230,8 @@ it("keeps a conflicting local title until the user explicitly loads the server t
   server.version += 1; server.title = "已提交的远端标题";
   expect(await within(view.container).findByText("标题版本冲突", {}, { timeout: 3000 })).toBeInTheDocument();
   expect(within(view.container).getByRole("textbox", { name: "文档标题" })).toHaveValue("本机待保存标题");
-  expect(await screen.findByRole("alertdialog", { name: "标题已被其他作者修改，本机标题仍保留。请载入服务端标题后再编辑。" })).toBeVisible();
-  expect(screen.getAllByRole("alertdialog")).toHaveLength(1);
+  expect(await screen.findByText("标题已被其他作者修改，本机标题仍保留。请载入服务端标题后再编辑。", { selector: '[data-slot="toast-title"]' })).toBeVisible();
+  expect(screen.getAllByText(/./, { selector: '[data-slot="toast-title"]' })).toHaveLength(1);
   expect(requests.filter(request => request.path.endsWith("/operations"))).toHaveLength(0);
   fireEvent.click(await screen.findByRole("button", { name: "本机修改" }));
   fireEvent.click(await screen.findByRole("button", { name: "载入服务端标题" }));
@@ -268,7 +268,7 @@ it.each([false, true])("replays an uncertain title receipt before checking a new
   await within(view.container).findByRole("button", { name: "模拟协作编辑" });
   server.loseTitleResponse = true;
   fireEvent.change(within(view.container).getByRole("textbox", { name: "文档标题" }), { target: { value: "结果不确定的标题" } });
-  await screen.findByRole("alertdialog", { name: "网络异常，请稍后重试" }, { timeout: 3000 });
+  await screen.findByText("网络异常，请稍后重试", { selector: '[data-slot="toast-title"]' }, { timeout: 3000 });
   if (laterInput) fireEvent.change(within(view.container).getByRole("textbox", { name: "文档标题" }), { target: { value: "更晚的本机输入" } });
   act(() => {
     server.title = "随后提交的标题"; server.version += 1;

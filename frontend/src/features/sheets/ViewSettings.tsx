@@ -1,9 +1,12 @@
+import { Spinner } from "@orbis/ui/spinner";
+import { sheetSettingRowClassName, sheetActionClassName } from "./sheet-chrome";
 import { reportError } from "../../shared/api/request-feedback";
-import { useState } from "react";
-import { ActionButton } from "../../shared/ui/ActionButton";
-import { Button } from "../../shared/ui/Button";
+import { useId, useState } from "react";
+import { Button } from "@orbis/ui/button";
+import { RadioGroup, RadioGroupItem } from "@orbis/ui/radio-group";
+
 import { Plus, Trash2 } from "../../shared/ui/icons";
-import { SelectField } from "../../shared/ui/SelectField";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@orbis/ui/select";
 import { ValueEditor } from "./Cell";
 import { FieldManager } from "./FieldManager";
 import { KINDS, type Field, type View } from "./model";
@@ -35,6 +38,7 @@ export function ViewSettings({
   onClose: () => void;
   onFieldAction?: (action: string, field: Field, anchor: Anchor) => void;
 }) {
+  const rowHeightId = useId();
   const [draft, setDraft] = useState(() => {
     const initial = structuredClone(view);
     const field = fields.find(field => field.id === initialFieldID);
@@ -58,6 +62,15 @@ export function ViewSettings({
     }
   }
   if (mode === "columns") return <FieldManager fields={fields} view={view} anchor={anchor} onSave={onSave} onClose={onClose} onFieldAction={onFieldAction} />;
+  const groupItems = [
+              { value: "", label: "不分组" },
+              ...choices(fields.filter((f) => f.kind === "select")),
+            ];
+  const sortFieldItems = choices(sortable);
+  const sortDirectionItems = [
+                    { value: "false", label: "升序" },
+                    { value: "true", label: "降序" },
+                  ];
   return (
     <Popover
       anchor={anchor}
@@ -67,74 +80,71 @@ export function ViewSettings({
       }}
       wide
     >
-      <div className="sheet-view-settings">
+      <div className="flex flex-col gap-4 p-3 [&>strong]:text-base [&>strong]:font-semibold [&>p]:text-xs [&>p]:text-muted-foreground">
         <strong>{labels[mode]}</strong>
-        {mode === "height" &&
-          [32, 40, 64, 96].map((height, i) => (
-            <label key={height} className="sheet-setting-row">
-              <input
-                type="radio"
-                name="row-height"
-                checked={draft.row_height === height}
-                disabled={busy}
-                onChange={() => setDraft({ ...draft, row_height: height })}
-              />
-              {["紧凑", "标准", "宽松", "超高"][i]}
-            </label>
-          ))}
+        {mode === "height" ? <RadioGroup aria-label="行高" value={String(draft.row_height)} disabled={busy} onValueChange={height => setDraft({ ...draft, row_height: Number(height) })}>
+          {[32, 40, 64, 96].map((height, index) => <div key={height} className={sheetSettingRowClassName}>
+            <RadioGroupItem id={`${rowHeightId}-${height}`} value={String(height)} />
+            <label htmlFor={`${rowHeightId}-${height}`}>{["紧凑", "标准", "宽松", "超高"][index]}</label>
+          </div>)}
+        </RadioGroup> : null}
         {mode === "group" && (
-          <SelectField
-            label="按字段分组"
+          <label className="grid gap-2 text-sm font-medium"><span>{"按字段分组"}</span><Select
             value={draft.group_field_id}
-            options={[
-              { value: "", label: "不分组" },
-              ...choices(fields.filter((f) => f.kind === "select")),
-            ]}
             disabled={busy}
-            onChange={(group_field_id) =>
-              setDraft({ ...draft, group_field_id })
-            }
-          />
+            onValueChange={group_field_id => { if (group_field_id === null) return; setDraft({ ...draft, group_field_id }); }}
+            items={groupItems}
+          >
+            <SelectTrigger aria-label={"按字段分组"}><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {groupItems.map(item => (
+                <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select></label>
         )}
         {mode === "sort" && (
           <>
             <p>依次按以下条件排序</p>
             {draft.sorts.map((sort, index) => (
-              <div className="sheet-setting-row" key={index}>
-                <SelectField
-                  density="compact"
-                  aria-label={`排序字段 ${index + 1}`}
+              <div className={sheetSettingRowClassName} key={index}>
+                <Select
                   value={sort.field_id}
-                  options={choices(sortable)}
                   disabled={busy}
-                  onChange={(field_id) =>
-                    setDraft({
-                      ...draft,
-                      sorts: draft.sorts.map((s, i) =>
-                        i === index ? { ...s, field_id } : s,
-                      ),
-                    })
-                  }
-                />
-                <SelectField
-                  density="compact"
-                  aria-label={`排序方向 ${index + 1}`}
+                  onValueChange={field_id => { if (field_id === null) return; setDraft({
+                                                          ...draft,
+                                                          sorts: draft.sorts.map((s, i) =>
+                                                            i === index ? { ...s, field_id } : s,
+                                                          ),
+                                                        }); }}
+                  items={sortFieldItems}
+                >
+                  <SelectTrigger aria-label={`排序字段 ${index + 1}`} size="sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {sortFieldItems.map(item => (
+                      <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
                   value={String(sort.descending)}
-                  options={[
-                    { value: "false", label: "升序" },
-                    { value: "true", label: "降序" },
-                  ]}
                   disabled={busy}
-                  onChange={(v) =>
-                    setDraft({
-                      ...draft,
-                      sorts: draft.sorts.map((s, i) =>
-                        i === index ? { ...s, descending: v === "true" } : s,
-                      ),
-                    })
-                  }
-                />
-                <ActionButton
+                  onValueChange={v => { if (v === null) return; setDraft({
+                                                          ...draft,
+                                                          sorts: draft.sorts.map((s, i) =>
+                                                            i === index ? { ...s, descending: v === "true" } : s,
+                                                          ),
+                                                        }); }}
+                  items={sortDirectionItems}
+                >
+                  <SelectTrigger aria-label={`排序方向 ${index + 1}`} size="sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {sortDirectionItems.map(item => (
+                      <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button className={`${sheetActionClassName} min-w-8`}
                   size="sm"
                   aria-label="移除排序"
                   disabled={busy}
@@ -143,16 +153,16 @@ export function ViewSettings({
                       ...draft,
                       sorts: draft.sorts.filter((_, i) => i !== index),
                     })
-                  }
+                  } variant="ghost"
                 >
                   <Trash2 size={15} />
-                </ActionButton>
+                </Button>
               </div>
             ))}
             <Button
               size="sm"
               variant="ghost"
-              icon={<Plus size={15} />}
+
               disabled={busy || !sortable.length || draft.sorts.length >= 8}
               onClick={() =>
                 setDraft({
@@ -163,7 +173,7 @@ export function ViewSettings({
                   ],
                 })
               }
-            >
+            ><Plus size={15} />
               添加排序条件
             </Button>
           </>
@@ -191,30 +201,40 @@ export function ViewSettings({
                     ? { contains: "包含" }
                     : {}),
               };
-              return (
-                <div className="sheet-filter-row" key={index}>
-                  <div>
-                    <SelectField
-                      density="compact"
-                      aria-label={`筛选字段 ${index + 1}`}
-                      value={filter.field_id}
-                      options={choices(filterable)}
-                      disabled={busy}
-                      onChange={(field_id) =>
-                        patch({ field_id, value: null, operator: "eq" })
-                      }
-                    />
-                    <SelectField
-                      density="compact"
-                      aria-label={`筛选条件 ${index + 1}`}
-                      value={filter.operator}
-                      options={Object.entries(operators).map(
+              const filterFieldItems = choices(filterable);
+  const filterOperatorItems = Object.entries(operators).map(
                         ([value, label]) => ({ value, label }),
-                      )}
+                      );
+  return (
+                <div className="flex flex-col gap-2.5 border-b border-border pb-4 [&>div:first-child]:flex [&>div:first-child]:gap-2 [&>div>[data-slot=select-trigger]]:min-w-0 [&>div>[data-slot=select-trigger]]:flex-1" key={index}>
+                  <div>
+                    <Select
+                      value={filter.field_id}
                       disabled={busy}
-                      onChange={(operator) => patch({ operator })}
-                    />
-                    <ActionButton
+                      onValueChange={field_id => { if (field_id === null) return; patch({ field_id, value: null, operator: "eq" }); }}
+                      items={filterFieldItems}
+                    >
+                      <SelectTrigger aria-label={`筛选字段 ${index + 1}`} size="sm"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {filterFieldItems.map(item => (
+                          <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select
+                      value={filter.operator}
+                      disabled={busy}
+                      onValueChange={operator => { if (operator === null) return; patch({ operator }); }}
+                      items={filterOperatorItems}
+                    >
+                      <SelectTrigger aria-label={`筛选条件 ${index + 1}`} size="sm"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {filterOperatorItems.map(item => (
+                          <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button className={sheetActionClassName}
                       size="sm"
                       aria-label="移除筛选"
                       disabled={busy}
@@ -223,10 +243,10 @@ export function ViewSettings({
                           ...draft,
                           filters: draft.filters.filter((_, i) => i !== index),
                         })
-                      }
+                      } variant="ghost"
                     >
                       <Trash2 size={15} />
-                    </ActionButton>
+                    </Button>
                   </div>
                   {!["empty", "not_empty"].includes(filter.operator) && (
                     <ValueEditor
@@ -241,7 +261,7 @@ export function ViewSettings({
             <Button
               size="sm"
               variant="ghost"
-              icon={<Plus size={15} />}
+
               disabled={
                 busy || !filterable.length || draft.filters.length >= 20
               }
@@ -254,21 +274,21 @@ export function ViewSettings({
                   ],
                 })
               }
-            >
+            ><Plus size={15} />
               添加筛选条件
             </Button>
           </>
         )}
-        <footer>
+        <footer className="flex justify-end gap-2 border-t border-border pt-4">
           <Button size="sm" disabled={busy} onClick={onClose}>
             取消
           </Button>
           <Button
             size="sm"
-            variant="primary"
-            isPending={busy}
-            onClick={() => void save()}
-          >
+            variant="default"
+
+            onClick={() => void save()} disabled={busy} aria-busy={busy || undefined}
+          >{busy ? <Spinner aria-hidden="true" /> : null}
             应用
           </Button>
         </footer>

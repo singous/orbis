@@ -1,7 +1,9 @@
-import { ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { cn } from "@orbis/ui/cn";
+import { boardMindmapControlClassName } from "./board-control-styles";
+import { ChevronDown, ChevronRight, Plus } from "@orbis/ui/icons";
 import { useEffect, useRef, useState } from "react";
-import { ActionButton } from "../../shared/ui/ActionButton";
-import { Tooltip } from "../../shared/ui/Tooltip";
+
+import { Tooltip, TooltipTrigger, TooltipContent } from "@orbis/ui/tooltip";
 import { portPosition } from "./geometry";
 import { appendTopic, hiddenElements, isMindmapTopic, mindmapDescendants, toggleTopicCollapsed } from "./mindmap";
 import type { Command, Element } from "./model";
@@ -52,7 +54,7 @@ export function BoardMindmapControls(props: Props) {
     const node = id ? props.elements.get(id) : null;
     return node && isMindmapTopic(node) && !hidden.has(node.id) ? [node] : [];
   });
-  return <div className="board-mindmap-controls" aria-label="思维导图分支操作">
+  return <div className="board-mindmap-controls" role="group" aria-label="思维导图分支操作">
     {nodes.map(node => {
       const descendants = mindmapDescendants(props.elements, node.id);
       const point = portPosition(node, "right");
@@ -60,24 +62,20 @@ export function BoardMindmapControls(props: Props) {
       const top = point.y * props.camera.zoom + props.camera.y;
       const label = node.text || "主题";
       return <div key={node.id} className="board-mindmap-node-controls" style={{ left, top }}>
-        {descendants.length ? <Tooltip label={node.structure.collapsed ? `展开 ${descendants.length} 个子主题` : "收起子主题"}>
-          <ActionButton className="board-mindmap-toggle" aria-label={`${node.structure.collapsed ? "展开" : "收起"}“${label}”的子主题`} aria-expanded={!node.structure.collapsed} isDisabled={pending === node.id} onPointerDown={event => event.stopPropagation()} onKeyDown={event => event.stopPropagation()} onKeyUp={event => event.stopPropagation()} onPress={() => {
+        {descendants.length ? <Tooltip><TooltipTrigger render={<button type="button" className={cn("board-mindmap-toggle", boardMindmapControlClassName)} aria-label={`${node.structure.collapsed ? "展开" : "收起"}“${label}”的子主题`} aria-expanded={!node.structure.collapsed} disabled={pending === node.id} onPointerDown={event => event.stopPropagation()} onKeyDown={event => { if (event.key !== "F6") event.stopPropagation(); }} onKeyUp={event => event.stopPropagation()} onClick={event => { event.stopPropagation();
             try { void submit(node, toggleTopicCollapsed(node, live.current.elements)); }
             catch (error) { live.current.onError(error); }
-          }}>
+           }}>
             {node.structure.collapsed ? <><ChevronRight size={12} /><span>{descendants.length}</span></> : <ChevronDown size={14} />}
-          </ActionButton>
-        </Tooltip> : null}
-        {selectedID === node.id ? <Tooltip label="添加子主题（Tab）">
-          <ActionButton className="board-mindmap-add" aria-label={`为“${label}”添加子主题`} isDisabled={pending === node.id} style={{ left: descendants.length ? "var(--board-mindmap-control-spacing)" : 0 }} onPointerDown={event => event.stopPropagation()} onKeyDown={event => event.stopPropagation()} onKeyUp={event => event.stopPropagation()} onPress={() => {
+          </button>} /><TooltipContent>{node.structure.collapsed ? `展开 ${descendants.length} 个子主题` : "收起子主题"}</TooltipContent></Tooltip> : null}
+        {selectedID === node.id ? <Tooltip><TooltipTrigger render={<button type="button" className={cn("board-mindmap-add", boardMindmapControlClassName)} aria-label={`为“${label}”添加子主题`} disabled={pending === node.id} style={{ left: descendants.length ? "var(--board-mindmap-control-spacing)" : 0 }} onPointerDown={event => event.stopPropagation()} onKeyDown={event => { if (event.key !== "F6") event.stopPropagation(); }} onKeyUp={event => event.stopPropagation()} onClick={event => { event.stopPropagation();
             try {
               const current = live.current.elements.get(node.id);
               if (!current) return;
               const result = appendTopic(current, live.current.elements, false);
               void submit(current, result.commands, result.id);
             } catch (error) { live.current.onError(error); }
-          }}><Plus size={14} /></ActionButton>
-        </Tooltip> : null}
+           }}><Plus size={14} /></button>} /><TooltipContent>{"添加子主题（Tab）"}</TooltipContent></Tooltip> : null}
       </div>;
     })}
   </div>;

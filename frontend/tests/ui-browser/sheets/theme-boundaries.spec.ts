@@ -1,0 +1,48 @@
+import { expect, test } from "@playwright/test";
+import { installSession } from "../fixtures/session";
+import { mountTableControl } from "../fixtures/table-controls";
+
+for (const inner of ["light", "dark"] as const) for (const width of [1280, 390]) test.describe(`${inner} nested sheet ${width}`, () => {
+  test.use({ hasTouch: width === 390 });
+  test("palette and body picker follow the nearest theme and keep the editing node", async ({ page }) => {
+    const outer = inner === "light" ? "dark" : "light";
+    await page.setViewportSize({ width, height: 900 });
+    await installSession(page);
+    await page.addInitScript(theme => localStorage.setItem("orbis.appearance", theme), outer);
+    await mountTableControl(page, "sheet-single", inner);
+    const popup = page.getByRole("dialog", { name: "字段选择", exact: true });
+    const input = popup.getByRole("textbox", { name: "搜索字段选项", exact: true });
+    const source = page.getByTestId("table-control-preview");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", outer);
+    await expect(input).toBeFocused();
+    const original = await input.elementHandle();
+    await input.fill("选项");
+    const sourceTag = source.locator(".sheet-inline-value .sheet-tag");
+    const optionTag = popup.getByRole("option", { name: "选项 A", exact: true }).locator(".sheet-tag");
+    await expect.poll(() => popup.evaluate(element => element.closest("[data-theme]")?.getAttribute("data-theme"))).toBe(inner);
+    const initial = await sourceTag.evaluate(element => ({ color: getComputedStyle(element).color, background: getComputedStyle(element).backgroundColor }));
+    expect(initial.color).toBe(inner === "light" ? "rgb(34, 108, 175)" : "rgb(121, 184, 255)");
+    await expect(optionTag).toHaveCSS("color", initial.color);
+    await expect(optionTag).toHaveCSS("background-color", initial.background);
+    await source.evaluate((element, theme) => { element.setAttribute("data-theme", theme); (element as HTMLElement).style.setProperty("--ob-sheet-blue-base", "#105530"); }, outer);
+    await expect.poll(() => popup.evaluate(element => element.closest("[data-theme]")?.getAttribute("data-theme"))).toBe(outer);
+    await expect(input).toHaveValue("选项");
+    await expect(input).toBeFocused();
+    expect(await input.evaluate((element, original) => element === original, original)).toBe(true);
+    const updated = await sourceTag.evaluate(element => ({ color: getComputedStyle(element).color, background: getComputedStyle(element).backgroundColor }));
+    expect(updated.color).toBe(outer === "light" ? "rgb(34, 108, 175)" : "rgb(121, 184, 255)");
+    expect(updated.background).not.toBe(initial.background);
+    await expect(optionTag).toHaveCSS("color", updated.color);
+    await expect(optionTag).toHaveCSS("background-color", updated.background);
+    await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
+    await input.press("ArrowDown");
+    const option = popup.getByRole("option", { name: "选项 A", exact: true });
+    await expect(option).toBeFocused();
+    await expect(option).toHaveCSS("outline-width", "2px");
+    await expect(option).toHaveCSS("outline-style", "solid");
+    await page.keyboard.press("Escape");
+    await expect(popup).toHaveCount(0);
+    await expect(page.getByRole("status", { name: "取消次数" })).toHaveText("1");
+    await expect(page.getByRole("status", { name: "提交记录" })).toHaveText("[]");
+  });
+});

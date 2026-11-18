@@ -54,7 +54,7 @@ afterEach(() => vi.unstubAllGlobals());
 function renderer() {
   const container = document.createElement("div");
   Object.defineProperties(container, { clientWidth: { value: 800 }, clientHeight: { value: 600 } });
-  return new BoardRenderer(container, { down: vi.fn(), move: vi.fn(), up: vi.fn(), doubleClick: vi.fn(), zoom: vi.fn() });
+  return new BoardRenderer(container, { down: vi.fn(), move: vi.fn(), up: vi.fn(), doubleClick: vi.fn(), zoom: vi.fn() }, { imagePlaceholder: "#e2e8f0", imageError: "#64748b", selection: "#2563eb" });
 }
 function frame() {
   const callbacks = [...scene.frames.values()];

@@ -1,3 +1,4 @@
+import { editorContentLoaderClassName, editorContentLoaderButtonClassName, editorContentLoaderErrorClassName } from "./editor-control-styles";
 import { Extension } from "@tiptap/core";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
@@ -21,12 +22,12 @@ function decorations(doc: ProseMirrorNode, options: Options): DecorationSet {
     if (!state) return;
     widgets.push(Decoration.widget(position + node.nodeSize, () => {
       const shell = document.createElement("div");
-      shell.className = "editor-content-loader";
+      shell.className = editorContentLoaderClassName;
       shell.contentEditable = "false";
       shell.dataset.blockLoader = id;
       const button = document.createElement("button");
       button.type = "button";
-      button.className = "editor-content-loader-button";
+      button.className = editorContentLoaderButtonClassName;
       button.disabled = Boolean(state.loading);
       button.textContent = state.loading ? "正在载入…" : !state.payload_loaded ? "展开正文" : "载入子内容（" + String(state.child_count - (state.loaded_count??0)) + "）";
       button.addEventListener("mousedown", event => event.preventDefault());
@@ -34,13 +35,18 @@ function decorations(doc: ProseMirrorNode, options: Options): DecorationSet {
       shell.append(button);
       if (state.error) {
         const message = document.createElement("span");
-        message.className = "editor-content-loader-error";
+        message.className = editorContentLoaderErrorClassName;
         message.setAttribute("role", "alert");
         message.textContent = state.error;
         shell.append(message);
       }
       return shell;
-    }, { side: -1, key: "load-" + id + "-" + String(state.cursor) + "-" + String(state.loading) + "-" + String(state.error) }));
+    }, {
+      side: -1,
+      key: "load-" + id + "-" + String(state.cursor) + "-" + String(state.loading) + "-" + String(state.error),
+      // 原生按钮的 Enter 应触发读取，不能被编辑器解释成正文换行。
+      stopEvent: event => event.type === "keydown",
+    }));
     pending.delete(id!);
   });
   return DecorationSet.create(doc, widgets);

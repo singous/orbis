@@ -1,35 +1,45 @@
+import { Badge } from "@orbis/ui/badge";
+import { Input } from "@orbis/ui/input";
+import { Spinner } from "@orbis/ui/spinner";
+import { cn } from "@orbis/ui/cn";
+import { PageHeader } from "../../shared/ui/PageHeader";
+import { cardSurfaceClassName } from "../../shared/ui/surface-styles";
 import { reportError } from "../../shared/api/request-feedback";
 import { newUUID } from "../../shared/ids";
 import { useEffect, useRef, useState } from "react";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useStore } from "zustand";
-import { StickyNote, Tags, LayoutGrid, List } from "lucide-react";
-import { ToggleButton } from "@heroui/react/toggle-button";
-import { ToggleButtonGroup } from "@heroui/react/toggle-button-group";
+import { StickyNote, Tags, LayoutGrid, List } from "@orbis/ui/icons";
+import { Toggle } from "@orbis/ui/toggle";
+import { Toolbar, ToolbarButton } from "@orbis/ui/toolbar";
 import { authStore, getAuthSessionKey } from "../../shared/auth/auth-store";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { ApiError } from "../../shared/api/api-client";
-import { Button } from "../../shared/ui/Button";
-import { ActionButton } from "../../shared/ui/ActionButton";
-import { Dialog, DialogContent } from "../../shared/ui/Dialog";
-import { TextInput } from "../../shared/ui/TextInput";
-import { SelectField } from "../../shared/ui/SelectField";
-import { Tag } from "../../shared/ui/Tag";
+import { Button } from "@orbis/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@orbis/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@orbis/ui/select";
 import { ChevronDown, Pencil, Pin, Trash2, ArchiveRestore } from "../../shared/ui/icons";
+import { EmptyState } from "../../shared/ui/EmptyState";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { DocumentShell } from "../documents/DocumentShell";
 import { ContentRenderer } from "../content/ContentRenderer";
 import { FileContentContext } from "../files/FileContent";
 import { useManagedFiles } from "../files/use-managed-files";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
-import { listQuickNotes, listQuickNoteTags, patchQuickNote, quickNoteSummary, type NoteFilter, type QuickNote, type QuickNoteTag } from "./api";
+import { listQuickNotes, patchQuickNote, type NoteFilter, type QuickNote, type QuickNoteTag } from "./api";
+import { quickNoteTagsQueryOptions, quickNoteSummaryQueryOptions } from "./metadata-queries";
 import { editorBlocks } from "./QuickNoteEditor";
 import { QuickNoteComposer } from "./QuickNoteComposer";
 import { QuickNoteTags } from "./QuickNoteTags";
-import "./quick-notes.css";
+
+const sortOptions = [{ value: "updated", label: "最近更新" }, { value: "created", label: "最近创建" }] as const;
+
+const viewOptions = [
+  { value: "list", label: "列表视图", Icon: List },
+  { value: "cards", label: "卡片视图", Icon: LayoutGrid },
+] as const;
 
 const noteTime = new Intl.DateTimeFormat("zh-CN", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
-const ALL_TAGS_KEY = "all";
 
 function NoteCard({ note, tags, canEdit, disabled, onEdit, onPatch }: { note: QuickNote; tags: QuickNoteTag[]; canEdit: boolean; disabled: boolean; onEdit: () => void; onPatch: (change: { is_pinned?: boolean; is_deleted?: boolean }) => void }) {
   const [expanded, setExpanded] = useState(false);
@@ -40,12 +50,20 @@ function NoteCard({ note, tags, canEdit, disabled, onEdit, onPatch }: { note: Qu
     const measure = () => setOverflow(element.scrollHeight > 320);
       measure(); const observer = new ResizeObserver(measure); observer.observe(element); if (element.firstElementChild) observer.observe(element.firstElementChild); return () => observer.disconnect();
   }, [note.blocks]);
-  return <article className={`quick-note-card${note.is_pinned ? " is-pinned" : ""}`} aria-label="随手记记录">
-    <header className="quick-note-card-heading"><time dateTime={new Date(note.updated_at_ms).toISOString()}>更新于 {noteTime.format(note.updated_at_ms)}</time>{note.is_pinned ? <Pin aria-label="已置顶" size={14} /> : null}
-      {canEdit ? <div className="quick-note-card-actions">{note.deleted_at_ms !== null ? <ActionButton type="button" disabled={disabled} aria-label="恢复记录" title="恢复记录" onClick={() => onPatch({ is_deleted: false })}><ArchiveRestore size={15} /></ActionButton> : <><ActionButton type="button" disabled={disabled} aria-label="编辑记录" title="编辑记录" onClick={onEdit}><Pencil size={15} /></ActionButton><ActionButton type="button" disabled={disabled} aria-label={note.is_pinned ? "取消置顶" : "置顶记录"} title={note.is_pinned ? "取消置顶" : "置顶记录"} onClick={() => onPatch({ is_pinned: !note.is_pinned })}><Pin size={15} /></ActionButton><ActionButton type="button" disabled={disabled} aria-label="移入回收站" title="移入回收站" onClick={() => onPatch({ is_deleted: true })}><Trash2 size={15} /></ActionButton></>}</div> : null}
+  const actions = note.deleted_at_ms !== null ? [
+    { id: "restore", label: "恢复记录", Icon: ArchiveRestore, run: () => onPatch({ is_deleted: false }) },
+  ] : [
+    { id: "edit", label: "编辑记录", Icon: Pencil, run: onEdit },
+    { id: "pin", label: note.is_pinned ? "取消置顶" : "置顶记录", Icon: Pin, run: () => onPatch({ is_pinned: !note.is_pinned }) },
+    { id: "archive", label: "移入回收站", Icon: Trash2, run: () => onPatch({ is_deleted: true }) },
+  ];
+  // 截断高度与上面的溢出测量保持相同像素值，缩放后也保留展开入口。
+  return <article className={cn(cardSurfaceClassName, "quick-note-card px-6 py-4 [@media(max-width:650px)]:px-4")} aria-label="随手记记录">
+    <header className="quick-note-card-heading mb-4 flex flex-wrap items-center gap-2 text-xs leading-5 text-(--muted-foreground)"><time dateTime={new Date(note.updated_at_ms).toISOString()}>更新于 {noteTime.format(note.updated_at_ms)}</time>{note.is_pinned ? <Pin aria-label="已置顶" size={14} /> : null}
+      {canEdit ? <div className="quick-note-card-actions ms-auto flex items-center">{actions.map(({ id, label, Icon, run }) => <Button key={id} size="icon-sm" disabled={disabled} aria-label={label} title={label} onClick={run} variant="ghost"><Icon size={15} /></Button>)}</div> : null}
     </header>
-    <div className={`quick-note-card-content${expanded ? " is-expanded" : ""}`} ref={content}><ContentRenderer blocks={editorBlocks(note.blocks)} /></div>
-    <footer className="quick-note-card-footer"><div className="quick-note-card-tags">{note.tag_ids.map(id => <Tag key={id}>{tags.find(tag => tag.id === id)?.name ?? "标签"}</Tag>)}</div>{overflow || expanded ? <ActionButton type="button" aria-expanded={expanded} onClick={() => setExpanded(value => !value)}><ChevronDown size={14} />{expanded ? "收起" : "展开"}</ActionButton> : null}</footer>
+    <div className={cn("quick-note-card-content quick-note-content overflow-hidden text-sm leading-(--ob-prose-body-leading) wrap-anywhere", expanded ? "max-h-none" : "max-h-[320px]")} ref={content}><ContentRenderer blocks={editorBlocks(note.blocks)} /></div>
+    <footer className="quick-note-card-footer mt-3 flex items-end justify-between gap-2"><div className="quick-note-card-tags flex min-w-0 flex-wrap gap-1">{note.tag_ids.map(id => <Badge key={id} className="h-auto max-w-full wrap-anywhere" variant="secondary">{tags.find(tag => tag.id === id)?.name ?? "标签"}</Badge>)}</div>{overflow || expanded ? <Button size="sm" aria-expanded={expanded} onClick={() => setExpanded(value => !value)} variant="ghost"><ChevronDown size={14} />{expanded ? "收起" : "展开"}</Button> : null}</footer>
   </article>;
 }
 
@@ -72,8 +90,8 @@ function QuickNotesWorkspace() {
   useEffect(() => { const timer = setTimeout(() => setFilter(value => ({ ...value, q: search })), 250); return () => clearTimeout(timer); }, [search]);
   useEffect(() => { if (!expanded) return; const close = (event: KeyboardEvent) => { if (event.key === "Escape") setExpanded(false); }; window.addEventListener("keydown", close); return () => window.removeEventListener("keydown", close); }, [expanded]);
   const notes = useInfiniteQuery({ queryKey: [...prefix, "list", filter], queryFn: ({ pageParam, signal }) => listQuickNotes(auth, filter, pageParam, signal), initialPageParam: 1, getNextPageParam: last => last.pagination.page * last.pagination.page_size < last.pagination.total ? last.pagination.page + 1 : undefined });
-  const tags = useQuery({ queryKey: [...prefix, "tags"], queryFn: ({ signal }) => listQuickNoteTags(auth, signal) });
-  const summary = useQuery({ queryKey: [...prefix, "summary"], queryFn: ({ signal }) => quickNoteSummary(auth, signal) });
+  const tags = useQuery(quickNoteTagsQueryOptions(auth, sessionKey));
+  const summary = useQuery(quickNoteSummaryQueryOptions(auth, sessionKey));
   const tagItems = tags.data?.items ?? [];
   const items = [...new Map((notes.data?.pages.flatMap(page => page.items) ?? []).map(note => [note.id, note])).values()];
   const refresh = () => { void queryClient.invalidateQueries({ queryKey: prefix }); };
@@ -86,32 +104,29 @@ function QuickNotesWorkspace() {
   }
   function chooseTag(tag: string) { setFilter(value => ({ ...value, tag })); }
   return <DocumentShell>
-    <div className={`quick-notes-page${expanded ? " composer-expanded" : ""}`}>
-      <header className="quick-notes-heading"><div><h1>随手记</h1><span>把零散的想法，留在这里</span></div><div className="quick-notes-view" role="group" aria-label="记录展示方式">{patch && !patching ? <Button onClick={() => void runPatch(patch)}>重试操作</Button> : null}<ActionButton type="button" title="列表视图" aria-label="列表视图" aria-pressed={view === "list"} onClick={() => setView("list")}><List size={17} /></ActionButton><ActionButton type="button" title="卡片视图" aria-label="卡片视图" aria-pressed={view === "cards"} onClick={() => setView("cards")}><LayoutGrid size={17} /></ActionButton></div></header>
-      <div className="quick-notes-layout">
+    <div className="quick-notes-page mx-auto max-w-[1800px] p-6 [@media(max-width:650px)]:p-4">
+      <PageHeader layout="compact" className="quick-notes-heading" title="随手记" description="把零散的想法，留在这里" actionsProps={{ className: "quick-notes-view flex gap-1", role: "group", "aria-label": "记录展示方式" }} actions={<>{patch && !patching ? <Button onClick={() => void runPatch(patch)} variant="outline">重试操作</Button> : null}{viewOptions.map(({ value, label, Icon }) => <Button key={value} size="icon-sm" title={label} aria-label={label} aria-pressed={view === value} onClick={() => setView(value)} variant={view === value ? "secondary" : "ghost"}><Icon size={17} /></Button>)}</>} />
+      <div className={cn("quick-notes-layout grid items-start gap-6 [@media(max-width:650px)]:gap-4", expanded ? "grid-cols-1" : "grid-cols-[minmax(300px,.8fr)_minmax(0,1.2fr)] [@media(max-width:1100px)]:grid-cols-1")}>
         <QuickNoteComposer userId={user.id} workspaceId={workspace.id} tags={tagItems} canEdit={canEdit} expanded={expanded} onToggleExpanded={() => setExpanded(value => !value)} onManageTags={() => setTagManager(true)} onSaved={() => { refresh(); setFilter(value => ({ ...value, q: "", tag: "", deleted: false })); setSearch(""); }} />
-        <section className="quick-notes-feed" aria-label="历史记录">
-          <div className="quick-notes-filters"><div className="quick-notes-search"><TextInput aria-label="搜索随手记" placeholder="搜索记录…" maxLength={200} value={search} onChange={event => setSearch(event.target.value)} /></div><SelectField aria-label="记录排序" density="compact" value={filter.sort} options={[{ value: "updated", label: "最近更新" }, { value: "created", label: "最近创建" }]} onChange={value => setFilter(current => ({ ...current, sort: value as NoteFilter["sort"] }))} /><ActionButton type="button" aria-label={filter.deleted ? "返回全部记录" : "查看回收站"} title={filter.deleted ? "返回全部记录" : "查看回收站"} aria-pressed={filter.deleted} onClick={() => setFilter(current => ({ ...current, deleted: !current.deleted, tag: "" }))}><Trash2 size={17} /></ActionButton></div>
-          <div className="quick-notes-tag-filters">
-            <ToggleButtonGroup className="quick-notes-tag-toggle-group" aria-label="按标签筛选" isDetached size="sm" selectionMode="single" disallowEmptySelection selectedKeys={[filter.tag || ALL_TAGS_KEY]} onSelectionChange={keys => {
-              const selected = keys.values().next().value;
-              if (typeof selected === "string") chooseTag(selected === ALL_TAGS_KEY ? "" : selected);
-            }}>
-              <ToggleButton id={ALL_TAGS_KEY}>{filter.deleted ? "回收站" : "全部"} {summary.data ? `(${filter.deleted ? summary.data.deleted : summary.data.total})` : ""}</ToggleButton>
-              {!filter.deleted && tagItems.map(tag => <ToggleButton key={tag.id} id={tag.id}>{tag.name} ({tag.count})</ToggleButton>)}
-            </ToggleButtonGroup>
-            {canEdit ? <ActionButton className="quick-notes-manage-tags" type="button" aria-label="管理标签" title="管理标签" onClick={() => setTagManager(true)}><Tags size={16} /></ActionButton> : null}
+        <section className={cn("quick-notes-feed min-w-0", expanded && "hidden")} aria-label="历史记录">
+          <div className="quick-notes-filters mb-4 flex items-center gap-2 [@media(max-width:650px)]:flex-wrap"><div className="quick-notes-search flex min-w-[100px] flex-1 items-center [@media(max-width:650px)]:basis-full"><Input className="min-w-0" aria-label="搜索随手记" placeholder="搜索记录…" maxLength={200} value={search} onChange={event => setSearch(event.target.value)} /></div><Select<NoteFilter["sort"]> items={sortOptions} value={filter.sort} onValueChange={sort => { if (sort !== null) setFilter(current => ({ ...current, sort })); }}><SelectTrigger className="w-40" aria-label="记录排序"><SelectValue /></SelectTrigger><SelectContent role="region" aria-label="记录排序选项">{sortOptions.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select><Button size="icon" aria-label={filter.deleted ? "返回全部记录" : "查看回收站"} title={filter.deleted ? "返回全部记录" : "查看回收站"} aria-pressed={filter.deleted} onClick={() => setFilter(current => ({ ...current, deleted: !current.deleted, tag: "" }))} variant="ghost"><Trash2 size={17} /></Button></div>
+          <div className="quick-notes-tag-filters mb-4 flex flex-wrap items-center gap-2">
+            <Toolbar className="quick-notes-tag-toggle-group max-w-full flex-wrap justify-start gap-2" aria-label="按标签筛选">
+              <ToolbarButton render={<Toggle className="max-w-full whitespace-normal wrap-anywhere" pressed={!filter.tag} onPressedChange={selected => { if (selected) chooseTag(""); }} />}>{filter.deleted ? "回收站" : "全部"} {summary.data ? `(${filter.deleted ? summary.data.deleted : summary.data.total})` : ""}</ToolbarButton>
+              {!filter.deleted && tagItems.map(tag => <ToolbarButton key={tag.id} render={<Toggle className="max-w-full whitespace-normal wrap-anywhere" pressed={filter.tag === tag.id} onPressedChange={selected => { if (selected) chooseTag(tag.id); }} />}>{tag.name} ({tag.count})</ToolbarButton>)}
+            </Toolbar>
+            {canEdit ? <Button className="quick-notes-manage-tags" size="icon" aria-label="管理标签" title="管理标签" onClick={() => setTagManager(true)} variant="ghost"><Tags size={16} /></Button> : null}
           </div>
 
           {notes.isPending ? <LoadingState label="正在加载随手记…" variant="cards" /> : null}
-          {!notes.isPending && !notes.isError && !items.length ? <div className="quick-notes-empty"><StickyNote size={36} /><h2>{filter.deleted ? "回收站是空的" : filter.q || filter.tag ? "没有找到匹配的记录" : "记下第一个想法"}</h2><p>{filter.deleted ? "移入回收站的记录可以在这里恢复。" : filter.q || filter.tag ? "试试其他关键词或标签。" : "一句灵感、一段代码、一张图片，都可以从这里开始。"}</p></div> : null}
-          <FileContentContext.Provider value={files}><div className={`quick-notes-records is-${view}`}>{items.map(note => <NoteCard key={note.id} note={note} tags={tagItems} canEdit={canEdit} disabled={Boolean(patch)} onEdit={() => setEditing(note)} onPatch={change => void runPatch({ id: note.id, body: { ...change, operation_id: newUUID(), expected_version: note.version } })} />)}</div></FileContentContext.Provider>
-          {notes.hasNextPage ? <Button className="quick-notes-load-more" isPending={notes.isFetchingNextPage} onClick={() => void notes.fetchNextPage()}>加载更多</Button> : null}
+          {!notes.isPending && !notes.isError && !items.length ? <EmptyState appearance="plain" className="quick-notes-empty min-h-[340px]" icon={<StickyNote size={36} />} title={filter.deleted ? "回收站是空的" : filter.q || filter.tag ? "没有找到匹配的记录" : "记下第一个想法"} description={filter.deleted ? "移入回收站的记录可以在这里恢复。" : filter.q || filter.tag ? "试试其他关键词或标签。" : "一句灵感、一段代码、一张图片，都可以从这里开始。"} /> : null}
+          <FileContentContext.Provider value={files}><div className={cn("quick-notes-records grid items-start gap-4", view === "cards" && "grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] [@media(max-width:1100px)]:grid-cols-2 [@media(max-width:650px)]:grid-cols-1")}>{items.map(note => <NoteCard key={note.id} note={note} tags={tagItems} canEdit={canEdit} disabled={Boolean(patch)} onEdit={() => setEditing(note)} onPatch={change => void runPatch({ id: note.id, body: { ...change, operation_id: newUUID(), expected_version: note.version } })} />)}</div></FileContentContext.Provider>
+          {notes.hasNextPage ? <Button className="quick-notes-load-more mx-auto mt-6 flex" onClick={() => void notes.fetchNextPage()} variant="outline" disabled={notes.isFetchingNextPage} focusableWhenDisabled={(notes.isFetchingNextPage)} aria-busy={notes.isFetchingNextPage || undefined}>{notes.isFetchingNextPage ? <Spinner aria-hidden="true" /> : null}加载更多</Button> : null}
         </section>
       </div>
     </div>
     <QuickNoteTags open={tagManager} onOpenChange={setTagManager} tags={tagItems} onChanged={refresh} />
-    <Dialog open={Boolean(editing)} onOpenChange={open => { if (!open) setEditing(null); }}><DialogContent title="编辑随手记" className="quick-note-edit-dialog">{editing ? <QuickNoteComposer key={editing.id} userId={user.id} workspaceId={workspace.id} note={editing} tags={tagItems} canEdit={canEdit} onManageTags={() => setTagManager(true)} onSaved={() => { setEditing(null); refresh(); }} /> : null}</DialogContent></Dialog>
+    <Dialog open={Boolean(editing)} onOpenChange={open => { if (!open) setEditing(null); }}><DialogContent className="quick-note-edit-dialog w-[min(720px,calc(100vw-32px))]"><DialogHeader><DialogTitle>{"编辑随手记"}</DialogTitle></DialogHeader>{editing ? <QuickNoteComposer appearance="dialog" key={editing.id} userId={user.id} workspaceId={workspace.id} note={editing} tags={tagItems} canEdit={canEdit} onManageTags={() => setTagManager(true)} onSaved={() => { setEditing(null); refresh(); }} /> : null}</DialogContent></Dialog>
   </DocumentShell>;
 }
 

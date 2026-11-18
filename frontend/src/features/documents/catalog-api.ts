@@ -45,8 +45,8 @@ export async function setDocumentGroupArchived(groupId: string, archived: boolea
 
   });
 }
-export function listNotebooks(auth: AuthRequestOptions, groupId?: string, status: ResourceStatus = "active", options: { signal?: AbortSignal } = {}) {
-  return pages(query("/collections",{ group_id:groupId,archived:String(status === "archived") }),notebookSchema,auth,options.signal);
+export function listNotebooks(auth: AuthRequestOptions, groupId?: string, status: ResourceStatus = "active", options: { signal?: AbortSignal; includePreview?: boolean } = {}) {
+  return pages(query("/collections",{ group_id:groupId,archived:String(status === "archived"), include_preview: options.includePreview ? "true" : undefined }),notebookSchema,auth,options.signal);
 }
 export async function createNotebook(payload: { title: string; group_id?: string | null; sort_order: number; icon?: NotebookIconValue | null }, auth: AuthRequestOptions): Promise<Notebook> {
   return notebookSchema.parse(await apiRequest(path(auth,"/collections"),{ ...authRequestOptions(auth),method:"POST",body:payload }));
@@ -110,7 +110,15 @@ export async function reorderNotebookNotes(collectionId: string, payload: NoteOr
   return getNoteTree(collectionId,auth);
 }
 export async function browseNotes(auth: AuthRequestOptions, status: ResourceStatus = "active", options: { allPages?: boolean; signal?: AbortSignal; page?:number; pageSize?:number } = {}) {
-  const result = await pages(status === "archived" ? "/documents/archive" : "/documents",status === "archived" ? nativeNoteSchema.transform(item => ({ ...item,summary:null as string | null })) : nativeNoteSchema.extend({ summary:z.string().refine(value => Array.from(value).length <= 240) }),auth,options.signal,options.allPages ?? false,options.page ?? 1,options.pageSize ?? 20);
+  const archived = status === "archived";
+  const allPages = options.allPages ?? false;
+  const schema = archived
+    ? nativeNoteSchema.transform(item => ({ ...item, summary: null as string | null }))
+    : nativeNoteSchema.extend({ summary: z.string().refine(value => Array.from(value).length <= 240) });
+  const result = await pages(
+    archived ? "/documents/archive" : "/documents", schema, auth, options.signal,
+    allPages, allPages ? 1 : options.page ?? 1, options.pageSize ?? (allPages ? CATALOG_PAGE_SIZE : 20),
+  );
   return { ...result,items:result.items.map(item => ({ ...noteSchema.parse(item),summary:item.summary })) };
 }
 export async function importMarkdown(payload: { notebook_id: string; title: string; markdown: string; parent_id: string | null; sort_order: number; operation_id: string }, auth: AuthRequestOptions): Promise<Note> {

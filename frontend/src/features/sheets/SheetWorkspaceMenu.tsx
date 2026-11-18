@@ -1,7 +1,9 @@
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Columns3, Copy, FileInput, Filter, Group, LayoutGrid, Pencil, Table2, Trash2 } from "lucide-react";
+import { cn } from "@orbis/ui/cn";
+import { sheetMenuClassName, sheetMenuActionClassName } from "./sheet-chrome";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Columns3, Copy, FileInput, Filter, Group, LayoutGrid, Pencil, Table2, Trash2 } from "@orbis/ui/icons";
 import { Fragment } from "react";
 import { releaseFeatures } from "../../shared/release-features";
-import { ActionButton } from "../../shared/ui/ActionButton";
+import { Button } from "@orbis/ui/button";
 import { Popover, type Anchor } from "./Popover";
 import { COLORS, KINDS, type Field, type View } from "./model";
 
@@ -35,10 +37,10 @@ export function SheetWorkspaceMenu({ menu, busy, fieldCount, visibleFieldCount, 
       label={menu.kind === "field" ? "列操作" : "视图操作"}
       onClose={() => onClose()}
     >
-      <div className="sheet-menu" role="menu">
+      <div className={sheetMenuClassName} role="menu">
         {menu.kind === "color" &&
           COLORS.map((color, i) => (
-            <ActionButton
+            <Button className={sheetMenuActionClassName}
               size="sm"
               role="menuitem"
               key={color}
@@ -46,19 +48,19 @@ export function SheetWorkspaceMenu({ menu, busy, fieldCount, visibleFieldCount, 
               onClick={() => {
                 onClose();
                 onColor(menu.field.id, color);
-              }}
+              }} variant="ghost"
             >
               {["绿色", "黄色", "蓝色", "紫色", "粉色", "默认"][i]}
-            </ActionButton>
+            </Button>
           ))}
         {menu.kind === "add" && (
           <>
             {(["grid", "kanban", "form"] as const).filter(kind => releaseFeatures.sheetForms || kind !== "form").map((kind) => (
-              <ActionButton
+              <Button className={sheetMenuActionClassName}
                 size="sm"
                 role="menuitem"
                 key={kind}
-                onClick={() => onAdd(kind)}
+                onClick={() => onAdd(kind)} variant="ghost"
               >
                 {kind === "grid" ? (
                   <Table2 size={15} />
@@ -72,46 +74,46 @@ export function SheetWorkspaceMenu({ menu, busy, fieldCount, visibleFieldCount, 
                   : kind === "kanban"
                     ? "看板视图"
                     : "表单"}
-              </ActionButton>
+              </Button>
             ))}
           </>
         )}
         {menu.kind === "view" && (
           <>
-            <ActionButton
+            <Button className={sheetMenuActionClassName}
               size="sm"
               role="menuitem"
               onClick={() => {
                 onRename(menu.view);
                 onClose();
-              }}
+              }} variant="ghost"
             >
               <Pencil size={14} />
               重命名视图
-            </ActionButton>
-            <ActionButton
+            </Button>
+            <Button className={sheetMenuActionClassName}
               size="sm"
               role="menuitem"
               onClick={() => {
                 onClose();
                 onDuplicate(menu.view);
-              }}
+              }} variant="ghost"
             >
               <Copy size={14} />
               复制视图
-            </ActionButton>
-            <ActionButton
+            </Button>
+            <Button className={sheetMenuActionClassName}
               size="sm"
               role="menuitem"
               disabled={viewCount < 2}
               onClick={() => {
                 onClose();
                 onDelete(menu.view);
-              }}
+              }} variant="ghost"
             >
               <Trash2 size={14} />
               删除视图
-            </ActionButton>
+            </Button>
           </>
         )}
         {menu.kind === "field" &&
@@ -129,12 +131,9 @@ export function SheetWorkspaceMenu({ menu, busy, fieldCount, visibleFieldCount, 
             { id: "hide", label: "隐藏列", icon: Columns3 },
             { id: "delete", label: "删除列", icon: Trash2 },
           ].map((item) => (
-            <Fragment key={item.id}>{["left", "group", "delete"].includes(item.id) && <hr />}<ActionButton
+            <Fragment key={item.id}>{["left", "group", "delete"].includes(item.id) && <hr />}<Button className={cn(sheetMenuActionClassName, item.id === "delete" && "text-(--destructive)")}
               size="sm"
               role="menuitem"
-              className={
-                item.id === "delete" ? "sheet-danger-action" : undefined
-              }
               key={item.id}
               disabled={
                 busy ||
@@ -147,11 +146,11 @@ export function SheetWorkspaceMenu({ menu, busy, fieldCount, visibleFieldCount, 
                 (item.id === "delete" && fieldCount <= 1) ||
                 (item.id === "hide" && visibleFieldCount <= 1)
               }
-              onClick={() => onFieldAction(item.id, menu.field, menu.anchor)}
+              onClick={() => onFieldAction(item.id, menu.field, menu.anchor)} variant="ghost"
             >
               <item.icon size={14} />
               {item.label}
-            </ActionButton></Fragment>
+            </Button></Fragment>
           ))}
       </div>
     </Popover>

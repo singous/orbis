@@ -1,8 +1,8 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { expect, it } from "vitest";
-import { SelectField } from "../../shared/ui/SelectField";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@orbis/ui/select";
 import { anchorAt, Popover, type Anchor } from "./Popover";
 
 function Example() {
@@ -12,7 +12,10 @@ function Example() {
     <button>Outside</button>
     {anchor && <Popover anchor={anchor} label="Settings" onClose={() => setAnchor(null)}>
       <input aria-label="Name" />
-      <SelectField label="Category" value="a" options={[{ value: "a", label: "Alpha" }, { value: "b", label: "Beta" }]} onChange={() => {}} />
+      <Select value="a" items={[{ value: "a", label: "Alpha" }, { value: "b", label: "Beta" }]}>
+        <SelectTrigger aria-label="Category"><SelectValue /></SelectTrigger>
+        <SelectContent><SelectItem value="a">Alpha</SelectItem><SelectItem value="b">Beta</SelectItem></SelectContent>
+      </Select>
       <button onClick={() => setAnchor(null)}>Close</button>
     </Popover>}
   </>;
@@ -38,11 +41,12 @@ it("keeps input composition and a nested selector from dismissing the parent", a
   await user.click(screen.getByRole("button", { name: "Open" }));
   fireEvent.keyDown(screen.getByRole("textbox", { name: "Name" }), { key: "Escape", isComposing: true });
   expect(screen.getByRole("dialog", { name: "Settings" })).toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: /Category/ }));
-  expect(screen.getByRole("listbox")).toBeInTheDocument();
+  await user.click(screen.getByRole("combobox", { name: /Category/ }));
+  expect(await screen.findByRole("listbox")).toBeInTheDocument();
   await user.keyboard("{Escape}");
-  expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+  await waitFor(() => expect(screen.queryByRole("listbox")).not.toBeInTheDocument());
   expect(screen.getByRole("dialog", { name: "Settings" })).toBeInTheDocument();
+  expect(screen.getByRole("combobox", { name: /Category/ })).toHaveFocus();
 });
 
 it("does not steal focus from a control clicked outside the popover", async () => {

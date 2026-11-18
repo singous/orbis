@@ -56,7 +56,7 @@ vi.mock("./TiptapEditor", () => ({
   }}>模拟编辑</button>; },
 }));
 vi.mock("../queries", () => ({
-  useNote: () => ({ data: { id: "018ff7c4-a5b6-7000-8000-000000000001", workspace_id: ownerSession.workspace.id, notebook_id: "018ff7c4-a5b6-7000-8000-000000000004", title: "产品计划" }, isError: false }),
+  useNote: () => ({ data: { id: "018ff7c4-a5b6-7000-8000-000000000001", workspace_id: ownerSession.workspace.id, notebook_id: "018ff7c4-a5b6-7000-8000-000000000004", title: "产品计划", updated_at_ms: 1 }, isError: false }),
   useNoteContent: () => ({ data: contentFixture.current, isError: false, refetch: vi.fn() }),
   useNotebooks: () => ({ data: { items: [] }, isLoading: false, isError: false }),
   useNotebook: () => ({ data: undefined, isLoading: false, isError: false }),

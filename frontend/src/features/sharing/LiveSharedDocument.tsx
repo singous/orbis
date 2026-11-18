@@ -1,8 +1,10 @@
+import { Spinner } from "@orbis/ui/spinner";
+import { Button } from "@orbis/ui/button";
+import { sharePendingChildrenClassName, sharePendingDescriptionClassName } from "./sharing-styles";
 import { reportError } from "../../shared/api/request-feedback";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ApiError } from "../../shared/api/api-client";
-import { ActionButton } from "../../shared/ui/ActionButton";
 import { ContentRenderer } from "../content/ContentRenderer";
 import { TableHostContext } from "../data-tables/context";
 import {
@@ -168,10 +170,10 @@ export function LiveSharedDocument({
     pages,
     );
   return (
-    <article className="public-share-document">
-      <header>
-        <h1>{first.data.title}</h1>
-        <p>
+    <article className="mx-auto max-w-225 px-12 pt-12 pb-24 max-[760px]:px-5 max-[760px]:pt-8 max-[760px]:pb-16">
+      <header className="mb-10">
+        <h1 className="text-[clamp(1.8rem,3vw,2.5rem)] leading-[1.25] font-[650] tracking-[-.035em]">{first.data.title}</h1>
+        <p className="mt-3 text-[.8rem] text-muted-foreground">
           在线正文 · 最后更新{" "}
           {new Date(first.data.updated_at_ms).toLocaleString("zh-CN", {
             timeZone: "Asia/Shanghai",
@@ -188,46 +190,43 @@ export function LiveSharedDocument({
 
       {missingPayloads.length ? (
         <section
-          className="share-pending-children"
+          className={sharePendingChildrenClassName}
           aria-label="按需加载较大内容"
         >
-          <p>较大的单块内容单独加载。</p>
+          <p className={sharePendingDescriptionClassName}>较大的单块内容单独加载。</p>
           {missingPayloads.map((descriptor) => (
-            <ActionButton
+            <Button
               key={descriptor.id}
-              isPending={pending === descriptor.id}
-              disabled={Boolean(pending)}
-              onClick={() => void loadPayload(descriptor.id)}
-            >
+              disabled={(pending === descriptor.id) || (Boolean(pending))}
+              onClick={() => void loadPayload(descriptor.id)} variant="ghost" focusableWhenDisabled={(pending === descriptor.id) && !(Boolean(pending))} aria-busy={pending === descriptor.id || undefined}
+            >{pending === descriptor.id ? <Spinner aria-hidden="true" /> : null}
               加载较大内容（{Math.ceil(descriptor.payload_bytes / 1024)} KiB）
-            </ActionButton>
+            </Button>
           ))}
         </section>
       ) : null}
       {branches.length ? (
-        <section className="share-pending-children" aria-label="按需加载子内容">
-          <p>以下容器还有子内容，可按需展开阅读。</p>
+        <section className={sharePendingChildrenClassName} aria-label="按需加载子内容">
+          <p className={sharePendingDescriptionClassName}>以下容器还有子内容，可按需展开阅读。</p>
           {branches.map((branch) => (
-            <ActionButton
+            <Button
               key={branch.id}
-              isPending={pending === branch.id}
-              disabled={Boolean(pending)}
-              onClick={() => void load(branch.id)}
-            >
+              disabled={(pending === branch.id) || (Boolean(pending))}
+              onClick={() => void load(branch.id)} variant="ghost" focusableWhenDisabled={(pending === branch.id) && !(Boolean(pending))} aria-busy={pending === branch.id || undefined}
+            >{pending === branch.id ? <Spinner aria-hidden="true" /> : null}
               加载 {branch.label}（{branch.loaded}/{branch.count}）
-            </ActionButton>
+            </Button>
           ))}
         </section>
       ) : null}
       {lastRoot?.has_more ? (
-        <ActionButton
-          className="share-load-more"
-          isPending={pending === "root"}
-          disabled={Boolean(pending)}
-          onClick={() => void load()}
-        >
+        <Button
+          className="mx-auto mt-8 block"
+          disabled={(pending === "root") || (Boolean(pending))}
+          onClick={() => void load()} variant="ghost" focusableWhenDisabled={(pending === "root") && !(Boolean(pending))} aria-busy={pending === "root" || undefined}
+        >{pending === "root" ? <Spinner aria-hidden="true" /> : null}
           继续阅读
-        </ActionButton>
+        </Button>
       ) : null}
 
     </article>

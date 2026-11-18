@@ -42,7 +42,8 @@ test(`${name}: the menu edge resizes the function sidebar and preserves its widt
   const navigation = (await page.locator(".workspace-main-navigation").boundingBox())!;
   expect(await handle.evaluate(element => Boolean(element.closest(".workspace-sidebar")))).toBe(true);
   await expect(page.locator(".workspace-shell-grid > .workspace-sidebar-resizer")).toHaveCount(0);
-  expect(bounds.x + bounds.width).toBeCloseTo(navigation.x + navigation.width - 1, 0);
+  const border = await page.locator(".workspace-main-navigation").evaluate(element => parseFloat(getComputedStyle(element).borderRightWidth));
+  expect(bounds.x + bounds.width).toBeCloseTo(navigation.x + navigation.width - border, 0);
   const x = bounds.x + bounds.width / 2;
   const y = bounds.y + bounds.height / 2;
   await page.mouse.move(x, y);

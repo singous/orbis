@@ -1,3 +1,5 @@
+import { Spinner } from "@orbis/ui/spinner";
+import "./palette.css";
 import { reportError } from "../../shared/api/request-feedback";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -7,20 +9,18 @@ import { ApiError } from "../../shared/api/api-client";
 import { authStore } from "../../shared/auth/auth-store";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { newUUID } from "../../shared/ids";
-import { ActionButton } from "../../shared/ui/ActionButton";
-import { Button } from "../../shared/ui/Button";
-import { Dialog, DialogContent, DialogFooter } from "../../shared/ui/Dialog";
+import { Button } from "@orbis/ui/button";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@orbis/ui/dialog";
 import { EmptyState } from "../../shared/ui/EmptyState";
 import { Plus, Table2 } from "../../shared/ui/icons";
 import { PageContainer } from "../../shared/ui/PageContainer";
-import { SelectField } from "../../shared/ui/SelectField";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@orbis/ui/select";
 
-import { TextInput } from "../../shared/ui/TextInput";
+import { Input } from "@orbis/ui/input";
 import { DocumentShell } from "../documents/DocumentShell";
 import { useNotebooks } from "../documents/queries";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { sheetAPI } from "./api";
-import "./sheets.css";
 
 const templates = [
   { id: "", name: "空白数据表", description: "自由定义字段" },
@@ -99,6 +99,7 @@ export function SheetsHome() {
       setBusy(false);
     }
   }
+  const notebookFilterItems = [{ value: "", label: "全部笔记本" }, ...notebookOptions];
   return (
     <DocumentShell notebookId={collection || undefined}>
       <PageContainer
@@ -107,34 +108,38 @@ export function SheetsHome() {
         actions={
           canEdit ? (
             <Button
-              variant="primary"
-              icon={<Plus size={16} />}
+              variant="default"
               onClick={openCreate}
             >
-              新建数据表
+              <Plus size={16} aria-hidden="true" />新建数据表
             </Button>
           ) : undefined
         }
       >
-        <div className="sheet-home-content">
-          <div className="sheet-home-filters">
-            <SelectField
-              aria-label="筛选笔记本"
-              density="compact"
+        <div className="sheet-data-theme text-sm text-foreground">
+          <div className="mb-6 w-[220px]">
+            <Select
               value={collection}
-              options={[{ value: "", label: "全部笔记本" }, ...notebookOptions]}
-              onChange={setCollection}
-            />
+              onValueChange={next => { if (next !== null) setCollection(next); }}
+              items={notebookFilterItems}
+            >
+              <SelectTrigger aria-label="筛选笔记本" size="sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {notebookFilterItems.map(item => (
+                  <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           {list.error ? (
             null
           ) : items.length ? (
-            <div className="sheet-home-list">
+            <div className="sheet-home-list rounded-[12px] border border-border bg-card px-5 [box-shadow:var(--shadow-sm)] empty:hidden">
               {items.map((item) => (
-                <Link key={item.id} to={`/documents/${item.document_id}`}>
+                <Link className="flex items-center gap-3 border-b border-b-border py-[18px] in-[.workspace-shell]:border-b-border text-foreground no-underline last:border-b-0 last:border-b-current" key={item.id} to={`/documents/${item.document_id}`}>
                   <Table2 size={18} />
                   <span>{item.title}</span>
-                  <small>
+                  <small className="ml-auto text-[12px] text-(--muted-foreground)">
                     {new Date(item.updated_at_ms).toLocaleDateString("zh-CN", {
                       timeZone: "Asia/Shanghai",
                     })}
@@ -156,15 +161,15 @@ export function SheetsHome() {
               }
             />
           ) : (
-            <p className="sheet-muted">正在读取…</p>
+            <p className="text-[12px] text-(--muted-foreground)">正在读取…</p>
           )}
           {list.hasNextPage && (
-            <div className="sheet-list-more">
+            <div className="mt-6 flex justify-center">
               <Button
                 size="sm"
-                isPending={list.isFetchingNextPage}
-                onClick={() => void list.fetchNextPage()}
-              >
+
+                onClick={() => void list.fetchNextPage()} disabled={list.isFetchingNextPage} focusableWhenDisabled={list.isFetchingNextPage} aria-busy={list.isFetchingNextPage || undefined}
+              >{list.isFetchingNextPage ? <Spinner aria-hidden="true" /> : null}
                 加载更多
               </Button>
             </div>
@@ -172,46 +177,52 @@ export function SheetsHome() {
         </div>
         <Dialog
           open={creating}
-          onOpenChange={(open) => {
+
+          onOpenChange={(open, details) => { if (!open && busy) { details.cancel(); return; }
             if (!busy) setCreating(open);
-          }}
+           }} disablePointerDismissal={!(!busy)}
         >
           <DialogContent
-            title="新建数据表"
-            description="选择所属笔记本和起始模板。"
-            className="sheet-create-dialog"
-          >
-            <div className="sheet-create-fields">
-              <TextInput
-                label="数据表名称"
+
+
+            className="max-w-140"
+          ><DialogHeader><DialogTitle>{"新建数据表"}</DialogTitle><DialogDescription>{"选择所属笔记本和起始模板。"}</DialogDescription></DialogHeader>
+            <div className="grid gap-5 pt-6">
+              <label className="grid gap-1.5 text-sm font-medium text-foreground">数据表名称<Input
                 aria-label="数据表名称"
                 value={title}
                 disabled={busy || !!intent.current}
                 onChange={(e) => setTitle(e.target.value)}
-              />
-              <SelectField
-                label="所属笔记本"
+              /></label>
+              <label className="grid gap-2 text-sm font-medium"><span>{"所属笔记本"}</span><Select
                 value={target}
-                options={notebookOptions}
                 disabled={busy || !!intent.current}
-                onChange={setTarget}
-              />
+                onValueChange={next => { if (next !== null) setTarget(next); }}
+                items={notebookOptions}
+              >
+                <SelectTrigger aria-label={"所属笔记本"}><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {notebookOptions.map(item => (
+                    <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select></label>
               {!notebookOptions.length && (
-                <p className="sheet-muted">请先在文档中心创建笔记本。</p>
+                <p className="text-[12px] text-(--muted-foreground)">请先在文档中心创建笔记本。</p>
               )}
-              <span className="sheet-section-label">起始模板</span>
-              <div className="sheet-template-list">
+              <span className="text-sm font-medium text-muted-foreground">起始模板</span>
+              <div className="grid grid-cols-2 gap-2.5">
                 {templates.map((t) => (
-                  <ActionButton
+                  <Button variant="ghost"
                     key={t.id}
                     aria-pressed={template === t.id}
-                    className={template === t.id ? "selected" : ""}
+                    // 保持原模板卡片 76px 的最小高度，长文案仍可换行。
+                    className={`min-h-[76px] justify-start whitespace-normal rounded-xl border-border px-4 py-3 text-start ${template === t.id ? "bg-accent outline-1 outline-ring" : "bg-card"}`}
                     disabled={busy || !!intent.current}
                     onClick={() => setTemplate(t.id)}
                   >
-                    <strong>{t.name}</strong>
-                    <span>{t.description}</span>
-                  </ActionButton>
+                    <span className="grid gap-1"><strong className="text-sm font-medium">{t.name}</strong><span className="text-xs text-muted-foreground">{t.description}</span></span>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -220,11 +231,11 @@ export function SheetsHome() {
                 取消
               </Button>
               <Button
-                variant="primary"
-                isPending={busy}
-                disabled={!target || !title.trim()}
-                onClick={() => void create()}
-              >
+                variant="default"
+
+                disabled={busy || (!target || !title.trim())}
+                onClick={() => void create()} focusableWhenDisabled={busy && !(!target || !title.trim())} aria-busy={busy || undefined}
+              >{busy ? <Spinner aria-hidden="true" /> : null}
                 {intent.current ? "重试创建" : "创建数据表"}
               </Button>
             </DialogFooter>

@@ -1,3 +1,4 @@
+import { notification } from "../helpers/notifications";
 import {expect,test} from "@playwright/test";
 import {ownerSession,openWithSession,createCollection,createDocument,workspacePath,sessionHeaders,responseData} from "../helpers/api-fixtures";
 
@@ -57,7 +58,7 @@ test("an initialized table duplicates atomically after a lost response and edits
     await expect.poll(()=>lostAcknowledgement).toBe(true);
     await expect.poll(()=>copies.length).toBe(2);
   }else{
-    await expect(page.getByRole("alertdialog", { name: "网络异常，请稍后重试", exact: true })).toBeVisible();
+    await expect(notification(page, "网络异常，请稍后重试")).toBeVisible();
     await page.getByRole("button", { name: "本机修改", exact: true }).click();
     receiptUnavailable=false;
     await page.getByRole("button",{name:"重试保存",exact:true}).click();
@@ -80,7 +81,7 @@ test("an initialized table duplicates atomically after a lost response and edits
   await page.locator(".orbis-data-table").first().hover({position:{x:3,y:3}});
   await page.getByRole("button",{name:"块操作：数据表",exact:true}).click();
   await page.getByRole("menuitem",{name:"复制块",exact:true}).click();
-  await expect(page.getByRole("alertdialog", { name: /已复制/ })).toBeVisible();
+  await expect(notification(page, /已复制/)).toBeVisible();
   const destination=await createDocument(request,session,collection.id,"跨文档粘贴验收");
   await page.goto(`/documents/${destination.id}`);
   await expect(page.locator(".ProseMirror")).toBeVisible();

@@ -65,6 +65,7 @@ compose ps
 部署命令不会代为注册账号。`web` 和 `api` 的健康检查分别确认 Nginx 与数据库连接就绪。
 
 源码试用可先按根 README 构建 `server`、`frontend`、`collaboration` 三个镜像，将本地镜像引用填入私有配置，跳过远端拉取步骤。
+当前源码的前端镜像构建执行严格许可检查，并要求传入 `--build-arg ORBIS_SOURCE_REVISION="$(git rev-parse HEAD)"`，指向已公开的本次源码提交。完整流程见[许可材料维护说明](../licenses/README.md)。
 镜像 ID 可用 `docker image inspect --format '{{.Id}}' IMAGE` 查询。迁移容器始终使用与 API 相同的镜像。
 
 ## 邮件与容量配置

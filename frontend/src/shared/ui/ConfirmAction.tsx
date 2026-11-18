@@ -1,11 +1,12 @@
-import { AlertDialog } from "@heroui/react/alert-dialog";
-import { useRef, useState, type ReactNode } from "react";
+import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription, DialogHeader, DialogFooter } from "@orbis/ui/dialog";
+import { useRef, useState, type ReactElement } from "react";
 import { reportError } from "../api/request-feedback";
-import { Button } from "./Button";
+import { Button } from "@orbis/ui/button";
+import { Spinner } from "@orbis/ui/spinner";
 
 /** 危险操作只在用户明确确认后执行；请求失败仍由统一反馈出口处理。 */
 export function ConfirmAction({ children, title, description, confirmLabel, onConfirm, disabled = false }: {
-  children: ReactNode;
+  children: ReactElement;
   title: string;
   description: string;
   confirmLabel: string;
@@ -15,6 +16,7 @@ export function ConfirmAction({ children, title, description, confirmLabel, onCo
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const running = useRef(false);
+  const cancel = useRef<HTMLButtonElement>(null);
 
   async function confirm() {
     if (running.current || disabled) return;
@@ -31,24 +33,17 @@ export function ConfirmAction({ children, title, description, confirmLabel, onCo
     }
   }
 
-  return (
-    <AlertDialog isOpen={open} onOpenChange={value => { if (!running.current) setOpen(value); }}>
-      {children}
-      <AlertDialog.Backdrop isKeyboardDismissDisabled={pending}>
-        <AlertDialog.Container>
-          <AlertDialog.Dialog>
-            <AlertDialog.Header>
-              <AlertDialog.Icon status="warning" />
-              <AlertDialog.Heading>{title}</AlertDialog.Heading>
-            </AlertDialog.Header>
-            <AlertDialog.Body><p>{description}</p></AlertDialog.Body>
-            <AlertDialog.Footer>
-              <Button slot="close" autoFocus disabled={pending}>取消</Button>
-              <Button variant="danger" disabled={disabled} isPending={pending} onPress={() => void confirm()}>{confirmLabel}</Button>
-            </AlertDialog.Footer>
-          </AlertDialog.Dialog>
-        </AlertDialog.Container>
-      </AlertDialog.Backdrop>
-    </AlertDialog>
-  );
+  return <Dialog disablePointerDismissal open={open} onOpenChange={(value, details) => {
+    if (running.current) { details.cancel(); return; }
+    setOpen(value);
+  }}>
+    <DialogTrigger render={children} disabled={disabled} />
+    <DialogContent role="alertdialog" initialFocus={cancel} showCloseButton={false}>
+      <DialogHeader><DialogTitle>{title}</DialogTitle><DialogDescription>{description}</DialogDescription></DialogHeader>
+      <DialogFooter>
+        <Button ref={cancel} disabled={pending} onClick={() => setOpen(false)}>取消</Button>
+        <Button variant="destructive" disabled={disabled || pending} focusableWhenDisabled={pending && !disabled} aria-busy={pending || undefined} onClick={() => void confirm()}>{pending ? <Spinner aria-hidden="true" /> : null}{confirmLabel}</Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>;
 }

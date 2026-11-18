@@ -24,7 +24,7 @@ it.each([["web", false], ["desktop", false], ["web", true]] as const)("preserves
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(<QueryClientProvider client={client}><MemoryRouter initialEntries={["/home"]}><WorkspaceRoute><Page /></WorkspaceRoute></MemoryRouter></QueryClientProvider>);
   await screen.findByRole("status", { name: "正在打开首页…" });
-  const name = surface === "web" ? "搜索" : "全局搜索";
+  const name = "搜索文档";
   const user = userEvent.setup();
   if (compact) await user.click(screen.getByRole("button", { name: "打开主导航" }));
   const oldTrigger = screen.getByRole("button", { name });
@@ -36,7 +36,7 @@ it.each([["web", false], ["desktop", false], ["web", true]] as const)("preserves
   expect(oldTrigger).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "页面加载完成", hidden: true })).toBeInTheDocument();
   expect(screen.getByRole("combobox", { name: "搜索任何内容" })).toBe(input);
-  expect(input).toHaveValue("保留加载中的搜索");
+  expect(input).toHaveValue("@doc 保留加载中的搜索");
   expect(input).toHaveFocus();
   expect(screen.getAllByRole("dialog", { name: "全局搜索" })).toHaveLength(1);
   await user.click(screen.getByRole("button", { name: "关闭搜索" }));
@@ -45,6 +45,6 @@ it.each([["web", false], ["desktop", false], ["web", true]] as const)("preserves
   expect(currentTrigger).toBe(oldTrigger);
   await waitFor(() => expect(currentTrigger).toHaveFocus());
   await user.click(currentTrigger);
-  expect(screen.getByRole("combobox", { name: "搜索任何内容" })).toHaveValue("");
+  expect(screen.getByRole("combobox", { name: "搜索任何内容" })).toHaveValue("@doc ");
   client.clear();
 });

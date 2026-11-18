@@ -26,8 +26,13 @@ func (h *handler) collections(c *gin.Context) {
 		h.fail(c, err)
 		return
 	}
+	preview := c.Query("include_preview")
+	if values, ok := c.GetQueryArray("include_preview"); ok && (len(values) != 1 || (preview != "true" && preview != "false")) {
+		h.fail(c, fault.Field("query.include_preview", "include_preview 必须是 true 或 false"))
+		return
+	}
 	items, total, err := h.deps.Documents.Collections(c.Request.Context(), document.CollectionQuery{
-		Scope: directoryScope(c), Page: page, Archived: archived, GroupID: groupID,
+		Scope: directoryScope(c), Page: page, Archived: archived, GroupID: groupID, IncludePreview: preview == "true",
 	})
 	if err != nil {
 		h.fail(c, err)

@@ -18,6 +18,7 @@ vi.mock("./renderer", () => ({
     setElements() {}
     setSelection() {}
     setCanvasTextColor() {}
+    setCanvasChrome() {}
     setPreview(elements: unknown) { drawing.preview(elements); }
     clearPreview() { drawing.clear(); }
     destroy() {}
@@ -153,7 +154,7 @@ it("preserves the existing two-click connector tool and its bound ports", () => 
   expect(onTool).toHaveBeenCalledWith("select");
 });
 
-it("lets HeroUI ports handle Space without triggering canvas panning or text editing", async () => {
+it("lets connection ports handle Space without triggering canvas panning or text editing", async () => {
   const user = userEvent.setup();
   const { first, second, pointer, submit, onTool } = connectableBoard();
   act(() => drawing.events!.move(pointer(first.id, 160, 180, "pointermove")));

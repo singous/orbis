@@ -1,7 +1,9 @@
+import { fileURLToPath, URL } from "node:url";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import type { ProxyOptions } from "vite";
 import { configDefaults, defineConfig } from "vitest/config";
+import { themeScopes } from "./scripts/theme-scopes";
 
 const apiTarget = process.env.ORBIS_DEV_API_TARGET || "http://127.0.0.1:9202";
 const proxy = {
@@ -25,7 +27,11 @@ const proxy = {
 } satisfies Record<string, ProxyOptions>;
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss({ optimize: false }), themeScopes()],
+  resolve: {
+    alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
+    dedupe: ["react", "react-dom"],
+  },
   envDir: process.env.ORBIS_E2E_DIR || process.env.VITEST ? false : undefined,
   optimizeDeps: {
     entries: ["index.html"],
@@ -69,7 +75,7 @@ export default defineConfig({
     proxy,
   },
   test: {
-    exclude: [...configDefaults.exclude, "tests/e2e/**", "test-results/**", "docs/**"],
+    exclude: [...configDefaults.exclude, "tests/e2e/**", "tests/ui-browser/**", "tests/visual/**", "test-results/**", "docs/**", "packages/ui/**"],
     environment: "jsdom",
     globals: true,
     setupFiles: "./vitest.setup.ts",

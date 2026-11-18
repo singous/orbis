@@ -4,8 +4,8 @@ import { useLayoutEffect, useState, type CSSProperties, type RefObject } from "r
 export const SIDEBAR_MIN_WIDTH = 160;
 const SIDEBAR_MAX_WIDTH = 480;
 const MAIN_MIN_WIDTH = 360;
-const DEFAULT_SIDEBAR_WIDTH = 232;
-const DEFAULT_RAIL_WIDTH = 58;
+const DEFAULT_SIDEBAR_WIDTH = 180;
+const DEFAULT_RAIL_WIDTH = 72;
 
 function clampWidth(width: number, maximum: number) {
   return Math.round(Math.min(maximum, Math.max(SIDEBAR_MIN_WIDTH, width)));
@@ -20,7 +20,7 @@ function readPreferredWidth(key: string, maximum: number): number | null {
   } catch { return null; }
 }
 
-export function useSidebarResize(gridRef: RefObject<HTMLDivElement | null>, enabled: boolean, hasContext: boolean, preferences: SidebarPreferences = DEFAULT_SIDEBAR_PREFERENCES) {
+export function useSidebarResize(gridRef: RefObject<HTMLDivElement | null>, enabled: boolean, hasContext: boolean, preferences: SidebarPreferences = DEFAULT_SIDEBAR_PREFERENCES, layoutScope?: string) {
   const key = preferences.widthKey;
   const [stored, setStored] = useState(() => ({ key, width: readPreferredWidth(key, SIDEBAR_MAX_WIDTH) }));
   const preferredWidth = stored.key === key ? stored.width : readPreferredWidth(key, SIDEBAR_MAX_WIDTH);
@@ -52,7 +52,7 @@ export function useSidebarResize(gridRef: RefObject<HTMLDivElement | null>, enab
     if (context) observer.observe(context);
     window.addEventListener("resize", measure);
     return () => { observer.disconnect(); window.removeEventListener("resize", measure); };
-  }, [gridRef, enabled, hasContext]);
+  }, [gridRef, enabled, hasContext, key, layoutScope]);
 
   const maximum = bounds.maximum;
   const width = clampWidth(preferredWidth ?? bounds.defaultWidth, maximum);

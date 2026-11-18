@@ -86,3 +86,64 @@ func TestWorkspaceBrowseRespectsAncestorsArchivesAndStablePages(t *testing.T) {
 		t.Fatal("workspace browse leaked another workspace")
 	}
 }
+
+func TestCollectionPagePreviews(t *testing.T) {
+	f := newDocument(t)
+	base := "/api/v1/workspaces/" + f.workspaceID + "/collections"
+	hidden := createNode(t, f, "Hidden parent", nil)
+	createNode(t, f, "Hidden child", &hidden.ID)
+	archiveNode(t, f, hidden.ID, true, 200)
+	var newest []string
+	for i := 0; i < 4; i++ {
+		f.env.Clock.Advance(time.Second)
+		node := createNode(t, f, fmt.Sprintf("Document %d", i), nil)
+		newest = append([]string{node.ID}, newest...)
+	}
+	empty := testenv.Decode[struct{ ID string }](t, f.env.Call(t, "POST", base, f.session.AccessToken, map[string]any{"title": "Empty"}, 201))
+	result := testenv.Decode[struct {
+		Items []struct {
+			ID      string
+			Preview *struct {
+				Count  int
+				Recent []struct{ ID string }
+			}
+		}
+	}](t, f.env.Call(t, "GET", base+"?include_preview=true", f.session.AccessToken, nil, 200))
+	found := map[string]bool{}
+	for _, book := range result.Items {
+		found[book.ID] = true
+		if book.Preview == nil || book.Preview.Recent == nil {
+			t.Fatal("missing preview")
+		}
+		switch book.ID {
+		case f.collectionID:
+			if book.Preview.Count != 5 || len(book.Preview.Recent) != 3 {
+				t.Fatalf("unexpected preview: %+v", book.Preview)
+			}
+			for i, item := range book.Preview.Recent {
+				if item.ID != newest[i] {
+					t.Fatalf("unexpected preview order: %+v", book.Preview.Recent)
+				}
+			}
+		case empty.ID:
+			if book.Preview.Count != 0 || len(book.Preview.Recent) != 0 {
+				t.Fatal("empty collection contains documents")
+			}
+		}
+	}
+	if !found[f.collectionID] || !found[empty.ID] {
+		t.Fatal("expected both collections")
+	}
+	outsider := f.env.AddUser(t, "preview-outsider@example.test")
+	_, _, err := docstore.New(f.env.DB).ListCollections(t.Context(), document.CollectionQuery{
+		Scope: document.DirectoryScope{WorkspaceID: f.workspaceID, ActorID: outsider.User.ID},
+		Page:  pagination.Page{Number: 1, Size: 20}, IncludePreview: true,
+	})
+	if err == nil {
+		t.Fatal("preview exposed document metadata outside the authorized snapshot")
+	}
+	plain := f.env.Call(t, "GET", base, f.session.AccessToken, nil, 200)
+	if strings.Contains(string(plain.Data), `"preview"`) {
+		t.Fatal("unexpected preview on default list")
+	}
+}

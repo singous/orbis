@@ -1,4 +1,3 @@
-import { DEFAULT_EXIT_DURATION, DEFAULT_TOAST_TIMEOUT, toast as heroToast } from "@heroui/react/toast";
 import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
@@ -7,7 +6,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import { FieldSettings } from "../../src/features/sheets/FieldSettings";
 import { ViewSettings } from "../../src/features/sheets/ViewSettings";
 import { newField, type Field, type View } from "../../src/features/sheets/model";
-import { Toaster } from "../../src/shared/ui/Toast";
+import { clearToasts, TOAST_DURATION_MS, Toaster } from "../../src/shared/ui/Toast";
 
 type SettingsKind = "field" | "view";
 const settings = [
@@ -43,16 +42,26 @@ function SettingsHarness({ kind, onSave, onClose }: {
 
 afterEach(async () => {
   cleanup();
-  heroToast.clear();
-  await act(() => new Promise(resolve => setTimeout(resolve, DEFAULT_EXIT_DURATION)));
+  clearToasts();
+  await act(() => new Promise(resolve => setTimeout(resolve, 180)));
 });
+
+async function findNotification(title: string) {
+  const titleElement = await screen.findByText(title, { selector: '[data-slot="toast-title"]' });
+  expect(titleElement).toBeVisible();
+  return titleElement.closest<HTMLElement>('[data-slot="toast"]')!;
+}
 
 async function dismissNotification(notification: HTMLElement, dismissal: "timeout" | "keyboard", user: ReturnType<typeof userEvent.setup>) {
   if (dismissal === "keyboard") {
-    act(() => within(notification).getByRole("button", { name: "Close" }).focus());
+    await user.keyboard("{F6}");
+    expect(screen.getByRole("region", { name: "通知" })).toHaveFocus();
+    const close = within(notification).getByRole("button", { name: "关闭通知" });
+    for (let stop = 0; stop < 3 && document.activeElement !== close; stop++) await user.tab();
+    expect(close).toHaveFocus();
     await user.keyboard("{Enter}");
   }
-  await waitFor(() => expect(notification).not.toBeInTheDocument(), { timeout: DEFAULT_TOAST_TIMEOUT * 2 });
+  await waitFor(() => expect(notification).not.toBeInTheDocument(), { timeout: TOAST_DURATION_MS * 2 });
 }
 
 it.each(settings)("keeps the $kind settings draft when an error toast is clicked and dismissed", async scenario => {
@@ -67,8 +76,8 @@ it.each(settings)("keeps the $kind settings draft when an error toast is clicked
     await user.click(screen.getByRole("checkbox", { name: "备注" }));
   }
   await user.click(screen.getByRole("button", { name: scenario.submit }));
-  const notification = await screen.findByRole("alertdialog", { name: scenario.title });
-  await user.click(within(notification).getByRole("button", { name: "Close" }));
+  const notification = await findNotification(scenario.title);
+  await user.click(notification.querySelector<HTMLElement>('[data-slot="toast-close"]')!);
   expect(onClose).not.toHaveBeenCalled();
   expect(screen.getByRole("dialog", { name: scenario.dialog })).toBeInTheDocument();
   if (scenario.kind === "field") {
@@ -90,15 +99,15 @@ for (const dismissal of ["timeout", "keyboard"] as const) {
     const onClose = vi.fn();
     render(<SettingsHarness kind={scenario.kind} onSave={onSave} onClose={onClose} />);
     await user.click(screen.getByRole("button", { name: scenario.submit }));
-    const notification = screen.getByRole("alertdialog", { name: scenario.title });
+    const notification = await findNotification(scenario.title);
     expect(notification).toHaveTextContent("保存请求失败");
     await dismissNotification(notification, dismissal, user);
-    expect(screen.queryByRole("alertdialog", { name: scenario.title })).not.toBeInTheDocument();
+    expect(screen.queryByText(scenario.title, { selector: '[data-slot="toast-title"]' })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: scenario.submit }));
     expect(onSave).toHaveBeenCalledTimes(2);
-    expect(screen.getByRole("alertdialog", { name: scenario.title })).toHaveTextContent("保存请求失败");
+    expect(await findNotification(scenario.title)).toHaveTextContent("保存请求失败");
     expect(onClose).not.toHaveBeenCalled();
-  }, DEFAULT_TOAST_TIMEOUT * 3);
+  }, TOAST_DURATION_MS * 3);
 
   it(`repeats an empty field-name validation error after ${dismissal} dismissal`, async () => {
     const user = userEvent.setup();
@@ -106,12 +115,12 @@ for (const dismissal of ["timeout", "keyboard"] as const) {
     render(<SettingsHarness kind="field" onSave={onSave} onClose={vi.fn()} />);
     await user.clear(screen.getByRole("textbox", { name: "字段名称" }));
     await user.click(screen.getByRole("button", { name: "保存字段" }));
-    const notification = screen.getByRole("alertdialog", { name: "请填写字段名称" });
+    const notification = await findNotification("请填写字段名称");
     expect(notification).toHaveTextContent("请填写字段名称");
     await dismissNotification(notification, dismissal, user);
-    expect(screen.queryByRole("alertdialog", { name: "请填写字段名称" })).not.toBeInTheDocument();
+    expect(screen.queryByText("请填写字段名称", { selector: '[data-slot="toast-title"]' })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "保存字段" }));
-    expect(screen.getByRole("alertdialog", { name: "请填写字段名称" })).toHaveTextContent("请填写字段名称");
+    expect(await findNotification("请填写字段名称")).toHaveTextContent("请填写字段名称");
     expect(onSave).not.toHaveBeenCalled();
-  }, DEFAULT_TOAST_TIMEOUT * 3);
+  }, TOAST_DURATION_MS * 3);
 }

@@ -1,5 +1,5 @@
 import {cacheDocumentCommit} from "./document-cache";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, type Query } from "@tanstack/react-query";
 
 import type { NoteContent, NoteChildrenPage, Notebook, NotebookIconValue, NoteTreeItem, PageData } from "../../shared/api/schemas";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
@@ -9,6 +9,7 @@ import {
   reorderNotebookNotes,
   createNotebook,
   exportMarkdown,
+  getDocumentGroup,
   getNote,
   getNotebook,
   getNoteContent,
@@ -41,14 +42,26 @@ export function useDocumentGroups(status: ResourceStatus = "active") {
   return useQuery({ queryKey: ["document-groups", status], queryFn: ({ signal }) => listDocumentGroups(auth, status,signal) });
 }
 
+export function useDocumentGroup(groupId?: string) {
+  const auth = useDocumentAuth();
+  return useQuery({
+    queryKey: ["document-groups", "detail", groupId],
+    enabled: Boolean(groupId),
+    queryFn: ({ signal }) => getDocumentGroup(groupId!, auth, signal),
+    retry: false,
+  });
+}
+
 export function useNotebooks(
   groupId?: string,
   status: ResourceStatus = "active",
+  options: { enabled?: boolean; includePreview?: boolean } = {},
 ) {
   const auth = useDocumentAuth();
   return useQuery({
-    queryKey: ["notebooks", status, groupId ?? "all", false],
-    queryFn: ({ signal }) => listNotebooks(auth, groupId, status, { signal }),
+    queryKey: ["notebooks", status, groupId ?? "all", options.includePreview ?? false],
+    enabled: options.enabled ?? true,
+    queryFn: ({ signal }) => listNotebooks(auth, groupId, status, { signal, includePreview: options.includePreview }),
   });
 }
 
@@ -146,6 +159,11 @@ export function useDocumentIndex(
   });
 }
 
+// A saved title or body changes the shelf preview. Refresh it on the next shelf visit.
+function isNotebookPreviewQuery({ queryKey }: Query) {
+  return queryKey[0] === "notebooks" && queryKey[1] === "active" && queryKey[3] === true;
+}
+
 function useRefreshDocuments() {
   const queryClient = useQueryClient();
   return async () => {
@@ -219,6 +237,7 @@ export function useUpdateNote() {
       // Reconcile the affected list in the background; a title save must not
       // delay the body write behind unrelated workspace directory requests.
       void queryClient.invalidateQueries({ queryKey: ["note-tree", note.notebook_id] });
+      void queryClient.invalidateQueries({ predicate: isNotebookPreviewQuery, refetchType: "none" });
       void queryClient.invalidateQueries({ queryKey: ["note-search"] });
       void queryClient.invalidateQueries({ queryKey: ["global-search"] });
     },
@@ -253,6 +272,7 @@ export function useSaveNoteContent() {
       if ("blocks" in content) queryClient.setQueryData(["note-content", content.note_id], content);
       else void queryClient.invalidateQueries({ queryKey: ["note-content", content.note_id] });
       void queryClient.invalidateQueries({ queryKey: ["collaboration", content.note_id, "revisions"] });
+      void queryClient.invalidateQueries({ predicate: isNotebookPreviewQuery, refetchType: "none" });
       void queryClient.invalidateQueries({ queryKey: ["note-search"] });
       void queryClient.invalidateQueries({ queryKey: ["global-search"] });
     },

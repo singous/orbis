@@ -1,25 +1,27 @@
+import { Spinner } from "@orbis/ui/spinner";
 import { reportError } from "../../shared/api/request-feedback";
 import { LoadingState } from "../../shared/ui/LoadingState";
-import { ActionButton } from "../../shared/ui/ActionButton";
+import { cn } from "@orbis/ui/cn";
+import { WorkbenchResourceLink } from "../../shared/ui/WorkbenchResourceLink";
+import { workbenchStyles } from "../../shared/ui/workbench-styles";
 import { ArrowUpRight, ChevronRight, Globe, Plus } from "../../shared/ui/icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useRef, useState, type FormEvent } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useStore } from "zustand";
-import "../../styles/site-management.css";
+import { SitePagination } from "./SiteManagementLayout";
 
 import { authStore } from "../../shared/auth/auth-store";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
-import { Button } from "../../shared/ui/Button";
-import { Dialog, DialogContent } from "../../shared/ui/Dialog";
+import { Button } from "@orbis/ui/button";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@orbis/ui/dialog";
 import { PageContainer } from "../../shared/ui/PageContainer";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
 import { createSite } from "./api";
 import { useSites } from "./queries";
 import { SITE_KINDS, type SiteConfig } from "./schemas";
-import { SiteSettingsForm } from "./SiteSettingsForm";
-import { SiteSourceEditor } from "./SiteSourceEditor";
+import { SiteDraftFields } from "./SiteDraftFields";
 
 export const EMPTY_SITE_CONFIG: SiteConfig = {
   name: "", slug: "", description: "", site_kind: "knowledge", accent_color: "#0f766e", navigation: [],
@@ -33,6 +35,7 @@ function createInitialConfig(notebookId: string | null): SiteConfig {
 }
 
 export function SitesPage() {
+  const createButtonRef = useRef<HTMLButtonElement>(null);
   const workspace = useStore(authStore, (state) => state.workspace);
   const canEdit = canMutateWorkspaceContent(workspace);
   const [searchParams] = useSearchParams();
@@ -63,28 +66,26 @@ export function SitesPage() {
 
   return (
     <WorkspaceShell>
-      <PageContainer title="你的文档站点" description="管理站点、组织目录并发布文档。" actions={canEdit ? <Button variant="primary" icon={<Plus aria-hidden="true" size={16} />} onClick={openCreate}>创建站点</Button> : null}>
-        <section className="workbench-section" aria-label="文档站点">
-          <header className="workbench-section-heading"><h2>全部站点</h2>{sites.data ? <span className="workbench-section-count">{sites.data.pagination.total} 个站点</span> : null}</header>
+      <PageContainer title="你的文档站点" description="管理站点、组织目录并发布文档。" actions={canEdit ? <Button ref={createButtonRef} variant="default" onClick={openCreate}><Plus aria-hidden="true" size={16} />创建站点</Button> : null}>
+        <section className={workbenchStyles.section} aria-label="文档站点">
+          <header className={workbenchStyles.sectionHeading}><h2 className={workbenchStyles.sectionTitle}>全部站点</h2>{sites.data ? <span className={workbenchStyles.sectionCount}>{sites.data.pagination.total} 个站点</span> : null}</header>
           {sites.isPending ? <LoadingState label="正在加载站点…" variant="cards" /> : sites.isError ? (
             null
           ) : sites.data.items.length ? <>
-            <div className="workbench-resource-grid">
+            <div className={workbenchStyles.resourceGrid}>
               {sites.data.items.map((site) => (
-                <Link to={`/sites/${site.id}`} className="workbench-resource-card workbench-site-card" key={site.id} aria-label={`管理站点 ${site.name}`}>
-                  <span className="workbench-resource-icon" style={{ color: site.accent_color }}><Globe aria-hidden="true" size={24} /></span>
-                  <span className="workbench-resource-copy"><strong>{site.name}</strong><span>{site.description || SITE_KINDS[site.site_kind].description}</span><span className="workbench-site-status"><i className={site.published_release_id ? "is-published" : ""} />{site.published_release_id ? "已发布" : "草稿"}</span></span>
-                  <ChevronRight className="workbench-resource-chevron" aria-hidden="true" size={18} />
-                </Link>
+                <WorkbenchResourceLink appearance="card" to={`/sites/${site.id}`} className="min-h-[108px] max-[850px]:min-h-[84px]" key={site.id} aria-label={`管理站点 ${site.name}`} icon={<Globe aria-hidden="true" size={24} />} iconStyle={{ color: site.accent_color }} title={site.name} caption={site.description || SITE_KINDS[site.site_kind].description} end={<ChevronRight className={workbenchStyles.resourceChevron} aria-hidden="true" size={18} />}>
+                  <span className="mt-[3px] flex items-center gap-1.5 truncate text-sm text-(--muted-foreground)"><i className={cn("size-[5px] rounded-full", site.published_release_id ? "bg-(--status-success-foreground)" : "bg-(--muted-foreground)")} />{site.published_release_id ? "已发布" : "草稿"}</span>
+                </WorkbenchResourceLink>
               ))}
             </div>
-            <div className="mvp-pagination"><ActionButton type="button" disabled={!sites.data.pagination.has_previous} onClick={() => setPage(page - 1)}>上一页</ActionButton><span>第 {page} 页 · 共 {sites.data.pagination.total} 个站点</span><ActionButton type="button" disabled={!sites.data.pagination.has_next} onClick={() => setPage(page + 1)}>下一页</ActionButton></div>
+            <SitePagination hasPrevious={sites.data.pagination.has_previous} hasNext={sites.data.pagination.has_next} onPrevious={() => setPage(page - 1)} onNext={() => setPage(page + 1)}>第 {page} 页 · 共 {sites.data.pagination.total} 个站点</SitePagination>
           </> : (
-            <div className="workbench-empty-section workbench-site-empty"><Globe aria-hidden="true" size={30} /><h2>从第一篇文档开始</h2><p>选择内容、安排目录、预览发布。<br />读者看到你确认发布的版本。</p>{canEdit ? <Button variant="secondary" onClick={openCreate}>创建第一个站点<ArrowUpRight aria-hidden="true" size={16} /></Button> : <p>工作空间的编辑者可以创建站点。</p>}</div>
+            <div className={cn(workbenchStyles.emptySection, "min-h-[250px]")}><Globe aria-hidden="true" size={30} /><h2 className={workbenchStyles.emptyTitle}>从第一篇文档开始</h2><p className={workbenchStyles.emptyDescription}>选择内容、安排目录、预览发布。<br />读者看到你确认发布的版本。</p>{canEdit ? <Button onClick={openCreate} variant="outline">创建第一个站点<ArrowUpRight aria-hidden="true" size={16} /></Button> : <p className={workbenchStyles.emptyDescription}>工作空间的编辑者可以创建站点。</p>}</div>
           )}
         </section>
       </PageContainer>
-      <Dialog open={open} onOpenChange={setOpen}><DialogContent className="site-create-dialog" title="创建文档站点" description="先确定站点信息与内容来源，提交前不会创建站点。"><form className="site-create-form" onSubmit={submit}><SiteSettingsForm autoFocusName value={config} onChange={setConfig} disabled={create.isPending} /><SiteSourceEditor value={config.source} onChange={(source) => setConfig({ ...config, source })} disabled={create.isPending} /><div className="site-create-actions"><ActionButton variant="secondary" className="mvp-button" type="button" disabled={create.isPending} onClick={() => setOpen(false)}>取消</ActionButton><ActionButton isPending={create.isPending} variant="primary" className="mvp-button primary" type="submit" disabled={create.isPending || config.source?.kind === "notebooks" && !config.source.notebooks.length}>{create.isPending ? "创建中…" : "创建站点"}</ActionButton></div></form></DialogContent></Dialog>
+      <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-4xl" finalFocus={createButtonRef}><DialogHeader><DialogTitle>{"创建文档站点"}</DialogTitle><DialogDescription>{"先确定站点信息与内容来源，提交前不会创建站点。"}</DialogDescription></DialogHeader><form className="mt-[30px] grid min-w-0 gap-7 overflow-visible p-0" onSubmit={submit}><SiteDraftFields autoFocusName value={config} onChange={setConfig} disabled={create.isPending} /><DialogFooter className="mt-0 pt-1.5 max-[560px]:flex-wrap"><Button disabled={create.isPending} onClick={() => setOpen(false)} variant="outline">取消</Button><Button variant="default" type="submit" disabled={(create.isPending) || (create.isPending || config.source?.kind === "notebooks" && !config.source.notebooks.length)} focusableWhenDisabled={(create.isPending) && !(create.isPending || config.source?.kind === "notebooks" && !config.source.notebooks.length)} aria-busy={create.isPending || undefined}>{create.isPending ? <Spinner aria-hidden="true" /> : null}{create.isPending ? "创建中…" : "创建站点"}</Button></DialogFooter></form></DialogContent></Dialog>
     </WorkspaceShell>
   );
 }

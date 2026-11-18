@@ -1,26 +1,26 @@
+import { cn } from "@orbis/ui/cn";
 import { reportError } from "../../shared/api/request-feedback";
-import { Popover } from "@heroui/react/popover";
+import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui/popover";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
 
 import { authStore, getAuthSessionKey } from "../../shared/auth/auth-store";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { preparePendingNavigation } from "../../shared/navigation/pending-navigation";
-import { ActionButton } from "../../shared/ui/ActionButton";
-import { Button } from "../../shared/ui/Button";
+import { Button, buttonVariants } from "@orbis/ui/button";
 import { LoadingState } from "../../shared/ui/LoadingState";
 
-import { UserAvatar, identityColor } from "../../shared/ui/UserAvatar";
+import { identityColor } from "../../shared/ui/UserAvatar";
 import { OrbisLogo } from "../../shared/ui/OrbisLogo";
-import { Boxes, Check, ChevronDown } from "../../shared/ui/icons";
+import { Boxes, Check, Users } from "../../shared/ui/icons";
 import { listWorkspaces, switchWorkspace } from "./api";
-import { workspaceRoleLabel } from "./capabilities";
+import { canManageWorkspaceMembers, workspaceRoleLabel } from "./capabilities";
+import { workspaceMenuPanelClassName, workspaceMenuRowClassName } from "./workspace-navigation-styles";
 
 /** The shell supplies the anchor; discovery mounts only after explicit opening. */
-export function WorkspaceSwitcher({ variant = "topbar" }: { variant?: "topbar" | "rail" }) {
-  const workspace = useStore(authStore, state => state.workspace);
+export function WorkspaceSwitcher() {
   const authenticated = useStore(authStore, state => Boolean(state.accessToken));
   const sessionKey = useStore(authStore, getAuthSessionKey);
   const location = useLocation();
@@ -42,20 +42,16 @@ export function WorkspaceSwitcher({ variant = "topbar" }: { variant?: "topbar" |
     return () => document.removeEventListener("keydown", dismiss, true);
   }, [open, close]);
 
-  return <div className={`workspace-switcher${variant === "rail" ? " workspace-switcher--rail" : ""}`}>
-    <Popover isOpen={open} onOpenChange={next => setOpen(next ? { sessionKey, locationKey: location.key } : null)}>
-      <ActionButton type="button" className={variant === "rail" ? "rail-brand workspace-switcher-rail-trigger" : "workspace-brand"} aria-label="切换工作空间" disabled={!authenticated}>
-        {variant === "rail" ? <OrbisLogo size={32} /> : <>
-          <span className="workspace-brand-mark identity-mark" style={identityColor(workspace?.id || "orbis")}><Boxes size={16} aria-hidden="true" /></span>
-          <span className="workspace-brand-word">{workspace?.name ?? "Orbis"}</span>
-          <ChevronDown size={14} aria-hidden="true" />
-        </>}
-      </ActionButton>
-      <Popover.Content className={`workspace-switcher-popover${variant === "rail" ? " workspace-switcher-popover--rail" : ""}`} placement={variant === "rail" ? "right top" : "bottom start"} shouldFlip offset={12}>
-        <Popover.Dialog className="workspace-switcher-dialog" aria-label="切换工作空间">
+  return <div className="workspace-switcher workspace-switcher--rail relative mb-7 flex-none">
+    <Popover open={open} onOpenChange={next => setOpen(next ? { sessionKey, locationKey: location.key } : null)}>
+      <PopoverTrigger render={<Button variant="ghost" />} className="rail-brand workspace-switcher-rail-trigger h-10 w-11 p-0" aria-label="切换工作空间" disabled={!authenticated}>
+        <OrbisLogo size={32} className="size-8" />
+      </PopoverTrigger>
+      <PopoverContent aria-label="切换工作空间" className={cn("workspace-switcher-popover workspace-switcher-popover--rail max-h-[min(32rem,var(--available-height))] overflow-hidden", workspaceMenuPanelClassName)} side="right" align="start" sideOffset={6}>
+        <div className="workspace-switcher-dialog flex min-h-0 min-w-0 flex-auto flex-col overflow-y-auto overscroll-contain">
           {open ? <WorkspaceChoices key={`${sessionKey}:${location.key}`} onClose={close} /> : null}
-        </Popover.Dialog>
-      </Popover.Content>
+        </div>
+      </PopoverContent>
     </Popover>
   </div>;
 }
@@ -64,7 +60,6 @@ function WorkspaceChoices({ onClose }: { onClose: () => void }) {
   const auth = useAuthRequest();
   const authRef = useRef(auth);
   authRef.current = auth;
-  const user = useStore(authStore, state => state.user);
   const workspace = useStore(authStore, state => state.workspace);
   const sessionKey = useStore(authStore, getAuthSessionKey);
   const navigate = useNavigate();
@@ -126,23 +121,22 @@ function WorkspaceChoices({ onClose }: { onClose: () => void }) {
 
   const items = memberships.data?.items ?? [];
   return <>
-    <div className="workspace-switcher-item workspace-switcher-account">
-      <UserAvatar user={user} className="workspace-switcher-avatar" />
-      <span className="min-w-0 flex-1"><span className="workspace-switcher-name truncate">{user?.display_name || user?.email || "Orbis"}</span><span className="workspace-switcher-sub">选择当前工作空间</span></span>
-    </div>
     {memberships.isPending ? <LoadingState label="正在加载工作空间…" compact /> : null}
 
-    {memberships.isSuccess && workspace && !items.some(item => item.id === workspace.id) ? <p className="workspace-switcher-empty">当前工作空间不可用，请选择另一个空间。</p> : null}
-    <ul className="workspace-switcher-list" aria-label="可用工作空间">
+    {memberships.isSuccess && workspace && !items.some(item => item.id === workspace.id) ? <p className="workspace-switcher-empty px-2.5 pt-[5px] pb-3 text-xs text-(--muted-foreground)">当前工作空间不可用，请选择另一个空间。</p> : null}
+    <ul className="workspace-switcher-list m-0 min-h-0 min-w-0 list-none overflow-y-auto overscroll-contain p-0 [&>li+li]:mt-1" aria-label="可用工作空间">
       {items.map(item => <li key={item.id}>
-        <ActionButton type="button" className="workspace-switcher-item workspace-switcher-option w-full justify-start text-left" aria-label={`切换到 ${item.name}`} aria-current={item.id === workspace?.id ? "true" : undefined} disabled={Boolean(pendingId)} onClick={() => void selectWorkspace(item.id)}>
-          <span className="workspace-switcher-space-icon identity-mark" style={identityColor(item.id)}><Boxes aria-hidden="true" size={16} /></span>
-          <span className="min-w-0 flex-1"><span className="workspace-switcher-name truncate">{item.name}</span><span className="workspace-switcher-sub">{workspaceRoleLabel(item.role)}</span></span>
-          {item.id === workspace?.id ? <Check aria-hidden="true" size={16} className="workspace-switcher-check" /> : null}
-        </ActionButton>
+        <Button type="button" className="workspace-switcher-item workspace-switcher-option h-[62px] min-w-0 w-full justify-start gap-2.5 rounded-lg px-3.5 text-left whitespace-normal aria-current:bg-sidebar-accent aria-current:hover:bg-sidebar-accent" aria-label={`切换到 ${item.name}`} aria-current={item.id === workspace?.id ? "true" : undefined} disabled={Boolean(pendingId)} onClick={() => void selectWorkspace(item.id)} variant="ghost">
+          <span className="workspace-switcher-space-icon identity-mark grid size-[39px] flex-none place-items-center rounded-[7px] bg-muted text-sm text-(--identity-color) in-aria-current:bg-card" style={identityColor(item.id)}><Boxes aria-hidden="true" size={18} /></span>
+          <span className="min-w-0 flex-1"><span className="workspace-switcher-name block truncate text-sm font-medium text-foreground">{item.name}</span><span className="workspace-switcher-sub mt-0.5 block text-xs text-muted-foreground">{workspaceRoleLabel(item.role)}</span></span>
+          {item.id === workspace?.id ? <Check aria-hidden="true" size={16} className="workspace-switcher-check flex-none text-(--muted-foreground)" /> : null}
+        </Button>
       </li>)}
     </ul>
-    {memberships.isSuccess && !items.length ? <p className="workspace-switcher-empty">暂无可访问的工作空间。</p> : null}
-    {pendingId ? <div className="workspace-switcher-pending"><span role="status">{phase === "preparing" ? "正在保存当前内容…" : "正在完成工作空间切换…"}</span><Button size="sm" variant="ghost" onClick={cancelSwitch}>{phase === "preparing" ? "取消切换" : "留在当前空间"}</Button></div> : null}
+    {canManageWorkspaceMembers(workspace) ? <div className="mt-1 border-t border-border pt-1">
+      <Link to="/settings/members" className={cn(buttonVariants({ variant: "ghost" }), "w-full justify-start", workspaceMenuRowClassName)}><Users aria-hidden="true" />工作空间成员</Link>
+    </div> : null}
+    {memberships.isSuccess && !items.length ? <p className="workspace-switcher-empty px-2.5 pt-[5px] pb-3 text-xs text-(--muted-foreground)">暂无可访问的工作空间。</p> : null}
+    {pendingId ? <div className="workspace-switcher-pending mt-2 flex flex-none items-center justify-between gap-2 border-t border-border px-1 pt-2 text-xs [&>span]:min-w-0 [&>span]:flex-1"><span role="status">{phase === "preparing" ? "正在保存当前内容…" : "正在完成工作空间切换…"}</span><Button size="sm" variant="ghost" onClick={cancelSwitch}>{phase === "preparing" ? "取消切换" : "留在当前空间"}</Button></div> : null}
   </>;
 }

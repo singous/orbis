@@ -32,7 +32,7 @@ describe("SiteReader", () => {
 
   it("searches only the supplied published pages and offers a keyboard-ready result", async () => {
     render(<MemoryRouter><SiteReader snapshot={readerSnapshot} basePath="/s/orbis-guide" /></MemoryRouter>);
-    await userEvent.click(screen.getByRole("button", { name: "搜索文档" }));
+    await userEvent.click(screen.getByRole("button", { name: "搜索文档 ⌘ K" }));
     const searchbox = screen.getByRole("combobox", { name: "搜索文档" });
     await userEvent.type(searchbox, "独立版本");
     expect(screen.getByRole("option", { name: /发布站点.*发布后生成独立版本/ })).toBeInTheDocument();

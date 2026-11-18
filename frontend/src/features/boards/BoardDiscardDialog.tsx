@@ -1,5 +1,6 @@
-import { AlertDialog } from "@heroui/react/alert-dialog";
-import { Button } from "../../shared/ui/Button";
+import { Dialog, DialogContent, DialogTitle, DialogFooter } from "@orbis/ui/dialog";
+import { useId, useRef } from "react";
+import { Button } from "@orbis/ui/button";
 
 export function BoardDiscardDialog({ open, description, cancelLabel, discardLabel, onCancel, onDiscard, disabled = false }: {
   open: boolean;
@@ -10,21 +11,15 @@ export function BoardDiscardDialog({ open, description, cancelLabel, discardLabe
   onDiscard: () => void;
   disabled?: boolean;
 }) {
-  return <AlertDialog isOpen={open} onOpenChange={value => { if (!value) onCancel(); }}>
-    <AlertDialog.Backdrop>
-      <AlertDialog.Container>
-        <AlertDialog.Dialog>
-          <AlertDialog.Header>
-            <AlertDialog.Icon status="warning" />
-            <AlertDialog.Heading>画板尚未保存</AlertDialog.Heading>
-          </AlertDialog.Header>
-          <AlertDialog.Body><p>{description}</p></AlertDialog.Body>
-          <AlertDialog.Footer>
-            <Button autoFocus onPress={onCancel}>{cancelLabel}</Button>
-            <Button variant="danger" disabled={disabled} onPress={onDiscard}>{discardLabel}</Button>
-          </AlertDialog.Footer>
-        </AlertDialog.Dialog>
-      </AlertDialog.Container>
-    </AlertDialog.Backdrop>
-  </AlertDialog>;
+  const cancel = useRef<HTMLButtonElement>(null);
+  const descriptionId = useId();
+  return <Dialog  open={open} onOpenChange={value => { if (!value) onCancel(); }} disablePointerDismissal>
+    <DialogContent role="alertdialog" initialFocus={cancel} aria-describedby={descriptionId} showCloseButton={false}>
+      <DialogTitle>画板尚未保存</DialogTitle><p id={descriptionId} className="text-sm leading-6 text-muted-foreground">{description}</p>
+      <DialogFooter>
+        <Button ref={cancel} onClick={event => { event.stopPropagation(); onCancel(); }}>{cancelLabel}</Button>
+        <Button variant="destructive" disabled={disabled} onClick={event => { event.stopPropagation(); onDiscard(); }}>{discardLabel}</Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>;
 }

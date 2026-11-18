@@ -1,0 +1,5 @@
+{
+  "ref": "0f0bbdc69445bd4f764482d7510d4220581ed83a",
+  "description": "Frozen legacy occurrences. Remove exceptions as surfaces migrate; do not regenerate to accept new violations.",
+  "findings": {}
+}

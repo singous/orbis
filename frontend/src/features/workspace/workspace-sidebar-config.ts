@@ -18,11 +18,11 @@ export type WorkspaceSidebarConfig = {
   titlePlacement?: "header" | "below-header";
   leadingActions?: ReactNode;
   actions?: ReactNode;
+  railActions?: ReactNode;
   content: ReactNode;
   label?: string;
   collapseLabel?: string;
   expandLabel?: string;
   resizeLabel?: string;
-  desktopVisible?: boolean;
   preferences?: SidebarPreferences;
 };

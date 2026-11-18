@@ -1,5 +1,5 @@
 import { lazy } from "react";
-import type { RouteObject } from "react-router-dom";
+import { Navigate, useLocation, type RouteObject } from "react-router-dom";
 
 const QuickNotesPage = lazy(() => import("../features/quick-notes/QuickNotesPage").then(module => ({ default: module.QuickNotesPage })));
 const SheetsHome = lazy(() => import("../features/sheets/SheetsHome").then(m => ({default:m.SheetsHome})));
@@ -11,13 +11,17 @@ const SiteEditorPage = lazy(() => import("../features/sites/SiteEditorPage").the
 const HomePage = lazy(() => import("../features/home/HomePage").then(module => ({ default: module.HomePage })));
 const DocumentOverviewPage = lazy(() => import("../features/documents/DocumentOverviewPage").then(module => ({ default: module.DocumentOverviewPage })));
 const RecentDocumentsPage = lazy(() => import("../features/documents/RecentDocumentsPage").then(module => ({ default: module.RecentDocumentsPage })));
-const CollectionsPage = lazy(() => import("../features/documents/CollectionsPage").then(module => ({ default: module.CollectionsPage })));
 const LegacyDocumentSearchRedirect = lazy(() => import("../features/search/LegacyDocumentSearchRedirect").then(module => ({ default: module.LegacyDocumentSearchRedirect })));
 const ArchivePage = lazy(() => import("../features/documents/ArchivePage").then(module => ({ default: module.ArchivePage })));
 const NotebookPage = lazy(() => import("../features/documents/NotebookPage").then(module => ({ default: module.NotebookPage })));
 const AccountSettingsPage = lazy(() => import("../features/account/AccountSettingsPage").then(module => ({ default: module.AccountSettingsPage })));
 const DocumentRoute = lazy(() => import("./DocumentRoute").then(module => ({ default: module.DocumentRoute })));
 const MemberSettingsPage = lazy(() => import("../features/members/MemberSettingsPage").then(module => ({ default: module.MemberSettingsPage })));
+
+function NotebookShelfRedirect() {
+  const { search, hash, state } = useLocation();
+  return <Navigate replace to={{ pathname: "/documents", search, hash }} state={state} />;
+}
 
 /** All private pages share the same authenticated layout route. */
 export const workspaceRoutes: RouteObject[] = [
@@ -31,7 +35,7 @@ export const workspaceRoutes: RouteObject[] = [
   { path: "/home", element: <HomePage /> },
   { path: "/documents", element: <DocumentOverviewPage /> },
   { path: "/documents/recent", element: <RecentDocumentsPage /> },
-  { path: "/documents/collections", element: <CollectionsPage /> },
+  { path: "/documents/collections", element: <NotebookShelfRedirect /> },
   { path: "/documents/search", element: <LegacyDocumentSearchRedirect /> },
   { path: "/documents/archive", element: <ArchivePage /> },
   { path: "/collections/:collectionId", element: <NotebookPage /> },

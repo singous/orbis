@@ -22,7 +22,7 @@ export function SheetPage() {
     );
   return (
     <DocumentShell>
-      <div className="sheet-empty">
+      <div className="px-8 py-16 text-center text-(--muted-foreground)">
         {meta.error?.message ?? "正在打开数据表…"}
       </div>
     </DocumentShell>

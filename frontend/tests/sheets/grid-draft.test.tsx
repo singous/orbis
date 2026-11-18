@@ -24,11 +24,16 @@ function mount(readOnly = false, fields: Field[] = [field], rows: Row[] = [row])
   render(<SheetGrid rows={rows} confirmedRows={[]} draftKey="grid-draft" discardVersion={0} rowOffset={0} fields={fields} view={view} readOnly={readOnly} busy={false} hasPending={false} auth={auth} onChange={onChange} onFieldMenu={() => {}} onNewField={() => {}} onWidth={onWidth} onCreateOption={async () => ""} onInspect={() => {}} onDraftChange={() => {}} onAdd={() => {}} hasMore={false} loading={false} onMore={async () => {}} onRefresh={() => {}} onError={onError} />);
   return { onChange, onError, onWidth };
 }
+function dataCell() {
+  const cells = screen.getAllByRole("gridcell").filter(cell => cell.matches(".sheet-cell"));
+  expect(cells).toHaveLength(1);
+  return cells[0];
+}
 describe("sheet grid editing safety", () => {
   it("selects on one click and edits on a double click", async () => {
     const user = userEvent.setup();
     const { onChange } = mount();
-    const cell = screen.getByRole("gridcell");
+    const cell = dataCell();
     await user.click(cell);
     expect(cell).toHaveAttribute("aria-selected", "true");
     expect(screen.queryByRole("textbox", { name: "编辑草稿" })).not.toBeInTheDocument();
@@ -39,7 +44,8 @@ describe("sheet grid editing safety", () => {
   it("commits the current draft but only selects the next clicked cell", async () => {
     const user = userEvent.setup();
     const { onChange } = mount(false, [field], [row, { ...row, id: "next" }]);
-    const cells = screen.getAllByRole("gridcell");
+    const cells = screen.getAllByRole("gridcell").filter(cell => cell.matches(".sheet-cell"));
+    expect(cells).toHaveLength(2);
     await user.dblClick(cells[0]);
     fireEvent.change(screen.getByRole("textbox", { name: "编辑草稿" }), { target: { value: "新内容" } });
     await user.click(cells[1]);
@@ -50,7 +56,7 @@ describe("sheet grid editing safety", () => {
   it("does not toggle checkbox values on a single click", async () => {
     const user = userEvent.setup();
     const { onChange } = mount(false, [{ ...field, kind: "checkbox" }], [{ ...row, values: { field: false } }]);
-    const cell = screen.getByRole("gridcell");
+    const cell = dataCell();
     await user.click(screen.getByRole("checkbox", { name: "内容" }));
     expect(cell).toHaveAttribute("aria-selected", "true");
     expect(onChange).not.toHaveBeenCalled();
@@ -60,13 +66,13 @@ describe("sheet grid editing safety", () => {
   it("does not enter editing on a read-only grid", async () => {
     const user = userEvent.setup();
     const { onChange } = mount(true);
-    await user.dblClick(screen.getByRole("gridcell"));
+    await user.dblClick(dataCell());
     expect(screen.queryByRole("textbox", { name: "编辑草稿" })).not.toBeInTheDocument();
     expect(onChange).not.toHaveBeenCalled();
   });
   it.each(['"unterminated\n', 'first\toutside'])('preserves an unsaved draft when multiline paste is invalid: %s', clipboard => {
     const { onChange, onError } = mount();
-    fireEvent.doubleClick(screen.getByRole("gridcell"));
+    fireEvent.doubleClick(dataCell());
     fireEvent.change(screen.getByRole("textbox", { name: "编辑草稿" }), { target: { value: "不能丢失的草稿" } });
     fireEvent.paste(screen.getByRole("grid"), { clipboardData: { getData: () => clipboard } });
     expect(onError).toHaveBeenCalled();

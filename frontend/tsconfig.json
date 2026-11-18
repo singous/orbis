@@ -2,7 +2,11 @@
   "compilerOptions": {
     "target": "ES2022",
     "useDefineForClassFields": true,
-    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ES2022"
+    ],
     "allowJs": false,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -16,7 +20,25 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@orbis-ui-src/*": [
+        "./packages/ui/src/*"
+      ]
+    }
   },
-  "include": ["src", "tests/**/*.test.ts", "tests/**/*.test.tsx", "vite.config.ts", "vitest.setup.ts"]
+  "include": [
+    "src",
+    "tests/**/*.test.ts",
+    "tests/**/*.test.tsx",
+    "vite.config.ts",
+    "vitest.setup.ts",
+    "packages/ui/src",
+    "packages/ui/.storybook",
+    "packages/ui/vite.config.ts"
+  ]
 }

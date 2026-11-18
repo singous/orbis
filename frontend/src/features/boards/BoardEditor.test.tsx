@@ -1,4 +1,4 @@
-import { toast as heroToast } from "@heroui/react/toast";
+import { clearToasts } from "../../shared/ui/Toast";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -6,6 +6,7 @@ import { authStore } from "../../shared/auth/auth-store";
 import { showToast, Toaster } from "../../shared/ui/Toast";
 import type { Board } from "./model";
 import type { SessionState } from "./session";
+import { Toolbar } from "@orbis/ui/toolbar";
 import { BoardEditor } from "./BoardEditor";
 import { preparePendingNavigation } from "../../shared/navigation/pending-navigation";
 
@@ -23,7 +24,7 @@ vi.mock("./BoardCanvas", () => ({ BoardCanvas: ({ onSelection, selectionActions 
   <div role="application" aria-label="画板编辑区域" />
   <button onClick={() => onSelection(new Set(["sample"]))}>选中测试对象</button>
   <button onClick={() => onSelection(new Set())}>清除测试选择</button>
-  {selectionActions}
+  <Toolbar aria-label="选中对象操作">{selectionActions}</Toolbar>
 </> }));
 vi.mock("./BoardMinimap", () => ({ BoardMinimap: () => null }));
 vi.mock("./session", async () => {
@@ -66,7 +67,7 @@ beforeEach(() => {
   sessionControl.discard.mockReset();
   authStore.setState({ workspace: { id: "workspace", name: "验收空间", role: "owner", created_at_ms: 1, updated_at_ms: 1 } });
 });
-afterEach(() => { cleanup(); heroToast.clear(); authStore.getState().clearSession(); });
+afterEach(() => { cleanup(); clearToasts(); authStore.getState().clearSession(); });
 
 it("only offers discard when the session can safely discard its pending operations", async () => {
   sessionControl.initial = { status: "conflict", pending: 1, error: "保存结果尚未确认", canDiscard: false };
@@ -88,7 +89,7 @@ it("preserves the server reason after discard fails and clears recovery feedback
   fireEvent.click(await screen.findByRole("button", { name: "本机修改" }));
   fireEvent.click(await screen.findByRole("button", { name: "放弃未保存修改" }));
   fireEvent.click(screen.getByRole("button", { name: "放弃并重新读取" }));
-  await waitFor(() => expect(screen.getByRole("alertdialog", { name: "重新读取服务器失败" })).toHaveTextContent("重新读取服务器失败"));
+  await waitFor(() => expect(screen.getByText("重新读取服务器失败", { selector: '[data-slot="toast-title"]' })).toHaveTextContent("重新读取服务器失败"));
   expect(sessionControl.current!.state.error).toBe("服务器拒绝：图元尺寸无效");
   fireEvent.click(screen.getByRole("button", { name: "取消" }));
   fireEvent.click(screen.getByRole("button", { name: "重试同步" }));
@@ -102,7 +103,7 @@ it("clears failed discard feedback when background synchronization resolves the 
   fireEvent.click(await screen.findByRole("button", { name: "本机修改" }));
   fireEvent.click(await screen.findByRole("button", { name: "放弃未保存修改" }));
   fireEvent.click(screen.getByRole("button", { name: "放弃并重新读取" }));
-  await waitFor(() => expect(screen.getByRole("alertdialog", { name: "正在确认操作结果" })).toHaveTextContent("正在确认操作结果"));
+  await waitFor(() => expect(screen.getByText("正在确认操作结果", { selector: '[data-slot="toast-title"]' })).toHaveTextContent("正在确认操作结果"));
   act(() => sessionControl.current!.publish({ status: "saved", pending: 0, error: null, canDiscard: false }));
   await waitFor(() => expect(screen.queryByRole("button", { name: "本机修改" })).not.toBeInTheDocument());
   expect(screen.queryByRole("button", { name: "放弃并重新读取" })).not.toBeInTheDocument();
@@ -115,14 +116,14 @@ it("reports another identical import failure after its notification was dismisse
   Object.defineProperty(file, "size", { value: 32 * 1024 * 1024 + 1 });
 
   fireEvent.change(input, { target: { files: [file] } });
-  expect(await screen.findByRole("alertdialog")).toHaveTextContent("文件超过 32 MiB 导入限制。");
-  act(() => heroToast.close(heroToast.getQueue().visibleToasts[0].key));
-  await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+  expect(await screen.findByText(/./, { selector: '[data-slot="toast-title"]' })).toHaveTextContent("文件超过 32 MiB 导入限制。");
+  fireEvent.click(screen.getByText(/./, { selector: '[data-slot="toast-title"]' }).closest('[data-slot="toast"]')!.querySelector('[data-slot="toast-close"]')!);
+  await waitFor(() => expect(screen.queryByText(/./, { selector: '[data-slot="toast-title"]' })).not.toBeInTheDocument());
 
   fireEvent.click(screen.getByRole("button", { name: "选中测试对象" }));
-  expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  expect(screen.queryByText(/./, { selector: '[data-slot="toast-title"]' })).not.toBeInTheDocument();
   fireEvent.change(input, { target: { files: [file] } });
-  expect(await screen.findByRole("alertdialog")).toHaveTextContent("文件超过 32 MiB 导入限制。");
+  expect(await screen.findByText(/./, { selector: '[data-slot="toast-title"]' })).toHaveTextContent("文件超过 32 MiB 导入限制。");
 });
 
 it("keeps each page tab linked to the live canvas panel after keyboard switches", async () => {
@@ -179,8 +180,8 @@ it("keeps retry available after dismissing the error and prevents guarded naviga
   sessionControl.initial = { status: "save_failed", pending: 1, error: "连接失败", canDiscard: false };
   const view = render(<><BoardEditor id="board" /><Toaster /></>);
   act(() => showToast({ title: "连接失败", tone: "danger" }));
-  const notice = await screen.findByRole("alertdialog");
-  fireEvent.click(notice.querySelector('button[aria-label="Close"]')!);
+  const notice = await screen.findByText(/./, { selector: '[data-slot="toast-title"]' });
+  fireEvent.click(notice.closest('[data-slot="toast"]')!.querySelector('[data-slot="toast-close"]')!);
   expect(screen.getByRole("button", { name: "重试保存" })).toBeVisible();
   await expect(preparePendingNavigation()).rejects.toThrow("画板尚未保存");
   expect(sessionControl.retry).not.toHaveBeenCalled();
@@ -188,4 +189,25 @@ it("keeps retry available after dismissing the error and prevents guarded naviga
   await expect(preparePendingNavigation()).resolves.toBeUndefined();
   view.unmount();
   await expect(preparePendingNavigation()).resolves.toBeUndefined();
+});
+
+it.each(["owner", "viewer"] as const)("keeps import permission in the explicit board export menu for %s", async role => {
+  authStore.setState({ workspace: { id: "workspace", name: "验收空间", role, created_at_ms: 1, updated_at_ms: 1 } });
+  const user = userEvent.setup();
+  const view = render(<BoardEditor id="board" />);
+  const input = view.container.querySelector<HTMLInputElement>('input[accept=".json,.orbis-board.json"]')!;
+  const openFile = vi.spyOn(input, "click");
+  const trigger = screen.getByRole("button", { name: "导入与导出画板" });
+  await user.click(trigger);
+  const item = await screen.findByRole("menuitem", { name: "导入画板文件" });
+  if (role === "owner") {
+    expect(item).not.toHaveAttribute("aria-disabled", "true");
+    await user.click(item);
+    expect(openFile).toHaveBeenCalledOnce();
+  } else {
+    expect(item).toHaveAttribute("aria-disabled", "true");
+    expect(openFile).not.toHaveBeenCalled();
+    await user.keyboard("{Escape}");
+  }
+  await waitFor(() => expect(trigger).toHaveFocus());
 });

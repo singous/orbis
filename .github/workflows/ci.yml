@@ -101,8 +101,59 @@ jobs:
           npm run check:document-blocks
           npm run typecheck
           npm run test:run -- --maxWorkers=2
-      - name: Build frontend
-        run: npm run build
+      - name: Verify dependency license inventory and gate behavior
+        run: |
+          npm run licenses:generate -- --check
+          npm run test:licenses
+      - name: Build frontend and component documentation
+        run: |
+          npm run build
+          npm run storybook:build
+          npm run check:bundle -- --complete
+
+  frontend-visual:
+    name: Frontend Linux visual regression
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:bc6ab0d6d44ff4826e4cb8c1e6d801e185bfc42bb0753f8e2a30efc70db054c7
+      options: --ipc=host
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install locked frontend dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Compare against reviewed Linux baselines
+        run: npm run test:visual
+      - name: Upload visual comparison evidence
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: frontend-visual-evidence
+          path: |
+            frontend/test-results/visual/
+            frontend/tests/visual/snapshots/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  frontend-licenses:
+    name: Frontend release license gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+      - name: Verify frozen notices and maintainer decisions offline
+        working-directory: frontend
+        run: npm run check:licenses
 
   browser:
     name: Browser acceptance
@@ -128,9 +179,22 @@ jobs:
       - name: Install Chromium and system dependencies
         working-directory: frontend
         run: npx playwright install --with-deps chromium
+      - name: Verify UI components, accessibility and application contracts
+        id: ui_contracts
+        # 保留 UI 失败，但继续获取独立数据库旅程的证据；最后的检查恢复失败结论。
+        continue-on-error: true
+        working-directory: frontend
+        run: |
+          npm run test:storybook
+          npm run test:ui
       - name: Build production frontend
         working-directory: frontend
         run: npm run build
+      - name: Verify production UI assets are served locally
+        working-directory: frontend
+        env:
+          ORBIS_UI_PRODUCTION: "1"
+        run: npm run test:ui -- tests/ui-browser/platform/production-network.spec.ts tests/ui-browser/platform/style-foundation.spec.ts --output=test-results/production-ui
       - name: Build the owned collaboration test engine
         env:
           BUILDX_CONFIG: ${{ runner.temp }}/orbis-buildx
@@ -142,12 +206,20 @@ jobs:
           ORBIS_E2E_PERFORMANCE_MODE: "report"
           ORBIS_TEST_COLLABORATION_IMAGE: orbis-collaboration:ci
         run: npm run test:e2e
+      - name: Preserve UI contract failures
+        if: always() && steps.ui_contracts.outcome == 'failure'
+        run: |
+          echo "UI component, accessibility or application contract tests failed. See the original failures above and the uploaded UI browser evidence."
+          exit 1
       - name: Upload browser failure evidence
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: browser-failure-evidence
-          path: frontend/test-results/browser/
+          path: |
+            frontend/test-results/browser/
+            frontend/test-results/ui-browser/
+            frontend/test-results/production-ui/
           if-no-files-found: ignore
           retention-days: 7
 
@@ -167,13 +239,22 @@ jobs:
           echo "ORBIS_GO_BIN=$RUNNER_TEMP/go/bin/go" >> "$GITHUB_ENV"
       - name: Check Docker Compose availability
         run: docker compose version
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
       - name: Build the three deployment images
         env:
           BUILDX_CONFIG: ${{ runner.temp }}/orbis-buildx
         run: |
           docker build --target server --iidfile "$RUNNER_TEMP/orbis-server-image" .
-          docker build --target frontend --iidfile "$RUNNER_TEMP/orbis-frontend-image" .
+          docker build --target frontend --build-arg ORBIS_SOURCE_REVISION="${{ github.sha }}" --iidfile "$RUNNER_TEMP/orbis-frontend-image" .
           docker build --target collaboration --iidfile "$RUNNER_TEMP/orbis-collaboration-image" .
+      - name: Verify notices and corresponding source in the final frontend image
+        run: |
+          license_container=$(docker create "$(cat "$RUNNER_TEMP/orbis-frontend-image")")
+          trap 'docker rm "$license_container" >/dev/null' EXIT
+          docker cp "$license_container:/usr/share/nginx/html/licenses" "$RUNNER_TEMP/orbis-image-licenses"
+          node frontend/scripts/check-license-bundle.mjs "$RUNNER_TEMP/orbis-image-licenses"
       - name: Verify an owned Compose installation and persistent restart
         run: |
           make compose-check IMAGE="$(cat "$RUNNER_TEMP/orbis-server-image")" FRONTEND_IMAGE="$(cat "$RUNNER_TEMP/orbis-frontend-image")" COLLABORATION_IMAGE="$(cat "$RUNNER_TEMP/orbis-collaboration-image")"

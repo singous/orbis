@@ -1,0 +1,216 @@
+{
+  "license": "MIT",
+  "copyright": "Copyright (c) 2023 shadcn",
+  "licenseFile": "licenses/texts/shadcn-ui-MIT.txt",
+  "sourceRepository": "https://github.com/shadcn-ui/ui",
+  "style": "base-nova",
+  "cliVersion": "4.23.0",
+  "acquisition": "Official shadcn 4.23.0 CLI add in an isolated base-nova neutral workspace; raw official registry JSON separately frozen. Root implementation retains native APIs and classes with documented integration-only adaptations.",
+  "sourceRevisionSemantics": "reproducible-content identifies a verified upstream source revision that reproduces the frozen registry JSON. registry-snapshot records an official registry response by URL and SHA-256 without inventing an unverified website deployment or Git revision.",
+  "timestampUnit": "unix-ms",
+  "timestampSemantics": {
+    "addedAt": "For the original two entries, the Git author time of their first local introduction; for new registry-snapshot entries, the first recorded acquisition time of this frozen official source. Unix milliseconds.",
+    "updatedAt": "Time of the latest recorded local native-source acquisition/adaptation. It is not an assertion about a historical website deployment or a future Git commit timestamp."
+  },
+  "components": {
+    "button": {
+      "source": "https://ui.shadcn.com/r/styles/base-nova/button.json",
+      "sourceRevision": "c257f688cf4de7ec10cc1be84cad29cd4631182c",
+      "sourceRevisionKind": "reproducible-content",
+      "servedRevision": null,
+      "sourceChecksum": "sha256:9ba7e870178813f0552b818a913a2792fb500c779e36395740b4973e3025d427",
+      "addedAt": 1793476336000,
+      "updatedAt": 1793597672507,
+      "modifications": "Native base-nova component API and default classes retained. Official CLI resolves Lucide placeholders; local public-subpath imports, explicit React type imports and Chinese screen-reader labels where applicable. Native portals receive only optional application overlay-scope HTML props, without restoring legacy APIs or styles.",
+      "status": "experimental"
+    },
+    "dialog": {
+      "source": "https://ui.shadcn.com/r/styles/base-nova/dialog.json",
+      "sourceRevision": "c257f688cf4de7ec10cc1be84cad29cd4631182c",
+      "sourceRevisionKind": "reproducible-content",
+      "servedRevision": null,
+      "sourceChecksum": "sha256:40fc321d25eb9590d07db54b00d9bc1a74274a549aa06d5915a34ba302ed8b94",
+      "addedAt": 1793476336000,
+      "updatedAt": 1793597672507,
+      "modifications": "Native base-nova component API and default classes retained. Official CLI resolves Lucide placeholders; local public-subpath imports, explicit React type imports and Chinese screen-reader labels where applicable. Native portals receive only optional application overlay-scope HTML props, without restoring legacy APIs or styles.",
+      "status": "experimental"
+    },
+    "input": {
+      "source": "https://ui.shadcn.com/r/styles/base-nova/input.json",
+      "sourceRevision": null,
+      "sourceRevisionKind": "registry-snapshot",
+      "servedRevision": null,
+      "sourceChecksum": "sha256:bbad1bba130ac9750a61844eeb8f043e8a710846e07689fa85398b80a46c2741",
+      "addedAt": 1793595043043,
+      "status": "experimental",
+      "updatedAt": 1794381493192,
+      "modifications": "Native base-nova API, focus, invalid and disabled semantics retained. Orbis graphite styling uses a muted surface, 6 px radius and 12 px horizontal padding. Local cn and explicit React type imports remain."
+    },
+    "textarea": {
+      "source": "https://ui.shadcn.com/r/styles/base-nova/textarea.json",
+      "sourceRevision": null,
+      "sourceRevisionKind": "registry-snapshot",
+      "servedRevision": null,
+      "sourceChecksum": "sha256:8f01f6bc4ee556263bae7644e8b527022fa77ff203f33a258bb47142ef7d9c81",
+      "addedAt": 1793595043043,
+      "status": "experimental",
+      "updatedAt": 1793597672507,
+      "modifications": "Native base-nova component API and default classes retained. Official CLI resolves Lucide placeholders; local public-subpath imports, explicit React type imports and Chinese screen-reader labels where applicable. Native portals receive only optional application overlay-scope HTML props, without restoring legacy APIs or styles."
+    },
+    "select": {
+      "source": "https://ui.shadcn.com/r/styles/base-nova/select.json",
+      "sourceRevision": null,
+      "sourceRevisionKind": "registry-snapshot",
+      "servedRevision": null,
+      "sourceChecksum": "sha256:425e9b0a28b72617f18fabd75384050113295b88e7ba01c35bede2c72bd5d476",
+      "addedAt": 1793595043043,
+      "status": "experimental",
+      "updatedAt": 1793597672507,
+      "modifications": "Native base-nova component API and default classes retained. Official CLI resolves Lucide placeholders; local public-subpath imports, explicit React type imports and Chinese screen-reader labels where applicable. Native portals receive only optional application overlay-scope HTML props, without restoring legacy APIs or styles."
+    },
+    "avatar": {
+      "source": "https://ui.shadcn.com/r/styles/base-nova/avatar.json",
+      "sourceRevision": null,
+      "sourceRevisionKind": "registry-snapshot",
+      "servedRevision": null,
+      "sourceChecksum": "sha256:bbcabf0121fb2ff93a8522f8f80b74631e732a31399b1b7991c0b8c3167e2172",
+      "addedAt": 1793595043043,
+      "status": "experimental",
+      "updatedAt": 1793597672507,
+      "modifications": "Native base-nova component API and default classes retained. Official CLI resolves Lucide placeholders; local public-subpath imports, explicit React type imports and Chinese screen-reader labels where applicable. Native portals receive only optional application overlay-scope HTML props, without restoring legacy APIs or styles."
+    },
+    "badge": {
+      "source": "https://ui.shadcn.com/r/styles/base-nova/badge.json",
+      "sourceRevision": null,
+      "sourceRevisionKind": "registry-snapshot",
+      "servedRevision": null,
+      "sourceChecksum": "sha256:ccc20021cdcbf0fb23c0d4d28f1da4adde8e51ba59f4b11dd2722ed97a5ee3a4",
+      "addedAt": 1793595043043,
+      "status": "experimental",
+      "updatedAt": 1793597672507,
+      "modifications": "Native base-nova component API and default classes retained. Official CLI resolves Lucide placeholders; local public-subpath imports, explicit React type imports and Chinese screen-reader labels where applicable. Native portals receive only optional application overlay-scope HTML props, without restoring legacy APIs or styles."
+    },
+    "spinner": {
+      "source": "https://ui.shadcn.com/r/styles/base-nova/spinner.json",
+      "sourceRevision": null,
+      "sourceRevisionKind": "registry-snapshot",
+      "servedRevision": null,
+      "sourceChecksum": "sha256:d949d0b91ff34620eecf2bb359536fd3e6942b518dc0a396b77fd02a90661b61",
+      "addedAt": 1793595043043,
+      "status": "experimental",
+      "updatedAt": 1793597672507,
+      "modifications": "Native base-nova component API and default classes retained. Official CLI resolves Lucide placeholders; local public-subpath imports, explicit React type imports and Chinese screen-reader labels where applicable. Native portals receive only optional application overlay-scope HTML props, without restoring legacy APIs or styles."
+    },
+    "skeleton": {
+      "source": "https://ui.shadcn.com/r/styles/base-nova/skeleton.json",
+      "sourceRevision": null,
+      "sourceRevisionKind": "registry-snapshot",
+      "servedRevision": null,
+      "sourceChecksum": "sha256:85692a09912f518ffd64c540dfcf098fe748a807baf288c107cf8126496cf886",
+      "addedAt": 1793595043043,
+      "status": "experimental",
+      "updatedAt": 1793597672507,
+      "modifications": "Native base-nova component API and default classes retained. Official CLI resolves Lucide placeholders; local public-subpath imports, explicit React type imports and Chinese screen-reader labels where applicable. Native portals receive only optional application overlay-scope HTML props, without restoring legacy APIs or styles."
+    },
+    "dropdown-menu": {
+      "source": "https://ui.shadcn.com/r/styles/base-nova/dropdown-menu.json",
+      "sourceRevision": null,
+      "sourceRevisionKind": "registry-snapshot",
+      "servedRevision": null,
+      "sourceChecksum": "sha256:335c59dba30145f434a9cc9ccb0438a3c5e2afe857fc11b029de1ecb415224d7",
+      "addedAt": 1793595043043,
+      "status": "experimental",
+      "updatedAt": 1793597672507,
+      "modifications": "Native base-nova component API and default classes retained. Official CLI resolves Lucide placeholders; local public-subpath imports, explicit React type imports and Chinese screen-reader labels where applicable. Native portals receive only optional application overlay-scope HTML props, without restoring legacy APIs or styles."
+    },
+    "popover": {
+      "source": "https://ui.shadcn.com/r/styles/base-nova/popover.json",
+      "sourceRevision": null,
+      "sourceRevisionKind": "registry-snapshot",
+      "servedRevision": null,
+      "sourceChecksum": "sha256:ba5fe84f353f6c0fd2133a2ab893f5e8861fc60dc4dea548a7ec875acaa37b2c",
+      "addedAt": 1793595043043,
+      "status": "experimental",
+      "updatedAt": 1793597672507,
+      "modifications": "Native base-nova component API and default classes retained. Official CLI resolves Lucide placeholders; local public-subpath imports, explicit React type imports and Chinese screen-reader labels where applicable. Native portals receive only optional application overlay-scope HTML props, without restoring legacy APIs or styles."
+    },
+    "tooltip": {
+      "source": "https://ui.shadcn.com/r/styles/base-nova/tooltip.json",
+      "sourceRevision": null,
+      "sourceRevisionKind": "registry-snapshot",
+      "servedRevision": null,
+      "sourceChecksum": "sha256:2f55867faecee2d3616cfd8c6a80b538909a21e62fdfa2788b1ead56093e5395",
+      "addedAt": 1793595043043,
+      "status": "experimental",
+      "updatedAt": 1793597672507,
+      "modifications": "Native base-nova API and styles retained; CLI Lucide icons, local imports and scoped portal HTML props. A per-instance React ID context supplies default role=tooltip and trigger description linkage missing in the installed Base UI implementation; explicit native props can override these defaults."
+    },
+    "radio-group": {
+      "source": "https://ui.shadcn.com/r/styles/base-nova/radio-group.json",
+      "sourceRevision": null,
+      "sourceRevisionKind": "registry-snapshot",
+      "servedRevision": null,
+      "sourceChecksum": "sha256:874b30662ba338d06362491b663cae9198281a4bc385b6be6425f2de442384d7",
+      "addedAt": 1793595043043,
+      "status": "experimental",
+      "updatedAt": 1793597672507,
+      "modifications": "Native base-nova component API and default classes retained. Official CLI resolves Lucide placeholders; local public-subpath imports, explicit React type imports and Chinese screen-reader labels where applicable. Native portals receive only optional application overlay-scope HTML props, without restoring legacy APIs or styles."
+    },
+    "tabs": {
+      "source": "https://ui.shadcn.com/r/styles/base-nova/tabs.json",
+      "sourceRevision": null,
+      "sourceRevisionKind": "registry-snapshot",
+      "servedRevision": null,
+      "sourceChecksum": "sha256:b4552a0329dd9a6e2bfaf03405c133874df5a4930c7bb3dd84c9ab5c45b89402",
+      "addedAt": 1793595043043,
+      "status": "experimental",
+      "updatedAt": 1793597672507,
+      "modifications": "Native base-nova component API and default classes retained. Official CLI resolves Lucide placeholders; local public-subpath imports, explicit React type imports and Chinese screen-reader labels where applicable. Native portals receive only optional application overlay-scope HTML props, without restoring legacy APIs or styles."
+    },
+    "checkbox": {
+      "source": "https://ui.shadcn.com/r/styles/base-nova/checkbox.json",
+      "sourceRevision": null,
+      "sourceRevisionKind": "registry-snapshot",
+      "servedRevision": null,
+      "sourceChecksum": "sha256:e6df7b595f25a7ee97c3fb94e0ddc35998f74c98b990d3030e485905ec677178",
+      "addedAt": 1793595043043,
+      "status": "experimental",
+      "updatedAt": 1793597672507,
+      "modifications": "Native base-nova component API and default classes retained. Official CLI resolves Lucide placeholders; local public-subpath imports, explicit React type imports and Chinese screen-reader labels where applicable. Native portals receive only optional application overlay-scope HTML props, without restoring legacy APIs or styles."
+    },
+    "toggle": {
+      "source": "https://ui.shadcn.com/r/styles/base-nova/toggle.json",
+      "sourceRevision": null,
+      "sourceRevisionKind": "registry-snapshot",
+      "servedRevision": null,
+      "sourceChecksum": "sha256:f06447a03bcc1e510f3a50d5e7735bd82bdc17bc77849596709727c215bcc20e",
+      "addedAt": 1793595043043,
+      "status": "experimental",
+      "updatedAt": 1793597672507,
+      "modifications": "Native base-nova component API and default classes retained. Official CLI resolves Lucide placeholders; local public-subpath imports, explicit React type imports and Chinese screen-reader labels where applicable. Native portals receive only optional application overlay-scope HTML props, without restoring legacy APIs or styles."
+    },
+    "sheet": {
+      "source": "https://ui.shadcn.com/r/styles/base-nova/sheet.json",
+      "sourceRevision": null,
+      "sourceRevisionKind": "registry-snapshot",
+      "servedRevision": null,
+      "sourceChecksum": "sha256:72b36d92af7fcbc9bd2d1d4ef0cbc65f4fc8178f7bb2bedaf657460f15011cf4",
+      "addedAt": 1793595043043,
+      "status": "experimental",
+      "updatedAt": 1793597672507,
+      "modifications": "Native base-nova component API and default classes retained. Official CLI resolves Lucide placeholders; local public-subpath imports, explicit React type imports and Chinese screen-reader labels where applicable. Native portals receive only optional application overlay-scope HTML props, without restoring legacy APIs or styles."
+    },
+    "toast": {
+      "source": "https://ui.shadcn.com/r/styles/base-nova/toast.json",
+      "sourceRevision": null,
+      "sourceRevisionKind": "registry-snapshot",
+      "servedRevision": null,
+      "sourceChecksum": "sha256:161ed77c409fe7345ee6308f7cf66f7bcf2717d8d5e1a8b36a7f8e8fa0df745e",
+      "addedAt": 1793595457378,
+      "updatedAt": 1793599271278,
+      "modifications": "Native base-nova source/API/styles retained. Official CLI resolves Lucide placeholders; local Button import and Chinese viewport/close labels; ToastPortal spreads the application overlay-scope HTML props before explicit native props. A shared native useRender focus adapter removes hidden Root/Close nodes from Tab order and exposes actual focused nodes, addressing Base UI 1.9.0 mui/base-ui#5659 without changing priority, announcements, timers or classes. Action keeps its native render contract and only leaves Tab order when its Toast ancestor is hidden. Native render callbacks, refs, events and children are preserved.",
+      "status": "experimental"
+    }
+  },
+  "iconLibrary": "lucide"
+}

@@ -1,6 +1,8 @@
+import { notification } from "../helpers/notifications";
 import { releaseFeatures } from "../../../src/shared/release-features";
 import { expect, test, type APIRequestContext, type Browser, type Page } from "@playwright/test";
 import { createCollection, createDocument, openWithSession, ownerSession, responseData, sessionHeaders, workspacePath, type TestSession } from "../helpers/api-fixtures";
+import { settleNativeEditorSelection } from "../helpers/editor-selection";
 
 const runtime = { enabled: false };
 type NativeBlock = { id: string; type: string; props: Record<string, unknown>; content: Array<{ text: string; marks: string[]; href: string | null }>; children: NativeBlock[] };
@@ -38,6 +40,7 @@ async function append(page: Page, id: string, value: string) {
 async function lineBoundary(page: Page, edge: "start" | "end") {
   const apple = await page.evaluate(() => /Mac|iPhone|iPad/.test(navigator.platform));
   await page.keyboard.press(apple ? edge === "start" ? "Meta+ArrowLeft" : "Meta+ArrowRight" : edge === "start" ? "Home" : "End");
+  await settleNativeEditorSelection(page);
 }
 async function pastePlainText(page: Page) {
   const apple = await page.evaluate(() => /Mac|iPhone|iPad/.test(navigator.platform));
@@ -107,7 +110,7 @@ test("named document versions fix content and restore into an editable collabora
   const compared = await responseData<{ items: Array<{ change: string; before_text: string; after_text: string }> }>(await request.get(workspacePath(session, `/documents/${document.id}/versions/${revised.id}/compare?from_id=${review.id}`), { headers: sessionHeaders(session) }));
   expect(compared.items).toHaveLength(1);
   expect(compared.items[0]).toMatchObject({ change: "modified", before_text: "Version baseline", after_text: "Version baseline revised" });
-  await page.locator('.document-versions [data-slot="select-trigger"]').click();
+  await page.getByRole("combobox", { name: "选择比较起点", exact: true }).click();
   await page.getByRole("option", { name: /评审稿/ }).click();
   await expect(page.getByRole("heading", { name: "内容差异", exact: true })).toBeVisible();
   await expect(page.getByText("Version baseline", { exact: true })).toBeVisible();
@@ -119,7 +122,7 @@ test("named document versions fix content and restore into an editable collabora
   await page.screenshot({ path: testInfo.outputPath("document-versions-mobile.png"), fullPage: true });
   await page.getByRole("button", { name: "查看版本 评审稿", exact: true }).click();
   await page.getByRole("button", { name: "恢复此版本", exact: true }).click();
-  await expect(page.getByRole("alertdialog", { name: "请求成功", exact: true })).toBeVisible();
+  await expect(notification(page, "请求成功")).toBeVisible();
   await page.getByRole("button", { name: "关闭评论与历史", exact: true }).click();
   await expect(page.locator(".ProseMirror")).toHaveText("Version baseline");
   await append(page, blocks[0].id, " after restore");
@@ -273,7 +276,7 @@ test("explicit history restore opens the new epoch and remains editable", async 
   await page.getByRole("button", { name: "查看全部保存记录", exact: true }).click();
   await page.getByRole("button", { name: `查看保存记录 ${source.revision.version}`, exact: true }).click();
   await page.getByRole("button", { name: "恢复此版本", exact: true }).click();
-  await expect(page.getByRole("alertdialog", { name: "请求成功", exact: true })).toBeVisible();
+  await expect(notification(page, "请求成功")).toBeVisible();
   await page.getByRole("button", { name: "关闭评论与历史", exact: true }).click();
   await expect(page.locator(".ProseMirror")).toHaveText("Historical body");
   await append(page, blocks[0].id, " after restore");

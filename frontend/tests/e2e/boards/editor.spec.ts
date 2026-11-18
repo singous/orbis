@@ -196,7 +196,7 @@ test("native board templates persist and editing supports undo, deletion and rec
   await expect.poll(async () => (await snapshot()).elements.length).toBe(13);
   await page.getByRole("tab", { name: "页面 2", exact: true }).click();
   await page.getByRole("tab", { name: "模板", exact: true }).click();
-  await page.getByRole("button", { name: /图类型/ }).click();
+  await page.getByRole("combobox", { name: "图类型", exact: true }).click();
   await page.getByRole("option", { name: "ER 图", exact: true }).click();
   await page.getByRole("button", { name: /用户权限/ }).click();
   await expect(page.locator(".board-save-state")).toHaveText("已保存");
@@ -386,7 +386,7 @@ test("mind map keyboard editing and native document embeds preserve board refere
   );
   await openWithSession(page, session, "/documents/" + board.document_id);
   await page.getByRole("button", { name: "模板库", exact: true }).click();
-  await page.getByRole("button", { name: /图类型/ }).click();
+  await page.getByRole("combobox", { name: "图类型", exact: true }).click();
   await page.getByRole("option", { name: "思维导图", exact: true }).click();
   await page
     .locator(".board-template-list")
@@ -580,7 +580,7 @@ test("container layout and connected field deletion preserve the rest of the dia
   }
   await expect(page.locator(".board-save-state")).toHaveText("已保存");
   await page.getByRole("tab", { name: "模板", exact: true }).click();
-  await page.getByRole("button", { name: /图类型/ }).click();
+  await page.getByRole("combobox", { name: "图类型", exact: true }).click();
   await page.getByRole("option", { name: "ER 图", exact: true }).click();
   await page.getByRole("button", { name: /用户权限/ }).click();
   await expect(page.locator(".board-save-state")).toHaveText("已保存");

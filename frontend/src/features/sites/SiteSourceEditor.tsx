@@ -1,10 +1,11 @@
 import { LoadingState } from "../../shared/ui/LoadingState";
-import { Input as HeroInput } from "@heroui/react/input";
-import { Radio } from "@heroui/react/radio";
-import { RadioGroup } from "@heroui/react/radio-group";
-import { ActionButton } from "../../shared/ui/ActionButton";
-import { SelectField } from "../../shared/ui/SelectField";
-import { ArrowDown, ArrowUp, Plus, Trash2 } from "../../shared/ui/icons";
+import { Input } from "@orbis/ui/input";
+import { RadioGroup, RadioGroupItem } from "@orbis/ui/radio-group";
+import { Button } from "@orbis/ui/button";
+import { SiteField, SiteInfoPanel, SiteNotice, SiteSectionHeading, SiteReorderControls } from "./SiteManagementLayout";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@orbis/ui/select";
+import { useId } from "react";
+import { Plus } from "../../shared/ui/icons";
 
 import { useNoteTree, useNotebooks } from "../documents/queries";
 import type { NotebookSource, SiteSource, SiteSources } from "./schemas";
@@ -39,19 +40,18 @@ function SourceBinding({
   const tree = useNoteTree(binding.notebook_id);
   const flatTree = flattenNoteTree(tree.data?.items ?? []);
   const notebook = notebookOptions.find((item) => item.id === binding.notebook_id);
-  return <article className="site-source-binding">
-    <header>
-      <div><strong>{notebook?.title ?? "来源笔记本不可用"}</strong><span>来源 {index + 1}</span></div>
-      {!disabled ? <div className="site-source-order-actions">
-        <ActionButton type="button" aria-label={`上移来源 ${index + 1}`} disabled={index === 0} onClick={() => onMove(-1)}><ArrowUp size={14} /></ActionButton>
-        <ActionButton type="button" aria-label={`下移来源 ${index + 1}`} disabled={index === source.notebooks.length - 1} onClick={() => onMove(1)}><ArrowDown size={14} /></ActionButton>
-        <ActionButton type="button" aria-label={`移除来源 ${index + 1}`} onClick={onRemove}><Trash2 size={14} /></ActionButton>
-      </div> : null}
+  const fieldId = useId();
+  const notebookChoices = [...(!notebook ? [{ value: binding.notebook_id, label: "当前来源不可用" }] : []), ...notebookOptions.map(item => ({ value: item.id, label: item.title }))];
+  const rootChoices = [{ value: "", label: "整个笔记本" }, ...flatTree.map(item => ({ value: item.id, label: item.title }))];
+  return <article className="mb-3.5 overflow-hidden rounded-[13px] border border-border bg-card">
+    <header className="flex items-center justify-between gap-4 border-b border-border px-[15px] py-[13px]">
+      <div className="grid gap-[2px]"><strong className="text-sm font-semibold">{notebook?.title ?? "来源笔记本不可用"}</strong><span className="text-xs tracking-[.05em] text-muted-foreground uppercase">来源 {index + 1}</span></div>
+      {!disabled ? <SiteReorderControls appearance="source" first={index === 0} last={index === source.notebooks.length - 1} upLabel={`上移来源 ${index + 1}`} downLabel={`下移来源 ${index + 1}`} removeLabel={`移除来源 ${index + 1}`} onMove={onMove} onRemove={onRemove} /> : null}
     </header>
-    <div className="site-source-binding-fields">
-      <SelectField label="来源笔记本" aria-label={`来源笔记本 ${index + 1}`} disabled={disabled} value={binding.notebook_id} onChange={(notebook_id) => onChange({ notebook_id, root_note_id: null, label: binding.label ?? null })} options={[...(!notebook ? [{ value: binding.notebook_id, label: "当前来源不可用" }] : []), ...notebookOptions.map((item) => ({ value: item.id, label: item.title }))]} />
-      <SelectField label="内容范围" aria-label={`内容范围 ${index + 1}`} disabled={disabled || tree.isPending} value={binding.root_note_id ?? ""} onChange={(rootId) => onChange({ ...binding, root_note_id: rootId || null })} options={[{ value: "", label: "整个笔记本" }, ...flatTree.map((item) => ({ value: item.id, label: item.title }))]} />
-      <label>栏目名称<HeroInput aria-label={`栏目名称 ${index + 1}`} disabled={disabled} value={binding.label ?? ""} placeholder={notebook?.title ?? "默认使用笔记本名称"} onChange={(event) => onChange({ ...binding, label: event.target.value || null })} /></label>
+    <div className="grid grid-cols-1 gap-[11px] border-b border-border px-[15px] py-3.5 min-[721px]:grid-cols-3 [&_label]:grid [&_label]:gap-1.5 [&_label]:text-sm [&_label]:text-muted-foreground [&_input]:min-w-0">
+      <div className="grid gap-2"><label htmlFor={`${fieldId}-notebook`}>来源笔记本</label><Select items={notebookChoices} disabled={disabled} value={binding.notebook_id} onValueChange={notebook_id => { if (notebook_id !== null) onChange({ notebook_id, root_note_id: null, label: binding.label ?? null }); }}><SelectTrigger id={`${fieldId}-notebook`} aria-label={`来源笔记本 ${index + 1}`} className="w-full"><SelectValue /></SelectTrigger><SelectContent role="region" aria-label="来源笔记本选项">{notebookChoices.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></div>
+      <div className="grid gap-2"><label htmlFor={`${fieldId}-root`}>内容范围</label><Select items={rootChoices} disabled={disabled || tree.isPending} value={binding.root_note_id ?? ""} onValueChange={rootId => { if (rootId !== null) onChange({ ...binding, root_note_id: rootId || null }); }}><SelectTrigger id={`${fieldId}-root`} aria-label={`内容范围 ${index + 1}`} className="w-full"><SelectValue /></SelectTrigger><SelectContent role="region" aria-label="内容范围选项">{rootChoices.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></div>
+      <SiteField>栏目名称<Input aria-label={`栏目名称 ${index + 1}`} disabled={disabled} value={binding.label ?? ""} placeholder={notebook?.title ?? "默认使用笔记本名称"} onChange={(event) => onChange({ ...binding, label: event.target.value || null })} /></SiteField>
     </div>
     {tree.isPending ? <LoadingState label="正在加载真实文档树…" compact /> : tree.isError ? null : <SiteSourceTree items={tree.data.items} rootNoteId={binding.root_note_id} source={source} resolved={saved ? sources : undefined} disabled={disabled} onChange={onSourceChange} />}
   </article>;
@@ -73,6 +73,7 @@ export function SiteSourceEditor({
   savedAtMs?: number;
 }) {
   const source = sourceOrManual(value);
+  const modeId = useId();
   const notebooks = useNotebooks();
   const notebookOptions = notebooks.data?.items ?? [];
   const latestSourceUpdate = sources?.pages.reduce<number | null>((latest, page) => page.updated_at_ms !== null && (latest === null || page.updated_at_ms > latest) ? page.updated_at_ms : latest, null) ?? null;
@@ -92,13 +93,13 @@ export function SiteSourceEditor({
     onChange({ ...source, notebooks: next });
   }
 
-  return <section className="site-source-editor" aria-labelledby="site-source-title">
-    <div className="site-section-heading"><div><h2 id="site-source-title">内容来源</h2><p>关联笔记本后，新文档与标题更新会在下次预览时自动出现。</p></div></div>
-    <RadioGroup className="site-source-mode" aria-label="内容来源方式" name="site-source-kind" orientation="horizontal" isDisabled={disabled} value={source.kind} onChange={(kind) => { if (kind === "notebooks" || kind === "manual") setMode(kind); }}>
-      <Radio value="notebooks"><Radio.Content><Radio.Control><Radio.Indicator /></Radio.Control>关联笔记本</Radio.Content></Radio>
-      <Radio value="manual"><Radio.Content><Radio.Control><Radio.Indicator /></Radio.Control>手动选择</Radio.Content></Radio>
+  return <section className="min-w-0" aria-labelledby="site-source-title">
+    <SiteSectionHeading title={<span id="site-source-title">内容来源</span>} description="关联笔记本后，新文档与标题更新会在下次预览时自动出现。" />
+    <RadioGroup className="mb-5 flex flex-wrap gap-5" aria-label="内容来源方式" name="site-source-kind" aria-orientation="horizontal" disabled={disabled} value={source.kind} onValueChange={kind => { if (kind === "manual" || kind === "notebooks") setMode(kind); }}>
+      <div className="flex items-center gap-2"><RadioGroupItem id={`${modeId}-notebooks`} value="notebooks" /><label htmlFor={`${modeId}-notebooks`}>关联笔记本</label></div>
+      <div className="flex items-center gap-2"><RadioGroupItem id={`${modeId}-manual`} value="manual" /><label htmlFor={`${modeId}-manual`}>手动选择</label></div>
     </RadioGroup>
-    {source.kind === "manual" ? <div className="site-source-manual-note"><strong>手动选择目录</strong><p>继续使用下方站点目录。切换到笔记本来源不会删除这些手选项，切回后仍可继续编辑。</p></div> : <>
+    {source.kind === "manual" ? <SiteNotice title="手动选择目录" description="继续使用下方站点目录。切换到笔记本来源不会删除这些手选项，切回后仍可继续编辑。" /> : <>
       {notebooks.isPending ? <LoadingState label="正在加载笔记本…" compact /> : null}
       {source.notebooks.map((binding, index) => <SourceBinding
         key={`${binding.notebook_id}-${index}`}
@@ -114,17 +115,17 @@ export function SiteSourceEditor({
         onRemove={() => onChange({ ...source, notebooks: source.notebooks.filter((_, position) => position !== index) })}
         onMove={(direction) => moveBinding(index, direction)}
       />)}
-      {!source.notebooks.length ? <div className="site-source-empty-selection"><strong>尚未关联来源</strong><p>请明确添加一个笔记本，或切换到手动选择后再保存。</p></div> : null}
-      {!disabled && notebookOptions.length ? <ActionButton className="site-source-add" type="button" onClick={() => {
+      {!source.notebooks.length ? <SiteNotice className="mb-3.5" title="尚未关联来源" description="请明确添加一个笔记本，或切换到手动选择后再保存。" /> : null}
+      {!disabled && notebookOptions.length ? <Button variant="ghost" className="mt-1" size="sm" onClick={() => {
         const next = notebookOptions.find((item) => !source.notebooks.some((binding) => binding.notebook_id === item.id)) ?? notebookOptions[0];
         onChange({ ...source, notebooks: [...source.notebooks, { notebook_id: next.id, root_note_id: null, label: null }] });
-      }}><Plus size={14} />添加来源</ActionButton> : null}
-      <div className="site-source-status">
+      }}><Plus size={14} />添加来源</Button> : null}
+      <SiteInfoPanel className="mt-[17px] flex flex-wrap justify-between gap-x-4 gap-y-[7px] text-xs text-muted-foreground">
         <span>{saved ? `来源配置已保存${savedAtMs ? ` · ${formatSavedTime(savedAtMs)}` : ""}` : "来源配置尚未保存，公开路径将在保存后生成"}</span>
         {saved && sources ? <span>当前解析 {sources.pages.length} 篇 · 排除 {sources.excluded_count} 篇</span> : null}
         {saved && latestSourceUpdate ? <span>来源内容更新 · {formatSavedTime(latestSourceUpdate)}</span> : null}
         {saved && !sources ? <span>来源解析暂不可用，草稿配置仍可编辑</span> : null}
-      </div>
+      </SiteInfoPanel>
     </>}
   </section>;
 }

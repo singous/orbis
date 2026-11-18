@@ -5,7 +5,7 @@ import { LoadingState } from "../shared/ui/LoadingState";
 
 const PublicSharePage = lazy(() => import("../features/sharing/PublicSharePage").then(module => ({ default: module.PublicSharePage })));
 const PublicSitePage = lazy(() => import("../features/sites/PublicSitePage").then((module) => ({ default: module.PublicSitePage })));
-const SitePreviewPage = lazy(() => import("../features/sites/PublicSitePage").then((module) => ({ default: module.SitePreviewPage })));
+const SitePreviewPage = lazy(() => import("../features/sites/SitePreviewPage").then((module) => ({ default: module.SitePreviewPage })));
 const PublicSheetForm = lazy(() => import("../features/sheets/PublicSheetForm").then(m => ({default:m.PublicSheetForm})));
 const AcceptInvitationPage = lazy(() => import("../features/members/AcceptInvitationPage").then(module => ({ default: module.AcceptInvitationPage })));
 const ConfirmOwnershipPage = lazy(() => import("../features/members/ConfirmOwnershipPage").then(module => ({ default: module.ConfirmOwnershipPage })));

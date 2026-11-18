@@ -52,7 +52,19 @@ func workspaceResponse(w workspace.Workspace) workspaceDTO {
 	return workspaceDTO{ID: w.ID, Name: w.Name, Role: w.Role, CreatedAtMS: w.CreatedAtMS, UpdatedAtMS: w.UpdatedAtMS}
 }
 
+type notebookPreviewDTO struct {
+	Count  int64                `json:"count"`
+	Recent []previewDocumentDTO `json:"recent"`
+}
+type previewDocumentDTO struct {
+	ID          string  `json:"id"`
+	Title       string  `json:"title"`
+	UpdatedAtMS int64   `json:"updated_at_ms"`
+	SheetID     *string `json:"sheet_id"`
+	BoardID     *string `json:"board_id"`
+}
 type collectionDTO struct {
+	Preview          *notebookPreviewDTO      `json:"preview,omitempty"`
 	IsArchived       bool                     `json:"is_archived"`
 	Icon             *document.CollectionIcon `json:"icon"`
 	GroupID          string                   `json:"group_id"`
@@ -68,7 +80,14 @@ type collectionDTO struct {
 }
 
 func collectionResponse(c document.Collection) collectionDTO {
-	return collectionDTO{Icon: c.Icon, ID: c.ID, WorkspaceID: c.WorkspaceID, Title: c.Title,
+	var preview *notebookPreviewDTO
+	if c.Preview != nil {
+		preview = &notebookPreviewDTO{Count: c.Preview.Count, Recent: make([]previewDocumentDTO, 0, len(c.Preview.Recent))}
+		for _, d := range c.Preview.Recent {
+			preview.Recent = append(preview.Recent, previewDocumentDTO{ID: d.ID, Title: d.Title, UpdatedAtMS: d.UpdatedAtMS, SheetID: d.SheetID, BoardID: d.BoardID})
+		}
+	}
+	return collectionDTO{Preview: preview, Icon: c.Icon, ID: c.ID, WorkspaceID: c.WorkspaceID, Title: c.Title,
 		GroupID: c.GroupID, SortOrder: c.SortOrder, MetadataVersion: c.MetadataVersion,
 		CreatedAtMS: c.CreatedAtMS, UpdatedAtMS: c.UpdatedAtMS,
 		DirectoryVersion: c.DirectoryVersion, ArchivedAtMS: c.ArchivedAtMS, IsArchived: c.IsArchived}

@@ -1,0 +1,124 @@
+{
+  "entries": [
+    {
+      "file": "src/shared/ui/ColorField.tsx",
+      "detail": "#000000",
+      "maxOccurrences": 1,
+      "reason": "Authored color fallback when a picker receives an unsupported color value; not a chrome/theme color."
+    },
+    {
+      "file": "src/shared/ui/ColorField.tsx",
+      "detail": "hsl(${hue}, ${hslSaturation * 100}%, ${lightness * 100}%)",
+      "maxOccurrences": 1,
+      "reason": "Conversion of the existing user-authored HSB color model to CSS HSL before HEX serialization."
+    },
+    {
+      "file": "src/app/catalog/UICatalog.tsx",
+      "detail": "#12345680",
+      "maxOccurrences": 1,
+      "reason": "Authored color format fixture in the development-only ColorField catalog; not a UI theme color."
+    },
+    {
+      "file": "src/app/catalog/UICatalog.tsx",
+      "detail": "hsl(120, 100%, 50%)",
+      "maxOccurrences": 1,
+      "reason": "Authored color format fixture in the development-only ColorField catalog; not a UI theme color."
+    },
+    {
+      "file": "src/app/catalog/UICatalog.tsx",
+      "detail": "rgb(18, 52, 86)",
+      "maxOccurrences": 1,
+      "reason": "Authored color format fixture in the development-only ColorField catalog; not a UI theme color."
+    },
+    {
+      "file": "src/features/boards/BoardInspector.tsx",
+      "detail": "#ffffff",
+      "maxOccurrences": 2,
+      "reason": "Picker representation of transparent authored page/element fill; committed colors remain the existing serialized element/page values."
+    },
+    {
+      "file": "src/features/boards/board-appearance.ts",
+      "detail": "#f2f4f7",
+      "maxOccurrences": 1,
+      "reason": "Persisted default board background identity used to recognize historical pages and apply the application theme; changing it would change stored-content interpretation."
+    },
+    {
+      "file": "src/features/boards/export.ts",
+      "detail": "#ffffff",
+      "maxOccurrences": 1,
+      "reason": "Default SVG document background in the exported authored artifact, independent of application chrome/theme."
+    },
+    {
+      "file": "src/features/boards/icons.ts",
+      "detail": "#334155",
+      "maxOccurrences": 1,
+      "reason": "Fallback color serialized into an authored icon SVG when the supplied icon color cannot be represented by the existing HEX contract."
+    },
+    {
+      "file": "src/features/boards/mindmap.ts",
+      "detail": "#7568c8",
+      "maxOccurrences": 1,
+      "reason": "Default root fill/stroke written to newly authored mind-map element styles."
+    },
+    {
+      "file": "src/features/boards/mindmap.ts",
+      "detail": "#8b83c1",
+      "maxOccurrences": 1,
+      "reason": "Default branch stroke written to newly authored mind-map element styles."
+    },
+    {
+      "file": "src/features/boards/mindmap.ts",
+      "detail": "#ffffff",
+      "maxOccurrences": 1,
+      "reason": "Default root text color written to newly authored mind-map element styles."
+    },
+    {
+      "file": "src/features/boards/model.ts",
+      "detail": "#ffffff",
+      "maxOccurrences": 2,
+      "reason": "Default fill serialized into newly created element styles; not a theme color."
+    },
+    {
+      "file": "src/features/boards/model.ts",
+      "detail": "#64748b",
+      "maxOccurrences": 1,
+      "reason": "Default stroke serialized into newly created element styles; not a theme color."
+    },
+    {
+      "file": "src/features/boards/model.ts",
+      "detail": "#1e293b",
+      "maxOccurrences": 1,
+      "reason": "Default text color serialized into newly created element styles; not a theme color."
+    },
+    {
+      "file": "src/features/boards/model.ts",
+      "detail": "#f8fafc",
+      "maxOccurrences": 1,
+      "reason": "Authored frame fill chosen by element kind during creation and stored with the board element."
+    },
+    {
+      "file": "src/features/boards/model.ts",
+      "detail": "#fef3c7",
+      "maxOccurrences": 1,
+      "reason": "Authored note fill chosen by element kind during creation and stored with the board element."
+    },
+    {
+      "file": "src/features/boards/templates.ts",
+      "detail": "#dbeafe",
+      "maxOccurrences": 1,
+      "reason": "Mind-map template root fill included in generated authored board data."
+    },
+    {
+      "file": "src/features/boards/templates.ts",
+      "detail": "#3b82f6",
+      "maxOccurrences": 1,
+      "reason": "Mind-map template root stroke included in generated authored board data."
+    },
+    {
+      "file": "src/features/sites/SitesPage.tsx",
+      "detail": "#0f766e",
+      "maxOccurrences": 1,
+      "reason": "Initial editable site accent submitted as the authored publication brand color, not an application UI color."
+    }
+  ]
+}

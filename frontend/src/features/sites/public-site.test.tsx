@@ -3,7 +3,8 @@ import { act, cleanup, render, screen, waitFor, within } from "@testing-library/
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
-import { PublicSitePage, SitePreviewPage } from "./PublicSitePage";
+import { PublicSitePage } from "./PublicSitePage";
+import { SitePreviewPage } from "./SitePreviewPage";
 import { authStore } from "../../shared/auth/auth-store";
 import { SiteReader } from "./SiteReader";
 import type { SitePreview, SiteSnapshot } from "./schemas";

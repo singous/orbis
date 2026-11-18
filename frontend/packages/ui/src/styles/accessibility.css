@@ -1,0 +1,41 @@
+@layer base {
+  /* 居中的 modal 需要可用视口边界；调用方仍可用布局 utility 提供独立滚动区域。 */
+  [data-slot="dialog-content"] { max-height: calc(100dvh - 2rem); overflow-y: auto; }
+  /* 放在 base 层，使原生组件和调用方的 utility 始终可以覆盖普通焦点回退。 */
+  :where(button, input, textarea, a, [tabindex]):focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  @media (forced-colors: active) {
+    :root, [data-theme="light"], [data-theme="dark"], .light, .dark {
+      --background: Canvas;
+      --foreground: CanvasText;
+      --card: Canvas;
+      --card-foreground: CanvasText;
+      --popover: Canvas;
+      --popover-foreground: CanvasText;
+      --primary: Highlight;
+      --primary-foreground: HighlightText;
+      --secondary: Canvas;
+      --secondary-foreground: CanvasText;
+      --muted: Canvas;
+      --muted-foreground: CanvasText;
+      --accent: Highlight;
+      --accent-foreground: HighlightText;
+      --destructive: CanvasText;
+      --border: ButtonText;
+      --input: ButtonText;
+      --ring: Highlight;
+    }
+  }
+}
+
+@layer utilities {
+  @media (forced-colors: active) {
+    /* 系统高对比模式不绘制 box-shadow ring，保留独立的键盘焦点轮廓。 */
+    :is(button, input, textarea, a, [tabindex]):focus-visible { outline-style: solid; outline-color: Highlight; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { scroll-behavior: auto !important; transition-property: none !important; transition-duration: 0.01ms !important; animation-name: none !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+  }
+}

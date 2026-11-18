@@ -1,0 +1,240 @@
+{
+  "ref": "0f0bbdc69445bd4f764482d7510d4220581ed83a",
+  "description": "Pre-migration CSS ordering and broad selectors; audit each surface before removing its styles.",
+  "files": [
+    {
+      "file": "src/features/boards/board-preview.css",
+      "lines": 126,
+      "imports": [],
+      "broadSelectors": []
+    },
+    {
+      "file": "src/features/boards/boards.css",
+      "lines": 911,
+      "imports": [],
+      "broadSelectors": []
+    },
+    {
+      "file": "src/features/home/home.css",
+      "lines": 123,
+      "imports": [],
+      "broadSelectors": [
+        ":is(.home-stats a, .home-document-row, .home-notebook):is(:hover, :focus-visible) { background: var(--orbis-item-hover-bg); color: var(--orbis-item-foreground); }"
+      ]
+    },
+    {
+      "file": "src/features/quick-notes/quick-notes.css",
+      "lines": 89,
+      "imports": [],
+      "broadSelectors": []
+    },
+    {
+      "file": "src/features/search/search-palette.css",
+      "lines": 167,
+      "imports": [],
+      "broadSelectors": []
+    },
+    {
+      "file": "src/features/search/search.css",
+      "lines": 20,
+      "imports": [],
+      "broadSelectors": []
+    },
+    {
+      "file": "src/features/sheets/sheets.css",
+      "lines": 1735,
+      "imports": [],
+      "broadSelectors": [
+        "textarea.sheet-inline-input {"
+      ]
+    },
+    {
+      "file": "src/shared/ui/embedded-surface.css",
+      "lines": 39,
+      "imports": [],
+      "broadSelectors": []
+    },
+    {
+      "file": "src/styles/auth.css",
+      "lines": 223,
+      "imports": [],
+      "broadSelectors": []
+    },
+    {
+      "file": "src/styles/base-mvp.css",
+      "lines": 100,
+      "imports": [],
+      "broadSelectors": []
+    },
+    {
+      "file": "src/styles/block-controls.css",
+      "lines": 37,
+      "imports": [],
+      "broadSelectors": []
+    },
+    {
+      "file": "src/styles/collaboration.css",
+      "lines": 64,
+      "imports": [],
+      "broadSelectors": []
+    },
+    {
+      "file": "src/styles/data-tables.css",
+      "lines": 523,
+      "imports": [],
+      "broadSelectors": []
+    },
+    {
+      "file": "src/styles/design-tokens.css",
+      "lines": 76,
+      "imports": [],
+      "broadSelectors": []
+    },
+    {
+      "file": "src/styles/document-components.css",
+      "lines": 45,
+      "imports": [],
+      "broadSelectors": []
+    },
+    {
+      "file": "src/styles/document-editor.css",
+      "lines": 56,
+      "imports": [],
+      "broadSelectors": []
+    },
+    {
+      "file": "src/styles/document-sharing.css",
+      "lines": 241,
+      "imports": [],
+      "broadSelectors": []
+    },
+    {
+      "file": "src/styles/document-tree.css",
+      "lines": 143,
+      "imports": [],
+      "broadSelectors": []
+    },
+    {
+      "file": "src/styles/heroui-theme.css",
+      "lines": 80,
+      "imports": [],
+      "broadSelectors": []
+    },
+    {
+      "file": "src/styles/icons.css",
+      "lines": 61,
+      "imports": [],
+      "broadSelectors": [
+        ":is(.rail-action, .workspace-function-link).is-active > .orbis-icon:has(> .orbis-icon-solid) > :not(.orbis-icon-solid) { display: none; }",
+        ":is(.rail-action, .workspace-function-link).is-active > .orbis-icon > .orbis-icon-solid { display: block; }",
+        ":is(.rail-action, .workspace-function-link) > .orbis-icon { transform-origin: center; }",
+        ":is(.rail-action, .workspace-function-link):active > .orbis-icon { transform: scale(.9); }",
+        ":is(.rail-action, .workspace-function-link).is-active > .orbis-icon { animation: navigation-icon-select 240ms cubic-bezier(.2, .8, .2, 1); }"
+      ]
+    },
+    {
+      "file": "src/styles/index.css",
+      "lines": 698,
+      "imports": [
+        "tailwindcss",
+        "@heroui/styles",
+        "@fontsource-variable/inter",
+        "./heroui-theme.css",
+        "./design-tokens.css",
+        "./surface-theme.css",
+        "./ui-controls.css",
+        "./document-tree.css",
+        "./scrollbars.css",
+        "./icons.css",
+        "./loading.css"
+      ],
+      "broadSelectors": [
+        ".icon-button {",
+        ".icon-button:hover {",
+        ".icon-button:disabled {",
+        ":is(.ui-button, .mvp-button, .workbench-primary-action, .text-action) > svg {"
+      ]
+    },
+    {
+      "file": "src/styles/loading.css",
+      "lines": 33,
+      "imports": [],
+      "broadSelectors": []
+    },
+    {
+      "file": "src/styles/notebook-icons.css",
+      "lines": 67,
+      "imports": [],
+      "broadSelectors": []
+    },
+    {
+      "file": "src/styles/notebook-layout.css",
+      "lines": 56,
+      "imports": [],
+      "broadSelectors": []
+    },
+    {
+      "file": "src/styles/scrollbars.css",
+      "lines": 49,
+      "imports": [],
+      "broadSelectors": [
+        ":is(html, body):has(.site-reader:is([data-theme=\"light\"], [data-theme=\"dark\"])) {"
+      ]
+    },
+    {
+      "file": "src/styles/site-management.css",
+      "lines": 558,
+      "imports": [],
+      "broadSelectors": []
+    },
+    {
+      "file": "src/styles/site-reader.css",
+      "lines": 228,
+      "imports": [],
+      "broadSelectors": []
+    },
+    {
+      "file": "src/styles/surface-theme.css",
+      "lines": 74,
+      "imports": [],
+      "broadSelectors": []
+    },
+    {
+      "file": "src/styles/tiptap-editor.css",
+      "lines": 119,
+      "imports": [],
+      "broadSelectors": []
+    },
+    {
+      "file": "src/styles/translucent-notice.css",
+      "lines": 40,
+      "imports": [],
+      "broadSelectors": []
+    },
+    {
+      "file": "src/styles/ui-controls.css",
+      "lines": 109,
+      "imports": [],
+      "broadSelectors": [
+        ":is(.ui-button, .orbis-icon-button, .orbis-action-button) {",
+        ":is(.orbis-tooltip, .orbis-select-popover, .orbis-color-popover)[data-entering=\"true\"] {",
+        ":is(.orbis-tooltip, .orbis-select-popover, .orbis-color-popover)[data-exiting=\"true\"] {",
+        ":is(.orbis-modal-backdrop, .orbis-modal-container)[data-entering=\"true\"] {",
+        ":is(.orbis-modal-backdrop, .orbis-modal-container)[data-exiting=\"true\"] {",
+        ":is(.menu-item, .list-box-item, .orbis-block-menu [role=\"menuitem\"], .editor-more-menu button,"
+      ]
+    },
+    {
+      "file": "src/styles/workbench-pages.css",
+      "lines": 228,
+      "imports": [],
+      "broadSelectors": []
+    },
+    {
+      "file": "src/styles/workspace-shell.css",
+      "lines": 378,
+      "imports": [],
+      "broadSelectors": []
+    }
+  ]
+}

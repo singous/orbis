@@ -1,48 +1,37 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { ActionButton } from "./ActionButton";
-import { Button } from "./Button";
-import { IconButton } from "./IconButton";
+import { Button } from "@orbis/ui/button";
 
-describe("shared action contract", () => {
-  it("keeps ordinary controls inside forms from submitting and preserves explicit submit", async () => {
+// 表单动作保持原生 type 语义，异步动作不能因为仍可聚焦而重复执行。
+describe("native action contract", () => {
+  it("keeps ordinary form controls separate from explicit submission", async () => {
     const submit = vi.fn((event: React.FormEvent) => event.preventDefault());
     const action = vi.fn();
     const user = userEvent.setup();
     render(<form onSubmit={submit}>
       <Button onClick={action}>预览</Button>
-      <ActionButton onClick={action}>展开</ActionButton>
-      <IconButton aria-label="更多" onClick={action}>…</IconButton>
-      <ActionButton type="submit">保存</ActionButton>
+      <Button variant="ghost" onClick={action}>展开</Button>
+      <Button size="icon" aria-label="更多" onClick={action}>…</Button>
+      <Button type="submit">保存</Button>
     </form>);
-    for (const label of ["预览", "展开", "更多"]) {
-      await user.click(screen.getByRole("button", { name: label }));
-    }
+    for (const label of ["预览", "展开", "更多"]) await user.click(screen.getByRole("button", { name: label }));
     expect(action).toHaveBeenCalledTimes(3);
     expect(submit).not.toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "保存" }));
     expect(submit).toHaveBeenCalledOnce();
   });
 
-  it("prevents pending actions from being repeated with pointer or keyboard", async () => {
+  it("blocks repeated pointer and keyboard activation while a pending action retains focus", async () => {
     const action = vi.fn();
     const user = userEvent.setup();
-    render(<><Button isPending onClick={action}>保存中</Button><ActionButton isPending onClick={action}>发布中</ActionButton></>);
-    for (const label of ["保存中", "发布中"]) {
-      const button = screen.getByRole("button", { name: label });
-      expect(button).toHaveAttribute("aria-busy", "true");
-      await user.click(button);
-      button.focus();
-      await user.keyboard("{Enter}");
-    }
+    render(<Button disabled focusableWhenDisabled aria-busy onClick={action}>保存中</Button>);
+    const button = screen.getByRole("button", { name: "保存中" });
+    expect(button).toHaveAttribute("aria-busy", "true");
+    expect(button).toHaveAttribute("aria-disabled", "true");
+    button.focus();
+    await user.keyboard("{Enter} ");
+    await user.click(button);
     expect(action).not.toHaveBeenCalled();
   });
-});
-
-it("preserves checkbox state on actions with a custom accessibility role", () => {
-  const view = render(<ActionButton role="checkbox" aria-label="Visible field" aria-checked>Eye</ActionButton>);
-  expect(screen.getByRole("checkbox", { name: "Visible field" })).toBeChecked();
-  view.rerender(<ActionButton role="checkbox" aria-label="Visible field" aria-checked={false}>Eye</ActionButton>);
-  expect(screen.getByRole("checkbox", { name: "Visible field" })).not.toBeChecked();
 });

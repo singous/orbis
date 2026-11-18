@@ -311,7 +311,7 @@ it("discloses live future scope before creating a link and supports revocation",
   await user.click(screen.getByRole("button", { name: "分享" }));
   const clipboard = vi.spyOn(navigator.clipboard, "writeText");
   await user.click(
-    await screen.findByRole("button", { name: "复制已有分享链接" }),
+    await screen.findByRole("button", { name: "复制链接（已有分享）" }),
   );
   expect(clipboard).toHaveBeenCalledWith(
     new URL(`/share/${token}`, window.location.origin).href,
@@ -348,10 +348,10 @@ it("ignores clipboard completion from a closed share dialog session", async () =
   vi.spyOn(navigator.clipboard, "writeText").mockImplementation(() => new Promise<void>(resolve => { finish = resolve; }));
   render(<QueryClientProvider client={client}><ShareButton notebookId={bookId} noteId={rootId} title="文档" /></QueryClientProvider>);
   await user.click(screen.getByRole("button", { name: "分享" }));
-  await user.click(await screen.findByRole("button", { name: "复制已有分享链接" }));
+  await user.click(await screen.findByRole("button", { name: "复制链接（已有分享）" }));
   await user.click(screen.getByRole("button", { name: "关闭" }));
   await user.click(screen.getByRole("button", { name: "分享" }));
-  await screen.findByRole("button", { name: "复制已有分享链接" });
+  await screen.findByRole("button", { name: "复制链接（已有分享）" });
   await act(async () => { finish(); });
   expect(screen.queryByText("链接已复制。")).not.toBeInTheDocument();
   client.clear();

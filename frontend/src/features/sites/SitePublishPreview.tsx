@@ -1,4 +1,6 @@
-import { ActionButton } from "../../shared/ui/ActionButton";
+import { DialogFooter } from "@orbis/ui/dialog";
+import { Button } from "@orbis/ui/button";
+import { SiteNotice } from "./SiteManagementLayout";
 import { AlertTriangle, RotateCw } from "../../shared/ui/icons";
 import { useState } from "react";
 
@@ -27,17 +29,17 @@ export function SitePublishPreview({
 }) {
   const [selectedSlug, setSelectedSlug] = useState(preview.pages[0]?.slug ?? "");
   const selectedPage = preview.pages.find((page) => page.slug === selectedSlug) ?? preview.pages[0];
-  return <div className="site-publish-preview">
-    <div className="site-preview-summary"><strong>{preview.pages.length} 篇页面</strong><span>以下内容已冻结；确认发布不会在后台重新生成预览。</span></div>
+  return <div className="mt-[22px] grid gap-5">
+    <div className="flex items-baseline justify-between gap-4"><strong className="text-sm">{preview.pages.length} 篇页面</strong><span className="text-xs text-muted-foreground">以下内容已冻结；确认发布不会在后台重新生成预览。</span></div>
     <SiteChanges changes={sources.changes} />
-    {preview.pages.length ? <div className="site-preview-workspace">
-      <nav aria-label="预览页面"><ul>{preview.pages.map((page) => <li key={page.slug}><ActionButton type="button" className={page.slug === selectedPage?.slug ? "active" : ""} onClick={() => setSelectedSlug(page.slug)}>{page.title}<small>/{page.slug}</small></ActionButton></li>)}</ul></nav>
-      <article className="site-preview-page">{selectedPage ? <><header><span>冻结正文</span><h3>{selectedPage.title}</h3>{selectedPage.description ? <p>{selectedPage.description}</p> : null}</header><AuthenticatedFileContent><SitePreviewLinks siteSlug={preview.slug} basePath={`/sites/${siteId}/preview`} onNavigate={setSelectedSlug}><ContentRenderer blocks={selectedPage.blocks} pageTitle={selectedPage.title} /></SitePreviewLinks></AuthenticatedFileContent></> : null}</article>
-    </div> : <div className="site-preview-empty"><AlertTriangle size={18} /><div><strong>来源中没有可发布页面</strong><p>请返回来源配置，确认笔记本中有文档且没有全部排除。</p></div></div>}
-    <div className="site-dialog-actions">
-      <ActionButton variant="secondary" className="mvp-button" type="button" disabled={busy} onClick={onRefresh}><RotateCw size={14} />重新预览</ActionButton>
-      <ActionButton variant="secondary" className="mvp-button" type="button" disabled={busy} onClick={onCancel}>取消</ActionButton>
-      <ActionButton variant="primary" className="mvp-button primary" type="button" disabled={busy || !preview.pages.length} onClick={onConfirm}>{busy ? "发布中…" : "确认发布"}</ActionButton>
-    </div>
+    {preview.pages.length ? <div className="grid min-h-[330px] grid-cols-1 overflow-hidden rounded-xl border border-border min-[721px]:grid-cols-[210px_minmax(0,1fr)]">
+      <nav className="border-b border-border bg-card p-[9px] min-[721px]:border-b-0 min-[721px]:border-e" aria-label="预览页面"><ul className="grid gap-[3px]">{preview.pages.map((page) => <li key={page.slug}><Button variant={page.slug === selectedPage?.slug ? "secondary" : "ghost"} className="grid h-auto w-full justify-start gap-1 text-start whitespace-normal" onClick={() => setSelectedSlug(page.slug)}>{page.title}<small className="text-xs text-muted-foreground">/{page.slug}</small></Button></li>)}</ul></nav>
+      <article className="overflow-auto px-8 py-[26px]">{selectedPage && <><header className="mb-[22px] border-b border-border pb-4"><span className="text-xs tracking-[.08em] text-muted-foreground">冻结正文</span><h3 className="mt-1.5 text-[length:var(--ob-prose-title-size)] font-semibold leading-[1.5]">{selectedPage.title}</h3>{selectedPage.description && <p className="mt-[7px] text-xs text-muted-foreground">{selectedPage.description}</p>}</header><AuthenticatedFileContent><SitePreviewLinks siteSlug={preview.slug} basePath={`/sites/${siteId}/preview`} onNavigate={setSelectedSlug}><ContentRenderer blocks={selectedPage.blocks} pageTitle={selectedPage.title} /></SitePreviewLinks></AuthenticatedFileContent></>}</article>
+    </div> : <SiteNotice icon={<AlertTriangle size={18} />} title="来源中没有可发布页面" description="请返回来源配置，确认笔记本中有文档且没有全部排除。" descriptionClassName="mt-1" />}
+    <DialogFooter>
+      <Button disabled={busy} onClick={onRefresh} variant="outline"><RotateCw size={14} />重新预览</Button>
+      <Button disabled={busy} onClick={onCancel} variant="outline">取消</Button>
+      <Button variant="default" disabled={busy || !preview.pages.length} onClick={onConfirm}>{busy ? "发布中…" : "确认发布"}</Button>
+    </DialogFooter>
   </div>;
 }
