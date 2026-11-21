@@ -77,3 +77,7 @@ The 46 actual images were reviewed in light and dark at the captured widths, wit
 [CI run 43173500837](https://github.com/singous/orbis/actions/runs/43173500837), artifact `frontend-visual-evidence` (`13923182224`), captured source `b785efd9b54fe03b9a6843ca719d203965e4e75f` as merge checkout `d66540367f11e90045af0271b5d0734e6691f6b2`. The ZIP SHA-256 was `aca3f67217ee1b4e4316d51583787bda14e1fadb752854325f1d2513f64ffe96`, matching GitHub's artifact digest. The only differences were ten desktop images across eight scenarios; 119 scenarios passed.
 
 The workspace menu and notebook directory each narrow by 20 px. Review of both themes confirmed the expected content shift on Home, profile, the user menu, the document editor and Board. The ten reviewed images were copied byte for byte. The other 130 images, including every narrow viewport reference, and the comparison threshold are unchanged.
+
+## Brand controls and document loading
+
+[CI run 44927177685](https://github.com/singous/orbis/actions/runs/44927177685), artifact `frontend-visual-evidence` (`14716172743`), captured the PR head `9b30f15e329844ab1126beb961a07e1735a40119`. The archive matched the artifact digest `221c224a2c2680da4503898aacfdcc189b6c3749baf7f80b6b7aea9cc1cf2653`. The 40 changed images cover menus, controls, the document outline and board or sheet chrome. They were copied byte for byte from the Linux artifact. The comparison threshold remains zero differing pixels.
