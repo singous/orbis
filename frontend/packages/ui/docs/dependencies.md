@@ -57,7 +57,7 @@ npm run test:storybook
 npm run test:ui
 npm run storybook:build
 npm run build
-npm run check:bundle -- --complete
+npm run check:bundle
 ORBIS_SOURCE_REVISION="$(git rev-parse HEAD)" npm run licenses:bundle -- dist/licenses
 npm run check:license-bundle
 ```

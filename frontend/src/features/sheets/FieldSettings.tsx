@@ -7,7 +7,7 @@ import { newUUID } from "../../shared/ids";
 import { Button } from "@orbis/ui/button";
 
 import { ArrowDown, ArrowUp, GripVertical, Plus, Trash2 } from "../../shared/ui/icons";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@orbis/ui/select";
+import { Combobox } from "@orbis/ui/combobox";
 import { Input } from "@orbis/ui/input";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { ValueEditor } from "./Cell";
@@ -87,19 +87,11 @@ export function FieldSettings({
       <h3>字段设置</h3>
       <div className="flex flex-col gap-5 pt-6">
         <label className="grid gap-2 text-sm font-medium"><span>{"字段名称"}</span><Input aria-label="字段名称" value={draft.name} maxLength={120} disabled={busy} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></label>
-        <label className="grid gap-2 text-sm font-medium"><span>{"字段类型"}</span><Select
+        <label className="grid gap-2 text-sm font-medium"><span>{"字段类型"}</span><Combobox
           value={draft.kind}
           disabled={busy}
           onValueChange={kind => { if (kind === null) return; setDraft({ ...draft, kind: kind as Kind, default: null }); }}
-          items={fieldKindItems}
-        >
-          <SelectTrigger aria-label={"字段类型"}><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {fieldKindItems.map(item => (
-              <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select></label>
+          items={fieldKindItems} label="字段类型" /></label>
         {hasOptions && (
           <section className="flex flex-col gap-3">
             <div className="flex items-center justify-between font-medium">
@@ -145,7 +137,7 @@ export function FieldSettings({
                       ),
                     })
                   } />
-                <Select
+                <Combobox
                   value={option.color || "gray"}
                   disabled={busy}
                   onValueChange={color => { if (color === null) return; setDraft({
@@ -155,14 +147,9 @@ export function FieldSettings({
                                                           ),
                                                         }); }}
                   items={colorItems}
-                >
-                  <SelectTrigger aria-label={`选项 ${index + 1} 颜色`} size="sm"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {colorItems.map(item => (
-                      <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  label={`选项 ${index + 1} 颜色`}
+                  size="sm"
+                />
                 <div className="flex items-center gap-1 [@media(max-width:760px)]:col-[2/-1] [@media(max-width:760px)]:justify-end pointer-coarse:col-[2/-1] pointer-coarse:justify-end" role="group" aria-label={`选项 ${index + 1} 操作`}>
                   <Button className={cn(sheetActionClassName, "min-w-8")} size="sm" aria-label={`上移选项 ${index + 1} ${option.label}`} disabled={busy || index === 0} onClick={() => moveOption(index, index - 1)} variant="ghost"><ArrowUp size={15} /></Button>
                   <Button className={cn(sheetActionClassName, "min-w-8")} size="sm" aria-label={`下移选项 ${index + 1} ${option.label}`} disabled={busy || index === draft.options.length - 1} onClick={() => moveOption(index, index + 1)} variant="ghost"><ArrowDown size={15} /></Button>
@@ -207,19 +194,11 @@ export function FieldSettings({
         )}
         {draft.kind === "datetime" && (
           <>
-            <label className="grid gap-2 text-sm font-medium"><span>{"日期格式"}</span><Select
+            <label className="grid gap-2 text-sm font-medium"><span>{"日期格式"}</span><Combobox
               value={draft.date_format ?? "YYYY-MM-DD"}
               disabled={busy}
               onValueChange={date_format => { if (date_format === null) return; setDraft({ ...draft, date_format }); }}
-              items={precisionItems}
-            >
-              <SelectTrigger aria-label={"日期格式"}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {precisionItems.map(item => (
-                  <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select></label>
+              items={precisionItems} label="日期格式" /></label>
             <div className={sheetCheckClassName}>
               <Checkbox
                 id={includeTimeId}

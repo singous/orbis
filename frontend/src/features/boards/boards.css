@@ -1,13 +1,4 @@
 /* Canvas rendering, selection, ports and mindmap hit geometry only. Ordinary chrome lives in React owners. */
-.board-shell {
-  --board-canvas: var(--background);
-  --board-grid: color-mix(in oklab, var(--foreground) 12%, transparent);
-}
-.board-shell .board-stage-wrap {
-  background-color: var(--board-canvas);
-  background-image: radial-gradient(var(--board-grid) 0.7px, transparent 0.85px);
-  background-size: 16px 16px;
-}
 .board-shell .board-canvas {
   position: absolute;
   inset: 0;

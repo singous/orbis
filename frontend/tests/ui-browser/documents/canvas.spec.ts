@@ -2,6 +2,42 @@ import { expect, test } from "@playwright/test";
 import { designCode, designedBlocks, documentEditorHTTP, documentId } from "../fixtures/document-editor";
 import { installSession } from "../fixtures/session";
 
+test("slow document content leaves metadata, formatting tools and outline visible", async ({ page }) => {
+  await installSession(page);
+  await documentEditorHTTP(page);
+  let releaseContent!: () => void;
+  const contentDelay = new Promise<void>(resolve => { releaseContent = resolve; });
+  const contentPath = `/documents/${documentId}/children`;
+  await page.route(url => url.pathname.endsWith(contentPath), async route => {
+    await contentDelay;
+    await route.fallback();
+  });
+  const contentRequest = page.waitForRequest(request => new URL(request.url()).pathname.endsWith(contentPath));
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const title = page.getByRole("textbox", { name: "文档标题", exact: true });
+  const toolbar = page.getByRole("toolbar", { name: "文档格式", exact: true });
+  const insert = toolbar.getByRole("button", { name: "插入内容", exact: true });
+  const outline = page.getByRole("complementary", { name: "文档大纲", exact: true });
+  try {
+    await page.goto(`/documents/${documentId}`);
+    await contentRequest;
+    await expect(title).toHaveValue("界面平台化设计");
+    await expect(title).not.toBeEditable();
+    await expect(insert).toBeDisabled();
+    const toggle = page.getByRole("button", { name: "文档大纲", exact: true });
+    await expect(toggle).toHaveAttribute("aria-expanded", "false");
+    await expect(outline).toBeHidden();
+    await toggle.click();
+    await expect(outline).toBeVisible();
+    await expect(page.getByRole("status", { name: "正在打开文档…" })).toBeVisible();
+  } finally {
+    releaseContent();
+  }
+  await expect(title).toBeEditable();
+  await expect(insert).toBeEnabled();
+  await expect(outline.getByRole("button", { name: "协作与知识组织", exact: true })).toBeVisible();
+});
+
 for (const theme of ["light", "dark"]) test(`the notebook editor renders the designed blocks in ${theme}`, async ({ page, context }) => {
   await installSession(page);
   await page.addInitScript(theme => localStorage.setItem("orbis.appearance", theme), theme);
@@ -48,17 +84,64 @@ for (const theme of ["light", "dark"]) test(`the notebook editor renders the des
 test("document header shows the real offline state and toggles the outline", async ({ page, context }) => {
   await installSession(page);
   const writes = await documentEditorHTTP(page);
+  await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.goto(`/documents/${documentId}`);
   await expect(page.getByRole("textbox", { name: "文档标题" })).toHaveValue("界面平台化设计");
   await expect(page.getByRole("toolbar", { name: "文档格式" })).toBeVisible();
 
   const outline = page.getByRole("complementary", { name: "文档大纲", exact: true });
   const toggle = page.getByRole("button", { name: "文档大纲", exact: true });
+  const panel = page.locator(".editor-outline");
+  const layout = page.locator(".editor-layout");
+  const body = layout.locator(".ProseMirror");
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(outline).toBeHidden();
+  await toggle.click();
   await expect(outline.getByRole("button", { name: "协作与知识组织", exact: true })).toBeVisible();
+  await expect(body).toBeVisible();
+  await expect(layout).toHaveCSS("grid-template-columns", / 224px$/);
+  const expanded = (await body.boundingBox())!;
+  const openPosition = await panel.evaluate(element => element.getBoundingClientRect().left);
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
   await expect(outline).toBeHidden();
+  await expect(panel).toHaveAttribute("inert", "");
+  await expect(panel).toHaveCSS("visibility", "hidden");
+  const collapsed = (await body.boundingBox())!;
+  expect(collapsed.x).toBeCloseTo(expanded.x, 1);
+  expect(collapsed.width).toBeGreaterThan(expanded.width);
+
+  const intermediate = await layout.evaluate(element => {
+    const sidebar = element.querySelector(".editor-outline")!;
+    const trigger = document.querySelector<HTMLButtonElement>(`[aria-controls="${sidebar.id}"]`)!;
+    return new Promise<{ panelLeft: number; bodyLeft: number; bodyWidth: number } | null>(resolve => {
+      const timeout = window.setTimeout(() => resolve(null), 1000);
+      element.addEventListener("transitionstart", event => {
+        if (event.target !== element || event.propertyName !== "grid-template-columns") return;
+        window.clearTimeout(timeout);
+        const transition = element.getAnimations().find(animation => animation instanceof CSSTransition && animation.transitionProperty === "grid-template-columns")!;
+        transition.pause();
+        transition.currentTime = Number(transition.effect!.getComputedTiming().duration) / 2;
+        const body = element.querySelector(".ProseMirror")!.getBoundingClientRect();
+        resolve({ panelLeft: sidebar.getBoundingClientRect().left, bodyLeft: body.left, bodyWidth: body.width });
+        transition.play();
+      });
+      trigger.click();
+    });
+  });
+  expect(intermediate).not.toBeNull();
+  expect(intermediate!.panelLeft).toBeGreaterThan(openPosition);
+  expect(intermediate!.bodyLeft).toBeCloseTo(expanded.x, 1);
+  expect(intermediate!.bodyWidth).toBeGreaterThan(expanded.width);
+  expect(intermediate!.bodyWidth).toBeLessThan(collapsed.width);
+  await expect.poll(async () => (await body.boundingBox())?.width).toBeCloseTo(expanded.width, 1);
+  await expect(outline).toBeVisible();
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await toggle.press("Space");
+  await expect(panel).toHaveCSS("visibility", "hidden");
+  await toggle.press("Space");
+  await expect(layout).toHaveCSS("transition-property", "none");
   await expect(outline).toBeVisible();
 
   const save = page.locator(".document-save-state");

@@ -62,7 +62,10 @@ export function dependencyUsage(packages) {
     usage.set(location, seen);
     const entry = packages[location];
     for (const name of Object.keys({ ...entry.dependencies, ...entry.optionalDependencies, ...entry.peerDependencies })) {
-      visit(resolvePackage(packages, location, name), scope);
+      // Boneyard's Vite peer and Playwright dependency are used by its Node capture tools.
+      const captureTool = packageName(location) === "boneyard-js" && name === "playwright";
+      const childScope = captureTool ? "dev-only" : scope === "runtime" && buildRoots.has(name) ? "build-only" : scope;
+      visit(resolvePackage(packages, location, name), childScope);
     }
   }
   for (const name of Object.keys({ ...root.dependencies, ...root.devDependencies })) {

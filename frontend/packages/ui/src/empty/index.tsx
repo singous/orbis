@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 
-import { cn } from "./cn";
+import { cn } from "../cn";
 
-export function EmptyState({
+export function Empty({
   icon,
   title,
   description,
@@ -25,7 +25,7 @@ export function EmptyState({
         className,
       )}
     >
-      {icon ? appearance === "plain" ? icon : <div className="mb-1 grid h-12 w-12 place-items-center rounded-md bg-accent text-muted-foreground">{icon}</div> : null}
+      {icon ? appearance === "plain" ? icon : <div aria-hidden="true" className="mb-1 grid size-12 place-items-center rounded-xl bg-muted text-muted-foreground">{icon}</div> : null}
       {appearance === "plain" ? <h2 className="m-0 text-base font-medium text-foreground">{title}</h2> : <div className="text-base font-semibold text-foreground">{title}</div>}
       {description ? (
         <p className={appearance === "plain" ? "m-0 text-sm" : "max-w-sm text-sm leading-6 text-muted-foreground"}>{description}</p>

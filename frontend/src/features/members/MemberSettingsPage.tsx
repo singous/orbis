@@ -1,3 +1,4 @@
+import { Pagination } from "@orbis/ui/pagination";
 import { Badge } from "@orbis/ui/badge";
 import { SectionHeading } from "../../shared/ui/SectionHeading";
 import { reportError } from "../../shared/api/request-feedback";
@@ -12,7 +13,7 @@ import { authStore } from "../../shared/auth/auth-store";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@orbis/ui/select";
+import { Combobox } from "@orbis/ui/combobox";
 
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
 import { PageContainer } from "../../shared/ui/PageContainer";
@@ -109,7 +110,7 @@ export function MemberSettingsPage() {
             </div>
             <form className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_150px_auto] sm:items-end" onSubmit={submitInvite}>
               <label className="grid gap-1.5 text-sm font-medium text-foreground">邮箱<Input type="email" placeholder="member@example.com" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
-              <div className="grid gap-2"><label htmlFor="member-invitation-role" className="text-sm font-medium">角色</label><Select<AssignableRole> items={roleOptions} value={role} onValueChange={next => { if (next !== null) setRole(next); }}><SelectTrigger id="member-invitation-role" className="w-full"><SelectValue /></SelectTrigger><SelectContent role="region" aria-label="邀请角色选项">{roleOptions.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></div>
+              <div className="grid gap-2"><label htmlFor="member-invitation-role" className="text-sm font-medium">角色</label><Combobox<AssignableRole> items={roleOptions} value={role} onValueChange={next => { if (next !== null) setRole(next); }} label="角色" id="member-invitation-role" className="w-full" popupProps={{ "role": "region", "aria-label": "邀请角色选项" }} /></div>
               <Button type="submit" variant="default" disabled={!mailQuery.data?.enabled || !email.trim() || invite.isPending}><Mail aria-hidden="true" />发送邀请</Button>
             </form>
           </section>
@@ -127,7 +128,7 @@ export function MemberSettingsPage() {
                   <div className="min-w-[180px] flex-1"><div className="text-sm font-semibold">{member.display_name || member.email}</div><div className="mt-1 text-xs text-muted-foreground">{member.email}</div></div>
                   <div className="flex items-center gap-2">
                     {member.role === "owner" ? <Badge variant="secondary"><Crown aria-hidden="true" className="mr-1" size={12} />所有者</Badge> : actorCanChange ? (
-                      <Select<AssignableRole> items={roleOptions} value={member.role} disabled={roleMutation.isPending} onValueChange={nextRole => { if (nextRole !== null) roleMutation.mutate({ id: member.user_id, version: member.version, nextRole }); }}><SelectTrigger aria-label={`调整 ${member.email} 的角色`} className="min-w-30"><SelectValue /></SelectTrigger><SelectContent role="region" aria-label="成员角色选项">{roleOptions.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select>
+                      <Combobox<AssignableRole> items={roleOptions} value={member.role} disabled={roleMutation.isPending} onValueChange={nextRole => { if (nextRole !== null) roleMutation.mutate({ id: member.user_id, version: member.version, nextRole }); }} label={`调整 ${member.email} 的角色`} size="sm" className="min-w-30" popupProps={{ "role": "region", "aria-label": "成员角色选项" }} />
                     ) : <Badge variant="secondary"><Shield aria-hidden="true" className="mr-1" size={12} />{member.role}</Badge>}
                     {workspace?.role === "owner" && member.role === "admin" ? <Button variant="secondary" onClick={() => confirmTransfer(member.user_id)} disabled={!mailQuery.data?.enabled || transferMutation.isPending}>转让所有权</Button> : null}
                     {member.role !== "owner" && actorCanChange ? <Button type="button" variant="destructive" size="icon-sm" aria-label={`移除 ${member.email}`} onClick={() => confirmRemove(member.user_id, member.version, member.email)}><Trash2 aria-hidden="true" size={14} /></Button> : null}
@@ -136,7 +137,16 @@ export function MemberSettingsPage() {
               );
             })}
           </div>
-          <div className="collaboration-actions flex flex-wrap items-center gap-2"><Button size="sm" disabled={memberPage <= 1 || membersQuery.isFetching} onClick={() => setMemberPage(value => value - 1)} variant="default">上一页成员</Button><span>第 {memberPage} 页</span><Button size="sm" disabled={!membersQuery.data?.pagination.has_next || membersQuery.isFetching} onClick={() => setMemberPage(value => value + 1)} variant="default">下一页成员</Button></div>
+          <Pagination
+            label="成员分页"
+            className="collaboration-actions"
+            previousLabel="上一页成员"
+            nextLabel="下一页成员"
+            hasPrevious={memberPage > 1 && !membersQuery.isFetching}
+            hasNext={!!membersQuery.data?.pagination.has_next && !membersQuery.isFetching}
+            onPrevious={() => setMemberPage(value => value - 1)}
+            onNext={() => setMemberPage(value => value + 1)}
+          >第 {memberPage} 页</Pagination>
         </section>
         {workspace?.role === "owner" && ownershipQuery.data?.status === "pending" ? <section aria-label="待确认所有权转让"><h2>所有权转让待确认</h2><p>当前所有者通过邮件确认后，目标管理员成为所有者。</p><dl><dt>确认邮件</dt><dd>{ownershipQuery.data.email_sent ? "已发送" : "未发送"}</dd></dl><Button disabled={resendTransfer.isPending} onClick={() => resendTransfer.mutate(ownershipQuery.data!.id)} variant="default">重发所有权确认邮件</Button><Button disabled={cancelTransfer.isPending} onClick={() => cancelTransfer.mutate(ownershipQuery.data!.id)} variant="default">取消所有权转让</Button></section> : null}
         {canManage && (pendingInvitations.length || (invitesQuery.data?.pagination.total ?? 0) > 0) ? (
@@ -152,7 +162,16 @@ export function MemberSettingsPage() {
                 </div>
               ))}
             </div>
-            <div className="collaboration-actions flex flex-wrap items-center gap-2"><Button size="sm" disabled={invitationPage <= 1 || invitesQuery.isFetching} onClick={() => setInvitationPage(value => value - 1)} variant="default">上一页邀请</Button><span>第 {invitationPage} 页</span><Button size="sm" disabled={!invitesQuery.data?.pagination.has_next || invitesQuery.isFetching} onClick={() => setInvitationPage(value => value + 1)} variant="default">下一页邀请</Button></div>
+            <Pagination
+              label="邀请分页"
+              className="collaboration-actions"
+              previousLabel="上一页邀请"
+              nextLabel="下一页邀请"
+              hasPrevious={invitationPage > 1 && !invitesQuery.isFetching}
+              hasNext={!!invitesQuery.data?.pagination.has_next && !invitesQuery.isFetching}
+              onPrevious={() => setInvitationPage(value => value - 1)}
+              onNext={() => setInvitationPage(value => value + 1)}
+            >第 {invitationPage} 页</Pagination>
           </section>
         ) : null}
 

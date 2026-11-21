@@ -9,8 +9,6 @@
   --ob-ease-out: var(--ease-out);
   --ob-z-dialog: 50;
   --ob-z-popover: 50;
-  --ob-menu-width: 280px;
-  --ob-menu-row-height: 40px;
   --ob-book-cover-font: 'Noto Serif SC', 'Songti SC', SimSun, serif;
   --ob-book-cover-sand: #d8ccb8;
   --ob-book-cover-sage: #dde7db;

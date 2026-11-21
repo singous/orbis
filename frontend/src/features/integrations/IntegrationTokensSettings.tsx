@@ -1,3 +1,4 @@
+import { Pagination } from "@orbis/ui/pagination";
 import { profileStyles } from "@/shared/ui/workbench-styles";
 import { reportError } from "../../shared/api/request-feedback";
 import { useEffect, useRef, useState, type FormEvent } from "react";
@@ -8,7 +9,7 @@ import { authRequestOptions, useAuthRequest } from "../../shared/auth/use-auth-r
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Checkbox } from "@orbis/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@orbis/ui/select";
+import { Combobox } from "@orbis/ui/combobox";
 import { Spinner } from "@orbis/ui/spinner";
 
 type IntegrationToken = {
@@ -98,17 +99,11 @@ function IntegrationTokensScope() {
       <label className="grid gap-1.5 text-sm font-medium text-foreground">令牌名称<Input required maxLength={120} value={name} disabled={pending} onChange={event => setName(event.target.value)} placeholder="例如：我的写作助手" /></label>
       <div className="grid gap-1.5 text-sm font-medium">
         <label htmlFor="integration-token-permission">权限</label>
-        <Select items={permissions} value={permission} disabled={pending} onValueChange={value => { if (value !== null) setPermission(value); }}>
-          <SelectTrigger id="integration-token-permission"><SelectValue /></SelectTrigger>
-          <SelectContent>{permissions.map(item => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}</SelectContent>
-        </Select>
+        <Combobox items={permissions} value={permission} disabled={pending} onValueChange={value => { if (value !== null) setPermission(value); }} label="权限" id="integration-token-permission" />
       </div>
       <div className="grid gap-1.5 text-sm font-medium">
         <label htmlFor="integration-token-scope">授权范围</label>
-        <Select items={scopes} value={scope} disabled={pending} onValueChange={value => { if (value !== null) setScope(value); }}>
-          <SelectTrigger id="integration-token-scope"><SelectValue /></SelectTrigger>
-          <SelectContent>{scopes.map(item => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}</SelectContent>
-        </Select>
+        <Combobox items={scopes} value={scope} disabled={pending} onValueChange={value => { if (value !== null) setScope(value); }} label="授权范围" id="integration-token-scope" />
       </div>
       {scope !== "workspace" ? <label className="grid gap-1.5 text-sm font-medium text-foreground">{scope === "note" ? "文档 ID" : "笔记本 ID"}<Input required value={scopeId} disabled={pending} onChange={event => setScopeId(event.target.value)} /></label> : null}
       {scope !== "workspace" ? <p>{scope === "note" ? "仅授权这篇文档，不包含下级文档。" : "包含此笔记本当前与后续新增文档。"}</p> : null}
@@ -131,6 +126,15 @@ function IntegrationTokensScope() {
       </li>)}
     </ul>
     {!items.length ? <p>本页暂无集成令牌。</p> : null}
-    <div className={profileStyles.actions}><Button disabled={page<=1||pending} onClick={()=>setPage(value=>value-1)}>上一页令牌</Button><span>第 {page} 页</span><Button disabled={!hasMore||pending} onClick={()=>setPage(value=>value+1)}>下一页令牌</Button></div>
+    <Pagination
+      label="集成令牌分页"
+      className={profileStyles.actions}
+      previousLabel="上一页令牌"
+      nextLabel="下一页令牌"
+      hasPrevious={page > 1 && !pending}
+      hasNext={hasMore && !pending}
+      onPrevious={() => setPage(value => value - 1)}
+      onNext={() => setPage(value => value + 1)}
+    >第 {page} 页</Pagination>
   </section>;
 }

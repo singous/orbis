@@ -1,4 +1,4 @@
-import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription, DialogHeader, DialogFooter } from "@orbis/ui/dialog";
+import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@orbis/ui/alert-dialog";
 import { useRef, useState, type ReactElement } from "react";
 import { reportError } from "../api/request-feedback";
 import { Button } from "@orbis/ui/button";
@@ -33,17 +33,17 @@ export function ConfirmAction({ children, title, description, confirmLabel, onCo
     }
   }
 
-  return <Dialog disablePointerDismissal open={open} onOpenChange={(value, details) => {
+  return <AlertDialog open={open} onOpenChange={(value, details) => {
     if (running.current) { details.cancel(); return; }
     setOpen(value);
   }}>
-    <DialogTrigger render={children} disabled={disabled} />
-    <DialogContent role="alertdialog" initialFocus={cancel} showCloseButton={false}>
-      <DialogHeader><DialogTitle>{title}</DialogTitle><DialogDescription>{description}</DialogDescription></DialogHeader>
-      <DialogFooter>
-        <Button ref={cancel} disabled={pending} onClick={() => setOpen(false)}>取消</Button>
+    <AlertDialogTrigger render={children} disabled={disabled} />
+    <AlertDialogContent initialFocus={cancel}>
+      <AlertDialogHeader><AlertDialogTitle>{title}</AlertDialogTitle><AlertDialogDescription>{description}</AlertDialogDescription></AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel ref={cancel} disabled={pending} render={<Button variant="outline" />}>取消</AlertDialogCancel>
         <Button variant="destructive" disabled={disabled || pending} focusableWhenDisabled={pending && !disabled} aria-busy={pending || undefined} onClick={() => void confirm()}>{pending ? <Spinner aria-hidden="true" /> : null}{confirmLabel}</Button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>;
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>;
 }

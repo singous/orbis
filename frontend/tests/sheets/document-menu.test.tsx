@@ -49,7 +49,11 @@ it("copies the current document URL and restores the explicit menu trigger", asy
   const user = userEvent.setup();
   const copy = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue(undefined);
   mount();
-  const trigger = await screen.findByRole("button", { name: "更多文档操作" });
+  const trigger = await waitFor(() => {
+    const button = screen.getByRole("button", { name: "更多文档操作" });
+    expect(button).toBeEnabled();
+    return button;
+  });
   await user.click(trigger);
   await user.click(await screen.findByRole("menuitem", { name: "复制链接" }));
   expect(copy).toHaveBeenCalledExactlyOnceWith(window.location.href);
@@ -61,7 +65,12 @@ it("waits for real navigation preparation before archiving with the current note
   const prepare = vi.fn(() => new Promise<void>(resolve => { finish = resolve; }));
   unregister.push(registerPendingNavigation(prepare));
   mount();
-  await user.click(await screen.findByRole("button", { name: "更多文档操作" }));
+  const trigger = await waitFor(() => {
+    const button = screen.getByRole("button", { name: "更多文档操作" });
+    expect(button).toBeEnabled();
+    return button;
+  });
+  await user.click(trigger);
   await user.click(await screen.findByRole("menuitem", { name: "归档文档" }));
   expect(prepare).toHaveBeenCalledOnce();
   expect(calls.notebook).not.toHaveBeenCalled();
@@ -75,7 +84,12 @@ it("omits the archive action for readers while retaining copy", async () => {
   const user = userEvent.setup();
   authStore.setState({ workspace: { id: "space", name: "工作空间", role: "viewer", created_at_ms: 1, updated_at_ms: 1 } });
   mount();
-  await user.click(await screen.findByRole("button", { name: "更多文档操作" }));
+  const trigger = await waitFor(() => {
+    const button = screen.getByRole("button", { name: "更多文档操作" });
+    expect(button).toBeEnabled();
+    return button;
+  });
+  await user.click(trigger);
   expect(await screen.findByRole("menuitem", { name: "复制链接" })).toBeVisible();
   expect(screen.queryByRole("menuitem", { name: "归档文档" })).not.toBeInTheDocument();
   expect(calls.archive).not.toHaveBeenCalled();

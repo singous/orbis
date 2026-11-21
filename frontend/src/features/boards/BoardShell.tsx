@@ -7,8 +7,10 @@ import { WorkspaceShell } from "../workspace/WorkspaceShell";
 
 import type { Board } from "./model";
 
+export type BoardIdentity = Pick<Board, "title" | "collection_id" | "document_id">;
+
 type Props = {
-  board: Board;
+  board?: BoardIdentity;
   children: ReactNode;
   actions: ReactNode;
   status: ReactNode;
@@ -26,16 +28,15 @@ export function BoardShell({ board, children, actions, status, embedded }: Props
   </section>;
   return (
     <WorkspaceShell
-      sidebar={createNotebookSidebar(board.collection_id, board.document_id)}
+      sidebar={board ? createNotebookSidebar(board.collection_id, board.document_id) : undefined}
       contentLayout="document"
       sectionTitle={
         <div className="board-document-heading flex min-w-0 items-center gap-2.5 text-(--muted-foreground)">
           <Shapes size={17} aria-hidden="true" className="shrink-0 text-primary" />
-          <h1 className="min-w-0 truncate text-[14px] font-semibold text-foreground" title={board.title}>{board.title}</h1>
-          {status}
+          <h1 className="min-w-0 truncate text-[14px] font-semibold text-foreground" title={board?.title}>{board?.title || "画板"}</h1>
         </div>
       }
-      toolbar={<div className="board-header-actions flex items-center gap-1.5 max-[760px]:gap-0.5">{actions}</div>}
+      toolbar={<div className="board-header-actions flex items-center gap-1.5 max-[760px]:gap-0.5">{status}{actions}</div>}
     >
       <section className={shellClassName} aria-label="画板工作区">
         {children}

@@ -1,4 +1,5 @@
 export const boardFloatingPanelStyles = "absolute z-[22] top-3 right-3 bottom-14 w-[352px] overflow-auto rounded-[10px] border border-(--ob-board-border) bg-card [box-shadow:var(--shadow-sm)] [@container(640px<width<=900px)]:w-72 [@container(max-width:640px)]:top-[58px] [@container(max-width:640px)]:w-[min(300px,calc(100%-80px))]";
+export const boardStageClassName = "board-stage-wrap absolute inset-0 min-h-0 min-w-0 overflow-hidden [--board-canvas:var(--background)] [--board-grid:color-mix(in_oklab,var(--foreground)_12%,transparent)] bg-(--board-canvas) bg-[radial-gradient(var(--board-grid)_0.7px,transparent_0.85px)] bg-size-[16px_16px]";
 
 // 坐标与命中框由画布 overlay 几何样式拥有。
 export const boardMindmapControlClassName = "disabled:cursor-not-allowed disabled:opacity-50 board-mindmap-action rounded-[999px] border border-[color:color-mix(in_oklab,var(--primary)_45%,var(--ob-board-border))] bg-card text-primary [&.board-mindmap-action]:text-[11px] [&.board-mindmap-action]:leading-none [&:hover]:bg-primary [&:hover]:text-primary-foreground enabled:hover:bg-primary focus-visible:bg-primary focus-visible:text-primary-foreground";

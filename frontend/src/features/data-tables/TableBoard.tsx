@@ -1,7 +1,7 @@
+import { Pagination } from "@orbis/ui/pagination";
 import { tableEmptyClassName } from "./table-chrome";
 import { reportError } from "../../shared/api/request-feedback";
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@orbis/ui/button";
 import { readTable } from "./api";
 import type { TableHost } from "./context";
 import {
@@ -144,22 +144,13 @@ function BoardColumn({
         ))}
       </div>
       {page && (offset > 0 || page.has_more) ? (
-        <footer>
-          <Button
-            size="sm"
-            disabled={offset === 0 || loading}
-            onClick={() => setOffset(Math.max(0, offset - TABLE_PAGE_SIZE))}
-          >
-            上一页
-          </Button>
-          <Button
-            size="sm"
-            disabled={!page.has_more || loading}
-            onClick={() => setOffset(page.next_offset)}
-          >
-            下一页
-          </Button>
-        </footer>
+        <Pagination
+          label="看板分组分页"
+          hasPrevious={offset > 0 && !loading}
+          hasNext={page.has_more && !loading}
+          onPrevious={() => setOffset(Math.max(0, offset - TABLE_PAGE_SIZE))}
+          onNext={() => setOffset(page.next_offset)}
+        />
       ) : null}
       {!loading && !page?.records.length ? (
         <p className="px-[3px] py-[15px] text-xs text-(--muted-foreground)">拖入记录或更改状态</p>

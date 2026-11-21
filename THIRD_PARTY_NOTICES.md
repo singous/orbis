@@ -73,6 +73,7 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `@babel/types` | 7.29.11 | MIT | build-only, dev-only | [1](licenses/texts/npm/117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76.txt) |
 | `@base-ui/react` | 1.9.0 | MIT | runtime | [1](licenses/texts/npm/07fc1b39d69d14bc7d40482a628f47226258eb01265db68ae684944b916beb2a.txt) |
 | `@base-ui/utils` | 0.5.0 | MIT | runtime | [1](licenses/texts/npm/07fc1b39d69d14bc7d40482a628f47226258eb01265db68ae684944b916beb2a.txt) |
+| `@chenglou/pretext` | 0.0.5 | MIT | dev-only, runtime | [1](licenses/texts/npm/e9355cb16457e81acd97dac2e50f2f8bbf2a9a464025f9c46db3680cf9598846.txt) |
 | `@csstools/color-helpers` | 5.1.0 | MIT-0 | dev-only | [1](licenses/texts/npm/947e32047a166cd05f04e45938d172b412c07cbee0b9735afd14bae30e02c2f6.txt) |
 | `@csstools/css-calc` | 2.1.4 | MIT | dev-only | [1](licenses/texts/npm/d00d032f517721b45c56c70c46bf904ebb71ad313df4d4db7722266b38069665.txt) |
 | `@csstools/css-color-parser` | 3.1.0 | MIT | dev-only | [1](licenses/texts/npm/d00d032f517721b45c56c70c46bf904ebb71ad313df4d4db7722266b38069665.txt) |
@@ -303,6 +304,7 @@ Generated from the exact frontend lockfile. Runtime and asset entries are includ
 | `balanced-match` | 4.0.4 | MIT | build-only | [1](licenses/texts/npm/d408f38ffa3355c5faec517153295338892eb0f1ea43f57874bb23c6075979b5.txt) |
 | `baseline-browser-mapping` | 2.11.34 | Apache-2.0 | build-only, dev-only | [1](licenses/texts/npm/c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4.txt) |
 | `better-opn` | 3.0.2 | MIT | dev-only | [1](licenses/texts/npm/914d1872727809314c403a449c6bfed8aa7de72679ced2477bac51999dd65258.txt) |
+| `boneyard-js` | 1.10.0 | MIT | dev-only, runtime | [1](licenses/texts/npm/d7d2e16cf3aa23d4675415e0f7cb500e06503985ba13b4e472d729768d2eab3c.txt) |
 | `brace-expansion` | 2.1.7 | MIT | dev-only | [1](licenses/texts/npm/68f12f6e2c33688699249c01d8f9623c534da20aa71989c57b061b7bc1676d14.txt) |
 | `brace-expansion` | 5.0.12 | MIT | build-only | [1](licenses/texts/npm/9c63a23124d68cd30cd316a94a1a0bca34f032786df6df69fc4b5f136bac8d2e.txt) |
 | `braces` | 3.0.3 | MIT | build-only | [1](licenses/texts/npm/35bdd8a44339719441900fb50fbefc5e2dca1ca662cbaed7a687de842c8b70f2.txt) |

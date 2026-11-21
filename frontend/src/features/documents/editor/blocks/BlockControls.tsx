@@ -14,7 +14,7 @@ import { useContext,useEffect, useLayoutEffect, useMemo, useRef, useState } from
 import { Portal, readPortalTheme } from "@orbis/ui/portal";
 import { GripVertical, Plus, Copy, Link2, ArrowUp, ArrowDown, Layers, Trash2, ChevronRight } from '../../../../shared/ui/icons';
 import { Button } from "@orbis/ui/button";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@orbis/ui/select";
+import { Combobox } from "@orbis/ui/combobox";
 import { DOCUMENT_BLOCKS } from '../../../content/model/document-components';
 import { newBlockId } from '../../../content/blocks';
 import { fromTiptapDocument } from '../tiptap-model';
@@ -383,18 +383,10 @@ export function BlockControls({editor,readOnly,noteId}:{editor:Editor;readOnly:b
     <Button className={blockMenuItemClassName} role="menuitem" onClick={()=>copySelected(true)} variant="ghost"><span className="block-menu-icon w-[15px] text-center">✂</span><span>剪切块</span><kbd aria-hidden="true" className={blockMenuShortcutClassName}>⌘ X</kbd></Button>
     {actionItem('创建副本',{type:'duplicate'},<Copy size={15}/>)}
     <div className={blockMenuSeparatorClassName}/>
-    {convertOptions.length?<Select
+    {convertOptions.length?<Combobox
       value={current.type==='heading'?`heading:${current.props.level??1}`:current.type}
       onValueChange={value => { if (value === null) return; const [target,level]=value.split(':');run({type:'convert',target,level:level?Number(level):undefined}); }}
-      items={convertOptions}
-    >
-      <SelectTrigger aria-label="转换块类型" className={"mt-1 mb-1.5"}><SelectValue /></SelectTrigger>
-      <SelectContent>
-        {convertOptions.map(item => (
-          <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
-        ))}
-      </SelectContent>
-    </Select>:null}
+      items={convertOptions} label="转换块类型" size="sm" className="mt-1 mb-1.5" />:null}
     {actionItem('在上方插入',{type:'insert',side:'before'},<Plus size={15}/>)}
     {actionItem('在下方插入',{type:'insert',side:'after'},<Plus size={15}/>)}
     {actionItem('上移',{type:'up'},<ArrowUp size={15}/>)}

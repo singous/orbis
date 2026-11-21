@@ -17,9 +17,9 @@ import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { ApiError } from "../../shared/api/api-client";
 import { Button } from "@orbis/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@orbis/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@orbis/ui/select";
+import { Combobox } from "@orbis/ui/combobox";
 import { ChevronDown, Pencil, Pin, Trash2, ArchiveRestore } from "../../shared/ui/icons";
-import { EmptyState } from "../../shared/ui/EmptyState";
+import { Empty } from "@orbis/ui/empty";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { DocumentShell } from "../documents/DocumentShell";
 import { ContentRenderer } from "../content/ContentRenderer";
@@ -109,7 +109,7 @@ function QuickNotesWorkspace() {
       <div className={cn("quick-notes-layout grid items-start gap-6 [@media(max-width:650px)]:gap-4", expanded ? "grid-cols-1" : "grid-cols-[minmax(300px,.8fr)_minmax(0,1.2fr)] [@media(max-width:1100px)]:grid-cols-1")}>
         <QuickNoteComposer userId={user.id} workspaceId={workspace.id} tags={tagItems} canEdit={canEdit} expanded={expanded} onToggleExpanded={() => setExpanded(value => !value)} onManageTags={() => setTagManager(true)} onSaved={() => { refresh(); setFilter(value => ({ ...value, q: "", tag: "", deleted: false })); setSearch(""); }} />
         <section className={cn("quick-notes-feed min-w-0", expanded && "hidden")} aria-label="历史记录">
-          <div className="quick-notes-filters mb-4 flex items-center gap-2 [@media(max-width:650px)]:flex-wrap"><div className="quick-notes-search flex min-w-[100px] flex-1 items-center [@media(max-width:650px)]:basis-full"><Input className="min-w-0" aria-label="搜索随手记" placeholder="搜索记录…" maxLength={200} value={search} onChange={event => setSearch(event.target.value)} /></div><Select<NoteFilter["sort"]> items={sortOptions} value={filter.sort} onValueChange={sort => { if (sort !== null) setFilter(current => ({ ...current, sort })); }}><SelectTrigger className="w-40" aria-label="记录排序"><SelectValue /></SelectTrigger><SelectContent role="region" aria-label="记录排序选项">{sortOptions.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select><Button size="icon" aria-label={filter.deleted ? "返回全部记录" : "查看回收站"} title={filter.deleted ? "返回全部记录" : "查看回收站"} aria-pressed={filter.deleted} onClick={() => setFilter(current => ({ ...current, deleted: !current.deleted, tag: "" }))} variant="ghost"><Trash2 size={17} /></Button></div>
+          <div className="quick-notes-filters mb-4 flex items-center gap-2 [@media(max-width:650px)]:flex-wrap"><div className="quick-notes-search flex min-w-[100px] flex-1 items-center [@media(max-width:650px)]:basis-full"><Input className="min-w-0" aria-label="搜索随手记" placeholder="搜索记录…" maxLength={200} value={search} onChange={event => setSearch(event.target.value)} /></div><Combobox<NoteFilter["sort"]> items={sortOptions} value={filter.sort} onValueChange={sort => { if (sort !== null) setFilter(current => ({ ...current, sort })); }} label="记录排序" size="sm" className="w-40" popupProps={{ "role": "region", "aria-label": "记录排序选项" }} /><Button size="icon" aria-label={filter.deleted ? "返回全部记录" : "查看回收站"} title={filter.deleted ? "返回全部记录" : "查看回收站"} aria-pressed={filter.deleted} onClick={() => setFilter(current => ({ ...current, deleted: !current.deleted, tag: "" }))} variant="ghost"><Trash2 size={17} /></Button></div>
           <div className="quick-notes-tag-filters mb-4 flex flex-wrap items-center gap-2">
             <Toolbar className="quick-notes-tag-toggle-group max-w-full flex-wrap justify-start gap-2" aria-label="按标签筛选">
               <ToolbarButton render={<Toggle className="max-w-full whitespace-normal wrap-anywhere" pressed={!filter.tag} onPressedChange={selected => { if (selected) chooseTag(""); }} />}>{filter.deleted ? "回收站" : "全部"} {summary.data ? `(${filter.deleted ? summary.data.deleted : summary.data.total})` : ""}</ToolbarButton>
@@ -119,7 +119,7 @@ function QuickNotesWorkspace() {
           </div>
 
           {notes.isPending ? <LoadingState label="正在加载随手记…" variant="cards" /> : null}
-          {!notes.isPending && !notes.isError && !items.length ? <EmptyState appearance="plain" className="quick-notes-empty min-h-[340px]" icon={<StickyNote size={36} />} title={filter.deleted ? "回收站是空的" : filter.q || filter.tag ? "没有找到匹配的记录" : "记下第一个想法"} description={filter.deleted ? "移入回收站的记录可以在这里恢复。" : filter.q || filter.tag ? "试试其他关键词或标签。" : "一句灵感、一段代码、一张图片，都可以从这里开始。"} /> : null}
+          {!notes.isPending && !notes.isError && !items.length ? <Empty appearance="plain" className="quick-notes-empty min-h-[340px]" icon={<StickyNote size={36} />} title={filter.deleted ? "回收站是空的" : filter.q || filter.tag ? "没有找到匹配的记录" : "记下第一个想法"} description={filter.deleted ? "移入回收站的记录可以在这里恢复。" : filter.q || filter.tag ? "试试其他关键词或标签。" : "一句灵感、一段代码、一张图片，都可以从这里开始。"} /> : null}
           <FileContentContext.Provider value={files}><div className={cn("quick-notes-records grid items-start gap-4", view === "cards" && "grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] [@media(max-width:1100px)]:grid-cols-2 [@media(max-width:650px)]:grid-cols-1")}>{items.map(note => <NoteCard key={note.id} note={note} tags={tagItems} canEdit={canEdit} disabled={Boolean(patch)} onEdit={() => setEditing(note)} onPatch={change => void runPatch({ id: note.id, body: { ...change, operation_id: newUUID(), expected_version: note.version } })} />)}</div></FileContentContext.Provider>
           {notes.hasNextPage ? <Button className="quick-notes-load-more mx-auto mt-6 flex" onClick={() => void notes.fetchNextPage()} variant="outline" disabled={notes.isFetchingNextPage} focusableWhenDisabled={(notes.isFetchingNextPage)} aria-busy={notes.isFetchingNextPage || undefined}>{notes.isFetchingNextPage ? <Spinner aria-hidden="true" /> : null}加载更多</Button> : null}
         </section>

@@ -42,7 +42,10 @@ test("create dialog keeps nested selection, locks while saving, and retries the 
   await expect(select).toContainText("试点笔记本");
   await select.click();
   await expect(page.getByRole("option", { name: "试点笔记本", exact: true })).toBeVisible();
+  await expect(select).toBeFocused();
+  await expect(page.getByRole("combobox", { name: "搜索笔记本…", exact: true })).not.toBeFocused();
   await page.keyboard.press("Escape");
+  await expect(select).toHaveAttribute("aria-expanded", "false");
   await expect(dialog).toBeVisible();
   await expect(select).toBeFocused();
   await dialog.getByRole("button", { name: "任务跟踪 任务、状态与日期", exact: true }).click();

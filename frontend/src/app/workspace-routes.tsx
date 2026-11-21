@@ -1,5 +1,6 @@
 import { lazy } from "react";
 import { Navigate, useLocation, type RouteObject } from "react-router-dom";
+import type { WorkspaceLoadingKind } from "../features/workspace/WorkspaceLoadingContent";
 
 const QuickNotesPage = lazy(() => import("../features/quick-notes/QuickNotesPage").then(module => ({ default: module.QuickNotesPage })));
 const SheetsHome = lazy(() => import("../features/sheets/SheetsHome").then(m => ({default:m.SheetsHome})));
@@ -24,7 +25,9 @@ function NotebookShelfRedirect() {
 }
 
 /** All private pages share the same authenticated layout route. */
-export const workspaceRoutes: RouteObject[] = [
+export type WorkspaceRouteHandle = { workspaceLoading: WorkspaceLoadingKind };
+
+export const workspaceRoutes: (RouteObject & { handle?: WorkspaceRouteHandle })[] = [
   { path: "/documents/quick-notes", element: <QuickNotesPage /> },
   { path: "/sheets", element: <SheetsHome /> },
   { path: "/sheets/:sheetId", element: <SheetPage /> },
@@ -33,13 +36,13 @@ export const workspaceRoutes: RouteObject[] = [
   { path: "/sites", element: <SitesPage /> },
   { path: "/sites/:siteId", element: <SiteEditorPage /> },
   { path: "/home", element: <HomePage /> },
-  { path: "/documents", element: <DocumentOverviewPage /> },
+  { path: "/documents", element: <DocumentOverviewPage />, handle: { workspaceLoading: "notebook-shelf" } },
   { path: "/documents/recent", element: <RecentDocumentsPage /> },
-  { path: "/documents/collections", element: <NotebookShelfRedirect /> },
+  { path: "/documents/collections", element: <NotebookShelfRedirect />, handle: { workspaceLoading: "notebook-shelf" } },
   { path: "/documents/search", element: <LegacyDocumentSearchRedirect /> },
   { path: "/documents/archive", element: <ArchivePage /> },
-  { path: "/collections/:collectionId", element: <NotebookPage /> },
+  { path: "/collections/:collectionId", element: <NotebookPage />, handle: { workspaceLoading: "notebook" } },
   { path: "/settings/account", element: <AccountSettingsPage /> },
-  { path: "/documents/:noteId", element: <DocumentRoute /> },
+  { path: "/documents/:noteId", element: <DocumentRoute />, handle: { workspaceLoading: "document" } },
   { path: "/settings/members", element: <MemberSettingsPage /> },
 ];

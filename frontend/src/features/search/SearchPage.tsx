@@ -1,3 +1,4 @@
+import { Pagination } from "@orbis/ui/pagination";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -7,7 +8,7 @@ import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { Button } from "@orbis/ui/button";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { PageContainer } from "../../shared/ui/PageContainer";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@orbis/ui/select";
+import { Combobox } from "@orbis/ui/combobox";
 
 import { Input } from "@orbis/ui/input";
 import { WorkspaceShell } from "../workspace/WorkspaceShell";
@@ -61,8 +62,8 @@ export function SearchPage() {
         {input ? <Button variant="ghost" onClick={() => { setInput(""); setComposing(false); updateFilters({ q: "" }); }}>清空搜索</Button> : null}
       </div>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <div className="grid gap-2"><label htmlFor="search-content-type" className="text-sm font-medium">内容类型</label><Select<SearchFilters["type"]> items={SEARCH_TYPE_OPTIONS} value={filters.type} onValueChange={type => { if (type !== null) updateFilters({ type }); }}><SelectTrigger id="search-content-type" className="w-full"><SelectValue /></SelectTrigger><SelectContent role="region" aria-label="内容类型选项">{SEARCH_TYPE_OPTIONS.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></div>
-        <div className="grid gap-2"><label htmlFor="search-content-status" className="text-sm font-medium">内容状态</label><Select<SearchFilters["status"]> items={SEARCH_STATUS_OPTIONS} value={filters.status} onValueChange={status => { if (status !== null) updateFilters({ status }); }}><SelectTrigger id="search-content-status" className="w-full"><SelectValue /></SelectTrigger><SelectContent role="region" aria-label="内容状态选项">{SEARCH_STATUS_OPTIONS.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></div>
+        <div className="grid gap-2"><label htmlFor="search-content-type" className="text-sm font-medium">内容类型</label><Combobox<SearchFilters["type"]> items={SEARCH_TYPE_OPTIONS} value={filters.type} onValueChange={type => { if (type !== null) updateFilters({ type }); }} label="内容类型" id="search-content-type" size="sm" className="w-full" popupProps={{ "role": "region", "aria-label": "内容类型选项" }} /></div>
+        <div className="grid gap-2"><label htmlFor="search-content-status" className="text-sm font-medium">内容状态</label><Combobox<SearchFilters["status"]> items={SEARCH_STATUS_OPTIONS} value={filters.status} onValueChange={status => { if (status !== null) updateFilters({ status }); }} label="内容状态" id="search-content-status" size="sm" className="w-full" popupProps={{ "role": "region", "aria-label": "内容状态选项" }} /></div>
       </div>
       <p className="text-xs leading-[18px] text-muted-foreground">文件与附件支持名称和已有元数据检索。</p>
     </form>
@@ -83,11 +84,15 @@ export function SearchPage() {
           </Link></li>;
         })}
       </ul>}
-      {data.pagination.total_pages > 1 ? <nav className="flex flex-wrap items-center justify-center gap-4 text-sm" aria-label="搜索结果分页">
-        <Button disabled={!data.pagination.has_previous || results.isFetching} onClick={() => updateFilters({ page: filters.page - 1 })} variant="default">上一页</Button>
-        <span>第 {data.pagination.page} / {data.pagination.total_pages} 页</span>
-        <Button disabled={!data.pagination.has_next || results.isFetching} onClick={() => updateFilters({ page: filters.page + 1 })} variant="default">下一页</Button>
-      </nav> : null}
+      {data.pagination.total_pages > 1 ? <Pagination
+        label="搜索结果分页"
+        size="default"
+        className="justify-center"
+        hasPrevious={data.pagination.has_previous && !results.isFetching}
+        hasNext={data.pagination.has_next && !results.isFetching}
+        onPrevious={() => updateFilters({ page: filters.page - 1 })}
+        onNext={() => updateFilters({ page: filters.page + 1 })}
+      >第 {data.pagination.page} / {data.pagination.total_pages} 页</Pagination> : null}
     </> : null}
   </PageContainer></WorkspaceShell>;
 }

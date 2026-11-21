@@ -3,7 +3,7 @@ import { Input } from "@orbis/ui/input";
 import { RadioGroup, RadioGroupItem } from "@orbis/ui/radio-group";
 import { Button } from "@orbis/ui/button";
 import { SiteField, SiteInfoPanel, SiteNotice, SiteSectionHeading, SiteReorderControls } from "./SiteManagementLayout";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@orbis/ui/select";
+import { Combobox } from "@orbis/ui/combobox";
 import { useId } from "react";
 import { Plus } from "../../shared/ui/icons";
 
@@ -49,8 +49,8 @@ function SourceBinding({
       {!disabled ? <SiteReorderControls appearance="source" first={index === 0} last={index === source.notebooks.length - 1} upLabel={`上移来源 ${index + 1}`} downLabel={`下移来源 ${index + 1}`} removeLabel={`移除来源 ${index + 1}`} onMove={onMove} onRemove={onRemove} /> : null}
     </header>
     <div className="grid grid-cols-1 gap-[11px] border-b border-border px-[15px] py-3.5 min-[721px]:grid-cols-3 [&_label]:grid [&_label]:gap-1.5 [&_label]:text-sm [&_label]:text-muted-foreground [&_input]:min-w-0">
-      <div className="grid gap-2"><label htmlFor={`${fieldId}-notebook`}>来源笔记本</label><Select items={notebookChoices} disabled={disabled} value={binding.notebook_id} onValueChange={notebook_id => { if (notebook_id !== null) onChange({ notebook_id, root_note_id: null, label: binding.label ?? null }); }}><SelectTrigger id={`${fieldId}-notebook`} aria-label={`来源笔记本 ${index + 1}`} className="w-full"><SelectValue /></SelectTrigger><SelectContent role="region" aria-label="来源笔记本选项">{notebookChoices.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></div>
-      <div className="grid gap-2"><label htmlFor={`${fieldId}-root`}>内容范围</label><Select items={rootChoices} disabled={disabled || tree.isPending} value={binding.root_note_id ?? ""} onValueChange={rootId => { if (rootId !== null) onChange({ ...binding, root_note_id: rootId || null }); }}><SelectTrigger id={`${fieldId}-root`} aria-label={`内容范围 ${index + 1}`} className="w-full"><SelectValue /></SelectTrigger><SelectContent role="region" aria-label="内容范围选项">{rootChoices.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></div>
+      <div className="grid gap-2"><label htmlFor={`${fieldId}-notebook`}>来源笔记本</label><Combobox items={notebookChoices} disabled={disabled} value={binding.notebook_id} onValueChange={notebook_id => { if (notebook_id !== null) onChange({ notebook_id, root_note_id: null, label: binding.label ?? null }); }} label={`来源笔记本 ${index + 1}`} id={`${fieldId}-notebook`} className="w-full" popupProps={{ "role": "region", "aria-label": "来源笔记本选项" }} search={{ mode: "local", placement: "popup", placeholder: "搜索笔记本…" }} /></div>
+      <div className="grid gap-2"><label htmlFor={`${fieldId}-root`}>内容范围</label><Combobox items={rootChoices} disabled={disabled || tree.isPending} value={binding.root_note_id ?? ""} onValueChange={rootId => { if (rootId !== null) onChange({ ...binding, root_note_id: rootId || null }); }} label={`内容范围 ${index + 1}`} id={`${fieldId}-root`} className="w-full" popupProps={{ "role": "region", "aria-label": "内容范围选项" }} /></div>
       <SiteField>栏目名称<Input aria-label={`栏目名称 ${index + 1}`} disabled={disabled} value={binding.label ?? ""} placeholder={notebook?.title ?? "默认使用笔记本名称"} onChange={(event) => onChange({ ...binding, label: event.target.value || null })} /></SiteField>
     </div>
     {tree.isPending ? <LoadingState label="正在加载真实文档树…" compact /> : tree.isError ? null : <SiteSourceTree items={tree.data.items} rootNoteId={binding.root_note_id} source={source} resolved={saved ? sources : undefined} disabled={disabled} onChange={onSourceChange} />}

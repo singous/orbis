@@ -5,6 +5,34 @@ import { readContrasts } from "../fixtures/contrast";
 import { installSession, workspace } from "../fixtures/session";
 import { board, boardId, documentId, firstPageId, boardHTTP, mountBoard } from "../fixtures/board";
 
+test("slow canvas data leaves the board title and fixed tools visible", async ({ page }) => {
+  await installSession(page);
+  await boardHTTP(page);
+  let releaseCanvas!: () => void;
+  const canvasDelay = new Promise<void>(resolve => { releaseCanvas = resolve; });
+  await page.route(url => url.pathname.includes(`/boards/${boardId}/pages/${firstPageId}/`), async route => {
+    await canvasDelay;
+    await route.fallback();
+  });
+  const canvasRequest = page.waitForRequest(request => new URL(request.url()).pathname.includes(`/boards/${boardId}/pages/${firstPageId}/`));
+  try {
+    await page.goto(`/documents/${documentId}`);
+    await canvasRequest;
+    await expect(page.getByRole("heading", { name: board.title, exact: true })).toBeVisible();
+    const tools = page.getByRole("toolbar", { name: "画板工具", exact: true });
+    await expect(tools.getByRole("button", { name: "画笔", exact: true })).toBeDisabled();
+    await expect(page.getByRole("toolbar", { name: "画板视图", exact: true })).toBeVisible();
+    await expect(page.getByRole("toolbar", { name: "画板历史操作", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "画板快捷键帮助", exact: true })).toBeEnabled();
+    await expect(page.locator(".board-header-actions .board-save-state")).toHaveText("加载中…");
+  } finally {
+    releaseCanvas();
+  }
+  await expect(page.getByRole("application", { name: "画板编辑区域", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "画笔", exact: true })).toBeEnabled();
+  await expect(page.locator(".board-header-actions .board-save-state")).toHaveText("已保存");
+});
+
 async function evidence(page: Page, state: string, theme: string, width: number) {
   if (!process.env.ORBIS_BOARD_EVIDENCE) return;
   await page.evaluate(async () => {
@@ -34,7 +62,7 @@ for (const theme of ["light", "dark"]) for (const width of [1280, 390]) test.des
     const mutations = await boardHTTP(page);
     await mountBoard(page, "editor");
     await expect(page.getByRole("application", { name: "画板编辑区域" })).toBeVisible();
-    await expect(page.getByRole("status").filter({ hasText: "已保存" })).toBeVisible({ visible: width > 760 });
+    await expect(page.getByRole("status").filter({ hasText: "已保存" })).toBeVisible();
     await evidence(page, "editor", theme, width);
     await page.getByRole("button", { name: "连接线", exact: true }).click();
     await expect(page.locator(".board-tool-hint")).toBeVisible();
@@ -206,7 +234,7 @@ for (const theme of ["light", "dark"]) for (const failure of [503, 409]) test(`p
   await expect(page.getByRole("application", { name: "画板编辑区域" })).toBeVisible();
   for (const width of [761, 760, 390, 1280]) {
     await page.setViewportSize({ width, height: 900 });
-    await expect(page.locator(".board-save-state")).toBeVisible({ visible: width > 760 });
+    await expect(page.locator(".board-header-actions .board-save-state")).toBeVisible();
     await expect(page.locator(".board-export-trigger > span")).toBeVisible({ visible: width > 760 });
   }
   await page.getByRole("button", { name: "添加画板页面" }).click();

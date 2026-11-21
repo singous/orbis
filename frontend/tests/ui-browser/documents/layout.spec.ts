@@ -2,6 +2,7 @@ import { Buffer } from "node:buffer";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { expectNoContinuingMotion, expectVisibleKeyboardFocus } from "../fixtures/media";
+import { documentEditorHTTP, documentId } from "../fixtures/document-editor";
 
 const now = Date.parse("2026-11-01T00:00:00Z");
 const workspace = { id: "00000000-0000-4000-8000-000000000002", name: "文档布局空间", role: "owner", created_at_ms: 1, updated_at_ms: 1 };
@@ -32,6 +33,52 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
+const refreshRoutes = [
+  { path: "/documents", module: "features/documents/DocumentOverviewPage.tsx", heading: "我的文档", pending: ".notebook-overview" },
+  { path: `/collections/${notebooks[0].id}`, module: "features/documents/NotebookPage.tsx", heading: notebooks[0].title, pending: ".notebook-home" },
+  { path: `/documents/${documentId}`, module: "app/DocumentRoute.tsx", heading: "界面平台化设计", pending: "article[aria-label='文档正文']" },
+] as const;
+
+for (const target of refreshRoutes) test(`hard refresh keeps the destination layout for ${target.module}`, async ({ page }) => {
+  const isDocument = target.module === "app/DocumentRoute.tsx";
+  if (isDocument) await documentEditorHTTP(page);
+  await page.goto(target.path);
+  if (isDocument) await expect(page.getByRole("textbox", { name: "文档标题" })).toHaveValue(target.heading);
+  else await expect(page.getByRole("heading", { name: target.heading, exact: true }).first()).toBeVisible();
+
+  let releaseWorkspace!: () => void;
+  let releaseDestination!: () => void;
+  const workspaceDelay = new Promise<void>(resolve => { releaseWorkspace = resolve; });
+  const destinationDelay = new Promise<void>(resolve => { releaseDestination = resolve; });
+  await page.route("**/src/app/WorkspaceRoute.tsx*", async route => { await workspaceDelay; await route.continue(); });
+  await page.route(`**/src/${target.module}*`, async route => { await destinationDelay; await route.continue(); });
+  const refreshing = page.reload({ waitUntil: "domcontentloaded" });
+  try {
+    const startup = page.locator(".workspace-startup");
+    await expect(startup.locator(target.pending)).toBeVisible();
+    await expect(page.getByRole("heading", { name: "在线文档", exact: true })).toHaveCount(0);
+    releaseWorkspace();
+    const content = page.locator("#workspace-main-content");
+    await expect(content.locator(target.pending)).toBeVisible();
+    await expect(page.getByRole("heading", { name: "在线文档", exact: true })).toHaveCount(0);
+    if (isDocument) {
+      await expect(page.locator(".workspace-toolbar .document-save-state")).toHaveText("加载中…");
+      await expect(page.getByRole("status", { name: "正在打开文档…" })).toBeVisible();
+    }
+    if (target.path === "/documents") {
+      await expect(content.getByRole("heading", { name: "我的文档", exact: true })).toBeVisible();
+      await expect(content.getByRole("button", { name: "新建笔记本", exact: true })).toBeDisabled();
+    }
+  } finally {
+    releaseWorkspace();
+    releaseDestination();
+    await refreshing;
+  }
+  await expect(page).toHaveURL(target.path);
+  if (isDocument) await expect(page.getByRole("textbox", { name: "文档标题" })).toHaveValue(target.heading);
+  else await expect(page.getByRole("heading", { name: target.heading, exact: true }).first()).toBeVisible();
+});
+
 test("recent edits filter by title and notebook without losing content types", async ({ page }) => {
   const sheet = { ...notes[1], collection_id: notebooks[1].id, title: "安装计划表", sheet_id: "00000000-0000-4000-8000-000000000010", updated_at_ms: now - 86_400_000 };
   await page.route(url => url.pathname.endsWith("/documents") && !url.pathname.includes("/collections/"), route =>
@@ -47,6 +94,23 @@ test("recent edits filter by title and notebook without losing content types", a
   await expect(page.getByRole("link", { name: notes[0].title, exact: true })).toHaveCount(0);
   const selector = page.getByRole("combobox", { name: "按笔记本筛选" });
   await selector.click();
+  const notebookSearch = page.getByRole("combobox", { name: "搜索笔记本…", exact: true });
+  await expect(notebookSearch).toBeVisible();
+  await expect(selector).toBeFocused();
+  await page.keyboard.press("a");
+  await expect(notebookSearch).toHaveValue("");
+  const notebookPopup = page.getByRole("dialog", { name: "按笔记本筛选" });
+  await expect(notebookPopup).toHaveAttribute("data-size", "sm");
+  await expect(notebookSearch).toHaveCSS("font-size", "13px");
+  await expect(notebookPopup.getByRole("option", { name: "全部笔记本", exact: true })).toHaveCSS("min-height", "30px");
+  const triggerBounds = (await selector.boundingBox())!;
+  const popupBounds = (await notebookPopup.boundingBox())!;
+  expect(popupBounds.width).toBeGreaterThan(triggerBounds.width);
+  expect(popupBounds.x + popupBounds.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+  await notebookSearch.click();
+  await expect(notebookSearch).toBeFocused();
+  await notebookSearch.fill("研发");
+  await expect(page.getByRole("option", { name: notebooks[1].title, exact: true })).toHaveCount(0);
   await page.getByRole("option", { name: notebooks[0].title, exact: true }).click();
   await expect(page.getByText("没有符合条件的文档。")).toBeVisible();
   await selector.click();

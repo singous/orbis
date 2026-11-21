@@ -1,3 +1,4 @@
+import { Pagination } from "@orbis/ui/pagination";
 import { Spinner } from "@orbis/ui/spinner";
 import { reportError } from "../../shared/api/request-feedback";
 import { LoadingState } from "../../shared/ui/LoadingState";
@@ -9,7 +10,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useStore } from "zustand";
-import { SitePagination } from "./SiteManagementLayout";
 
 import { authStore } from "../../shared/auth/auth-store";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
@@ -79,7 +79,7 @@ export function SitesPage() {
                 </WorkbenchResourceLink>
               ))}
             </div>
-            <SitePagination hasPrevious={sites.data.pagination.has_previous} hasNext={sites.data.pagination.has_next} onPrevious={() => setPage(page - 1)} onNext={() => setPage(page + 1)}>第 {page} 页 · 共 {sites.data.pagination.total} 个站点</SitePagination>
+            <Pagination label="站点分页" className="justify-end py-4" hasPrevious={sites.data.pagination.has_previous} hasNext={sites.data.pagination.has_next} onPrevious={() => setPage(page - 1)} onNext={() => setPage(page + 1)}>第 {page} 页 · 共 {sites.data.pagination.total} 个站点</Pagination>
           </> : (
             <div className={cn(workbenchStyles.emptySection, "min-h-[250px]")}><Globe aria-hidden="true" size={30} /><h2 className={workbenchStyles.emptyTitle}>从第一篇文档开始</h2><p className={workbenchStyles.emptyDescription}>选择内容、安排目录、预览发布。<br />读者看到你确认发布的版本。</p>{canEdit ? <Button onClick={openCreate} variant="outline">创建第一个站点<ArrowUpRight aria-hidden="true" size={16} /></Button> : <p className={workbenchStyles.emptyDescription}>工作空间的编辑者可以创建站点。</p>}</div>
           )}

@@ -1,3 +1,4 @@
+import { Pagination } from "@orbis/ui/pagination";
 import { Badge } from "@orbis/ui/badge";
 import { Spinner } from "@orbis/ui/spinner";
 import { reportError } from "../../shared/api/request-feedback";
@@ -10,7 +11,7 @@ import { Link, useBlocker, useNavigate, useParams } from "react-router-dom";
 import { useStore } from "zustand";
 import { Button } from "@orbis/ui/button";
 import { workbenchStyles } from "../../shared/ui/workbench-styles";
-import { SiteSectionHeading, SitePagination } from "./SiteManagementLayout";
+import { SiteSectionHeading } from "./SiteManagementLayout";
 
 import { authStore } from "../../shared/auth/auth-store";
 import { registerPendingNavigation } from "../../shared/navigation/pending-navigation";
@@ -160,7 +161,7 @@ function SiteEditor({ site }: { site: Site }) {
     <section className="mt-[44px] border-t border-border pt-7"><SiteSectionHeading title={<><History size={18} />发布历史</>} description="切换版本只改变公开站点，草稿仍可继续编辑。" actions={canPublish && site.published_release_id && <Button disabled={busy} onClick={() => setPendingAction({ type: "unpublish",expectedVersion:versionRef.current,operationId:newUUID() })} variant="destructive">撤回站点</Button>} />
       {releases.isPending ? <LoadingState label="正在加载发布记录…" compact /> : releases.isError ? null : releases.data.items.length ? <>
         {releases.data.items.map((release) => <div className="flex items-center gap-[22px] border-b border-border py-3.5 text-xs text-muted-foreground [&>:last-child]:ml-auto max-[800px]:flex-wrap max-[800px]:gap-3" key={release.id}><span className="min-w-[34px] font-semibold text-foreground">v{release.release_number}</span><span>{formatSavedTime(release.published_at_ms)}</span>{release.is_active ? <Badge variant="secondary">当前公开版本</Badge> : canPublish && <Button disabled={busy} onClick={() => setPendingAction({ type: "activate", releaseId: release.id, number: release.release_number,expectedVersion:versionRef.current,operationId:newUUID() })} variant="outline"><RotateCcw size={14} />切换到此版本</Button>}</div>)}
-        <SitePagination hasPrevious={releases.data.pagination.has_previous} hasNext={releases.data.pagination.has_next} onPrevious={() => setReleasePage(releasePage - 1)} onNext={() => setReleasePage(releasePage + 1)}>第 {releasePage} 页</SitePagination>
+        <Pagination label="发布历史分页" className="justify-end py-4" hasPrevious={releases.data.pagination.has_previous} hasNext={releases.data.pagination.has_next} onPrevious={() => setReleasePage(releasePage - 1)} onNext={() => setReleasePage(releasePage + 1)}>第 {releasePage} 页</Pagination>
       </> : <p className="py-[15px] text-xs text-muted-foreground">第一次发布后，版本会保存在这里。</p>}
     </section>
     <Dialog open={previewBundle !== null} onOpenChange={(open, details) => { if (!open && busy) { details.cancel(); return; } if (!open) setPreviewBundle(null); }}><DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-4xl"><DialogHeader><DialogTitle>{"确认发布站点"}</DialogTitle><DialogDescription>{"核对来源变化与冻结正文。确认后只会发布这里显示的版本。"}</DialogDescription></DialogHeader>{previewBundle && <SitePublishPreview siteId={site.id} preview={previewBundle.preview} sources={previewBundle.sources} busy={busy} onConfirm={confirmPublish} onRefresh={preparePublishPreview} onCancel={() => setPreviewBundle(null)} />}</DialogContent></Dialog>

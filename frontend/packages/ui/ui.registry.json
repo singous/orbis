@@ -65,8 +65,8 @@
       "sourceChecksum": "sha256:425e9b0a28b72617f18fabd75384050113295b88e7ba01c35bede2c72bd5d476",
       "addedAt": 1793595043043,
       "status": "experimental",
-      "updatedAt": 1793597672507,
-      "modifications": "Native base-nova component API and default classes retained. Official CLI resolves Lucide placeholders; local public-subpath imports, explicit React type imports and Chinese screen-reader labels where applicable. Native portals receive only optional application overlay-scope HTML props, without restoring legacy APIs or styles."
+      "updatedAt": 1795276664490,
+      "modifications": "Native base-nova component API retained. Orbis uses a muted, borderless trigger and a shadowed popup with inset highlights and spaced options. Official CLI resolves Lucide placeholders; local public-subpath imports, explicit React type imports and Chinese screen-reader labels where applicable. Native portals receive only optional application overlay-scope HTML props, without restoring legacy APIs or styles. The popup can also anchor to a wider Combobox control. The size level coordinates the trigger, list, groups, option rows, and indicators."
     },
     "avatar": {
       "source": "https://ui.shadcn.com/r/styles/base-nova/avatar.json",
@@ -120,8 +120,8 @@
       "sourceChecksum": "sha256:335c59dba30145f434a9cc9ccb0438a3c5e2afe857fc11b029de1ecb415224d7",
       "addedAt": 1793595043043,
       "status": "experimental",
-      "updatedAt": 1793597672507,
-      "modifications": "Native base-nova component API and default classes retained. Official CLI resolves Lucide placeholders; local public-subpath imports, explicit React type imports and Chinese screen-reader labels where applicable. Native portals receive only optional application overlay-scope HTML props, without restoring legacy APIs or styles."
+      "updatedAt": 1795276664490,
+      "modifications": "Native base-nova component API retained. Official CLI resolves Lucide placeholders; local public-subpath imports, explicit React type imports and Chinese screen-reader labels where applicable. Native portals receive only optional application overlay-scope HTML props, without restoring legacy APIs or styles. Orbis aligns the popup and rows with workspace menus and supports structured icons, descriptions, shortcuts, and danger levels. Popup geometry adapts to content with optional consumer sizing. The size level coordinates menu typography, icon sizes, padding, and row spacing, with inheritance for submenus."
     },
     "popover": {
       "source": "https://ui.shadcn.com/r/styles/base-nova/popover.json",
@@ -131,8 +131,8 @@
       "sourceChecksum": "sha256:ba5fe84f353f6c0fd2133a2ab893f5e8861fc60dc4dea548a7ec875acaa37b2c",
       "addedAt": 1793595043043,
       "status": "experimental",
-      "updatedAt": 1793597672507,
-      "modifications": "Native base-nova component API and default classes retained. Official CLI resolves Lucide placeholders; local public-subpath imports, explicit React type imports and Chinese screen-reader labels where applicable. Native portals receive only optional application overlay-scope HTML props, without restoring legacy APIs or styles."
+      "updatedAt": 1795276664490,
+      "modifications": "Native base-nova component API retained. Official CLI resolves Lucide placeholders; local public-subpath imports, explicit React type imports and Chinese screen-reader labels where applicable. Native portals receive only optional application overlay-scope HTML props, without restoring legacy APIs or styles. Orbis adds a menu appearance and action styling shared by workspace menu panels. Popup geometry adapts to content with optional consumer sizing. The size level coordinates panel typography, padding, and spacing, including shared menu-action dimensions."
     },
     "tooltip": {
       "source": "https://ui.shadcn.com/r/styles/base-nova/tooltip.json",

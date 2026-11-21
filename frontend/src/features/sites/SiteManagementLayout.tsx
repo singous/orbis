@@ -14,20 +14,6 @@ export function SiteSectionHeading({ title, description, actions }: { title: Rea
   </div>;
 }
 
-export function SitePagination({ hasPrevious, hasNext, onPrevious, onNext, children }: {
-  hasPrevious: boolean;
-  hasNext: boolean;
-  onPrevious: () => void;
-  onNext: () => void;
-  children: ReactNode;
-}) {
-  return <div className="flex flex-wrap items-center justify-end gap-3 py-4 text-sm text-muted-foreground">
-    <Button variant="outline" size="sm" disabled={!hasPrevious} onClick={onPrevious}>上一页</Button>
-    <span>{children}</span>
-    <Button variant="outline" size="sm" disabled={!hasNext} onClick={onNext}>下一页</Button>
-  </div>;
-}
-
 export function SiteInfoPanel({ className, ...props }: ComponentProps<"div">) {
   return <div {...props} className={cn("rounded-lg border bg-muted/50 p-4", className)} />;
 }

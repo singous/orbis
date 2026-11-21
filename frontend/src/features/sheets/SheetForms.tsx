@@ -7,6 +7,7 @@ import QRCode from "qrcode";
 import { useEffect, useId, useRef, useState } from "react";
 import { useBlocker } from "react-router-dom";
 import { Button } from "@orbis/ui/button";
+import { ButtonGroup } from "@orbis/ui/button-group";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@orbis/ui/dialog";
 import { Badge } from "@orbis/ui/badge";
 import { Input } from "@orbis/ui/input";
@@ -142,7 +143,7 @@ export function SheetForms({
   return (
     <div className="sheet-form-workspace sheet-data-theme flex min-h-0 flex-1 flex-col">
       <div className="sheet-form-toolbar flex min-h-14 items-center gap-3 border-b border-border px-5 py-2.5 [@media(max-width:760px)]:flex-wrap [@media(max-width:760px)]:gap-2 [@media(max-width:760px)]:px-3">
-        <div className="sheet-segment flex gap-1">
+        <ButtonGroup className="sheet-segment" aria-label="表单模式">
           <Button
             className={sheetActionClassName}
             size="sm"
@@ -165,7 +166,7 @@ export function SheetForms({
           >
             预览表单
           </Button>
-        </div>
+        </ButtonGroup>
         <span className="ml-auto text-[12px] text-(--muted-foreground)">{dirty ? "有未保存修改" : "已保存"}</span>
         {!readOnly && (
           <>

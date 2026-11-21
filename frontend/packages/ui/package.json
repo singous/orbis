@@ -8,6 +8,7 @@
     "./cn": "./src/cn.ts",
     "./styles.css": "./src/styles/styles.css",
     "./button": "./src/button/index.tsx",
+    "./button-group": "./src/button-group/index.tsx",
     "./input": "./src/input/index.tsx",
     "./textarea": "./src/textarea/index.tsx",
     "./dialog": "./src/dialog/index.tsx",
@@ -28,10 +29,17 @@
     "./checkbox": "./src/checkbox/index.tsx",
     "./toggle": "./src/toggle/index.tsx",
     "./toolbar": "./src/toolbar/index.tsx",
-    "./sheet": "./src/sheet/index.tsx"
+    "./sheet": "./src/sheet/index.tsx",
+    "./pagination": "./src/pagination/index.tsx",
+    "./alert-dialog": "./src/alert-dialog/index.tsx",
+    "./input-group": "./src/input-group/index.tsx",
+    "./field": "./src/field/index.tsx",
+    "./empty": "./src/empty/index.tsx",
+    "./combobox": "./src/combobox/index.tsx"
   },
   "dependencies": {
     "@base-ui/react": "1.9.0",
+    "boneyard-js": "1.10.0",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.1",
     "lucide-react": "^0.468.0",

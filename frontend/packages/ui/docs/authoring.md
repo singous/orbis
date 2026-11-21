@@ -15,3 +15,6 @@ Toolbar 的键盘成员通过显式的 ToolbarButton、ToolbarLink、ToolbarInpu
 新增组件先有真实消费者，再附适用的 Story、交互验证和类型用例。`check:ui` 检查组件子路径、包与应用依赖方向、原语和图标入口、CSS 所有权、主题角色，以及退役 shared UI 文件、导入和原生组件上的旧属性。业务的 `query.isPending`、ReadStatus `appearance` 等不受旧组件属性检查影响。
 
 依赖和 copied code 按[准入、升级及移除流程](dependencies.md)维护。官方候选在隔离目录用已记录的 shadcn CLI 版本生成；`ui.registry.json` 与 `licenses/copied-code/*.registry.json` 保存来源、实际获取记录、冻结内容及校验值。升级时比较真实上游输出，保留必要的导入路径、图标、本地化、主题范围与可访问性适配，并同步记录；不把手写旧外观当作上游生成结果。
+
+
+DropdownMenuItem 的 `icon`、`description` 和 `shortcut` 用于分配行内内容。危险动作使用 `level="danger"`，标题和图标使用危险色。多级菜单由 DropdownMenuSub、DropdownMenuSubTrigger 和 DropdownMenuSubContent 组合。工作区切换这类包含列表和状态的面板可以使用 PopoverContent 的 `appearance="menu"` 共用菜单表面，面板里的链接沿用 `popoverActionClassName`。 DropdownMenuContent 与菜单样式的 PopoverContent 通过 `size` 选择 `xs`、`sm`、`default`、`lg`、`xl` 五档，字号、图标、行高和间距共同变化。子菜单默认继承父菜单的级别，宽度继续由内容和使用方的 `className` 决定。

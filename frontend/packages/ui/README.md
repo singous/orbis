@@ -1,6 +1,6 @@
 # @orbis/ui
 
-Orbis 的私有 source-only UI 包。应用直接使用组件子路径，Vite 编译源码；没有根入口、独立构建、发布或版本发布流程。18 个通用组件采用 shadcn `base-nova` 的默认类与原生组合 API，另有 ColorPicker、Toolbar、Portal 和图标集成。业务状态和请求恢复由消费者拥有，Orbis 品牌组件尚未在此基础层实现。
+Orbis 的私有 source-only UI 包。应用直接使用组件子路径，Vite 编译源码；没有根入口、独立构建、发布或版本发布流程。18 个通用组件采用 shadcn `base-nova` 的默认类与原生组合 API，另有 ColorPicker、Toolbar、Portal 和图标集成。Orbis 品牌组件在该基础上组合。业务状态和请求恢复由消费者拥有。
 
 ```tsx
 import { Button } from "@orbis/ui/button";
@@ -14,7 +14,7 @@ import { Spinner } from "@orbis/ui/spinner";
 </Button>
 ```
 
-当前入口：`button`、`input`、`textarea`、`dialog`、`sheet`、`popover`、`portal`、`dropdown-menu`、`tooltip`、`select`、`radio-group`、`tabs`、`checkbox`、`toggle`、`toolbar`、`toast`、`color-picker`、`avatar`、`badge`、`spinner`、`skeleton`、`icons`、`cn` 和 `styles.css`。Button 的 `render`、复合 Select/Dialog/Avatar、原生事件及上游类型直接可用。旧 shared Button/ActionButton/IconButton/TextInput/SelectField/Tag/Dialog/Tooltip 适配入口由架构检查禁止保留与导入。
+当前入口：`button`、`input`、`textarea`、`dialog`、`sheet`、`popover`、`portal`、`dropdown-menu`、`tooltip`、`select`、`radio-group`、`tabs`、`checkbox`、`toggle`、`toolbar`、`toast`、`color-picker`、`avatar`、`badge`、`spinner`、`skeleton`、`icons`、`cn` 和 `styles.css`。品牌组合另有 `button-group`、`pagination`、`alert-dialog`、`input-group`、`field`、`empty` 和 `combobox`。Button 的 `render`、复合 Select/Dialog/Avatar、原生事件及上游类型直接可用。旧 shared Button/ActionButton/IconButton/TextInput/SelectField/Tag/Dialog/Tooltip 适配入口由架构检查禁止保留与导入。
 
 样式采用 neutral 的标准 `background`、`foreground`、`primary`、`border`、`ring` 等语义和 Geist 字体。浅色 destructive/ring 的两处对比度修正、短视口弹窗和系统可访问性规则有独立声明；这些是基础集成约束。应用主题文件只拥有状态及正文/画布/网格等领域角色，不能重定义基础标准 token。独立阅读器主题通过显式 OverlayScope 进入原生浮层；Portal 与 Toolbar 保留外部宿主和键盘注册的真实集成能力。应用开发路由 `/__ui` 验证组件与主题组合。
 

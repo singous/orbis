@@ -1,5 +1,4 @@
-import { cn } from "@orbis/ui/cn";
-import { editorMenuItemClassName, editorMoreMenuItemClassName, editorToolbarClassName, editorToolbarGroupClassName, editorInsertionMenuClassName, editorMoreMenuClassName, editorToolbarControlClassName } from "./editor-control-styles";
+import { editorMenuItemClassName, editorMoreMenuItemClassName, editorInsertionMenuClassName, editorMoreMenuClassName } from "./editor-control-styles";
 import { isEmbeddedInput } from "./blocks/block-selection";
 import { releaseFeatures } from "../../../shared/release-features";
 import { blockBoardHistory } from "./blocks/board-removal";
@@ -7,9 +6,7 @@ import { showToast } from "../../../shared/ui/Toast";
 import { reportError, reportRequestError } from "../../../shared/api/request-feedback";
 import { registerRetiredBlockCleanup } from "./tiptap-retired";
 import { Button } from "@orbis/ui/button";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@orbis/ui/select";
-import { Toolbar, ToolbarButton, ToolbarGroup } from "@orbis/ui/toolbar";
-import { Toggle } from "@orbis/ui/toggle";
+import { DocumentFormatToolbar } from "./DocumentFormatToolbar";
 import { Portal } from "@orbis/ui/portal";
 import { useEditorToolbarHost } from "./EditorToolbarHost";
 import { BlockControls, requestBlockMenu } from "./blocks/BlockControls";
@@ -21,7 +18,7 @@ import Collaboration from "@tiptap/extension-collaboration";
 import type * as Y from "yjs";
 import { yUndoPluginKey } from "y-prosemirror";
 import { Plugin } from "@tiptap/pm/state";
-import { Bold, Code, Heading1, Heading2, Heading3, Image, Italic, Link2, List, ListChecks, ListOrdered, Minus, MoreHorizontal, Paperclip, Plus, Quote, Redo2, Strikethrough, Table2, Underline, Undo2 } from "../../../shared/ui/icons";
+import { Code, Heading1, Heading2, Heading3, Image, List, ListChecks, ListOrdered, Minus, Plus, Quote, Table2 } from "../../../shared/ui/icons";
 import { useEffect, useLayoutEffect, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 
 import { safeContentUrl } from "../../content/ContentRenderer";
@@ -46,13 +43,6 @@ import "../../../styles/tiptap-editor.css";
 
 type EditorChange = { blocks: NoteBlocksV2 };
 type Command = { label: string; keywords: string; icon: ReactNode; run: (editor: Editor) => void };
-
-const TEXT_MARK_TOOLS = [
-  { mark: "bold", label: "粗体", Icon: Bold },
-  { mark: "italic", label: "斜体", Icon: Italic },
-  { mark: "underline", label: "下划线", Icon: Underline },
-  { mark: "strike", label: "删除线", Icon: Strikethrough },
-] as const;
 
 function insertBlock(editor: Editor, value: OrbisBlock) {
   const node = toTiptapDocumentForSchema({ schema_version: 2, editor: "blocknote", blocks: [value] }, editor.schema).content?.[0];
@@ -108,10 +98,6 @@ const COMMANDS: Command[] = [
   ...(releaseFeatures.boardCreation ? [{ label: "画板", keywords: "drawing whiteboard canvas 画板", icon: <Plus size={16} />, run: (editor: Editor) => insertBlock(editor, { id: newBlockId(), type: "board", props: { board_id:null,page_id:null,mode:"live",revision:null,frame_id:null }, content: [], children: [] }) }] : []),
   ...INSERTABLE_DOCUMENT_BLOCKS.filter(kind => kind !== "group").map((kind: DocumentBlockKind) => ({ label: DOCUMENT_BLOCKS[kind].label, keywords: `${kind} document`, icon: <Plus size={16} />, run: (editor: Editor) => insertBlock(editor, createDocumentBlock(kind)) })),
 ];
-
-function Tool({ title, active, onClick, children }: { title: string; active?: boolean; onClick: () => void; children: ReactNode }) {
-  return <ToolbarButton focusableWhenDisabled={false} className={cn(["重做", "链接", "行内代码", "表格", "上传媒体或附件"].includes(title) && "editor-secondary-tool [@media(max-width:700px)]:hidden")} title={title} aria-label={title} aria-pressed={active} onMouseDown={(event) => event.preventDefault()} onClick={onClick} render={<Button variant="ghost" />}>{children}</ToolbarButton>;
-}
 
 function inlineLink(editor: Editor) {
   const previous = editor.getAttributes("link").href as string | undefined;
@@ -481,42 +467,29 @@ export function TiptapEditor({ blocks, onChange, onError, readOnly = false, note
     editor.view.dispatch(tr); editor.view.focus();
   }
 
-  const paragraphItems = [{value:"paragraph",label:"正文"},{value:"heading:1",label:"标题 1"},{value:"heading:2",label:"标题 2"},{value:"heading:3",label:"标题 3"},{value:"bulletListItem",label:"无序列表"},{value:"numberedListItem",label:"有序列表"},{value:"checkListItem",label:"任务清单"},{value:"quote",label:"引用"},{value:"codeBlock",label:"代码块"}];
-  const formatToolbar = !readOnly && editor ? <Toolbar className={editorToolbarClassName} aria-label="文档格式">
-      <ToolbarGroup className={editorToolbarGroupClassName} aria-label="编辑历史">
-        <Tool title="撤销" onClick={() => { if (!blockBoardHistory(editor)) editor.chain().focus().undo().run(); }}><Undo2 size={16} /><span className="hidden min-[1360px]:in-[.document-format-host]:inline">撤销</span></Tool>
-        <Tool title="重做" onClick={() => { if (!blockBoardHistory(editor)) editor.chain().focus().redo().run(); }}><Redo2 size={16} /><span className="hidden min-[1360px]:in-[.document-format-host]:inline">重做</span></Tool>
-      </ToolbarGroup>
-      <Select
-        value={active?.h1 ? "heading:1" : active?.h2 ? "heading:2" : active?.h3 ? "heading:3" : active?.bulletList ? "bulletListItem" : active?.orderedList ? "numberedListItem" : active?.taskList ? "checkListItem" : active?.quote ? "quote" : active?.codeBlock ? "codeBlock" : "paragraph"}
-        onValueChange={value => { if (value !== null) setParagraphType(value); }}
-        items={paragraphItems}
-      >
-        <ToolbarButton focusableWhenDisabled={false} render={<SelectTrigger aria-label="段落类型" size="sm" className={cn("editor-block-type w-[104px] flex-none text-sm leading-5 in-[.document-format-host]:h-8 in-[.document-format-host]:border-transparent in-[.document-format-host]:bg-muted [@media(max-width:700px)]:w-[85px]", editorToolbarControlClassName)}><SelectValue /></SelectTrigger>} />
-        <SelectContent>
-          {paragraphItems.map(item => (
-            <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <ToolbarGroup className={cn(editorToolbarGroupClassName, "editor-text-style-tools")} aria-label="文字样式">
-        {TEXT_MARK_TOOLS.map(({ mark, label, Icon }) => <ToolbarButton key={mark} focusableWhenDisabled={false} render={<Toggle title={label} aria-label={label}
-          pressed={Boolean(active?.[mark])} onPressedChange={() => toggleMark(mark)}
-          className={cn(editorToolbarControlClassName, mark !== "bold" && "editor-secondary-tool [@media(max-width:700px)]:hidden")}
-          onMouseDown={event => event.preventDefault()}><Icon size={16} /></Toggle>} />)}
-      </ToolbarGroup>
-      <ToolbarGroup className={cn(editorToolbarGroupClassName, "[@media(max-width:700px)]:hidden")} aria-label="行内格式">
-        <Tool title="链接" active={active?.link} onClick={() => inlineLink(editor)}><Link2 size={16} /></Tool>
-        <Tool title="行内代码" active={active?.code} onClick={() => toggleMark("code")}><Code size={16} /></Tool>
-      </ToolbarGroup>
-      <ToolbarGroup className={cn(editorToolbarGroupClassName, "[@media(max-width:700px)]:hidden")} aria-label="表格与附件">
-        <Tool title="表格" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}><Table2 size={16} /></Tool>
-        <Tool title="上传媒体或附件" onClick={() => inputRef.current?.click()}><Image size={16} /><Paperclip size={13} /></Tool>
-      </ToolbarGroup>
-      <ToolbarButton focusableWhenDisabled={false} render={<Button ref={moreButtonRef} className={cn(editorToolbarControlClassName, "editor-more-tools hidden [@media(max-width:700px)]:inline-flex")} aria-label="更多格式" aria-expanded={moreOpen} onClick={() => { setMenuOpen(false); setSlash(null); setMoreOpen(value => !value); }} variant="ghost" size="icon"><MoreHorizontal size={17}/></Button>} />
-      <ToolbarButton focusableWhenDisabled={false} render={<Button ref={insertButtonRef} type="button" className={cn(editorToolbarControlClassName, "orbis-tiptap-insert ml-auto in-[.document-format-host]:ml-0 in-[.document-format-host]:bg-muted [@media(max-width:700px)]:ml-0.5")} aria-label="插入内容" aria-expanded={menuOpen} onClick={() => { setMoreOpen(false); setActiveCommand(0); setMenuOpen((value) => !value); }} variant="ghost"><Plus size={15} />插入</Button>} />
-      <input ref={inputRef} type="file" aria-label="选择上传文件" hidden onChange={(event) => void upload(event)} />
-    </Toolbar> : null;
+  const formatToolbar = !readOnly && editor ? <>
+    <DocumentFormatToolbar
+      active={active ?? undefined}
+      paragraph={active?.h1 ? "heading:1" : active?.h2 ? "heading:2" : active?.h3 ? "heading:3" : active?.bulletList ? "bulletListItem" : active?.orderedList ? "numberedListItem" : active?.taskList ? "checkListItem" : active?.quote ? "quote" : active?.codeBlock ? "codeBlock" : "paragraph"}
+      moreOpen={moreOpen}
+      menuOpen={menuOpen}
+      moreButtonRef={moreButtonRef}
+      insertButtonRef={insertButtonRef}
+      actions={{
+        onUndo: () => { if (!blockBoardHistory(editor)) editor.chain().focus().undo().run(); },
+        onRedo: () => { if (!blockBoardHistory(editor)) editor.chain().focus().redo().run(); },
+        onParagraph: setParagraphType,
+        onMark: toggleMark,
+        onLink: () => inlineLink(editor),
+        onCode: () => toggleMark("code"),
+        onTable: () => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
+        onUpload: () => inputRef.current?.click(),
+        onMore: () => { setMenuOpen(false); setSlash(null); setMoreOpen(value => !value); },
+        onInsert: () => { setMoreOpen(false); setActiveCommand(0); setMenuOpen(value => !value); },
+      }}
+    />
+    <input ref={inputRef} type="file" aria-label="选择上传文件" hidden onChange={event => void upload(event)} />
+  </> : null;
 
   const visible = slash ? COMMANDS.filter((item) => `${item.label} ${item.keywords}`.toLocaleLowerCase().includes(slash.query)) : COMMANDS;
   return <EditorReadOnlyContext.Provider value={readOnly}><FileContentContext.Provider value={files}><div className="orbis-tiptap document-prose relative min-w-0" data-testid="orbis-tiptap-editor" onKeyDownCapture={(event) => {

@@ -11,10 +11,10 @@ import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { newUUID } from "../../shared/ids";
 import { Button } from "@orbis/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@orbis/ui/dialog";
-import { EmptyState } from "../../shared/ui/EmptyState";
+import { Empty } from "@orbis/ui/empty";
 import { Plus, Table2 } from "../../shared/ui/icons";
 import { PageContainer } from "../../shared/ui/PageContainer";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@orbis/ui/select";
+import { Combobox } from "@orbis/ui/combobox";
 
 import { Input } from "@orbis/ui/input";
 import { DocumentShell } from "../documents/DocumentShell";
@@ -118,18 +118,15 @@ export function SheetsHome() {
       >
         <div className="sheet-data-theme text-sm text-foreground">
           <div className="mb-6 w-[220px]">
-            <Select
+            <Combobox
               value={collection}
               onValueChange={next => { if (next !== null) setCollection(next); }}
               items={notebookFilterItems}
-            >
-              <SelectTrigger aria-label="筛选笔记本" size="sm"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {notebookFilterItems.map(item => (
-                  <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              label="筛选笔记本"
+              size="sm"
+              search={{ mode: "local", placement: "popup", placeholder: "搜索笔记本…" }}
+              popupProps={{ className: "w-64" }}
+            />
           </div>
           {list.error ? (
             null
@@ -148,7 +145,7 @@ export function SheetsHome() {
               ))}
             </div>
           ) : !list.isLoading ? (
-            <EmptyState
+            <Empty
               icon={<Table2 size={24} />}
               title="还没有数据表"
               description="从一张空白表开始，或选择模板整理任务、资料与联系人。"
@@ -194,19 +191,11 @@ export function SheetsHome() {
                 disabled={busy || !!intent.current}
                 onChange={(e) => setTitle(e.target.value)}
               /></label>
-              <label className="grid gap-2 text-sm font-medium"><span>{"所属笔记本"}</span><Select
+              <label className="grid gap-2 text-sm font-medium"><span>{"所属笔记本"}</span><Combobox
                 value={target}
                 disabled={busy || !!intent.current}
                 onValueChange={next => { if (next !== null) setTarget(next); }}
-                items={notebookOptions}
-              >
-                <SelectTrigger aria-label={"所属笔记本"}><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {notebookOptions.map(item => (
-                    <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select></label>
+                items={notebookOptions} label="所属笔记本" search={{ mode: "local", placement: "popup", placeholder: "搜索笔记本…" }} /></label>
               {!notebookOptions.length && (
                 <p className="text-[12px] text-(--muted-foreground)">请先在文档中心创建笔记本。</p>
               )}

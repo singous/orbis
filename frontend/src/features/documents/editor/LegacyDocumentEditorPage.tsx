@@ -1,7 +1,6 @@
 import { editorLoadMoreClassName } from "./editor-control-styles";
 
-import { pageColumnClassName } from "../../../shared/ui/PageContainer";
-import { documentBreadcrumbClassName, documentHeaderActionsClassName, editorCanvasClassName, editorTitleClassName } from "./document-chrome";
+import { documentHeaderActionsClassName, editorCanvasClassName } from "./document-chrome";
 import { releaseFeatures } from "../../../shared/release-features";
 import { ConfirmAction } from "../../../shared/ui/ConfirmAction";
 import { markErrorHandled, reportError, reportRequestError } from "../../../shared/api/request-feedback";
@@ -14,9 +13,10 @@ import { LoadingState } from "../../../shared/ui/LoadingState";
 import { TableHostContext, replaceTableBlock, type TableHost,type PendingTableWriter } from "../../data-tables/context";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@orbis/ui/dropdown-menu";
 import { Button } from "@orbis/ui/button";
-import { Input } from "@orbis/ui/input";
+import { DocumentBreadcrumb, DocumentEditorHeading } from "./DocumentEditorHeading";
+import { DocumentFormatToolbar } from "./DocumentFormatToolbar";
 
-import { Archive, BookOpen, ChevronRight, MoreHorizontal, Download, MessageSquare, RefreshCw, RotateCcw } from "../../../shared/ui/icons";
+import { Archive, MoreHorizontal, Download, MessageSquare, RefreshCw, RotateCcw } from "../../../shared/ui/icons";
 import { Component, lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useStore } from "zustand";
@@ -43,7 +43,6 @@ import { createBlockChanges } from "./block-changes";
 import { createEditorDraftFingerprint, type EditorDraft } from "./editor-draft";
 import { EditorLayout, EditorOutlineStore } from "./EditorLayout";
 import { DocumentSaveStatus } from "./DocumentSaveStatus";
-import { formatNotebookUpdateTime } from "../notebook-update-time";
 import { loadDocumentEditor } from "./editor-module";
 import { DocumentShell } from "../DocumentShell";
 import { getNoteContentOutline, getNoteChildrenPage, getNoteBlock, isBoundedContentPage } from "../api";
@@ -758,19 +757,13 @@ export function LegacyDocumentEditorPage() {
     },
   }),[draftKey,noteId,workspace?.id,canEdit,tableWriters]);
 
-  if (noteQuery.isError || contentQuery.isError) {
+  if (noteQuery.isError && !noteQuery.data) {
     return <DocumentShell><div className="mx-auto max-w-3xl p-8"><Link to="/documents" className="mt-4 inline-flex text-sm font-semibold">返回文档中心</Link></div></DocumentShell>;
   }
 
-  const breadcrumb = (
-    <nav className={documentBreadcrumbClassName} aria-label="文档位置">
-      <Link to={noteQuery.data ? `/collections/${noteQuery.data.notebook_id}` : "/documents"} title={notebook?.title ?? "笔记本"}>
-        <BookOpen aria-hidden="true" size={15} /><span>{notebook?.title ?? "笔记本"}</span>
-      </Link>
-      <ChevronRight aria-hidden="true" size={13} />
-      <span aria-current="page" title={draft?.title || "未命名文档"}>{draft?.title || "未命名文档"}</span>
-    </nav>
-  );
+  const editorDraft = noteQuery.data && hydratedNoteRef.current === draftKey ? draft : null;
+  const title = editorDraft?.title ?? noteQuery.data?.title ?? "";
+  const breadcrumb = <DocumentBreadcrumb notebookId={noteQuery.data?.notebook_id} notebookTitle={notebook?.title} title={title || "未命名文档"} />;
   const toolbar = (
     <div className={documentHeaderActionsClassName}>{(retainedDraft) || (checkpoints.candidates.length) || (checkpoints.status.status === "failed" && autosaveState !== "saved") || (draft && saveState === "conflict") || (saveState === "error" && !editorError) ? <DraftActions>{retainedDraft ? <section><h3 className="mb-2 text-sm font-semibold">保留的草稿</h3><div className="mt-3 flex flex-wrap gap-2"><Button onClick={()=>{
         const url=URL.createObjectURL(new Blob([JSON.stringify(retainedDraft.record)],{type:"application/json"}));const link=document.createElement("a");link.href=url;link.download=`orbis-local-draft-${noteId}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),0);
@@ -779,12 +772,15 @@ export function LegacyDocumentEditorPage() {
 {checkpoints.status.status === "failed" && autosaveState !== "saved" ? <section><h3 className="mb-2 text-sm font-semibold">保存副本</h3><Button variant="ghost" onClick={() => void checkpoints.controller.flush().catch(() => {})}>重试保存到本机</Button></section> : null}
 {draft && saveState === "conflict" ? <section><h3 className="mb-2 text-sm font-semibold">当前修改</h3><div className="mt-3 flex flex-wrap gap-2"><Button variant="secondary"  onClick={() => void loadCompleteContent().then(() => navigator.clipboard?.writeText(v2ToMarkdown((coordinatorRef.current?.current ?? draft).blocks.blocks))).catch(() => {})}><Download aria-hidden="true" size={14} />复制本地 Markdown</Button><ConfirmAction title="载入服务端版本" description="当前未保存的正文和标题将被服务端版本替换。需要保留时，请先复制本地 Markdown。" confirmLabel="替换本地修改" disabled={restoring || archiving} onConfirm={reloadServer}><Button variant="secondary" ><RotateCcw aria-hidden="true" size={14} />载入服务端版本</Button></ConfirmAction></div></section> : null}
 {saveState === "error" && !editorError ? <section><h3 className="mb-2 text-sm font-semibold">保存修改</h3><div className="mt-3"><Button variant="secondary"  onClick={() => coordinatorRef.current?.retry()}><RefreshCw aria-hidden="true" size={14} />重试保存</Button></div></section> : null}</DraftActions> : null}
-      <DocumentSaveStatus state={canEdit ? saveState : "readonly"} label={canEdit ? checkpointCopy ?? undefined : undefined} />
+      <DocumentSaveStatus
+        state={editorDraft ? (canEdit ? saveState : "readonly") : contentQuery.isError ? "error" : "loading"}
+        label={editorDraft ? (canEdit ? checkpointCopy ?? undefined : undefined) : contentQuery.isError ? "读取失败" : undefined}
+      />
       {canEdit && noteQuery.data ? (releaseFeatures.documentSharing ? <ShareButton notebookId={noteQuery.data.notebook_id!} noteId={noteId} title={draft?.title || noteQuery.data.title} /> : null) : null}
       {releaseFeatures.documentCollaboration && <Button ref={collaborationTriggerRef} type="button" size="icon" aria-label="评论与历史" aria-haspopup="dialog" aria-expanded={collaborationOpen} disabled={!draft || archiving} onClick={() => { setCollaborationMounted(true); setCollaborationSession(value => value + 1); setCollaborationOpen(true); }} variant="secondary"><MessageSquare aria-hidden="true" size={16} /></Button>}
       {canEdit ? <DropdownMenu>
         <DropdownMenuTrigger disabled={!draft || editorBusy} render={<Button  type="button"  aria-label="更多文档操作" variant="secondary" size="icon"><MoreHorizontal aria-hidden="true" size={18} /></Button>} />
-        <DropdownMenuContent align="end" className="document-actions-popover" sideOffset={6} aria-label="文档操作">
+        <DropdownMenuContent size="sm" align="end" className="document-actions-popover" sideOffset={6} aria-label="文档操作">
           <DropdownMenuItem label="归档文档" disabled={!draft || editorBusy} onClick={() => { void handleArchive(); }}><Archive aria-hidden="true" size={16} /><span>归档文档</span></DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu> : null}
@@ -792,47 +788,48 @@ export function LegacyDocumentEditorPage() {
   );
 
   return (
-    <DocumentShell editorLayout breadcrumb={breadcrumb} toolbar={toolbar} notebookId={noteQuery.data?.notebook_id} activeNoteId={noteId}>
-      {!draft || !noteQuery.data || hydratedNoteRef.current !== draftKey ? <div className={pageColumnClassName}><LoadingState label="正在打开文档…" variant="editor" /></div> : (
-        <EditorLayout outlineStore={outlineStore} loadOutlineContent={loadCompleteContent}>
-          <article className={editorCanvasClassName}>
-            <h1 className="sr-only">{draft.title || "无标题"}</h1>
-            <p className="mb-1 text-xs text-muted-foreground">块文档</p>
-            <Input
-              aria-label="文档标题"
-              className={editorTitleClassName}
-              placeholder="无标题"
-              value={draft.title}
-              readOnly={!canEdit || editorBusy}
-              onChange={(event) => changeDraft({ ...(coordinatorRef.current?.current ?? draft), title: event.target.value })}
-            />
-            <div className="mb-7 mt-2 flex items-center gap-2 text-xs text-muted-foreground"><time dateTime={new Date(noteQuery.data.updated_at_ms).toISOString()}>{formatNotebookUpdateTime(noteQuery.data.updated_at_ms)} 更新</time><span aria-hidden="true">·</span><span>{canEdit ? "停手后自动保存" : "只读访问"}</span></div>
+    <DocumentShell editorLayout pendingFormat={canEdit && !contentQuery.isError ? <DocumentFormatToolbar /> : undefined} breadcrumb={breadcrumb} toolbar={toolbar} notebookId={noteQuery.data?.notebook_id} activeNoteId={noteId}>
+      <EditorLayout outlineStore={outlineStore} loadOutlineContent={editorDraft ? loadCompleteContent : undefined} pending={!editorDraft && !contentQuery.isError}>
+        <article className={editorCanvasClassName}>
+          <DocumentEditorHeading title={title} updatedAt={noteQuery.data?.updated_at_ms}
+            description={canEdit ? "停手后自动保存" : "只读访问"}
+            readOnly={!editorDraft || !canEdit || editorBusy}
+            onTitleChange={editorDraft ? next => changeDraft({ ...(coordinatorRef.current?.current ?? editorDraft), title: next }) : undefined}
+          />
+          {contentQuery.isError && !editorDraft ? (
+            <div role="alert" className="flex items-center gap-3 py-5 text-sm text-muted-foreground">
+              无法读取正文。<Button size="sm" variant="secondary" onClick={() => void contentQuery.refetch()}>重试</Button>
+            </div>
+          ) : !editorDraft ? (
+            <LoadingState label="正在打开文档…" variant="editor-body" bones="document-body" />
+          ) : (
+            <>
+              <DocumentCopyContext.Provider value={copyPort}><TableHostContext.Provider value={tableHost}><EditorErrorBoundary key={noteId}>
+                <Suspense fallback={<LoadingState label="正在准备编辑…" variant="editor-body" bones="document-body" delayMs={180} />}>
+                  <LiveDocumentEditor
+                    noteId={noteId}
+                    blocks={editorDraft.blocks}
+                    onContentReady={handle => { contentHandle.current = handle; setEditorReady(Boolean(handle)); }}
+                    ensureComplete={loadCompleteContent}
+                    hasMoreContent={hasMoreContent || hasPendingContent(loadStates)}
+                    loadStates={loadStates}
+                    onLoadBlock={loadNestedContent}
+                    ensureBlocks={loadSelectedSubtrees}
+                    readOnly={!canEdit || editorBusy}
+                    onError={(message) => { editorErrorRef.current = message; setEditorError(message); }}
+                    onChange={({ blocks }) => changeDraft({ ...(coordinatorRef.current?.current ?? editorDraft), blocks })}
+                  />
+                </Suspense>
+              </EditorErrorBoundary></TableHostContext.Provider></DocumentCopyContext.Provider>
+              {hasMoreContent ? <div ref={loadMoreTarget} className={editorLoadMoreClassName} aria-live="polite">
+                {loadingMore ? <LoadingState label="正在载入后续正文…" compact /> : null}
 
-            <DocumentCopyContext.Provider value={copyPort}><TableHostContext.Provider value={tableHost}><EditorErrorBoundary key={noteId}>
-              <Suspense fallback={<LoadingState label="正在准备编辑…" variant="editor-body" delayMs={180} />}>
-                <LiveDocumentEditor
-                  noteId={noteId}
-                  blocks={draft.blocks}
-                  onContentReady={handle => { contentHandle.current = handle; setEditorReady(Boolean(handle)); }}
-                  ensureComplete={loadCompleteContent}
-                  hasMoreContent={hasMoreContent || hasPendingContent(loadStates)}
-                  loadStates={loadStates}
-                  onLoadBlock={loadNestedContent}
-                  ensureBlocks={loadSelectedSubtrees}
-                  readOnly={!canEdit || editorBusy}
-                  onError={(message) => { editorErrorRef.current = message; setEditorError(message); }}
-                  onChange={({ blocks }) => changeDraft({ ...(coordinatorRef.current?.current ?? draft), blocks })}
-                />
-              </Suspense>
-            </EditorErrorBoundary></TableHostContext.Provider></DocumentCopyContext.Provider>
-            {hasMoreContent ? <div ref={loadMoreTarget} className={editorLoadMoreClassName} aria-live="polite">
-              {loadingMore ? <LoadingState label="正在载入后续正文…" compact /> : null}
-
-              {!loadingMore ? <Button variant="ghost" onClick={() => void loadMoreContent().catch(() => {})}>继续阅读</Button> : null}
-            </div> : null}
-          </article>
-        </EditorLayout>
-      )}
+                {!loadingMore ? <Button variant="ghost" onClick={() => void loadMoreContent().catch(() => {})}>继续阅读</Button> : null}
+              </div> : null}
+            </>
+          )}
+        </article>
+      </EditorLayout>
       {collaborationMounted ? <Suspense fallback={collaborationOpen ? <LoadingState label="正在加载评论与历史…" compact /> : null}>{releaseFeatures.documentCollaboration && <DocumentCollaborationPanel key={`${noteId}:${collaborationSession}`} open={collaborationOpen} noteId={noteId} currentUserId={currentUserId} canManage={canEdit} onClose={closeCollaboration} onRestore={restoreSavedRevision} onPrepareVersion={async () => { const coordinator = coordinatorRef.current; if (!coordinator || !canEdit || restoringRef.current || archivingRef.current) throw new Error("当前草稿尚未准备好。"); return (await flushCurrentDraft(coordinator)).version; }} />}</Suspense> : null}
     </DocumentShell>
   );
