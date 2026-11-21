@@ -60,7 +60,12 @@ it("retries the identical failed embedded write from its local draft tools", asy
   const user = userEvent.setup();
   api.change.mockRejectedValueOnce(new Error("保存回执待确认")).mockResolvedValueOnce({ records: [], deleted: [] });
   mount();
-  await user.click((await screen.findAllByRole("button", { name: "添加记录" }))[0]);
+  const add = await waitFor(() => {
+    const button = screen.getAllByRole("button", { name: "添加记录" })[0];
+    expect(button).toBeEnabled();
+    return button;
+  });
+  await user.click(add);
   await user.click(await screen.findByRole("button", { name: "本机修改" }));
   const dialog = screen.getByRole("dialog", { name: "本机修改" });
   expect(within(dialog).getByRole("button", { name: "导出本机修改" })).toBeEnabled();

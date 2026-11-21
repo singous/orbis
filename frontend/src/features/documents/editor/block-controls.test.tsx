@@ -250,6 +250,7 @@ it('navigates from the outline to the heading and repeats navigation without cha
  Object.defineProperty(node,'scrollIntoView',{configurable:true,value:scroll});
  const editor=(container.querySelector('.ProseMirror') as HTMLElement & {editor:import('@tiptap/core').Editor}).editor;
  const before=editor.state.doc;
+ fireEvent.click(screen.getByRole('button',{name:'文档大纲'}));
  const link=screen.getByRole('button',{name:'First'});
  fireEvent.click(link);
  await waitFor(()=>expect(scroll).toHaveBeenCalledTimes(1));
@@ -281,6 +282,7 @@ it('loads a heading payload even when its empty placeholder is already in the ed
  expect(node).toHaveAttribute('data-orbis-block-id','b0');
  expect(node).toHaveTextContent('');
  Object.defineProperty(node,'scrollIntoView',{configurable:true,value:scroll});
+ fireEvent.click(screen.getByRole('button',{name:'文档大纲'}));
  fireEvent.click(screen.getByRole('button',{name:'Loaded heading'}));
  await waitFor(()=>expect(scroll).toHaveBeenCalledTimes(1));
  expect(load).toHaveBeenCalledTimes(1);
@@ -303,6 +305,7 @@ it('loads an unread heading before navigating from the outline',async()=>{
  });
  const {container}=render(<EditorLayout outlineStore={store} loadOutlineContent={load}><TiptapEditor noteId="outline-document" blocks={blocks} onChange={()=>{}}/></EditorLayout>);
  editor=(container.querySelector('.ProseMirror') as HTMLElement & {editor:import('@tiptap/core').Editor}).editor;
+ fireEvent.click(screen.getByRole('button',{name:'文档大纲'}));
  fireEvent.click(screen.getByRole('button',{name:'Later'}));
  await waitFor(()=>expect(scroll).toHaveBeenCalledTimes(1));
  expect(load).toHaveBeenCalledTimes(1);
