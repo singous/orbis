@@ -1,6 +1,6 @@
 import { cn } from "@orbis/ui/cn";
 import { editorNodeSettingsClassName, editorNodeControlsClassName, editorNodeFieldClassName, editorPaneButtonClassName } from "./editor-control-styles";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@orbis/ui/select";
+import { Combobox } from "@orbis/ui/combobox";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Extension, Mark, Node, mergeAttributes } from "@tiptap/core";
@@ -148,18 +148,10 @@ function ComponentView({ node, editor, updateAttributes, getPos }: NodeViewProps
         const label = name === "title" ? definition.label + "标题" : PROP_LABELS[name] || name;
         if (rule.values) {
           const propertyItems = rule.values.map((value) => ({ value: String(value), label: VALUE_LABELS[String(value)] || String(value) }));
-          return <label key={name} className="grid gap-2 text-sm font-medium"><span>{label}</span><Select
+          return <label key={name} className="grid gap-2 text-sm font-medium"><span>{label}</span><Combobox
             value={String(props[name] ?? rule.default)}
             onValueChange={value => { if (value === null) return; updateProps({ [name]: typeof rule.default === "number" ? Number(value) : value }); }}
-            items={propertyItems}
-          >
-            <SelectTrigger aria-label={label} className={cn("min-w-[125px] flex-1")}><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {propertyItems.map(item => (
-                <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select></label>;
+            items={propertyItems} label={label} className={cn("min-w-[125px] flex-1")} /></label>;
         }
         return <label className={editorNodeFieldClassName} key={name}><span className="[font-size:var(--text-sm)] text-(--muted-foreground)">{label}</span><Input aria-label={label} maxLength={rule.maxLength} value={String(props[name] ?? rule.default)}
           placeholder={name === "href" ? "https://… 或内部文档链接" : "输入标题"}
@@ -295,10 +287,7 @@ function CodeView({ node, updateAttributes }: NodeViewProps) {
     : Object.entries({ ...CODE_LANGUAGES, [language]: codeLanguageLabel(language) }).map(([value, label]) => ({ value, label }));
   return <NodeViewWrapper as="div" data-orbis-block-id={node.attrs.orbisOwn ? undefined : node.attrs.orbisId} className="orbis-code">
     <div className="orbis-code-toolbar flex min-h-[38px] items-center justify-between gap-2 border-b border-(--reading-border) px-3.5 py-[7px]" contentEditable={false}>
-      <Select value={language} disabled={readOnly} onValueChange={value => { if (value !== null) updateAttributes({ language: value }); }} items={languageItems}>
-        <SelectTrigger aria-label="代码语言" size="sm" className="w-fit max-w-full border-transparent px-0 text-xs text-muted-foreground dark:bg-transparent"><SelectValue /></SelectTrigger>
-        <SelectContent>{languageItems.map(item => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}</SelectContent>
-      </Select>
+      <Combobox value={language} disabled={readOnly} onValueChange={value => { if (value !== null) updateAttributes({ language: value }); }} items={languageItems} label="代码语言" size="sm" className="w-fit max-w-full text-muted-foreground dark:bg-transparent" />
       <Button type="button" variant="ghost" size="icon-sm" aria-label="复制代码" title="复制代码" onClick={() => void copyCode(node.textContent)}><Copy aria-hidden="true" size={14} /></Button>
     </div>
     <pre><NodeViewContent as="code" style={{ whiteSpace: "pre" }} /></pre>

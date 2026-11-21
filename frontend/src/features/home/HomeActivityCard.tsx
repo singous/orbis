@@ -1,13 +1,11 @@
-import { cn } from "@orbis/ui/cn";
 import type { CSSProperties } from "react";
-import { Skeleton } from "@orbis/ui/skeleton";
-import { LoadingState, loadingLineClassName } from "../../shared/ui/LoadingState";
+import { LoadingState } from "../../shared/ui/LoadingState";
 import { HomeCard, HomeCardHeading } from "./HomeLayout";
 import type { buildActivityCalendar } from "./home-activity";
 
 const CALENDAR_DAY_CLASSES = "home-calendar-day block aspect-square min-w-0 rounded-sm bg-muted data-[level=1]:bg-[color-mix(in_oklab,var(--ob-icon-mint)_15%,var(--card))] data-[level=2]:bg-[color-mix(in_oklab,var(--ob-icon-mint)_30%,var(--card))] data-[level=3]:bg-[color-mix(in_oklab,var(--ob-icon-mint)_60%,var(--card))] data-[level=4]:bg-(--ob-icon-mint) data-future:border data-future:border-border data-future:bg-transparent";
 
-type HomeActivityProps = { state: "skeleton" } | {
+type HomeActivityProps = {
   state: "ready" | "pending" | "unavailable";
   activity: ReturnType<typeof buildActivityCalendar>;
   noteCount: number;
@@ -16,10 +14,6 @@ type HomeActivityProps = { state: "skeleton" } | {
 
 /** 启动占位和已加载首页共用足迹卡片，数据与查询仍由页面拥有。 */
 export function HomeActivityCard(props: HomeActivityProps) {
-  if (props.state === "skeleton") return <HomeCard className="workspace-loading-panel grid min-h-60 gap-6">
-    <Skeleton className={cn(loadingLineClassName, "loading-line--short w-[64%]")} />
-    {[0, 1, 2].map(row => <Skeleton className={loadingLineClassName} key={row} />)}
-  </HomeCard>;
   const { state, activity, noteCount, quickNoteCount } = props;
   const ready = state === "ready";
   return (

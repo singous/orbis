@@ -18,7 +18,7 @@ import { ApiError } from "../../shared/api/api-client";
 import { Button } from "@orbis/ui/button";
 
 import { Input } from "@orbis/ui/input";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@orbis/ui/select";
+import { Combobox } from "@orbis/ui/combobox";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { documentVersionLabel, type DocumentVersion, type SaveVersionInput } from "./version-api";
 import { useDocumentVersion, useDocumentVersionComparison, useDocumentVersions, useEditDocumentVersion, useRestoreDocumentVersion, useSaveDocumentVersion } from "./version-queries";
@@ -163,19 +163,11 @@ export function DocumentVersions({ noteId, canManage, onPrepare, onRestore, onBu
         {detail.data.dependencies.some(dep => dep.kind === "sheet_link") ? <p className={collaborationHintClassName}>此文档包含共享表格链接。预览显示来源当前可见的数据；恢复只恢复链接，表格数据由来源独立管理。</p> : null}
         {canManage && !saveUncertain && !restoreUncertain ? <VersionMetadata key={selectedId} noteId={noteId} version={detail.data.version} onBusyChange={value => { setMetadataBusy(value); onBusyChange(value); }} /> : null}
         <RevisionContent noteId={noteId} version={detail.data.version.source_revision} blocks={detail.data.blocks} />
-        {versions.some(version => version.id !== selectedId) ? <label className="grid gap-2 text-sm font-medium"><span>{"选择比较起点"}</span><Select
+        {versions.some(version => version.id !== selectedId) ? <label className="grid gap-2 text-sm font-medium"><span>{"选择比较起点"}</span><Combobox
           value={compareFrom}
           disabled={busy}
           onValueChange={value => { if (value !== null) setCompareFrom(value); }}
-          items={comparisonItems}
-        >
-          <SelectTrigger aria-label={"选择比较起点"}><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {comparisonItems.map(item => (
-              <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select></label> : null}
+          items={comparisonItems} label="选择比较起点" /></label> : null}
         {compareFrom ? <VersionComparison noteId={noteId} from={compareFrom} to={selectedId} /> : null}
         {canManage ? <div className={collaborationRestoreClassName}><p className={collaborationHintClassName}>恢复会先保存当前草稿，再生成新的编辑状态。恢复前的内容会保留在历史中。</p><Button type="button" variant="default" disabled={busy} onClick={restoreSelected}>{restore.isPending ? "正在恢复…" : "恢复此版本"}</Button></div> : null}
       </> : null}

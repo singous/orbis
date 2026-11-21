@@ -7,7 +7,8 @@ import { Plus, Trash2, Shapes, X, ArrowUp, ArrowDown } from "@orbis/ui/icons";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { Input } from "@orbis/ui/input";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@orbis/ui/select";
+import { Field as UIField, FieldLabel } from "@orbis/ui/field";
+import { Combobox } from "@orbis/ui/combobox";
 import { ColorField } from "../../shared/ui/ColorField";
 import { Button } from "@orbis/ui/button";
 import {
@@ -73,9 +74,9 @@ function Field({
     />;
   }
   return (
-    <label className={boardPanelStyles.field}>
-      <span>{label}</span>
-      <Input aria-label={label} type={type} value={draft} disabled={disabled} onFocus={() => {
+    <UIField className={boardPanelStyles.field} disabled={disabled}>
+      <FieldLabel className="text-inherit font-normal">{label}</FieldLabel>
+      <Input type={type} value={draft} onFocus={() => {
           focused.current = true;
           commit.current = onCommit;
         }} onChange={(e) => setDraft(e.target.value)} onBlur={() => {
@@ -85,7 +86,7 @@ function Field({
           if (!e.nativeEvent.isComposing && e.key === "Enter")
             e.currentTarget.blur();
         }} />
-    </label>
+    </UIField>
   );
 }
 export function BoardInspector({
@@ -250,33 +251,17 @@ export function BoardInspector({
               {e.shape_type === "connector" ? (
                 <fieldset disabled={readOnly}>
                   <legend>连接线</legend>
-                  <label className="board-field mb-3 grid gap-2 text-sm font-medium"><span>{"线型"}</span><Select
+                  <label className="board-field mb-3 grid gap-2 text-sm font-medium"><span>{"线型"}</span><Combobox
                     value={e.structure.route}
                     disabled={readOnly}
                     onValueChange={value => { if (value === null) return; patch({ structure: { ...e.structure, route: value as Element["structure"]["route"] } }); }}
-                    items={routeItems}
-                  >
-                    <SelectTrigger aria-label={"线型"} size="sm" className="w-full"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {routeItems.map(item => (
-                        <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select></label>
+                    items={routeItems} label="线型" size="sm" className="w-full" /></label>
                   {(["start_marker", "end_marker"] as const).map((field, i) => (
-                    <label key={field} className="grid gap-2 text-sm font-medium"><span>{i ? "终点" : "起点"}</span><Select
+                    <label key={field} className="grid gap-2 text-sm font-medium"><span>{i ? "终点" : "起点"}</span><Combobox
                       value={e.structure[field]}
                       disabled={readOnly}
                       onValueChange={value => { if (value === null) return; patch({ structure: { ...e.structure, [field]: value } }); }}
-                      items={markerItems}
-                    >
-                      <SelectTrigger aria-label={i ? "终点" : "起点"} size="sm" className="w-full"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {markerItems.map(item => (
-                          <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select></label>
+                      items={markerItems} label={i ? "终点" : "起点"} size="sm" className="w-full" /></label>
                   ))}
                 </fieldset>
               ) : null}
@@ -330,19 +315,15 @@ export function BoardInspector({
                           })
                         }
                       />
-                      <Select
+                      <Combobox
                         value={member.key}
                         disabled={readOnly}
                         onValueChange={value => { if (value === null) return; patch({ structure: { ...e.structure, members: e.structure.members.map(m => m.id === member.id ? { ...m, key: value as typeof member.key } : m) } }); }}
                         items={memberKindItems}
-                      >
-                        <SelectTrigger aria-label={"字段键 " + (index + 1)} size="sm" className="w-full"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {memberKindItems.map(item => (
-                            <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        label={"字段键 " + (index + 1)}
+                        size="sm"
+                        className="w-full"
+                      />
                       <Button
 
                         aria-label={"上移字段 " + member.name}
@@ -454,19 +435,11 @@ export function BoardInspector({
                     </Button>
                   </div>
                 ) : null}
-                <label className="board-field mb-3 grid gap-2 text-sm font-medium"><span>{"父容器"}</span><Select
+                <label className="board-field mb-3 grid gap-2 text-sm font-medium"><span>{"父容器"}</span><Combobox
                   value={e.structure.parent_id ?? ""}
                   disabled={readOnly}
                   onValueChange={value => { if (value === null) return; run(() => reparentElement(elements, e, value || null)); }}
-                  items={parentItems}
-                >
-                  <SelectTrigger aria-label={"父容器"} size="sm" className="w-full"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {parentItems.map(item => (
-                      <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select></label>
+                  items={parentItems} label="父容器" size="sm" className="w-full" /></label>
                 <Button
 
                   onClick={() =>
@@ -547,19 +520,11 @@ export function BoardInspector({
                 </div>
                 <div className={boardPanelStyles.check}><Checkbox id={`${checkboxId}-bold`} disabled={readOnly} checked={e.style.bold} onCheckedChange={value => style("bold", value)} /><label htmlFor={`${checkboxId}-bold`}>粗体</label></div>
                 <div className={boardPanelStyles.check}><Checkbox id={`${checkboxId}-dashed`} disabled={readOnly} checked={e.style.dashed} onCheckedChange={value => style("dashed", value)} /><label htmlFor={`${checkboxId}-dashed`}>虚线</label></div>
-                <label className="board-field mb-3 grid gap-2 text-sm font-medium"><span>{"文字对齐"}</span><Select
+                <label className="board-field mb-3 grid gap-2 text-sm font-medium"><span>{"文字对齐"}</span><Combobox
                   value={e.style.align}
                   disabled={readOnly}
                   onValueChange={value => { if (value === null) return; style("align", value); }}
-                  items={alignItems}
-                >
-                  <SelectTrigger aria-label={"文字对齐"} size="sm" className="w-full"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {alignItems.map(item => (
-                      <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select></label>
+                  items={alignItems} label="文字对齐" size="sm" className="w-full" /></label>
               </fieldset>
             </TabsContent>
           </>

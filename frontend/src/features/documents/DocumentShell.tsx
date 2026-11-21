@@ -17,6 +17,7 @@ type DocumentShellProps = {
   toolbar?: ReactNode;
   breadcrumb?: ReactNode;
   editorLayout?: boolean;
+  pendingFormat?: ReactNode;
   contextPanel?: ReactNode;
   contextOpen?: boolean;
   onOpenContext?: () => void;
@@ -25,7 +26,7 @@ type DocumentShellProps = {
   activeNoteId?: string;
 };
 
-export function DocumentShell({ children, loading = false, toolbar, breadcrumb, editorLayout = false, contextPanel, contextOpen, onOpenContext, notebookId, activeNoteId, createAction }: DocumentShellProps) {
+export function DocumentShell({ children, loading = false, toolbar, breadcrumb, editorLayout = false, pendingFormat, contextPanel, contextOpen, onOpenContext, notebookId, activeNoteId, createAction }: DocumentShellProps) {
   const workspaceId = useStore(authStore, (state) => state.workspace?.id);
   const [storedContextOpen, setStoredContextOpen] = useState(() => workspaceId ? readDocumentContextOpen(workspaceId) : true);
   const isContextOpen = contextOpen ?? storedContextOpen;
@@ -50,7 +51,7 @@ export function DocumentShell({ children, loading = false, toolbar, breadcrumb, 
       contextOpen={isContextOpen}
       onOpenContext={isContextOpen ? undefined : () => { setContextOpen(true); onOpenContext?.(); }}
     >
-      {editorLayout ? <EditorToolbarFrame>{children}</EditorToolbarFrame> : children}
+      {editorLayout ? <EditorToolbarFrame pendingFormat={pendingFormat}>{children}</EditorToolbarFrame> : children}
     </WorkspaceShell>
   );
 }

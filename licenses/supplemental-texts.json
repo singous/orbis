@@ -1536,6 +1536,18 @@
         }
       ],
       "evidence": "The maintainer explicitly identifies this as the complete 0.2.0 notice in LICENSE-NOTES.md at f42b1e7b2a403d2050dda1141211b4e198e50e70; copyright line remains exactly \"Copyright komagata\" without adding a year."
+    },
+    "boneyard-js@1.10.0": {
+      "license": "MIT",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/d7d2e16cf3aa23d4675415e0f7cb500e06503985ba13b4e472d729768d2eab3c.txt",
+          "sha256": "d7d2e16cf3aa23d4675415e0f7cb500e06503985ba13b4e472d729768d2eab3c",
+          "sourceURL": "https://raw.githubusercontent.com/0xGF/boneyard/9e1980889ae1fc26241882b73aa14b474c982bbf/LICENSE",
+          "sourceRevision": "9e1980889ae1fc26241882b73aa14b474c982bbf"
+        }
+      ],
+      "evidence": "The npm tarball omits LICENSE. The upstream v1.10.0 tag names the corresponding release and includes the MIT license."
     }
   }
 }

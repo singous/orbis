@@ -17,7 +17,7 @@ import {
 } from "../../shared/auth/use-auth-request";
 import { Button } from "@orbis/ui/button";
 
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@orbis/ui/select";
+import { Combobox } from "@orbis/ui/combobox";
 import { Input } from "@orbis/ui/input";
 import { parseFileReference, uploadManagedFile } from "../files/managed-files";
 import { KINDS, cellText, type Field, type Value } from "./model";
@@ -302,18 +302,13 @@ export function ValueEditor({
         ];
   if (field.kind === "select")
     return (
-      <Select
+      <Combobox
         value={String(value ?? "")}
         onValueChange={v => { if (v === null) return; onChange(v || null); }}
         items={checkboxItems}
-      >
-        <SelectTrigger aria-label={field.name} size="sm"><SelectValue /></SelectTrigger>
-        <SelectContent>
-          {checkboxItems.map(item => (
-            <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        label={field.name}
+        size="sm"
+      />
     );
   if (field.kind === "multi_select" || field.kind === "person")
     return (

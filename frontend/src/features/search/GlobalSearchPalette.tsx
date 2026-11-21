@@ -1,3 +1,4 @@
+import { Pagination } from "@orbis/ui/pagination";
 import { reportError } from "../../shared/api/request-feedback";
 import { Dialog, DialogClose } from "@orbis/ui/dialog";
 import { CommandPopup, CommandInput, CommandList, CommandResult, CommandMessage, CommandFooter } from "../../shared/ui/command";
@@ -8,7 +9,7 @@ import { authStore, getAuthSessionKey } from "../../shared/auth/auth-store";
 import { preparePendingNavigation } from "../../shared/navigation/pending-navigation";
 import { Button } from "@orbis/ui/button";
 import { LoadingState } from "../../shared/ui/LoadingState";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@orbis/ui/select";
+import { Combobox } from "@orbis/ui/combobox";
 import { X } from "../../shared/ui/icons";
 import type { SearchFilters, SearchResult } from "./api";
 import { resultHref, SEARCH_MAX_LENGTH, SEARCH_STATUS_OPTIONS, SEARCH_TYPE_LABELS } from "./search-state";
@@ -138,7 +139,7 @@ export function GlobalSearchPalette({ initialFilters, onClose, isOpen = true, on
         <kbd className="flex-none rounded-[5px] bg-accent px-[5px] py-0.5 font-sans text-xs text-foreground whitespace-nowrap max-[560px]:hidden">{shortcut}</kbd>
       </CommandInput>
       <div className="flex flex-none flex-wrap items-center gap-2 px-4 pt-3 max-[560px]:gap-1">
-        <Select<SearchFilters["status"]> items={SEARCH_STATUS_OPTIONS} value={status} onValueChange={value => { if (value !== null) { cancelOpening(); setStatus(value); setPage(1); } }}><SelectTrigger aria-label="内容状态" size="sm"><SelectValue /></SelectTrigger><SelectContent role="region" aria-label="内容状态选项">{SEARCH_STATUS_OPTIONS.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select>
+        <Combobox<SearchFilters["status"]> items={SEARCH_STATUS_OPTIONS} value={status} onValueChange={value => { if (value !== null) { cancelOpening(); setStatus(value); setPage(1); } }} label="内容状态" size="sm" popupProps={{ "role": "region", "aria-label": "内容状态选项" }} />
         {parsed.category ? <Button size="sm" aria-label={`清除类型筛选：${parsed.category.label}`} onClick={() => { changeInput(parsed.q); inputRef.current?.focus(); }} variant="ghost">{parsed.category.label}<X size={12} /></Button> : null}
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-3 pb-4">
@@ -160,11 +161,15 @@ export function GlobalSearchPalette({ initialFilters, onClose, isOpen = true, on
             return <CommandResult key={key} selected={activeKey === key} icon={Icon} title={result.title || "未命名内容"} path={result.location} excerpt={result.snippet ? <>{result.match === "comment" ? "评论：" : ""}{result.snippet}</> : undefined} metadata={<>{SEARCH_TYPE_LABELS[result.type]}{result.status === "archived" ? " · 归档" : ""}</>} element={<Link id={`${listId}-${key}`} aria-disabled={opening || undefined} data-search-result tabIndex={-1} onMouseMove={() => setSelected(key)} to={resultHref(result)} onClick={event => { if (plainClick(event)) { event.preventDefault(); void openResult(result); } }} />} />;
           })}
         </CommandList>
-        {!waiting && !results.isError && filters.q && results.data && results.data.pagination.total_pages > 1 ? <div className="mt-4 flex items-center justify-center gap-3 text-xs text-muted-foreground" aria-label="搜索结果分页">
-          <Button size="sm" variant="outline" disabled={!results.data.pagination.has_previous || opening} onClick={() => setPage(current => current - 1)}>上一页</Button>
-          <span>第 {results.data.pagination.page} / {results.data.pagination.total_pages} 页</span>
-          <Button size="sm" variant="outline" disabled={!results.data.pagination.has_next || opening} onClick={() => setPage(current => current + 1)}>下一页</Button>
-        </div> : null}
+        {!waiting && !results.isError && filters.q && results.data && results.data.pagination.total_pages > 1 ? <Pagination
+          label="搜索结果分页"
+          size="xs"
+          className="mt-4 justify-center"
+          hasPrevious={results.data.pagination.has_previous && !opening}
+          hasNext={results.data.pagination.has_next && !opening}
+          onPrevious={() => setPage(current => current - 1)}
+          onNext={() => setPage(current => current + 1)}
+        >第 {results.data.pagination.page} / {results.data.pagination.total_pages} 页</Pagination> : null}
       </div>
       <CommandFooter>
         <span className="max-[560px]:hidden">↑ ↓ 选择</span>

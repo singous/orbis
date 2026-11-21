@@ -150,7 +150,7 @@ export function Popover({
       if (
         e.key === "Escape" &&
         !e.isComposing && !e.defaultPrevented &&
-        !(e.target instanceof Element && (e.target.closest(NESTED_OVERLAY) || e.target.closest('[role="combobox"][aria-expanded="true"]')))
+        !(e.target instanceof Element && (e.target.closest(NESTED_OVERLAY) || e.target.closest('[role="combobox"][aria-expanded="true"]:not([data-sheet-inline-combobox])')))
       ) {
         e.preventDefault();
         e.stopPropagation();

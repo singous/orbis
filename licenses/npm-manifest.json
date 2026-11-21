@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "lockfileSha256": "cd02823f4027e6711fec7a4e501d925d486ad147a08c165a0b1fee650f93eca0",
+  "lockfileSha256": "e112506d476a9843c13cb78cfd989f84207b9ffce1bcb0843c1973772ed8fea7",
   "classification": "Declared dependency closure: runtime dependencies except explicit Vite/Tailwind/shadcn build roots; fonts, icons, tw-animate-css and shadcn CSS are assets. Peers and optional binaries retain every applicable owner. This is a conservative declared-dependency inventory, not a measurement of tree-shaken emitted code. Build/test sources are not part of the frontend static distribution.",
   "packages": [
     {
@@ -757,6 +757,27 @@
           "file": "licenses/texts/npm/07fc1b39d69d14bc7d40482a628f47226258eb01265db68ae684944b916beb2a.txt",
           "sha256": "07fc1b39d69d14bc7d40482a628f47226258eb01265db68ae684944b916beb2a",
           "source": "node_modules/@base-ui/utils/LICENSE"
+        }
+      ]
+    },
+    {
+      "name": "@chenglou/pretext",
+      "version": "0.0.5",
+      "location": "node_modules/@chenglou/pretext",
+      "license": "MIT",
+      "policy": "permissive",
+      "artifact": "https://registry.npmmirror.com/@chenglou/pretext/-/pretext-0.0.5.tgz",
+      "integrity": "sha512-A8GZN10REdFGsyuiUgLV8jjPDDFMg5GmgxGWV0I3igxBOnzj+jgz2VMmVD7g+SFyoctfeqHFxbNatKSzVRWtRg==",
+      "usage": [
+        "dev-only",
+        "runtime"
+      ],
+      "distribution": "browser-js",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/e9355cb16457e81acd97dac2e50f2f8bbf2a9a464025f9c46db3680cf9598846.txt",
+          "sha256": "e9355cb16457e81acd97dac2e50f2f8bbf2a9a464025f9c46db3680cf9598846",
+          "source": "node_modules/@chenglou/pretext/LICENSE"
         }
       ]
     },
@@ -6136,6 +6157,28 @@
           "file": "licenses/texts/npm/914d1872727809314c403a449c6bfed8aa7de72679ced2477bac51999dd65258.txt",
           "sha256": "914d1872727809314c403a449c6bfed8aa7de72679ced2477bac51999dd65258",
           "source": "node_modules/better-opn/LICENSE"
+        }
+      ]
+    },
+    {
+      "name": "boneyard-js",
+      "version": "1.10.0",
+      "location": "node_modules/boneyard-js",
+      "license": "MIT",
+      "policy": "permissive",
+      "artifact": "https://registry.npmmirror.com/boneyard-js/-/boneyard-js-1.10.0.tgz",
+      "integrity": "sha512-bHyZFdBHswa6Rt2aP0F1pNpPn4/lRcTMRWAt1d7tbFZLoPnwjztr6cmAVa/vaQwTOH9ETD3Lz4vW1iuvQDJNqg==",
+      "usage": [
+        "dev-only",
+        "runtime"
+      ],
+      "distribution": "browser-js",
+      "texts": [
+        {
+          "file": "licenses/texts/npm/d7d2e16cf3aa23d4675415e0f7cb500e06503985ba13b4e472d729768d2eab3c.txt",
+          "sha256": "d7d2e16cf3aa23d4675415e0f7cb500e06503985ba13b4e472d729768d2eab3c",
+          "sourceURL": "https://raw.githubusercontent.com/0xGF/boneyard/9e1980889ae1fc26241882b73aa14b474c982bbf/LICENSE",
+          "sourceRevision": "9e1980889ae1fc26241882b73aa14b474c982bbf"
         }
       ]
     },

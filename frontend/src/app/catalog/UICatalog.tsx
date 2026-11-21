@@ -62,7 +62,7 @@ export function UICatalog() {
     <section aria-label="加载布局" className="grid gap-6">
       <h2>加载布局</h2>
       {(["cards", "rows", "editor", "editor-body"] as const).map(variant => <div key={variant} data-loading-preview={variant}>
-        <LoadingState label={`正在加载 ${variant}…`} variant={variant} />
+        <LoadingState label={`正在加载 ${variant}…`} variant={variant} bones={variant === "cards" ? "notebook-shelf" : variant === "editor-body" ? "document-body" : undefined} />
       </div>)}
       <div data-loading-preview="compact"><LoadingState label="正在加载紧凑列表…" compact /></div>
     </section>

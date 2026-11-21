@@ -1,8 +1,9 @@
+import { Pagination } from "@orbis/ui/pagination";
 import { useSearchParams, Link } from "react-router-dom";
 import { Button } from "@orbis/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@orbis/ui/dropdown-menu";
-import { Input } from "@orbis/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@orbis/ui/select";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@orbis/ui/input-group";
+import { Combobox } from "@orbis/ui/combobox";
 import { ArrowDown, ArrowUpRight, BookOpen, Copy, MoreHorizontal, Search } from "@orbis/ui/icons";
 
 import type { Note } from "../../shared/api/schemas";
@@ -68,15 +69,22 @@ export function RecentDocumentsPage() {
         <div className="mx-auto w-full max-w-[1440px] px-[clamp(20px,3.25vw,44px)] pt-[37px] pb-10 max-[640px]:pt-6">
           <PageHeader title="最近编辑" description="数据表、画板与文档，按最后编辑时间排序" className="mb-7 border-0 pb-0 max-[641px]:pb-0" />
           <div className="mb-7 flex flex-wrap items-center gap-3">
-            <label className="relative block w-[280px] max-w-full">
-              <span className="sr-only">搜索文档标题</span>
-              <Search aria-hidden="true" size={15} className="pointer-events-none absolute start-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input type="search" className="h-[34px] bg-sidebar ps-8 text-sm md:text-xs" placeholder="搜索文档标题" value={title} onChange={event => filter("title", event.target.value)} />
-            </label>
-            <Select items={items} value={notebookId} onValueChange={value => filter("notebook", value ?? ALL_NOTEBOOKS)}>
-              <SelectTrigger aria-label="按笔记本筛选" className="h-[34px] max-w-full min-w-[130px] gap-2 rounded-md px-2.5 text-xs"><BookOpen aria-hidden="true" className="size-[15px] text-muted-foreground" /><SelectValue>{notebookId === ALL_NOTEBOOKS ? "全部笔记本" : notebooksById.get(notebookId)?.title ?? "所选笔记本"}</SelectValue></SelectTrigger>
-              <SelectContent align="start" alignItemWithTrigger={false}>{items.map(item => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}</SelectContent>
-            </Select>
+            <InputGroup className="w-[280px] max-w-full bg-sidebar">
+              <InputGroupAddon aria-hidden="true"><Search size={15} /></InputGroupAddon>
+              <InputGroupInput type="search" aria-label="搜索文档标题" className="h-8 md:text-xs" placeholder="搜索文档标题" value={title} onChange={event => filter("title", event.target.value)} />
+            </InputGroup>
+            <Combobox
+              items={items}
+              label="按笔记本筛选"
+              size="sm"
+              value={notebookId}
+              onValueChange={value => filter("notebook", value ?? ALL_NOTEBOOKS)}
+              search={{ mode: "local", placement: "popup", placeholder: "搜索笔记本…" }}
+              popupProps={{ className: "w-64" }}
+              triggerIcon={<BookOpen className="text-muted-foreground" />}
+              displayValue={notebookId === ALL_NOTEBOOKS ? "全部笔记本" : notebooksById.get(notebookId)?.title ?? "所选笔记本"}
+              className="w-fit max-w-full min-w-[130px]"
+            />
             <span className="ms-auto flex items-center gap-2 text-xs text-muted-foreground"><ArrowDown aria-hidden="true" size={15} />最近编辑优先</span>
           </div>
           {notesQuery.isLoading ? <LoadingState label="正在加载文档…" /> : null}
@@ -101,7 +109,7 @@ export function RecentDocumentsPage() {
                   <time className="text-xs text-muted-foreground max-[640px]:hidden" dateTime={new Date(note.updated_at_ms).toISOString()}>{formatNotebookUpdateTime(note.updated_at_ms, now)}</time>
                   <DropdownMenu>
                     <DropdownMenuTrigger render={<Button variant="ghost" size="icon-xs" aria-label={`文档操作：${note.title}`}><MoreHorizontal aria-hidden="true" /></Button>} />
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" size="sm">
                       <DropdownMenuItem render={<Link to={to} />}><ArrowUpRight aria-hidden="true" />打开文档</DropdownMenuItem>
                       <DropdownMenuItem render={<Link to={`/collections/${note.notebook_id}`} />}><BookOpen aria-hidden="true" />前往笔记本</DropdownMenuItem>
                       <DropdownMenuItem onClick={async () => {
@@ -119,11 +127,15 @@ export function RecentDocumentsPage() {
           {visible.length || effectivePage > 1 ? (
             <footer className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-border px-3 pt-3 text-xs text-muted-foreground">
               <span>本页显示 {visible.length} 项最近编辑</span>
-              {effectivePage > 1 || hasNext ? <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" disabled={effectivePage <= 1 || notesQuery.isFetching} onClick={() => goToPage(effectivePage - 1)}>上一页最近文档</Button>
-                <span>第 {effectivePage} 页</span>
-                <Button variant="ghost" size="sm" disabled={!hasNext || notesQuery.isFetching} onClick={() => goToPage(effectivePage + 1)}>下一页最近文档</Button>
-              </div> : null}
+              {effectivePage > 1 || hasNext ? <Pagination
+                label="最近文档分页"
+                previousLabel="上一页最近文档"
+                nextLabel="下一页最近文档"
+                hasPrevious={effectivePage > 1 && !notesQuery.isFetching}
+                hasNext={!!hasNext && !notesQuery.isFetching}
+                onPrevious={() => goToPage(effectivePage - 1)}
+                onNext={() => goToPage(effectivePage + 1)}
+              >第 {effectivePage} 页</Pagination> : null}
             </footer>
           ) : null}
         </div>

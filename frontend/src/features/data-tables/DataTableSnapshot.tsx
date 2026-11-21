@@ -1,3 +1,4 @@
+import { Pagination } from "@orbis/ui/pagination";
 import { tableSurfaceClassName, tableHeadingClassName, tableFooterClassName, tableEmptyClassName } from "./table-chrome";
 import { reportError } from "../../shared/api/request-feedback";
 
@@ -5,7 +6,6 @@ import { z } from "zod";
 import { paginationSchema } from "../../shared/api/schemas";
 import { tableRows,publicRecordSchema } from "./public-contract";
 import { useEffect, useState } from "react";
-import { Button } from "@orbis/ui/button";
 import { Table2 } from "../../shared/ui/icons";
 import { apiRequest } from "../../shared/api/api-client";
 import {
@@ -101,25 +101,15 @@ export function DataTableSnapshot({ data }: { data: TableSnapshot }) {
       </div>
       <footer className={tableFooterClassName}>
         <span>{total} 条记录 · {data.records_url?.includes("/public/shares/")?"分享内容":data.records_url?.includes("/workspaces/")?"公开预览":"发布快照"}</span>
-        <div>
-          <Button
-            size="sm"
-            disabled={offset === 0 || loading}
-            onClick={() => setOffset(Math.max(0, offset - TABLE_PAGE_SIZE))}
-          >
-            上一页
-          </Button>
-          <span>
-            {offset + (rows.length ? 1 : 0)}–{offset + rows.length}
-          </span>
-          <Button
-            size="sm"
-            disabled={offset + rows.length >= total || loading}
-            onClick={() => setOffset(offset + TABLE_PAGE_SIZE)}
-          >
-            下一页
-          </Button>
-        </div>
+        <Pagination
+          label="数据表快照分页"
+          hasPrevious={offset > 0 && !loading}
+          hasNext={offset + rows.length < total && !loading}
+          onPrevious={() => setOffset(Math.max(0, offset - TABLE_PAGE_SIZE))}
+          onNext={() => setOffset(offset + TABLE_PAGE_SIZE)}
+        >
+          {offset + (rows.length ? 1 : 0)}–{offset + rows.length}
+        </Pagination>
       </footer>
     </section>
   );

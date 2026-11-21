@@ -16,6 +16,10 @@ import { reportError } from "../../shared/api/request-feedback";
 
 type RecordPageParam = { cursor: string; offset: number };
 
+export function sheetBoardQueryKey(workspaceId: string | null | undefined, sheetId: string, viewId: string) {
+  return ["sheets", workspaceId, sheetId, "board", viewId] as const;
+}
+
 export function useSheet(id: string, viewId: string, search: string) {
   const auth = useAuthRequest(),
     client = useQueryClient();

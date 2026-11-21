@@ -3,6 +3,7 @@ import { sheetActionClassName, sheetStatusBarClassName, sheetMutedClassName } fr
 import { ConfirmAction } from "../../shared/ui/ConfirmAction";
 import { DraftActions } from "../../shared/ui/DraftActions";
 import { Button } from "@orbis/ui/button";
+import { LoadingState } from "../../shared/ui/LoadingState";
 
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ChevronDown, Expand, GripVertical, Plus } from "@orbis/ui/icons";
@@ -681,6 +682,7 @@ export function SheetGrid({
         ref={scroller}
         role="grid"
         aria-label="数据表"
+        aria-busy={loading || undefined}
         aria-rowcount={recordCount + 1 + (hasTailAction ? 1 : 0)}
         aria-colcount={columnCount}
         tabIndex={0}
@@ -807,6 +809,7 @@ export function SheetGrid({
             </div>
           )}
         </div>
+        {loading && !rows.length ? <div className="px-4"><LoadingState label="正在读取记录…" compact /></div> : null}
         <div
           className="sheet-grid-body"
           role={rows.length ? "rowgroup" : undefined}

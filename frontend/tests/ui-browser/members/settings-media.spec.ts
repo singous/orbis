@@ -59,6 +59,8 @@ async function installMembersFixture(page: Page) {
 async function expectRoleOptionFocus(option: Locator) {
   await expect(option).toBeFocused();
   await expect(option).toHaveAttribute("data-highlighted", "");
+  // 等弹层淡入结束后再检查焦点选项的实际对比度。
+  await option.evaluate(element => Promise.all(element.closest('[data-slot="select-content"]')!.getAnimations().map(animation => animation.finished)));
   const focus = await option.evaluate(element => ({ background: getComputedStyle(element).backgroundColor, color: getComputedStyle(element).color }));
   const [contrast] = await readContrasts(option, [null]);
   expect(contrast.ratio).toBeGreaterThanOrEqual(4.5);

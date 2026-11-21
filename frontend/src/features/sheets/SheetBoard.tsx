@@ -1,3 +1,4 @@
+import { Pagination } from "@orbis/ui/pagination";
 import "./grid.css";
 import { cn } from "@orbis/ui/cn";
 import { sheetActionClassName, sheetMutedClassName } from "./sheet-chrome";
@@ -18,7 +19,7 @@ import {
   type Value,
   type View,
 } from "./model";
-import type { SheetController } from "./use-sheet";
+import { sheetBoardQueryKey, type SheetController } from "./use-sheet";
 
 function BoardCell({
   controller: c,
@@ -141,11 +142,7 @@ function ColumnRecords({
   const currentCursor = previousScope.current === cursorScope ? cursor : "";
   const query = useQuery({
     queryKey: [
-      "sheets",
-      c.auth.workspaceId,
-      id,
-      "board",
-      view.id,
+      ...sheetBoardQueryKey(c.auth.workspaceId, id, view.id),
       c.meta.data!.version,
       c.meta.data!.order_revision ?? 0,
       group.id,
@@ -230,28 +227,20 @@ function ColumnRecords({
         )}
       </div>
       {(previous.length > 0 || query.data?.next_cursor) && (
-        <footer className="flex justify-between pt-2">
-          <Button className={sheetActionClassName}
-            size="sm"
-            disabled={!previous.length || query.isFetching}
-            onClick={() => {
-              setCursor(previous.at(-1)!);
-              setPrevious(previous.slice(0, -1));
-            }} variant="ghost"
-          >
-            上一页
-          </Button>
-          <Button className={sheetActionClassName}
-            size="sm"
-            disabled={!query.data?.next_cursor || query.isFetching}
-            onClick={() => {
-              setPrevious([...previous, cursor]);
-              setCursor(query.data!.next_cursor);
-            }} variant="ghost"
-          >
-            下一页
-          </Button>
-        </footer>
+        <Pagination
+          label="表格看板分组分页"
+          className="justify-between pt-2"
+          hasPrevious={previous.length > 0 && !query.isFetching}
+          hasNext={!!query.data?.next_cursor && !query.isFetching}
+          onPrevious={() => {
+            setCursor(previous.at(-1)!);
+            setPrevious(previous.slice(0, -1));
+          }}
+          onNext={() => {
+            setPrevious([...previous, cursor]);
+            setCursor(query.data!.next_cursor);
+          }}
+        />
       )}
     </>
   );

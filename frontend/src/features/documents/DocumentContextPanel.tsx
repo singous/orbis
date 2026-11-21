@@ -8,7 +8,7 @@ import {newUUID} from "../../shared/ids";
 import {ApiError} from "../../shared/api/api-client";
 import { LoadingState } from "../../shared/ui/LoadingState";
 import { Button } from "@orbis/ui/button";
-import { Input } from "@orbis/ui/input";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@orbis/ui/input-group";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@orbis/ui/dropdown-menu";
 
 import { DragDropProvider } from "@dnd-kit/react";
@@ -163,10 +163,10 @@ function DocumentRowActions({ note, reordering, onCreateChild, onRename, onArchi
   return <div className={documentTreeStyles.actions} data-document-row-action data-menu-open={open}>
     <DropdownMenu onOpenChange={setOpen}>
       <DropdownMenuTrigger disabled={reordering} render={<Button  type="button" className={documentTreeStyles.action} aria-label={`文档操作 ${note.title}`} title="更多操作" variant="ghost" size="icon"><MoreVertical aria-hidden="true" size={16} /></Button>} />
-      <DropdownMenuContent align="end" sideOffset={4} className="document-actions-popover" aria-label={`文档操作 ${note.title}`}>
+      <DropdownMenuContent size="sm" align="end" sideOffset={4} className="document-actions-popover" aria-label={`文档操作 ${note.title}`}>
         <DropdownMenuItem label="新建子文档" disabled={reordering} onClick={() => onCreateChild(note.id)}><Plus aria-hidden="true" size={16} /><span>新建子文档</span></DropdownMenuItem>
         <DropdownMenuItem label="重命名" disabled={reordering} onClick={() => onRename(note)}><Pencil aria-hidden="true" size={16} /><span>重命名</span></DropdownMenuItem>
-        <DropdownMenuItem label="归档" disabled={reordering} variant="destructive" onClick={() => onArchive(note)}><Archive aria-hidden="true" size={16} /><span>归档</span></DropdownMenuItem>
+        <DropdownMenuItem label="归档" disabled={reordering} level="danger" icon={<Archive size={16} />} onClick={() => onArchive(note)}>归档</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
     <Button type="button" className={`${documentTreeStyles.action} document-create-child pointer-coarse:hidden @max-[190px]/document-directory:hidden`} aria-label={`新建子文档 ${note.title}`} title="新建子文档" disabled={reordering} onClick={() => onCreateChild(note.id)} variant="ghost" size="icon"><Plus aria-hidden="true" size={16} /></Button>
@@ -362,11 +362,10 @@ export function DocumentContextPanel({ notebookId, activeNoteId, mobile = false,
 
   return (
     <section className={main ? notebookDirectoryStyles.list : documentTreeStyles.container} aria-label={main ? undefined : "文档目录"}>
-      {!main ? <label className="relative mx-1 mb-3 block">
-        <span className="sr-only">搜索笔记本</span>
-        <Search aria-hidden="true" size={14} className="pointer-events-none absolute start-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <Input type="search" placeholder="搜索笔记本" value={search} onChange={event => setSearch(event.target.value)} className="bg-card ps-8 md:text-xs" />
-      </label> : null}
+      {!main ? <InputGroup className="mx-1 mb-3 bg-card">
+        <InputGroupAddon aria-hidden="true"><Search size={14} /></InputGroupAddon>
+        <InputGroupInput type="search" aria-label="搜索笔记本" placeholder="搜索笔记本" value={search} onChange={event => setSearch(event.target.value)} className="md:text-xs" />
+      </InputGroup> : null}
       {main ? null : (
         <div className={documentTreeStyles.header}>
           <h2 className={documentTreeStyles.heading}><ListTree size={18} aria-hidden="true" /><span>目录</span></h2>

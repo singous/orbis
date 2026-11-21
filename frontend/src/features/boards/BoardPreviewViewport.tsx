@@ -56,7 +56,7 @@ export function BoardPreviewViewport({ children }: { children: ReactNode }) {
       <Tooltip><TooltipTrigger render={<Button  className={previewActionClassName} aria-label="缩小画板" disabled={view.zoom <= MIN_ZOOM} onClick={() => zoom(view.zoom / ZOOM_STEP)} variant="ghost" size="icon"><Minus size={15} /></Button>} /><TooltipContent>{"缩小画板"}</TooltipContent></Tooltip>
       <DropdownMenu>
         <DropdownMenuTrigger render={<Button  className={previewActionClassName} aria-label={`缩放比例 ${Math.round(view.zoom * 100)}%`} variant="ghost">{Math.round(view.zoom * 100)}%</Button>} />
-        <DropdownMenuContent align="end" aria-label="缩放比例">
+        <DropdownMenuContent size="sm" align="end" aria-label="缩放比例">
           <DropdownMenuRadioGroup value={view.zoom} onValueChange={zoom}>
             {PREVIEW_ZOOMS.map(value => <DropdownMenuRadioItem key={value} value={value} closeOnClick label={`${value * 100}%`}>{value * 100}%</DropdownMenuRadioItem>)}
           </DropdownMenuRadioGroup>

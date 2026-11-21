@@ -4,7 +4,6 @@ import { sheetActionClassName, sheetMutedClassName } from "./sheet-chrome";
 import { reportError } from "../../shared/api/request-feedback";
 import {
   CalendarDays,
-  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -13,6 +12,7 @@ import {
 import { useLayoutEffect, useRef, useState } from "react";
 import type { AuthRequestOptions } from "../../shared/auth/use-auth-request";
 import { Button } from "@orbis/ui/button";
+import { ComboboxRoot, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList } from "@orbis/ui/combobox";
 import { CellValue, PersonChip, ValueEditor } from "./Cell";
 import { KINDS, type Field, type Value } from "./model";
 import { Popover, anchorAt, type Anchor } from "./Popover";
@@ -41,6 +41,7 @@ export function CellEditor({
 }) {
   const host = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+  const keyboardOption = useRef<string | undefined>(undefined);
   const choosing = [
     "select",
     "multi_select",
@@ -186,63 +187,55 @@ export function CellEditor({
             />
           ) : (
             <>
-              <input
-                autoFocus
-                className="mb-1.5 w-full min-h-(--ob-control-height-lg) border-0 border-b border-current border-b-border bg-transparent p-2 text-foreground outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring pointer-coarse:min-h-(--ob-control-height-touch)"
-                aria-label={`搜索${field.name}选项`}
-                placeholder={onCreateOption ? "可搜索或新建选项" : "搜索选项"}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.nativeEvent.isComposing) return;
-                  if (e.key === "Enter" && options[0]) {
-                    e.preventDefault();
-                    choose(options[0].id);
-                  }
-                  if (e.key === "ArrowDown") {
-                    e.preventDefault();
-                    e.currentTarget.parentElement
-                      ?.querySelector<HTMLButtonElement>('[role="option"]')
-                      ?.focus();
+              <ComboboxRoot<string, boolean>
+                inline
+                open
+                multiple={multiple}
+                items={field.options.map(option => option.id)}
+                filteredItems={options.map(option => option.id)}
+                inputValue={search}
+                value={multiple ? (Array.isArray(value) ? value : []) : (typeof value === "string" ? value : null)}
+                onInputValueChange={(next, details) => {
+                  if (details.reason === "input-change") {
+                    keyboardOption.current = undefined;
+                    setSearch(next);
                   }
                 }}
-              />
-              <div
-                className="max-h-60 overflow-auto"
-                role="listbox"
-                aria-label={`${field.name}选项`}
-                aria-multiselectable={multiple || undefined}
-                onKeyDown={(e) => {
-                  if (!["ArrowDown", "ArrowUp"].includes(e.key)) return;
-                  e.preventDefault();
-                  const buttons = Array.from(
-                    e.currentTarget.querySelectorAll<HTMLButtonElement>(
-                      '[role="option"]',
-                    ),
-                  );
-                  const index = buttons.indexOf(
-                    document.activeElement as HTMLButtonElement,
-                  );
-                  buttons[
-                    (index +
-                      (e.key === "ArrowDown" ? 1 : -1) +
-                      buttons.length) %
-                      buttons.length
-                  ]?.focus();
+                onOpenChange={(open, details) => {
+                  if (!open) details.cancel();
+                }}
+                onItemHighlighted={(id, details) => {
+                  keyboardOption.current = details.reason === "keyboard" ? id : undefined;
+                }}
+                onValueChange={next => {
+                  if (Array.isArray(next)) onChange(next);
+                  else if (next != null) void commit(next);
                 }}
               >
-                {options.map((option) => {
-                  const selected = multiple
-                    ? Array.isArray(value) && value.includes(option.id)
-                    : value === option.id;
-                  return (
-                    <button
-                      className="flex min-h-(--ob-control-height-md) w-full items-center justify-between rounded-md px-[9px] py-1.5 hover:bg-(--accent) focus-visible:bg-(--accent) focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring pointer-coarse:min-h-(--ob-control-height-touch)"
-                      role="option"
-                      aria-selected={selected}
-                      key={option.id}
-                      onClick={() => choose(option.id)}
-                    >
+                <ComboboxInput
+                  autoFocus
+                  data-sheet-inline-combobox
+                  className="mb-1.5"
+                  aria-label={`搜索${field.name}选项`}
+                  placeholder={onCreateOption ? "可搜索或新建选项" : "搜索选项"}
+                  onKeyDown={event => {
+                    if (event.nativeEvent.isComposing) {
+                      event.preventBaseUIHandler();
+                      return;
+                    }
+                    // 表格支持用 Space 选择，或在未使用方向键时用 Enter 选择首个匹配项。
+                    const active = event.currentTarget.hasAttribute("aria-activedescendant") ? keyboardOption.current : undefined;
+                    const id = event.key === " " ? active : event.key === "Enter" && active === undefined ? options[0]?.id : undefined;
+                    if (id === undefined) return;
+                    event.preventDefault();
+                    event.preventBaseUIHandler();
+                    choose(id);
+                  }}
+                />
+                <ComboboxEmpty>没有匹配的选项</ComboboxEmpty>
+                <ComboboxList aria-label={`${field.name}选项`}>
+                  {options.map(option => (
+                    <ComboboxItem key={option.id} value={option.id}>
                       {field.kind === "person" ? (
                         <PersonChip id={option.id} label={option.label} />
                       ) : (
@@ -256,14 +249,10 @@ export function CellEditor({
                           {option.label}
                         </span>
                       )}
-                      {selected && <Check size={14} />}
-                    </button>
-                  );
-                })}
-                {!options.length && (
-                  <p className={sheetMutedClassName}>没有匹配的选项</p>
-                )}
-              </div>
+                    </ComboboxItem>
+                  ))}
+                </ComboboxList>
+              </ComboboxRoot>
               {onCreateOption &&
                 search.trim() &&
                 !field.options.some((o) => o.label === search.trim()) && (

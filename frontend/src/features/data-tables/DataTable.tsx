@@ -1,3 +1,4 @@
+import { Pagination } from "@orbis/ui/pagination";
 import { tableSurfaceClassName, tableHeadingClassName, tableFooterClassName, tableStartClassName, tableFormClassName, tableFormActionsClassName } from "./table-chrome";
 import { reportError } from "../../shared/api/request-feedback";
 import { DraftActions } from "../../shared/ui/DraftActions";
@@ -346,7 +347,7 @@ function DataTableEditor({
           ) : null}
           <DropdownMenu>
             <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label="更多表格操作" />}>•••</DropdownMenuTrigger>
-            <DropdownMenuContent align="end" aria-label="表格操作">
+            <DropdownMenuContent size="sm" align="end" aria-label="表格操作">
               {host.auth ? (
                 <>
                   <DropdownMenuItem onClick={() => exportFile("csv")}>
@@ -494,30 +495,15 @@ function DataTableEditor({
           <span>{table.page.total} 条记录</span>
         </div>
         {view.kind === "grid" || host.shareToken ? (
-          <div>
-            <Button
-              size="sm"
-              variant="ghost"
-              disabled={table.offset === 0 || table.loading}
-              onClick={() =>
-                table.setOffset(Math.max(0, table.offset - TABLE_PAGE_SIZE))
-              }
-            >
-              上一页
-            </Button>
-            <span>
-              {table.offset + (table.rows.length ? 1 : 0)}–
-              {table.offset + table.rows.length}
-            </span>
-            <Button
-              size="sm"
-              variant="ghost"
-              disabled={!table.page.has_more || table.loading}
-              onClick={() => table.setOffset(table.page!.next_offset)}
-            >
-              下一页
-            </Button>
-          </div>
+          <Pagination
+            label="数据表记录分页"
+            hasPrevious={table.offset > 0 && !table.loading}
+            hasNext={table.page.has_more && !table.loading}
+            onPrevious={() => table.setOffset(Math.max(0, table.offset - TABLE_PAGE_SIZE))}
+            onNext={() => table.setOffset(table.page!.next_offset)}
+          >
+            {table.offset + (table.rows.length ? 1 : 0)}–{table.offset + table.rows.length}
+          </Pagination>
         ) : null}
       </footer>
       {field !== undefined && !host.readOnly ? (

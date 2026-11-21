@@ -38,6 +38,20 @@ test("corresponding source pins require real immutable revisions, checksums and 
   assert.throws(() => parseSourcePins(valid.replace("elkjs-source.tar.gz", "../../source.tgz")));
 });
 
+test("Boneyard's capture tools stay outside the browser distribution", () => {
+  const usage = dependencyUsage({
+    "": { dependencies: { "boneyard-js": "1" } },
+    "node_modules/boneyard-js": { dependencies: { playwright: "1" }, peerDependencies: { vite: "1" } },
+    "node_modules/playwright": { dependencies: { "playwright-core": "1" } },
+    "node_modules/playwright-core": {},
+    "node_modules/vite": { dependencies: { lightningcss: "1" } },
+    "node_modules/lightningcss": {},
+  });
+  assert.deepEqual([...usage.get("node_modules/boneyard-js")], ["runtime"]);
+  assert.deepEqual([...usage.get("node_modules/playwright-core")], ["dev-only"]);
+  assert.deepEqual([...usage.get("node_modules/lightningcss")], ["build-only"]);
+});
+
 test("bundled dependency provenance points to the actual containing tarball", () => {
   const location = "node_modules/container/node_modules/embedded";
   const packages = { "node_modules/container": { version: "4.3.1", resolved: "https://example.com/container.tgz", integrity: "sha512-actual" }, [location]: { version: "0.10.2", inBundle: true } };

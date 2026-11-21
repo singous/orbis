@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Search, Shapes, Smile, LayoutTemplate, Layers, X } from "@orbis/ui/icons";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
-import { Input } from "@orbis/ui/input";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@orbis/ui/select";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@orbis/ui/input-group";
+import { Combobox } from "@orbis/ui/combobox";
 import { Button } from "@orbis/ui/button";
 import { BOARD_CATALOG, SHAPES, type Element } from "./model";
 import { shapePath } from "./geometry";
@@ -59,27 +59,23 @@ export function BoardLibrary(props: Props) {
   const categoryItems = [{ value: "", label: "全部类别" }, ...BOARD_CATALOG.categories.filter(c => tab !== "shapes" || c.id !== "mindmap").map(c => ({ value: c.id, label: c.name }))];
   const filters = (
     <>
-        <label className={boardPanelStyles.search}>
-          <Search size={15} className="pointer-events-none absolute left-2.5 text-(--muted-foreground)" />
-          <Input className="min-w-0 ps-8" aria-label="搜索画板素材" placeholder={
+        <InputGroup className={boardPanelStyles.search}>
+          <InputGroupAddon aria-hidden="true"><Search size={15} /></InputGroupAddon>
+          <InputGroupInput aria-label="搜索画板素材" placeholder={
               tab === "icons"
                 ? "搜索图标，支持中文或英文"
                 : "搜索图形、模板或对象"
             } value={query} onChange={(e) => setQuery(e.target.value)} />
-        </label>
+        </InputGroup>
         {tab !== "icons" && tab !== "layers" ? (
-          <Select
+          <Combobox
             value={category}
             onValueChange={value => { if (value !== null) setCategory(value); }}
             items={categoryItems}
-          >
-            <SelectTrigger aria-label="图类型" size="sm" className={boardPanelStyles.category}><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {categoryItems.map(item => (
-                <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            label="图类型"
+            size="sm"
+            className={boardPanelStyles.category}
+          />
         ) : null}
     </>
   );

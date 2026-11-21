@@ -33,6 +33,12 @@ for (const surface of ["web", "desktop"] as const) {
       await workspaceTrigger.click();
       const choices = page.getByRole("dialog", { name: "切换工作空间", exact: true });
       await expectInViewport(page, choices);
+      await expect(choices).toHaveAttribute("data-size", "sm");
+      const readSurface = (element: Element) => {
+        const style = getComputedStyle(element);
+        return [style.width, style.borderRadius, style.padding, style.backgroundColor, style.boxShadow];
+      };
+      const switcherSurface = await choices.evaluate(readSurface);
       await expect(choices.getByRole("button", { name: `切换到 ${workspace.name}` })).toHaveAttribute("aria-current", "true");
       await page.keyboard.press("Escape");
       await expect(choices).toHaveCount(0);
@@ -41,6 +47,8 @@ for (const surface of ["web", "desktop"] as const) {
       await accountTrigger.click();
       const menu = page.getByRole("menu", { name: "用户操作", exact: true });
       await expectInViewport(page, menu);
+      await expect(menu).toHaveAttribute("data-size", "sm");
+      await expect.poll(() => menu.evaluate(readSurface)).toEqual(switcherSurface);
       await expect(menu.getByRole("menuitem", { name: "账号", exact: true })).toHaveAttribute("href", "/settings/account");
       expect((await new AxeBuilder({ page }).include('[data-slot="dropdown-menu-content"]').analyze()).violations).toEqual([]);
       await menu.getByRole("menuitem", { name: "外观", exact: true }).click();

@@ -1,3 +1,4 @@
+import { Pagination } from "@orbis/ui/pagination";
 
 import { SectionHeading } from "../../shared/ui/SectionHeading";
 import { emptyPanelClassName } from "../../shared/ui/surface-styles";
@@ -220,7 +221,16 @@ export function ArchivePage() {
           onRestore={(id) => void completeRestore(() => archiveNote.mutateAsync({ id, archived: false,expected_directory_version:notebooksById.get(archivedNotesById.get(id)!.notebook_id)!.directory_version }))}
           pendingId={archiveNote.isPending ? archiveNote.variables?.id : undefined}
         />
-        <div className="collaboration-actions"><Button size="sm" disabled={documentPage<=1 || notesQuery.isFetching} onClick={() => setDocumentPage(value=>value-1)}>上一页回收站文档</Button><span>第 {documentPage} 页</span><Button size="sm" disabled={!notesQuery.data?.pagination.has_next || notesQuery.isFetching} onClick={() => setDocumentPage(value=>value+1)}>下一页回收站文档</Button></div>
+        <Pagination
+          label="回收站文档分页"
+          className="collaboration-actions"
+          previousLabel="上一页回收站文档"
+          nextLabel="下一页回收站文档"
+          hasPrevious={documentPage > 1 && !notesQuery.isFetching}
+          hasNext={!!notesQuery.data?.pagination.has_next && !notesQuery.isFetching}
+          onPrevious={() => setDocumentPage(value => value - 1)}
+          onNext={() => setDocumentPage(value => value + 1)}
+        >第 {documentPage} 页</Pagination>
       </PageContainer>
     </DocumentShell>
   );

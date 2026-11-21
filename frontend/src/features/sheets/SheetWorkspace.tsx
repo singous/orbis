@@ -8,24 +8,17 @@ import { DraftActions } from "../../shared/ui/DraftActions";
 import { Button } from "@orbis/ui/button";
 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@orbis/ui/dropdown-menu";
-import { useQuery } from "@tanstack/react-query";
+import { useIsFetching, useQuery } from "@tanstack/react-query";
 import {
-  AlignVerticalSpaceAround,
   Archive,
-  ArrowDown,
   BookOpen,
-  Check,
   ChevronRight,
   Copy,
   FileInput,
-  Filter,
-  Group,
   LayoutGrid,
   MessageSquare,
   MoreHorizontal,
   Plus,
-  Search,
-  Settings2,
   Table2,
   X,
 } from "@orbis/ui/icons";
@@ -41,9 +34,11 @@ import { newUUID } from "../../shared/ids";
 import { preparePendingNavigation } from "../../shared/navigation/pending-navigation";
 
 import { EmbeddedSurface } from "../../shared/ui/EmbeddedSurface";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@orbis/ui/tooltip";
 import { Input } from "@orbis/ui/input";
-import { DocumentShell } from "../documents/DocumentShell";
+import { DocumentSaveStatus, type DocumentStatusState } from "../documents/editor/DocumentSaveStatus";
+import { SheetLoading } from "./SheetLoading";
+import { SheetRecordToolbar } from "./SheetRecordToolbar";
+import type { Note } from "../../shared/api/schemas";
 import { createNotebookSidebar } from "../documents/NotebookSectionMenu";
 import { getNotebook } from "../documents/api";
 import { useArchiveNote, useNotebook } from "../documents/queries";
@@ -69,7 +64,7 @@ import {
 } from "./model";
 import { SheetWorkspaceMenu, type SheetMenu } from "./SheetWorkspaceMenu";
 import { removeFieldDefinition, updateFieldDefinition } from "./definition";
-import { useSheet } from "./use-sheet";
+import { sheetBoardQueryKey, useSheet } from "./use-sheet";
 
 const DocumentComments = lazy(() =>
   import("../collaboration/DocumentCollaborationPanel").then((m) => ({
@@ -84,8 +79,10 @@ export function SheetWorkspace({
   readOnly = false,
   onViewChange,
   embedKey,
+  documentNote,
 }: {
   id: string;
+  documentNote?: Pick<Note, "id" | "title" | "notebook_id">;
   embedded?: boolean;
   embedKey?: string;
   initialView?: string;
@@ -136,10 +133,11 @@ export function SheetWorkspace({
   const [cellDirty, setCellDirty] = useState(false);
   const navigate = useNavigate(),
     archiveNote = useArchiveNote();
-  const notebook = useNotebook(c.meta.data?.collection_id);
+  const notebook = useNotebook(c.meta.data?.collection_id ?? documentNote?.notebook_id);
   const userID = useStore(authStore, (s) => s.user?.id ?? "");
   const sheet = c.meta.data,
     view = c.view;
+  const loadingColumns = useIsFetching({ queryKey: sheetBoardQueryKey(c.auth.workspaceId, id, view?.id ?? "") }) > 0;
   const fields = useMemo(
     () =>
       sheet?.definition.fields.map((f) =>
@@ -149,24 +147,15 @@ export function SheetWorkspace({
       ) ?? [],
     [sheet, members.data],
   );
-  const LoadingShell = embedded ? "div" : DocumentShell;
-  if (!sheet || !view)
-    return (
-      <LoadingShell {...(!embedded ? { loading: true } : {})}>
-        <div className="px-8 py-16 text-center text-(--muted-foreground)">
-          {c.meta.error ? (
-            <>
-
-              <Button size="sm" onClick={() => void c.meta.refetch()} variant="ghost">
-                重试
-              </Button>
-            </>
-          ) : (
-            "正在打开数据表…"
-          )}
-        </div>
-      </LoadingShell>
-    );
+  if (!sheet || !view) return (
+    <SheetLoading canEdit={canEdit} embedded={embedded}
+      title={sheet?.title ?? documentNote?.title}
+      notebookId={sheet?.collection_id ?? documentNote?.notebook_id}
+      notebookTitle={notebook.data?.title}
+      documentId={sheet?.document_id ?? documentNote?.id}
+      onRetry={(c.meta.isError || sheet) ? () => void c.meta.refetch() : undefined}
+    />
+  );
   const activeForm = releaseFeatures.sheetForms ? c.forms.data?.find((f) => f.id === selectedView) : undefined;
   const ownedTabs = [
     ...sheet.definition.views.filter(candidate => candidate.id !== rename?.id).map(candidate => `${tabsId}-${candidate.id}`),
@@ -363,20 +352,17 @@ export function SheetWorkspace({
               </ConfirmAction>
             </div>
           </section></DraftActions> : null;
+  const recordStatus = !activeForm && c.pages.isError ? "读取记录失败" : undefined;
+  const saveStatus: DocumentStatusState = c.error ? "error"
+    : c.busy ? "saving"
+    : c.hasPending || cellDirty ? "dirty"
+    : recordStatus ? "error"
+    : !activeForm && (c.pages.isPending || c.pages.isFetching || loadingColumns) ? "loading"
+    : canEdit ? "saved"
+    : "readonly";
   const actions = (
     <div className={documentHeaderActionsClassName}>{draftActions}
-      <span className="flex items-center gap-[5px] whitespace-nowrap text-[12px] text-(--muted-foreground) [@media(max-width:760px)]:hidden">
-        {c.busy ? (
-          "保存中…"
-        ) : c.hasPending || cellDirty ? (
-          "待保存"
-        ) : (
-          <>
-            <Check size={12} />
-            已保存
-          </>
-        )}
-      </span>
+      <DocumentSaveStatus state={saveStatus} label={c.error ? undefined : recordStatus} />
       <span className={documentHeaderDividerClassName} aria-hidden="true" />
       {canEdit && (
         (releaseFeatures.documentSharing ? <ShareButton
@@ -399,7 +385,7 @@ export function SheetWorkspace({
         <DropdownMenuTrigger render={<Button className={cn(sheetActionClassName)} aria-label="更多文档操作" variant="ghost" size="icon">
           <MoreHorizontal size={18} />
         </Button>} />
-        <DropdownMenuContent align="end" className="document-actions-popover" aria-label="文档操作">
+        <DropdownMenuContent size="sm" align="end" className="document-actions-popover" aria-label="文档操作">
           <DropdownMenuItem label="复制链接" onClick={() => { void navigator.clipboard.writeText(location.href).catch(fail); }}>
             <Copy size={15} /><span>复制链接</span>
           </DropdownMenuItem>
@@ -524,61 +510,12 @@ export function SheetWorkspace({
         />
       ) : (
         <>
-          <div className={cn("sheet-toolbar flex shrink-0 items-center gap-1 border-b border-b-(--ob-sheet-chrome-border) bg-(--ob-sheet-toolbar-bg) py-1.5 whitespace-nowrap overscroll-x-contain", embedded ? "min-h-10 flex-wrap overflow-visible px-2.5" : "min-h-11 overflow-x-auto px-5 [@media(max-width:760px)]:px-3")}>
-            {(
-              [
-                { mode: "columns", icon: Settings2, label: "字段管理" },
-                { mode: "filter", icon: Filter, label: "筛选" },
-                { mode: "group", icon: Group, label: "分组" },
-                { mode: "sort", icon: ArrowDown, label: "排序" },
-                {
-                  mode: "height",
-                  icon: AlignVerticalSpaceAround,
-                  label: "行高",
-                },
-              ] as const
-            ).map(({ mode, icon: Icon, label }) => (
-              <Tooltip key={mode}><TooltipTrigger render={<Button
-                size="sm"
-                aria-label={label}
-                disabled={!canEdit || c.busy}
-                className={cn(sheetActionClassName, embedded && "min-w-[30px] px-[7px]", (mode === "filter" && view.filters.length) ||
-                  (mode === "sort" && view.sorts.length) ||
-                  (mode === "group" && view.group_field_id)
-                    ? "is-set bg-(--accent) text-primary forced-colors:bg-primary forced-colors:text-primary-foreground forced-colors:[forced-color-adjust:none]"
-                    : "")}
-                onClick={(e) =>
-                  setSettings({ mode, anchor: anchorAt(e.currentTarget) })
-                } variant="ghost"
-              >
-                <Icon size={14} />
-                <span className={cn("sheet-tool-label", embedded && "hidden in-[.embed-surface.is-expanded]:inline")}>{label}</span>
-              </Button>} /><TooltipContent>{label}</TooltipContent></Tooltip>
-            ))}
-            <label className={cn("flex max-w-[190px] items-center gap-[7px] rounded-lg border border-(--ob-sheet-chrome-border) px-[9px] py-[5px] text-(--muted-foreground) focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ring pointer-coarse:min-h-(--ob-control-height-touch)", embedded ? "min-w-20 flex-1" : "ml-2 min-w-[110px] shrink-0")}>
-              <Search size={14} />
-              <input
-                className="w-full min-w-0 bg-transparent text-[12px] text-foreground outline-none"
-                aria-label="搜索记录"
-                placeholder="搜索"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </label>
-            {canEdit && (
-              <Button className={cn(sheetActionClassName, embedded && "min-w-[30px] px-[7px]")} size="sm" disabled={c.busy} onClick={addRecord} variant="ghost">
-                <Plus size={14} />
-                添加记录
-              </Button>
-            )}
-            <span className="sheet-toolbar-spacer flex-1" />
-            {canEdit && releaseFeatures.sheetForms && (
-              <Button className={cn(sheetActionClassName, embedded && "min-w-[30px] px-[7px]")} size="sm" aria-label="生成表单" title="生成表单" onClick={() => void addView("form")} variant="ghost">
-                <FileInput size={14} />
-                <span className="sheet-tool-label">生成表单</span>
-              </Button>
-            )}
-          </div>
+          <SheetRecordToolbar embedded={embedded} canEdit={canEdit} busy={c.busy} view={view} search={search}
+            onSettings={(mode, target) => setSettings({ mode, anchor: anchorAt(target) })}
+            onSearch={setSearch}
+            onAdd={addRecord}
+            onCreateForm={() => void addView("form")}
+          />
 
           {view.kind === "grid" ? (
             <SheetGrid

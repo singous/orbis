@@ -2,6 +2,49 @@ import { expect, test } from "@playwright/test";
 import { installSession } from "../fixtures/session";
 import { initialView, initialSheet, records, mountWorkspace, sheetReadData } from "../fixtures/sheet-workspace";
 
+test("sheet header reports loading while metadata and records arrive independently", async ({ page }) => {
+  await installSession(page);
+  const sheet = { ...initialSheet, id: "00000000-0000-4000-8000-000000000021" };
+  await page.route("**/api/v1/**", route => {
+    const path = new URL(route.request().url()).pathname;
+    const data = path.endsWith(`/documents/${sheet.document_id}`) ? {
+      id: sheet.document_id, workspace_id: sheet.workspace_id, collection_id: sheet.collection_id, parent_id: null,
+      position: 0, title: sheet.title, sheet_id: sheet.id, content_version: 1, created_at_ms: 1, updated_at_ms: 1,
+      is_archived: false, archived_at_ms: null,
+    } : sheetReadData(path.replace(sheet.id, initialSheet.id), sheet);
+    return route.fulfill({ json: { code: "OK", message: "", request_id: "sheet-document", data } });
+  });
+  let releaseMetadata!: () => void;
+  let releaseRecords!: () => void;
+  const metadataDelay = new Promise<void>(resolve => { releaseMetadata = resolve; });
+  const recordsDelay = new Promise<void>(resolve => { releaseRecords = resolve; });
+  const metadataPath = `/sheets/${sheet.id}`;
+  const recordsPath = `${metadataPath}/records`;
+  await page.route(url => url.pathname.endsWith(metadataPath), async route => { await metadataDelay; await route.fallback(); });
+  await page.route(url => url.pathname.endsWith(recordsPath), async route => { await recordsDelay; await route.fallback(); });
+  const metadataRequest = page.waitForRequest(request => new URL(request.url()).pathname.endsWith(metadataPath));
+  const recordRequest = page.waitForRequest(request => new URL(request.url()).pathname.endsWith(recordsPath));
+  const chip = page.locator(".sheet-header-actions .document-save-state");
+  try {
+    await page.goto(`/documents/${sheet.document_id}`);
+    await metadataRequest;
+    await expect(page.getByRole("navigation", { name: "文档位置" })).toContainText(sheet.title);
+    await expect(chip).toHaveText("加载中…");
+    await expect(page.getByRole("button", { name: "筛选", exact: true })).toBeDisabled();
+    releaseMetadata();
+    await recordRequest;
+    await expect(page.getByRole("tab", { name: initialView.name, exact: true })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "名称" })).toBeVisible();
+    await expect(chip).toHaveText("加载中…");
+    await expect(page.getByText("示例记录 1", { exact: true })).toHaveCount(0);
+  } finally {
+    releaseMetadata();
+    releaseRecords();
+  }
+  await expect(page.getByText("示例记录 1", { exact: true })).toBeVisible();
+  await expect(chip).toHaveText("已保存");
+});
+
 for (const theme of ["light", "dark"] as const) for (const width of [1280, 390]) test.describe(`${theme} sheet ${width}px`, () => {
   test.use({ hasTouch: width === 390 });
   test("keeps nested menus, metadata versions, record retry and embedded identity", async ({ page }) => {
@@ -35,6 +78,7 @@ for (const theme of ["light", "dark"] as const) for (const width of [1280, 390])
     const root = page.locator(".sheet-workspace");
     const input = page.getByRole("textbox", { name: "搜索记录", exact: true });
     await expect(input).toBeVisible();
+    await expect(root.locator(".sheet-grid-header")).toBeVisible();
     const expectedBorders = await root.evaluate(element => {
       const reference = document.createElement("span");
       element.append(reference);

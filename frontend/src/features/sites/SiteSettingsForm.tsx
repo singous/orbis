@@ -1,6 +1,8 @@
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@orbis/ui/input-group";
+import { Field, FieldLabel, FieldDescription } from "@orbis/ui/field";
 import { Input } from "@orbis/ui/input";
 import { Textarea } from "@orbis/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@orbis/ui/select";
+import { Combobox } from "@orbis/ui/combobox";
 import { useId } from "react";
 import { ColorField } from "../../shared/ui/ColorField";
 import { Button } from "@orbis/ui/button";
@@ -36,14 +38,21 @@ export function SiteSettingsForm({ value, onChange, disabled = false, autoFocusN
   };
   return <fieldset className="grid min-w-0 gap-4 p-0" disabled={disabled}>
     <SiteField>站点名称<Input autoFocus={autoFocusName} required maxLength={160} value={value.name} onChange={(event) => onChange({ ...value, name: event.target.value })} placeholder="例如：Orbis 使用手册" /></SiteField>
-    <SiteField>站点路径<span className="relative block w-full text-sm font-normal"><span aria-hidden="true" className="pointer-events-none absolute inset-y-0 start-3 flex items-center text-muted-foreground">/s/</span><Input className="ps-11" required pattern="[a-z0-9]+(-[a-z0-9]+)*" maxLength={80} value={value.slug} onChange={(event) => onChange({ ...value, slug: event.target.value })} placeholder="team-handbook" /></span><small>小写英文、数字和连字符。发布后可通过此路径访问。</small></SiteField>
+    <Field>
+      <FieldLabel>站点路径</FieldLabel>
+      <InputGroup>
+        <InputGroupAddon aria-hidden="true">/s/</InputGroupAddon>
+        <InputGroupInput required pattern="[a-z0-9]+(-[a-z0-9]+)*" maxLength={80} value={value.slug} onChange={(event) => onChange({ ...value, slug: event.target.value })} placeholder="team-handbook" />
+      </InputGroup>
+      <FieldDescription>小写英文、数字和连字符。发布后可通过此路径访问。</FieldDescription>
+    </Field>
     <SiteField className="[&_textarea]:min-h-24">站点简介<Textarea rows={3} maxLength={2000} value={value.description} onChange={(event) => onChange({ ...value, description: event.target.value })} placeholder="告诉读者，他们可以在这里找到什么。" /></SiteField>
-    <div className="grid gap-2"><label htmlFor={`${fieldId}-kind`} className="text-sm font-medium">站点场景</label><Select<SiteKind> items={kindOptions} value={value.site_kind} disabled={disabled} onValueChange={site_kind => { if (site_kind !== null) onChange({ ...value, site_kind }); }}><SelectTrigger id={`${fieldId}-kind`} aria-describedby={`${fieldId}-kind-description`} className="w-full"><SelectValue /></SelectTrigger><SelectContent role="region" aria-label="站点场景选项">{kindOptions.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select><p id={`${fieldId}-kind-description`} className="text-xs text-muted-foreground">{SITE_KINDS[value.site_kind].description}</p></div>
+    <div className="grid gap-2"><label htmlFor={`${fieldId}-kind`} className="text-sm font-medium">站点场景</label><Combobox<SiteKind> items={kindOptions} value={value.site_kind} disabled={disabled} onValueChange={site_kind => { if (site_kind !== null) onChange({ ...value, site_kind }); }} label="站点场景" id={`${fieldId}-kind`} aria-describedby={`${fieldId}-kind-description`} className="w-full" popupProps={{ "role": "region", "aria-label": "站点场景选项" }} /><p id={`${fieldId}-kind-description`} className="text-xs text-muted-foreground">{SITE_KINDS[value.site_kind].description}</p></div>
     <ColorField value={value.accent_color} disabled={disabled} onChange={(accent_color) => onChange({ ...value, accent_color })} />
     <div className="grid gap-4 border-t border-border pt-5">
       <div className="grid gap-[5px]"><strong className="text-xs font-semibold text-foreground">品牌与阅读外观</strong><span className="text-xs text-muted-foreground">链接和外观会随每次发布固定到公开版本。</span></div>
       <SiteField>Logo 地址<Input type="url" value={branding.logo_url ?? ""} placeholder="https://example.com/logo.svg" onChange={(event) => updateBranding({ logo_url: event.target.value || null })} /><small>服务端会在预览与发布时校验公开 URL。</small></SiteField>
-      <div className="grid gap-2"><label htmlFor={`${fieldId}-theme`} className="text-sm font-medium">阅读主题</label><Select<SiteBranding["theme"]> items={themeOptions} value={branding.theme} disabled={disabled} onValueChange={theme => { if (theme !== null) updateBranding({ theme }); }}><SelectTrigger id={`${fieldId}-theme`} className="w-full"><SelectValue /></SelectTrigger><SelectContent role="region" aria-label="阅读主题选项">{themeOptions.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></div>
+      <div className="grid gap-2"><label htmlFor={`${fieldId}-theme`} className="text-sm font-medium">阅读主题</label><Combobox<SiteBranding["theme"]> items={themeOptions} value={branding.theme} disabled={disabled} onValueChange={theme => { if (theme !== null) updateBranding({ theme }); }} label="阅读主题" id={`${fieldId}-theme`} className="w-full" popupProps={{ "role": "region", "aria-label": "阅读主题选项" }} /></div>
       <LinkList label="顶栏链接" value={branding.links} onChange={(links) => updateBranding({ links })} />
       <LinkList label="页脚链接" value={branding.footer_links} onChange={(footer_links) => updateBranding({ footer_links })} />
       <div className="grid gap-2"><span className="text-xs font-semibold text-foreground">行动按钮</span><div className="grid grid-cols-1 gap-[7px] min-[721px]:grid-cols-[minmax(90px,.65fr)_minmax(140px,1.35fr)] [&_input]:min-w-0">

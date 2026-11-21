@@ -1,17 +1,13 @@
-import { Spinner } from "@orbis/ui/spinner";
 import { cn } from "@orbis/ui/cn";
-import { boardFloatingPanelStyles } from "./board-control-styles";
+import { boardFloatingPanelStyles, boardStageClassName } from "./board-control-styles";
 import { releaseFeatures } from "../../shared/release-features";
 import { ConfirmAction } from "../../shared/ui/ConfirmAction";
 import { reportError } from "../../shared/api/request-feedback";
 import { DraftActions } from "../../shared/ui/DraftActions";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@orbis/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
-import { Toolbar, ToolbarButton } from "@orbis/ui/toolbar";
-import { Toggle } from "@orbis/ui/toggle";
+import { ToolbarButton } from "@orbis/ui/toolbar";
 
-import { LoadingState } from "../../shared/ui/LoadingState";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@orbis/ui/tooltip";
 import { newUUID } from "../../shared/ids";
 import { selectionForCopy, selectionForLayout } from "./transforms";
 import {
@@ -25,45 +21,29 @@ import {
   type RefObject,
 } from "react";
 import {
-  Check,
   Copy,
   Download,
   History,
-  Maximize,
-  Minus,
   Plus,
-  Redo2,
   Settings2,
   Trash2,
-  Undo2,
   X,
   MessageSquare,
-  ImagePlus,
-  Layers,
   LayoutTemplate,
-  Network,
 } from "@orbis/ui/icons";
-import {
-  RiCursorLine,
-  RiHand,
-  RiAddCircleFill,
-  RiNodeTree,
-  RiText,
-  RiPencilLine,
-  RiFunctionAddLine,
-} from "../../shared/ui/icons";
 import { Button } from "@orbis/ui/button";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@orbis/ui/dialog";
 import { boardCanvasBackground, boardCanvasTextColor, DEFAULT_BOARD_BACKGROUND } from "./board-appearance";
 import { TemplatePreview } from "./TemplatePreview";
-import { PREVIEW_ZOOMS } from "./BoardPreviewViewport";
 import { zoomAt } from "./viewport";
 import { BoardPreviewState } from "./BoardPreviewState";
-import { BoardShell } from "./BoardShell";
+import { BoardShell, type BoardIdentity } from "./BoardShell";
+import { BoardHistoryTools, BoardTools, BoardViewTools } from "./BoardControls";
+import { BoardLoadingActions, BoardLoadingCanvas } from "./BoardLoading";
+import { DocumentSaveStatus, type DocumentStatusState } from "../documents/editor/DocumentSaveStatus";
 import { BoardMinimap } from "./BoardMinimap";
 import { canMutateWorkspaceContent } from "../workspace/capabilities";
-import { DocumentShell } from "../documents/DocumentShell";
 import { ShareButton } from "../sharing/ShareButton";
 import type { BoardSession } from "./session";
 import { useBoardSession } from "./use-board-session";
@@ -92,23 +72,19 @@ const DocumentComments = lazy(() =>
     default: m.DocumentComments,
   })),
 );
-const boardToolActionClassName = "board-toolbar-action shrink-0";
 const boardHeaderActionClassName = "board-header-action shrink-0";
-const boardFloatingToolbarClassName = "absolute z-16 flex h-[34px] items-center gap-0.5 rounded-[7px] border border-(--ob-board-border) bg-card px-1 py-0.5 [box-shadow:var(--shadow-sm)] pointer-coarse:h-[calc(var(--ob-control-height-touch)+6px)]";
 const boardPageBarClassName = "row-start-2 z-16 mb-3 flex h-[34px] items-center gap-0.5 rounded-[7px] border border-(--ob-board-border) bg-card px-1 py-0.5 [box-shadow:var(--shadow-sm)] pointer-coarse:h-[calc(var(--ob-control-height-touch)+6px)]";
 const boardStarterActionClassName = "board-starter-action pointer-events-auto h-auto min-w-0 justify-start gap-3 p-3";
-const boardSeparatorClassName = "board-separator my-1 block h-px w-5 shrink-0 bg-(--ob-board-border)";
 const boardToolHintClassName = "board-tool-hint pointer-events-none absolute top-[54px] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-[5px] border border-(--ob-board-hint-border) bg-card px-2.5 py-1.5 text-[11px] text-(--ob-board-hint-foreground) [@container(max-width:640px)]:top-[58px] [@container(max-width:640px)]:right-3 [@container(max-width:640px)]:left-auto [@container(max-width:640px)]:translate-x-0";
 
-const ZOOM_STEP = 1.2;
 const STATUS = {
-  loading: "正在读取…",
-  saved: "已保存",
-  saving: "正在同步…",
-  save_failed: "保存失败",
-  conflict: "有修改需要处理",
-  error: "读取失败",
-};
+  loading: { state: "loading" },
+  saved: { state: "saved" },
+  saving: { state: "saving", label: "正在同步…" },
+  save_failed: { state: "error" },
+  conflict: { state: "conflict", label: "有修改需要处理" },
+  error: { state: "error", label: "读取失败" },
+} satisfies Record<string, { state: DocumentStatusState; label?: string }>;
 type EmbeddedBoardOptions = {
   pageID: string;
   blockID?: string;
@@ -116,7 +92,7 @@ type EmbeddedBoardOptions = {
   readOnly: boolean;
   sessionRef?: RefObject<Pick<BoardSession, "getSnapshot"> | null>;
 };
-export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOptions }) {
+export function BoardEditor({ id, embed, document }: { id: string; embed?: EmbeddedBoardOptions; document?: BoardIdentity }) {
   const { auth, workspace, user, session, state, images } = useBoardSession(id, embed);
   const renderer = useRef<BoardRenderer | null>(null);
   const [selection, setSelection] = useState<Set<string>>(new Set()),
@@ -308,18 +284,15 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
       setExporting(false);
     }
   }
-  const LoadingShell = embed ? "div" : DocumentShell;
   if (embed && state.board && state.pageID !== embed.pageID) return <BoardPreviewState role="alert">引用的画板页面已不存在，请重新选择引用页面。</BoardPreviewState>;
-  if (!state.board)
-    return (
-      <LoadingShell {...(!embed ? { loading: true } : {})}>
-        {state.error ? (
-          <div className="board-loading flex min-h-[360px] flex-col items-center justify-center gap-4 text-(--ob-board-loading-foreground)">
-            <Button onClick={() => void session.start(embed?.pageID ?? new URLSearchParams(location.search).get("page") ?? "")}>重试</Button>
-          </div>
-        ) : <LoadingState label="正在打开画板…" variant="editor" />}
-      </LoadingShell>
-    );
+  if (!state.board) return (
+    <BoardShell board={document} embedded={!!embed}
+      status={<DocumentSaveStatus {...STATUS[state.error ? "error" : "loading"]} className="board-save-state" />} actions={<BoardLoadingActions />}>
+      <BoardLoadingCanvas embedded={!!embed} readOnly={embed?.readOnly}
+        onRetry={state.error ? () => void session.start(embed?.pageID ?? new URLSearchParams(location.search).get("page") ?? "") : undefined}
+      />
+    </BoardShell>
+  );
   const board = state.board,
     page = board.pages.find((p) => p.id === state.pageID) ?? board.pages[0];
   const pendingActions = state.pending ? (
@@ -340,10 +313,7 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
   ) : null;
   const saveState = (
     <>
-    <span className={cn("board-save-state inline-flex shrink-0 items-center gap-1 text-[11px] font-normal", `is-${state.status}`, state.status === "conflict" || state.status === "error" ? "text-destructive" : state.status === "save_failed" ? "text-status-warning-foreground" : "text-(--muted-foreground)", embed ? "rounded-[5px] bg-card px-[7px] py-1" : "[@media(max-width:760px)]:hidden")} role="status">
-      {state.status === "saved" ? <Check size={13} /> : null}
-      {STATUS[state.status]}
-    </span>
+    <DocumentSaveStatus {...STATUS[state.status]} className="board-save-state" />
     {embed ? pendingActions : null}
     {state.pending > 0 && (state.status === "save_failed" || state.status === "conflict") && <Button className={embed ? "" : undefined} size="sm" onClick={event => { event.stopPropagation(); void recover(() => session.retry()); }} variant="ghost">重试保存</Button>}
     </>
@@ -392,7 +362,7 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
         <DropdownMenuTrigger render={<Button aria-label="导入与导出画板" className={cn(boardHeaderActionClassName, "board-export-trigger")} variant="ghost">
           <Download size={16} /><span className="[@media(max-width:760px)]:hidden">导出</span>
         </Button>} />
-        <DropdownMenuContent align="end" className="board-export-popover z-(--ob-z-popover) min-w-[180px]" aria-label="导入与导出画板">
+        <DropdownMenuContent size="sm" align="end" className="board-export-popover z-(--ob-z-popover) min-w-[180px]" aria-label="导入与导出画板">
           <DropdownMenuItem label="导入画板文件" disabled={!canEdit} onClick={() => importRef.current?.click()}>导入画板文件</DropdownMenuItem>
           <DropdownMenuItem label="SVG" disabled={exporting} onClick={() => void exportFile("svg")}>SVG</DropdownMenuItem>
           <DropdownMenuItem label="PNG" disabled={exporting} onClick={() => void exportFile("png")}>PNG</DropdownMenuItem>
@@ -534,7 +504,7 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
             />
           ) : null}
           <div
-            className={cn("board-stage-wrap absolute inset-0 min-h-0 min-w-0 overflow-hidden", inspector || comments ? "right-[368px] [@container(640px<width<=900px)]:right-[300px] [@container(max-width:640px)]:right-0" : "right-0")}
+            className={cn(boardStageClassName, inspector || comments ? "right-[368px] [@container(640px<width<=900px)]:right-[300px] [@container(max-width:640px)]:right-0" : "right-0")}
             style={{ backgroundColor: boardCanvasBackground(page.background), backgroundImage: embed ? "none" : undefined, "--board-canvas-text": boardCanvasTextColor(page.background) } as CSSProperties}
             onDragOver={(e) => {
               if (canEdit) e.preventDefault();
@@ -605,34 +575,7 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
                 </div>
               </div>
             ) : null}
-            <Toolbar className={cn(boardFloatingToolbarClassName, "board-zoom right-3", embed ? "top-2" : "top-3")} aria-label="画板视图">
-              <ToolbarButton focusableWhenDisabled={false} render={<Button
-
-                aria-label="缩小画板"
-                title="缩小画板"
-                onClick={() => zoom(camera.zoom / ZOOM_STEP)} variant="ghost" size="icon"
-              >
-                <Minus size={15} />
-              </Button>} />
-              <DropdownMenu>
-                <ToolbarButton focusableWhenDisabled={false} render={<DropdownMenuTrigger render={<Button  aria-label={`缩放比例 ${Math.round(camera.zoom * 100)}%`} variant="ghost">{Math.round(camera.zoom * 100)}%</Button>} />} />
-                <DropdownMenuContent align="end" aria-label="画板缩放比例">
-                  {PREVIEW_ZOOMS.map(value => <DropdownMenuItem key={value} label={`${value * 100}%`} onClick={() => zoom(value)}>{value * 100}%</DropdownMenuItem>)}
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <ToolbarButton focusableWhenDisabled={false} render={<Button
-
-                aria-label="放大画板"
-                title="放大画板"
-                onClick={() => zoom(camera.zoom * ZOOM_STEP)} variant="ghost" size="icon"
-              >
-                <Plus size={15} />
-              </Button>} />
-              <span className="board-separator mx-[3px] my-0 h-4 w-px shrink-0 bg-(--ob-board-border)" />
-              <ToolbarButton focusableWhenDisabled={false} render={<Button  aria-label="适应全部内容" title="适应全部内容" onClick={fit} variant="ghost" size="icon">
-                <Maximize size={16} />
-              </Button>} />
-            </Toolbar>
+            <BoardViewTools embedded={!!embed} zoom={camera.zoom} onZoom={zoom} onFit={fit} />
             {tool === "connect" ? (
               <div className={boardToolHintClassName}>
                 依次点击两个图形，连接到最近的端口
@@ -646,27 +589,11 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
               renderer={renderer.current}
               onCamera={setCamera}
             />
-            <Toolbar className={cn(boardFloatingToolbarClassName, "board-history-controls left-3", embed ? "bottom-[38px]" : "top-3", embed?.readOnly && "hidden")} aria-label="画板历史操作">
-              <ToolbarButton focusableWhenDisabled={false} disabled={!canEdit || !state.canUndo} render={<Button
-
-                aria-label="撤销画板操作"
-
-                onClick={() => void session.undo().catch(fail)} variant="ghost" size="icon"
-              >
-                <Undo2 size={17} />
-              </Button>} />
-              <ToolbarButton focusableWhenDisabled={false} disabled={!canEdit || !state.canRedo} render={<Button
-
-                aria-label="重做画板操作"
-
-                onClick={() => void session.redo().catch(fail)} variant="ghost" size="icon"
-              >
-                <Redo2 size={17} />
-              </Button>} />
-              {releaseFeatures.documentCollaboration && <ToolbarButton focusableWhenDisabled={false} render={<Button aria-label="查看画板历史" onClick={openHistory} variant="ghost" size="icon">
-                <History size={16} />
-              </Button>} />}
-            </Toolbar>
+            <BoardHistoryTools embedded={!!embed} hidden={embed?.readOnly}
+              onUndo={canEdit && state.canUndo ? () => void session.undo().catch(fail) : undefined}
+              onRedo={canEdit && state.canRedo ? () => void session.redo().catch(fail) : undefined}
+              onHistory={openHistory}
+            />
           </div>
           {inspector && !comments ? (
             <BoardInspector
@@ -713,78 +640,13 @@ export function BoardEditor({ id, embed }: { id: string; embed?: EmbeddedBoardOp
           </small>
         </footer>
 
-        <Toolbar className={cn("board-toolbar absolute left-3 z-18 flex w-11 flex-col items-center gap-px overflow-y-auto rounded-[9px] border border-(--ob-board-border) bg-card p-[5px] [box-shadow:var(--shadow-sm)] pointer-coarse:w-[calc(var(--ob-control-height-touch)+12px)]", embed ? "top-[52px] bottom-[60px] h-fit max-h-[calc(100%-112px)] [scrollbar-width:thin]" : "top-1/2 max-h-[calc(100%-128px)] -translate-y-1/2 [@container(max-width:640px)]:top-16 [@container(max-width:640px)]:bottom-16 [@container(max-width:640px)]:h-fit [@container(max-width:640px)]:translate-y-0", embed?.readOnly && "hidden")} orientation="vertical" aria-label="画板工具">
-          <ToolbarButton focusableWhenDisabled={false} render={<Button
-            className={boardToolActionClassName}
-            aria-label="切换素材面板"
-            title="图形与素材"
-            aria-pressed={library && (libraryTab === "shapes" || libraryTab === "icons")}
-            onClick={() => openLibrary("shapes")} variant="ghost" size="icon"
-          >
-            <RiAddCircleFill size={17} />
-          </Button>} />
-          <span className={boardSeparatorClassName} />
-          {(
-            [
-              { id: "select", label: "选择", shortcut: "V", Icon: RiCursorLine },
-              { id: "pan", label: "移动画布", shortcut: "H", Icon: RiHand },
-              { id: "connect", label: "连接线", shortcut: "C", Icon: RiNodeTree },
-              { id: "mindmap", label: "思维导图", shortcut: "M", Icon: Network },
-              { id: "basic.text", label: "文字", shortcut: "T", Icon: RiText },
-              { id: "draw", label: "画笔", shortcut: "P", Icon: RiPencilLine },
-            ] as const
-          ).map(({ id, label, shortcut, Icon }) => (
-            <Tooltip key={id}><TooltipTrigger render={<ToolbarButton focusableWhenDisabled={false} disabled={!canEdit && !["select", "pan"].includes(id)} render={<Toggle
-
-                aria-label={label}
-                pressed={tool === id}
-
-                onPressedChange={() => { setTool(id); setLibrary(false); }}
-              >
-                <Icon size={17} />
-              </Toggle>} />} /><TooltipContent side="right">{`${label} (${shortcut})`}</TooltipContent></Tooltip>
-          ))}
-
-          <ToolbarButton focusableWhenDisabled={false} disabled={!canEdit} render={<Button
-            className={boardToolActionClassName}
-            aria-label="插入图片"
-            title="插入图片"
-
-            onClick={() => { imageTarget.current = null; imageInput.current?.click(); }} variant="ghost" size="icon"
-          >
-            <ImagePlus size={17} />
-          </Button>} />
-          <span className={boardSeparatorClassName} />
-          <ToolbarButton focusableWhenDisabled={false} render={<Button
-            className={boardToolActionClassName}
-            aria-label="模板库"
-            title="模板库"
-            aria-pressed={library && libraryTab === "templates"}
-            onClick={() => openLibrary("templates")} variant="ghost" size="icon"
-          >
-            <LayoutTemplate size={17} />
-          </Button>} />
-          <ToolbarButton focusableWhenDisabled={false} render={<Button
-            className={boardToolActionClassName}
-            aria-label="页面与图层"
-            title="页面与图层"
-            aria-pressed={library && libraryTab === "layers"}
-            onClick={() => openLibrary("layers")} variant="ghost" size="icon"
-          >
-            <Layers size={17} />
-          </Button>} />
-          <span className={boardSeparatorClassName} />
-          <ToolbarButton focusableWhenDisabled={false} disabled={layoutBusy || (!canEdit || layoutBusy || !state.elements.size)} render={<Button
-            className={boardToolActionClassName}
-
-
-            aria-label="自动布局"
-            title="自动布局"
-            onClick={() => void arrange()} aria-busy={layoutBusy || undefined} variant="ghost"
-          >{layoutBusy ? <Spinner aria-hidden="true" /> : null}
-            <RiFunctionAddLine size={16} />
-          </Button>} />
-        </Toolbar>
+        <BoardTools embedded={!!embed} hidden={embed?.readOnly} canEdit={canEdit} selected={tool}
+          libraryTab={library ? libraryTab : undefined} arranging={layoutBusy}
+          onSelect={next => { setTool(next); setLibrary(false); }}
+          onLibrary={openLibrary}
+          onImage={canEdit ? () => { imageTarget.current = null; imageInput.current?.click(); } : undefined}
+          onArrange={canEdit && state.elements.size ? () => void arrange() : undefined}
+        />
 
         {comments ? (
           <section className={cn(boardFloatingPanelStyles, "board-comments px-3.5 pb-4")}>

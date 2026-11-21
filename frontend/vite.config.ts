@@ -3,6 +3,7 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import type { ProxyOptions } from "vite";
 import { configDefaults, defineConfig } from "vitest/config";
+import { boneyardPlugin } from "boneyard-js/vite";
 import { themeScopes } from "./scripts/theme-scopes";
 
 const apiTarget = process.env.ORBIS_DEV_API_TARGET || "http://127.0.0.1:9202";
@@ -27,7 +28,12 @@ const proxy = {
 } satisfies Record<string, ProxyOptions>;
 
 export default defineConfig({
-  plugins: [react(), tailwindcss({ optimize: false }), themeScopes()],
+  plugins: [
+    react(),
+    tailwindcss({ optimize: false }),
+    themeScopes(),
+    !process.env.VITEST && boneyardPlugin({ routes: ["/__bones"], out: "./src/shared/ui/bones", breakpoints: [390, 768, 1024, 1280, 1440] }),
+  ],
   resolve: {
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
     dedupe: ["react", "react-dom"],

@@ -1,6 +1,6 @@
 import { cn } from "@orbis/ui/cn";
 import { reportError } from "../../shared/api/request-feedback";
-import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui/popover";
+import { Popover, PopoverTrigger, PopoverContent, popoverActionClassName } from "@orbis/ui/popover";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -9,7 +9,7 @@ import { useStore } from "zustand";
 import { authStore, getAuthSessionKey } from "../../shared/auth/auth-store";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
 import { preparePendingNavigation } from "../../shared/navigation/pending-navigation";
-import { Button, buttonVariants } from "@orbis/ui/button";
+import { Button } from "@orbis/ui/button";
 import { LoadingState } from "../../shared/ui/LoadingState";
 
 import { identityColor } from "../../shared/ui/UserAvatar";
@@ -17,7 +17,6 @@ import { OrbisLogo } from "../../shared/ui/OrbisLogo";
 import { Boxes, Check, Users } from "../../shared/ui/icons";
 import { listWorkspaces, switchWorkspace } from "./api";
 import { canManageWorkspaceMembers, workspaceRoleLabel } from "./capabilities";
-import { workspaceMenuPanelClassName, workspaceMenuRowClassName } from "./workspace-navigation-styles";
 
 /** The shell supplies the anchor; discovery mounts only after explicit opening. */
 export function WorkspaceSwitcher() {
@@ -47,7 +46,7 @@ export function WorkspaceSwitcher() {
       <PopoverTrigger render={<Button variant="ghost" />} className="rail-brand workspace-switcher-rail-trigger h-10 w-11 p-0" aria-label="切换工作空间" disabled={!authenticated}>
         <OrbisLogo size={32} className="size-8" />
       </PopoverTrigger>
-      <PopoverContent aria-label="切换工作空间" className={cn("workspace-switcher-popover workspace-switcher-popover--rail max-h-[min(32rem,var(--available-height))] overflow-hidden", workspaceMenuPanelClassName)} side="right" align="start" sideOffset={6}>
+      <PopoverContent aria-label="切换工作空间" appearance="menu" size="sm" className="workspace-switcher-popover workspace-switcher-popover--rail w-64 max-h-[min(32rem,var(--available-height))] overflow-hidden" side="right" align="start" sideOffset={6}>
         <div className="workspace-switcher-dialog flex min-h-0 min-w-0 flex-auto flex-col overflow-y-auto overscroll-contain">
           {open ? <WorkspaceChoices key={`${sessionKey}:${location.key}`} onClose={close} /> : null}
         </div>
@@ -126,15 +125,15 @@ function WorkspaceChoices({ onClose }: { onClose: () => void }) {
     {memberships.isSuccess && workspace && !items.some(item => item.id === workspace.id) ? <p className="workspace-switcher-empty px-2.5 pt-[5px] pb-3 text-xs text-(--muted-foreground)">当前工作空间不可用，请选择另一个空间。</p> : null}
     <ul className="workspace-switcher-list m-0 min-h-0 min-w-0 list-none overflow-y-auto overscroll-contain p-0 [&>li+li]:mt-1" aria-label="可用工作空间">
       {items.map(item => <li key={item.id}>
-        <Button type="button" className="workspace-switcher-item workspace-switcher-option h-[62px] min-w-0 w-full justify-start gap-2.5 rounded-lg px-3.5 text-left whitespace-normal aria-current:bg-sidebar-accent aria-current:hover:bg-sidebar-accent" aria-label={`切换到 ${item.name}`} aria-current={item.id === workspace?.id ? "true" : undefined} disabled={Boolean(pendingId)} onClick={() => void selectWorkspace(item.id)} variant="ghost">
-          <span className="workspace-switcher-space-icon identity-mark grid size-[39px] flex-none place-items-center rounded-[7px] bg-muted text-sm text-(--identity-color) in-aria-current:bg-card" style={identityColor(item.id)}><Boxes aria-hidden="true" size={18} /></span>
-          <span className="min-w-0 flex-1"><span className="workspace-switcher-name block truncate text-sm font-medium text-foreground">{item.name}</span><span className="workspace-switcher-sub mt-0.5 block text-xs text-muted-foreground">{workspaceRoleLabel(item.role)}</span></span>
+        <Button type="button" className={cn(popoverActionClassName, "workspace-switcher-item workspace-switcher-option rounded-lg text-left whitespace-normal aria-current:bg-sidebar-accent aria-current:hover:bg-sidebar-accent")} aria-label={`切换到 ${item.name}`} aria-current={item.id === workspace?.id ? "true" : undefined} disabled={Boolean(pendingId)} onClick={() => void selectWorkspace(item.id)} variant="ghost">
+          <span className="workspace-switcher-space-icon identity-mark grid size-8 flex-none place-items-center rounded-[7px] bg-muted text-(--identity-color) in-aria-current:bg-card" style={identityColor(item.id)}><Boxes aria-hidden="true" size={18} /></span>
+          <span className="min-w-0 flex-1"><span className="workspace-switcher-name block truncate font-medium text-foreground">{item.name}</span><span className="workspace-switcher-sub mt-0.5 block text-[11px] text-muted-foreground">{workspaceRoleLabel(item.role)}</span></span>
           {item.id === workspace?.id ? <Check aria-hidden="true" size={16} className="workspace-switcher-check flex-none text-(--muted-foreground)" /> : null}
         </Button>
       </li>)}
     </ul>
     {canManageWorkspaceMembers(workspace) ? <div className="mt-1 border-t border-border pt-1">
-      <Link to="/settings/members" className={cn(buttonVariants({ variant: "ghost" }), "w-full justify-start", workspaceMenuRowClassName)}><Users aria-hidden="true" />工作空间成员</Link>
+      <Link to="/settings/members" className={popoverActionClassName}><Users aria-hidden="true" />工作空间成员</Link>
     </div> : null}
     {memberships.isSuccess && !items.length ? <p className="workspace-switcher-empty px-2.5 pt-[5px] pb-3 text-xs text-(--muted-foreground)">暂无可访问的工作空间。</p> : null}
     {pendingId ? <div className="workspace-switcher-pending mt-2 flex flex-none items-center justify-between gap-2 border-t border-border px-1 pt-2 text-xs [&>span]:min-w-0 [&>span]:flex-1"><span role="status">{phase === "preparing" ? "正在保存当前内容…" : "正在完成工作空间切换…"}</span><Button size="sm" variant="ghost" onClick={cancelSwitch}>{phase === "preparing" ? "取消切换" : "留在当前空间"}</Button></div> : null}

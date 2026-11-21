@@ -710,7 +710,7 @@ test("table pages live in the document tree and edit cells with anchored pickers
   await expect(cells.nth(1)).toContainText("进行中");
   await cells.nth(1).dblclick();
   await page
-    .getByRole("textbox", { name: "搜索状态选项", exact: true })
+    .getByRole("combobox", { name: "搜索状态选项", exact: true })
     .fill("待复核");
   await page
     .getByRole("button", { name: "新建选项「待复核」", exact: true })

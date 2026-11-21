@@ -6,7 +6,7 @@ import { Button } from "@orbis/ui/button";
 import { RadioGroup, RadioGroupItem } from "@orbis/ui/radio-group";
 
 import { Plus, Trash2 } from "../../shared/ui/icons";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@orbis/ui/select";
+import { Combobox } from "@orbis/ui/combobox";
 import { ValueEditor } from "./Cell";
 import { FieldManager } from "./FieldManager";
 import { KINDS, type Field, type View } from "./model";
@@ -89,26 +89,18 @@ export function ViewSettings({
           </div>)}
         </RadioGroup> : null}
         {mode === "group" && (
-          <label className="grid gap-2 text-sm font-medium"><span>{"按字段分组"}</span><Select
+          <label className="grid gap-2 text-sm font-medium"><span>{"按字段分组"}</span><Combobox
             value={draft.group_field_id}
             disabled={busy}
             onValueChange={group_field_id => { if (group_field_id === null) return; setDraft({ ...draft, group_field_id }); }}
-            items={groupItems}
-          >
-            <SelectTrigger aria-label={"按字段分组"}><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {groupItems.map(item => (
-                <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select></label>
+            items={groupItems} label="按字段分组" size="sm" /></label>
         )}
         {mode === "sort" && (
           <>
             <p>依次按以下条件排序</p>
             {draft.sorts.map((sort, index) => (
               <div className={sheetSettingRowClassName} key={index}>
-                <Select
+                <Combobox
                   value={sort.field_id}
                   disabled={busy}
                   onValueChange={field_id => { if (field_id === null) return; setDraft({
@@ -118,15 +110,10 @@ export function ViewSettings({
                                                           ),
                                                         }); }}
                   items={sortFieldItems}
-                >
-                  <SelectTrigger aria-label={`排序字段 ${index + 1}`} size="sm"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {sortFieldItems.map(item => (
-                      <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select
+                  label={`排序字段 ${index + 1}`}
+                  size="sm"
+                />
+                <Combobox
                   value={String(sort.descending)}
                   disabled={busy}
                   onValueChange={v => { if (v === null) return; setDraft({
@@ -136,14 +123,9 @@ export function ViewSettings({
                                                           ),
                                                         }); }}
                   items={sortDirectionItems}
-                >
-                  <SelectTrigger aria-label={`排序方向 ${index + 1}`} size="sm"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {sortDirectionItems.map(item => (
-                      <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  label={`排序方向 ${index + 1}`}
+                  size="sm"
+                />
                 <Button className={`${sheetActionClassName} min-w-8`}
                   size="sm"
                   aria-label="移除排序"
@@ -208,32 +190,22 @@ export function ViewSettings({
   return (
                 <div className="flex flex-col gap-2.5 border-b border-border pb-4 [&>div:first-child]:flex [&>div:first-child]:gap-2 [&>div>[data-slot=select-trigger]]:min-w-0 [&>div>[data-slot=select-trigger]]:flex-1" key={index}>
                   <div>
-                    <Select
+                    <Combobox
                       value={filter.field_id}
                       disabled={busy}
                       onValueChange={field_id => { if (field_id === null) return; patch({ field_id, value: null, operator: "eq" }); }}
                       items={filterFieldItems}
-                    >
-                      <SelectTrigger aria-label={`筛选字段 ${index + 1}`} size="sm"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {filterFieldItems.map(item => (
-                          <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select
+                      label={`筛选字段 ${index + 1}`}
+                      size="sm"
+                    />
+                    <Combobox
                       value={filter.operator}
                       disabled={busy}
                       onValueChange={operator => { if (operator === null) return; patch({ operator }); }}
                       items={filterOperatorItems}
-                    >
-                      <SelectTrigger aria-label={`筛选条件 ${index + 1}`} size="sm"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {filterOperatorItems.map(item => (
-                          <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      label={`筛选条件 ${index + 1}`}
+                      size="sm"
+                    />
                     <Button className={sheetActionClassName}
                       size="sm"
                       aria-label="移除筛选"

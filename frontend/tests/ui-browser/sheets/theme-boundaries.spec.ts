@@ -11,7 +11,7 @@ for (const inner of ["light", "dark"] as const) for (const width of [1280, 390])
     await page.addInitScript(theme => localStorage.setItem("orbis.appearance", theme), outer);
     await mountTableControl(page, "sheet-single", inner);
     const popup = page.getByRole("dialog", { name: "字段选择", exact: true });
-    const input = popup.getByRole("textbox", { name: "搜索字段选项", exact: true });
+    const input = popup.getByRole("combobox", { name: "搜索字段选项", exact: true });
     const source = page.getByTestId("table-control-preview");
     await expect(page.locator("html")).toHaveAttribute("data-theme", outer);
     await expect(input).toBeFocused();
@@ -37,7 +37,9 @@ for (const inner of ["light", "dark"] as const) for (const width of [1280, 390])
     await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
     await input.press("ArrowDown");
     const option = popup.getByRole("option", { name: "选项 A", exact: true });
-    await expect(option).toBeFocused();
+    await expect(input).toBeFocused();
+    await expect(input).toHaveAttribute("aria-activedescendant", (await option.getAttribute("id"))!);
+    await expect(option).toHaveAttribute("data-highlighted", "");
     await expect(option).toHaveCSS("outline-width", "2px");
     await expect(option).toHaveCSS("outline-style", "solid");
     await page.keyboard.press("Escape");
