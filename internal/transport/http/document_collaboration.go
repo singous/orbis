@@ -3,6 +3,7 @@ package httpapi
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"io"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"orbis.local/orbis/internal/document"
 	"orbis.local/orbis/internal/platform/fault"
 )
@@ -22,6 +24,7 @@ const maxCollaborationUserConnections = 8
 const collaborationPollInterval = 500 * time.Millisecond
 const collaborationIOTimeout = 10 * time.Second
 const collaborationEnvelopeBytes = 4 << 20
+const collaborationSnapshotType = "application/vnd.orbis.yjs"
 
 type collaborationSocketMessage struct {
 	Type            string                         `json:"type"`
@@ -101,20 +104,84 @@ func (s *CollaborationSockets) Close() {
 }
 
 func (h *handler) enableDocumentCollaboration(c *gin.Context) {
-	state, err := h.deps.Documents.EnableCollaboration(c.Request.Context(), directoryScope(c))
+	after, epoch, err := collaborationReadBase(c)
 	if err != nil {
 		h.fail(c, err)
 		return
 	}
-	success(c, http.StatusOK, state)
+	scope := directoryScope(c)
+	var state document.CollaborationState
+	if after > 0 {
+		state, err = h.deps.Documents.ResumeCollaboration(c.Request.Context(), scope, after, epoch)
+	} else {
+		state, err = h.deps.Documents.EnableCollaboration(c.Request.Context(), scope)
+	}
+	if err != nil {
+		h.fail(c, err)
+		return
+	}
+	writeCollaborationSnapshot(c, state)
 }
 func (h *handler) documentCollaboration(c *gin.Context) {
-	state, _, err := h.deps.Documents.ReadCollaboration(c.Request.Context(), directoryScope(c), 0)
+	after, epoch, err := collaborationReadBase(c)
 	if err != nil {
 		h.fail(c, err)
 		return
 	}
-	success(c, http.StatusOK, state)
+	state, _, err := h.deps.Documents.ReadCollaboration(c.Request.Context(), directoryScope(c), after, epoch)
+	if err != nil {
+		h.fail(c, err)
+		return
+	}
+	writeCollaborationSnapshot(c, state)
+}
+
+func collaborationReadBase(c *gin.Context) (int64, string, error) {
+	after, err := integerQuery(c, "after_version", 0)
+	if err != nil {
+		return 0, "", err
+	}
+	epoch, err := singleQuery(c, "epoch", "")
+	if err != nil {
+		return 0, "", err
+	}
+	if after != 0 || epoch != "" || c.Request.URL.Query().Has("after_version") || c.Request.URL.Query().Has("epoch") {
+		parsed, err := uuid.Parse(epoch)
+		if err != nil || parsed == uuid.Nil || parsed.String() != epoch || after < 1 || after > document.MaxVersion {
+			return 0, "", fault.Field("query.after_version", "续读需要有效的版本和协同 epoch")
+		}
+	}
+	return after, epoch, nil
+}
+
+// The binary format is a big-endian uint32 JSON metadata length, followed by
+// the metadata and the raw Yjs state. Incremental and up-to-date replies remain JSON.
+func writeCollaborationSnapshot(c *gin.Context, state document.CollaborationState) {
+	c.Header("Cache-Control", "private, no-store")
+	c.Writer.Header().Add("Vary", "Accept")
+	if len(state.State) == 0 || c.NegotiateFormat("application/json", collaborationSnapshotType) != collaborationSnapshotType {
+		success(c, http.StatusOK, state)
+		return
+	}
+	snapshot := state.State
+	state.State = nil
+	state.StateVector = nil
+	metadata, err := json.Marshal(state)
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+	var prefix [4]byte
+	binary.BigEndian.PutUint32(prefix[:], uint32(len(metadata)))
+	c.Header("Content-Type", collaborationSnapshotType)
+	c.Status(http.StatusOK)
+	if _, err = c.Writer.Write(prefix[:]); err != nil {
+		return
+	}
+	if _, err = c.Writer.Write(metadata); err != nil {
+		return
+	}
+	_, _ = c.Writer.Write(snapshot)
 }
 
 func (h *handler) updateDocumentCollaboration(c *gin.Context) {

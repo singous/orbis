@@ -11,7 +11,7 @@ export type CollaborationState = {
   epoch: string;
   content_version: number;
   protocol_version: 1;
-  state?: string | null;
+  state?: string | Uint8Array | null;
   state_vector?: string;
   updates?: string[];
   updated_at_ms: number;
@@ -182,7 +182,8 @@ export class DocumentCollaborationProvider {
   private applyState(state: CollaborationState) {
     if (state.document_id !== this.options.documentId || state.protocol_version !== 1 || !Number.isSafeInteger(state.content_version) || state.content_version < 1 || typeof state.epoch !== "string") throw new Error("协作服务返回了无法识别的文档状态。");
     if (state.epoch !== this.epoch) throw new Error("文档已切换到新的协作版本，本机草稿需要恢复。");
-    const updates = [...(state.state ? [state.state] : []), ...(state.updates ?? [])].map(decodeCollaborationUpdate);
+    const updates = (state.updates ?? []).map(decodeCollaborationUpdate);
+    if (state.state) updates.unshift(typeof state.state === "string" ? decodeCollaborationUpdate(state.state) : state.state);
     const targets = [...this.bufferedTargets, ...[...this.pending.values()].flatMap(operation => operation.targets ?? [])];
     if (targets.length) {
       const preview = new Y.Doc({ gc: false });

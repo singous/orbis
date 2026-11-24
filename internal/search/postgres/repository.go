@@ -133,10 +133,10 @@ const documentSQL = `SELECT d.id,'document'::text AS type,d.workspace_id,d.title
     LEFT JOIN active_documents visible ON visible.id=d.id
     LEFT JOIN LATERAL (
         WITH RECURSIVE walk AS (
-            SELECT b.block_id,b.plain_text,ARRAY[b.position] AS path FROM document_block_versions b
+            SELECT b.block_id,b.plain_text,ARRAY[b.position] AS path FROM document_block_contents b
             WHERE visible.id IS NOT NULL AND b.document_id=d.id AND b.valid_to IS NULL AND b.parent_id IS NULL
             UNION ALL
-            SELECT b.block_id,b.plain_text,w.path || b.position FROM document_block_versions b JOIN walk w ON b.parent_id=w.block_id
+            SELECT b.block_id,b.plain_text,w.path || b.position FROM document_block_contents b JOIN walk w ON b.parent_id=w.block_id
             WHERE b.document_id=d.id AND b.valid_to IS NULL AND cardinality(w.path)<@block_depth
         ) SELECT string_agg(plain_text,E'\n' ORDER BY path,block_id) AS text FROM walk WHERE plain_text<>''
     ) body ON true

@@ -64,6 +64,7 @@ class Server {
   rejectUpdates = false;
   loseTitleResponse = false;
   opening: Promise<void> = Promise.resolve();
+  previewAvailable = false;
   titleReceipts = new Map<string, Record<string, unknown>>();
   sockets: Socket[] = [];
   updates: Array<{ socket: Socket; message: Wire; version: number }> = [];
@@ -92,7 +93,14 @@ beforeEach(() => {
   vi.stubGlobal("IDBKeyRange", IDBKeyRange);
   vi.stubGlobal("WebSocket", class extends Socket { constructor(_url: string) { super(server); } });
   requests = http((url, init) => {
-    if (url.pathname.endsWith(`/documents/${NOTE_ID}`)) return response({ ...nativeDocument, title: server.title, content_version: server.version, collaboration_available: true });
+    if (url.pathname.endsWith(`/documents/${NOTE_ID}`)) return response({ ...nativeDocument, title: server.title, content_version: server.version, collaboration_available: true, collaboration_preview_available: server.previewAvailable });
+    if (url.pathname.endsWith("/children") && server.previewAvailable) {
+      return response({ version: server.version, items: [{
+        id: blockId, parent_id: null, position: 0, block_revision: server.version, child_count: 0,
+        block_type: "paragraph", payload_loaded: true, payload_bytes: 32,
+        payload: { type: "paragraph", props: {}, content: [{ text: "首屏预览", marks: [], href: null }] },
+      }], pagination: { next_cursor: "next", has_more: true } });
+    }
     if (url.pathname.endsWith("/collaboration")) return server.opening.then(() => response(server.state()));
     if (url.pathname.endsWith(`/collections/${NOTEBOOK_ID}`)) return response(nativeCollection);
     if (url.pathname.endsWith("/operations") && init.method === "POST") {
@@ -143,6 +151,21 @@ it("starts local draft checks while the snapshot is pending and waits before all
     release();
   }
   expect(await within(view.container).findByRole("button", { name: "模拟协作编辑" })).toBeEnabled();
+});
+
+it("shows a version-bound read-only preview while a long document opens", async () => {
+  server.previewAvailable = true;
+  let release!: () => void;
+  server.opening = new Promise<void>(resolve => { release = resolve; });
+  const view = open();
+  try {
+    const preview = await within(view.container).findByRole("region", { name: "文档正文预览" });
+    expect(preview).toHaveTextContent("首屏预览");
+    expect(within(view.container).queryByRole("button", { name: "模拟协作编辑" })).not.toBeInTheDocument();
+    expect(requests.some(request => request.path.includes("/children?page_size=32&version=4"))).toBe(true);
+  } finally { release(); }
+  expect(await within(view.container).findByRole("button", { name: "模拟协作编辑" })).toBeEnabled();
+  expect(within(view.container).queryByRole("region", { name: "文档正文预览" })).not.toBeInTheDocument();
 });
 
 it("uses the CRDT body without native JSON paging and shows saved only after durable ACK", async () => {

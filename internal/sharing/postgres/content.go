@@ -370,7 +370,7 @@ func (r *Repository) Block(ctx context.Context, input sharing.PublicQuery) (shar
 			Position int
 			Payload  json.RawMessage
 		}
-		if err := tx.Table("document_block_versions").Select("block_id,parent_id,position,payload").Where("document_id=? AND block_id=? AND valid_from<=? AND (valid_to IS NULL OR valid_to>?)", doc.ID, input.BlockID, doc.ContentVersion, doc.ContentVersion).Take(&row).Error; err != nil {
+		if err := tx.Table("document_block_contents").Select("block_id,parent_id,position,payload").Where("document_id=? AND block_id=? AND valid_from<=? AND (valid_to IS NULL OR valid_to>?)", doc.ID, input.BlockID, doc.ContentVersion, doc.ContentVersion).Take(&row).Error; err != nil {
 			return scopeError(err)
 		}
 		var payload document.Payload
@@ -434,7 +434,7 @@ func (r *Repository) Asset(ctx context.Context, input sharing.PublicQuery) (asse
 				return sharing.Missing()
 			}
 			var rows []struct{ Payload json.RawMessage }
-			if err := tx.WithContext(ctx).Table("document_block_versions").Select("payload").Where("document_id=? AND valid_from<=? AND (valid_to IS NULL OR valid_to>?) AND payload->>'type'='board'", doc.ID, doc.ContentVersion, doc.ContentVersion).Limit(document.MaxBlocks).Find(&rows).Error; err != nil {
+			if err := tx.WithContext(ctx).Table("document_block_contents").Select("payload").Where("document_id=? AND valid_from<=? AND (valid_to IS NULL OR valid_to>?) AND payload->>'type'='board'", doc.ID, doc.ContentVersion, doc.ContentVersion).Limit(document.MaxBlocks).Find(&rows).Error; err != nil {
 				return err
 			}
 			for _, row := range rows {

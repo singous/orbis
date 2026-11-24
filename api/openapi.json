@@ -32748,7 +32748,7 @@
       "get": {
         "operationId": "getDocumentCollaboration",
         "summary": "读取已启用文档的持久化 CRDT 状态",
-        "description": "工作空间、文集、文档及全部祖先当前可见；启用与写入需要编辑权限。正文 CRDT 状态、原生块查询投影、历史和幂等回执在同一事务提交后才确认保存。相同 operation_id 重试必须保持 epoch、update、targets 与 table_copies 的原始意图。409 COLLABORATION_TARGET_REMOVED（原所属块已更新、移动或删除，保留本地二进制草稿并停止自动重试）、COLLABORATION_EPOCH_CHANGED、COLLABORATION_SEED_MISMATCH、COLLABORATION_PROJECTION_MISMATCH、IDEMPOTENCY_CONFLICT；404 COLLABORATION_NOT_ENABLED；422 COLLABORATION_UPDATE_INVALID；413 COLLABORATION_TOO_LARGE；503 COLLABORATION_UNAVAILABLE。普通并发富文本通过 CRDT 合并；业务覆盖、权限和发布继续遵守各自的版本契约。",
+        "description": "工作空间、文集、文档及全部祖先当前可见；启用与写入需要编辑权限。正文 CRDT 状态、原生块查询投影、历史和幂等回执在同一事务提交后才确认保存。相同 operation_id 重试必须保持 epoch、update、targets 与 table_copies 的原始意图。409 COLLABORATION_TARGET_REMOVED（原所属块已更新、移动或删除，保留本地二进制草稿并停止自动重试）、COLLABORATION_EPOCH_CHANGED、COLLABORATION_SEED_MISMATCH、COLLABORATION_PROJECTION_MISMATCH、IDEMPOTENCY_CONFLICT；404 COLLABORATION_NOT_ENABLED；422 COLLABORATION_UPDATE_INVALID；413 COLLABORATION_TOO_LARGE；503 COLLABORATION_UNAVAILABLE。普通并发富文本通过 CRDT 合并；业务覆盖、权限和发布继续遵守各自的版本契约。 可同时提供 epoch 与 after_version 续读。仅当前代次且版本连续时返回增量，已对齐时返回元信息，其他情况返回完整快照。 客户端通过 Accept 请求此表示。完整快照包含 4 字节大端 JSON 元信息长度、UTF-8 元信息和原始 Yjs 字节。JSON 元信息包含文档 ID、epoch、正文及协议版本和更新时间。增量和已对齐响应仍为 JSON。",
         "security": [
           {
             "bearerAuth": []
@@ -32771,6 +32771,27 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "epoch",
+            "in": "query",
+            "required": false,
+            "description": "客户端完整基线的同步代次，必须与 after_version 同时提供。",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "after_version",
+            "in": "query",
+            "required": false,
+            "description": "客户端完整基线已应用到的正文版本，必须与 epoch 同时提供。",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
             }
           }
         ],
@@ -32814,6 +32835,12 @@
                     "data"
                   ],
                   "additionalProperties": false
+                }
+              },
+              "application/vnd.orbis.yjs": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
                 }
               }
             }
@@ -32933,7 +32960,7 @@
       "post": {
         "operationId": "enableDocumentCollaboration",
         "summary": "在保留块标识与内容的前提下启用文档协同",
-        "description": "首次从完整原生块树初始化一次；重复启用返回同一 epoch 和二进制身份，不改变既有正文内容或版本。工作空间、文集、文档及全部祖先当前可见；启用与写入需要编辑权限。正文 CRDT 状态、原生块查询投影、历史和幂等回执在同一事务提交后才确认保存。相同 operation_id 重试必须保持 epoch、update、targets 与 table_copies 的原始意图。409 COLLABORATION_TARGET_REMOVED（原所属块已更新、移动或删除，保留本地二进制草稿并停止自动重试）、COLLABORATION_EPOCH_CHANGED、COLLABORATION_SEED_MISMATCH、COLLABORATION_PROJECTION_MISMATCH、IDEMPOTENCY_CONFLICT；404 COLLABORATION_NOT_ENABLED；422 COLLABORATION_UPDATE_INVALID；413 COLLABORATION_TOO_LARGE；503 COLLABORATION_UNAVAILABLE。普通并发富文本通过 CRDT 合并；业务覆盖、权限和发布继续遵守各自的版本契约。",
+        "description": "首次从完整原生块树初始化一次；重复启用返回同一 epoch 和二进制身份，不改变既有正文内容或版本。工作空间、文集、文档及全部祖先当前可见；启用与写入需要编辑权限。正文 CRDT 状态、原生块查询投影、历史和幂等回执在同一事务提交后才确认保存。相同 operation_id 重试必须保持 epoch、update、targets 与 table_copies 的原始意图。409 COLLABORATION_TARGET_REMOVED（原所属块已更新、移动或删除，保留本地二进制草稿并停止自动重试）、COLLABORATION_EPOCH_CHANGED、COLLABORATION_SEED_MISMATCH、COLLABORATION_PROJECTION_MISMATCH、IDEMPOTENCY_CONFLICT；404 COLLABORATION_NOT_ENABLED；422 COLLABORATION_UPDATE_INVALID；413 COLLABORATION_TOO_LARGE；503 COLLABORATION_UNAVAILABLE。普通并发富文本通过 CRDT 合并；业务覆盖、权限和发布继续遵守各自的版本契约。 可同时提供 epoch 与 after_version 续读。仅当前代次且版本连续时返回增量，已对齐时返回元信息，其他情况返回完整快照。 客户端通过 Accept 请求此表示。完整快照包含 4 字节大端 JSON 元信息长度、UTF-8 元信息和原始 Yjs 字节。JSON 元信息包含文档 ID、epoch、正文及协议版本和更新时间。增量和已对齐响应仍为 JSON。",
         "security": [
           {
             "bearerAuth": []
@@ -32956,6 +32983,27 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "epoch",
+            "in": "query",
+            "required": false,
+            "description": "客户端完整基线的同步代次，必须与 after_version 同时提供。",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "after_version",
+            "in": "query",
+            "required": false,
+            "description": "客户端完整基线已应用到的正文版本，必须与 epoch 同时提供。",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
             }
           }
         ],
@@ -32999,6 +33047,12 @@
                     "data"
                   ],
                   "additionalProperties": false
+                }
+              },
+              "application/vnd.orbis.yjs": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
                 }
               }
             }
@@ -43833,6 +43887,10 @@
             "format": "uuid",
             "nullable": true,
             "description": "Primary native board, or null for other documents."
+          },
+          "collaboration_preview_available": {
+            "type": "boolean",
+            "description": "详情接口在顶层正文块超过首屏容量时返回 true。省略时直接等待编辑器。"
           }
         },
         "required": [
@@ -54235,6 +54293,10 @@
             "format": "uuid",
             "nullable": true,
             "description": "Primary native board, or null for other documents."
+          },
+          "collaboration_preview_available": {
+            "type": "boolean",
+            "description": "详情接口在顶层正文块超过首屏容量时返回 true。省略时直接等待编辑器。"
           }
         },
         "required": [

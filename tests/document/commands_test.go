@@ -90,6 +90,77 @@ func TestSparseCommandsInsertMoveDeleteAndFinalTreeValidation(t *testing.T) {
 		t.Fatal("deletion changed unrelated content")
 	}
 }
+
+func TestStructureOnlyVersionsReuseOriginalPayload(t *testing.T) {
+	f := newDocument(t)
+	first, second, added := block("first text"), block("second text"), block("new text")
+	f.env.Call(t, "PUT", f.path+"/content", f.session.AccessToken, writeBody(1, uuid.NewString(), "Doc", []document.Block{first, second}), 200)
+	start := 0
+	command(t, f, 2, document.Operation{Type: "insert_blocks", Position: &start, Blocks: []document.Block{added}})
+	// A second structure-only revision must reference the payload owner directly.
+	command(t, f, 3, document.Operation{Type: "move_block", BlockID: first.ID, Position: &start})
+	var rows []struct {
+		BlockID         string
+		ValidFrom       int64
+		PayloadRevision *int64
+		OwnsPayload     bool
+		StoredTextBytes int
+	}
+	if err := f.env.DB.Table("document_block_versions").
+		Select("block_id, valid_from, payload_revision, payload IS NOT NULL AS owns_payload, octet_length(plain_text) AS stored_text_bytes").
+		Where("document_id=? AND valid_from BETWEEN 3 AND 4", f.documentID).
+		Order("valid_from, position").Scan(&rows).Error; err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 5 {
+		t.Fatalf("expected one new payload and four structure records, got %d records", len(rows))
+	}
+	for _, row := range rows {
+		if row.BlockID == added.ID && row.ValidFrom == 3 {
+			if !row.OwnsPayload || row.PayloadRevision != nil || row.StoredTextBytes != len("new text") {
+				t.Fatalf("new block must own its content: %+v", row)
+			}
+			continue
+		}
+		expected := int64(2)
+		if row.BlockID == added.ID {
+			expected = 3
+		}
+		if row.OwnsPayload || row.StoredTextBytes != 0 || row.PayloadRevision == nil || *row.PayloadRevision != expected {
+			t.Fatalf("structure record copied content or chained its reference: %+v", row)
+		}
+	}
+	for _, version := range []struct {
+		query string
+		ids   []string
+		text  []string
+	}{
+		{"?version=2", []string{first.ID, second.ID}, []string{"first text", "second text"}},
+		{"?version=3", []string{added.ID, first.ID, second.ID}, []string{"new text", "first text", "second text"}},
+		{"", []string{first.ID, added.ID, second.ID}, []string{"first text", "new text", "second text"}},
+	} {
+		body := testenv.Decode[content](t, f.env.Call(t, "GET", f.path+"/content"+version.query, f.session.AccessToken, nil, 200))
+		if len(body.Blocks) != len(version.ids) {
+			t.Fatalf("version %q has %d blocks", version.query, len(body.Blocks))
+		}
+		for i, block := range body.Blocks {
+			if block.ID != version.ids[i] || len(block.Content) != 1 || block.Content[0].Text != version.text[i] {
+				t.Fatalf("version %q loses block contents or order at %d: %+v", version.query, i, block)
+			}
+		}
+	}
+	command(t, f, 4, document.Operation{Type: "replace_text", BlockID: first.ID, Match: "first", Replacement: "changed"})
+	var stored struct {
+		PayloadRevision *int64
+		PlainText       string
+	}
+	if err := f.env.DB.Table("document_block_versions").Where("document_id=? AND block_id=? AND valid_to IS NULL", f.documentID, first.ID).Take(&stored).Error; err != nil {
+		t.Fatal(err)
+	}
+	if stored.PayloadRevision != nil || stored.PlainText != "changed text" {
+		t.Fatalf("content edit must own its new payload: %+v", stored)
+	}
+}
 func TestSparseCommandConcurrencyAndReceiptRollback(t *testing.T) {
 	f := newDocument(t)
 	first, second := block("first"), block("second")

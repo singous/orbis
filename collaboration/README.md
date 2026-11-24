@@ -29,7 +29,8 @@ responses. The process exits cleanly on SIGTERM/SIGINT.
 ```
 
 - `state: null, blocks: NativeBlock[]` initializes an existing native document
-  exactly once. Empty native content remains an empty fragment.
+  exactly once. Empty native content remains an empty fragment. The response
+  includes the complete seed state and returns `update: null`.
 - `state: base64, update: base64, blocks: null` merges browser updates into the
   persisted binary state. Duplicate updates are safe; missing causal dependencies
   are rejected until the client resynchronizes and resends the complete update.
@@ -37,6 +38,12 @@ responses. The process exits cleanly on SIGTERM/SIGINT.
   against that same state. Stable block IDs retain unaffected XML/text identities;
   inline edits use the Yjs ProseMirror binding. Never rebuild a live CRDT from JSON.
 - `state: base64, blocks: null, update: null` reads and validates existing state.
+
+Merging an update can return `text_block_ids` when the applied transaction only
+changed text or presentation properties in existing top-level paragraphs or headings. Go uses these
+server-derived IDs to limit comparisons against the previous native rows. The
+response still includes the complete validated projection. Structural edits,
+unsupported node types, and older engines use full projection comparison.
 
 Updates may include `targets: [{client, clock}]` (at most 20,000 entries), using
 the original owning block XmlElement Item IDs before the local transaction.

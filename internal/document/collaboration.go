@@ -40,11 +40,12 @@ type CollaborationTarget struct {
 }
 
 type CollaborationTransformResult struct {
-	State       []byte  `json:"state"`
-	Update      []byte  `json:"update"`
-	Blocks      []Block `json:"blocks"`
-	Changed     bool    `json:"changed"`
-	StateVector []byte  `json:"state_vector"`
+	State        []byte   `json:"state"`
+	Update       []byte   `json:"update"`
+	Blocks       []Block  `json:"blocks"`
+	Changed      bool     `json:"changed"`
+	StateVector  []byte   `json:"state_vector"`
+	TextBlockIDs []string `json:"text_block_ids,omitempty"`
 }
 
 type CollaborationState struct {
@@ -85,9 +86,22 @@ type CollaborationResult struct {
 // CollaborationRepository keeps binary state, native blocks, history and receipts atomic.
 type CollaborationRepository interface {
 	CollaborationAvailable() bool
+	HasCollaborationPreview(context.Context, DirectoryScope, int64) (bool, error)
 	EnableCollaboration(context.Context, DirectoryScope, int64) (CollaborationState, error)
-	ReadCollaboration(context.Context, DirectoryScope, int64) (CollaborationState, bool, error)
+	ReadCollaboration(context.Context, DirectoryScope, int64, ...string) (CollaborationState, bool, error)
 	CommitCollaboration(context.Context, CollaborationCommit) (CollaborationResult, error)
+}
+
+// HasCollaborationPreview is a size hint for a document already read by actor.
+func (s *Service) HasCollaborationPreview(ctx context.Context, scope DirectoryScope, version int64) (bool, error) {
+	r, ok := s.repo.(CollaborationRepository)
+	if !ok || !r.CollaborationAvailable() {
+		return false, nil
+	}
+	if err := s.access.Require(ctx, scope.ActorID, scope.WorkspaceID, workspace.Read); err != nil {
+		return false, err
+	}
+	return r.HasCollaborationPreview(ctx, scope, version)
 }
 
 func (s *Service) CollaborationAvailable() bool {
@@ -110,8 +124,17 @@ func (s *Service) EnableCollaboration(ctx context.Context, scope DirectoryScope)
 	return r.EnableCollaboration(ctx, scope, s.clock.Now().UnixMilli())
 }
 
+// ResumeCollaboration checks edit permission before reusing an existing base.
+func (s *Service) ResumeCollaboration(ctx context.Context, scope DirectoryScope, after int64, epoch string) (CollaborationState, error) {
+	if err := s.access.Require(ctx, scope.ActorID, scope.WorkspaceID, workspace.Edit); err != nil {
+		return CollaborationState{}, err
+	}
+	state, _, err := s.ReadCollaboration(ctx, scope, after, epoch)
+	return state, err
+}
+
 // ReadCollaboration checks current visibility even when no newer snapshot exists.
-func (s *Service) ReadCollaboration(ctx context.Context, scope DirectoryScope, after int64) (CollaborationState, bool, error) {
+func (s *Service) ReadCollaboration(ctx context.Context, scope DirectoryScope, after int64, epoch ...string) (CollaborationState, bool, error) {
 	if err := s.access.Require(ctx, scope.ActorID, scope.WorkspaceID, workspace.Read); err != nil {
 		return CollaborationState{}, false, err
 	}
@@ -119,7 +142,7 @@ func (s *Service) ReadCollaboration(ctx context.Context, scope DirectoryScope, a
 	if !ok || !r.CollaborationAvailable() {
 		return CollaborationState{}, false, CollaborationUnavailable()
 	}
-	return r.ReadCollaboration(ctx, scope, after)
+	return r.ReadCollaboration(ctx, scope, after, epoch...)
 }
 
 func (s *Service) ApplyCollaboration(ctx context.Context, scope DirectoryScope, input CollaborationUpdate) (CollaborationResult, error) {

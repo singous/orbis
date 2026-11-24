@@ -84,7 +84,7 @@ func CheckVersion(current, expected int64) error {
 }
 func BlockAt(ctx context.Context, tx *gorm.DB, scope document.DirectoryScope, version int64, id string) (document.Payload, error) {
 	var row blockRow
-	err := tx.WithContext(ctx).Table("document_block_versions b").Select("b.*").Joins("JOIN documents d ON d.id=b.document_id").Where(
+	err := tx.WithContext(ctx).Table(blockContentTable+" b").Select("b.*").Joins("JOIN documents d ON d.id=b.document_id").Where(
 		"d.workspace_id=? AND d.id=? AND b.block_id=? AND b.valid_from<=? AND (b.valid_to IS NULL OR b.valid_to>?)",
 		scope.WorkspaceID,
 		scope.DocumentID,
@@ -113,7 +113,7 @@ func CommitBlock(ctx context.Context, tx *gorm.DB, input BlockCommit, engines ..
 		return 0, fault.New(fault.Conflict, "DOCUMENT_VERSION_EXHAUSTED", "文档版本号已达到上限")
 	}
 	var before blockRow
-	if err := tx.WithContext(ctx).Where("document_id=? AND block_id=? AND valid_to IS NULL", input.Document.ID, input.BlockID).Take(&before).Error; err != nil {
+	if err := tx.WithContext(ctx).Table(blockContentTable).Where("document_id=? AND block_id=? AND valid_to IS NULL", input.Document.ID, input.BlockID).Take(&before).Error; err != nil {
 		return 0, missing(err)
 	}
 	encoded, err := json.Marshal(input.Payload)
@@ -133,6 +133,7 @@ func CommitBlock(ctx context.Context, tx *gorm.DB, input BlockCommit, engines ..
 	before.ValidFrom = next
 	before.ValidTo = nil
 	before.Payload = encoded
+	before.PayloadRevision = nil
 	if err := cacheBlock(&before); err != nil {
 		return 0, err
 	}
@@ -181,7 +182,7 @@ func checkBlockBudget(ctx context.Context, tx *gorm.DB, before blockRow, encoded
 		return nil
 	}
 	var rows []blockRow
-	if err := tx.WithContext(ctx).Where("document_id=? AND valid_to IS NULL", before.DocumentID).Find(&rows).Error; err != nil {
+	if err := tx.WithContext(ctx).Table(blockContentTable).Where("document_id=? AND valid_to IS NULL", before.DocumentID).Find(&rows).Error; err != nil {
 		return err
 	}
 	records := make([]document.BlockRecord, 0, len(rows))

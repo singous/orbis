@@ -134,6 +134,16 @@ async function request<T>(path: string, options: ApiRequestOptions, parse: (resp
   }
 }
 export function apiRequest<T = unknown>(path: string, options: ApiRequestOptions = {}): Promise<T> { return request(path, options, jsonSuccess<T>); }
+export function apiNegotiatedRequest(path: string, options: ApiRequestOptions, mediaType: string, read: (response: Response) => Promise<unknown>): Promise<unknown> {
+  const headers = new Headers(options.headers);
+  headers.set("Accept", `${mediaType}, application/json`);
+  return request(path, { ...options, headers }, async (response, captured) => {
+    if (response.headers.get("Content-Type")?.split(";")[0] !== mediaType) return jsonSuccess(response, captured);
+    const data = await read(response);
+    captured.signal?.throwIfAborted();
+    return data;
+  });
+}
 export function apiBlobRequest(path: string, options: ApiRequestOptions = {}): Promise<Blob> { return request(path, options, response => response.blob()); }
 export function publicMarkdownRequest(path: string, signal?: AbortSignal): Promise<string> {
   return request(path, { signal, cache: "no-store" }, async response => {

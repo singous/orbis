@@ -6,6 +6,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http/httptest"
 	"os"
 	"strings"
@@ -16,6 +18,8 @@ import (
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 	"orbis.local/orbis/internal/document"
 	"orbis.local/orbis/internal/document/crdtengine"
 	docstore "orbis.local/orbis/internal/document/postgres"
@@ -23,6 +27,26 @@ import (
 	"orbis.local/orbis/internal/table"
 	"orbis.local/orbis/tests/testenv"
 )
+
+type projectionReadLogger struct {
+	logger.Interface
+	projectionRows int64
+}
+
+func (l *projectionReadLogger) Trace(_ context.Context, _ time.Time, query func() (string, int64), _ error) {
+	sql, rows := query()
+	if strings.HasPrefix(sql, `SELECT * FROM "document_block_contents"`) {
+		l.projectionRows += rows
+	}
+}
+
+type fullProjectionEngine struct{ document.CollaborationEngine }
+
+func (e fullProjectionEngine) Transform(ctx context.Context, input document.CollaborationTransform) (document.CollaborationTransformResult, error) {
+	result, err := e.CollaborationEngine.Transform(ctx, input)
+	result.TextBlockIDs = nil
+	return result, err
+}
 
 type delayedCollaborationEngine struct {
 	engine           document.CollaborationEngine
@@ -151,6 +175,59 @@ func TestCollaborationPreservesUntouchedNativeRunsAndBlockRevision(t *testing.T)
 	got, _ = json.Marshal(afterNative.Blocks[0].Content)
 	if afterNative.Revision.Version != 4 || !bytes.Equal(got, want) {
 		t.Fatal("semantic CRDT comparison changed a native caller's explicit run representation")
+	}
+}
+
+func TestCollaborationTextEditReadsOnlyTheChangedProjectionRow(t *testing.T) {
+	const paragraphs = 5000
+	blocks := make([]document.Block, paragraphs)
+	text := strings.Repeat("这是一段用于测试首屏速度的文档正文。", 5)
+	for index := range blocks {
+		blocks[index] = block(fmt.Sprintf("段落 %d %s", index, text))
+	}
+	f, engine, blocks, state := collaborationFixtureWithBlocks(t, blocks)
+	changed := copyBlocks(t, blocks)
+	changed[0].Content[0].Text += " Updated."
+	update := generatedUpdate(t, engine, state, changed)
+	transformed, err := engine.Transform(t.Context(), document.CollaborationTransform{State: state.State, Update: update.Update})
+	if err != nil || len(transformed.TextBlockIDs) != 1 || transformed.TextBlockIDs[0] != changed[0].ID {
+		t.Fatalf("engine did not classify the single text edit: %v (%v)", transformed.TextBlockIDs, err)
+	}
+	trace := &projectionReadLogger{Interface: logger.Default}
+	db := f.env.DB.Session(&gorm.Session{Logger: trace})
+	repository := docstore.NewWithCollaboration(db, engine)
+	commit := document.CollaborationCommit{
+		Scope: document.DirectoryScope{ActorID: f.session.User.ID, WorkspaceID: f.workspaceID, DocumentID: f.documentID},
+		Input: update, RequestHash: "local-projection-test", Timestamp: f.env.Clock.Now().UnixMilli(),
+	}
+	// Roll the complete path back so the next run starts from the same state.
+	rollback := errors.New("roll back baseline projection")
+	fullStart := time.Now()
+	err = db.Transaction(func(tx *gorm.DB) error {
+		if _, err := docstore.NewWithCollaboration(tx, fullProjectionEngine{engine}).CommitCollaboration(t.Context(), commit); err != nil {
+			return err
+		}
+		return rollback
+	})
+	if !errors.Is(err, rollback) {
+		t.Fatalf("full projection failed: %v", err)
+	}
+	fullDuration := time.Since(fullStart)
+	fullRows := trace.projectionRows
+	trace.projectionRows = 0
+	localStart := time.Now()
+	if _, err := repository.CommitCollaboration(t.Context(), commit); err != nil {
+		t.Fatal(err)
+	}
+	localDuration := time.Since(localStart)
+	if fullRows != paragraphs || trace.projectionRows != 1 {
+		t.Fatalf("projection comparison read %d baseline block rows and %d optimized rows", fullRows, trace.projectionRows)
+	}
+	t.Logf("projection comparison read %d baseline block rows (%s) and %d optimized rows (%s)", fullRows, fullDuration.Round(time.Millisecond), trace.projectionRows, localDuration.Round(time.Millisecond))
+	t.Logf("full Yjs snapshot %d bytes; broadcast update %d bytes", len(transformed.State), len(transformed.Update))
+	current := testenv.Decode[content](t, f.env.Call(t, "GET", f.path+"/content", f.session.AccessToken, nil, 200))
+	if !document.EquivalentCollaborationBlocks(changed, current.Blocks) {
+		t.Fatal("the incrementally persisted projection differs from the complete document")
 	}
 }
 func generatedUpdate(t *testing.T, engine *crdtengine.Client, state document.CollaborationState, blocks []document.Block) document.CollaborationUpdate {

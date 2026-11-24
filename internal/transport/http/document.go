@@ -138,6 +138,14 @@ func (h *handler) document(c *gin.Context) {
 	}
 	result := h.documentResponse(item)
 	result.CollaborationAvailable = h.deps.Documents.CollaborationAvailable()
+	if result.CollaborationAvailable && item.BoardID == nil && item.SheetID == nil {
+		preview, err := h.deps.Documents.HasCollaborationPreview(c.Request.Context(), directoryScope(c), item.ContentVersion)
+		if err != nil {
+			h.fail(c, err)
+			return
+		}
+		result.CollaborationPreviewAvailable = preview
+	}
 	success(c, http.StatusOK, result)
 }
 

@@ -56,7 +56,7 @@ func (r *Repository) Browse(ctx context.Context, scope document.DirectoryScope, 
 			if err := tx.Raw(workspaceVisibleSQL+`SELECT page.*, coalesce(summary.text,'') AS summary
               FROM (SELECT * FROM visible ORDER BY updated_at_ms DESC,id DESC LIMIT ? OFFSET ?) page
               LEFT JOIN LATERAL (
-                SELECT left(btrim(b.plain_text,E' \n\r\t'),?) AS text FROM document_block_versions b
+                SELECT left(btrim(b.plain_text,E' \n\r\t'),?) AS text FROM document_block_contents b
                 WHERE b.document_id=page.id AND b.valid_from<=page.content_version
                   AND (b.valid_to IS NULL OR b.valid_to>page.content_version)
                   AND btrim(b.plain_text,E' \n\r\t')<>''

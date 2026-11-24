@@ -46,7 +46,7 @@ func (r *Library) Search(ctx context.Context, q integration.LibraryQuery) ([]int
 		}
 		err = tx.Raw(`SELECT s.id AS document_id,b.block_id,b.valid_from AS block_revision,b.snippet FROM jsonb_to_recordset(CAST(? AS JSONB)) AS s(id UUID,version BIGINT)
    CROSS JOIN LATERAL(SELECT b.block_id,b.valid_from,substring(b.plain_text FROM greatest(1,strpos(lower(b.plain_text),lower(?))-60) FOR 300) AS snippet
-   FROM document_block_versions b WHERE b.document_id=s.id AND b.valid_from<=s.version AND (b.valid_to IS NULL OR b.valid_to>s.version) AND strpos(lower(b.plain_text),lower(?))>0 ORDER BY b.block_id LIMIT ?)b`, string(encoded), q.Text, q.Text, integration.MaxSearchAnchors).Scan(&rows).Error
+   FROM document_block_contents b WHERE b.document_id=s.id AND b.valid_from<=s.version AND (b.valid_to IS NULL OR b.valid_to>s.version) AND strpos(lower(b.plain_text),lower(?))>0 ORDER BY b.block_id LIMIT ?)b`, string(encoded), q.Text, q.Text, integration.MaxSearchAnchors).Scan(&rows).Error
 		if err != nil {
 			return err
 		}

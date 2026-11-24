@@ -12,7 +12,7 @@ import (
 // ReferencesAsset follows only renderer fields, never arbitrary editor metadata or textual UUID mentions.
 func ReferencesAsset(ctx context.Context, tx *gorm.DB, did string, version int64, id string) (bool, error) {
 	var exists bool
-	err := tx.WithContext(ctx).Raw(`SELECT EXISTS(SELECT 1 FROM document_block_versions b
+	err := tx.WithContext(ctx).Raw(`SELECT EXISTS(SELECT 1 FROM document_block_contents b
       WHERE b.document_id=@document AND b.valid_from<=@version AND (b.valid_to IS NULL OR b.valid_to>@version)
       AND (
         (b.payload->>'type' IN ('image','audio','video','file','drawing') AND b.payload->'props'->'source'->>'type'='asset' AND b.payload->'props'->'source'->>'asset_id'=@asset)
@@ -39,7 +39,7 @@ func ReferencedAssetIDs(ctx context.Context, tx *gorm.DB, did string, version in
 	}
 	var rows []struct{ ID string }
 	err = tx.WithContext(ctx).Raw(`WITH bodies AS (
-      SELECT payload FROM document_block_versions WHERE document_id=@document AND valid_from<=@version AND (valid_to IS NULL OR valid_to>@version)
+      SELECT payload FROM document_block_contents WHERE document_id=@document AND valid_from<=@version AND (valid_to IS NULL OR valid_to>@version)
     ), refs AS (
       SELECT payload->'props'->'source'->>'asset_id' AS id FROM bodies
        WHERE payload->>'type' IN ('image','audio','video','file','drawing') AND payload->'props'->'source'->>'type'='asset'
@@ -72,7 +72,7 @@ func ReferencedAssetsInSnapshots(ctx context.Context, tx *gorm.DB, snapshots *go
 	}
 	var rows []struct{ ID string }
 	query := `WITH bodies AS (
-      SELECT b.payload FROM document_block_versions b JOIN (?) s ON s.id=b.document_id
+      SELECT b.payload FROM document_block_contents b JOIN (?) s ON s.id=b.document_id
         AND b.valid_from<=s.version AND (b.valid_to IS NULL OR b.valid_to>s.version)
     ), refs AS (
       SELECT payload->'props'->'source'->>'asset_id' AS id FROM bodies WHERE payload->>'type' IN ('image','audio','video','file','drawing') AND payload->'props'->'source'->>'type'='asset'
