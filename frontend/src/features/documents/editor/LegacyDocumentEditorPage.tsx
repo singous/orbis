@@ -597,8 +597,10 @@ export function LegacyDocumentEditorPage() {
     // Explicitly replace the draft only after both server reads succeed.
     const coordinator = coordinatorRef.current;
     await coordinator?.settlePendingSave();
-    const [noteResult, contentResult] = await Promise.all([noteQuery.refetch(), contentQuery.refetch()]);
-    if (coordinatorRef.current !== coordinator || !noteResult.data || !contentResult.data || noteResult.error || contentResult.error) return;
+    const noteResult = await noteQuery.refetch();
+    if (coordinatorRef.current !== coordinator || !noteResult.data || noteResult.error) return;
+    const contentResult = await contentQuery.refetch();
+    if (coordinatorRef.current !== coordinator || !contentResult.data || contentResult.error) return;
     coordinator?.dispose(false);
     const next = { title: contentResult.data.title ?? noteResult.data.title, blocks: normalizeEditorBlocks(noteId, contentResult.data.blocks), version: contentResult.data.content_version };
     if (coordinatorMode.current?.coordinator === coordinator) { coordinatorMode.current.mode.partial = "next_cursor" in contentResult.data; coordinatorMode.current.mode.blocks = "next_cursor" in contentResult.data && (isBoundedContentPage(contentResult.data)); }
@@ -798,7 +800,10 @@ export function LegacyDocumentEditorPage() {
           />
           {contentQuery.isError && !editorDraft ? (
             <div role="alert" className="flex items-center gap-3 py-5 text-sm text-muted-foreground">
-              无法读取正文。<Button size="sm" variant="secondary" onClick={() => void contentQuery.refetch()}>重试</Button>
+              无法读取正文。<Button size="sm" variant="secondary" onClick={async () => {
+                const note = await noteQuery.refetch();
+                if (!note.error) await contentQuery.refetch();
+              }}>重试</Button>
             </div>
           ) : !editorDraft ? (
             <LoadingState label="正在打开文档…" variant="editor-body" bones="document-body" />

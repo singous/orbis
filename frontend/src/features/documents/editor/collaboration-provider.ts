@@ -68,7 +68,12 @@ export function encodeCollaborationUpdate(update: Uint8Array): string {
   return btoa(binary);
 }
 export function decodeCollaborationUpdate(update: string): Uint8Array {
-  return Uint8Array.from(atob(update), character => character.charCodeAt(0));
+  const bytesType: Uint8ArrayConstructor & { fromBase64?: (value: string) => Uint8Array } = Uint8Array;
+  if (bytesType.fromBase64) return bytesType.fromBase64(update);
+  const binary = atob(update);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  return bytes;
 }
 function socketAddress(workspace: string, document: string): string {
   const url = new URL(`/api/v1/workspaces/${encodeURIComponent(workspace)}/documents/${encodeURIComponent(document)}/collaboration/socket`, globalThis.location.href);

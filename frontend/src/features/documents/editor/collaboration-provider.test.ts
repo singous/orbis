@@ -7,6 +7,23 @@ import { collaborationScope, createCollaborationPersistence } from "./collaborat
 import { fingerprintElement } from "../../content/codecs/collaboration-fingerprint";
 import type { DraftLaneOptions } from "./draft-lanes";
 
+it("decodes the same bytes through native Base64 and the browser fallback", () => {
+  const expected = new Uint8Array([0, 1, 127, 128, 254, 255, 0]);
+  const encoded = encodeCollaborationUpdate(expected);
+  const original = Uint8Array;
+  const native = vi.fn(() => expected);
+  try {
+    vi.stubGlobal("Uint8Array", class extends original { static fromBase64 = native; });
+    expect(decodeCollaborationUpdate(encoded)).toEqual(expected);
+    expect(native).toHaveBeenCalledWith(encoded);
+    vi.stubGlobal("Uint8Array", class extends original { static fromBase64 = undefined; });
+    expect([...decodeCollaborationUpdate(encoded)]).toEqual([...expected]);
+    expect(() => decodeCollaborationUpdate("!")).toThrow();
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
 const documentId = "00000000-0000-4000-8000-000000000001", workspaceId = "00000000-0000-4000-8000-000000000002", userId = "user", epoch = "00000000-0000-4000-8000-000000000003";
 type Wire = Record<string, any>;
 class FakeSocket {

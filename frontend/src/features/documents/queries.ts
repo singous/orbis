@@ -1,5 +1,6 @@
 import {cacheDocumentCommit} from "./document-cache";
 import { useMutation, useQuery, useQueryClient, type Query } from "@tanstack/react-query";
+import { firstNotePageQueryOptions, noteQueryOptions } from "./document-read-queries";
 
 import type { NoteContent, NoteChildrenPage, Notebook, NotebookIconValue, NoteTreeItem, PageData } from "../../shared/api/schemas";
 import { useAuthRequest } from "../../shared/auth/use-auth-request";
@@ -10,10 +11,8 @@ import {
   createNotebook,
   exportMarkdown,
   getDocumentGroup,
-  getNote,
   getNotebook,
   getNoteContent,
-  getNoteChildrenPage,
   getNoteTree,
   importMarkdown,
   listDocumentGroups,
@@ -122,22 +121,17 @@ export function useReorderNotes(notebookId: string) {
 }
 
 export function useNote(noteId?: string) {
-  const auth = useDocumentAuth();
-  return useQuery({
-    queryKey: ["note", noteId],
-    meta: { silent: false },
-    enabled: Boolean(noteId),
-    queryFn: ({ signal }) => getNote(noteId as string, auth, signal),
-  });
+  return useQuery(noteQueryOptions(noteId, useDocumentAuth()));
 }
 
 export function useNoteContent(noteId?: string, options?: { pageSize: number }) {
   const auth = useDocumentAuth();
-  return useQuery<NoteContent|NoteChildrenPage>({
-    queryKey: [options ? "note-content-pages" : "note-content", noteId],
+  const client = useQueryClient();
+  return useQuery<NoteContent | NoteChildrenPage>(options ? firstNotePageQueryOptions(client, noteId, auth, options.pageSize) : {
+    queryKey: ["note-content", noteId],
     meta: { silent: false },
     enabled: Boolean(noteId),
-    queryFn: ({ signal }) => options ? getNoteChildrenPage(noteId as string, auth, { limit: options.pageSize, signal }) : getNoteContent(noteId as string, auth, signal),
+    queryFn: ({ signal }) => getNoteContent(noteId as string, auth, signal),
   });
 }
 
