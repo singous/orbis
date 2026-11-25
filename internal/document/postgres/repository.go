@@ -20,8 +20,9 @@ import (
 )
 
 type Repository struct {
-	db            *gorm.DB
-	collaboration document.CollaborationEngine
+	db                 *gorm.DB
+	collaboration      document.CollaborationEngine
+	collaborationCache collaborationStateCache
 }
 
 // New uses a caller-owned PostgreSQL pool for document storage.
@@ -244,7 +245,7 @@ func (r *Repository) Get(ctx context.Context, wid, did string) (document.Documen
 	// Resolve presentation from at most two active blocks so added prose stays visible.
 	if row.SheetID != nil {
 		var primary []struct{ Kind, SheetID string }
-		if err := tx.Table("document_block_versions").Select("payload->>'type' AS kind, payload->'props'->>'sheet_id' AS sheet_id").Where("document_id=? AND valid_to IS NULL", row.ID).Limit(2).Scan(&primary).Error; err != nil {
+		if err := tx.Table(blockContentTable).Select("payload->>'type' AS kind, payload->'props'->>'sheet_id' AS sheet_id").Where("document_id=? AND valid_to IS NULL", row.ID).Limit(2).Scan(&primary).Error; err != nil {
 			return document.Document{}, err
 		}
 		if len(primary) != 1 || primary[0].Kind != "data_table" || primary[0].SheetID != *row.SheetID {
@@ -253,7 +254,7 @@ func (r *Repository) Get(ctx context.Context, wid, did string) (document.Documen
 	}
 	if row.BoardID != nil {
 		var primary []struct{ Kind, BoardID string }
-		if err := tx.Table("document_block_versions").Select("payload->>'type' AS kind,payload->'props'->>'board_id' AS board_id").Where("document_id=? AND valid_to IS NULL", row.ID).Limit(2).Scan(&primary).Error; err != nil {
+		if err := tx.Table(blockContentTable).Select("payload->>'type' AS kind,payload->'props'->>'board_id' AS board_id").Where("document_id=? AND valid_to IS NULL", row.ID).Limit(2).Scan(&primary).Error; err != nil {
 			return document.Document{}, err
 		}
 		if len(primary) != 1 || primary[0].Kind != "board" || primary[0].BoardID != *row.BoardID {
@@ -281,7 +282,7 @@ func (r *Repository) Read(
 		return document.Revision{}, nil, missing(err)
 	}
 	var rows []blockRow
-	err = r.db.WithContext(ctx).Where(
+	err = r.db.WithContext(ctx).Table(blockContentTable).Where(
 		"document_id = ? AND valid_from <= ? AND (valid_to IS NULL OR valid_to > ?)",
 		did,
 		version,
@@ -358,7 +359,7 @@ func (r *Repository) Commit(ctx context.Context, c document.Commit) (int64, erro
 			return err
 		}
 		var old []blockRow
-		if err := tx.Where("document_id = ? AND valid_to IS NULL", c.DocumentID).Find(&old).Error; err != nil {
+		if err := tx.Table(blockContentTable).Where("document_id = ? AND valid_to IS NULL", c.DocumentID).Find(&old).Error; err != nil {
 			return err
 		}
 		before := map[string]blockRow{}
@@ -370,20 +371,25 @@ func (r *Repository) Commit(ctx context.Context, c document.Commit) (int64, erro
 		for _, b := range c.Blocks {
 			prior, exists := before[b.ID]
 			delete(before, b.ID)
-			if exists && equalParent(prior.ParentID, b.ParentID) && prior.Position == b.Position && equalPayload(prior.Payload, b.Payload) {
+			samePayload := exists && equalPayload(prior.Payload, b.Payload)
+			if samePayload && equalParent(prior.ParentID, b.ParentID) && prior.Position == b.Position {
 				continue
 			}
 			if exists {
 				changed = append(changed, b.ID)
 			}
-			insert = append(insert, blockRow{
+			row := blockRow{
 				DocumentID: c.DocumentID,
 				BlockID:    b.ID,
 				ParentID:   b.ParentID,
 				Position:   b.Position,
 				Payload:    b.Payload,
 				ValidFrom:  version,
-			})
+			}
+			if samePayload {
+				reuseBlockPayload(&row, prior)
+			}
+			insert = append(insert, row)
 		}
 		for id := range before {
 			changed = append(changed, id)
@@ -479,7 +485,7 @@ func blockPage(ctx context.Context, tx *gorm.DB, wid, did string, version int64,
 	if count != 1 {
 		return nil, fault.Missing()
 	}
-	q := tx.WithContext(ctx).Where(
+	q := tx.WithContext(ctx).Table(blockContentTable).Where(
 		"document_id = ? AND valid_from <= ? AND (valid_to IS NULL OR valid_to > ?)",
 		did,
 		version,

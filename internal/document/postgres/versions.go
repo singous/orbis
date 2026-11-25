@@ -110,7 +110,7 @@ func (r *Repository) ReadVersionContent(ctx context.Context, scope document.Dire
 			return missing(err)
 		}
 		var rows []blockRow
-		if err := tx.Table("document_version_blocks m").Select("b.*").Joins("JOIN document_block_versions b ON b.document_id=m.document_id AND b.block_id=m.block_id AND b.valid_from=m.block_revision").Where("m.version_id=? AND m.document_id=?", id, scope.DocumentID).Order("m.block_id").Scan(&rows).Error; err != nil {
+		if err := tx.Table("document_version_blocks m").Select("b.*").Joins("JOIN document_block_contents b ON b.document_id=m.document_id AND b.block_id=m.block_id AND b.valid_from=m.block_revision").Where("m.version_id=? AND m.document_id=?", id, scope.DocumentID).Order("m.block_id").Scan(&rows).Error; err != nil {
 			return err
 		}
 		records := make([]document.BlockRecord, 0, len(rows))
@@ -231,7 +231,7 @@ func captureVersion(ctx context.Context, tx *gorm.DB, did string, revision int64
 		return document.Version{}, missing(err)
 	}
 	var rows []blockRow
-	if err := tx.Where("document_id=? AND valid_from<=? AND (valid_to IS NULL OR valid_to>?)", did, revision, revision).Order("block_id").Find(&rows).Error; err != nil {
+	if err := tx.Table(blockContentTable).Where("document_id=? AND valid_from<=? AND (valid_to IS NULL OR valid_to>?)", did, revision, revision).Order("block_id").Find(&rows).Error; err != nil {
 		return document.Version{}, err
 	}
 	records := make([]document.BlockRecord, 0, len(rows))
@@ -352,8 +352,8 @@ func (r *Repository) CompareVersions(ctx context.Context, scope document.Directo
 		if err != nil {
 			return err
 		}
-		query := `WITH before AS (SELECT b.block_id,b.parent_id,b.position,b.payload,b.plain_text FROM document_version_blocks m JOIN document_block_versions b ON b.document_id=m.document_id AND b.block_id=m.block_id AND b.valid_from=m.block_revision WHERE m.version_id=?),
-            after AS (SELECT b.block_id,b.parent_id,b.position,b.payload,b.plain_text FROM document_version_blocks m JOIN document_block_versions b ON b.document_id=m.document_id AND b.block_id=m.block_id AND b.valid_from=m.block_revision WHERE m.version_id=?)
+		query := `WITH before AS (SELECT b.block_id,b.parent_id,b.position,b.payload,b.plain_text FROM document_version_blocks m JOIN document_block_contents b ON b.document_id=m.document_id AND b.block_id=m.block_id AND b.valid_from=m.block_revision WHERE m.version_id=?),
+            after AS (SELECT b.block_id,b.parent_id,b.position,b.payload,b.plain_text FROM document_version_blocks m JOIN document_block_contents b ON b.document_id=m.document_id AND b.block_id=m.block_id AND b.valid_from=m.block_revision WHERE m.version_id=?)
             SELECT COALESCE(a.block_id,b.block_id) AS block_id,
             CASE WHEN b.block_id IS NULL THEN 'added' WHEN a.block_id IS NULL THEN 'removed' WHEN a.payload IS DISTINCT FROM b.payload THEN 'modified' ELSE 'moved' END AS change,
             a.payload IS DISTINCT FROM b.payload AS content_changed,

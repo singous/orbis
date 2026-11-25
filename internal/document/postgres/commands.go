@@ -33,7 +33,7 @@ type structureRow struct {
 
 func commandState(ctx context.Context, tx *gorm.DB, doc document.Document, ops []document.Operation, writeCache bool) ([]document.StructureNode, map[string]document.Payload, error) {
 	var metadata []structureRow
-	if err := tx.WithContext(ctx).Table("document_block_versions").Select(`block_id,parent_id,position,payload->>'type' AS block_type,valid_from,payload_bytes,payload_digest,
+	if err := tx.WithContext(ctx).Table(blockContentTable).Select(`block_id,parent_id,position,payload->>'type' AS block_type,valid_from,payload_bytes,payload_digest,
       CASE WHEN payload->>'type'='table' THEN jsonb_array_length(payload->'table'->'rows')*jsonb_array_length(payload->'table'->'column_widths') ELSE 0 END AS grid_cells`).Where("document_id=? AND valid_to IS NULL", doc.ID).Find(&metadata).Error; err != nil {
 		return nil, nil, err
 	}
@@ -56,7 +56,7 @@ func commandState(ctx context.Context, tx *gorm.DB, doc document.Document, ops [
 	payloads := map[string]document.Payload{}
 	if len(needed) > 0 {
 		var rows []blockRow
-		if err := tx.WithContext(ctx).Where("document_id=? AND valid_to IS NULL AND block_id IN ?", doc.ID, needed).Find(&rows).Error; err != nil {
+		if err := tx.WithContext(ctx).Table(blockContentTable).Where("document_id=? AND valid_to IS NULL AND block_id IN ?", doc.ID, needed).Find(&rows).Error; err != nil {
 			return nil, nil, err
 		}
 		for _, row := range rows {
@@ -274,7 +274,7 @@ func ApplyCommandsInTransaction(ctx context.Context, tx *gorm.DB, command docume
 			args = append(args, change.ID, change.ParentID, change.Position, change.Revision)
 		}
 		args = append(args, doc.ID, version, doc.ID)
-		result := tx.WithContext(ctx).Exec("WITH moved(block_id,parent_id,position,source_version) AS (VALUES "+strings.Join(values, ",")+") INSERT INTO document_block_versions(document_id,block_id,parent_id,position,payload,payload_bytes,payload_digest,valid_from,valid_to) SELECT ?,m.block_id,m.parent_id,m.position,b.payload,b.payload_bytes,b.payload_digest,?,NULL FROM moved m JOIN document_block_versions b ON b.document_id=? AND b.block_id=m.block_id AND b.valid_from=m.source_version", args...)
+		result := tx.WithContext(ctx).Exec("WITH moved(block_id,parent_id,position,source_version) AS (VALUES "+strings.Join(values, ",")+") INSERT INTO document_block_versions(document_id,block_id,parent_id,position,payload_revision,payload_bytes,payload_digest,valid_from,valid_to) SELECT ?,m.block_id,m.parent_id,m.position,COALESCE(b.payload_revision,b.valid_from),b.payload_bytes,b.payload_digest,?,NULL FROM moved m JOIN document_block_versions b ON b.document_id=? AND b.block_id=m.block_id AND b.valid_from=m.source_version", args...)
 		if result.Error != nil {
 			return document.CommandResult{}, result.Error
 		}

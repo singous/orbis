@@ -10,20 +10,25 @@ import (
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"orbis.local/orbis/internal/document"
 	"orbis.local/orbis/internal/platform/fault"
 )
 
 type collaborationRow struct {
 	DocumentID, Epoch  string
-	ContentVersion     int64
+	ContentVersion     int64 // Version of the binary checkpoint in State.
 	State, StateVector []byte
 	UpdatedAtMS        int64
+	PendingUpdateCount int64
+	PendingUpdateBytes int64
+	PendingSinceMS     int64
 }
 
-func (collaborationRow) TableName() string { return "document_collaboration_states" }
+func (collaborationRow) TableName() string    { return "document_collaboration_states" }
+func (r collaborationRow) headVersion() int64 { return r.ContentVersion + r.PendingUpdateCount }
 func (r collaborationRow) domain() document.CollaborationState {
-	return document.CollaborationState{DocumentID: r.DocumentID, Epoch: r.Epoch, ContentVersion: r.ContentVersion, ProtocolVersion: document.CollaborationProtocolVersion, State: r.State, StateVector: r.StateVector, UpdatedAtMS: r.UpdatedAtMS}
+	return document.CollaborationState{DocumentID: r.DocumentID, Epoch: r.Epoch, ContentVersion: r.headVersion(), ProtocolVersion: document.CollaborationProtocolVersion, StateVector: r.StateVector, UpdatedAtMS: r.UpdatedAtMS}
 }
 
 type collaborationUpdateRow struct {
@@ -41,9 +46,20 @@ func (collaborationUpdateRow) TableName() string { return "document_collaboratio
 
 func (r *Repository) CollaborationAvailable() bool { return r.collaboration != nil }
 
+func (r *Repository) HasCollaborationPreview(ctx context.Context, scope document.DirectoryScope, version int64) (bool, error) {
+	const previewPageSize = 32
+	var hasMore bool
+	err := r.db.WithContext(ctx).Raw(`SELECT EXISTS (
+		SELECT 1 FROM document_block_versions b JOIN documents d ON d.id=b.document_id
+		WHERE d.workspace_id=? AND d.id=? AND d.content_version=?
+		AND b.valid_to IS NULL AND b.parent_id IS NULL
+		OFFSET ? LIMIT 1)`, scope.WorkspaceID, scope.DocumentID, version, previewPageSize).Scan(&hasMore).Error
+	return hasMore, err
+}
+
 func currentBlocks(ctx context.Context, tx *gorm.DB, did string) ([]document.Block, error) {
 	var rows []blockRow
-	if err := tx.WithContext(ctx).Where("document_id=? AND valid_to IS NULL", did).Find(&rows).Error; err != nil {
+	if err := tx.WithContext(ctx).Table(blockContentTable).Where("document_id=? AND valid_to IS NULL", did).Find(&rows).Error; err != nil {
 		return nil, err
 	}
 	records := make([]document.BlockRecord, 0, len(rows))
@@ -58,19 +74,21 @@ func (r *Repository) EnableCollaboration(ctx context.Context, scope document.Dir
 	if r.collaboration == nil {
 		return result, document.CollaborationUnavailable()
 	}
+	var base collaborationBase
 	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		doc, err := LockContent(ctx, tx, scope)
 		if err != nil {
 			return err
 		}
 		var state collaborationRow
-		err = tx.Where("document_id=?", doc.ID).Take(&state).Error
+		err = tx.Clauses(clause.Locking{Strength: "UPDATE"}).Select(collaborationMetadata).Where("document_id=?", doc.ID).Take(&state).Error
 		if err == nil {
-			if state.ContentVersion != doc.ContentVersion {
+			if state.headVersion() != doc.ContentVersion {
 				return fmt.Errorf("collaboration projection is not current")
 			}
 			result = state.domain()
-			return nil
+			base, err = r.loadCollaborationBase(ctx, tx, state)
+			return err
 		}
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
@@ -95,14 +113,23 @@ func (r *Repository) EnableCollaboration(ctx context.Context, scope document.Dir
 			return err
 		}
 		result = state.domain()
+		result.State = state.State
 		return nil
 	})
+	if err == nil && result.State == nil {
+		result.State, err = r.materializeCollaboration(ctx, base)
+	}
 	return result, err
 }
 
-func (r *Repository) ReadCollaboration(ctx context.Context, scope document.DirectoryScope, after int64) (document.CollaborationState, bool, error) {
+func (r *Repository) ReadCollaboration(ctx context.Context, scope document.DirectoryScope, after int64, epochs ...string) (document.CollaborationState, bool, error) {
 	var result document.CollaborationState
+	var base collaborationBase
 	changed := false
+	var epoch string
+	if len(epochs) > 0 {
+		epoch = epochs[0]
+	}
 	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		doc, err := New(tx).Get(ctx, scope.WorkspaceID, scope.DocumentID)
 		if err != nil {
@@ -111,25 +138,26 @@ func (r *Repository) ReadCollaboration(ctx context.Context, scope document.Direc
 		if scope.CollectionID != "" && scope.CollectionID != doc.CollectionID {
 			return fault.Missing()
 		}
-		if after == doc.ContentVersion {
+		if epoch == "" && after == doc.ContentVersion {
 			// Visibility is checked above even for an idle subscription.
 			return nil
 		}
 		var row collaborationRow
-		query := tx.Where("document_id=?", doc.ID)
-		if after > 0 {
-			query = query.Select("document_id,epoch,content_version,state_vector,updated_at_ms")
-		}
+		query := tx.Select(collaborationMetadata).Where("document_id=?", doc.ID)
 		if err := query.Take(&row).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return fault.New(fault.NotFound, "COLLABORATION_NOT_ENABLED", "文档尚未启用正文协同")
 			}
 			return err
 		}
-		if row.ContentVersion != doc.ContentVersion {
+		if row.headVersion() != doc.ContentVersion {
 			return fmt.Errorf("collaboration projection is not current")
 		}
-		if after > 0 {
+		result = row.domain()
+		if epoch != "" && epoch == row.Epoch && after == result.ContentVersion {
+			return nil
+		}
+		if after > 0 && after < result.ContentVersion && (epoch == "" || epoch == row.Epoch) {
 			var budget struct {
 				Count        int64
 				Bytes        int64
@@ -137,29 +165,36 @@ func (r *Repository) ReadCollaboration(ctx context.Context, scope document.Direc
 				FirstVersion int64
 			}
 			recent := tx.Table("document_collaboration_updates").Select("content_version,octet_length(update_data) AS bytes").Where("document_id=? AND content_version>?", doc.ID, after).Order("content_version,operation_id").Limit(collaborationIncrementalLimit + 1)
+			if epoch != "" {
+				recent = recent.Where("epoch=?", epoch)
+			}
 			if err := tx.Table("(?) AS recent", recent).Select("count(*) AS count,COALESCE(SUM(bytes),0) AS bytes,COUNT(DISTINCT content_version) AS versions,COALESCE(MIN(content_version),0) AS first_version").Scan(&budget).Error; err != nil {
 				return err
 			}
-			if budget.Count > 0 && budget.Count <= collaborationIncrementalLimit && budget.Bytes <= document.MaxCollaborationStateBytes && budget.FirstVersion == after+1 && budget.Versions == doc.ContentVersion-after {
+			if budget.Count > 0 && budget.Count <= collaborationIncrementalLimit && budget.Bytes <= document.MaxCollaborationStateBytes && budget.FirstVersion == after+1 && budget.Versions == result.ContentVersion-after {
 				var updates []collaborationUpdateRow
-				if err := tx.Where("document_id=? AND content_version>?", doc.ID, after).Order("content_version,operation_id").Limit(collaborationIncrementalLimit).Find(&updates).Error; err != nil {
+				tail := tx.Where("document_id=? AND content_version>?", doc.ID, after)
+				if epoch != "" {
+					tail = tail.Where("epoch=?", epoch)
+				}
+				if err := tail.Order("content_version,operation_id").Limit(collaborationIncrementalLimit).Find(&updates).Error; err != nil {
 					return err
 				}
-				result = row.domain()
 				result.Updates = make([][]byte, 0, len(updates))
 				for _, update := range updates {
 					result.Updates = append(result.Updates, update.Update)
 				}
-			} else if err := tx.Where("document_id=?", doc.ID).Take(&row).Error; err != nil {
-				return err
+				changed = true
+				return nil
 			}
 		}
-		if result.DocumentID == "" {
-			result = row.domain()
-		}
 		changed = true
-		return nil
+		base, err = r.loadCollaborationBase(ctx, tx, row)
+		return err
 	}, &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: true})
+	if err == nil && changed && len(result.Updates) == 0 {
+		result.State, err = r.materializeCollaboration(ctx, base)
+	}
 	return result, changed, err
 }
 
@@ -167,7 +202,8 @@ func (r *Repository) ReadCollaboration(ctx context.Context, scope document.Direc
 // Every old API and embedded-table writer calls this before committing its receipt.
 func SyncCollaboration(ctx context.Context, tx *gorm.DB, did string, version int64, operation, actor string, timestamp int64, rotateEpoch bool, engine document.CollaborationEngine) error {
 	var state collaborationRow
-	if err := tx.WithContext(ctx).Where("document_id=?", did).Take(&state).Error; err != nil {
+	if err := tx.WithContext(ctx).Clauses(clause.Locking{Strength: "UPDATE"}).Select(collaborationMetadata).
+		Where("document_id=?", did).Take(&state).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil
 		}
@@ -176,14 +212,22 @@ func SyncCollaboration(ctx context.Context, tx *gorm.DB, did string, version int
 	if engine == nil {
 		return document.CollaborationUnavailable()
 	}
-	if state.ContentVersion != version-1 {
+	if state.headVersion() != version-1 {
 		return fmt.Errorf("collaboration writer skipped a content revision")
 	}
 	blocks, err := currentBlocks(ctx, tx, did)
 	if err != nil {
 		return err
 	}
-	result, err := engine.Transform(ctx, document.CollaborationTransform{State: state.State, Blocks: &blocks})
+	base, err := loadCollaborationBase(ctx, tx, state)
+	if err != nil {
+		return err
+	}
+	current, err := materializeCollaboration(ctx, engine, base)
+	if err != nil {
+		return err
+	}
+	result, err := engine.Transform(ctx, document.CollaborationTransform{State: current, Blocks: &blocks})
 	if err != nil {
 		return err
 	}
@@ -194,23 +238,56 @@ func SyncCollaboration(ctx context.Context, tx *gorm.DB, did string, version int
 	if !document.EquivalentCollaborationBlocks(blocks, canonical) {
 		return fault.New(fault.Conflict, "COLLABORATION_PROJECTION_MISMATCH", "正文协同投影校验失败，当前修改未提交")
 	}
-	state.State, state.StateVector, state.ContentVersion, state.UpdatedAtMS = result.State, result.StateVector, version, timestamp
+	epoch := state.Epoch
 	if rotateEpoch {
-		state.Epoch = uuid.NewString()
+		epoch = uuid.NewString()
 	}
-	if err := tx.Model(&collaborationRow{}).Where("document_id=?", did).Updates(map[string]any{"epoch": state.Epoch, "content_version": version, "state": state.State, "state_vector": state.StateVector, "updated_at_ms": timestamp}).Error; err != nil {
-		return err
-	}
-	return appendCollaborationUpdate(ctx, tx, collaborationUpdateRow{DocumentID: did, OperationID: operation, ActorID: &actor, ContentVersion: version, Epoch: state.Epoch, Update: result.Update, CreatedAtMS: timestamp})
+	return persistCollaborationUpdate(ctx, tx, state, collaborationUpdateRow{DocumentID: did, OperationID: operation, ActorID: &actor, ContentVersion: version, Epoch: epoch, Update: result.Update, CreatedAtMS: timestamp}, result)
 }
 
-// Only the transport tail is pruned. Binary identity, immutable native history and operation receipts remain intact.
-func appendCollaborationUpdate(ctx context.Context, tx *gorm.DB, row collaborationUpdateRow) error {
-	if err := tx.WithContext(ctx).Create(&row).Error; err != nil {
+// Writers hold the document lock. Take the checkpoint row lock only while
+// advancing the persisted head, as the worker can compact a prefix in parallel.
+func persistCollaborationUpdate(ctx context.Context, tx *gorm.DB, previous collaborationRow, update collaborationUpdateRow, result document.CollaborationTransformResult) error {
+	var current collaborationRow
+	if err := tx.WithContext(ctx).Clauses(clause.Locking{Strength: "UPDATE"}).Select(collaborationMetadata).
+		Where("document_id=?", update.DocumentID).Take(&current).Error; err != nil {
 		return err
 	}
-	if row.ContentVersion > collaborationRetainedVersions {
-		return tx.Where("document_id=? AND content_version<=?", row.DocumentID, row.ContentVersion-collaborationRetainedVersions).Delete(&collaborationUpdateRow{}).Error
+	if current.Epoch != previous.Epoch || current.headVersion() != update.ContentVersion-1 || len(update.Update) == 0 {
+		return fmt.Errorf("collaboration journal cannot advance from the committed head")
+	}
+	count := current.PendingUpdateCount + 1
+	size := current.PendingUpdateBytes + int64(len(update.Update))
+	fields := map[string]any{"state_vector": result.StateVector, "updated_at_ms": update.CreatedAtMS}
+	covered := current.ContentVersion
+	if current.Epoch != update.Epoch || size > maxCollaborationReplayBytes || count > maxCollaborationReplayUpdates {
+		// A restore fences old clients. The hard bounds also keep recovery safe
+		// when the worker is down or a single edit exceeds the replay budget.
+		covered = update.ContentVersion
+		fields["epoch"] = update.Epoch
+		fields["state"] = result.State
+		fields["content_version"] = covered
+		fields["pending_update_count"] = 0
+		fields["pending_update_bytes"] = 0
+		fields["pending_since_ms"] = 0
+		fields["snapshot_lease_until_ms"] = 0
+	} else {
+		fields["pending_update_count"] = count
+		fields["pending_update_bytes"] = size
+		if current.PendingUpdateCount == 0 {
+			fields["pending_since_ms"] = update.CreatedAtMS
+		}
+	}
+	if err := tx.WithContext(ctx).Model(&collaborationRow{}).Where("document_id=?", update.DocumentID).Updates(fields).Error; err != nil {
+		return err
+	}
+	if err := tx.WithContext(ctx).Create(&update).Error; err != nil {
+		return err
+	}
+
+	// Preserve both the client catch-up window and all uncheckpointed updates.
+	if cutoff := min(covered, update.ContentVersion-collaborationRetainedVersions); cutoff > 0 {
+		return tx.WithContext(ctx).Where("document_id=? AND content_version<=?", update.DocumentID, cutoff).Delete(&collaborationUpdateRow{}).Error
 	}
 	return nil
 }
@@ -221,7 +298,7 @@ func replaceProjection(ctx context.Context, tx *gorm.DB, did string, version int
 		return err
 	}
 	var old []blockRow
-	if err := tx.WithContext(ctx).Where("document_id=? AND valid_to IS NULL", did).Find(&old).Error; err != nil {
+	if err := tx.WithContext(ctx).Table(blockContentTable).Where("document_id=? AND valid_to IS NULL", did).Find(&old).Error; err != nil {
 		return err
 	}
 	before := make(map[string]blockRow, len(old))
@@ -233,26 +310,33 @@ func replaceProjection(ctx context.Context, tx *gorm.DB, did string, version int
 	for _, record := range records {
 		previous, exists := before[record.ID]
 		delete(before, record.ID)
+		samePayload := false
 		if exists {
 			var before, after document.Payload
 			if json.Unmarshal(previous.Payload, &before) != nil || json.Unmarshal(record.Payload, &after) != nil {
 				return fmt.Errorf("invalid stored collaboration payload")
 			}
-			if document.EquivalentCollaborationPayload(before, after) {
-				record.Payload = previous.Payload
-			}
+			samePayload = document.EquivalentCollaborationPayload(before, after)
 		}
-		if exists && equalParent(previous.ParentID, record.ParentID) && previous.Position == record.Position && bytes.Equal(previous.Payload, record.Payload) {
+		if samePayload && equalParent(previous.ParentID, record.ParentID) && previous.Position == record.Position {
 			continue
 		}
 		if exists {
 			closed = append(closed, record.ID)
 		}
-		insert = append(insert, blockRow{DocumentID: did, BlockID: record.ID, ParentID: record.ParentID, Position: record.Position, Payload: record.Payload, ValidFrom: version})
+		row := blockRow{DocumentID: did, BlockID: record.ID, ParentID: record.ParentID, Position: record.Position, Payload: record.Payload, ValidFrom: version}
+		if samePayload {
+			reuseBlockPayload(&row, previous)
+		}
+		insert = append(insert, row)
 	}
 	for id := range before {
 		closed = append(closed, id)
 	}
+	return persistProjectionChanges(ctx, tx, did, version, closed, insert)
+}
+
+func persistProjectionChanges(ctx context.Context, tx *gorm.DB, did string, version int64, closed []string, insert []blockRow) error {
 	if len(closed) > 0 {
 		if err := tx.WithContext(ctx).Model(&blockRow{}).Where("document_id=? AND valid_to IS NULL AND block_id IN ?", did, closed).Update("valid_to", version).Error; err != nil {
 			return err
@@ -273,7 +357,7 @@ func replaceProjection(ctx context.Context, tx *gorm.DB, did string, version int
 // A stale browser property update must not undo a table transaction's newer reference.
 func preserveTableReferences(ctx context.Context, tx *gorm.DB, did string, blocks []document.Block) (bool, error) {
 	var rows []blockRow
-	if err := tx.WithContext(ctx).Select("block_id,payload").Where("document_id=? AND valid_to IS NULL AND payload->>'type'='data_table'", did).Find(&rows).Error; err != nil {
+	if err := tx.WithContext(ctx).Table(blockContentTable).Select("block_id,payload").Where("document_id=? AND valid_to IS NULL AND payload->>'type'='data_table'", did).Find(&rows).Error; err != nil {
 		return false, err
 	}
 	references := map[string]document.Payload{}
@@ -311,6 +395,7 @@ func preserveTableReferences(ctx context.Context, tx *gorm.DB, did string, block
 
 type collaborationPreparation struct {
 	state        collaborationRow
+	current      []byte
 	transformed  document.CollaborationTransformResult
 	transformErr error
 	ready        bool
@@ -320,8 +405,10 @@ type collaborationPreparation struct {
 // The commit transaction revalidates permission, receipts, epoch and the exact base.
 func (r *Repository) prepareCollaboration(ctx context.Context, commit document.CollaborationCommit) (collaborationPreparation, error) {
 	var prepared collaborationPreparation
+	var base collaborationBase
 	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if _, _, err := readSnapshot(ctx, tx, document.ReadQuery{Scope: commit.Scope}); err != nil {
+		doc, _, err := readSnapshot(ctx, tx, document.ReadQuery{Scope: commit.Scope})
+		if err != nil {
 			return err
 		}
 		var receipts int64
@@ -331,23 +418,34 @@ func (r *Repository) prepareCollaboration(ctx context.Context, commit document.C
 		if receipts > 0 {
 			return nil
 		}
-		if err := tx.Where("document_id=?", commit.Scope.DocumentID).Take(&prepared.state).Error; err != nil {
+		if err := tx.Select(collaborationMetadata).Where("document_id=?", commit.Scope.DocumentID).Take(&prepared.state).Error; err != nil {
 			return missing(err)
 		}
+		if prepared.state.headVersion() != doc.ContentVersion {
+			return fmt.Errorf("collaboration projection is not current")
+		}
 		prepared.ready = prepared.state.Epoch == commit.Input.Epoch
-		return nil
+		if !prepared.ready {
+			return nil
+		}
+		base, err = r.loadCollaborationBase(ctx, tx, prepared.state)
+		return err
 	}, &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: true})
 	if err != nil {
 		return prepared, err
 	}
 	if prepared.ready {
-		prepared.transformed, prepared.transformErr = r.collaboration.Transform(ctx, document.CollaborationTransform{State: prepared.state.State, Update: commit.Input.Update, Targets: commit.Input.Targets})
+		prepared.current, prepared.transformErr = r.materializeCollaboration(ctx, base)
+		if prepared.transformErr == nil {
+			prepared.transformed, prepared.transformErr = r.collaboration.Transform(ctx, document.CollaborationTransform{State: prepared.current, Update: commit.Input.Update, Targets: commit.Input.Targets})
+		}
 	}
 	return prepared, nil
 }
 
 func (r *Repository) CommitCollaboration(ctx context.Context, commit document.CollaborationCommit) (document.CollaborationResult, error) {
 	var result document.CollaborationResult
+	var committedState []byte
 	if r.collaboration == nil {
 		return result, document.CollaborationUnavailable()
 	}
@@ -372,28 +470,38 @@ func (r *Repository) CommitCollaboration(ctx context.Context, commit document.Co
 			return json.Unmarshal(receipt.Result, &result)
 		}
 		var state collaborationRow
-		if err := tx.Select("document_id,epoch,content_version,updated_at_ms").Where("document_id=?", doc.ID).Take(&state).Error; err != nil {
+		if err := tx.Select(collaborationMetadata).Where("document_id=?", doc.ID).Take(&state).Error; err != nil {
 			return missing(err)
 		}
 		if state.Epoch != commit.Input.Epoch {
 			return fault.New(fault.Conflict, "COLLABORATION_EPOCH_CHANGED", "文档已恢复或切换版本，未同步的本机修改仍保留，请先导出后重新载入")
 		}
-		if state.ContentVersion != doc.ContentVersion {
+		if state.headVersion() != doc.ContentVersion {
 			return fmt.Errorf("collaboration projection is not current")
 		}
 		var transformed document.CollaborationTransformResult
-		if prepared.ready && prepared.state.Epoch == state.Epoch && prepared.state.ContentVersion == state.ContentVersion {
-			state.State = prepared.state.State
+		var current []byte
+		if prepared.ready && prepared.state.Epoch == state.Epoch && prepared.state.headVersion() == state.headVersion() {
+			current = prepared.current
 			transformed, err = prepared.transformed, prepared.transformErr
 		} else {
 			// A competing commit requires a fresh merge. Keep the existing serialized
 			// fallback so a normal CRDT edit is never rejected for a stale save counter.
-			var binary struct{ State []byte }
-			if err := tx.Table("document_collaboration_states").Select("state").Where("document_id=?", doc.ID).Take(&binary).Error; err != nil {
+			if err := tx.Select(collaborationMetadata).Clauses(clause.Locking{Strength: "UPDATE"}).Where("document_id=?", doc.ID).Take(&state).Error; err != nil {
 				return err
 			}
-			state.State = binary.State
-			transformed, err = r.collaboration.Transform(ctx, document.CollaborationTransform{State: state.State, Update: commit.Input.Update, Targets: commit.Input.Targets})
+			base, err := r.loadCollaborationBase(ctx, tx, state)
+			if err != nil {
+				return err
+			}
+			current, err = r.materializeCollaboration(ctx, base)
+			if err != nil {
+				return err
+			}
+			transformed, err = r.collaboration.Transform(ctx, document.CollaborationTransform{State: current, Update: commit.Input.Update, Targets: commit.Input.Targets})
+			if err != nil {
+				return err
+			}
 		}
 		if err != nil {
 			return err
@@ -412,9 +520,11 @@ func (r *Repository) CommitCollaboration(ctx context.Context, commit document.Co
 				return err
 			}
 			transformed.State, transformed.StateVector, transformed.Update = reconciled.State, reconciled.StateVector, reconciled.State
+			transformed.TextBlockIDs = nil
 		}
 		var resolved []document.ResolvedBlock
 		if len(commit.Input.TableCopies) > 0 {
+			transformed.TextBlockIDs = nil
 			metadata, _, err := commandState(ctx, tx, doc, nil, true)
 			if err != nil {
 				return err
@@ -481,7 +591,7 @@ func (r *Repository) CommitCollaboration(ctx context.Context, commit document.Co
 			return err
 		}
 		version := doc.ContentVersion
-		changed := !bytes.Equal(state.State, transformed.State)
+		changed := !bytes.Equal(current, transformed.State)
 		if changed {
 			if err := CheckVersion(version, version); err != nil {
 				return err
@@ -490,13 +600,10 @@ func (r *Repository) CommitCollaboration(ctx context.Context, commit document.Co
 			if err := insertRevision(ctx, tx, revisionRow{DocumentID: doc.ID, Version: version, Title: doc.Title, AuthorID: &commit.Scope.ActorID, CreatedAtMS: commit.Timestamp}); err != nil {
 				return err
 			}
-			if err := replaceProjection(ctx, tx, doc.ID, version, blocks); err != nil {
+			if err := replaceTextProjection(ctx, tx, doc.ID, version, blocks, transformed.TextBlockIDs); err != nil {
 				return err
 			}
 			if err := tx.Model(&documentRow{}).Where("id=?", doc.ID).Updates(map[string]any{"content_version": version, "updated_at_ms": commit.Timestamp}).Error; err != nil {
-				return err
-			}
-			if err := tx.Model(&collaborationRow{}).Where("document_id=?", doc.ID).Updates(map[string]any{"content_version": version, "state": transformed.State, "state_vector": transformed.StateVector, "updated_at_ms": commit.Timestamp}).Error; err != nil {
 				return err
 			}
 		}
@@ -506,11 +613,15 @@ func (r *Repository) CommitCollaboration(ctx context.Context, commit document.Co
 			return err
 		}
 		if changed {
-			if err := appendCollaborationUpdate(ctx, tx, collaborationUpdateRow{DocumentID: doc.ID, OperationID: commit.Input.OperationID, ActorID: &commit.Scope.ActorID, ContentVersion: version, Epoch: state.Epoch, Update: transformed.Update, CreatedAtMS: commit.Timestamp}); err != nil {
+			if err := persistCollaborationUpdate(ctx, tx, state, collaborationUpdateRow{DocumentID: doc.ID, OperationID: commit.Input.OperationID, ActorID: &commit.Scope.ActorID, ContentVersion: version, Epoch: state.Epoch, Update: transformed.Update, CreatedAtMS: commit.Timestamp}, transformed); err != nil {
 				return err
 			}
+			committedState = transformed.State
 		}
 		return tx.Create(&operationRow{DocumentID: doc.ID, OperationID: commit.Input.OperationID, ActorID: &commit.Scope.ActorID, RequestHash: commit.RequestHash, ResultVersion: version, Result: encoded, CreatedAtMS: commit.Timestamp}).Error
 	})
+	if err == nil {
+		r.collaborationCache.put(result.DocumentID, result.Epoch, result.ContentVersion, committedState)
+	}
 	return result, err
 }

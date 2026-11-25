@@ -11,7 +11,7 @@ export type CollaborationState = {
   epoch: string;
   content_version: number;
   protocol_version: 1;
-  state?: string | null;
+  state?: string | Uint8Array | null;
   state_vector?: string;
   updates?: string[];
   updated_at_ms: number;
@@ -68,7 +68,12 @@ export function encodeCollaborationUpdate(update: Uint8Array): string {
   return btoa(binary);
 }
 export function decodeCollaborationUpdate(update: string): Uint8Array {
-  return Uint8Array.from(atob(update), character => character.charCodeAt(0));
+  const bytesType: Uint8ArrayConstructor & { fromBase64?: (value: string) => Uint8Array } = Uint8Array;
+  if (bytesType.fromBase64) return bytesType.fromBase64(update);
+  const binary = atob(update);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  return bytes;
 }
 function socketAddress(workspace: string, document: string): string {
   const url = new URL(`/api/v1/workspaces/${encodeURIComponent(workspace)}/documents/${encodeURIComponent(document)}/collaboration/socket`, globalThis.location.href);
@@ -177,7 +182,8 @@ export class DocumentCollaborationProvider {
   private applyState(state: CollaborationState) {
     if (state.document_id !== this.options.documentId || state.protocol_version !== 1 || !Number.isSafeInteger(state.content_version) || state.content_version < 1 || typeof state.epoch !== "string") throw new Error("协作服务返回了无法识别的文档状态。");
     if (state.epoch !== this.epoch) throw new Error("文档已切换到新的协作版本，本机草稿需要恢复。");
-    const updates = [...(state.state ? [state.state] : []), ...(state.updates ?? [])].map(decodeCollaborationUpdate);
+    const updates = (state.updates ?? []).map(decodeCollaborationUpdate);
+    if (state.state) updates.unshift(typeof state.state === "string" ? decodeCollaborationUpdate(state.state) : state.state);
     const targets = [...this.bufferedTargets, ...[...this.pending.values()].flatMap(operation => operation.targets ?? [])];
     if (targets.length) {
       const preview = new Y.Doc({ gc: false });

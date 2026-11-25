@@ -25,14 +25,16 @@ import { authStore } from "../../../shared/auth/auth-store";
 import { useOptionalAuthRequest } from "../../../shared/auth/use-auth-request";
 import { registerPendingNavigation } from "../../../shared/navigation/pending-navigation";
 import { newUUID } from "../../../shared/ids";
+import type { NoteChildrenPage } from "../../../shared/api/schemas";
 import { canMutateWorkspaceContent } from "../../workspace/capabilities";
 import { ShareButton } from "../../sharing/ShareButton";
 import { TableHostContext, type PendingTableWriter, type TableHost } from "../../data-tables/context";
 import type { RestoreSavedRevision } from "../../collaboration/DocumentCollaborationPanel";
 import { v2ToMarkdown, type NoteBlocksV2 } from "../../content/blocks";
+import { ContentRenderer } from "../../content/ContentRenderer";
 import { DocumentShell } from "../DocumentShell";
 import { cacheDocumentCommit } from "../document-cache";
-import { getNote, saveNoteBlockChanges } from "../api";
+import { getNote, getNoteChildrenPage, saveNoteBlockChanges } from "../api";
 import { useArchiveNote, useNote, useNotebook, useSaveNoteContent } from "../queries";
 import { DocumentCopyContext, type DocumentCopyPort } from "./blocks/block-copy-context";
 import { indexBlocks } from "./blocks/block-tree";
@@ -41,9 +43,10 @@ import { DocumentSaveStatus } from "./DocumentSaveStatus";
 import { LegacyDocumentEditorPage } from "./LegacyDocumentEditorPage";
 import { loadDocumentEditor } from "./editor-module";
 import { fromTiptapDocument } from "./tiptap-model";
-import type { EditorContentHandle } from "./editor-content-handle";
-import { getDocumentCollaboration } from "./collaboration-api";
+import { CONTENT_PAGE_SIZE, type EditorContentHandle } from "./editor-content-handle";
+import { getDocumentCollaboration, openDocumentCollaboration } from "./collaboration-api";
 import { DocumentCollaborationProvider, type CollaborationProviderSnapshot } from "./collaboration-provider";
+import { collaborationSnapshotCache } from "./collaboration-snapshot-cache";
 import type { CollaborationCheckpoint } from "./collaboration-persistence";
 import { checkpointRecoveryIssue, draftScopeKey, type DraftCheckpoint } from "./draft-checkpoints";
 import { useDraftCheckpoints } from "./use-draft-checkpoints";
@@ -53,12 +56,12 @@ import { createBlockChanges } from "./block-changes";
 import { hasPendingContent } from "./content-window";
 import { resolveTableCopies, type TableCopyIntent } from "./table-copy";
 
-const TiptapEditor = lazy(loadDocumentEditor);
 const DocumentCollaborationPanel = lazy(() => import("../../collaboration/DocumentCollaborationPanel").then(module => ({ default: module.DocumentCollaborationPanel })));
 const EMPTY_SNAPSHOT: CollaborationProviderSnapshot = { status: "initializing", contentVersion: 0, pendingCount: 0, isSaved: false, readOnly: true, error: null, recoveries: [] };
 const emptySnapshot = () => EMPTY_SNAPSHOT;
 const noSubscribe = () => () => {};
 const TITLE_SAVE_DELAY_MS = 750;
+const OPENING_PREVIEW_DELAY_MS = 250;
 type TitleStatus = "saved" | "dirty" | "saving" | "error" | "conflict";
 type Recovery = { record: DraftCheckpoint; source: "legacy" | "metadata"; owned: boolean };
 const normalizedTitle = (value: string) => value.trim() || "未命名文档";
@@ -102,7 +105,10 @@ export default function CollaborativeDocumentEditorPage() {
   const providerRef = useRef<DocumentCollaborationProvider | null>(null);
   const sessionRef = useRef<object | null>(null);
   const state = useSyncExternalStore(provider?.subscribe ?? noSubscribe, provider?.getSnapshot ?? emptySnapshot, emptySnapshot);
-  const [initialBlocks, setInitialBlocks] = useState<NoteBlocksV2 | null>(null);
+  const [editor, setEditor] = useState<{ Component: Awaited<ReturnType<typeof loadDocumentEditor>>["default"]; blocks: NoteBlocksV2 } | null>(null);
+  const [preview, setPreview] = useState<NoteChildrenPage | null>(null);
+  const bodyRef = useRef<HTMLElement>(null);
+  const openingScroll = useRef<number | null>(null);
   const [title, setTitle] = useState(noteQuery.data?.title ?? "");
   const titleRef = useRef(title), savedTitle = useRef(title);
   const metadataVersion = useRef(noteQuery.data?.content_version ?? 0);
@@ -172,16 +178,27 @@ export default function CollaborativeDocumentEditorPage() {
     const identity = {}; sessionRef.current = identity;
     const abort = new AbortController();
     let current: DocumentCollaborationProvider | null = null;
-    setProvider(null); setInitialBlocks(null); setError(null); setFallback(false); setRecoveries([]);
+    setProvider(null); setEditor(null); setError(null); setFallback(false); setRecoveries([]);
+    openingScroll.current = null;
     titlePending.current = null; titleTask.current = null;
     metadataVersion.current = noteQuery.data?.content_version ?? 0;
     nativeQueue.current = Promise.resolve();
     const credentials = authRef.current;
     const startingFresh = freshLaneRequested.current;
     if (!credentials || !workspace?.id || !userId) return;
+    const cache = collaborationSnapshotCache();
     void (async () => {
       try {
-        const initial = await getDocumentCollaboration(noteId, credentials, { activate: canEdit, signal: abort.signal });
+        const initialRequest = cache.read(draftKey).catch(() => undefined)
+          .then(cached => openDocumentCollaboration(noteId, credentials, canEdit, abort.signal, cached));
+        const editorRequest = loadDocumentEditor();
+        void editorRequest.catch(() => { /* Report module failure when the session reaches the editor. */ });
+        // Start independent reads together, but handle their errors after the server and provider.
+        const drafts = Promise.all([legacyDrafts.controller.read(), metadataDrafts.controller.read()]).then(
+          records => ({ records } as const),
+          (error: unknown) => ({ error } as const),
+        );
+        const initial = await initialRequest;
         if (abort.signal.aborted) return;
         current = new DocumentCollaborationProvider({ documentId: noteId, workspaceId: workspace.id, userId, initialState: initial, readOnly: !canEdit,
           laneOptions: startingFresh ? { storage: { getItem: () => null, setItem: (key, value) => window.sessionStorage.setItem(key, value) } } : undefined,
@@ -198,16 +215,29 @@ export default function CollaborativeDocumentEditorPage() {
         freshLaneRequested.current = false;
         await current.start();
         if (abort.signal.aborted) { await current.dispose(); return; }
-        const [legacy, metadata] = await Promise.all([legacyDrafts.controller.read(), metadataDrafts.controller.read()]);
+        const recovered = await drafts;
         if (abort.signal.aborted) { await current.dispose(); return; }
+        if ("error" in recovered) throw recovered.error;
+        const [legacy, metadata] = recovered.records;
         const changed = (record: DraftCheckpoint | null) => record && (record.pending || createEditorDraftFingerprint()(record.saved) !== createEditorDraftFingerprint()(record.current));
-        if (changed(metadata)) await metadataDrafts.controller.startFresh();
+        const legacyChanged = changed(legacy), metadataChanged = changed(metadata);
+        if (metadataChanged) await metadataDrafts.controller.startFresh();
         if (abort.signal.aborted) { await current.dispose(); return; }
-        setRecoveries([...(changed(legacy) ? [{ record: legacy!, source: "legacy" as const, owned: true }] : []), ...(changed(metadata) ? [{ record: metadata!, source: "metadata" as const, owned: false }] : [])]);
+        const owned: Recovery[] = [];
+        if (legacyChanged && legacy) owned.push({ record: legacy, source: "legacy", owned: true });
+        if (metadataChanged && metadata) owned.push({ record: metadata, source: "metadata", owned: false });
+        const { default: Component } = await editorRequest;
+        if (abort.signal.aborted) return;
+        setRecoveries(previous => [...owned, ...previous.filter(item => !owned.some(entry => entry.record.scopeKey === item.record.scopeKey))]);
         const blocks = fromTiptapDocument(yDocToProsemirrorJSON(current.doc, "body"));
+        const body = bodyRef.current;
+        if (body?.querySelector("[data-document-opening-preview]")) {
+          openingScroll.current = body.closest(".document-scroll-region")?.scrollTop ?? null;
+        }
         const initialTitle = noteQuery.data?.title ?? "未命名文档";
         savedTitle.current = titleRef.current = initialTitle; setTitle(initialTitle); setTitleStatus("saved");
-        providerRef.current = current; setInitialBlocks(blocks); outlineStore.reset(); outlineStore.update(blocks); setProvider(current);
+        providerRef.current = current; setEditor({ Component, blocks }); outlineStore.reset(); outlineStore.update(blocks); setProvider(current);
+        if (initial.state) await cache.write(draftKey, { ...initial, state: initial.state }).catch(() => {});
       } catch (cause) {
         if (abort.signal.aborted) return;
         reportError(cause);
@@ -224,7 +254,7 @@ export default function CollaborativeDocumentEditorPage() {
           return;
         }
         setError(message(cause, "文档协作状态未能载入，请重试。"));
-      }
+      } finally { void cache.close().catch(() => {}); }
     })();
     return () => {
       abort.abort();
@@ -236,6 +266,31 @@ export default function CollaborativeDocumentEditorPage() {
       if (current) void current.dispose().catch(() => {});
     };
   }, [draftKey, noteId, canEdit, sessionGeneration, legacyDrafts.controller, metadataDrafts.controller]);
+
+  const previewVersion = noteQuery.data?.content_version;
+  const previewAvailable = noteQuery.data?.collaboration_preview_available === true;
+  useEffect(() => {
+    setPreview(null);
+    const credentials = authRef.current;
+    if (!credentials || !previewAvailable || !previewVersion || editor || error || fallback) return;
+    const abort = new AbortController();
+    const timer = setTimeout(() => {
+      void getNoteChildrenPage(noteId, { ...credentials, feedback: { error: false } }, {
+        version: previewVersion, limit: CONTENT_PAGE_SIZE, signal: abort.signal,
+      }).then(result => {
+        if (!abort.signal.aborted && credentials.canNotify?.() !== false && result.has_more) setPreview(result);
+      }).catch(() => { /* The editor request owns navigation errors. */ });
+    }, OPENING_PREVIEW_DELAY_MS);
+    return () => { clearTimeout(timer); abort.abort(); };
+  }, [draftKey, noteId, previewAvailable, previewVersion, editor, error, fallback]);
+
+  function editorContentReady(handle: EditorContentHandle | null) {
+    contentHandle.current = handle;
+    if (!handle || openingScroll.current === null) return;
+    const scroller = bodyRef.current?.closest(".document-scroll-region");
+    if (scroller) scroller.scrollTop = openingScroll.current;
+    openingScroll.current = null;
+  }
 
   useEffect(() => {
     const additions: Recovery[] = [...legacyDrafts.candidates.map(record => ({ record, source: "legacy" as const, owned: false })), ...metadataDrafts.candidates.map(record => ({ record, source: "metadata" as const, owned: false }))];
@@ -521,20 +576,25 @@ export default function CollaborativeDocumentEditorPage() {
 {provider && (state.recoveries.length || state.status === "recovery") ? <section><h3 className="mb-2 text-sm font-semibold">保留的协作副本</h3><div className="mt-3 flex flex-wrap gap-2"><Button variant="secondary" onClick={() => download(`orbis-collaboration-recovery-${noteId}.json`, provider.exportRecovery())}>下载本机草稿</Button>{state.recoveries.map((checkpoint, index) => <Button key={checkpoint.epoch + "-" + index} variant="secondary" onClick={() => downloadCollaborationMarkdown(checkpoint)}>下载草稿 Markdown（版本 {checkpoint.contentVersion}）</Button>)}{canEdit && state.status === "recovery" ? <Button variant="secondary" disabled={busy} onClick={() => void openServerKeepingRecovery().catch(() => {})}>保留本机草稿并载入服务端</Button> : !canEdit ? <Button variant="ghost" onClick={() => window.location.reload()}>重新载入</Button> : null}</div></section> : null}
 {provider && (error || editorError || state.error) ? <section><h3 className="mb-2 text-sm font-semibold">当前修改</h3><div className="mt-3 flex flex-wrap gap-2"><Button variant="secondary"  disabled={state.readOnly || busy} onClick={() => void flushEverything().then(() => setError(null)).catch(cause => setError(message(cause, "保存确认尚未收到。")))}><RefreshCw aria-hidden="true" size={14} />重试保存</Button>{titleStatus === "conflict" ? <ConfirmAction title="载入服务端标题" description="当前未保存的标题将被服务端标题替换，正文不受影响。" confirmLabel="替换本地标题" disabled={busy} onConfirm={reloadServerTitle}><Button variant="secondary" disabled={busy}>载入服务端标题</Button></ConfirmAction> : null}<Button variant="secondary"  onClick={() => download(`${normalizedTitle(title)}.md`, v2ToMarkdown(bodySnapshot().blocks), "text/markdown")}><Download aria-hidden="true" size={14} />下载本地 Markdown</Button><Button variant="ghost" onClick={() => download(`orbis-collaboration-recovery-${noteId}.json`, provider.exportRecovery())}>下载完整恢复副本</Button></div></section> : null}
 {metadataDrafts.status.status === "failed" ? <section><h3 className="mb-2 text-sm font-semibold">保存标题副本</h3><Button variant="ghost" onClick={() => void metadataDrafts.controller.flush().catch(() => {})}>重试保存到本机</Button></section> : null}</DraftActions> : null}<DocumentSaveStatus
-    state={provider && initialBlocks ? saveState : error ? "error" : "loading"}
+    state={provider && editor ? saveState : error ? "error" : "loading"}
     label={!provider && error ? "读取失败" : saveState === "conflict" ? "标题版本冲突" : saveState === "offline" ? "离线，本机草稿已保留" : undefined}
   />{canEdit && noteQuery.data ? (releaseFeatures.documentSharing ? <ShareButton notebookId={noteQuery.data.notebook_id!} noteId={noteId} title={title || noteQuery.data.title} /> : null) : null}{releaseFeatures.documentCollaboration && <Button ref={collaborationTrigger} type="button" size="icon" aria-label="评论与历史" aria-haspopup="dialog" aria-expanded={collaborationOpen} disabled={!provider || busy} onClick={() => { setCollaborationMounted(true); setCollaborationSession(value => value + 1); setCollaborationOpen(true); }} variant="secondary"><MessageSquare aria-hidden="true" size={16} /></Button>}{canEdit ? <DropdownMenu><DropdownMenuTrigger disabled={!provider || busy} render={<Button  type="button"  aria-label="更多文档操作" variant="secondary" size="icon"><MoreHorizontal aria-hidden="true" size={18} /></Button>} /><DropdownMenuContent size="sm" align="end" className="document-actions-popover" sideOffset={6} aria-label="文档操作"><DropdownMenuItem label="归档文档" disabled={!provider || busy} onClick={() => { void archive().catch(() => {}); }}><Archive aria-hidden="true" size={16} /><span>归档文档</span></DropdownMenuItem></DropdownMenuContent></DropdownMenu> : null}</div>;
   return <DocumentShell editorLayout pendingFormat={canEdit && !error ? <DocumentFormatToolbar /> : undefined} breadcrumb={breadcrumb} toolbar={toolbar} notebookId={noteQuery.data?.notebook_id} activeNoteId={noteId}>
-    <EditorLayout outlineStore={outlineStore} pending={(!provider || !initialBlocks) && !error}>
-      <article className={editorCanvasClassName}>
+    <EditorLayout outlineStore={outlineStore} pending={(!provider || !editor) && !error}>
+      <article ref={bodyRef} className={editorCanvasClassName}>
         <DocumentEditorHeading title={displayTitle} updatedAt={noteQuery.data?.updated_at_ms}
           description={canEdit ? "修改自动同步，多人实时协作" : "只读访问"}
-          readOnly={!provider || !initialBlocks || readOnly || metadataRecovery} onTitleChange={changeTitle}
+          readOnly={!provider || !editor || readOnly || metadataRecovery} onTitleChange={changeTitle}
         />
-        {provider && initialBlocks ? (
-          <DocumentCopyContext.Provider value={copyPort}><TableHostContext.Provider value={tableHost}><EditorBoundary key={draftKey}><Suspense fallback={<LoadingState label="正在准备编辑…" variant="editor-body" bones="document-body" delayMs={180} />}><TiptapEditor noteId={noteId} blocks={initialBlocks} collaborationDoc={provider.doc} readOnly={readOnly} onContentReady={handle => { contentHandle.current = handle; }} onError={setEditorError} onChange={({ blocks }) => { completeTableCopies(blocks); outlineStore.update(blocks); }} /></Suspense></EditorBoundary></TableHostContext.Provider></DocumentCopyContext.Provider>
+        {provider && editor ? (
+          <DocumentCopyContext.Provider value={copyPort}><TableHostContext.Provider value={tableHost}><EditorBoundary key={draftKey}><editor.Component noteId={noteId} blocks={editor.blocks} collaborationDoc={provider.doc} readOnly={readOnly} onContentReady={editorContentReady} onError={setEditorError} onChange={({ blocks }) => { completeTableCopies(blocks); outlineStore.update(blocks); }} /></EditorBoundary></TableHostContext.Provider></DocumentCopyContext.Provider>
         ) : error ? (
           <p role="alert" className="py-5 text-sm text-muted-foreground">{error}</p>
+        ) : preview?.note_id === noteId && preview.content_version === previewVersion ? (
+          <section aria-label="文档正文预览" data-document-opening-preview>
+            <ContentRenderer blocks={preview.blocks} />
+            <p role="status" className="py-5 text-sm text-muted-foreground">正在准备编辑…</p>
+          </section>
         ) : (
           <LoadingState label="正在打开文档…" variant="editor-body" bones="document-body" />
         )}

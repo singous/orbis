@@ -61,5 +61,16 @@ func TestDocumentVersionUpgradePreservesHistoryAndBlocksLossyDowngrade(t *testin
 	if retained != 1 {
 		t.Fatal("failed downgrade removed saved version data")
 	}
+	// Earlier down steps can complete before the history guard rejects v26.
+	// Restore the current schema before exercising a current application reader.
+	if version, dirty, err := m.Version(); err != nil || version != 25 || !dirty {
+		t.Fatalf("expected the downgrade to stop at the retained history guard: version=%d dirty=%t err=%v", version, dirty, err)
+	}
+	if err := m.Force(26); err != nil {
+		t.Fatal(err)
+	}
+	if err := migrations.Up(env.URL); err != nil {
+		t.Fatal(err)
+	}
 	env.Call(t, "GET", base+"/documents/"+doc.ID+"/versions/"+version.ID+"/content", owner.AccessToken, nil, 200)
 }

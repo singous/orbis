@@ -24,6 +24,9 @@ func cacheBlock(row *blockRow) error {
 }
 func cacheBlocks(rows []blockRow) error {
 	for i := range rows {
+		if rows[i].PayloadRevision != nil {
+			continue
+		}
 		if err := cacheBlock(&rows[i]); err != nil {
 			return err
 		}

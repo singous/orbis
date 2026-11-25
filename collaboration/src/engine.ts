@@ -5,13 +5,20 @@ import { nativeBlock, nativeBlockSchema, editorBlock, type NativeBlock } from ".
 import { fromTiptapDocument, toTiptapDocument } from "../../frontend/src/features/documents/editor/tiptap-model";
 import { schema } from "./schema";
 import { reconcile } from "./reconcile";
+import { applyUpdateAndFindTextBlocks } from "./projection-scope";
 import { assertRetainedTargets, assertTargets, assertStructuralTargets, atomicTargetProofs, assertAtomicTargets, validateTargets, type Target } from "./removed-target";
-import { EngineError, MAX_BINARY_BYTES, MAX_BLOCKS, MAX_CONTENT_BYTES, MAX_DEPTH } from "./protocol";
+import { EngineError, MAX_BINARY_BYTES, MAX_BLOCKS, MAX_CONTENT_BYTES, MAX_DEPTH, MAX_REPLAY_BYTES, MAX_REPLAY_UPDATES } from "./protocol";
 
 const LEGACY_CACHE_ATTRIBUTES = new Set(["orbisOriginal", "orbisSignature", "orbisCellOriginal"]);
 
-export type TransformRequest = { state: string | null; blocks: NativeBlock[] | null; update: string | null; targets?: Target[] | null };
-export type TransformResult = { state: string; update: string; state_vector: string; changed: boolean; blocks: NativeBlock[] };
+export type TransformRequest = {
+  state: string | null;
+  blocks: NativeBlock[] | null;
+  update: string | null;
+  targets?: Target[] | null;
+  replay?: string[];
+};
+export type TransformResult = { state: string; update: string | null; state_vector: string; changed: boolean; blocks: NativeBlock[]; text_block_ids?: string[] };
 export function binary(value: string, code: "INVALID_STATE" | "INVALID_UPDATE"): Uint8Array {
   if (value.length > Math.ceil(MAX_BINARY_BYTES / 3) * 4) throw new EngineError("CONTENT_TOO_LARGE");
   if (value.length % 4 !== 0 || /[^A-Za-z0-9+/=]/.test(value)) throw new EngineError(code);
@@ -73,17 +80,48 @@ function pmBlocks(doc: Y.Doc): NativeBlock[] {
   return validateBlocks(fromTiptapDocument(pm).blocks.map(nativeBlock));
 }
 export function transform(request: TransformRequest): TransformResult {
-  if (!request || typeof request !== "object" || Object.keys(request).some(key => !["state", "blocks", "update", "targets"].includes(key)) ||
+  if (!request || typeof request !== "object" || Object.keys(request).some(key => !["state", "blocks", "update", "targets", "replay"].includes(key)) ||
     (request.state !== null && typeof request.state !== "string") || (request.update !== null && typeof request.update !== "string") ||
     (request.blocks !== null && !Array.isArray(request.blocks)) || (!request.state && request.blocks === null) || (request.blocks !== null && request.update !== null)) throw new EngineError("INVALID_REQUEST");
   const targets = validateTargets(request.targets);
   if (targets.length && request.update === null) throw new EngineError("INVALID_REQUEST");
+  const replay = request.replay;
+  if (replay !== undefined && (!Array.isArray(replay) || !replay.length || !request.state ||
+    request.blocks !== null || request.update !== null || replay.some(update => typeof update !== "string"))) {
+    throw new EngineError("INVALID_REQUEST");
+  }
   const doc = new Y.Doc({ gc: false });
   try {
     if (request.state !== null) {
       try { Y.applyUpdate(doc, binary(request.state, "INVALID_STATE")); assertYjs(doc); } catch (error) { if (error instanceof EngineError) throw error; throw new EngineError("INVALID_STATE"); }
     }
+    if (replay) {
+      if (replay.length > MAX_REPLAY_UPDATES) throw new EngineError("CONTENT_TOO_LARGE");
+      let size = 0;
+      try {
+        for (const value of replay) {
+          const update = binary(value, "INVALID_UPDATE");
+          size += update.byteLength;
+          if (size > MAX_REPLAY_BYTES) throw new EngineError("CONTENT_TOO_LARGE");
+          Y.applyUpdate(doc, update);
+          if (doc.store.pendingStructs !== null || doc.store.pendingDs !== null) throw new EngineError("INVALID_UPDATE");
+        }
+        assertYjs(doc);
+      } catch (error) {
+        if (error instanceof EngineError) throw error;
+        throw new EngineError("INVALID_UPDATE");
+      }
+      const state = Y.encodeStateAsUpdate(doc);
+      if (state.length > MAX_BINARY_BYTES) throw new EngineError("CONTENT_TOO_LARGE");
+      // Recovery replays the same already-validated binary state and leaves the
+      // transaction's persisted native projection untouched.
+      return { state: encode(state), update: null, state_vector: encode(Y.encodeStateVector(doc)), changed: false, blocks: [] };
+    }
     const before = Y.encodeStateAsUpdate(doc), vector = Y.encodeStateVector(doc);
+    let textBlockIds: string[] | undefined;
+    const invalidateTextScope = ({ changed }: Y.Transaction) => {
+      if (changed.size) textBlockIds = undefined;
+    };
     if (request.update !== null) {
       try {
         assertTargets(doc, targets);
@@ -91,7 +129,10 @@ export function transform(request: TransformRequest): TransformResult {
         assertStructuralTargets(doc, update, targets);
         const previous = Y.decodeStateVector(vector);
         const atomic = atomicTargetProofs(doc);
-        Y.applyUpdate(doc, update);
+        textBlockIds = applyUpdateAndFindTextBlocks(doc, update);
+        // The binding can repair malformed nodes during projection. Such a
+        // repair may touch other blocks, so it invalidates the local scope.
+        if (textBlockIds) doc.on("afterTransaction", invalidateTextScope);
         assertRetainedTargets(doc, update, previous);
         assertAtomicTargets(doc, previous, atomic, targets);
       } catch (error) { if (error instanceof EngineError) throw error; throw new EngineError("INVALID_UPDATE"); }
@@ -106,8 +147,16 @@ export function transform(request: TransformRequest): TransformResult {
     }
     let blocks: NativeBlock[];
     try { blocks = pmBlocks(doc); } catch (error) { if (error instanceof EngineError) throw error; throw new EngineError("INVALID_CONTENT"); }
+    doc.off("afterTransaction", invalidateTextScope);
     const after = Y.encodeStateAsUpdate(doc);
     if (after.length > MAX_BINARY_BYTES) throw new EngineError("CONTENT_TOO_LARGE");
-    return { state: encode(after), update: encode(Y.encodeStateAsUpdate(doc, vector)), state_vector: encode(Y.encodeStateVector(doc)), changed: !Buffer.from(before).equals(after), blocks };
+    return {
+      state: encode(after),
+      update: request.state === null ? null : encode(Y.encodeStateAsUpdate(doc, vector)),
+      state_vector: encode(Y.encodeStateVector(doc)),
+      changed: !Buffer.from(before).equals(after),
+      blocks,
+      ...(textBlockIds ? { text_block_ids: textBlockIds } : {}),
+    };
   } finally { doc.destroy(); }
 }

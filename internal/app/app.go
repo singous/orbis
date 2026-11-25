@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
-	"orbis.local/orbis/internal/platform/tasks"
 	"sync"
 
 	"orbis.local/orbis/api"
@@ -29,6 +28,7 @@ import (
 	mailadapter "orbis.local/orbis/internal/platform/mail"
 	"orbis.local/orbis/internal/platform/security"
 	"orbis.local/orbis/internal/platform/storage"
+	"orbis.local/orbis/internal/platform/tasks"
 	"orbis.local/orbis/internal/platform/thumbnail"
 	"orbis.local/orbis/internal/publishing"
 	pubstore "orbis.local/orbis/internal/publishing/postgres"
@@ -47,17 +47,18 @@ import (
 )
 
 type Application struct {
-	collaborationSockets *httpapi.CollaborationSockets
-	collaborationEngine  *crdtengine.Client
-	closeOnce            sync.Once
-	closeErr             error
-	Handler              http.Handler
-	pool                 *sql.DB
-	objects              *storage.Local
-	assets               *asset.Service
-	imports              *tasks.Imports
-	versions             *tasks.Versions
-	importStore          *appstore.Imports
+	collaborationSockets   *httpapi.CollaborationSockets
+	collaborationEngine    *crdtengine.Client
+	collaborationSnapshots *tasks.CollaborationSnapshots
+	closeOnce              sync.Once
+	closeErr               error
+	Handler                http.Handler
+	pool                   *sql.DB
+	objects                *storage.Local
+	assets                 *asset.Service
+	imports                *tasks.Imports
+	versions               *tasks.Versions
+	importStore            *appstore.Imports
 }
 
 // New checks the schema and owns all resources used by the returned HTTP handler.
@@ -65,8 +66,17 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*Applicat
 	return NewWithClock(ctx, cfg, logger, clock.System{})
 }
 
+// NewServer starts the background work owned by a running HTTP server.
+func NewServer(ctx context.Context, cfg config.Config, logger *slog.Logger) (*Application, error) {
+	return newApplication(ctx, cfg, logger, clock.System{}, true)
+}
+
 // NewWithClock makes expiry workflows testable without changing the system clock.
 func NewWithClock(ctx context.Context, cfg config.Config, logger *slog.Logger, wallClock clock.Clock) (*Application, error) {
+	return newApplication(ctx, cfg, logger, wallClock, false)
+}
+
+func newApplication(ctx context.Context, cfg config.Config, logger *slog.Logger, wallClock clock.Clock, serve bool) (*Application, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
@@ -208,7 +218,11 @@ func NewWithClock(ctx context.Context, cfg config.Config, logger *slog.Logger, w
 		}
 		return cleanup(err)
 	}
-	return &Application{Handler: router, pool: pool, objects: objects, assets: assets, imports: importWorkers, versions: versionWorkers, importStore: importsRepo, collaborationEngine: collaborationEngine, collaborationSockets: collaborationSockets}, nil
+	var snapshots *tasks.CollaborationSnapshots
+	if serve && engine != nil {
+		snapshots = tasks.StartCollaborationSnapshots(ctx, documentRepo, wallClock, logger)
+	}
+	return &Application{Handler: router, pool: pool, objects: objects, assets: assets, imports: importWorkers, versions: versionWorkers, importStore: importsRepo, collaborationEngine: collaborationEngine, collaborationSockets: collaborationSockets, collaborationSnapshots: snapshots}, nil
 }
 
 // Close releases the database pool after request processing has stopped.
@@ -217,6 +231,7 @@ func (a *Application) Close() error {
 		if a.collaborationSockets != nil {
 			a.collaborationSockets.Close()
 		}
+		a.collaborationSnapshots.Close()
 		if a.collaborationEngine != nil {
 			a.collaborationEngine.Close()
 		}

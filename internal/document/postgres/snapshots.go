@@ -45,14 +45,14 @@ func ReadSnapshotBatch(ctx context.Context, tx *gorm.DB, wid string, ids []strin
 		return nil, fault.Missing()
 	}
 	var bytes int64
-	if err := tx.WithContext(ctx).Table("document_block_versions b").Joins("JOIN documents d ON d.id=b.document_id").Where("d.workspace_id=? AND d.id IN ? AND b.valid_from<=d.content_version AND (b.valid_to IS NULL OR b.valid_to>d.content_version)", wid, ids).Select("coalesce(sum(octet_length(b.payload::text)),0)").Scan(&bytes).Error; err != nil {
+	if err := tx.WithContext(ctx).Table("document_block_contents b").Joins("JOIN documents d ON d.id=b.document_id").Where("d.workspace_id=? AND d.id IN ? AND b.valid_from<=d.content_version AND (b.valid_to IS NULL OR b.valid_to>d.content_version)", wid, ids).Select("coalesce(sum(octet_length(b.payload::text)),0)").Scan(&bytes).Error; err != nil {
 		return nil, err
 	}
 	if bytes > int64(maxBytes) {
 		return nil, fault.New(fault.TooLarge, "SNAPSHOT_TOO_LARGE", "所选内容超过快照大小限制，请缩小范围")
 	}
 	var rows []blockRow
-	if err := tx.WithContext(ctx).Table("document_block_versions b").Select("b.*").Joins("JOIN documents d ON d.id=b.document_id").Where("d.workspace_id=? AND d.id IN ? AND b.valid_from<=d.content_version AND (b.valid_to IS NULL OR b.valid_to>d.content_version)", wid, ids).Scan(&rows).Error; err != nil {
+	if err := tx.WithContext(ctx).Table("document_block_contents b").Select("b.*").Joins("JOIN documents d ON d.id=b.document_id").Where("d.workspace_id=? AND d.id IN ? AND b.valid_from<=d.content_version AND (b.valid_to IS NULL OR b.valid_to>d.content_version)", wid, ids).Scan(&rows).Error; err != nil {
 		return nil, err
 	}
 	records := map[string][]document.BlockRecord{}

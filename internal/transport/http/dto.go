@@ -94,20 +94,21 @@ func collectionResponse(c document.Collection) collectionDTO {
 }
 
 type documentDTO struct {
-	BoardID                *string `json:"board_id"`
-	SheetID                *string `json:"sheet_id"`
-	CollaborationAvailable bool    `json:"collaboration_available"`
-	IsArchived             bool    `json:"is_archived"`
-	ID                     string  `json:"id"`
-	WorkspaceID            string  `json:"workspace_id"`
-	CollectionID           string  `json:"collection_id"`
-	Title                  string  `json:"title"`
-	ContentVersion         int64   `json:"content_version"`
-	ArchivedAtMS           *int64  `json:"archived_at_ms"`
-	CreatedAtMS            int64   `json:"created_at_ms"`
-	UpdatedAtMS            int64   `json:"updated_at_ms"`
-	ParentID               *string `json:"parent_id"`
-	Position               int     `json:"position"`
+	CollaborationPreviewAvailable bool    `json:"collaboration_preview_available,omitempty"`
+	BoardID                       *string `json:"board_id"`
+	SheetID                       *string `json:"sheet_id"`
+	CollaborationAvailable        bool    `json:"collaboration_available"`
+	IsArchived                    bool    `json:"is_archived"`
+	ID                            string  `json:"id"`
+	WorkspaceID                   string  `json:"workspace_id"`
+	CollectionID                  string  `json:"collection_id"`
+	Title                         string  `json:"title"`
+	ContentVersion                int64   `json:"content_version"`
+	ArchivedAtMS                  *int64  `json:"archived_at_ms"`
+	CreatedAtMS                   int64   `json:"created_at_ms"`
+	UpdatedAtMS                   int64   `json:"updated_at_ms"`
+	ParentID                      *string `json:"parent_id"`
+	Position                      int     `json:"position"`
 }
 
 func documentResponse(d document.Document) documentDTO {

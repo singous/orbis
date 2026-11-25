@@ -93,12 +93,25 @@ func (r revisionRow) domain() document.Revision {
 type blockRow struct {
 	PayloadBytes        *int
 	PayloadDigest       *string
+	PayloadRevision     *int64
 	DocumentID, BlockID string
 	ParentID            *string
 	Position            int
 	Payload             json.RawMessage `gorm:"type:jsonb"`
 	ValidFrom           int64
 	ValidTo             *int64
+}
+
+const blockContentTable = "document_block_contents"
+
+func reuseBlockPayload(row *blockRow, previous blockRow) {
+	row.Payload = nil
+	row.PayloadBytes = previous.PayloadBytes
+	row.PayloadDigest = previous.PayloadDigest
+	row.PayloadRevision = previous.PayloadRevision
+	if row.PayloadRevision == nil {
+		row.PayloadRevision = &previous.ValidFrom
+	}
 }
 
 // TableName keeps persisted table names independent of Go type names.

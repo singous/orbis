@@ -37,6 +37,20 @@ it("loads current notebook metadata directly without enumerating the workspace",
   expect(fetcher.mock.calls[0][0]).toBe(`/api/v1/workspaces/${id}/collections/${id}`);
 });
 
+it("shares the document metadata request with the first body page", async () => {
+  const { wrapper } = setup();
+  const path = `/api/v1/workspaces/${id}/documents/${id}`;
+  const note = { ...notebook, collection_id: id, content_version: 7, title: "Pinned title", position: 0, parent_id: null };
+  const fetcher = vi.fn(async (url: string) => {
+    const data = url === path ? note : { version: 7, items: [], pagination: { next_cursor: null, has_more: false } };
+    return new Response(JSON.stringify({ code: "OK", message: "ok", request_id: "test", data }), { headers: { "Content-Type": "application/json" } });
+  });
+  vi.stubGlobal("fetch", fetcher);
+  const { result } = renderHook(() => ({ note: useNote(id), content: useNoteContent(id, { pageSize: 32 }) }), { wrapper });
+  await waitFor(() => expect(result.current.content.data).toMatchObject({ content_version: 7, title: "Pinned title" }));
+  expect(fetcher.mock.calls.map(([url]) => url)).toEqual([path, `${path}/children?page_size=32&version=7`]);
+});
+
 it("finishes a title save without waiting for background directory refreshes", async () => {
   const { client, wrapper } = setup();
   const note = {...notebook,collection_id:id,content_version:2,position:0,parent_id:null,title:"Renamed"};

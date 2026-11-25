@@ -2,7 +2,8 @@ import { useContext, useEffect, useRef } from "react";
 import { Link, useMatch, type LinkProps } from "react-router-dom";
 import { QueryClientContext } from "@tanstack/react-query";
 import { useOptionalAuthRequest } from "../../shared/auth/use-auth-request";
-import { getNote, getNoteChildrenPage } from "./api";
+import { firstNotePageQueryOptions, noteQueryOptions } from "./document-read-queries";
+import { CONTENT_PAGE_SIZE } from "./editor/editor-content-handle";
 import { loadDocumentEditor } from "./editor/editor-module";
 
 /** Pointer/focus intent warms one destination without changing link semantics. */
@@ -22,9 +23,13 @@ export function DocumentLink({ noteId, onPointerEnter, onPointerLeave, onFocus, 
     // Hovering the active row must not refetch (or fail) the editing session.
     if (!client || !auth || isCurrentDocument) return;
     const background = { ...auth, feedback: { error: false } };
-    void loadDocumentEditor().catch(() => { /* Navigation owns loading feedback. */ });
-    void client.prefetchQuery({ queryKey: ["note", noteId], meta: { silent: true }, queryFn: ({ signal }) => getNote(noteId, background, signal) });
-    void client.prefetchQuery({ queryKey: ["note-content-pages", noteId], meta: { silent: true }, queryFn: ({ signal }) => getNoteChildrenPage(noteId, background, { signal }) });
+    void client.fetchQuery(noteQueryOptions(noteId, background, true)).then(note => {
+      if (background.canNotify?.() === false || note.board_id || note.sheet_id) return;
+      void loadDocumentEditor().catch(() => { /* Navigation owns loading feedback. */ });
+      if (note.collaboration_available !== true) {
+        void client.prefetchQuery(firstNotePageQueryOptions(client, noteId, background, CONTENT_PAGE_SIZE, note));
+      }
+    }).catch(() => { /* Navigation retries metadata and owns loading feedback. */ });
   }
   return <Link {...props}
     onPointerEnter={event => {

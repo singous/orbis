@@ -31,10 +31,37 @@ function bytes(state: string) { return Buffer.from(state, "base64"); }
 function content(block: NativeBlock) { return block.content.map(run => run.text).join(""); }
 
 describe("persistent Yjs body engine", () => {
+  it("rebuilds the exact committed state from a checkpoint and ordered updates", () => {
+    const p = paragraph("before");
+    const initial = seed([p]);
+    const browser = load(initial.state);
+    try {
+      text(browser, p.id).insert(6, " new");
+      const first = merge(initial.state, browser);
+      text(browser, p.id).delete(0, 7);
+      const last = merge(first.state, browser);
+      assert.ok(first.update && last.update);
+      const replayed = transform({ state: initial.state, update: null, blocks: null, replay: [first.update, last.update] });
+      assert.equal(replayed.state, last.state);
+      assert.equal(replayed.state_vector, last.state_vector);
+      assert.equal(replayed.update, null);
+      assert.deepEqual(replayed.blocks, []);
+      assert.throws(() => transform({ state: initial.state, update: null, blocks: null, replay: [last.update!] }),
+        { code: "INVALID_UPDATE" });
+      assert.throws(() => transform({ state: initial.state, update: first.update, blocks: null, replay: [last.update!] }),
+        { code: "INVALID_REQUEST" });
+      assert.throws(() => transform({ state: initial.state, update: null, blocks: null, replay: Array<string>(97).fill(first.update!) }),
+        { code: "CONTENT_TOO_LARGE" });
+    } finally {
+      browser.destroy();
+    }
+  });
+
   it("seeds exactly once and reads without changing binary identities", () => {
     const blocks = [paragraph()];
     const initial = seed(blocks);
     assert.deepEqual(initial.blocks, blocks);
+    assert.equal(initial.update, null);
     const read = transform({ state: initial.state, blocks: null, update: null });
     assert.equal(read.changed, false);
     assert.deepEqual(bytes(read.state), bytes(initial.state));
@@ -63,6 +90,31 @@ describe("persistent Yjs body engine", () => {
     text(restored, p.id).insert(text(restored, p.id).length, " reconnected");
     assert.match(content(merge(merged.state, restored).blocks[0]), /reconnected$/);
     a.destroy(); b.destroy(); restored.destroy();
+  });
+
+  it("limits native comparison to merged top-level text changes and falls back for structural edits", () => {
+    const first = paragraph("first"), second = paragraph("second");
+    const initial = seed([first, second]);
+    const browser = load(initial.state);
+    try {
+      text(browser, second.id).insert(6, " updated");
+      const merged = merge(initial.state, browser);
+      assert.deepEqual(merged.text_block_ids, [second.id]);
+      assert.deepEqual(merged.blocks.map(content), ["first", "second updated"]);
+
+      const inserted = new Y.XmlElement("paragraph");
+      inserted.setAttribute("orbisId", id());
+      const insertedText = new Y.XmlText();
+      insertedText.insert(0, "new");
+      inserted.insert(0, [insertedText]);
+      browser.getXmlFragment("body").insert(0, [inserted]);
+      text(browser, second.id).insert(0, "again ");
+      const structural = merge(merged.state, browser);
+      assert.equal(structural.text_block_ids, undefined);
+      assert.deepEqual(structural.blocks.map(content), ["new", "first", "again second updated"]);
+    } finally {
+      browser.destroy();
+    }
   });
 
   it("keeps browser identities when API commands update an unrelated block", () => {

@@ -13,7 +13,7 @@ afterEach(() => { cleanup(); vi.clearAllTimers(); vi.useRealTimers(); vi.clearAl
 it("prefetches only the intended document while retaining native link attributes", async () => {
   vi.useFakeTimers();
   authStore.setState({ accessToken: "local", refreshToken: null });
-  mock.note.mockResolvedValue({ id: "target" });
+  mock.note.mockResolvedValue({ id: "target", content_version: 4, title: "Target" });
   mock.content.mockResolvedValue({ note_id: "target" });
   mock.module.mockResolvedValue({});
   const client = new QueryClient({ defaultOptions: { queries: { staleTime: 15_000 } } });
@@ -30,12 +30,31 @@ it("prefetches only the intended document while retaining native link attributes
   expect(mock.note).not.toHaveBeenCalled();
   fireEvent.pointerEnter(link);
   await act(async () => { await vi.advanceTimersByTimeAsync(DOCUMENT_PREFETCH_DWELL_MS); });
-  expect(client.getQueryData(["note-content-pages", "target"])).toEqual({ note_id: "target" });
+  expect(client.getQueryData(["note-content-pages", "target"])).toEqual({ note_id: "target", title: "Target" });
   fireEvent.focus(link);
   expect(mock.note).toHaveBeenCalledOnce();
   expect(mock.content).toHaveBeenCalledOnce();
+  expect(mock.content).toHaveBeenCalledWith("target", expect.anything(), expect.objectContaining({ version: 4, limit: 32 }));
   expect(mock.note).toHaveBeenCalledWith("target", expect.objectContaining({ accessToken: "local" }), expect.any(AbortSignal));
   expect(client.getQueryData(["note", "other"])).toBeUndefined();
+});
+
+it.each([
+  [{ collaboration_available: true }, true],
+  [{ board_id: "board" }, false],
+  [{ sheet_id: "sheet" }, false],
+])("only prefetches content used by the selected document route", async (metadata, loadsEditor) => {
+  authStore.setState({ accessToken: "local", refreshToken: null });
+  mock.note.mockResolvedValue({ id: "target", ...metadata });
+  mock.module.mockResolvedValue({});
+  const client = new QueryClient();
+  render(<QueryClientProvider client={client}><MemoryRouter>
+    <DocumentLink noteId="target" to="/documents/target">Target</DocumentLink>
+  </MemoryRouter></QueryClientProvider>);
+  await act(async () => { fireEvent.focus(screen.getByRole("link", { name: "Target" })); });
+  expect(mock.note).toHaveBeenCalledOnce();
+  expect(mock.content).not.toHaveBeenCalled();
+  expect(mock.module).toHaveBeenCalledTimes(loadsEditor ? 1 : 0);
 });
 
 it("keeps links usable without requesting private content when there is no session", () => {

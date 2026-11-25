@@ -92,7 +92,7 @@ func (r *Library) listDocuments(ctx context.Context, tx *gorm.DB, q integration.
 		args = append(args, sql.Named("title", *q.ExactTitle))
 	}
 	if q.Text != "" {
-		where = append(where, "(strpos(lower(v.title),lower(@query))>0 OR EXISTS(SELECT 1 FROM document_block_versions b WHERE b.document_id=v.id AND b.valid_to IS NULL AND strpos(lower(b.plain_text),lower(@query))>0))")
+		where = append(where, "(strpos(lower(v.title),lower(@query))>0 OR EXISTS(SELECT 1 FROM document_block_contents b WHERE b.document_id=v.id AND b.valid_to IS NULL AND strpos(lower(b.plain_text),lower(@query))>0))")
 		args = append(args, sql.Named("query", q.Text))
 	}
 	filter := strings.Join(where, " AND ")

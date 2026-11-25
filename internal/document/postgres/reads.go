@@ -88,7 +88,7 @@ func (r *Repository) ReadBlock(ctx context.Context, q document.ReadQuery) (docum
 		}
 		version = resolved
 		var row blockRow
-		if err := tx.Where("document_id=? AND block_id=? AND valid_from<=? AND (valid_to IS NULL OR valid_to>?)", doc.ID, q.BlockID, version, version).Take(&row).Error; err != nil {
+		if err := tx.Table(blockContentTable).Where("document_id=? AND block_id=? AND valid_from<=? AND (valid_to IS NULL OR valid_to>?)", doc.ID, q.BlockID, version, version).Take(&row).Error; err != nil {
 			return missing(err)
 		}
 		items, err := childCounts(ctx, tx, doc.ID, version, []document.BlockRecord{row.domain()})
@@ -105,12 +105,12 @@ const outlineSQL = `WITH RECURSIVE walk AS (
  SELECT block_id,parent_id,valid_from,payload->>'type' AS kind,
    CASE WHEN payload->>'type'='heading' THEN (payload->'props'->>'level')::integer ELSE 0 END AS level,
    CASE WHEN payload->>'type'='heading' THEN left(plain_text,240) ELSE '' END AS text,ARRAY[position] AS path
- FROM document_block_versions WHERE document_id=@document AND parent_id IS NULL AND valid_from<=@version AND (valid_to IS NULL OR valid_to>@version)
+ FROM document_block_contents WHERE document_id=@document AND parent_id IS NULL AND valid_from<=@version AND (valid_to IS NULL OR valid_to>@version)
  UNION ALL
  SELECT b.block_id,b.parent_id,b.valid_from,b.payload->>'type',
    CASE WHEN b.payload->>'type'='heading' THEN (b.payload->'props'->>'level')::integer ELSE 0 END,
    CASE WHEN b.payload->>'type'='heading' THEN left(b.plain_text,240) ELSE '' END,w.path || b.position
- FROM document_block_versions b JOIN walk w ON b.parent_id=w.block_id
+ FROM document_block_contents b JOIN walk w ON b.parent_id=w.block_id
  WHERE b.document_id=@document AND b.valid_from<=@version AND (b.valid_to IS NULL OR b.valid_to>@version) AND cardinality(w.path)<@depth
 ) `
 
@@ -193,8 +193,8 @@ func (r *Repository) Changes(ctx context.Context, q document.ReadQuery) ([]docum
 		if count != 1 {
 			return fault.Missing()
 		}
-		query := `WITH before AS (SELECT * FROM document_block_versions WHERE document_id=? AND valid_from<=? AND (valid_to IS NULL OR valid_to>?)),
-          after AS (SELECT * FROM document_block_versions WHERE document_id=? AND valid_from<=? AND (valid_to IS NULL OR valid_to>?))
+		query := `WITH before AS (SELECT * FROM document_block_contents WHERE document_id=? AND valid_from<=? AND (valid_to IS NULL OR valid_to>?)),
+          after AS (SELECT * FROM document_block_contents WHERE document_id=? AND valid_from<=? AND (valid_to IS NULL OR valid_to>?))
           SELECT coalesce(a.block_id,b.block_id) AS id,CASE WHEN a.block_id IS NULL THEN 'deleted' ELSE 'upsert' END AS change,a.valid_from AS block_revision,a.parent_id,b.parent_id AS previous_parent_id,a.position,b.position AS previous_position
           FROM before b FULL OUTER JOIN after a ON a.block_id=b.block_id
           WHERE (a.block_id IS NULL OR b.block_id IS NULL OR a.parent_id IS DISTINCT FROM b.parent_id OR a.position<>b.position OR a.payload IS DISTINCT FROM b.payload)`
@@ -222,7 +222,7 @@ func ChildrenAt(ctx context.Context, tx *gorm.DB, q document.ReadQuery) ([]docum
 			return nil, fault.Missing()
 		}
 	}
-	query := tx.Where("document_id=? AND parent_id IS NOT DISTINCT FROM CAST(? AS UUID) AND valid_from<=? AND (valid_to IS NULL OR valid_to>?)", q.Scope.DocumentID, q.ParentID, q.Version, q.Version)
+	query := tx.Table(blockContentTable).Where("document_id=? AND parent_id IS NOT DISTINCT FROM CAST(? AS UUID) AND valid_from<=? AND (valid_to IS NULL OR valid_to>?)", q.Scope.DocumentID, q.ParentID, q.Version, q.Version)
 	if q.AfterID != "" {
 		query = query.Where("position>? OR (position=? AND block_id>?)", q.AfterPosition, q.AfterPosition, q.AfterID)
 	}

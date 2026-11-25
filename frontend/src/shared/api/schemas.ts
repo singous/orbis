@@ -87,6 +87,7 @@ export const nativeNoteSchema = resourceIdentitySchema.extend({
   collection_id: z.string().uuid(), parent_id: z.string().uuid().nullable(), position: z.number().int().nonnegative(),
   title: z.string(), content_version: z.number().int().positive(),
   collaboration_available: z.boolean().optional(),
+  collaboration_preview_available: z.boolean().optional(),
   sheet_id: z.string().uuid().nullable().optional(),
   board_id: z.string().uuid().nullable().optional(),
 });
