@@ -79,7 +79,11 @@ func run(args []string, logger *slog.Logger) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	startup, cancel := context.WithTimeout(ctx, cfg.ReadTimeout)
-	application, err := app.New(startup, cfg, logger)
+	openApplication := app.New
+	if action == "serve" {
+		openApplication = app.NewServer
+	}
+	application, err := openApplication(startup, cfg, logger)
 	cancel()
 	if err != nil {
 		return err

@@ -20,8 +20,9 @@ import (
 )
 
 type Repository struct {
-	db            *gorm.DB
-	collaboration document.CollaborationEngine
+	db                 *gorm.DB
+	collaboration      document.CollaborationEngine
+	collaborationCache collaborationStateCache
 }
 
 // New uses a caller-owned PostgreSQL pool for document storage.

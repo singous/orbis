@@ -38,6 +38,40 @@ responses. The process exits cleanly on SIGTERM/SIGINT.
   against that same state. Stable block IDs retain unaffected XML/text identities;
   inline edits use the Yjs ProseMirror binding. Never rebuild a live CRDT from JSON.
 - `state: base64, blocks: null, update: null` reads and validates existing state.
+- `state: base64, blocks: null, update: null, replay: base64[]` reconstructs an
+  already committed head from an older checkpoint and its ordered journal.
+  Replay accepts up to 96 updates and 4 MiB of decoded update bytes. The
+  response contains the reconstructed state and state vector, with
+  `update: null` and an empty `blocks` array. Native blocks were validated and
+  written by the original edit transactions.
+
+## PostgreSQL checkpoints
+
+Go writes the collaboration update, native block changes, document revision
+and operation receipt in one transaction before acknowledging an edit.
+`document_collaboration_states.content_version` identifies the version covered
+by the full binary checkpoint. The logical head is that version plus
+`pending_update_count`, and matches `documents.content_version`.
+`state_vector` and `updated_at_ms` describe that committed head. The retained
+journal must cover every pending version in the current epoch.
+
+The Go server compacts due documents in this order:
+
+1. At least 1 MiB of accumulated update bytes.
+2. At least 32 pending updates.
+3. The oldest pending update has waited at least 5 seconds.
+
+One checkpoint can cover a prefix without disturbing newer committed updates.
+Clients can still catch up using the retained recent updates. If appending an
+edit would exceed 4 MiB or 96 pending updates, its transaction also writes a
+checkpoint. Restoring a historical version checkpoints the new epoch in the
+restore transaction.
+
+Upgrade the engine to one that accepts `replay` before starting the Go server
+with migration 30, and stop older Go writers before the new server accepts
+edits. For a downgrade, stop incoming writes while leaving the new Go server
+running until every `pending_update_count` is zero. Migration 30 refuses to
+remove replay metadata while any checkpoint trails the committed head.
 
 Merging an update can return `text_block_ids` when the applied transaction only
 changed text or presentation properties in existing top-level paragraphs or headings. Go uses these

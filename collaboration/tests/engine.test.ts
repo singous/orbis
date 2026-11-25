@@ -31,6 +31,32 @@ function bytes(state: string) { return Buffer.from(state, "base64"); }
 function content(block: NativeBlock) { return block.content.map(run => run.text).join(""); }
 
 describe("persistent Yjs body engine", () => {
+  it("rebuilds the exact committed state from a checkpoint and ordered updates", () => {
+    const p = paragraph("before");
+    const initial = seed([p]);
+    const browser = load(initial.state);
+    try {
+      text(browser, p.id).insert(6, " new");
+      const first = merge(initial.state, browser);
+      text(browser, p.id).delete(0, 7);
+      const last = merge(first.state, browser);
+      assert.ok(first.update && last.update);
+      const replayed = transform({ state: initial.state, update: null, blocks: null, replay: [first.update, last.update] });
+      assert.equal(replayed.state, last.state);
+      assert.equal(replayed.state_vector, last.state_vector);
+      assert.equal(replayed.update, null);
+      assert.deepEqual(replayed.blocks, []);
+      assert.throws(() => transform({ state: initial.state, update: null, blocks: null, replay: [last.update!] }),
+        { code: "INVALID_UPDATE" });
+      assert.throws(() => transform({ state: initial.state, update: first.update, blocks: null, replay: [last.update!] }),
+        { code: "INVALID_REQUEST" });
+      assert.throws(() => transform({ state: initial.state, update: null, blocks: null, replay: Array<string>(97).fill(first.update!) }),
+        { code: "CONTENT_TOO_LARGE" });
+    } finally {
+      browser.destroy();
+    }
+  });
+
   it("seeds exactly once and reads without changing binary identities", () => {
     const blocks = [paragraph()];
     const initial = seed(blocks);

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"strings"
 
 	"github.com/google/uuid"
@@ -31,6 +32,7 @@ type CollaborationTransform struct {
 	Blocks  *[]Block              `json:"blocks"`
 	Update  []byte                `json:"update"`
 	Targets []CollaborationTarget `json:"targets,omitempty"`
+	Replay  [][]byte              `json:"replay,omitempty"`
 }
 
 type CollaborationTarget struct {
@@ -116,6 +118,13 @@ func (s *Service) EnableCollaboration(ctx context.Context, scope DirectoryScope)
 	r, ok := s.repo.(CollaborationRepository)
 	if !ok || !r.CollaborationAvailable() {
 		return CollaborationState{}, CollaborationUnavailable()
+	}
+	// A previously initialized document can open while an editor is saving.
+	// Only creating the first checkpoint needs the document write lock.
+	state, _, err := r.ReadCollaboration(ctx, scope, 0)
+	var business *fault.Error
+	if !errors.As(err, &business) || business.Code != "COLLABORATION_NOT_ENABLED" {
+		return state, err
 	}
 	if err := s.acquireCommand(ctx); err != nil {
 		return CollaborationState{}, err

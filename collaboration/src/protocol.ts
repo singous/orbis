@@ -1,4 +1,6 @@
 export const MAX_BINARY_BYTES = 64 * 1024 * 1024;
+export const MAX_REPLAY_BYTES = 4 * 1024 * 1024;
+export const MAX_REPLAY_UPDATES = 96;
 export const MAX_REQUEST_BYTES = 192 * 1024 * 1024;
 export const MAX_CONTENT_BYTES = 7 * 1024 * 1024;
 export const MAX_BLOCKS = 10_000;
